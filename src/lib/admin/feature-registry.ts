@@ -76,7 +76,37 @@ export interface FeatureDef {
   healthSignal: string;
   knownGaps?: string[];
   excluded?: 'crm';
+  /**
+   * Per-feature heartbeat-staleness override, in hours (W16 Task 1). Only
+   * `qualifiers` uses this today — FEATURE_COVERAGE.md §1.1: "Quiet between
+   * events is NORMAL: heartbeat window widened to 7d, never ambers on
+   * silence alone." Omit to fall back to the tier default in
+   * `TIER_THRESHOLDS`.
+   */
+  heartbeatStaleHoursOverride?: number;
 }
+
+/**
+ * Tier thresholds (W16 Task 1 — FEATURE_COVERAGE.md §3 "Tier thresholds"
+ * table). `computeFeatureStatus()` imports these rather than inlining magic
+ * numbers, per the doc's explicit instruction — they get recalibrated after
+ * 1-2 weeks of tagged production data (Appendix B item 5).
+ *
+ * `amberFp`/`redFp` are grouped-fingerprint counts over the tier's judging
+ * window (24h for high/med, trailing 7d for low — see computeFeatureStatus).
+ * `heartbeatStaleHours` gates the heartbeat-staleness AMBER rule (§3.3).
+ */
+export interface TierThresholds {
+  amberFp: number;
+  redFp: number;
+  heartbeatStaleHours: number;
+}
+
+export const TIER_THRESHOLDS: Readonly<Record<FeatureTier, TierThresholds>> = {
+  high: { amberFp: 2, redFp: 5, heartbeatStaleHours: 6 },
+  med: { amberFp: 1, redFp: 2, heartbeatStaleHours: 72 },
+  low: { amberFp: 1, redFp: 2, heartbeatStaleHours: 24 * 14 },
+} as const;
 
 export const FEATURE_REGISTRY: readonly FeatureDef[] = [
   // ── GolfHelm (24) ──────────────────────────────────────────────────────
@@ -140,6 +170,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     heartbeatTable: 'golf_qualifiers',
     tier: 'med',
     seasonalEmpty: false,
+    heartbeatStaleHoursOverride: 24 * 7,
     healthSignal:
       'Qualifier CRUD + leaderboard + selection-state transitions succeed. Quiet between events is NORMAL — heartbeat window widened to 7d.',
   },
