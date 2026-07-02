@@ -53,8 +53,10 @@ export default function BaseballAnnouncementsPage() {
       setLoadError(result.error ?? 'Announcements could not be loaded.');
     }
 
-    // For coaches: also fetch roster for the create flow
-    if (isCoach && selectedTeamId) {
+    // For coaches: also fetch roster for the create flow. selectedTeamId is
+    // already guaranteed truthy here (guard clause above returns otherwise,
+    // and this closure's value can't change mid-call), so only isCoach gates.
+    if (isCoach) {
       const supabase = createClient();
       const { data: members } = await supabase
         .from('baseball_team_members')

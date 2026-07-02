@@ -298,7 +298,11 @@ export async function getPerformanceCommandData(
     (r) => r.band === 'red' || r.band === 'orange_lower' || r.band === 'orange_upper',
   ).length;
   const pitcherRedFlags = board.filter(
-    (b) => b.readiness_band === 'red' && /^P|RHP|LHP|pitch/i.test(b.primary_position ?? ''),
+    // `^` must wrap the whole alternation, not just the first branch --
+    // `/^P|RHP|LHP|pitch/` only anchors "P" and lets RHP/LHP/pitch match
+    // anywhere in the string (e.g. would false-positive on any position
+    // code that merely contains "pitch" mid-string).
+    (b) => b.readiness_band === 'red' && /^(p|rhp|lhp|pitch)/i.test(b.primary_position ?? ''),
   ).length;
   const bwAlerts = Array.from(bwDeltaByPlayer.values()).filter((d) => d <= -3).length;
 

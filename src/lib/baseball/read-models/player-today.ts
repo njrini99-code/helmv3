@@ -513,10 +513,18 @@ export async function getPlayerToday(
 
   const supabase = await createClient();
   const me = await resolvePlayer(supabase, teamId);
-  if (!me.isMember || !me.playerId) {
+  // resolvePlayer only ever sets playerId in the branch where userId is also
+  // set (both come from the same authenticated-user path) -- but that's an
+  // invariant of resolvePlayer's own control flow, not something TS can see
+  // from these two independently-typed properties. Check userId here too so
+  // it's narrowed to non-null once, at the source, instead of re-checked
+  // later against a property TS still (correctly, from its view) sees as
+  // nullable.
+  if (!me.isMember || !me.playerId || !me.userId) {
     return base(me.playerId, false, null); // honest unauthorized envelope
   }
   const playerId = me.playerId;
+  const userId = me.userId;
 
   // The TEAM's IANA tz is the single source of truth for "today" (mirrors the
   // Daily Contract read/write — see contract-day.ts). `forDate` (when passed by
@@ -708,12 +716,12 @@ export async function getPlayerToday(
   let ackByEvent = new Map<string, string>(); // event_id -> acknowledged_at
   if (eventsRes.error) {
     error = 'Your schedule could not be loaded.';
-  } else if (eventRows.length > 0 && me.userId) {
+  } else if (eventRows.length > 0) {
     const eventIds = eventRows.map((e) => e.id);
     const { data: acks, error: ackErr } = await supabase
       .from('baseball_event_acknowledgements')
       .select('event_id, acknowledged_at')
-      .eq('user_id', me.userId)
+      .eq('user_id', userId)
       .in('event_id', eventIds);
     if (ackErr) {
       error = error ?? 'Acknowledgement status could not be loaded.';
