@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { createClient } from '@/lib/supabase/server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /**
  * Resolve a group of admin_events via the internally-gated RPC.
@@ -10,7 +11,7 @@ import { createClient } from '@/lib/supabase/server';
  * is_super_admin() via auth.uid(), which is NULL under service_role
  * (the documented 509-storm failure mode).
  */
-export async function resolveTriageEvents(
+async function resolveTriageEventsImpl(
   eventIds: string[],
 ): Promise<{ resolvedCount: number }> {
   await requireSuperAdmin();
@@ -28,4 +29,23 @@ export async function resolveTriageEvents(
   revalidatePath('/admin');
   revalidatePath('/admin/errors');
   return { resolvedCount: data ?? 0 };
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedResolveTriageEvents = withAdminObserved(
+  'resolveTriageEvents',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  resolveTriageEventsImpl,
+);
+
+export async function resolveTriageEvents(
+  eventIds: string[],
+): Promise<{ resolvedCount: number }> {
+  return observedResolveTriageEvents(eventIds);
 }
