@@ -5,6 +5,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   samplePerPlayerRounds,
   computeTeamHealth,
@@ -300,7 +301,7 @@ export interface TeamOverviewResult {
  * Aggregates team-level composite rating, category breakdown, and shot analysis.
  * Returns data suitable for the TeamCompositeCard and TeamShotOverview components.
  */
-export async function getTeamOverview(
+async function getTeamOverviewImpl(
   teamIdArg?: string,
 ): Promise<TeamOverviewResult> {
   try {
@@ -633,11 +634,23 @@ export async function getTeamOverview(
   }
 }
 
+const observedGetTeamOverview = withAdminObserved(
+  'getTeamOverview',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getTeamOverviewImpl,
+);
+
+export async function getTeamOverview(
+  teamIdArg?: string,
+): Promise<TeamOverviewResult> {
+  return observedGetTeamOverview(teamIdArg);
+}
+
 // ============================================================================
 // MAIN ACTION — getTeamCategoryInsights
 // ============================================================================
 
-export async function getTeamCategoryInsights(
+async function getTeamCategoryInsightsImpl(
   teamIdArg?: string,
 ): Promise<TeamCategoryInsightsResult> {
   try {
@@ -924,4 +937,16 @@ export async function getTeamCategoryInsights(
     await logServerError(message, { action: 'getTeamCategoryInsights' }, 'error');
     return { success: false, error: message };
   }
+}
+
+const observedGetTeamCategoryInsights = withAdminObserved(
+  'getTeamCategoryInsights',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getTeamCategoryInsightsImpl,
+);
+
+export async function getTeamCategoryInsights(
+  teamIdArg?: string,
+): Promise<TeamCategoryInsightsResult> {
+  return observedGetTeamCategoryInsights(teamIdArg);
 }
