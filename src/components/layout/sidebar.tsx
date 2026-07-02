@@ -555,7 +555,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                     'transition-colors duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
-                      ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                      ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
                       : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
@@ -565,7 +565,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                     aria-hidden="true"
                     className={cn(
                       'flex-shrink-0 transition-colors duration-150',
-                      isActive ? 'text-primary-400' : 'text-white/50'
+                      isActive ? 'text-primary-400 nav-item-active-icon' : 'text-white/50'
                     )}
                   />
                   {/* Text - animates out */}
@@ -619,7 +619,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                         'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
                         'transition-colors duration-150 ease-out',
                         isActive
-                          ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                          ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
                           : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                         isCollapsed ? 'justify-center px-2' : 'px-3'
                       )}
@@ -629,7 +629,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                         aria-hidden="true"
                         className={cn(
                           'flex-shrink-0 transition-colors',
-                          isActive ? 'text-primary-400' : 'text-white/50'
+                          isActive ? 'text-primary-400 nav-item-active-icon' : 'text-white/50'
                         )}
                       />
                       <span
@@ -670,7 +670,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                     'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out',
                     isActive
-                      ? 'bg-white/10 text-primary-400'
+                      ? 'bg-white/10 text-primary-400 nav-item-active'
                       : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
