@@ -108,6 +108,13 @@
   --fw-color-nav-text-dim: oklch(0.62 0.007 60);   /* recessive warm nav labels */
   --fw-color-nav-accent:   var(--fw-color-accent-400); /* active marker on black */
 
+  /* ── Helm Bridge sport inks ──────────────────────────────────────────
+     Baseball wayfinding accent (infield clay). NOTE: the "Living Annual"
+     .living-annual self-skinning scope described in older planning docs
+     was never shipped — this token IS the baseball ink layer. Never blend
+     it with the golf accent on one surface. */
+  --fw-color-team-baseball: #C2703D;
+
   /* ---- Radius RAMP (generous & soft — kind, tactile) ----
      THIS IS THE SYSTEM. A blessed, finite 4-step card-family ramp + pill.
      Squinting at any surface reveals exactly ONE corner radius per element
