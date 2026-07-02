@@ -2,14 +2,29 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  AuthCard,
+  AuthFooterLinks,
+  BaseballAuthShell,
+  humanizeAuthError,
+} from '@/components/auth/baseball-auth-shell';
+
+function humanizeResetRequestError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes('rate limit') || /only request this (again|once)/.test(lower)) {
+    return 'You already requested a reset link recently. Please wait a moment before trying again.';
+  }
+  if (lower.includes('invalid email')) {
+    return 'Please enter a valid email address.';
+  }
+  return humanizeAuthError(message);
+}
 
 export default function ForgotPasswordPage() {
-  const prefersReducedMotion = useReducedMotion();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -29,7 +44,7 @@ export default function ForgotPasswordPage() {
       });
 
       if (resetError) {
-        setError(resetError.message);
+        setError(humanizeResetRequestError(resetError.message));
         setLoading(false);
         return;
       }
@@ -43,270 +58,93 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center relative p-4 bg-auth-baseball">
-      {/* Skip to main content link for keyboard navigation */}
-      <a
-        href="#forgot-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-      >
-        Skip to form
-      </a>
+    <BaseballAuthShell
+      skipTargetId="forgot-form"
+      skipLabel="Skip to form"
+      eyebrow="ACCOUNT RECOVERY"
+      tagline={success ? undefined : 'Enter your email and we’ll send you a reset link.'}
+      footer={
+        <AuthFooterLinks
+          switchLabel={!success ? 'Remember your password?' : undefined}
+          switchHref="/baseball/login"
+          switchCta="Sign in"
+        />
+      }
+    >
+      <AuthCard ariaLabel={success ? 'Check your email' : 'Reset your password'}>
+        <div className="mb-6 text-center">
+          <h2 className="font-annual text-h3 font-semibold tracking-tight text-text-primary">
+            {success ? 'Check your email' : 'Reset your password'}
+          </h2>
+          {success && (
+            <p className="mt-1 text-sm text-warm-500">We&apos;ve sent a reset link to {email}</p>
+          )}
+        </div>
 
-      {/* Animated floating orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large primary orb - top right */}
-        <motion.div
-          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-amber-400/40 to-orange-400/30"
-          animate={{
-            x: [0, 30, 0],
-            y: [0, -20, 0],
-            scale: [1, 1.05, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
-        />
-        {/* Medium orb - bottom left */}
-        <motion.div
-          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-yellow-400/30 to-amber-400/25"
-          animate={{
-            x: [0, -25, 0],
-            y: [0, 25, 0],
-            scale: [1, 0.95, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          })}
-        />
-        {/* Small accent orb - top left */}
-        <motion.div
-          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-orange-300/25 to-amber-400/20"
-          animate={{
-            x: [0, 20, 0],
-            y: [0, -15, 0],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          })}
-        />
-        {/* Tiny floating dot */}
-        <motion.div
-          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-amber-500/40 top-[30%] right-[15%] sm:right-[20%]"
-          animate={{
-            y: [0, -10, 0],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
-        />
-      </div>
-
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(245, 158, 11, 0.5) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(245, 158, 11, 0.5) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }}
-      />
-
-      {/* Glass card */}
-      <div id="forgot-form" className="relative z-10 w-full max-w-[420px]">
-        <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
-          className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
-        >
-          {/* Logo with glow effect */}
-          <motion.div
-            className="flex flex-col items-center mb-6 sm:mb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-helm-amber-500/30 rounded-full blur-xl scale-150" />
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center mb-3 sm:mb-4">
-                <Image
-                  src="/helm-baseball-logo.png"
-                  alt="BaseballHelm Logo"
-                  width={56}
-                  height={56}
-                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
-                  priority
-                  unoptimized
-                />
+        {success ? (
+          <div className="animate-fade-in space-y-4 sm:space-y-5">
+            <div className="mb-2 flex justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-grade-plus/10">
+                <Mail className="h-8 w-8 text-grade-plus" aria-hidden />
               </div>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
-              BaseballHelm
-            </h1>
-          </motion.div>
-
-          {/* Header */}
-          <motion.div
-            className="text-center mb-6 sm:mb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
-          >
-            <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
-              {success ? 'Check your email' : 'Reset your password'}
-            </h2>
-            <p className="text-warm-500 text-sm sm:text-base">
-              {success
-                ? `We've sent a reset link to ${email}`
-                : 'Enter your email to receive a reset link'}
-            </p>
-          </motion.div>
-
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
-          >
-            {success ? (
-              <div className="space-y-4 sm:space-y-5">
-                {/* Success illustration */}
-                <div className="flex justify-center mb-2">
-                  <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
-                    <Mail className="w-8 h-8 text-amber-600" />
-                  </div>
+            <div className="rounded-xl border border-grade-plus/25 bg-grade-plus/10 px-4 py-3">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-grade-plus" aria-hidden />
+                <div className="text-sm text-primary-700">
+                  <p>Click the link in the email to reset your password.</p>
+                  <p className="mt-1 text-primary-600">The link will expire in 1 hour.</p>
                 </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-amber-700">
-                      <p>Click the link in the email to reset your password.</p>
-                      <p className="mt-1 text-amber-600">The link will expire in 1 hour.</p>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-warm-500 text-center">
-                  Did not receive the email? Check your spam folder or try again with a different email address.
-                </p>
-                <Link href="/baseball/login">
-                  <Button variant="ghost"
-                    className="
-                      w-full py-2.5 sm:py-3
-                      bg-white text-warm-700
-                      font-medium text-sm
-                      rounded-xl
-                      border border-warm-200
-                      transition-all duration-200
-                      hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300
-                      active:scale-[0.98]
-                    "
-                  >
-                    Back to Sign In
-                  </Button>
-                </Link>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
-                {error && (
-                  <div
-                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
-                    role="alert"
-                  >
-                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <label htmlFor="forgot-email" className="text-sm font-medium text-warm-700">Email</label>
-                  <input
-                    id="forgot-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
-                    autoFocus
-                    autoComplete="email"
-                    className="
-                      w-full px-4 py-2.5 sm:py-3
-                      bg-white
-                      border border-warm-200
-                      rounded-xl
-                      text-warm-900 text-base lg:text-sm
-                      placeholder:text-warm-400
-                      transition-all duration-200
-                      focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-                    "
-                  />
-                </div>
-
-                <Button variant="primary"
-                  type="submit"
-                  disabled={loading}
-                  className="
-                    w-full py-2.5 sm:py-3
-                    bg-primary-600 text-white
-                    font-medium text-sm
-                    rounded-xl
-                    shadow-sm
-                    transition-all duration-200
-                    hover:bg-primary-700 hover:shadow-md
-                    active:scale-[0.98]
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    flex items-center justify-center
-                  "
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-1" role="status" aria-label="Sending reset link">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      <span className="sr-only">Sending reset link...</span>
-                    </div>
-                  ) : (
-                    'Send reset link'
-                  )}
-                </Button>
-              </form>
-            )}
-          </motion.div>
-        </motion.div>
-
-        {/* Footer links */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
-        >
-          {!success && (
-            <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
-              Remember your password?{' '}
-              <Link href="/baseball/login" className="text-amber-600 font-semibold hover:text-amber-700 transition-colors">
-                Sign in
-              </Link>
+            </div>
+            <p className="text-center text-xs text-warm-500">
+              Did not receive the email? Check your spam folder or try again with a different email address.
             </p>
-          )}
-
-          <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-            <Link href="/" className="hover:text-warm-700 transition-colors">
-              &#8592; Back to HelmLabs
+            <Link href="/baseball/login">
+              <Button
+                variant="outline"
+                className="w-full py-2.5 text-sm font-medium sm:py-3"
+              >
+                Back to Sign In
+              </Button>
             </Link>
-          </p>
-        </motion.div>
-      </div>
-    </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
+            {error && (
+              <div
+                className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
+                role="alert"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <Input
+              id="forgot-email"
+              name="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
+              autoFocus
+            />
+
+            <Button
+              variant="primary"
+              type="submit"
+              isLoading={loading}
+              className="w-full py-2.5 text-sm font-medium sm:py-3"
+            >
+              {loading ? 'Sending reset link…' : 'Send reset link'}
+            </Button>
+          </form>
+        )}
+      </AuthCard>
+    </BaseballAuthShell>
   );
 }

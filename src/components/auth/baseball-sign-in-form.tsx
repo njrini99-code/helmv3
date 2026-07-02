@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/baseball/actions/auth';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
+import { humanizeAuthError } from '@/components/auth/baseball-auth-shell';
 
 function getErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -23,7 +24,7 @@ function getErrorMessage(error: string): string {
   if (lower.includes('network') || lower.includes('fetch')) {
     return 'Unable to reach the server. Please check your internet connection and try again.';
   }
-  return error;
+  return humanizeAuthError(error);
 }
 
 export function BaseballSignInForm() {
@@ -103,44 +104,26 @@ export function BaseballSignInForm() {
       {/* Error message */}
       {error && (
         <div
-          className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-[10px] flex items-start gap-2.5"
+          className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
           role="alert"
         >
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Email */}
-      <div className="space-y-1.5">
-        <label htmlFor="baseball-signin-email" className="text-sm font-medium text-warm-700">
-          Email
-        </label>
-        <input
-          id="baseball-signin-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          required
-          autoComplete="email"
-          inputMode="email"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          enterKeyHint="next"
-          className="
-            w-full px-4 py-3 min-h-[48px]
-            bg-white
-            border border-warm-200
-            rounded-xl
-            text-warm-900 text-base lg:text-sm
-            placeholder:text-warm-400
-            transition-all duration-200 ease-ios
-            focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/15
-          "
-        />
-      </div>
+      {/* Email — explicit "Email" label + honest autocomplete so password
+          managers and keyboards offer the right affordance every time. */}
+      <Input
+        id="baseball-signin-email"
+        name="email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@example.com"
+        required
+      />
 
       {/* Password */}
       <div className="space-y-1.5">
@@ -150,13 +133,14 @@ export function BaseballSignInForm() {
           </label>
           <Link
             href="/baseball/forgot-password"
-            className="text-xs text-primary-600 hover:text-primary-700 transition-colors"
+            className="rounded text-xs font-medium text-grade-plus transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
           >
             Forgot password?
           </Link>
         </div>
         <Input
           id="baseball-signin-password"
+          name="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -164,37 +148,17 @@ export function BaseballSignInForm() {
           required
           autoComplete="current-password"
           enterKeyHint="go"
-          className="py-3 min-h-[48px] rounded-xl"
         />
       </div>
 
-      {/* Submit button — inline spinner, iOS ease, tactile press */}
-      <Button variant="primary"
+      {/* Submit button — Button owns its own press physics + skeleton/pending state */}
+      <Button
+        variant="primary"
         type="submit"
-        disabled={isLoading}
-        aria-busy={isLoading}
-        className="
-          w-full min-h-[50px] py-3
-          bg-primary-600 text-white
-          font-semibold text-body tracking-[-0.01em]
-          rounded-xl
-          shadow-lg shadow-primary-600/25
-          transition-all duration-200 ease-ios
-          hover:bg-primary-700 hover:shadow-primary-600/30
-          active:scale-[0.97] active:duration-75
-          disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
-          flex items-center justify-center gap-2
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-        "
+        isLoading={isLoading}
+        className="min-h-[50px] w-full py-3 text-body font-semibold tracking-[-0.01em]"
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-[18px] h-[18px] animate-spin" aria-hidden="true" />
-            <span>Signing in…</span>
-          </>
-        ) : (
-          'Sign in'
-        )}
+        {isLoading ? 'Signing in…' : 'Sign in'}
       </Button>
     </form>
   );

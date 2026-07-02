@@ -7,6 +7,9 @@ import { signupAction } from '@/app/baseball/actions/auth';
 import { Users, GraduationCap, AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { humanizeAuthError } from '@/components/auth/baseball-auth-shell';
+import { cn } from '@/lib/utils';
 
 type Role = 'player' | 'coach';
 
@@ -27,7 +30,7 @@ function getSignupErrorMessage(error: string): string {
   if (lower.includes('rate limit') || lower.includes('too many')) {
     return 'Too many attempts. Please wait a moment and try again.';
   }
-  return error;
+  return humanizeAuthError(error);
 }
 
 export function BaseballSignUpForm() {
@@ -89,16 +92,16 @@ export function BaseballSignUpForm() {
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       {error && (
         <div
-          className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-[10px] flex items-start gap-2.5"
+          className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
           role="alert"
         >
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
           <div>
             <span>{error}</span>
             {error.includes('already exists') && (
               <Link
                 href="/baseball/login"
-                className="block mt-1 text-primary-600 font-medium hover:text-primary-700 underline underline-offset-2"
+                className="mt-1 block rounded font-medium text-grade-plus underline underline-offset-2 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
               >
                 Go to sign in
               </Link>
@@ -111,40 +114,38 @@ export function BaseballSignUpForm() {
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-warm-700">I am a...</legend>
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="primary"
+          <Button
+            variant="outline"
             type="button"
             onClick={() => setRole('player')}
             aria-pressed={role === 'player'}
-            className={`
-              p-4 rounded-[10px] border-2 transition-colors
-              flex flex-col items-center gap-2
-              ${role === 'player'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-warm-200 bg-white hover:border-warm-300'
-              }
-            `}
+            className={cn(
+              'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors',
+              role === 'player'
+                ? 'border-grade-plus bg-grade-plus/10'
+                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+            )}
           >
-            <GraduationCap className={`w-6 h-6 ${role === 'player' ? 'text-primary-600' : 'text-warm-400'}`} />
-            <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-warm-700'}`}>
+            <GraduationCap className={cn('h-6 w-6', role === 'player' ? 'text-grade-plus' : 'text-warm-400')} aria-hidden />
+            <span className={cn('text-sm font-medium', role === 'player' ? 'text-primary-700' : 'text-warm-700')}>
               Player
             </span>
           </Button>
 
-          <Button variant="primary"
+          <Button
+            variant="outline"
             type="button"
             onClick={() => setRole('coach')}
             aria-pressed={role === 'coach'}
-            className={`
-              p-4 rounded-[10px] border-2 transition-colors
-              flex flex-col items-center gap-2
-              ${role === 'coach'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-warm-200 bg-white hover:border-warm-300'
-              }
-            `}
+            className={cn(
+              'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors',
+              role === 'coach'
+                ? 'border-grade-plus bg-grade-plus/10'
+                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+            )}
           >
-            <Users className={`w-6 h-6 ${role === 'coach' ? 'text-primary-600' : 'text-warm-400'}`} />
-            <span className={`text-sm font-medium ${role === 'coach' ? 'text-primary-600' : 'text-warm-700'}`}>
+            <Users className={cn('h-6 w-6', role === 'coach' ? 'text-grade-plus' : 'text-warm-400')} aria-hidden />
+            <span className={cn('text-sm font-medium', role === 'coach' ? 'text-primary-700' : 'text-warm-700')}>
               Coach
             </span>
           </Button>
@@ -153,80 +154,48 @@ export function BaseballSignUpForm() {
 
       {/* Name fields - side by side */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label htmlFor="baseball-signup-firstname" className="text-sm font-medium text-warm-700">
-            First name
-          </label>
-          <input
-            id="baseball-signup-firstname"
-            type="text"
-            value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            placeholder="John"
-            required
-            autoComplete="given-name"
-            className="
-              w-full px-4 py-3
-              bg-white border border-warm-200 rounded-[10px]
-              text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-              transition-colors duration-200
-              focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-            "
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="baseball-signup-lastname" className="text-sm font-medium text-warm-700">
-            Last name
-          </label>
-          <input
-            id="baseball-signup-lastname"
-            type="text"
-            value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            placeholder="Doe"
-            required
-            autoComplete="family-name"
-            className="
-              w-full px-4 py-3
-              bg-white border border-warm-200 rounded-[10px]
-              text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-              transition-colors duration-200
-              focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-            "
-          />
-        </div>
-      </div>
-
-      {/* Email */}
-      <div className="space-y-1.5">
-        <label htmlFor="baseball-signup-email" className="text-sm font-medium text-warm-700">
-          Email
-        </label>
-        <input
-          id="baseball-signup-email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="you@example.com"
+        <Input
+          id="baseball-signup-firstname"
+          name="firstName"
+          label="First name"
+          type="text"
+          value={formData.firstName}
+          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+          placeholder="John"
           required
-          autoComplete="email"
-          className="
-            w-full px-4 py-3
-            bg-white border border-warm-200 rounded-[10px]
-            text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-            transition-colors duration-200
-            focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-          "
+          autoComplete="given-name"
+        />
+        <Input
+          id="baseball-signup-lastname"
+          name="lastName"
+          label="Last name"
+          type="text"
+          value={formData.lastName}
+          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+          placeholder="Doe"
+          required
+          autoComplete="family-name"
         />
       </div>
 
+      {/* Email — explicit "Email" label + honest autocomplete */}
+      <Input
+        id="baseball-signup-email"
+        name="email"
+        label="Email"
+        type="email"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+        placeholder="you@example.com"
+        required
+      />
+
       {/* Password with strength indicator */}
       <div className="space-y-1.5">
-        <label htmlFor="baseball-signup-password" className="text-sm font-medium text-warm-700">
-          Password
-        </label>
-        <input
+        <Input
           id="baseball-signup-password"
+          name="password"
+          label="Password"
           type="password"
           value={formData.password}
           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -234,67 +203,35 @@ export function BaseballSignUpForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="
-            w-full px-4 py-3
-            bg-white border border-warm-200 rounded-[10px]
-            text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-            transition-colors duration-200
-            focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-          "
         />
         <PasswordStrengthIndicator password={formData.password} />
       </div>
 
       {/* Submit */}
-      <Button variant="primary"
+      <Button
+        variant="primary"
         type="submit"
-        disabled={isLoading}
-        className="
-          w-full py-3
-          bg-primary-600 text-white font-medium text-sm
-          rounded-[10px] shadow-sm
-          transition-colors duration-200
-          hover:bg-primary-700 hover:shadow-md
-          active:scale-[0.98]
-          disabled:opacity-50 disabled:cursor-not-allowed
-          flex items-center justify-center
-        "
+        isLoading={isLoading}
+        className="w-full py-3 text-sm font-semibold"
       >
-        {isLoading ? (
-          <div className="flex items-center gap-1" role="status" aria-label="Creating account">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-            <span className="sr-only">Creating account...</span>
-          </div>
-        ) : (
-          'Create account'
-        )}
+        {isLoading ? 'Creating account…' : 'Create account'}
       </Button>
 
       {/* Divider */}
-      <div className="flex items-center gap-4 my-6">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent to-warm-200" />
-        <span className="text-xs text-warm-400 font-medium">or</span>
-        <div className="flex-1 h-px bg-gradient-to-l from-transparent to-warm-200" />
+      <div className="my-6 flex items-center gap-4">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[color:var(--hairline)]" />
+        <span className="text-xs font-medium text-warm-400">or</span>
+        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[color:var(--hairline)]" />
       </div>
 
       {/* Google SSO - placeholder */}
-      <Button variant="ghost"
+      <Button
+        variant="outline"
         type="button"
         disabled
-        className="
-          w-full py-3
-          bg-white text-warm-700 font-medium text-sm
-          rounded-[10px] border border-warm-200
-          transition-colors duration-200
-          hover:bg-warm-50 hover:border-warm-300
-          active:scale-[0.98]
-          disabled:opacity-50 disabled:cursor-not-allowed
-          flex items-center justify-center gap-3
-        "
+        className="flex w-full items-center justify-center gap-3 rounded-xl border border-warm-200 bg-cream-50 py-3 text-sm font-medium text-warm-700"
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24">
+        <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -304,7 +241,7 @@ export function BaseballSignUpForm() {
       </Button>
 
       {/* Terms */}
-      <p className="text-xs text-warm-400 text-center mt-4">
+      <p className="mt-4 text-center text-xs text-warm-400">
         By creating an account, you agree to our{' '}
         <Link href="/terms" className="text-warm-600 hover:underline">Terms</Link>
         {' '}and{' '}
