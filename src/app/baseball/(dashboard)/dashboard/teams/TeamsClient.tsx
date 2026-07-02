@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useToast } from '@/components/ui/sonner';
 import { useAuth } from '@/hooks/use-auth';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import Image from 'next/image';
 import {
   IconPlus,
@@ -17,7 +21,13 @@ import {
   IconVideo,
   IconCopy,
   IconCheck,
+  IconEdit,
+  IconTrash,
+  IconLogOut,
+  IconX,
+  IconWarning,
 } from '@/components/icons';
+import { createTeam, updateTeam, deleteTeam, leaveTeamAsCoach, createTeamInvitation, revokeTeamInvitation } from '@/app/baseball/actions/teams';
 
 interface Team {
   id: string;
@@ -48,103 +58,337 @@ interface TeamInvite {
   updated_at: string | null;
 }
 
+interface TeamFormState {
+  name: string;
+  description: string;
+  primary_color: string;
+  secondary_color: string;
+}
+
+const EMPTY_FORM: TeamFormState = {
+  name: '',
+  description: '',
+  primary_color: '#16A34A',
+  secondary_color: '#FFFFFF',
+};
+
+/** Native color swatch + hex text field, defined once and shared by both the
+ * create and edit team forms. */
+function ColorField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-warm-700 mb-1.5">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
+        />
+        <Input value={value} onChange={(e) => onChange(e.target.value)} className="flex-1" />
+      </div>
+    </div>
+  );
+}
+
+/** Shared Create/Edit team modal — one implementation backs both flows so the
+ * form markup (and its design-token compliance) only has to be right once. */
+function TeamFormModal({
+  title,
+  submitLabel,
+  isSubmitting,
+  form,
+  onChange,
+  onSubmit,
+  onCancel,
+}: {
+  title: string;
+  submitLabel: string;
+  isSubmitting: boolean;
+  form: TeamFormState;
+  onChange: (form: TeamFormState) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <Button
+        type="button"
+        variant="ghost"
+        aria-label="Close modal"
+        haptic="none"
+        className="min-h-0 absolute inset-0 block w-full h-full rounded-none bg-warm-900/50 backdrop-blur-sm cursor-default hover:bg-warm-900/50"
+        onClick={onCancel}
+      >
+        {''}
+      </Button>
+      <div className="relative bg-cream-50 rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        <div className="px-6 py-4 border-b border-warm-100">
+          <h2 className="text-lg font-semibold tracking-tight text-warm-900">{title}</h2>
+        </div>
+        <form onSubmit={onSubmit} className="p-6 space-y-4">
+          <Input
+            label="Team Name"
+            placeholder="e.g., Texas Elite 18U"
+            value={form.name}
+            onChange={(e) => onChange({ ...form, name: e.target.value })}
+            required
+          />
+          <Textarea
+            id="team-form-description"
+            label="Description"
+            placeholder="Brief description of your team..."
+            value={form.description}
+            onChange={(e) => onChange({ ...form, description: e.target.value })}
+            rows={3}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <ColorField
+              id="team-form-primary-color"
+              label="Primary Color"
+              value={form.primary_color}
+              onChange={(value) => onChange({ ...form, primary_color: value })}
+            />
+            <ColorField
+              id="team-form-secondary-color"
+              label="Secondary Color"
+              value={form.secondary_color}
+              onChange={(value) => onChange({ ...form, secondary_color: value })}
+            />
+          </div>
+          <div className="flex items-center gap-3 pt-4">
+            <Button type="button" variant="secondary" className="flex-1" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1" isLoading={isSubmitting}>
+              {submitLabel}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/** Delete-team confirmation. Deliberately NOT the generic ConfirmDialog:
+ * baseball_teams.id CASCADE-deletes into ~15 dependent tables (games, box
+ * scores, player/season stats, documents, tasks, lineups, travel
+ * itineraries, invites, staff), so this is a much higher-stakes destructive
+ * action than "delete this record." The server already blocks the delete
+ * outright when any of that history exists (see deleteTeam in
+ * actions/teams.ts) — this dialog's type-the-team-name requirement is
+ * defense in depth against a fat-fingered click, and its copy is explicit
+ * about the full blast radius rather than just "the roster." */
+function DeleteTeamDialog({
+  team,
+  isLoading,
+  onConfirm,
+  onCancel,
+}: {
+  team: Team;
+  isLoading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [confirmText, setConfirmText] = useState('');
+  const { modalRef } = useFocusTrap(true, onCancel);
+  const canConfirm = confirmText.trim().length > 0 && confirmText.trim() === team.name;
+
+  return (
+    <div
+      role="presentation"
+      className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
+    >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Delete ${team.name}`}
+        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-cream-50 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 border-b border-warm-100 px-6 py-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <IconWarning size={20} aria-hidden />
+          </div>
+          <h2 className="text-lg font-semibold tracking-tight text-warm-900">Delete {team.name}?</h2>
+        </div>
+
+        <div className="space-y-3 px-6 py-4">
+          <p className="text-sm leading-relaxed text-warm-600">
+            This permanently deletes <strong className="text-warm-900">{team.name}</strong> and
+            everything attached to it — games, box scores, player and season stats, documents,
+            tasks, lineups, travel itineraries, invite links, and coaching staff access. This
+            can&apos;t be undone.
+          </p>
+          <p className="text-sm leading-relaxed text-warm-600">
+            Deletion is blocked while the team has an active roster or any recorded history
+            (games, stats, uploads, etc.) — this dialog only appears once that history has been
+            cleared.
+          </p>
+          <Input
+            id="delete-team-confirm"
+            label={`Type "${team.name}" to confirm`}
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={team.name}
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-warm-100 px-6 py-4">
+          <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={onConfirm}
+            disabled={isLoading || !canConfirm}
+            isLoading={isLoading}
+            haptic="heavy"
+          >
+            Delete Team
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TeamsPage() {
   const router = useRouter();
   const { coach, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [invites, setInvites] = useState<Map<string, TeamInvite>>(new Map());
+  const [primaryByTeam, setPrimaryByTeam] = useState<Map<string, boolean>>(new Map());
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Create team form state
-  const [newTeam, setNewTeam] = useState({
-    name: '',
-    description: '',
-    primary_color: '#16A34A',
-    secondary_color: '#FFFFFF',
-  });
+  const [newTeam, setNewTeam] = useState<TeamFormState>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    async function fetchTeams() {
-      if (authLoading || !coach?.id) {
-        setLoading(false);
-        return;
-      }
+  // Edit team modal state
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editForm, setEditForm] = useState<TeamFormState>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
-      setLoading(true);
-      const supabase = createClient();
+  // Delete confirm state
+  const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
 
-      // baseball_teams does not have head_coach_id — use baseball_team_coach_staff for lookups
-      const { data: staffData, error: staffError } = await supabase
-        .from('baseball_team_coach_staff')
-        .select('team_id')
-        .eq('coach_id', coach.id);
+  // Leave confirm state
+  const [leavingTeam, setLeavingTeam] = useState<Team | null>(null);
 
-      if (staffError) {
-        setLoading(false);
-        return;
-      }
+  // Per-team busy state for invite generate/revoke
+  const [inviteBusyTeamId, setInviteBusyTeamId] = useState<string | null>(null);
 
-      const coachTeamIds = (staffData || []).map((s) => s.team_id);
-
-      let teamsData: Team[] = [];
-      if (coachTeamIds.length > 0) {
-        const { data: fetchedTeams, error: teamsError } = await supabase
-          .from('baseball_teams')
-          .select('*')
-          .in('id', coachTeamIds)
-          .order('created_at', { ascending: false });
-
-        if (teamsError) {
-          setLoading(false);
-          return;
-        }
-        teamsData = (fetchedTeams || []) as Team[];
-      }
-
-      // Get member counts
-      const teamIds = teamsData?.map((t) => t.id) || [];
-      if (teamIds.length > 0) {
-        const { data: members } = await supabase
-          .from('baseball_team_members')
-          .select('team_id')
-          .in('team_id', teamIds)
-          .eq('status', 'active');
-
-        const counts = new Map<string, number>();
-        (members || []).forEach((m) => {
-          counts.set(m.team_id, (counts.get(m.team_id) || 0) + 1);
-        });
-
-        const teamsWithCounts = (teamsData || []).map((t) => ({
-          ...t,
-          member_count: counts.get(t.id) || 0,
-        }));
-        setTeams(teamsWithCounts);
-
-        // Get active invites for each team
-        const { data: invitesData } = await supabase
-          .from('baseball_team_invitations')
-          .select('*')
-          .in('team_id', teamIds)
-          .eq('is_active', true);
-
-        const inviteMap = new Map<string, TeamInvite>();
-        (invitesData || []).forEach((inv) => {
-          inviteMap.set(inv.team_id, inv as TeamInvite);
-        });
-        setInvites(inviteMap);
-      } else {
-        setTeams([]);
-      }
-
+  async function fetchTeams() {
+    if (authLoading || !coach?.id) {
       setLoading(false);
+      return;
     }
 
+    setLoading(true);
+    const supabase = createClient();
+
+    // baseball_teams does not have head_coach_id — use baseball_team_coach_staff for lookups
+    const { data: staffData, error: staffError } = await supabase
+      .from('baseball_team_coach_staff')
+      .select('team_id, is_primary')
+      .eq('coach_id', coach.id);
+
+    if (staffError) {
+      showToast("Couldn't load your teams. Please refresh.", 'error');
+      setLoading(false);
+      return;
+    }
+
+    const coachTeamIds = (staffData || []).map((s) => s.team_id);
+    const primaryMap = new Map<string, boolean>();
+    (staffData || []).forEach((s) => {
+      primaryMap.set(s.team_id, s.is_primary === true);
+    });
+    setPrimaryByTeam(primaryMap);
+
+    let teamsData: Team[] = [];
+    if (coachTeamIds.length > 0) {
+      const { data: fetchedTeams, error: teamsError } = await supabase
+        .from('baseball_teams')
+        .select('*')
+        .in('id', coachTeamIds)
+        .order('created_at', { ascending: false });
+
+      if (teamsError) {
+        showToast("Couldn't load your teams. Please refresh.", 'error');
+        setLoading(false);
+        return;
+      }
+      teamsData = (fetchedTeams || []) as Team[];
+    }
+
+    // Get member counts
+    const teamIds = teamsData?.map((t) => t.id) || [];
+    if (teamIds.length > 0) {
+      const { data: members } = await supabase
+        .from('baseball_team_members')
+        .select('team_id')
+        .in('team_id', teamIds)
+        .eq('status', 'active');
+
+      const counts = new Map<string, number>();
+      (members || []).forEach((m) => {
+        counts.set(m.team_id, (counts.get(m.team_id) || 0) + 1);
+      });
+
+      const teamsWithCounts = (teamsData || []).map((t) => ({
+        ...t,
+        member_count: counts.get(t.id) || 0,
+      }));
+      setTeams(teamsWithCounts);
+
+      // Get active invites for each team
+      const { data: invitesData } = await supabase
+        .from('baseball_team_invitations')
+        .select('*')
+        .in('team_id', teamIds)
+        .eq('is_active', true);
+
+      const inviteMap = new Map<string, TeamInvite>();
+      (invitesData || []).forEach((inv) => {
+        inviteMap.set(inv.team_id, inv as TeamInvite);
+      });
+      setInvites(inviteMap);
+    } else {
+      setTeams([]);
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
     fetchTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, coach?.id]);
 
   const handleCreateTeam = async (e: React.FormEvent) => {
@@ -152,81 +396,166 @@ export default function TeamsPage() {
     if (!coach?.id || !newTeam.name.trim()) return;
 
     setCreating(true);
-    const supabase = createClient();
-
-    // Generate a random join code for the team
-    const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-    const { data, error } = await supabase
-      .from('baseball_teams')
-      .insert({
+    try {
+      const result = await createTeam({
         name: newTeam.name.trim(),
-        team_type: 'showcase',
         description: newTeam.description || null,
         primary_color: newTeam.primary_color,
         secondary_color: newTeam.secondary_color || null,
-        join_code: joinCode,
-        organization_id: coach.organization_id || null,
-        created_by: coach.id,
-      })
-      .select()
-      .single();
+      });
 
-    if (error) {
+      if (!result.success || !result.data) {
+        showToast(result.error ?? 'Failed to create team. Please try again.', 'error');
+        return;
+      }
+
+      const created = result.data;
+      setTeams((prev) => [{ ...created, member_count: 0 }, ...prev]);
+      setPrimaryByTeam((prev) => new Map(prev).set(created.id, true));
+      setShowCreateModal(false);
+      setNewTeam(EMPTY_FORM);
+      showToast('Team created', 'success');
+    } catch {
+      showToast('Something went wrong creating this team. Please try again.', 'error');
+    } finally {
       setCreating(false);
-      return;
     }
+  };
 
-    // Also add coach to team_coach_staff
-    await supabase.from('baseball_team_coach_staff').insert({
-      team_id: data.id,
-      coach_id: coach.id,
-      role: 'Head Coach',
-      is_primary: true,
+  const openEditModal = (team: Team) => {
+    setEditingTeam(team);
+    setEditForm({
+      name: team.name,
+      description: team.description || '',
+      primary_color: team.primary_color || '#16A34A',
+      secondary_color: team.secondary_color || '#FFFFFF',
     });
+  };
 
-    setTeams([{ ...data, member_count: 0 }, ...teams]);
-    setShowCreateModal(false);
-    setNewTeam({
-      name: '',
-      description: '',
-      primary_color: '#16A34A',
-      secondary_color: '#FFFFFF',
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeam || !editForm.name.trim()) return;
+
+    setSaving(true);
+    try {
+      const result = await updateTeam({
+        team_id: editingTeam.id,
+        name: editForm.name.trim(),
+        description: editForm.description || null,
+        primary_color: editForm.primary_color,
+        secondary_color: editForm.secondary_color || null,
+      });
+
+      if (!result.success || !result.data) {
+        showToast(result.error ?? 'Failed to update team. Please try again.', 'error');
+        return;
+      }
+
+      const updated = result.data;
+      setTeams((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)));
+      setEditingTeam(null);
+      showToast('Team updated', 'success');
+    } catch {
+      showToast('Something went wrong updating this team. Please try again.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingTeam) return;
+    const team = deletingTeam;
+    startTransition(async () => {
+      try {
+        const result = await deleteTeam(team.id);
+        if (!result.success) {
+          showToast(result.error ?? 'Failed to delete team. Please try again.', 'error');
+          return;
+        }
+        setTeams((prev) => prev.filter((t) => t.id !== team.id));
+        setInvites((prev) => {
+          const next = new Map(prev);
+          next.delete(team.id);
+          return next;
+        });
+        showToast('Team deleted', 'success');
+      } catch {
+        showToast('Something went wrong deleting this team. Please try again.', 'error');
+      } finally {
+        setDeletingTeam(null);
+      }
     });
-    setCreating(false);
+  };
+
+  const handleConfirmLeave = () => {
+    if (!leavingTeam) return;
+    const team = leavingTeam;
+    startTransition(async () => {
+      try {
+        const result = await leaveTeamAsCoach(team.id);
+        if (!result.success) {
+          showToast(result.error ?? 'Failed to leave team. Please try again.', 'error');
+          return;
+        }
+        setTeams((prev) => prev.filter((t) => t.id !== team.id));
+        showToast(`You left ${team.name}`, 'success');
+      } catch {
+        showToast('Something went wrong leaving this team. Please try again.', 'error');
+      } finally {
+        setLeavingTeam(null);
+      }
+    });
   };
 
   const handleGenerateInvite = async (teamId: string) => {
     if (!coach?.id) return;
-
-    const supabase = createClient();
-
-    // Generate a random invite code
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-    const { data, error } = await supabase
-      .from('baseball_team_invitations')
-      .insert({
-        team_id: teamId,
-        code: code,
-        created_by_coach_id: coach.id,
-        is_active: true,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      return;
+    setInviteBusyTeamId(teamId);
+    try {
+      const result = await createTeamInvitation(teamId);
+      if (!result.success || !result.data) {
+        showToast(result.error ?? 'Failed to generate invite. Please try again.', 'error');
+        return;
+      }
+      setInvites((prev) => new Map(prev).set(teamId, result.data as TeamInvite));
+    } catch {
+      showToast('Something went wrong generating the invite. Please try again.', 'error');
+    } finally {
+      setInviteBusyTeamId(null);
     }
+  };
 
-    setInvites(new Map(invites).set(teamId, data as TeamInvite));
+  const handleRevokeInvite = async (teamId: string, invite: TeamInvite) => {
+    setInviteBusyTeamId(teamId);
+    try {
+      const result = await revokeTeamInvitation(invite.id);
+      if (!result.success) {
+        showToast(result.error ?? 'Failed to revoke invite. Please try again.', 'error');
+        return;
+      }
+      setInvites((prev) => {
+        const next = new Map(prev);
+        next.delete(teamId);
+        return next;
+      });
+      showToast('Invite revoked', 'success');
+    } catch {
+      showToast('Something went wrong revoking the invite. Please try again.', 'error');
+    } finally {
+      setInviteBusyTeamId(null);
+    }
   };
 
   const handleCopyInvite = (code: string) => {
     const url = `${window.location.origin}/baseball/join/${code}`;
-    navigator.clipboard.writeText(url);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
+    navigator.clipboard.writeText(url).then(
+      () => {
+        setCopiedCode(code);
+        setTimeout(() => setCopiedCode(null), 2000);
+      },
+      () => {
+        showToast('Could not copy the invite link. Copy it manually.', 'error');
+      },
+    );
   };
 
   if (authLoading || loading) {
@@ -277,6 +606,8 @@ export default function TeamsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teams.map((team) => {
               const invite = invites.get(team.id);
+              const isPrimary = primaryByTeam.get(team.id) === true;
+              const inviteBusy = inviteBusyTeamId === team.id;
               return (
                 <div
                   key={team.id}
@@ -306,6 +637,43 @@ export default function TeamsPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Edit / Delete / Leave — dark scrim overlay (readable on any team color) */}
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        haptic="light"
+                        onClick={() => openEditModal(team)}
+                        className="min-w-[36px] min-h-[36px] p-2 rounded-lg bg-black/20 hover:bg-black/30 text-white"
+                        title="Edit team"
+                        aria-label={`Edit ${team.name}`}
+                      >
+                        <IconEdit size={14} />
+                      </Button>
+                      {isPrimary ? (
+                        <Button
+                          variant="ghost"
+                          haptic="light"
+                          onClick={() => setDeletingTeam(team)}
+                          className="min-w-[36px] min-h-[36px] p-2 rounded-lg bg-black/20 hover:bg-black/30 text-white"
+                          title="Delete team"
+                          aria-label={`Delete ${team.name}`}
+                        >
+                          <IconTrash size={14} />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          haptic="light"
+                          onClick={() => setLeavingTeam(team)}
+                          className="min-w-[36px] min-h-[36px] p-2 rounded-lg bg-black/20 hover:bg-black/30 text-white"
+                          title="Leave team"
+                          aria-label={`Leave ${team.name}`}
+                        >
+                          <IconLogOut size={14} />
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Team Info */}
@@ -313,6 +681,7 @@ export default function TeamsPage() {
                     <h3 className="text-lg font-semibold tracking-tight text-warm-900">{team.name}</h3>
                     <div className="flex items-center gap-2 mt-1 text-sm text-warm-500">
                       <Badge variant="secondary">{team.team_type}</Badge>
+                      {isPrimary && <Badge variant="secondary">Primary coach</Badge>}
                       {team.description && (
                         <span className="truncate max-w-[200px]">
                           {team.description}
@@ -353,12 +722,24 @@ export default function TeamsPage() {
                               <IconCopy size={16} className="text-warm-500" />
                             )}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            disabled={inviteBusy}
+                            isLoading={inviteBusy}
+                            onClick={() => handleRevokeInvite(team.id, invite)}
+                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center text-warm-500 hover:text-red-500"
+                            title="Revoke invite link"
+                          >
+                            <IconX size={16} />
+                          </Button>
                         </div>
                       ) : (
                         <Button
                           size="sm"
                           variant="secondary"
                           className="w-full"
+                          disabled={inviteBusy}
+                          isLoading={inviteBusy}
                           onClick={() => handleGenerateInvite(team.id)}
                         >
                           Generate Invite Link
@@ -395,101 +776,57 @@ export default function TeamsPage() {
         )}
       </div>
 
-      {/* Create Team Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <Button
-            type="button"
-            variant="ghost"
-            aria-label="Close modal"
-            haptic="none"
-            className="min-h-0 absolute inset-0 block w-full h-full rounded-none bg-warm-900/50 backdrop-blur-sm cursor-default hover:bg-warm-900/50"
-            onClick={() => setShowCreateModal(false)}
-          >
-            {''}
-          </Button>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="px-6 py-4 border-b border-warm-100">
-              <h2 className="text-lg font-semibold tracking-tight text-warm-900">Create New Team</h2>
-            </div>
-            <form onSubmit={handleCreateTeam} className="p-6 space-y-4">
-              <Input
-                label="Team Name"
-                placeholder="e.g., Texas Elite 18U"
-                value={newTeam.name}
-                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                required
-              />
-              <div>
-                <label htmlFor="team-description" className="block text-sm font-medium text-warm-700 mb-1.5">
-                  Description
-                </label>
-                <textarea
-                  id="team-description"
-                  placeholder="Brief description of your team..."
-                  value={newTeam.description}
-                  onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="team-primary-color" className="block text-sm font-medium text-warm-700 mb-1.5">
-                    Primary Color
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="team-primary-color"
-                      type="color"
-                      value={newTeam.primary_color}
-                      onChange={(e) => setNewTeam({ ...newTeam, primary_color: e.target.value })}
-                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
-                    />
-                    <Input
-                      value={newTeam.primary_color}
-                      onChange={(e) => setNewTeam({ ...newTeam, primary_color: e.target.value })}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="team-secondary-color" className="block text-sm font-medium text-warm-700 mb-1.5">
-                    Secondary Color
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="team-secondary-color"
-                      type="color"
-                      value={newTeam.secondary_color}
-                      onChange={(e) => setNewTeam({ ...newTeam, secondary_color: e.target.value })}
-                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
-                    />
-                    <Input
-                      value={newTeam.secondary_color}
-                      onChange={(e) => setNewTeam({ ...newTeam, secondary_color: e.target.value })}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1" isLoading={creating}>
-                  Create Team
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <TeamFormModal
+          title="Create New Team"
+          submitLabel="Create Team"
+          isSubmitting={creating}
+          form={newTeam}
+          onChange={setNewTeam}
+          onSubmit={handleCreateTeam}
+          onCancel={() => setShowCreateModal(false)}
+        />
       )}
+
+      {editingTeam && (
+        <TeamFormModal
+          title={`Edit ${editingTeam.name}`}
+          submitLabel="Save Changes"
+          isSubmitting={saving}
+          form={editForm}
+          onChange={setEditForm}
+          onSubmit={handleSaveEdit}
+          onCancel={() => setEditingTeam(null)}
+        />
+      )}
+
+      {/* Delete confirm — type-the-team-name gate + explicit cascade warning
+          (dedicated dialog, not the generic ConfirmDialog; see
+          DeleteTeamDialog above for why). */}
+      {deletingTeam && (
+        <DeleteTeamDialog
+          team={deletingTeam}
+          isLoading={isPending}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeletingTeam(null)}
+        />
+      )}
+
+      {/* Leave confirm */}
+      <ConfirmDialog
+        open={!!leavingTeam}
+        title="Leave team?"
+        message={
+          leavingTeam
+            ? `You'll lose coaching access to ${leavingTeam.name}. You can be re-invited later by the primary coach.`
+            : ''
+        }
+        confirmLabel="Leave Team"
+        variant="warning"
+        isLoading={isPending}
+        onConfirm={handleConfirmLeave}
+        onCancel={() => setLeavingTeam(null)}
+      />
     </>
   );
 }

@@ -1,8 +1,10 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
+import { randomBytes } from 'crypto';
 import {
   formatSafeErrorResponse,
   logSecurityEvent
@@ -10,6 +12,8 @@ import {
 import { TeamSchemas } from '@/lib/validation/action-schemas';
 import { logServerError } from '@/lib/server-error-logger';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import { requireBaseballCapability } from '@/lib/baseball/capabilities';
+import type { Database } from '@/lib/types/database';
 
 // ============================================================================
 // TYPES
@@ -564,12 +568,20 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
 /**
  * Generate a readable invite code
  * Uses uppercase letters and numbers, excluding ambiguous characters (O, 0, I, 1, L)
+ *
+ * HARDENED: backed by crypto.randomBytes (CSPRNG), not Math.random(). chars has
+ * exactly 32 entries so `byte % 32` is perfectly uniform (256 / 32 = 8) — no
+ * modulo bias. Math.random() is neither cryptographically secure nor safe
+ * against collisions under concurrent generation; every call site pairs this
+ * with an insert/update retry-on-collision loop (isUniqueViolation) rather
+ * than trusting uniqueness up front.
  */
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const bytes = randomBytes(8);
   let code = '';
   for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(bytes.readUInt8(i) % chars.length);
   }
   return code;
 }
@@ -833,6 +845,565 @@ export async function joinTeamByCode(inviteCode: string, playerId: string) {
   // Use existing join logic with validation
   return await joinTeam(playerId, team.id);
 }
+
+// ============================================================================
+// TEAM CRUD + STAFF SELF-SERVICE (Showcase "Teams" management page)
+//
+// Backs src/app/baseball/(dashboard)/dashboard/teams/TeamsClient.tsx. Every
+// mutation below routes through withBaseballAction (auth + Sentry + sanitized
+// errors) and returns a `{ success, error? }` result object rather than
+// throwing on expected failure paths, matching the established
+// generateTeamInviteCode / regenerateTeamInviteCode pattern above.
+// ============================================================================
+
+type BaseballTeamRow = Database['public']['Tables']['baseball_teams']['Row'];
+type BaseballTeamInvitationRow = Database['public']['Tables']['baseball_team_invitations']['Row'];
+
+export interface TeamMutationResult {
+  success: boolean;
+  data?: BaseballTeamRow;
+  error?: string;
+}
+
+export interface TeamInvitationMutationResult {
+  success: boolean;
+  data?: BaseballTeamInvitationRow;
+  error?: string;
+}
+
+export interface TeamActionResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Create a new team for the current coach (Showcase coaches manage multiple
+ * teams from this page). No active-team context is required — this is a
+ * first-write flow just like onboarding, so `requireActiveContext: false`.
+ *
+ * Uses the admin/service-role client for the two-step team + primary-staff-row
+ * insert, mirroring completeCoachOnboarding: the staff INSERT's RLS check
+ * (`is_baseball_primary_coach`) requires a primary staff row to ALREADY exist
+ * for the team, which is a chicken-and-egg problem for the very first staff
+ * row on a brand-new team — the request-scoped (RLS-on) client cannot do this
+ * two-step insert atomically. Auth is still fully enforced above via
+ * withBaseballAction resolving `ctx.user` before this body ever runs.
+ */
+export const createTeam = withBaseballAction(
+  'createTeam',
+  { featureArea: 'baseball-teams', requireActiveContext: false },
+  async (
+    ctx,
+    input: {
+      name: string;
+      description?: string | null;
+      primary_color?: string | null;
+      secondary_color?: string | null;
+    },
+  ): Promise<TeamMutationResult> => {
+    let validated: ReturnType<typeof TeamSchemas.create.parse>;
+    try {
+      validated = TeamSchemas.create.parse(input);
+    } catch {
+      return { success: false, error: 'Please provide a valid team name and colors.' };
+    }
+
+    const supabase = await createClient();
+    const { data: coach, error: coachError } = await supabase
+      .from('baseball_coaches')
+      .select('id, organization_id')
+      .eq('user_id', ctx.user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found.' };
+    }
+
+    const admin = createAdminClient();
+
+    for (let attempt = 0; attempt < MAX_JOIN_CODE_ATTEMPTS; attempt++) {
+      const joinCode = generateInviteCode();
+      const { data: team, error: teamError } = await admin
+        .from('baseball_teams')
+        .insert({
+          name: validated.name,
+          team_type: 'showcase',
+          description: validated.description ?? null,
+          primary_color: validated.primary_color ?? '#16A34A',
+          secondary_color: validated.secondary_color ?? null,
+          join_code: joinCode,
+          organization_id: coach.organization_id ?? null,
+          created_by: coach.id,
+        })
+        .select()
+        .single();
+
+      if (teamError) {
+        if (isUniqueViolation(teamError)) {
+          continue;
+        }
+        await logServerError(
+          `Failed to create team: ${teamError instanceof Error ? teamError.message : String(teamError)}`,
+          { action: 'teams.createTeam' },
+        );
+        return { success: false, error: 'Failed to create team. Please try again.' };
+      }
+
+      const { error: staffError } = await admin.from('baseball_team_coach_staff').insert({
+        team_id: team.id,
+        coach_id: coach.id,
+        role: 'Head Coach',
+        title: 'Head Coach',
+        is_primary: true,
+        is_head_coach: true,
+        status: 'active',
+        can_manage_roster: true,
+        can_manage_practice: true,
+        can_manage_lifting: true,
+        can_view_academics: true,
+        can_manage_imports: true,
+        can_manage_stats: true,
+        can_invite_staff: true,
+        can_manage_settings: true,
+        can_view_medical: true,
+        can_message_players: true,
+        can_manage_calendar: true,
+      });
+
+      if (staffError) {
+        await logServerError(
+          `Failed to create staff row for new team ${team.id}: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+          { action: 'teams.createTeam' },
+        );
+        // Compensating delete: the team row is brand new and has no other
+        // references yet, so removing it is a safe rollback of this failed
+        // multi-step create — not a delete-then-reinsert of existing data.
+        await admin.from('baseball_teams').delete().eq('id', team.id);
+        return { success: false, error: 'Team created but failed to assign you as coach. Please try again.' };
+      }
+
+      revalidatePath('/baseball/dashboard/teams');
+      return { success: true, data: team };
+    }
+
+    return { success: false, error: 'Failed to generate a unique invite code. Please try again.' };
+  },
+);
+
+/**
+ * Update whitelisted fields on a team. Gated on can_manage_settings against
+ * the specific team being edited (not the caller's "active" team), so a
+ * Showcase coach editing a non-active team from the list still passes.
+ */
+export const updateTeam = withBaseballAction(
+  'updateTeam',
+  {
+    featureArea: 'baseball-teams',
+    requiredCapability: 'can_manage_settings',
+    teamFrom: (input: { team_id: string }) => input.team_id,
+  },
+  async (
+    _ctx,
+    input: {
+      team_id: string;
+      name?: string;
+      description?: string | null;
+      primary_color?: string | null;
+      secondary_color?: string | null;
+    },
+  ): Promise<TeamMutationResult> => {
+    let validated: ReturnType<typeof TeamSchemas.update.parse>;
+    try {
+      validated = TeamSchemas.update.parse(input);
+    } catch {
+      return { success: false, error: 'Please provide valid team details.' };
+    }
+
+    // Whitelist: only fields explicitly present in the validated input are
+    // ever written — no raw client payload reaches the update() call.
+    const updates: Database['public']['Tables']['baseball_teams']['Update'] = {};
+    if (validated.name !== undefined) updates.name = validated.name;
+    if (validated.description !== undefined) updates.description = validated.description;
+    if (validated.primary_color !== undefined) updates.primary_color = validated.primary_color;
+    if (validated.secondary_color !== undefined) updates.secondary_color = validated.secondary_color;
+
+    if (Object.keys(updates).length === 0) {
+      return { success: false, error: 'No changes to save.' };
+    }
+
+    const supabase = await createClient();
+    const { data: team, error } = await supabase
+      .from('baseball_teams')
+      .update(updates)
+      .eq('id', validated.team_id)
+      .select()
+      .single();
+
+    if (error || !team) {
+      await logServerError(
+        `Failed to update team ${validated.team_id}: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'teams.updateTeam' },
+      );
+      return { success: false, error: 'Failed to update team. Please try again.' };
+    }
+
+    revalidatePath('/baseball/dashboard/teams');
+    return { success: true, data: team };
+  },
+);
+
+/**
+ * Delete a team. Requires can_manage_settings on the target team AND that the
+ * caller is the primary coach (matches the baseball_teams_delete RLS policy,
+ * which is gated on is_baseball_primary_coach). Blocks the delete if the team
+ * still has an active roster — coaches must offload/remove players first —
+ * AND if the team has ANY recorded history (games, box scores, player/season
+ * stats, stat/box-score uploads, documents, tasks, lineups, travel
+ * itineraries). An empty *active* roster alone is not a safe gate: a team
+ * can have a full season of history with zero currently-active players
+ * (everyone graduated / marked inactive), and baseball_teams.id
+ * CASCADE-deletes into ~15 dependent tables, so this history check is what
+ * actually prevents a season's records from being silently wiped.
+ */
+export const deleteTeam = withBaseballAction(
+  'deleteTeam',
+  {
+    featureArea: 'baseball-teams',
+    requiredCapability: 'can_manage_settings',
+    teamFrom: (teamId: string) => teamId,
+  },
+  async (ctx, teamId: string): Promise<TeamActionResult> => {
+    const supabase = await createClient();
+
+    const { data: coach, error: coachError } = await supabase
+      .from('baseball_coaches')
+      .select('id')
+      .eq('user_id', ctx.user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found.' };
+    }
+
+    const { data: staffRow, error: staffError } = await supabase
+      .from('baseball_team_coach_staff')
+      .select('is_primary')
+      .eq('team_id', teamId)
+      .eq('coach_id', coach.id)
+      .maybeSingle();
+
+    if (staffError) {
+      await logServerError(
+        `Failed to verify primary-coach status before delete: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+        { action: 'teams.deleteTeam' },
+      );
+      return { success: false, error: 'Unable to verify permissions right now. Please try again.' };
+    }
+
+    if (!staffRow?.is_primary) {
+      return { success: false, error: 'Only the primary coach can delete this team.' };
+    }
+
+    const { count, error: membersError } = await supabase
+      .from('baseball_team_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', teamId)
+      .eq('status', 'active');
+
+    if (membersError) {
+      await logServerError(
+        `Failed to check roster before delete: ${membersError instanceof Error ? membersError.message : String(membersError)}`,
+        { action: 'teams.deleteTeam' },
+      );
+      return { success: false, error: 'Unable to verify the roster right now. Please try again.' };
+    }
+
+    if ((count ?? 0) > 0) {
+      return {
+        success: false,
+        error: 'This team still has active roster members. Remove them before deleting the team.',
+      };
+    }
+
+    // An empty *active* roster is not sufficient to allow a delete: a team
+    // can have a full season of history (games, box scores, player/season
+    // stats, documents, tasks, lineups, travel itineraries...) with zero
+    // currently-active players (everyone graduated / was marked inactive or
+    // removed). baseball_teams.id CASCADE-deletes into ~15 dependent tables,
+    // so silently allowing that would permanently wipe a season's records in
+    // two clicks. Block the delete outright when ANY of that history exists.
+    const [
+      gamesCheck,
+      battingCheck,
+      pitchingCheck,
+      boxUploadsCheck,
+      playerStatsCheck,
+      seasonStatsCheck,
+      statUploadsCheck,
+      documentsCheck,
+      tasksCheck,
+      lineupsCheck,
+      travelCheck,
+    ] = await Promise.all([
+      supabase.from('baseball_games').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_box_score_batting').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_box_score_pitching').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_box_score_uploads').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_player_stats').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_player_season_stats').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_stat_uploads').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_documents').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_tasks').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_team_lineups').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_travel_itineraries').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+    ]);
+
+    const historyChecks: Array<{ label: string; count: number | null; error: unknown }> = [
+      { label: 'games', count: gamesCheck.count, error: gamesCheck.error },
+      { label: 'batting box scores', count: battingCheck.count, error: battingCheck.error },
+      { label: 'pitching box scores', count: pitchingCheck.count, error: pitchingCheck.error },
+      { label: 'box score uploads', count: boxUploadsCheck.count, error: boxUploadsCheck.error },
+      { label: 'player stats', count: playerStatsCheck.count, error: playerStatsCheck.error },
+      { label: 'season stats', count: seasonStatsCheck.count, error: seasonStatsCheck.error },
+      { label: 'stat uploads', count: statUploadsCheck.count, error: statUploadsCheck.error },
+      { label: 'documents', count: documentsCheck.count, error: documentsCheck.error },
+      { label: 'tasks', count: tasksCheck.count, error: tasksCheck.error },
+      { label: 'lineups', count: lineupsCheck.count, error: lineupsCheck.error },
+      { label: 'travel itineraries', count: travelCheck.count, error: travelCheck.error },
+    ];
+
+    const historyCheckFailure = historyChecks.find((c) => c.error);
+    if (historyCheckFailure) {
+      await logServerError(
+        `Failed to check team history before delete: ${historyCheckFailure.error instanceof Error ? historyCheckFailure.error.message : String(historyCheckFailure.error)}`,
+        { action: 'teams.deleteTeam' },
+      );
+      return { success: false, error: 'Unable to verify team history right now. Please try again.' };
+    }
+
+    const blockingHistory = historyChecks
+      .filter((c) => (c.count ?? 0) > 0)
+      .map((c) => c.label);
+
+    if (blockingHistory.length > 0) {
+      return {
+        success: false,
+        error: `This team has recorded history that can't be deleted: ${blockingHistory.join(', ')}. Teams with games, stats, or other history are not eligible for deletion.`,
+      };
+    }
+
+    const { error: deleteError } = await supabase
+      .from('baseball_teams')
+      .delete()
+      .eq('id', teamId);
+
+    if (deleteError) {
+      await logServerError(
+        `Failed to delete team ${teamId}: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`,
+        { action: 'teams.deleteTeam' },
+      );
+      return { success: false, error: 'Failed to delete team. Please try again.' };
+    }
+
+    revalidatePath('/baseball/dashboard/teams');
+    return { success: true };
+  },
+);
+
+/**
+ * Leave a team as a non-primary coach (delete own staff row). The primary
+ * coach cannot leave — they must transfer ownership or delete the team.
+ *
+ * No requiredCapability is enforced here: being staff on the team is
+ * sufficient to leave it (a coach without can_manage_settings must still be
+ * able to remove themselves).
+ *
+ * DB-GATED (db_gated, PR #673 follow-up): the live baseball_team_coach_staff
+ * DELETE RLS policy only allows is_baseball_primary_coach(team_id) OR
+ * has_baseball_staff_capability(team_id,'can_invite_staff') — there is no
+ * "delete your own row" clause. A non-primary coach without can_invite_staff
+ * will have this delete silently filtered to 0 rows by RLS (no error). We
+ * detect that (via .select() on the delete) and surface a clear error rather
+ * than a false "success". The DB-side fix — a self-delete clause on the
+ * policy — is written but NOT applied at
+ * supabase/migrations/20260701021000_baseball_team_coach_staff_self_leave.sql;
+ * apply it to make this action work for every non-primary coach.
+ */
+export const leaveTeamAsCoach = withBaseballAction(
+  'leaveTeamAsCoach',
+  { featureArea: 'baseball-teams', teamFrom: (teamId: string) => teamId },
+  async (ctx, teamId: string): Promise<TeamActionResult> => {
+    const supabase = await createClient();
+
+    const { data: coach, error: coachError } = await supabase
+      .from('baseball_coaches')
+      .select('id')
+      .eq('user_id', ctx.user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found.' };
+    }
+
+    const { data: staffRow, error: staffError } = await supabase
+      .from('baseball_team_coach_staff')
+      .select('id, is_primary')
+      .eq('team_id', teamId)
+      .eq('coach_id', coach.id)
+      .maybeSingle();
+
+    if (staffError) {
+      await logServerError(
+        `Failed to look up staff row before leave: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+        { action: 'teams.leaveTeamAsCoach' },
+      );
+      return { success: false, error: 'Unable to verify your membership right now. Please try again.' };
+    }
+
+    if (!staffRow) {
+      return { success: false, error: 'You are not a staff member of this team.' };
+    }
+
+    if (staffRow.is_primary) {
+      return {
+        success: false,
+        error: 'The primary coach cannot leave a team. Transfer ownership or delete the team instead.',
+      };
+    }
+
+    const { data: deleted, error: deleteError } = await supabase
+      .from('baseball_team_coach_staff')
+      .delete()
+      .eq('id', staffRow.id)
+      .select('id');
+
+    if (deleteError) {
+      await logServerError(
+        `Failed to leave team ${teamId}: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`,
+        { action: 'teams.leaveTeamAsCoach' },
+      );
+      return { success: false, error: 'Failed to leave team. Please try again.' };
+    }
+
+    if (!deleted || deleted.length === 0) {
+      // RLS silently filtered the delete to 0 rows (see PRE-SHIP CHECK above)
+      // rather than raising a Postgres error. Surface this loudly instead of
+      // reporting a false success.
+      return {
+        success: false,
+        error: "You don't have permission to leave this team yet. Ask the primary coach to remove your staff access.",
+      };
+    }
+
+    revalidatePath('/baseball/dashboard/teams');
+    return { success: true };
+  },
+);
+
+/**
+ * Create a new invitation code for a team (baseball_team_invitations table —
+ * distinct from the persistent baseball_teams.join_code).
+ */
+export const createTeamInvitation = withBaseballAction(
+  'createTeamInvitation',
+  {
+    featureArea: 'baseball-teams',
+    requiredCapability: 'can_manage_settings',
+    teamFrom: (teamId: string) => teamId,
+  },
+  async (ctx, teamId: string): Promise<TeamInvitationMutationResult> => {
+    const supabase = await createClient();
+
+    const { data: coach, error: coachError } = await supabase
+      .from('baseball_coaches')
+      .select('id')
+      .eq('user_id', ctx.user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found.' };
+    }
+
+    for (let attempt = 0; attempt < MAX_JOIN_CODE_ATTEMPTS; attempt++) {
+      const code = generateInviteCode();
+      const { data: invite, error } = await supabase
+        .from('baseball_team_invitations')
+        .insert({
+          team_id: teamId,
+          code,
+          created_by_coach_id: coach.id,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (!error) {
+        revalidatePath('/baseball/dashboard/teams');
+        return { success: true, data: invite };
+      }
+
+      if (isUniqueViolation(error)) {
+        continue;
+      }
+
+      await logServerError(
+        `Failed to create team invitation for team ${teamId}: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'teams.createTeamInvitation' },
+      );
+      return { success: false, error: 'Failed to generate invite. Please try again.' };
+    }
+
+    return { success: false, error: 'Failed to generate a unique invite code. Please try again.' };
+  },
+);
+
+/**
+ * Revoke (deactivate) an existing team invitation. The team_id needed for the
+ * capability check is not known up front — teamFrom must resolve
+ * synchronously from the action's args, but the caller here only has an
+ * invitation id — so the capability check is done manually inside the body
+ * (resolve the invitation's team_id first, THEN enforce can_manage_settings)
+ * rather than via the wrapper's `teamFrom` option.
+ */
+export const revokeTeamInvitation = withBaseballAction(
+  'revokeTeamInvitation',
+  { featureArea: 'baseball-teams' },
+  async (_ctx, invitationId: string): Promise<TeamActionResult> => {
+    const supabase = await createClient();
+
+    const { data: invitation, error: inviteError } = await supabase
+      .from('baseball_team_invitations')
+      .select('id, team_id')
+      .eq('id', invitationId)
+      .maybeSingle();
+
+    if (inviteError || !invitation) {
+      return { success: false, error: 'Invitation not found.' };
+    }
+
+    try {
+      await requireBaseballCapability(invitation.team_id, 'can_manage_settings');
+    } catch {
+      return { success: false, error: 'You do not have permission to manage this team.' };
+    }
+
+    const { error: updateError } = await supabase
+      .from('baseball_team_invitations')
+      .update({ is_active: false })
+      .eq('id', invitationId);
+
+    if (updateError) {
+      await logServerError(
+        `Failed to revoke invitation ${invitationId}: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+        { action: 'teams.revokeTeamInvitation' },
+      );
+      return { success: false, error: 'Failed to revoke invite. Please try again.' };
+    }
+
+    revalidatePath('/baseball/dashboard/teams');
+    return { success: true };
+  },
+);
 
 // ============================================================================
 // DECISION ROOM + STAFF SETTINGS — re-exports
