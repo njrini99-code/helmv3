@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Loading } from '@/components/ui/loading';
@@ -101,10 +101,42 @@ function MessagesContent() {
     }
   };
 
+  // Guards the auto-start effect below against double-firing for the same
+  // player id (e.g. React StrictMode's dev-only mount/cleanup/remount cycle,
+  // or any other spurious re-run). Persists for the life of this component
+  // instance rather than being reset on cleanup, so a genuine StrictMode
+  // double-invoke is suppressed while a later visit with a *different*
+  // player id still fires normally.
+  const autoStartedPlayerRef = useRef<string | null>(null);
+
   // Auto-start (or open) a conversation with a player when ?player=<playerId> is in URL
   // (e.g. from the Discover peek panel's "Message" action).
   useEffect(() => {
     if (!playerIdParam) return;
+    if (autoStartedPlayerRef.current === playerIdParam) return;
+    autoStartedPlayerRef.current = playerIdParam;
+
+    // Strip the `player` param from the CURRENT history entry FIRST, using the
+    // raw history API synchronously -- not router.replace(), whose
+    // navigation is async and wouldn't guarantee this lands before
+    // handleNewConversation's own window.history.pushState() call (inside
+    // handleSelectConversation) reads window.location.href.
+    //
+    // Why the ordering matters: handleNewConversation() -> handleSelectConversation()
+    // calls window.history.pushState(...) using window.location.href AT THAT
+    // MOMENT. If `player` is still in the URL when that runs, it gets copied
+    // into the newly pushed history entry too -- and the entry underneath
+    // (pushed by DiscoverView's router.push('/messages?player=...')) also
+    // still carries it. Either way, pressing Back would land on a
+    // `?player=...` URL and re-fire this entire effect (duplicate
+    // getPlayerUserId/createConversation round-trips + a duplicate
+    // "Conversation started" toast, and a second Back press repeats the
+    // cycle -- a history trap). Stripping the param from the *current* entry
+    // before any of that runs means every entry involved ends up clean, so
+    // Back always lands on a URL with no `player` param.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('player');
+    window.history.replaceState({}, '', url);
 
     let cancelled = false;
 
@@ -117,11 +149,6 @@ function MessagesContent() {
       } else {
         showToast('Could not start conversation with this player', 'error');
       }
-
-      // Strip the param so re-renders / back navigation don't re-trigger this.
-      const url = new URL(window.location.href);
-      url.searchParams.delete('player');
-      window.history.replaceState({}, '', url);
     })();
 
     return () => {
