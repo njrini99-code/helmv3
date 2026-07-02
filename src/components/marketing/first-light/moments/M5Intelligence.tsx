@@ -13,8 +13,11 @@
  * density + `src/components/golf/coachhelm/insights/EvidencePanel.tsx`'s
  * confidence-color threshold logic): a Source line and a Limitation line
  * sit OPEN, never behind a click — the whole point is nothing is hidden.
- * The confidence bar and the drift number roll in via `AnimatedNumber` on
- * first viewport entry.
+ * The drift number rolls in via `AnimatedNumber` on first viewport entry;
+ * the confidence bar fills on the same trigger via a GPU-safe `scaleX`
+ * transform (transform-origin left) rather than an animated `width` —
+ * width animations force layout reflow every frame, scaleX is
+ * compositor-only (CLAUDE.md motion rules: transform/opacity ONLY).
  *
  * Per the amendment, kelly (`#16A34A` / Tailwind `primary-*`) is demoted
  * to product-only chrome. It appears ONLY on the confidence badge + bar
@@ -139,9 +142,9 @@ export function M5Intelligence({ className }: M5IntelligenceProps) {
                 style={{ backgroundColor: 'rgba(var(--fl-sage-ink-rgb), 0.12)' }}
               >
                 <m.div
-                  className="absolute inset-y-0 left-0 rounded-full bg-primary-500"
-                  initial={{ width: '0%' }}
-                  whileInView={{ width: `${confPct}%` }}
+                  className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-primary-500"
+                  initial={{ scaleX: 0 }}
+                  whileInView={{ scaleX: confPct / 100 }}
                   viewport={{ once: true, margin: '-15%' }}
                   transition={reduced ? { duration: 0 } : { duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
                 />

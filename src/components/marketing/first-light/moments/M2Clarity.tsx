@@ -94,7 +94,7 @@ export function M2Clarity({ className }: M2ClarityProps) {
                 <span className={cn(flFraunces.className, 'text-xl font-medium text-[var(--fl-sage-ink)] sm:text-2xl')}>
                   {line.label}
                 </span>
-                <span className="max-w-sm text-body text-warm-500 sm:text-right">{line.detail}</span>
+                <span className="max-w-sm text-body text-[rgba(var(--fl-sage-ink-rgb),0.7)] sm:text-right">{line.detail}</span>
               </div>
             </m.div>
           ))}

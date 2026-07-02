@@ -75,7 +75,7 @@ export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
           >
             <div className="relative z-10">
               <h3 className={cn(flFraunces.className, 'text-lg font-medium text-[var(--fl-sage-ink)]')}>{v.title}</h3>
-              <p className="mt-2 text-body-sm leading-relaxed text-warm-600">{v.line}</p>
+              <p className="mt-2 text-body-sm leading-relaxed text-[rgba(var(--fl-sage-ink-rgb),0.72)]">{v.line}</p>
               <div className="mt-4 border-t border-[rgba(var(--fl-sage-ink-rgb),0.12)] pt-4">{v.detail}</div>
             </div>
           </m.div>
@@ -114,7 +114,7 @@ function LiftLabDetail() {
           <path d="M2 6.5l2.5 2.5L10 3" />
         </svg>
       </span>
-      <span className="font-annual text-body-sm text-warm-600">
+      <span className="font-annual text-body-sm text-[rgba(var(--fl-sage-ink-rgb),0.72)]">
         Today logged <span className="tabular-nums text-[var(--fl-sage-ink)]">· 4 sets</span>
       </span>
     </div>
@@ -125,7 +125,7 @@ function ReadinessDetail() {
   return (
     <div className="flex items-center gap-2.5">
       <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--fl-sage-deep)' }} aria-hidden="true" />
-      <span className="font-annual text-body-sm text-warm-600">
+      <span className="font-annual text-body-sm text-[rgba(var(--fl-sage-ink-rgb),0.72)]">
         <span className="tabular-nums text-[var(--fl-sage-ink)]">4.6</span> of 5 &mdash; ready to go
       </span>
     </div>

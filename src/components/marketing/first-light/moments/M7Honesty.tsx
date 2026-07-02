@@ -40,7 +40,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
       style={{ backgroundColor: 'var(--fl-sage-mist)' }}
     >
       <div className="mx-auto max-w-2xl text-center">
-        <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-warm-500">
+        <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-[var(--fl-sage-deep)]">
           Built by players
         </span>
         <m.p
@@ -57,7 +57,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-15%' }}
           transition={reduced ? { duration: 0 } : { duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-4 text-body text-warm-500"
+          className="mt-4 text-body text-[rgba(var(--fl-sage-ink-rgb),0.72)]"
         >
           We won&rsquo;t claim a client roster we don&rsquo;t have, or a stat we can&rsquo;t source. If a signal can&rsquo;t point to where it came from, it doesn&rsquo;t ship.
         </m.p>
@@ -78,7 +78,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
               suffix={stat.suffix}
               className={cn(flFraunces.className, 'text-4xl font-medium tabular-nums text-[var(--fl-sage-ink)]')}
             />
-            <p className="mt-1.5 max-w-[13rem] text-caption text-warm-500">{stat.label}</p>
+            <p className="mt-1.5 max-w-[13rem] text-caption text-[rgba(var(--fl-sage-ink-rgb),0.6)]">{stat.label}</p>
           </div>
         ))}
       </m.div>
