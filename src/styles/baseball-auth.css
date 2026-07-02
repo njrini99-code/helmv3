@@ -164,8 +164,10 @@
    focus-visible` = (0,2,0) regardless of import order. */
 .baseball-auth-panel button:focus-visible {
   outline: none;
+  /* §D2: ring-offset matches the panel's true-cream fill, not cream-high —
+     the halo shouldn't read as a whiter patch than the glass around it. */
   box-shadow:
-    0 0 0 2px var(--fl-cream-high),
+    0 0 0 2px var(--fl-cream),
     0 0 0 4px rgba(var(--fl-sage-deep-rgb), 0.55);
 }
 
@@ -208,6 +210,22 @@
   box-shadow:
     inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.1),
     0 0 0 3px rgba(var(--fl-sage-deep-rgb), 0.3);
+}
+
+/* §D2 (Nick): "no white … including autofill/webkit states." globals.css's
+   app-wide `input:-webkit-autofill` rule paints a near-white
+   `rgba(255,255,255,0.95)` inset shadow over any autofilled field — cheap
+   to override here, scoped to the panel, without touching that global rule
+   (still correct for the rest of the app). `.baseball-auth-panel
+   input:-webkit-autofill` = (0,2,1) beats the global `input:-webkit-
+   autofill` = (0,1,1) regardless of import order. */
+.baseball-auth-panel input:-webkit-autofill,
+.baseball-auth-panel input:-webkit-autofill:hover,
+.baseball-auth-panel input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(var(--fl-cream-rgb), 0.9) inset;
+  -webkit-text-fill-color: var(--fl-sage-ink);
+  caret-color: var(--fl-sage-deep);
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Labels — sage-ink on the cream glass (the amendment's exact wording).
