@@ -7,38 +7,59 @@ describe('coverage-scanner', () => {
   it('parses golf.ts and finds savePartialRound wrapped with feature round_tracking', () => {
     const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/golf.ts'));
     expect(scanned.exports).toContain('savePartialRound');
-    expect(scanned.exports).toContain('submitGolfRoundComprehensive');
+    expect(scanned.exports).toContain('createGolfEvent');
     expect(scanned.wrapped.get('savePartialRound')).toEqual({ feature: 'round_tracking' });
-    // Not yet wrapped — proves the scanner distinguishes wrapped from bare exports.
-    expect(scanned.wrapped.has('submitGolfRoundComprehensive')).toBe(false);
+    // createGolfEvent belongs to a later batch (calendar_events, W15 Batch 2) —
+    // still bare post-Batch-1, proving the scanner distinguishes wrapped from
+    // unwrapped exports within the same partially-wrapped file.
+    expect(scanned.wrapped.has('createGolfEvent')).toBe(false);
   });
 
   it('exports list matches a fresh regex scan (sanity: scanner is not hard-coded)', () => {
-    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/round-drafts.ts'));
+    // documents.ts is untouched until W15 Batch 3 — a stable fully-unwrapped
+    // fixture for this scanner sanity check (round-drafts.ts moved to fully
+    // wrapped in Batch 1, so it no longer fits this assertion).
+    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/documents.ts'));
     expect(scanned.exports.sort()).toEqual(
-      ['saveRoundDraft', 'loadRoundDraft', 'clearRoundDraft', 'checkRoundStaleness'].sort(),
+      [
+        'getDocuments',
+        'getDocument',
+        'createDocument',
+        'saveTextDocument',
+        'updateDocument',
+        'deleteDocument',
+        'uploadNewVersion',
+        'getDocumentVersions',
+        'revertToVersion',
+        'compareVersions',
+        'getPreviewUrl',
+        'uploadGolfDocument',
+        'createGolfDocument',
+        'deleteGolfDocument',
+        'updateGolfDocument',
+        'getVersionHistory',
+        'deleteVersion',
+        'getTextFileContent',
+      ].sort(),
     );
     expect(scanned.wrapped.size).toBe(0);
   });
 });
 
 describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)', () => {
-  it('does NOT throw for golf.ts scoped to only the already-wrapped export', () => {
+  it('does NOT throw for golf.ts scoped to only the Batch 0+1 wrapped exports', () => {
     expect(() =>
       assertAreaFullyWrapped(['src/app/golf/actions/golf.ts'], {
         exclude: {
-          // Everything except savePartialRound is unwrapped pre-Batch-1;
-          // scope this self-test to the one export the W6 exemplar covers.
+          // Batch 1 (round_tracking/qualifiers/my_qualifiers, 13 exports incl.
+          // the pre-existing savePartialRound exemplar) is now wrapped; every
+          // other golf.ts export belongs to a later batch (B2/B4/B5/B6) and is
+          // still bare — scope this self-test accordingly.
           'src/app/golf/actions/golf.ts': [
-            'submitGolfRoundComprehensive',
             'createGolfEvent',
             'updateGolfEvent',
             'deleteGolfEvent',
             'deleteGolfEventPermanently',
-            'createGolfQualifier',
-            'getQualifierRoundCourses',
-            'setQualifierRoundCourses',
-            'updateQualifierStatus',
             'createAnnouncement',
             'invitePlayerToTeam',
             'updatePlayerStatus',
@@ -57,37 +78,32 @@ describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)
             'deleteCoachBlockedTime',
             'updateCoachBlockedTime',
             'getCoachBlockedTime',
-            'deleteInProgressRound',
-            'getPlayerQualifiers',
-            'getNextQualifierRoundNumber',
-            'getQualifierLeaderboard',
             'getPlayerSavedCourses',
             'savePlayerCourse',
             'touchSavedCourse',
             'getRecentCoursesForPlayer',
-            'deleteShot',
-            'updateShot',
-            'getRoundShotDetails',
           ],
         },
       }),
     ).not.toThrow();
   });
 
-  it('THROWS listing every unwrapped export in round-drafts.ts (inverts in Batch 1)', () => {
+  it('THROWS listing every unwrapped export in documents.ts (still bare — W15 Batch 3)', () => {
+    // documents.ts is untouched until Batch 3; round-drafts.ts (the original
+    // fixture here) moved to fully wrapped in Batch 1, so it no longer proves
+    // gap-detection — documents.ts takes over that role.
     let thrown: Error | null = null;
     try {
-      assertAreaFullyWrapped(['src/app/golf/actions/round-drafts.ts']);
+      assertAreaFullyWrapped(['src/app/golf/actions/documents.ts']);
     } catch (err) {
       thrown = err instanceof Error ? err : new Error(String(err));
     }
     expect(thrown).not.toBeNull();
     const message = thrown?.message ?? '';
-    expect(message).toContain('saveRoundDraft');
-    expect(message).toContain('loadRoundDraft');
-    expect(message).toContain('clearRoundDraft');
-    expect(message).toContain('checkRoundStaleness');
-    expect(message).toContain('4 coverage gap(s)');
+    expect(message).toContain('getDocuments');
+    expect(message).toContain('createDocument');
+    expect(message).toContain('deleteVersion');
+    expect(message).toContain('18 coverage gap(s)');
   });
 
   it('throws when a wrap carries an invalid feature key', () => {

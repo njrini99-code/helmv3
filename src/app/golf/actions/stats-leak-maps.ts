@@ -39,6 +39,7 @@ import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { round } from '@/lib/golf/stat-formulas';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 import { verifyPlayerAccess } from './stats-data';
 import type {
@@ -404,7 +405,7 @@ async function buildApproachBuckets(
  * when `teamId` is omitted, then aggregates raw shots across the active
  * roster's completed rounds.
  */
-export async function getTeamLeakMaps(
+async function getTeamLeakMapsImpl(
   teamId?: string,
 ): Promise<LeakMapResult<TeamLeakMaps>> {
   try {
@@ -461,11 +462,23 @@ export async function getTeamLeakMaps(
   }
 }
 
+const observedGetTeamLeakMaps = withAdminObserved(
+  'getTeamLeakMaps',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getTeamLeakMapsImpl,
+);
+
+export async function getTeamLeakMaps(
+  teamId?: string,
+): Promise<LeakMapResult<TeamLeakMaps>> {
+  return observedGetTeamLeakMaps(teamId);
+}
+
 /**
  * Single-player putt-make% leak map. Gated by `verifyPlayerAccess`.
  * Returns the same `LeakBucket[]` shape (putting only) the chart consumes.
  */
-export async function getPuttMakeLeakMap(
+async function getPuttMakeLeakMapImpl(
   playerId: string,
 ): Promise<LeakMapResult<{ putting: LeakBucket[]; roundsIncluded: number }>> {
   try {
@@ -487,10 +500,22 @@ export async function getPuttMakeLeakMap(
   }
 }
 
+const observedGetPuttMakeLeakMap = withAdminObserved(
+  'getPuttMakeLeakMap',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPuttMakeLeakMapImpl,
+);
+
+export async function getPuttMakeLeakMap(
+  playerId: string,
+): Promise<LeakMapResult<{ putting: LeakBucket[]; roundsIncluded: number }>> {
+  return observedGetPuttMakeLeakMap(playerId);
+}
+
 /**
  * Single-player approach-proximity leak map. Gated by `verifyPlayerAccess`.
  */
-export async function getApproachProximityLeakMap(
+async function getApproachProximityLeakMapImpl(
   playerId: string,
 ): Promise<LeakMapResult<{ approach: LeakBucket[]; roundsIncluded: number }>> {
   try {
@@ -512,11 +537,23 @@ export async function getApproachProximityLeakMap(
   }
 }
 
+const observedGetApproachProximityLeakMap = withAdminObserved(
+  'getApproachProximityLeakMap',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getApproachProximityLeakMapImpl,
+);
+
+export async function getApproachProximityLeakMap(
+  playerId: string,
+): Promise<LeakMapResult<{ approach: LeakBucket[]; roundsIncluded: number }>> {
+  return observedGetApproachProximityLeakMap(playerId);
+}
+
 /**
  * Convenience: both leak maps for one player in a single round-id pass.
  * Gated by `verifyPlayerAccess`.
  */
-export async function getPlayerLeakMaps(
+async function getPlayerLeakMapsImpl(
   playerId: string,
 ): Promise<LeakMapResult<PlayerLeakMaps>> {
   try {
@@ -544,12 +581,24 @@ export async function getPlayerLeakMaps(
   }
 }
 
+const observedGetPlayerLeakMaps = withAdminObserved(
+  'getPlayerLeakMaps',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerLeakMapsImpl,
+);
+
+export async function getPlayerLeakMaps(
+  playerId: string,
+): Promise<LeakMapResult<PlayerLeakMaps>> {
+  return observedGetPlayerLeakMaps(playerId);
+}
+
 /**
  * Plain, serialization-safe standing rows for one player. Wraps
  * `loadPlayerStandingMap` (admin client → no RLS) behind `verifyPlayerAccess`
  * so the StandingBar / StandingStrip data wiring can run from a client subtree.
  */
-export async function getPlayerStandingRows(
+async function getPlayerStandingRowsImpl(
   playerId: string,
 ): Promise<LeakMapResult<PlayerStandingRow[]>> {
   try {
@@ -575,4 +624,16 @@ export async function getPlayerStandingRows(
     });
     return { success: false, error: 'Failed to load player standing' };
   }
+}
+
+const observedGetPlayerStandingRows = withAdminObserved(
+  'getPlayerStandingRows',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerStandingRowsImpl,
+);
+
+export async function getPlayerStandingRows(
+  playerId: string,
+): Promise<LeakMapResult<PlayerStandingRow[]>> {
+  return observedGetPlayerStandingRows(playerId);
 }

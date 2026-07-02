@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import {
   transitionSelectionState,
@@ -51,7 +52,7 @@ function pathsToRevalidate(qualifier_id: string): string[] {
   ];
 }
 
-export async function advanceSelectionState(
+async function advanceSelectionStateImpl(
   qualifier_id: string,
   target: QualifierSelectionState,
 ): Promise<QualifyingActionResult> {
@@ -73,7 +74,20 @@ export async function advanceSelectionState(
   }
 }
 
-export async function setQualifierCoachPick(
+const observedAdvanceSelectionState = withAdminObserved(
+  'advanceSelectionState',
+  { sport: 'golf', feature: 'qualifiers' },
+  advanceSelectionStateImpl,
+);
+
+export async function advanceSelectionState(
+  qualifier_id: string,
+  target: QualifierSelectionState,
+): Promise<QualifyingActionResult> {
+  return observedAdvanceSelectionState(qualifier_id, target);
+}
+
+async function setQualifierCoachPickImpl(
   qualifier_id: string,
   player_id: string,
   reasoning: string,
@@ -101,7 +115,21 @@ export async function setQualifierCoachPick(
   }
 }
 
-export async function removeQualifierCoachPick(
+const observedSetQualifierCoachPick = withAdminObserved(
+  'setQualifierCoachPick',
+  { sport: 'golf', feature: 'qualifiers' },
+  setQualifierCoachPickImpl,
+);
+
+export async function setQualifierCoachPick(
+  qualifier_id: string,
+  player_id: string,
+  reasoning: string,
+): Promise<QualifyingActionResult> {
+  return observedSetQualifierCoachPick(qualifier_id, player_id, reasoning);
+}
+
+async function removeQualifierCoachPickImpl(
   qualifier_id: string,
   player_id: string,
 ): Promise<QualifyingActionResult> {
@@ -123,7 +151,20 @@ export async function removeQualifierCoachPick(
   }
 }
 
-export async function confirmQualifierSelection(
+const observedRemoveQualifierCoachPick = withAdminObserved(
+  'removeQualifierCoachPick',
+  { sport: 'golf', feature: 'qualifiers' },
+  removeQualifierCoachPickImpl,
+);
+
+export async function removeQualifierCoachPick(
+  qualifier_id: string,
+  player_id: string,
+): Promise<QualifyingActionResult> {
+  return observedRemoveQualifierCoachPick(qualifier_id, player_id);
+}
+
+async function confirmQualifierSelectionImpl(
   qualifier_id: string,
 ): Promise<QualifyingActionResult> {
   try {
@@ -145,4 +186,16 @@ export async function confirmQualifierSelection(
     );
     return { ok: false, error: 'Internal error' };
   }
+}
+
+const observedConfirmQualifierSelection = withAdminObserved(
+  'confirmQualifierSelection',
+  { sport: 'golf', feature: 'qualifiers' },
+  confirmQualifierSelectionImpl,
+);
+
+export async function confirmQualifierSelection(
+  qualifier_id: string,
+): Promise<QualifyingActionResult> {
+  return observedConfirmQualifierSelection(qualifier_id);
 }

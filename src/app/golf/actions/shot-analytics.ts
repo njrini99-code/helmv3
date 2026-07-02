@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // INPUT VALIDATION
@@ -216,7 +217,7 @@ function isImprovement(direction: TrendData['direction'], higherIsBetter: boolea
 // MAIN ANALYTICS ACTION
 // ============================================================================
 
-export async function getPlayerShotAnalytics(
+async function getPlayerShotAnalyticsImpl(
   playerId: string,
   periodDays: number = 30
 ): Promise<{ success: true; data: PlayerShotAnalytics } | { success: false; error: string }> {
@@ -852,5 +853,18 @@ export async function getPlayerShotAnalytics(
       error: error instanceof Error ? error.message : 'Failed to analyze shot data',
     };
   }
+}
+
+const observedGetPlayerShotAnalytics = withAdminObserved(
+  'getPlayerShotAnalytics',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerShotAnalyticsImpl,
+);
+
+export async function getPlayerShotAnalytics(
+  playerId: string,
+  periodDays: number = 30
+): Promise<{ success: true; data: PlayerShotAnalytics } | { success: false; error: string }> {
+  return observedGetPlayerShotAnalytics(playerId, periodDays);
 }
 

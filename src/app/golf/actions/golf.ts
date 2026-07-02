@@ -1142,7 +1142,7 @@ type GolfEventUpdateData = {
 /**
  * Submit a golf round with comprehensive shot-by-shot stats
  */
-export async function submitGolfRoundComprehensive(
+async function submitGolfRoundComprehensiveImpl(
   data: GolfRoundInputComprehensive,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
@@ -2024,6 +2024,19 @@ export async function submitGolfRoundComprehensive(
   }
 }
 
+const observedSubmitGolfRoundComprehensive = withAdminObserved(
+  'submitGolfRoundComprehensive',
+  { sport: 'golf', feature: 'round_tracking' },
+  submitGolfRoundComprehensiveImpl,
+);
+
+export async function submitGolfRoundComprehensive(
+  data: GolfRoundInputComprehensive,
+  existingRoundId?: string
+): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
+  return observedSubmitGolfRoundComprehensive(data, existingRoundId);
+}
+
 // ============================================================================
 // EVENT ACTIONS
 // ============================================================================
@@ -2762,7 +2775,7 @@ export async function deleteGolfEventPermanently(
 // QUALIFIER ACTIONS
 // ============================================================================
 
-export async function createGolfQualifier(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
+async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
   try {
     // Validate input
     const validatedData = golfQualifierSchema.parse(data);
@@ -2952,6 +2965,16 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
   }
 }
 
+const observedCreateGolfQualifier = withAdminObserved(
+  'createGolfQualifier',
+  { sport: 'golf', feature: 'qualifiers' },
+  createGolfQualifierImpl,
+);
+
+export async function createGolfQualifier(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
+  return observedCreateGolfQualifier(data);
+}
+
 /**
  * Feature G — read the per-round course assignments for a qualifier.
  * Returns one entry per assigned round (ascending). RLS lets any team member
@@ -2959,7 +2982,7 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
  * and the player detail view. Reads through fromUntyped because the table is not
  * yet in the generated Database types (migration unapplied).
  */
-export async function getQualifierRoundCourses(
+async function getQualifierRoundCoursesImpl(
   qualifierId: string,
 ): Promise<QualifierRoundCourse[]> {
   try {
@@ -2994,6 +3017,18 @@ export async function getQualifierRoundCourses(
   }
 }
 
+const observedGetQualifierRoundCourses = withAdminObserved(
+  'getQualifierRoundCourses',
+  { sport: 'golf', feature: 'qualifiers' },
+  getQualifierRoundCoursesImpl,
+);
+
+export async function getQualifierRoundCourses(
+  qualifierId: string,
+): Promise<QualifierRoundCourse[]> {
+  return observedGetQualifierRoundCourses(qualifierId);
+}
+
 /**
  * Feature G — set (replace) the round count + per-round course assignments for an
  * existing qualifier. Coach-only; RLS enforces team ownership on every write.
@@ -3004,7 +3039,7 @@ export async function getQualifierRoundCourses(
  * destroy assignments on a transient failure). Reads/writes through fromUntyped
  * because the table is not yet in the generated Database types.
  */
-export async function setQualifierRoundCourses(
+async function setQualifierRoundCoursesImpl(
   qualifierId: string,
   numRounds: number,
   roundCourses: QualifierRoundCourseInput[],
@@ -3072,7 +3107,21 @@ export async function setQualifierRoundCourses(
   }
 }
 
-export async function updateQualifierStatus(
+const observedSetQualifierRoundCourses = withAdminObserved(
+  'setQualifierRoundCourses',
+  { sport: 'golf', feature: 'qualifiers' },
+  setQualifierRoundCoursesImpl,
+);
+
+export async function setQualifierRoundCourses(
+  qualifierId: string,
+  numRounds: number,
+  roundCourses: QualifierRoundCourseInput[],
+): Promise<ActionResult> {
+  return observedSetQualifierRoundCourses(qualifierId, numRounds, roundCourses);
+}
+
+async function updateQualifierStatusImpl(
   qualifierId: string,
   status: 'upcoming' | 'in_progress' | 'completed'
 ): Promise<ActionResult> {
@@ -3126,6 +3175,19 @@ export async function updateQualifierStatus(
   } catch (error) {
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedUpdateQualifierStatus = withAdminObserved(
+  'updateQualifierStatus',
+  { sport: 'golf', feature: 'qualifiers' },
+  updateQualifierStatusImpl,
+);
+
+export async function updateQualifierStatus(
+  qualifierId: string,
+  status: 'upcoming' | 'in_progress' | 'completed'
+): Promise<ActionResult> {
+  return observedUpdateQualifierStatus(qualifierId, status);
 }
 
 // ============================================================================
@@ -4962,7 +5024,7 @@ export async function savePartialRound(
 /**
  * Delete an in-progress round
  */
-export async function deleteInProgressRound(roundId: string): Promise<ActionResult<void>> {
+async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<void>> {
   try {
     // Validate UUID format
     const validId = CommonSchemas.uuid.safeParse(roundId);
@@ -5021,6 +5083,16 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
   }
 }
 
+const observedDeleteInProgressRound = withAdminObserved(
+  'deleteInProgressRound',
+  { sport: 'golf', feature: 'round_tracking' },
+  deleteInProgressRoundImpl,
+);
+
+export async function deleteInProgressRound(roundId: string): Promise<ActionResult<void>> {
+  return observedDeleteInProgressRound(roundId);
+}
+
 // ============================================================================
 // QUALIFIER ACTIONS (PLAYER)
 // ============================================================================
@@ -5049,7 +5121,7 @@ export interface PlayerQualifierInfo {
  * Get all qualifiers the current player is entered in
  * Returns qualifier info along with player's round completion status
  */
-export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifierInfo[]>> {
+async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierInfo[]>> {
   try {
     const supabase = await createClient();
 
@@ -5188,10 +5260,20 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
   }
 }
 
+const observedGetPlayerQualifiers = withAdminObserved(
+  'getPlayerQualifiers',
+  { sport: 'golf', feature: 'my_qualifiers' },
+  getPlayerQualifiersImpl,
+);
+
+export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifierInfo[]>> {
+  return observedGetPlayerQualifiers();
+}
+
 /**
  * Get the next available round number for a qualifier
  */
-export async function getNextQualifierRoundNumber(
+async function getNextQualifierRoundNumberImpl(
   qualifierId: string
 ): Promise<ActionResult<{ nextRoundNumber: number; availableRounds: number[] }>> {
   try {
@@ -5276,6 +5358,18 @@ export async function getNextQualifierRoundNumber(
   }
 }
 
+const observedGetNextQualifierRoundNumber = withAdminObserved(
+  'getNextQualifierRoundNumber',
+  { sport: 'golf', feature: 'qualifiers' },
+  getNextQualifierRoundNumberImpl,
+);
+
+export async function getNextQualifierRoundNumber(
+  qualifierId: string
+): Promise<ActionResult<{ nextRoundNumber: number; availableRounds: number[] }>> {
+  return observedGetNextQualifierRoundNumber(qualifierId);
+}
+
 /**
  * Get qualifier leaderboard (accessible to both coaches and players)
  */
@@ -5314,7 +5408,7 @@ export interface QualifierLeaderboardData {
   currentPlayerId: string | null;
 }
 
-export async function getQualifierLeaderboard(
+async function getQualifierLeaderboardImpl(
   qualifierId: string
 ): Promise<ActionResult<QualifierLeaderboardData>> {
   try {
@@ -5508,6 +5602,18 @@ export async function getQualifierLeaderboard(
       error: 'Failed to fetch leaderboard. Please try again.'
     };
   }
+}
+
+const observedGetQualifierLeaderboard = withAdminObserved(
+  'getQualifierLeaderboard',
+  { sport: 'golf', feature: 'qualifiers' },
+  getQualifierLeaderboardImpl,
+);
+
+export async function getQualifierLeaderboard(
+  qualifierId: string
+): Promise<ActionResult<QualifierLeaderboardData>> {
+  return observedGetQualifierLeaderboard(qualifierId);
 }
 
 /**
@@ -5971,7 +6077,7 @@ export async function getRecentCoursesForPlayer(
  * Delete a specific shot from a round
  * The database trigger will automatically resequence remaining shots
  */
-export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
+async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
   try {
     // Validate UUID format
     const validId = CommonSchemas.uuid.safeParse(shotId);
@@ -6076,6 +6182,16 @@ export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
   }
 }
 
+const observedDeleteShot = withAdminObserved(
+  'deleteShot',
+  { sport: 'golf', feature: 'round_tracking' },
+  deleteShotImpl,
+);
+
+export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
+  return observedDeleteShot(shotId);
+}
+
 /**
  * Shot data that can be updated
  */
@@ -6105,7 +6221,7 @@ export interface ShotUpdateData {
 /**
  * Update a specific shot in a round
  */
-export async function updateShot(
+async function updateShotImpl(
   shotId: string,
   data: ShotUpdateData
 ): Promise<ActionResult<void>> {
@@ -6288,6 +6404,19 @@ export async function updateShot(
   }
 }
 
+const observedUpdateShot = withAdminObserved(
+  'updateShot',
+  { sport: 'golf', feature: 'round_tracking' },
+  updateShotImpl,
+);
+
+export async function updateShot(
+  shotId: string,
+  data: ShotUpdateData
+): Promise<ActionResult<void>> {
+  return observedUpdateShot(shotId, data);
+}
+
 // ============================================================================
 // SHOT-BY-SHOT REVIEW TYPES & ACTION
 // ============================================================================
@@ -6354,7 +6483,7 @@ export interface RoundShotReviewData {
  * Get detailed shot-by-shot data for a round
  * Used for the shot-by-shot review feature
  */
-export async function getRoundShotDetails(
+async function getRoundShotDetailsImpl(
   roundId: string
 ): Promise<ActionResult<RoundShotReviewData>> {
   try {
@@ -6634,4 +6763,16 @@ export async function getRoundShotDetails(
     );
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedGetRoundShotDetails = withAdminObserved(
+  'getRoundShotDetails',
+  { sport: 'golf', feature: 'round_tracking' },
+  getRoundShotDetailsImpl,
+);
+
+export async function getRoundShotDetails(
+  roundId: string
+): Promise<ActionResult<RoundShotReviewData>> {
+  return observedGetRoundShotDetails(roundId);
 }
