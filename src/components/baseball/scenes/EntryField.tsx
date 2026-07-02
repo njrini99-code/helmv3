@@ -12,25 +12,43 @@
  *
  * Single `viewBox="0 0 1600 900"` + `preserveAspectRatio="xMidYMax
  * slice"` (the same technique the deleted YardScene used) — portrait
- * recomposition happens for free from the slice crop itself: the two
- * foul lines start at the canvas's extreme left/right edges and only
- * enter a narrow mobile viewport's cropped window once they've
- * converged most of the way toward the vanishing point, so a phone
- * naturally only ever shows them "converged higher" in the frame — the
- * amendment's mobile requirement, satisfied by CSS/viewBox handling
- * with no second component and no duplicated geometry.
+ * recomposition happens for free from the slice crop itself.
+ *
+ * GEOMETRY REBUILD 2026-07-02 (Nick, looking at the rendered login: "put
+ * the diamond in the back so it renders" — the field didn't read as
+ * baseball because the base path was a shallow decorative arc, not an
+ * actual diamond, and it sat low enough that it read as barely-there).
+ * One coherent field drawing now, not two overlays: `HOME`/`FIRST`/
+ * `SECOND`/`THIRD` below are the four corners of a real rotated-square
+ * base path (each side equal length, right angles at every corner —
+ * see the constants' own comment for the math), and each foul line's
+ * cubic-bezier start tangent is set to exactly match the base path's
+ * own home→first / home→third edge slope, so the foul line reads as
+ * that edge continuing outward to the fence rather than an unrelated
+ * curve. `HOME` sits lower-center-LEFT (not dead-center) so it clears
+ * the auth panel, which floats right on desktop; `SECOND` (the diamond's
+ * top vertex) lands mid-frame (y≈540 of 900) so the diamond's full body
+ * is clearly visible, not scrunched into the bottom edge behind the
+ * panel/bottom-sheet. The diamond's horizontal reach (x 600–880) is
+ * deliberately kept inside the MOBILE crop window's visible band
+ * (`xMidYMax slice` on a 390×844 viewport shows viewBox x≈[592,1008] —
+ * see the constants' comment for the derivation) so all four corners
+ * render at both the 1440×900 desktop and 390×844 mobile breakpoints;
+ * the foul lines' outer/upper reaches are still expected to run off
+ * either crop's edge exactly as before (by design — only the diamond
+ * itself has the "must be fully in-viewport at both breakpoints" bar).
  *
  * `stage` (0–4 | 'full') drives the onboarding arc ("the field gets
  * chalked"): 0 = bare morning air (washes + bloom only) → 1 = first
- * foul line draws in (stroke-draw via `pathLength`, 1.2s) → 2 = second
- * foul line → 3 = the base-path arc completes → 4 = the batter's-box
- * whispers appear + the bloom warms one step. Auth pages always pass
- * the default ('full') — everything present from first paint, so no
- * draw-in animation ever fires on mount (the `stroke-dashoffset`
- * resolves to its final value on the very first render; a transition
- * only plays when a LATER prop change moves the stage forward — same
- * pattern the deleted YardScene used for its bases-on/flag-raised
- * opacity transitions).
+ * (third-base side) foul line draws in (stroke-draw via `pathLength`,
+ * 1.2s) → 2 = second (first-base side) foul line → 3 = the diamond's
+ * closed outline completes → 4 = the batter's-box whispers appear + the
+ * bloom warms one step. Auth pages always pass the default ('full') —
+ * everything present from first paint, so no draw-in animation ever
+ * fires on mount (the `stroke-dashoffset` resolves to its final value
+ * on the very first render; a transition only plays when a LATER prop
+ * change moves the stage forward — same pattern the deleted YardScene
+ * used for its bases-on/flag-raised opacity transitions).
  *
  * `variant` ('dawn' | 'dusk') tints the sky wash + bloom. BOTH STAY
  * LIGHT — the SAGE & CREAM amendment: "the page never goes dark." Dawn
@@ -50,6 +68,64 @@ import { ENTRY_FIELD_PALETTE } from './palette';
 
 export type SceneStage = 0 | 1 | 2 | 3 | 4 | 'full';
 export type SceneVariant = 'dawn' | 'dusk';
+
+/**
+ * The base-path diamond — a real rotated square, not a decorative arc.
+ * `HOME` is the square's bottom vertex; `FIRST`/`SECOND`/`THIRD` are
+ * derived from it by walking 90°-apart 45°-diagonal steps (`DIAMOND_R`
+ * is the half-diagonal), which guarantees all four sides are equal
+ * length and every corner is a right angle — an actual diamond, not an
+ * approximation:
+ *   FIRST  = (HOME.x + r, HOME.y - r)   — right vertex
+ *   SECOND = (HOME.x,     HOME.y - 2r)  — top vertex
+ *   THIRD  = (HOME.x - r, HOME.y - r)   — left vertex
+ *
+ * Placement math (viewBox 1600×900, `preserveAspectRatio="xMidYMax
+ * slice"`): for BOTH the 1440×900 desktop and 390×844 mobile targets,
+ * the "slice" cover-scale is height-driven (height ratio > width
+ * ratio at both sizes), so the FULL viewBox height (y 0–900) is always
+ * visible at every breakpoint — only the horizontal window varies:
+ *   desktop 1440×900 → scale 1.0   → visible x ∈ [80, 1520]
+ *   mobile   390×844 → scale 0.938 → visible x ∈ [~592, ~1008]
+ * Mobile's ~416-unit-wide centered window is the binding constraint.
+ * `HOME.x = 740` (55 units left of the viewBox's true horizontal
+ * center, 800 — "lower-center-left," clearing the auth panel, which
+ * floats right on desktop) with `DIAMOND_R = 140` puts the diamond's
+ * horizontal reach at x ∈ [600, 880] — inside the mobile window with
+ * margin on both sides. `HOME.y = 820` keeps home near the bottom of
+ * the frame while `SECOND` (y 540) rises to mid-frame, so the whole
+ * body reads clearly rather than hugging the bottom edge.
+ */
+const DIAMOND_R = 140;
+const HOME = { x: 740, y: 820 };
+const FIRST = { x: HOME.x + DIAMOND_R, y: HOME.y - DIAMOND_R };
+const SECOND = { x: HOME.x, y: HOME.y - 2 * DIAMOND_R };
+const THIRD = { x: HOME.x - DIAMOND_R, y: HOME.y - DIAMOND_R };
+const DIAMOND_PATH = `M ${HOME.x} ${HOME.y} L ${FIRST.x} ${FIRST.y} L ${SECOND.x} ${SECOND.y} L ${THIRD.x} ${THIRD.y} Z`;
+
+/**
+ * The two foul lines, redrawn so they're the SAME geometry as the
+ * diamond rather than a second unrelated overlay: both start exactly
+ * at `HOME` and each cubic's first control point is placed to match
+ * the initial tangent of the corresponding base-path edge (home→first
+ * for the right/first-base line, home→third for the left/third-base
+ * line — both true 45° diagonals), then the curve sweeps on outward
+ * and up toward the fence/foul-pole area off-canvas, exactly mirrored
+ * left/right around `HOME.x`. This reads as the base path's own edges
+ * continuing to the outfield, not a separate decorative line.
+ */
+const RIGHT_FOUL_LINE = `M ${HOME.x} ${HOME.y} C 840 720, 1150 480, 1660 100`;
+const LEFT_FOUL_LINE = `M ${HOME.x} ${HOME.y} C 640 720, 330 480, -180 100`;
+
+/** Chalk-dust drift points, hand-placed along `RIGHT_FOUL_LINE`'s curve
+ * (t ≈ 0.3, 0.5, 0.7, 0.85) so the "living detail" still visibly rides
+ * the redrawn line rather than floating off it. */
+const DUST_POINTS = [
+  { cx: 886, cy: 692 },
+  { cx: 1046, cy: 565 },
+  { cx: 1255, cy: 404 },
+  { cx: 1444, cy: 262 },
+] as const;
 
 export interface EntryFieldProps {
   /** Optional className on the root decorative wrapper. */
@@ -74,7 +150,7 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
   const stageNum = stageToNumber(stage);
   const line1On = stageNum >= 1;
   const line2On = stageNum >= 2;
-  const arcOn = stageNum >= 3;
+  const diamondOn = stageNum >= 3;
   const boxesOn = stageNum >= 4;
   const bloomWarm = stageNum >= 4;
 
@@ -140,15 +216,16 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
           style={{ transition: 'opacity 1200ms cubic-bezier(0.22,0.7,0,1)' }}
         />
 
-        {/* Layer 3 — the chalk geometry, the ONLY motif: a groundskeeper's
-            blueprint, not a stadium. Two foul lines rising from the
-            bottom corners to a shared vanishing point, the base-path
-            arc, a whisper of the batter's boxes. A soft blurred pass
-            underneath a crisp hairline pass, both very faint (the
-            amendment's 6–10% band). */}
+        {/* Layer 3 — the chalk geometry, ONE coherent field drawing: the
+            base-path diamond (HOME/FIRST/SECOND/THIRD) plus the two foul
+            lines, each starting at HOME and continuing that base-path
+            edge's own slope outward to the fence (not a second, unrelated
+            overlay — see the module-level constants' comment above for
+            the geometry). A soft blurred pass underneath a crisp hairline
+            pass, both very faint (the amendment's 6–10% band). */}
         <g filter={`url(#${chalkBlurId})`} opacity="0.4">
           <path
-            d="M -60 900 C 220 760, 520 560, 800 300"
+            d={LEFT_FOUL_LINE}
             stroke={P.chalk}
             strokeWidth="6"
             strokeLinecap="round"
@@ -157,7 +234,7 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
             style={{ strokeDasharray: 1, strokeDashoffset: line1On ? 0 : 1, transition: drawTransition(0) }}
           />
           <path
-            d="M 1660 900 C 1380 760, 1080 560, 800 300"
+            d={RIGHT_FOUL_LINE}
             stroke={P.chalk}
             strokeWidth="6"
             strokeLinecap="round"
@@ -165,9 +242,19 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
             pathLength={1}
             style={{ strokeDasharray: 1, strokeDashoffset: line2On ? 0 : 1, transition: drawTransition(150) }}
           />
+          <path
+            d={DIAMOND_PATH}
+            stroke={P.chalk}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            pathLength={1}
+            style={{ strokeDasharray: 1, strokeDashoffset: diamondOn ? 0 : 1, transition: drawTransition(300) }}
+          />
         </g>
         <path
-          d="M -60 900 C 220 760, 520 560, 800 300"
+          d={LEFT_FOUL_LINE}
           stroke={P.chalk}
           strokeWidth="1.75"
           strokeLinecap="round"
@@ -177,7 +264,7 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
           style={{ strokeDasharray: 1, strokeDashoffset: line1On ? 0 : 1, transition: drawTransition(0) }}
         />
         <path
-          d="M 1660 900 C 1380 760, 1080 560, 800 300"
+          d={RIGHT_FOUL_LINE}
           stroke={P.chalk}
           strokeWidth="1.75"
           strokeLinecap="round"
@@ -187,34 +274,44 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
           style={{ strokeDasharray: 1, strokeDashoffset: line2On ? 0 : 1, transition: drawTransition(150) }}
         />
 
-        {/* Base-path arc — the faint suggestion of the diamond, no bases drawn */}
+        {/* The diamond itself — a real rotated square, not a decorative
+            arc: HOME -> FIRST -> SECOND -> THIRD -> Z, drawn in as one
+            closed stroke at stage 3, after both foul lines have landed.
+            Slightly stronger than the foul lines' own hairline (0.1 vs
+            0.09, still inside the amendment's 6–10% band) so the
+            diamond's body reads clearly rather than disappearing. */}
         <path
-          d="M 560 900 Q 800 660 1040 900"
+          d={DIAMOND_PATH}
           stroke={P.chalk}
           strokeWidth="1.75"
           strokeLinecap="round"
+          strokeLinejoin="round"
           fill="none"
-          opacity="0.08"
+          opacity="0.1"
           pathLength={1}
-          style={{ strokeDasharray: 1, strokeDashoffset: arcOn ? 0 : 1, transition: drawTransition(300) }}
+          style={{ strokeDasharray: 1, strokeDashoffset: diamondOn ? 0 : 1, transition: drawTransition(300) }}
         />
 
-        {/* Batter's-box whispers */}
+        {/* Batter's-box whispers — flank HOME (left = third-base side,
+            right = first-base side), offset from HOME the same way the
+            original design offset them from its implied home position. */}
         <g opacity={boxesOn ? 0.07 : 0} style={{ transition: 'opacity 900ms cubic-bezier(0.22,0.7,0,1) 450ms' }}>
-          <rect x="742" y="836" width="42" height="58" rx="3" stroke={P.chalk} strokeWidth="1.5" fill="none" />
-          <rect x="816" y="836" width="42" height="58" rx="3" stroke={P.chalk} strokeWidth="1.5" fill="none" />
+          <rect x={HOME.x - 58} y={HOME.y - 64} width="42" height="58" rx="3" stroke={P.chalk} strokeWidth="1.5" fill="none" />
+          <rect x={HOME.x + 16} y={HOME.y - 64} width="42" height="58" rx="3" stroke={P.chalk} strokeWidth="1.5" fill="none" />
         </g>
 
         {/* Layer 5 — the living detail: chalk-dust drifting up the right
-            foul line. Only once that line has drawn in. */}
+            (first-base) foul line, hand-placed along RIGHT_FOUL_LINE's
+            redrawn curve (see DUST_POINTS). Only once that line has
+            drawn in. */}
         {line2On && (
           <g opacity="0.85">
-            {[0, 1, 2, 3].map((i) => (
+            {DUST_POINTS.map((point, i) => (
               <circle
                 key={i}
                 data-scene-animated
-                cx={1180 - i * 110}
-                cy={720 - i * 90}
+                cx={point.cx}
+                cy={point.cy}
                 r={i % 2 === 0 ? 1.6 : 1.1}
                 fill={P.dust}
                 style={{

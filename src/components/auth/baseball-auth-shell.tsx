@@ -175,6 +175,13 @@ export function BaseballAuthShell({
                     className="absolute inset-0 rounded-full blur-2xl scale-150"
                     style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.15)' }}
                   />
+                  {/* The real helm-wheel mark, in its true kelly team-green
+                      — REVERTED (⚠ A-OVERRIDE, Amendment 3 §1, Nick 2026-07-02
+                      18:00) from a pixel-review pass that masked/recolored it
+                      to sage-deep. A real logo is content, not chrome, and is
+                      exempt from the kelly-demotion rule; Nick approved this
+                      auth masthead as-is with his logo on it. Don't recolor
+                      this mark again for palette-consistency reasons. */}
                   <div className="relative flex h-11 w-11 items-center justify-center">
                     <Image
                       src="/helm-baseball-logo.png"
