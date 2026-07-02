@@ -38,6 +38,13 @@ export interface KPIContentsItem {
   emphasis?: boolean;
   /** Decimals for a numeric value. */
   decimals?: number;
+  /**
+   * Renders an em-dash placeholder instead of `value` — for a figure that
+   * FAILED to load, so it never reads as a confirmed zero. Distinct from
+   * simply omitting the item: the label stays visible, honestly marked
+   * "not yet confirmed" rather than silently vanishing or lying with a 0.
+   */
+  ghost?: boolean;
 }
 
 export interface KPIContentsStripProps {
@@ -61,6 +68,7 @@ export function KPIContentsStrip({ items, columns = 3, className }: KPIContentsS
           leader={it.leader}
           emphasis={it.emphasis}
           decimals={it.decimals ?? 0}
+          ghost={it.ghost}
         />
       ))}
     </div>

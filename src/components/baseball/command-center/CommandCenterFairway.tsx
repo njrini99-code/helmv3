@@ -151,7 +151,14 @@ export function CommandCenterFairway({
   riskFeedError = null,
   coachDailyContracts,
   summary,
+  loadState,
 }: CommandCenterFairwayProps) {
+  // A REAL load failure (loadState === 'error') is distinct from an honest
+  // "no data yet" — the read model's counts default to 0 when a sub-read
+  // fails, which would otherwise render as if the team genuinely had an
+  // empty roster / zero risks. Ghost the KPI figures instead so the label
+  // stays visible but the number reads "not confirmed", not "confirmed zero".
+  const hasLoadError = loadState === 'error';
   const router = useRouter();
 
   const openPlayer = (playerId: string) =>
@@ -180,14 +187,15 @@ export function CommandCenterFairway({
   // there's no summary (no team yet), never shown as broken zero cards.
   const kpis: KPIContentsItem[] = [];
   if (summary) {
-    kpis.push({ label: 'Roster', value: summary.rosterSize });
+    kpis.push({ label: 'Roster', value: summary.rosterSize, ghost: hasLoadError });
     kpis.push({
       label: 'On the Record',
       value: summary.playersWithData,
       emphasis: summary.rosterSize > 0 && summary.playersWithData === summary.rosterSize,
+      ghost: hasLoadError,
     });
-    kpis.push({ label: 'Open Risks', value: summary.openRisks });
-    kpis.push({ label: 'Today', value: summary.eventsToday });
+    kpis.push({ label: 'Open Risks', value: summary.openRisks, ghost: hasLoadError });
+    kpis.push({ label: 'Today', value: summary.eventsToday, ghost: hasLoadError });
   }
 
   return (
@@ -227,7 +235,7 @@ export function CommandCenterFairway({
           {riskFeedError ? (
             <EditorsLetter
               ink="team"
-              title="Signals are catching up."
+              title="Some data couldn't load."
               body={riskFeedError}
               signoff="— From the desk of CoachHelm"
             />

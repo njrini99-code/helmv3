@@ -248,19 +248,24 @@ export async function getCommandCenter(
     weekEndIso = weekEnd.toISOString();
   }
 
+  // NOTE: baseball_player_aggregates has FKs to baseball_players and
+  // baseball_teams, but NOT to baseball_team_members — there is no direct
+  // foreign key between these two tables. PostgREST's nested-embed syntax
+  // (`baseball_player_aggregates ( ... )` inlined under a `baseball_team_members`
+  // select) needs a direct FK to resolve the relationship and fails every time
+  // with PGRST200 ("Could not find a relationship between 'baseball_team_members'
+  // and 'baseball_player_aggregates' in the schema cache"), which surfaced as
+  // "The roster pulse could not be loaded." and zeroed every hero KPI on the
+  // Command Center. Fetch the two tables separately (same pattern already used
+  // by roster.ts and coach-daily-contracts.ts) and join them in JS by player_id.
   const memberSelect = `
     player_id, jersey_number, position, status, joined_at,
     baseball_players!inner (
       id, first_name, last_name, avatar_url, primary_position, secondary_position,
       grad_year, bats, throws, height_feet, height_inches, weight_lbs, gpa, city, state
-    ),
-    baseball_player_aggregates (
-      player_id, team_id, total_sessions, total_at_bats, total_hits,
-      career_avg, practice_avg, game_avg, pressure_gap, recent_trend,
-      trend_data, last_5_avg, last_10_avg, last_session_at
     )`;
 
-  const [insightsRes, membersRes, eventsRes] = await Promise.all([
+  const [insightsRes, membersRes, aggregatesRes, eventsRes] = await Promise.all([
     supabase
       .from('baseball_coach_insights')
       .select(
@@ -275,6 +280,12 @@ export async function getCommandCenter(
       .select(memberSelect)
       .eq('team_id', teamId),
     supabase
+      .from('baseball_player_aggregates')
+      .select(
+        'player_id, team_id, total_sessions, total_at_bats, total_hits, career_avg, practice_avg, game_avg, pressure_gap, recent_trend, trend_data, last_5_avg, last_10_avg, last_session_at',
+      )
+      .eq('team_id', teamId),
+    supabase
       .from('baseball_events')
       .select('id, title, event_type, start_time, end_time, location, is_mandatory')
       .eq('team_id', teamId)
@@ -282,6 +293,20 @@ export async function getCommandCenter(
       .lte('start_time', dayEnd)
       .order('start_time', { ascending: true }),
   ]);
+
+  // Aggregates are a nice-to-have enrichment of the roster pulse (session
+  // counts / trends), not a blocker: if this query fails we still render the
+  // real roster with honest `noData: true` rows rather than failing the whole
+  // pulse the way the broken nested embed used to.
+  const aggregatesByPlayerId = new Map<string, BaseballPlayerAggregates & { last_session_at?: string | null }>();
+  if (!aggregatesRes.error) {
+    for (const agg of aggregatesRes.data ?? []) {
+      aggregatesByPlayerId.set(
+        agg.player_id,
+        agg as unknown as BaseballPlayerAggregates & { last_session_at?: string | null },
+      );
+    }
+  }
 
   const weekEventsRes =
     includeWeekEvents && weekStartIso && weekEndIso
@@ -371,11 +396,7 @@ export async function getCommandCenter(
         state: string | null;
       } | null;
       if (!player) continue;
-      const aggRaw = m.baseball_player_aggregates as unknown;
-      const agg = (Array.isArray(aggRaw) ? aggRaw[0] : aggRaw) as
-        | (BaseballPlayerAggregates & { last_session_at?: string | null })
-        | null
-        | undefined;
+      const agg = aggregatesByPlayerId.get(player.id);
       const totalSessions = agg?.total_sessions ?? 0;
       rosterPulse.push({
         playerId: player.id,
