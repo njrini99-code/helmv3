@@ -157,6 +157,11 @@ Running record of what was actually applied per wave, plus any deviations from t
 - emit-throttle.ts: per-process flood-collapse (LRU 500, key action:errCode, collapsed_count metadata) — noise-discipline. feature threaded additively into observed-action/server-error-logger/admin-logger/rls-denial (featureForTable default). savePartialRound retro-tagged round_tracking.
 - coverage-scanner + assertAreaFullyWrapped: self-test throws listing round-drafts.ts's 4 unwrapped exports; distinguishes wrapped savePartialRound from unwrapped submitGolfRoundComprehensive. Global tripwire = it.todo (flips in Task 16/PR-B).
 ### Batches (Tasks 5-14) + RLS centralization (15) + verification (16) → PR-B branch `feat/helm-bridge-instrumentation` (after W16 + polish)
+### Batch B7 (Task 12) — coachhelm engine — DONE (side branch `feat/helm-bridge-instr-b789`)
+- Wraps all 34 B7 exports (coachhelm_ai_engine, alerts_system, patterns_dashboard) via Impl+delegator: insight-delivery.ts (8) + player-fingerprint.ts (1) fully; alerts.ts (2) + pattern-management.ts (7) fully; insights.ts's 16 default-tagged `coachhelm_ai_engine` exports (the 10 insights_management/round_review_ai/my_development/player_coachhelm_dashboard overrides stay untouched for B8/B9, excluded via the contract test's exclude-list).
+- `triggerPlayerInsightsAfterRound` delegator preserves the existing fire-and-forget call shape (postRoundTrigger still awaits the SAME promise it always did — no new await introduced at the wrapper boundary) per the batch note.
+- No double-logging cleanup needed: verified zero log-then-rethrow sites across all 5 files (every catch either logs-and-returns a typed envelope or rethrows un-logged into the wrapper) — bodies are byte-identical, confirmed via diff.
+- New `coverage-contract.b7.test.ts` RED (34 unwrapped) → GREEN. typecheck exit 0; lint exit 0 (0 new warnings, files absent from lint output); full test suite unchanged vs baseline (pre-existing unrelated jsdom/framer-motion failures only).
 
 ## W16 — Feature Health Board (green-dot grid; PR-A branch)
 **Status:** in progress (Sonnet).

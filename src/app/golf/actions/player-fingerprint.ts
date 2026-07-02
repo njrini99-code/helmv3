@@ -38,6 +38,7 @@ import {
   getInsightsForCoach,
   type EvidenceInsight,
 } from '@/app/golf/actions/insight-delivery';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ---------------------------------------------------------------------------
 // Public types — the Fingerprint shape. Downstream UI imports these.
@@ -207,7 +208,7 @@ interface RoundRow {
  * Returns `null` when the viewer is not authenticated, not a coach that owns
  * the player, or the player does not exist.
  */
-export async function getPlayerFingerprint(
+async function getPlayerFingerprintImpl(
   playerId: string,
   supabaseOverride?: SupabaseClient,
 ): Promise<PlayerFingerprint | null> {
@@ -330,6 +331,18 @@ export async function getPlayerFingerprint(
     trend,
     generated_at: new Date().toISOString(),
   };
+}
+
+const observedGetPlayerFingerprint = withAdminObserved(
+  'getPlayerFingerprint',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getPlayerFingerprintImpl,
+);
+export async function getPlayerFingerprint(
+  playerId: string,
+  supabaseOverride?: SupabaseClient,
+): Promise<PlayerFingerprint | null> {
+  return observedGetPlayerFingerprint(playerId, supabaseOverride);
 }
 
 // ---------------------------------------------------------------------------
