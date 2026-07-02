@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseSuperAdminUserIds,
   isAdminPath,
+  isSuperAdminUserId,
   evaluateAdminGate,
 } from '@/lib/admin/super-admin-shared';
 
@@ -27,6 +28,24 @@ describe('isAdminPath', () => {
     expect(isAdminPath('/administrator')).toBe(false);
     expect(isAdminPath('/golf/admin')).toBe(false);
     expect(isAdminPath('/')).toBe(false);
+  });
+});
+
+describe('isSuperAdminUserId', () => {
+  it('is true for a user id in the allowlist', () => {
+    expect(isSuperAdminUserId(NICK, NICK)).toBe(true);
+    expect(isSuperAdminUserId(NICK, `abc, ${NICK} ,def`)).toBe(true);
+  });
+  it('is false for a user id NOT in the allowlist — the golf login success', () => {
+    // path (src/app/golf/actions/auth.ts) relies on this: an ordinary
+    // player/coach must fall straight through to the existing
+    // onboarding/team redirect logic with zero behavior change.
+    expect(isSuperAdminUserId('someone-else', NICK)).toBe(false);
+  });
+  it('fails CLOSED when the allowlist env is missing/empty', () => {
+    expect(isSuperAdminUserId(NICK, undefined)).toBe(false);
+    expect(isSuperAdminUserId(NICK, null)).toBe(false);
+    expect(isSuperAdminUserId(NICK, '')).toBe(false);
   });
 });
 
