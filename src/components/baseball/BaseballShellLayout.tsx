@@ -25,6 +25,7 @@ import { PageLoading } from '@/components/ui/loading';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { PeekPanelProvider } from '@/components/baseball/peek-panel';
 import { BaseballDashboardShell } from '@/components/baseball/dashboard-shell';
+import { BaseballProgramBrand } from '@/components/baseball/settings/BaseballProgramBrand';
 import { useBaseballAuth } from '@/hooks/use-baseball-auth';
 import { useBaseballNavContext } from '@/hooks/use-baseball-nav-context';
 import type { ActiveBaseballRole } from '@/lib/baseball/active-context-shared';
@@ -68,6 +69,10 @@ export function BaseballShellLayout({
     <SidebarProvider>
       <SessionActivityProvider>
         <LastSeenUpdater />
+        {/* Render-null: fetches the program's brand + applies it as CSS vars /
+            data attrs on <html>. Mounted once per shell so persisted branding
+            (settings/appearance) actually takes visible effect. */}
+        <BaseballProgramBrand />
         <PeekPanelProvider>
           <BaseballDashboardShell role={resolvedRole} navContext={navContext ?? undefined}>
             {children}

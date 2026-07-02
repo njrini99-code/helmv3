@@ -2814,3 +2814,51 @@ select:-webkit-autofill {
   height: 0;
   display: none;
 }
+
+/* ============================================================================
+ * BaseballHelm program-brand accent consumer (settings-appearance completion).
+ * ----------------------------------------------------------------------------
+ * `BaseballProgramBrand` (src/components/baseball/settings/BaseballProgramBrand.tsx)
+ * sets --baseball-brand-accent + data-baseball-branded="true" on <html> once a
+ * coach's persisted brand_accent passes its readability clamp. Until now that
+ * variable had ZERO CSS consumers, so the setting was silently invisible.
+ *
+ * BaseballHelm ships TWO shells today, both mount BaseballProgramBrand, and
+ * BOTH need their own consumer rule because they style their active-nav
+ * indicator completely differently:
+ *
+ * 1) Fairway shell (BaseballFairwayShell.tsx, behind the redesign flag) —
+ *    active-nav indicator is the design-token `--fw-color-nav-accent`
+ *    (→ `bg-nav-accent`/`text-nav-accent` in FairwaySidebar), scoped to
+ *    `.living-annual` (that shell's own root wrapper — golf never carries
+ *    this class).
+ *
+ * 2) Legacy shell (BaseballDashboardShell → Sidebar,
+ *    src/components/layout/sidebar.tsx) — this is the DEFAULT, unconditional
+ *    shell for (coach-dashboard)/coach, (player-dashboard)/player, and
+ *    (dashboard) whenever the redesign flag is off. It never renders
+ *    `.living-annual` and its active-nav indicator is hardcoded Tailwind
+ *    (`text-primary-400` / `border-primary-500`), not a design token, so the
+ *    Fairway rule below can never match it. Scoped to `.baseball-shell` (the
+ *    legacy shell's own root wrapper, src/components/baseball/dashboard-shell.tsx
+ *    — also golf-free) and to the `.nav-item-active` / `.nav-item-active-icon`
+ *    marker classes Sidebar applies ONLY to its active-nav link/icon, so this
+ *    never repaints the BaseballHelm wordmark, buttons, or any other
+ *    unrelated use of the same primary-400/500 utilities elsewhere in the
+ *    legacy shell's tree.
+ *
+ * Both rules only fire while data-baseball-branded="true" is present. Golf's
+ * identical --fw-color-nav-accent token at :root is never touched. No status
+ * color, no cream base token, no other accent is overridden here — exactly
+ * the single-variable guardrail the component's own comments describe.
+ * ========================================================================== */
+html[data-baseball-branded='true'] .living-annual {
+  --fw-color-nav-accent: var(--baseball-brand-accent, #16A34A);
+}
+html[data-baseball-branded='true'] .baseball-shell .nav-item-active {
+  color: var(--baseball-brand-accent, #4ade80);
+  border-color: var(--baseball-brand-accent, #16A34A);
+}
+html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
+  color: var(--baseball-brand-accent, #4ade80);
+}

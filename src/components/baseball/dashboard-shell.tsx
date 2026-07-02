@@ -180,7 +180,14 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
   }, [mobileOpen]);
 
   return (
-    <div className="min-h-dvh bg-dashboard-gradient">
+    // `baseball-shell` is a scoping hook ONLY (no styles of its own) so
+    // globals.css can safely re-point the legacy sidebar's active-nav accent
+    // to the program's persisted brand color without ever matching a golf
+    // route. This component + <Sidebar> (src/components/layout/sidebar.tsx)
+    // are baseball-only, but the class gives CSS an explicit, grep-able
+    // boundary instead of relying on file co-location. See globals.css
+    // "BaseballHelm legacy shell nav-accent consumer" for the paired rule.
+    <div className="min-h-dvh baseball-shell bg-dashboard-gradient">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-toolbar focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
