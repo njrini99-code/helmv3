@@ -1,10 +1,11 @@
 /**
- * M9 · FOOTER — pine field, both sports, both logins, real links.
- * docs/LANDING_ENTRY_WORLD_DESIGN.md M9. Organized by sport (GolfHelm /
- * BaseballHelm) rather than by function — every link resolves to a real
- * route; no golf-first bias, no dead "Request Demo" button (the legacy
- * footer's failure mode this moment exists to fix). Server component (no
- * interactivity needed).
+ * M9 · FOOTER — sage-ink field, both sports, both logins, real links.
+ * docs/LANDING_ENTRY_WORLD_DESIGN.md M9 (sage & cream amendment — this band
+ * stays dark ink as the page's closing beat, recolored from the old deep
+ * pine). Organized by sport (GolfHelm / BaseballHelm) rather than by
+ * function — every link resolves to a real route; no golf-first bias, no
+ * dead "Request Demo" button (the legacy footer's failure mode this moment
+ * exists to fix). Server component (no interactivity needed).
  */
 import Link from 'next/link';
 import Image from 'next/image';
@@ -46,9 +47,11 @@ export function M9Footer({ className }: M9FooterProps) {
     <footer
       className={className}
       style={{
-        backgroundColor: 'var(--fl-pine)',
+        backgroundColor: 'var(--fl-sage-ink)',
+        // Soft sage glow, not kelly — kelly is product-only and never
+        // appears on landing/auth chrome (sage & cream amendment).
         backgroundImage:
-          'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(22,163,74,0.08), transparent)',
+          'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(var(--fl-sage-rgb),0.1), transparent)',
       }}
     >
       <div
@@ -66,21 +69,21 @@ export function M9Footer({ className }: M9FooterProps) {
                 height={40}
                 className="h-8 w-8 object-contain"
               />
-              <span className="text-base font-semibold tracking-tight text-[var(--fl-ecru)]">
+              <span className="text-base font-semibold tracking-tight text-[var(--fl-cream)]">
                 Helm Sports Labs
               </span>
             </div>
-            <p className="mt-3 max-w-xs text-body-sm leading-relaxed text-[rgba(var(--fl-ecru-rgb),0.55)]">
+            <p className="mt-3 max-w-xs text-body-sm leading-relaxed text-[rgba(var(--fl-cream-rgb),0.55)]">
               One Helm. Two fields. The operating system for college programs — golf and baseball.
             </p>
           </div>
 
           {SPORT_COLUMNS.map((column) => (
             <div key={column.sport}>
-              <h4 className="text-eyebrow font-semibold uppercase tracking-[0.2em] text-[rgba(var(--fl-ecru-rgb),0.45)]">
+              <h4 className="text-eyebrow font-semibold uppercase tracking-[0.2em] text-[rgba(var(--fl-cream-rgb),0.45)]">
                 {column.sport}
               </h4>
-              <p className="mt-2 text-body-sm leading-relaxed text-[rgba(var(--fl-ecru-rgb),0.5)]">
+              <p className="mt-2 text-body-sm leading-relaxed text-[rgba(var(--fl-cream-rgb),0.5)]">
                 {column.tagline}
               </p>
               <ul className="mt-3 space-y-2.5">
@@ -88,7 +91,7 @@ export function M9Footer({ className }: M9FooterProps) {
                   <li key={link.name}>
                     <Link
                       href={link.href}
-                      className="text-body-sm text-[rgba(var(--fl-ecru-rgb),0.7)] transition-colors hover:text-[var(--fl-ecru)]"
+                      className="text-body-sm text-[rgba(var(--fl-cream-rgb),0.7)] transition-colors hover:text-[var(--fl-cream)]"
                     >
                       {link.name}
                     </Link>
@@ -99,14 +102,14 @@ export function M9Footer({ className }: M9FooterProps) {
           ))}
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-[rgba(var(--fl-ecru-rgb),0.1)] pt-6 text-caption text-[rgba(var(--fl-ecru-rgb),0.4)] sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-[rgba(var(--fl-cream-rgb),0.1)] pt-6 text-caption text-[rgba(var(--fl-cream-rgb),0.4)] sm:flex-row">
           <p>© {new Date().getFullYear()} Helm Sports Labs. All rights reserved.</p>
           <div className="flex items-center gap-5">
             {LEGAL_LINKS.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="transition-colors hover:text-[rgba(var(--fl-ecru-rgb),0.7)]"
+                className="transition-colors hover:text-[rgba(var(--fl-cream-rgb),0.7)]"
               >
                 {link.name}
               </Link>

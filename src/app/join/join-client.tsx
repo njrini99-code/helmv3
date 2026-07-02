@@ -73,7 +73,7 @@ export function JoinClient() {
   return (
     <main
       className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6 py-16"
-      style={{ backgroundColor: 'var(--fl-ecru)' }}
+      style={{ backgroundColor: 'var(--fl-cream)' }}
     >
       <div className="fl-grain" aria-hidden="true" />
       <LazyMotion features={domAnimation}>
@@ -86,19 +86,19 @@ export function JoinClient() {
           <div className="mb-8 text-center">
             <Link
               href="/"
-              className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-[rgba(20,53,39,0.55)]"
+              className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-sage-ink-rgb),0.55)]"
             >
               Helm Sports Labs
             </Link>
             <h1
               className={cn(
                 flFraunces.className,
-                'mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-normal leading-[1.1] text-[var(--fl-pine)]',
+                'mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-normal leading-[1.1] text-[var(--fl-sage-ink)]',
               )}
             >
               One code. Your team.
             </h1>
-            <p className="mt-3 text-body text-warm-500">
+            <p className="mt-3 text-body text-[rgba(var(--fl-sage-ink-rgb),0.6)]">
               Enter the invite code your coach gave you — golf or baseball, we&rsquo;ll take it from here.
             </p>
           </div>
@@ -108,10 +108,17 @@ export function JoinClient() {
               <div>
                 <label
                   htmlFor="inviteCode"
-                  className="mb-2 block text-eyebrow font-semibold uppercase tracking-[0.2em] text-[rgba(var(--fl-ecru-rgb),0.55)]"
+                  className="mb-2 block text-eyebrow font-semibold uppercase tracking-[0.2em] text-[rgba(var(--fl-cream-rgb),0.55)]"
                 >
                   Invite code
                 </label>
+                {/* Inset glass well (.fl-well, first-light.css) — never a
+                    stark white/black rectangle. `.fl-well` owns
+                    background/border/error-state (keyed off aria-invalid)
+                    at a specificity that reliably beats the shared Input's
+                    default classes; sage-deep focus ring here replaces the
+                    shared Input's default kelly `--focus-ring` (kelly is
+                    product-only — never landing/auth chrome). */}
                 <Input
                   id="inviteCode"
                   name="inviteCode"
@@ -129,11 +136,8 @@ export function JoinClient() {
                   aria-invalid={error ? true : undefined}
                   disabled={status === 'checking'}
                   className={cn(
-                    'text-center font-mono text-lg tracking-[0.3em] text-[var(--fl-ecru)] placeholder:tracking-normal placeholder:text-[rgba(var(--fl-ecru-rgb),0.35)]',
-                    'bg-black/20 hover:bg-black/20 focus:bg-black/20',
-                    'border-[rgba(var(--fl-brass-rgb),0.35)] hover:border-[rgba(var(--fl-brass-rgb),0.45)] focus:border-[var(--fl-green)] focus:ring-[var(--fl-green)]/30',
-                    'focus-visible:ring-offset-[var(--fl-pine)]',
-                    error && 'border-red-400/70 focus:border-red-400',
+                    'fl-well text-center font-mono text-lg tracking-[0.3em] text-[var(--fl-cream)] placeholder:tracking-normal placeholder:text-[rgba(var(--fl-cream-rgb),0.35)]',
+                    'focus-visible:ring-[color:var(--fl-sage-deep)]/35 focus-visible:ring-offset-[var(--fl-sage-ink)]',
                   )}
                 />
                 {error ? (
@@ -141,25 +145,29 @@ export function JoinClient() {
                     {error}
                   </p>
                 ) : (
-                  <p id="invite-code-hint" className="mt-2 text-center text-xs text-[rgba(var(--fl-ecru-rgb),0.45)]">
+                  <p id="invite-code-hint" className="mt-2 text-center text-xs text-[rgba(var(--fl-cream-rgb),0.45)]">
                     {trimmed.length > 0 ? `${trimmed.length} / 10 characters` : '4–10 characters, letters and numbers'}
                   </p>
                 )}
               </div>
 
+              {/* Sage-deep fill + cream text, overriding the shared Button's
+                  kelly `primary` variant (twMerge resolves the bg/text/ring
+                  conflicts — verified). Kelly is product-only, never
+                  landing/auth chrome. */}
               <Button
                 type="submit"
                 variant="primary"
                 isLoading={status === 'checking'}
                 disabled={!trimmed}
                 rightIcon={<ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
-                className="group w-full rounded-full px-6 py-3.5 text-sm shadow-lg shadow-black/20 hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-offset-[var(--fl-pine)]"
+                className="group w-full rounded-full bg-[var(--fl-sage-deep)] px-6 py-3.5 text-sm text-[var(--fl-cream)] shadow-[0_10px_25px_-5px_rgba(var(--fl-sage-ink-rgb),0.4)] hover:-translate-y-0.5 hover:bg-[var(--fl-sage-deep)] hover:brightness-110 hover:shadow-[0_10px_25px_-5px_rgba(var(--fl-sage-ink-rgb),0.4)] focus-visible:ring-[color:var(--fl-sage-deep)]/40 focus-visible:ring-offset-[var(--fl-sage-ink)]"
               >
                 {status === 'checking' ? 'Checking…' : 'Continue'}
               </Button>
             </form>
 
-            <p className="relative z-10 mt-5 text-center text-xs text-[rgba(var(--fl-ecru-rgb),0.5)]">
+            <p className="relative z-10 mt-5 text-center text-xs text-[rgba(var(--fl-cream-rgb),0.5)]">
               Don&rsquo;t have a code? Ask your coach for the team invite link.
             </p>
           </div>

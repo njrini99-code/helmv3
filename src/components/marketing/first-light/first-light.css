@@ -213,10 +213,72 @@
   overflow: hidden;
 }
 
+/* ---------------------------------------------------------------------
+ * Inset glass well — the ONE input treatment across the First Light /
+ * Entry Scenes material system (never a stark white or flat-black
+ * rectangle — CLAUDE.md hard rule + docs/baseball/ENTRY_SCENES_DESIGN.md
+ * "Inputs: inset glass wells... NEVER white rectangles"). A recessed
+ * cavity — soft inner shadow for depth, a faint brass edge, brightening to
+ * a sage-deep focus glow. Added by the `landing-portals+cta` lane for
+ * `/join`; reusable by any later glass surface that needs a text input
+ * (extend the `input.fl-well` selector to `:is(input, textarea).fl-well`
+ * if a future consumer needs a textarea well).
+ *
+ * Deliberately an `input.fl-well` COMPOUND selector (specificity 0,0,1,1)
+ * rather than a bare `.fl-well` class (0,0,1,0) — the shared `Input`
+ * component (`src/components/ui/input.tsx`) ships its own `bg-*`/`border-*`
+ * Tailwind utility classes at equal specificity, and this file loads via a
+ * separate `import` from a different point in the module graph than the
+ * Tailwind-generated stylesheet, so relying on source order to win a
+ * specificity TIE would be fragile. The compound selector wins
+ * unconditionally instead, regardless of import order.
+ * ------------------------------------------------------------------- */
+input.fl-well {
+  background: rgba(var(--fl-cream-high-rgb), 0.08);
+  border-color: rgba(var(--fl-brass-rgb), 0.3);
+  box-shadow:
+    inset 0 2px 6px rgba(var(--fl-sage-ink-rgb), 0.35),
+    inset 0 1px 0 0 rgba(var(--fl-sage-ink-rgb), 0.18);
+  transition:
+    box-shadow 0.2s cubic-bezier(0.22, 0.7, 0, 1),
+    border-color 0.2s cubic-bezier(0.22, 0.7, 0, 1),
+    background-color 0.2s cubic-bezier(0.22, 0.7, 0, 1);
+}
+
+input.fl-well:hover {
+  background: rgba(var(--fl-cream-high-rgb), 0.08);
+  border-color: rgba(var(--fl-brass-rgb), 0.42);
+}
+
+input.fl-well:focus {
+  background: rgba(var(--fl-cream-high-rgb), 0.08);
+  border-color: rgba(var(--fl-sage-deep-rgb), 0.6);
+  box-shadow:
+    inset 0 2px 6px rgba(var(--fl-sage-ink-rgb), 0.35),
+    0 0 0 3px rgba(var(--fl-sage-deep-rgb), 0.3);
+}
+
+/* Error state — keyed off `aria-invalid` (every consumer already sets this
+   for a11y) rather than a Tailwind `border-red-*` class, since a class
+   selector at equal specificity to `input.fl-well` can't reliably win a
+   cascade-order tie; the attribute selector's higher specificity always
+   does. Standard red-400/red-500, matching this page's inline error text. */
+input.fl-well[aria-invalid='true'] {
+  border-color: rgba(248, 113, 113, 0.7);
+}
+
+input.fl-well[aria-invalid='true']:focus {
+  border-color: rgba(239, 68, 68, 0.85);
+  box-shadow:
+    inset 0 2px 6px rgba(var(--fl-sage-ink-rgb), 0.35),
+    0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fl-glass-1,
   .fl-glass-2,
-  .fl-glass-3 {
+  .fl-glass-3,
+  input.fl-well {
     transition: none !important;
   }
 }
