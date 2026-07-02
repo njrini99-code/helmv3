@@ -20,8 +20,8 @@ Scaffold for the "First Light" landing redesign
 | `moments/M1Hero.tsx` | `landing-hero+nav` | LIVE — dawn cinema hero + M1→M2 exit scrub (photo scale/darken + headline lift/dissolve) |
 | `nav/GlassNav.tsx` | `landing-hero+nav` | LIVE (NEW) — G1 glass pill, sport-chooser popover (desktop dropdown / mobile bottom sheet) |
 | `moments/M2Clarity.tsx` | `landing-editorial` | STUB — replace in place |
-| `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — rebuilt 2026-07-02 to a film-strip column + hardware bezel + ledger captions (see the dedicated M3 section below) + palette-true placeholder screens (`screens/` below) |
-| `moments/M4TwoFields.tsx` | `landing-portals+cta` | LIVE (2026-07-02) — sage/cream diptych, scrub + hover, real logins |
+| `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — rebuilt 2026-07-02 to a film-strip column + hardware bezel + ledger captions (see the dedicated M3 section below); the three desktop screens + Lift Lab phone are LIVE INTERACTIVE COMPONENT REPLICAS (`screens/*.tsx`, see "Screen replica contract" below) — not screenshots |
+| `moments/M4TwoFields.tsx` | `landing-portals+cta` | LIVE (2026-07-02) — sage/cream diptych, scrub + hover, real logins, real product marks in cream coins |
 | `moments/M5Intelligence.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M6ForThePlayer.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M7Honesty.tsx` | `landing-editorial` | STUB — replace in place |
@@ -354,6 +354,14 @@ projector, hardware on a desk." Read `M3ProductCinema.tsx`'s own file-header
 doc comment for the full component-by-component breakdown; this section is
 the contract downstream lanes should hold to if they touch the file again.
 
+- **The screens are live interactive component replicas, not
+  screenshots** (2026-07-02, Fable spec — Nick: "the mockups are basic and
+  don't look like my app" / "I want interactive mockups not screenshots").
+  See "Screen replica contract" below for the full write-up — the short
+  version: each screen is a real JSX component under `screens/` that
+  studies the actual product surface it depicts and animates its own
+  content in when its dwell window engages, built to the `M5Intelligence.tsx`
+  signal-card replica's quality bar.
 - **Film column, not a crossfade.** `FilmColumn`/`FilmSlab` — the three
   desktop screens are ONE absolutely-positioned `height: 300%` column
   inside the frame's screen well. Its `y` steps 0% → -33.333% → -66.667%
@@ -459,57 +467,84 @@ scope) as airy sage/cream-graded placeholders — the originals were
 generated pre-respec and were dark pine-toned gradients that read murky
 under live verification even with the (now-fixed) sage/cream
 `fallbackGradient` overlay on top. Same pure-asset-swap contract applies.
+(All four slots have since been overwritten with the real free-license
+photography — see `public/marketing/first-light/photos/LICENSES.md`.)
 
-## Screenshot asset contract
+## Screen replica contract
 
-`public/marketing/first-light/screens/{command-center,stats-center,
-decision-room,lift-lab}.png` — LIVE, shipped by the `landing-cinema` lane.
+**Superseded 2026-07-02 (Fable spec, Nick escalation — "the mockups are
+basic and don't look like my app" / "I want interactive mockups not
+screenshots").** M3's four screens (Command Center, Stats Center, Decision
+Room, and the Lift Lab phone) were Pillow-rendered PNGs at
+`public/marketing/first-light/screens/*.png` (deleted this pass — nothing
+else referenced them; the stale `.gitignore` exemption for that path was
+removed too). They are now **live JSX component replicas**:
 
-**Revised 2026-07-02, twice.** First pass (superseding this lane's
-original real-screenshot approach — those were empty-state QA captures
-pulled from the overnight BaseballHelm visual-verification fleet, and
-read as raw dev output, not staged product cinema) built **dignified
-neutral placeholders**: a Georgia-serif label, a sage-mist badge with a
-generic line glyph, a tagline, zero kelly. Nick's A-OVERRIDE ("doesn't
-give sports on landing," Amendment 3 §2, 2026-07-02 ~18:00) called that
-out as still not sport-obvious enough — a viewer scrolling past couldn't
-tell this was golf/baseball software. **Second pass (current):** each
-PNG (`Pillow`, one-off, not committed as a script, same paths/dimensions
-— `16/10` for the three desktop screens at 1280×800, `9/19.5` for Lift
-Lab's phone at 480×1039) is now a sport-obvious idiom instead of a label
-card — command-center is a golf leaderboard (POS/PLAYER/THRU/SG TOTAL,
-tabular-nums SG figures, one sage-deep leader row), stats-center is a
-baseball box score (1–9 innings grid, R/H/E, two team rows), decision-room
-is the CoachHelm signal list (three rows, confidence pills), lift-lab is
-a barbell glyph over a readiness score/meter/check-in ledger. Still cream
-paper + sage-ink + brass hairlines throughout, still zero real athlete
-data — but **kelly now appears as tiny accents** (a leader/live tick, the
-confidence pills, a meter tick, a sync dot): allowed because these ARE
-simulated product screenshots (content, not landing chrome) per the
-amendment's own kelly-demotion carve-out, and real captures at
-integration will show the same real kelly in the same spots. ~340KB
-combined. `M3ProductCinema.tsx` renders them the `photoBg.ts` way: a
-solid cream-toned tint `<div>` behind (not the old dark pine gradient),
-an `<Image fill sizes=... className="object-cover">` on top, inside a
-fixed aspect-ratio container — a slow load or a future missing file
-never collapses the frame's layout, and never flashes dark.
+| File | Depicts | Studied from |
+|---|---|---|
+| `screens/CommandCenterScreen.tsx` | Coach Command Center | `command-center/CommandCenterFairway.tsx` |
+| `screens/StatsCenterScreen.tsx` | Baseball box score | `stats-center/StatsCenterClient.tsx` |
+| `screens/DecisionRoomScreen.tsx` | CoachHelm signal list | `insights/EvidencePanel.tsx`'s confidence pill + `M5Intelligence.tsx`'s signal card |
+| `screens/LiftLabScreen.tsx` (phone) | Player Lift Lab | `performance/PlayerLiftHomeClient.tsx` |
+| `screens/shared.tsx` | `KELLY`, `ScreenEyebrow`, `RollingStat`, `rowVariants`/`containerVariants`/`barVariants` | shared write-in plumbing, not a per-surface concern |
+| `screens/useScreenActive.ts` | `MotionValue<number>` → one-way sticky boolean | drives the `active` prop below |
 
-**Real Living-Annual captures (pristine, on-brand — not raw QA frames)
-swap in at integration**: drop the file in place at the same path, same
-aspect ratio; no code changes needed on either side. Those real captures
-correctly DO show the product's kelly green — kelly is product-only
-content per the sage/cream amendment (it's the product's own chrome
-inside a screenshot, not landing chrome), so no need to grade it out when
-that swap happens.
+**The study-the-real-surface rule.** A replica is a faithful MINIATURE of
+the real product surface — not a generic dashboard mockup with the right
+color palette. Before touching any of these files, read the actual
+page/component it depicts (table above) and note its real layout idioms
+(masthead grammar, card shapes, data presentation), not just its colors.
+The bar is `M5Intelligence.tsx`'s signal-card replica (Nick-approved,
+predates this pass) — match that level of faithfulness, not the
+"dignified neutral placeholder" bar the old PNGs settled for.
 
-**Gitignore note:** the repo's global `*.png` ignore rule (`.gitignore`)
-didn't have an exemption for this path (only `public/email/*.png` was
-exempted) — added
-`!public/marketing/first-light/screens/*.png` alongside it so these
-placeholders actually ship in the PR/repo instead of silently staying
-untracked (confirmed via `git check-ignore -v`; the previous lane's real
-screenshots were never actually committed despite this doc's earlier
-"shipped"/"committed" language — same gap, now fixed).
+**Props.** Every replica takes `ScreenReplicaProps` (`screens/shared.tsx`):
+
+- `active: boolean` — this screen's dwell window is (or has been)
+  engaged. `M3ProductCinema.tsx` derives one `active` boolean per screen
+  from the SAME `activeness`/handoff `MotionValue`s the ledger captions
+  already use (`useScreenActive`, a one-way sticky conversion — once a
+  screen crosses the engagement threshold it stays "written in" even if
+  the user scrubs back past it; per spec, reversal on scrub-back is fine
+  to leave as completed-state, so this never flips back to `false`).
+  Flipping `active` stages the content's write-in: rows stagger up
+  (opacity/y via framer-motion variant orchestration, `rowVariants`/
+  `containerVariants`), figures roll via `RollingStat` (a rAF-tweened
+  reimplementation of `ui/animated-number.tsx`'s odometer idiom, since
+  `AnimatedNumber`'s own mount-roll doesn't fit here — these screens mount
+  once, inside the always-mounted `FilmColumn`, and need to roll on the
+  `active` FLIP, not on mount), and confidence/meter bars scaleX in
+  (`barVariants`).
+- `instant?: boolean` — renders the fully-resolved end state immediately,
+  zero animation. `StaticCinema` (mobile + `prefers-reduced-motion`) passes
+  `active instant` — the structural reduced-motion fork already happened
+  one level up (per the "Reduced-motion: two valid patterns" section
+  above), so the replicas don't re-detect it themselves.
+- `className?: string` — merged via `cn()`; callers pass `h-full w-full`.
+
+**Palette + kelly.** Cream paper (`--fl-cream`/`--fl-cream-high` gradient),
+sage-ink type (`--fl-sage-ink`), brass hairlines (`.fl-rule`) throughout —
+first-light's OWN tokens, never the baseball Living-Annual kit's scoped
+CSS vars (`--grade-plus`, `--hairline`, etc. only resolve inside
+`.living-annual`; importing those classes here would silently break
+outside that scope). `font-annual` (Space Grotesk) is reserved for
+tabular figures only (`RollingStat`, box-score digits) — matching
+`StatReadout.tsx`'s real "ODOMETER TRUTH" convention, not applied to
+eyebrow labels. **Kelly (`#16A34A`, `KELLY` in `shared.tsx`) appears only
+as tiny accents inside these four files** (roster sync dot, live-inning
+dot, confidence pill/bar, meter fill) — legitimate per the sage/cream
+amendment's kelly-demotion carve-out, since these ARE simulated product
+screens (content), not landing chrome. Never reach for `KELLY` outside
+`screens/`.
+
+**Wiring.** `FilmSlab` (the scrub path) and `StaticCinema` (the static
+path) both render these components directly as children/JSX — no more
+`<Image>`, no more `photoBg.ts` tint layer (that pattern existed to cover
+an async image load; these are synchronous component renders, so the
+"never flash empty/dark" concern it solved no longer applies). A real
+future integration (real product screenshots, if ever wanted again) would
+be a revert of this section, not an asset swap — these are not
+placeholder-shaped the way the old PNGs were.
 
 ## Motion discipline (recap — see CLAUDE.md + this repo's motion rules)
 

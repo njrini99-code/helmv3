@@ -19,9 +19,9 @@
  *   crosses two handoff windows, holding still (dwell) between them —
  *   screens physically push each other out of frame; there is no opacity
  *   crossfade between them (opacity is reserved for the dock-in and the
- *   ledger captions below). Each slab's inner image layer counter-
- *   translates a few percent against the column's push for a whisper of
- *   depth parallax — see `FilmSlab`.
+ *   ledger captions below). Each slab's inner layer counter-translates a
+ *   few percent against the column's push for a whisper of depth
+ *   parallax — see `FilmSlab`.
  * - **Hardware bezel** (`HardwareShell`) — the frame is a piece of desk
  *   hardware, not a bare glass rectangle: an outer `fl-glass-2` shell, an
  *   inset screen well the film column lives inside, and a webcam-style dot
@@ -53,36 +53,55 @@
  * frame's existing dock-in (`HardwareFrame`'s `scale`/`y` over `[0,
  * DOCK_END]`) still supplies a subtle entrance without any color veil.
  *
- * SPORT-OBVIOUS REPLICAS (⚠ A-OVERRIDE, Amendment 3 §2, Nick 2026-07-02
- * 18:00: "doesn't give sports on landing" — M3's screens were generic
- * label cards with no sport signal). `public/marketing/first-light/
- * screens/*.png`, regenerated this lane (Pillow, one-off, not committed
- * as a script) at the same paths/dimensions — a pure asset swap, zero
- * code changes needed. Each is a dignified, palette-true idiom that reads
- * as real sports software at a glance, not a stock screenshot:
- *  - **command-center.png** — a golf leaderboard: POS/PLAYER/THRU/SG
- *    TOTAL columns, five rows, tabular-nums SG figures (+1.8/−0.4), one
- *    sage-deep leader row.
- *  - **stats-center.png** — a baseball box score: the 1–9 innings grid
- *    with R/H/E, two team rows, the batting team's current inning called
- *    out with a hairline kelly tick.
- *  - **decision-room.png** — the CoachHelm signal-list idiom: three rows,
- *    each with a confidence pill (92%/78%/64%).
- *  - **lift-lab.png** (phone) — a barbell (bar + plates) glyph over a
- *    readiness score, meter, and a short check-in ledger.
- * Kelly appears only as tiny accents inside these mockups (leader tick,
- * live-inning tick, confidence pills, meter tick, sync dot) — legitimate
- * per the amendment, since these ARE simulated product screenshots
- * (content), not landing chrome; real captures at integration will show
- * the same real kelly. Cream paper background, sage-ink type, brass
- * hairline dividers throughout — same idiom as the rest of the page.
- * Every panel keeps a solid cream-toned tint layer underneath the
- * `<Image fill>` so a slow load never flashes an empty/dark frame
- * (CONTRACTS.md's photoBg pattern, screenshot variant).
+ * LIVE INTERACTIVE REPLICAS (2026-07-02, Fable spec — Nick: "the mockups
+ * are basic and don't look like my app" / "I want interactive mockups not
+ * screenshots"). The three desktop screens + the Lift Lab phone are no
+ * longer Pillow-rendered PNGs — they are REAL JSX component replicas
+ * (`../screens/CommandCenterScreen.tsx`, `StatsCenterScreen.tsx`,
+ * `DecisionRoomScreen.tsx`, `LiftLabScreen.tsx`), each built by studying
+ * the actual surface it depicts:
+ *  - **CommandCenterScreen** — the coach Command Center idiom (studied
+ *    from `CommandCenterFairway.tsx`): a masthead line (team name + date
+ *    eyebrow), 3 stat tiles (record/next game/readiness), a roster-pulse
+ *    list of 4 rows.
+ *  - **StatsCenterScreen** — a baseball box score (studied from
+ *    `StatsCenterClient.tsx`): the 1–9 innings grid + R/H/E, two team
+ *    rows, one live-inning cell pulsing, a batting line below.
+ *  - **DecisionRoomScreen** — the CoachHelm honesty idiom (studied from
+ *    `EvidencePanel.tsx`'s confidence pill + `M5Intelligence.tsx`'s signal
+ *    card — THIS branch's replica quality bar): 3 signal rows, each a
+ *    title + confidence pill (92/78/64%) + source line + a scaleX
+ *    confidence bar.
+ *  - **LiftLabScreen** (phone) — studied from `PlayerLiftHomeClient.tsx`:
+ *    a readiness score, a bar-with-plates barbell glyph, a 3-row check-in
+ *    ledger.
+ * Each receives `active: boolean` — a one-way "has this screen's dwell
+ * window engaged" flag (`../screens/useScreenActive.ts`), derived from the
+ * SAME `activeness`/handoff clocks the ledger captions already use (one
+ * clock still drives everything). Flipping it stages the content's
+ * write-in: rows stagger up (opacity/y, framer-motion variant
+ * orchestration, 40-60ms stagger), figures roll via `../screens/
+ * shared.tsx`'s `RollingStat` (an `active`-triggered reimplementation of
+ * the `animated-number.tsx` odometer idiom — `AnimatedNumber`'s own
+ * mount-roll doesn't fit here, since these screens mount once, inside the
+ * always-mounted `FilmColumn`, and need to roll on the active FLIP, not on
+ * mount), confidence/meter bars scaleX in, and the live-inning/roster-sync
+ * dots start pulsing. A scrub back past the threshold is left in its
+ * completed state (one-way, per spec) rather than reversed. `StaticCinema`
+ * renders the SAME four components with `instant` (zero motion, fully-
+ * resolved state — see that function below). Kelly (`#16A34A`) appears
+ * only as tiny accents INSIDE these replicas (roster sync dot, live-inning
+ * dot, confidence pill/bar, meter fill) — legitimate per the sage/cream
+ * amendment's kelly-demotion carve-out, since these ARE simulated product
+ * screens (content), not landing chrome. See CONTRACTS.md's "Screen
+ * replica contract" for the full write-up and the study-the-real-surface
+ * rule for whichever lane touches this next. The `public/marketing/
+ * first-light/screens/*.png` placeholders this replaced are deleted —
+ * nothing else referenced them.
  *
  * Motion: transform/opacity only (`y`/`x`/`scale`/`rotate` on the column,
- * frame, and phone; `opacity` reserved for the dock-in, the cream veil,
- * and the ledger captions) — no GSAP, no layout-affecting scroll styles.
+ * frame, and phone; `opacity` reserved for the dock-in and the ledger
+ * captions) — no GSAP, no layout-affecting scroll styles.
  *
  * `prefers-reduced-motion` OR a viewport under `md` (768px, matching the
  * `isDesktopViewport` convention in `GolfDashboardShell.tsx`) skip
@@ -96,25 +115,27 @@
  * not just the last one.
  */
 import type { ReactNode } from 'react';
-import Image from 'next/image';
 import { m, useTransform, type MotionValue } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { PinnedScrub } from '../scroll/PinnedScrub';
 import { usePrefersReducedMotion } from '../scroll/usePrefersReducedMotion';
+import { CommandCenterScreen } from '../screens/CommandCenterScreen';
+import { StatsCenterScreen } from '../screens/StatsCenterScreen';
+import { DecisionRoomScreen } from '../screens/DecisionRoomScreen';
+import { LiftLabScreen } from '../screens/LiftLabScreen';
+import { useScreenActive } from '../screens/useScreenActive';
 
 export interface M3ProductCinemaProps {
   className?: string;
 }
 
+type ScreenKey = 'command-center' | 'stats-center' | 'decision-room';
+
 interface CinemaScreen {
-  key: string;
+  key: ScreenKey;
   label: string;
   caption: string;
-  src: string;
-  /** Solid fallback painted under the `<Image>` so a slow/failed load never
-   * flashes empty — CONTRACTS.md's photoBg pattern, screenshot variant. */
-  tint: string;
 }
 
 // A literal 3-tuple (not `CinemaScreen[]`) so `Ledger`'s literal-index reads
@@ -127,30 +148,32 @@ const SCREENS: readonly [CinemaScreen, CinemaScreen, CinemaScreen] = [
     key: 'command-center',
     label: 'Command Center',
     caption: 'Roster, calendar, and tasks — the whole program, one screen.',
-    src: '/marketing/first-light/screens/command-center.png',
-    tint: 'linear-gradient(155deg, var(--fl-cream-high) 0%, var(--fl-cream) 100%)',
   },
   {
     key: 'stats-center',
     label: 'Stats Center',
     caption: 'Box scores and stat lines that write themselves in as the season goes.',
-    src: '/marketing/first-light/screens/stats-center.png',
-    tint: 'linear-gradient(155deg, var(--fl-cream-high) 0%, var(--fl-cream) 100%)',
   },
   {
     key: 'decision-room',
     label: 'Decision Room',
     caption: 'CoachHelm surfaces the one thing worth a conversation this week.',
-    src: '/marketing/first-light/screens/decision-room.png',
-    tint: 'linear-gradient(155deg, var(--fl-cream-high) 0%, var(--fl-cream) 100%)',
   },
 ];
 
 const LIFT_LAB = {
   label: 'Lift Lab',
   caption: 'Lift Lab — readiness and reps, built into the same program.',
-  src: '/marketing/first-light/screens/lift-lab.png',
 };
+
+/** Picks the screen replica by its stable string key — not a numeric
+ * index, so this stays exact under `noUncheckedIndexedAccess` without a
+ * components-array lookup that would need one. */
+function renderScreenReplica(key: ScreenKey, active: boolean, instant: boolean): ReactNode {
+  if (key === 'command-center') return <CommandCenterScreen active={active} instant={instant} />;
+  if (key === 'stats-center') return <StatsCenterScreen active={active} instant={instant} />;
+  return <DecisionRoomScreen active={active} instant={instant} />;
+}
 
 /**
  * The scrub's timing map, named rather than indexed (repo runs
@@ -158,14 +181,19 @@ const LIFT_LAB = {
  * every consumer re-proves each element is defined). One clock drives four
  * surfaces: the film column's dwell/handoff steps, each slab's depth
  * parallax, the ledger caption crossfade, and the phone arc's window —
- * a timing tweak here can't drift out of sync between them.
+ * a timing tweak here can't drift out of sync between them. It ALSO drives
+ * when each screen replica's content "writes itself in" (`useScreenActive`
+ * below) — the same clock, a fifth surface, never a separately-tuned one.
  *
- * [0, DOCK_END]                    — frame dock-in (scale + y)
+ * [0, DOCK_END]                    — frame dock-in (scale + y); Command
+ *                                     Center's replica also writes in here
  * [DOCK_END, SCREEN0_HOLD_END]     — screen 0 (Command Center) holds
- * [SCREEN0_HOLD_END, HANDOFF_01_END] — column pushes 0% → -33.333%
+ * [SCREEN0_HOLD_END, HANDOFF_01_END] — column pushes 0% → -33.333%; Stats
+ *                                       Center's replica writes in here
  * [HANDOFF_01_END, SCREEN1_HOLD_END] — screen 1 (Stats Center) holds
  * [SCREEN1_HOLD_END, HANDOFF_12_END] — column pushes -33.333% → -66.667%,
- *                                       phone arc + desk rebalance start
+ *                                       phone arc + desk rebalance start;
+ *                                       Decision Room's replica writes in
  * [HANDOFF_12_END, SCREEN2_HOLD_END] — screen 2 (Decision Room) holds
  * [SCREEN2_HOLD_END, 1]            — final hold
  */
@@ -249,11 +277,29 @@ function ProductFrame({ progress }: { progress: MotionValue<number> }) {
   });
   const activeness2 = useTransform(handoff12, [0, 1], [0, 1]);
 
+  // Screen-replica "write itself in" triggers — Command Center keys off
+  // the frame's own dock-in window (its dwell starts effectively at
+  // progress 0, so the dock-in IS its entrance), Stats Center and
+  // Decision Room reuse the SAME handoff activeness the ledger above
+  // already computed (one clock, not a duplicate).
+  const dockActiveness = useTransform(progress, [0, DOCK_END], [0, 1]);
+  const entered0 = useScreenActive(dockActiveness);
+  const entered1 = useScreenActive(activeness1);
+  const entered2 = useScreenActive(activeness2);
+
   return (
     <>
       <div className="relative mx-auto w-full max-w-4xl">
         <Eyebrow />
-        <HardwareFrame progress={progress} columnY={columnY} handoff01={handoff01} handoff12={handoff12} />
+        <HardwareFrame
+          progress={progress}
+          columnY={columnY}
+          handoff01={handoff01}
+          handoff12={handoff12}
+          entered0={entered0}
+          entered1={entered1}
+          entered2={entered2}
+        />
         <Ledger activeness0={activeness0} activeness1={activeness1} activeness2={activeness2} />
         <PhoneArc progress={progress} />
       </div>
@@ -314,11 +360,17 @@ function HardwareFrame({
   columnY,
   handoff01,
   handoff12,
+  entered0,
+  entered1,
+  entered2,
 }: {
   progress: MotionValue<number>;
   columnY: MotionValue<string>;
   handoff01: MotionValue<number>;
   handoff12: MotionValue<number>;
+  entered0: boolean;
+  entered1: boolean;
+  entered2: boolean;
 }) {
   // Dock-in — [0, DOCK_END] only; clamped afterward (useTransform's
   // default) so the frame simply holds its landed scale/position for the
@@ -338,7 +390,14 @@ function HardwareFrame({
         wellRoundedClassName="rounded-[0.9rem]"
         wellClassName="aspect-[16/10] w-full"
       >
-        <FilmColumn columnY={columnY} handoff01={handoff01} handoff12={handoff12} />
+        <FilmColumn
+          columnY={columnY}
+          handoff01={handoff01}
+          handoff12={handoff12}
+          entered0={entered0}
+          entered1={entered1}
+          entered2={entered2}
+        />
       </HardwareShell>
     </m.div>
   );
@@ -351,40 +410,54 @@ function HardwareFrame({
  * steps 0% → -33.333% → -66.667% of the COLUMN's own height across the
  * two handoff windows — that's exactly two well-heights of travel (300% ×
  * 66.667% = 200%), landing screen 2 flush in the well with no crossfade
- * ever touching opacity.
+ * ever touching opacity. Named children (not a `SCREENS.map`) so each
+ * slab's screen REPLICA COMPONENT is wired explicitly — matches `Ledger`'s
+ * own named-over-indexed convention below.
  */
 function FilmColumn({
   columnY,
   handoff01,
   handoff12,
+  entered0,
+  entered1,
+  entered2,
 }: {
   columnY: MotionValue<string>;
   handoff01: MotionValue<number>;
   handoff12: MotionValue<number>;
+  entered0: boolean;
+  entered1: boolean;
+  entered2: boolean;
 }) {
   return (
     <m.div style={{ y: columnY }} className="absolute inset-x-0 top-0 h-[300%]" aria-hidden="true">
-      {SCREENS.map((screen, i) => (
-        <FilmSlab key={screen.key} screen={screen} index={i} handoff01={handoff01} handoff12={handoff12} />
-      ))}
+      <FilmSlab index={0} handoff01={handoff01} handoff12={handoff12}>
+        <CommandCenterScreen active={entered0} className="h-full w-full" />
+      </FilmSlab>
+      <FilmSlab index={1} handoff01={handoff01} handoff12={handoff12}>
+        <StatsCenterScreen active={entered1} className="h-full w-full" />
+      </FilmSlab>
+      <FilmSlab index={2} handoff01={handoff01} handoff12={handoff12}>
+        <DecisionRoomScreen active={entered2} className="h-full w-full" />
+      </FilmSlab>
     </m.div>
   );
 }
 
 function FilmSlab({
-  screen,
   index,
   handoff01,
   handoff12,
+  children,
 }: {
-  screen: CinemaScreen;
   index: number;
   handoff01: MotionValue<number>;
   handoff12: MotionValue<number>;
+  children: ReactNode;
 }) {
-  // Depth parallax — the inner image layer counter-translates ~4% against
-  // the column's own upward push (spec: "∓4% within its slab"), keyed off
-  // the same two handoff clocks that move the column itself:
+  // Depth parallax — the inner layer counter-translates ~4% against the
+  // column's own upward push (spec: "∓4% within its slab"), keyed off the
+  // same two handoff clocks that move the column itself:
   //  - slab 0 only ever departs: 0% → -4% as handoff01 runs.
   //  - slab 1 arrives (+4% → 0%) on handoff01, then departs (0% → -4%) on
   //    handoff12 — the two terms never overlap since handoff01 is already
@@ -404,14 +477,7 @@ function FilmSlab({
   return (
     <div className="absolute inset-x-0 h-1/3 overflow-hidden" style={{ top: `${index * 33.333}%` }}>
       <m.div style={{ y: innerY }} className="absolute inset-0">
-        <div className="absolute inset-0" style={{ background: screen.tint }} />
-        <Image
-          src={screen.src}
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 900px, 90vw"
-          className="object-cover object-top"
-        />
+        {children}
       </m.div>
     </div>
   );
@@ -490,6 +556,10 @@ function PhoneArc({ progress }: { progress: MotionValue<number> }) {
   const rotate = useTransform(progress, [PHONE_ARC_START, PHONE_ROTATE_OVERSHOOT_AT, PHONE_ARC_END], [10, -1.5, 0]);
   const scale = useTransform(progress, [PHONE_ARC_START, PHONE_ARC_END], [0.92, 1]);
   const opacity = useTransform(progress, [PHONE_ARC_START, PHONE_OPACITY_IN_END], [0, 1]);
+  // Reuses the SAME opacity window as the phone's own fade-in as its
+  // "write itself in" trigger — the phone's arrival and its content
+  // populating read as one beat, not two separately-tuned ones.
+  const entered = useScreenActive(opacity);
 
   return (
     <m.div
@@ -504,8 +574,7 @@ function PhoneArc({ progress }: { progress: MotionValue<number> }) {
         wellClassName="h-full w-full"
         className="h-full w-full"
       >
-        <div className="absolute inset-0" style={{ background: 'var(--fl-cream)' }} />
-        <Image src={LIFT_LAB.src} alt="" fill sizes="140px" className="object-cover object-top" />
+        <LiftLabScreen active={entered} className="h-full w-full" />
       </HardwareShell>
     </m.div>
   );
@@ -516,9 +585,13 @@ function PhoneArc({ progress }: { progress: MotionValue<number> }) {
  * `prefers-reduced-motion`. All four screens (three desktop + Lift Lab) in
  * normal document flow, each wrapped in the same hardware-bezel language
  * as the scrubbed version and each with its own left-anchored numbered
- * ledger caption; no `m.*`, no scrub, no dots, no viewport-entry animation
- * — reads perfectly standing still per the design bar ("must read
- * perfectly with zero motion").
+ * ledger caption; the screen replicas render `instant` (fully-resolved,
+ * zero motion) — no `m.*` write-in, no scrub, no dots, no viewport-entry
+ * animation — reads perfectly standing still per the design bar ("must
+ * read perfectly with zero motion"). Each replica sits inside a
+ * `role="img"`+`aria-label` wrapper (the same accessible contract the old
+ * `<Image alt=...>` gave screen readers) since the mockup's own fake
+ * figures/names would otherwise be read literally, out of context.
  */
 function StaticCinema() {
   return (
@@ -534,14 +607,9 @@ function StaticCinema() {
               wellRoundedClassName="rounded-[0.9rem]"
               wellClassName="aspect-[16/10] w-full"
             >
-              <div className="absolute inset-0" style={{ background: screen.tint }} />
-              <Image
-                src={screen.src}
-                alt={`${screen.label} — a screenshot of the Helm ${screen.label} screen`}
-                fill
-                sizes="(min-width: 640px) 448px, 90vw"
-                className="object-cover object-top"
-              />
+              <div role="img" aria-label={`${screen.label} — ${screen.caption}`} className="absolute inset-0">
+                {renderScreenReplica(screen.key, true, true)}
+              </div>
             </HardwareShell>
             <StaticLedgerEntry index={i} caption={screen.caption} />
           </div>
@@ -555,14 +623,9 @@ function StaticCinema() {
             wellClassName="aspect-[9/19.5] w-full"
             className="mx-auto w-[220px]"
           >
-            <div className="absolute inset-0" style={{ background: 'var(--fl-cream)' }} />
-            <Image
-              src={LIFT_LAB.src}
-              alt={`${LIFT_LAB.label} — a screenshot of the player's strength and conditioning screen`}
-              fill
-              sizes="220px"
-              className="object-cover object-top"
-            />
+            <div role="img" aria-label={`${LIFT_LAB.label} — ${LIFT_LAB.caption}`} className="absolute inset-0">
+              <LiftLabScreen active instant className="h-full w-full" />
+            </div>
           </HardwareShell>
           <StaticLedgerEntry index={3} caption={LIFT_LAB.caption} />
         </div>
