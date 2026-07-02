@@ -91,14 +91,14 @@ async function resolvePlayerTeam(
 // Also returns the athleteToPlayer map needed by the adapters.
 // ---------------------------------------------------------------------------
 
-interface AthleteContext {
+export interface AthleteContext {
   organizationId: string;
   teamId: string;
   athleteId: string;
   athleteToPlayer: Record<string, string>;
 }
 
-async function resolveAthleteContext(
+export async function resolveAthleteContext(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
 ): Promise<AthleteContext | null> {
@@ -256,5 +256,82 @@ export async function getPlayerLiftSession(
   return {
     ...session,
     exercises: exercises.map((e) => ({ ...e, sets: setsByExercise.get(e.id) ?? [] })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// getPlayerLiftOnboardingState (additive — Lift Lab front-door onboarding)
+//
+// First-visit detection for the Lift Lab entry (Task C). "New to the Lab"
+// means: no readiness check-in ever, no set log ever, AND no onboarded_at
+// value — the same resolveAthleteContext chain as getPlayerLiftHome above,
+// reused verbatim (exported, not duplicated).
+//
+// onboarded_at is read via the untyped escape hatch — the column ships in a
+// db_gated migration (supabase/migrations/
+// 20260702120000_baseball_helm_lifting_athletes_onboarded_at.sql, NOT
+// applied), so a live "column does not exist" PostgREST response is expected
+// until that migration lands. fromUntyped queries never throw on that error
+// (postgrest-js resolves to { data: null, error }), so this degrades to
+// "no durable signal yet" rather than surfacing an error — the caller
+// (LiftOnboardingGate) falls back to localStorage in that case.
+// ---------------------------------------------------------------------------
+
+export interface PlayerLiftOnboardingState {
+  /** helm_lifting_athletes.id for the caller, or null if not yet seeded. */
+  athleteId: string | null;
+  /**
+   * True when the athlete has zero prior Lab activity AND no durable
+   * onboarded_at value — eligible to see the first-run tour / branded
+   * welcome state on the Lift home.
+   */
+  isNewToLab: boolean;
+  /** Best-effort read of the (possibly not-yet-existing) onboarded_at column. */
+  onboardedAt: string | null;
+}
+
+export async function getPlayerLiftOnboardingState(
+  playerId: string,
+): Promise<PlayerLiftOnboardingState> {
+  if (!playerId) {
+    return { athleteId: null, isNewToLab: true, onboardedAt: null };
+  }
+
+  const supabase = await createClient();
+  const ctx = await resolveAthleteContext(supabase, playerId);
+  if (!ctx) {
+    // Not yet seeded in the Lab — definitionally new.
+    return { athleteId: null, isNewToLab: true, onboardedAt: null };
+  }
+
+  const { organizationId, athleteId } = ctx;
+
+  const [checkinRes, setLogRes, athleteRes] = await Promise.all([
+    // Any readiness check-in, ever (not just today).
+    fromUntyped(supabase, 'helm_lifting_readiness_checkins')
+      .select('id')
+      .eq('athlete_id', athleteId)
+      .eq('organization_id', organizationId)
+      .limit(1)
+      .maybeSingle(),
+    // Any logged set, ever.
+    fromUntyped(supabase, 'helm_lifting_set_results')
+      .select('id')
+      .eq('athlete_id', athleteId)
+      .eq('organization_id', organizationId)
+      .limit(1)
+      .maybeSingle(),
+    // Best-effort — see file header re: the db_gated column.
+    fromUntyped(supabase, 'helm_lifting_athletes').select('onboarded_at').eq('id', athleteId).maybeSingle(),
+  ]);
+
+  const onboardedAt =
+    ((athleteRes.data as { onboarded_at?: string | null } | null)?.onboarded_at) ?? null;
+  const hasActivity = Boolean(checkinRes.data) || Boolean(setLogRes.data);
+
+  return {
+    athleteId,
+    isNewToLab: !hasActivity && !onboardedAt,
+    onboardedAt,
   };
 }
