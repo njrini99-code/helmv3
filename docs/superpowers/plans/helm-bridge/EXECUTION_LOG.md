@@ -99,4 +99,5 @@ Running record of what was actually applied per wave, plus any deviations from t
 - POLISH TODO: consider Fairway surface primitives over raw bg-white/70 in a final sweep (optional; current is on-brand).
 
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
-**Status:** migration pending orchestrator; code in progress (Sonnet).
+- Task 1 migration `20260701140000_revoke_user_sessions_rpc.sql` applied to prod (SECURITY DEFINER, is_super_admin-gated, DELETEs auth.sessions + writes audit_log; anon denied, authenticated granted — asserted). Verified audit_log col types (record_id/user_id uuid, new_data jsonb) before apply.
+- Code in progress (Sonnet): middleware bridge + anonymous log-error + ignore-narrowing + golf password-reset + auth tab (feed/lockouts/sessions+revoke/funnel). **DEFERRED per baseball-hold:** Task 2 step 5 (baseball/lifting auth emitters). Auth tab reads all-sport data read-only (fine).
