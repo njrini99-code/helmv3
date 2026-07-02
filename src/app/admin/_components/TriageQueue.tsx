@@ -10,6 +10,7 @@ import { resolveTriageEvents } from '@/app/admin/actions/triage';
 import { SportBadge } from './SportBadge';
 import { PanelAllClear } from './PanelStates';
 import { LocalTime } from './LocalTime';
+import { CopyReportButton } from './CopyReportButton';
 
 const SEVERITY_TONE: Record<TriageSeverity, 'danger' | 'warning' | 'neutral' | 'info'> = {
   critical: 'danger',
@@ -77,6 +78,11 @@ export function TriageQueue({
           <span className="rounded bg-warm-100 px-1.5 py-0.5 text-eyebrow uppercase text-warm-600">
             {item.origin === 'sentry' ? 'Sentry' : 'App'}
           </span>
+          <CopyReportButton
+            variant="icon"
+            report={item.report}
+            label={`Copy incident report: ${item.title}`}
+          />
           {item.origin === 'app' ? (
             <Button
               type="button"
