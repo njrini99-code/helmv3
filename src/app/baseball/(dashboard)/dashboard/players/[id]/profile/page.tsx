@@ -31,10 +31,28 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
   const isPublicView = !user || user.id !== player.user_id;
 
+  // Resolve whether the viewer is an actual coach — NOT merely "not the
+  // profile owner". isPublicView is true for any authenticated non-owner
+  // (including another player), so the coach-only CTAs (Send Message / Add
+  // to Watchlist) must gate on this real role check instead, or any player
+  // viewing a teammate's/recruit's profile would see live coach actions.
+  // Mirrors the isCoachViewing pattern in the sibling public route at
+  // src/app/baseball/(public)/player/[id]/page.tsx.
+  let coach: { id: string; organization_id: string | null } | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from('baseball_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+    coach = data;
+  }
+  const isCoachViewing = Boolean(coach);
+
   // Best-effort watchlist status for the coach CTAs in the sidebar (viewer must
   // be a coach viewing someone else's profile — checkWatchlistStatus itself
   // no-ops to false for non-coach users).
-  const isInWatchlist = isPublicView
+  const isInWatchlist = isCoachViewing
     ? await checkWatchlistStatus(id).then((r) => r.isInWatchlist).catch(() => false)
     : false;
 
@@ -47,34 +65,26 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   } | null = null;
   let teamId: string | null = null;
 
-  if (user) {
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('baseball_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
       .single();
 
-    if (coach?.organization_id) {
-      const { data: team } = await supabase
-        .from('baseball_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .single();
+    if (team) {
+      teamId = team.id;
+      const year = new Date().getFullYear();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: ss } = await (supabase as any)
+        .from('baseball_player_season_stats')
+        .select('g,ab,avg,obp,slg,ops,hr,rbi,sb,k,ip,era,whip,k9,w,l,k_thrown')
+        .eq('player_id', id)
+        .eq('team_id', team.id)
+        .eq('season_year', year)
+        .maybeSingle();
 
-      if (team) {
-        teamId = team.id;
-        const year = new Date().getFullYear();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: ss } = await (supabase as any)
-          .from('baseball_player_season_stats')
-          .select('g,ab,avg,obp,slg,ops,hr,rbi,sb,k,ip,era,whip,k9,w,l,k_thrown')
-          .eq('player_id', id)
-          .eq('team_id', team.id)
-          .eq('season_year', year)
-          .maybeSingle();
-
-        if (ss) seasonStats = ss;
-      }
+      if (ss) seasonStats = ss;
     }
   }
 
@@ -142,7 +152,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {isPublicView && (
+            {isCoachViewing && (
               <PlayerProfileCoachActions
                 playerId={id}
                 playerUserId={(player.user_id as string | null) ?? null}

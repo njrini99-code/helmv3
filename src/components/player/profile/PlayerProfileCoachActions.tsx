@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IconMessage, IconStar, IconStarFilled } from '@/components/icons';
 import { toast } from '@/components/ui/sonner';
 import { toggleWatchlistPlayer } from '@/app/baseball/actions/watchlist';
-import { createConversation } from '@/app/baseball/actions/messages';
+import { createPlayerProfileConversation } from '@/app/baseball/actions/messages';
 
 interface PlayerProfileCoachActionsProps {
   playerId: string;
@@ -32,7 +32,7 @@ export function PlayerProfileCoachActions({
 
     startMessageTransition(async () => {
       try {
-        const result = await createConversation([playerUserId]);
+        const result = await createPlayerProfileConversation(playerId);
         router.push(`/baseball/dashboard/messages/${result.conversationId}`);
       } catch (error) {
         console.error('Error creating conversation:', error);
