@@ -5,8 +5,17 @@
  * from `EvidencePanel.tsx`'s confidence pill (`{pct}% confidence`, tiered
  * green/amber/gray) and `M5Intelligence.tsx`'s signal card (this branch's
  * quality bar: a title, an honest confidence figure, the source it came
- * from — never a bare claim). Three rows; kelly marks only the
- * high-confidence tier — product-only accent, per CONTRACTS.md.
+ * from — never a bare claim). Three bordered evidence cards; kelly marks
+ * only the high-confidence tier — product-only accent, per CONTRACTS.md.
+ *
+ * DENSITY PASS (2026-07) — see `CommandCenterScreen.tsx`'s file header for
+ * the root cause (`justify-center` clustering 3 plain rows in a tall
+ * `flex-1` area, reading as "void, 3 rows, void"). Fixed by promoting the
+ * signals to bordered evidence cards (hairline + a subtle sage bg step)
+ * inside a CSS grid with `1fr` rows — they now span the full body height
+ * with intent, edge to edge, never an isolated floating cluster. Added a
+ * header row + a quiet footer row so the screen reads header/body/footer
+ * like the other two, not a single centered island.
  */
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -40,23 +49,33 @@ export function DecisionRoomScreen({ active, instant = false, className }: Scree
       className={cn('relative flex h-full w-full flex-col overflow-hidden p-4', className)}
       style={{ background: 'linear-gradient(155deg, var(--fl-cream-high) 0%, var(--fl-cream) 100%)' }}
     >
-      <ScreenEyebrow>Decision Room</ScreenEyebrow>
-      <div className="fl-rule mt-2" />
+      {/* HEADER */}
+      <div className="flex shrink-0 items-baseline justify-between gap-2">
+        <ScreenEyebrow>This Week</ScreenEyebrow>
+        <ScreenEyebrow>3 Signals</ScreenEyebrow>
+      </div>
+      <div className="fl-rule mt-2 shrink-0" />
 
+      {/* BODY — 3 evidence cards distributed edge to edge via 1fr grid
+          rows, never a justify-center cluster stranded in the middle. */}
       <m.div
-        variants={containerVariants(0.08)}
+        variants={containerVariants(0.1)}
         initial={shown ? 'shown' : 'hidden'}
         animate={shown ? 'shown' : 'hidden'}
-        className="mt-1 flex flex-1 flex-col justify-center"
+        className="mt-3 grid flex-1 gap-2"
+        style={{ gridTemplateRows: `repeat(${SIGNALS.length}, 1fr)` }}
       >
-        {SIGNALS.map((s, i) => {
+        {SIGNALS.map((s) => {
           const color = tierColor(s.confidence);
           return (
             <m.div
               key={s.title}
               variants={rowVariants}
-              className="flex items-start justify-between gap-3 rounded-md px-1 py-2.5 transition-colors hover:bg-[rgba(var(--fl-sage-rgb),0.1)]"
-              style={i > 0 ? { borderTop: '1px solid rgba(var(--fl-brass-rgb), 0.18)' } : undefined}
+              className="flex items-start justify-between gap-3 rounded-md px-2.5 py-2 transition-colors hover:bg-[rgba(var(--fl-sage-rgb),0.12)]"
+              style={{
+                border: '1px solid rgba(var(--fl-brass-rgb), 0.2)',
+                background: 'rgba(var(--fl-sage-rgb), 0.07)',
+              }}
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-caption" style={{ color: 'var(--fl-sage-ink)' }}>
@@ -83,6 +102,12 @@ export function DecisionRoomScreen({ active, instant = false, className }: Scree
           );
         })}
       </m.div>
+
+      {/* FOOTER */}
+      <div className="fl-rule mt-2 shrink-0" />
+      <p className="mt-1.5 shrink-0 text-microbadge font-normal" style={{ color: 'rgba(var(--fl-sage-ink-rgb), 0.45)' }}>
+        Open Decision Room →
+      </p>
     </div>
   );
 }
