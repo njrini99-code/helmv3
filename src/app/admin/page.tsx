@@ -2,13 +2,15 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchOverviewSnapshot } from '@/lib/admin/data/overview';
 import { fetchTriageQueue } from '@/lib/admin/data/triage';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
 import { AdminStatusBanner } from './_components/AdminStatusBanner';
 import { KpiTile } from './_components/KpiTile';
 import { TriageQueue } from './_components/TriageQueue';
 import { AutoRefresh } from './_components/AutoRefresh';
 import { PanelBoundary } from './_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from './_components/PanelStates';
-import { SkeletonStat, SkeletonList } from '@/components/fairway';
+import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
+import { SkeletonStat, SkeletonList, Surface, Eyebrow } from '@/components/fairway';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +92,19 @@ async function TriagePanel() {
   );
 }
 
+async function FeatureHealthPanel() {
+  const raw = await fetchFeatureHealth();
+  const summary = summarizeFeatureHealth(raw, new Date());
+  return (
+    <Surface elevation="border" padding="sm">
+      <Eyebrow as="h2" tone="tertiary" className="mb-2">
+        Feature health
+      </Eyebrow>
+      <FeatureHealthRollup summary={summary} />
+    </Surface>
+  );
+}
+
 async function DeployRail() {
   const deploys = await fetchVercelDeployments(5);
   if (deploys.status === 'unconfigured') {
@@ -123,6 +138,9 @@ export default async function AdminOverviewPage() {
       </PanelBoundary>
       <PanelBoundary title="Triage" skeleton={<SkeletonList />}>
         <TriagePanel />
+      </PanelBoundary>
+      <PanelBoundary title="Feature health" skeleton={<SkeletonStat />}>
+        <FeatureHealthPanel />
       </PanelBoundary>
       <PanelBoundary title="Deploys" skeleton={<SkeletonStat />}>
         <DeployRail />

@@ -2,6 +2,12 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+import {
+  fetchFeatureHealth,
+  summarizeFeatureHealth,
+  computeFeatureHealthBanner,
+  type FeatureHealthSummary,
+} from '@/lib/admin/data/feature-health';
 
 export interface OverviewKpis {
   sentryUnresolved: number | null;
@@ -64,6 +70,7 @@ export async function fetchOverviewSnapshot() {
     lastLogin,
     lastError,
     lastCron,
+    featureHealthRaw,
   ] = await Promise.all([
     fetchSentryIssues({ limit: 1 }),
     fetchVercelDeployments(5),
@@ -87,6 +94,11 @@ export async function fetchOverviewSnapshot() {
       .eq('event_type', 'error').order('created_at', { ascending: false }).limit(1),
     admin.from('background_job_logs').select('started_at')
       .order('started_at', { ascending: false }).limit(1),
+    // Additive (W16 Task 5): fetchFeatureHealth manages its OWN user-scoped
+    // client internally (the RPC gates on auth.uid()) and never throws —
+    // RPC failure degrades to an all-neutral, all-degraded snapshot rather
+    // than blocking the rest of Overview.
+    fetchFeatureHealth(),
   ]);
 
   const lastDeployRow = deploys.data?.[0] ?? null;
@@ -119,15 +131,27 @@ export async function fetchOverviewSnapshot() {
   ];
   const watcher = watcherBase.map((s) => ({ ...s, stale: isSignalStale(s, now) }));
 
+  // Additive (W16 Task 5) — compact Feature Health rollup + banner
+  // discipline (Noise Charter N6): only a RED feature escalates the banner
+  // to 'critical'; a fresh fingerprint on an otherwise-clean feature is a
+  // softer 'attention' signal; amber/warnings alone contribute NOTHING.
+  const featureHealth: FeatureHealthSummary = summarizeFeatureHealth(featureHealthRaw, now);
+  const featureHealthBanner = computeFeatureHealthBanner(featureHealth);
+  const featureHealthCriticalCount = featureHealth.red;
+  const featureHealthAttentionCount = featureHealth.red === 0 && featureHealth.newFingerprints24h > 0 ? 1 : 0;
+
   const attentionFromDeploy = kpis.lastDeploy?.state === 'ERROR' ? 1 : 0;
   const banner = {
     ...computeBannerState({
-      criticalCount: criticals24h.count ?? 0,
-      attentionCount: attentionFromDeploy,
-      anyFeedStale: sentry.status === 'error' || watcher.some((w) => w.stale),
+      criticalCount: (criticals24h.count ?? 0) + featureHealthCriticalCount,
+      attentionCount: attentionFromDeploy + featureHealthAttentionCount,
+      anyFeedStale: sentry.status === 'error' || watcher.some((w) => w.stale) || featureHealth.degraded,
     }),
     checkedAt: now.toISOString(),
+    // Single-line banner detail per N6 (never a wall of routine noise) —
+    // null when the rollup contributes nothing (0 red, no new fingerprints).
+    featureHealthLine: featureHealthBanner.line,
   };
 
-  return { kpis, banner, watcher };
+  return { kpis, banner, watcher, featureHealth };
 }
