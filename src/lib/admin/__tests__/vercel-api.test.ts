@@ -1,0 +1,51 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const fetchMock = vi.fn();
+vi.stubGlobal('fetch', fetchMock);
+
+import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+
+describe('fetchVercelDeployments', () => {
+  beforeEach(() => {
+    vi.stubEnv('VERCEL_API_TOKEN', 'tok');
+    vi.stubEnv('VERCEL_PROJECT_ID', 'prj_1');
+    vi.stubEnv('VERCEL_TEAM_ID', 'team_1');
+    fetchMock.mockReset();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('returns unconfigured when the token trio is absent', async () => {
+    vi.stubEnv('VERCEL_API_TOKEN', '');
+    const res = await fetchVercelDeployments();
+    expect(res.status).toBe('unconfigured');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('maps deployments and always sends teamId (empty-results footgun)', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({
+      deployments: [{
+        uid: 'dpl_1', state: 'READY', createdAt: 1751328000000, ready: 1751328100000,
+        target: 'production', url: 'helmv3-abc.vercel.app',
+        meta: {
+          githubCommitSha: 'abc123', githubCommitMessage: 'feat: x',
+          githubCommitRef: 'main', githubCommitAuthorName: 'nick',
+        },
+      }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    const res = await fetchVercelDeployments(5);
+    expect(res.status).toBe('ok');
+    expect(res.data![0]).toMatchObject({
+      uid: 'dpl_1', state: 'READY', commitSha: 'abc123', commitRef: 'main', target: 'production',
+    });
+    const url = String(fetchMock.mock.calls[0]![0]);
+    expect(url).toContain('teamId=team_1');
+    expect(url).toContain('limit=5');
+  });
+
+  it('fails soft on non-200', async () => {
+    fetchMock.mockResolvedValue(new Response('nope', { status: 403 }));
+    const res = await fetchVercelDeployments();
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('403');
+  });
+});
