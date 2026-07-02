@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
 import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
 import { AdminMotionProvider } from './_motion-provider';
+import { AdminShell } from './_components/AdminShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export default async function AdminLayout({
   return (
     <AdminMotionProvider>
       <AdminNativeGuard />
-      {children}
+      <AdminShell email={probe.context.email}>{children}</AdminShell>
     </AdminMotionProvider>
   );
 }
