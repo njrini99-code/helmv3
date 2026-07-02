@@ -1,11 +1,12 @@
 // =============================================================================
 // src/app/baseball/(player-dashboard)/player/passport/page.tsx
 //
-// V5 Player Passport — the DEDICATED full passport surface (self view).
-//
-// Spec: docs/.../19_breakthrough_product_systems_v5/
-//        v5_player_passport_and_recruiting_showcase_system.md
-//   "Recruiting platforms have profiles. BaseballHelm should have proof."
+// V5 Player Passport — the DEDICATED full passport surface (self view), now
+// composed on the "Living Annual" kit (docs/baseball/design-system-living-
+// annual.md; execution plan docs/baseball/ui-migration-execution-plan.md §3.3
+// `passport`). PRESENTATION ONLY — the data flow below (context resolution,
+// getPlayerPassport/getPassportSettingsForEditor, redirect, prop shapes into
+// PassportVisibilityControls) is byte-for-byte the same as before this pass.
 //
 // The compact Passport on Today is a snapshot; THIS page is the full,
 // source-backed proof packet — Identity + Verified Measurables + Development
@@ -16,8 +17,17 @@
 // id from the URL) and only assembles that player's data. RLS + the read model's
 // viewer gate back every section; nothing here widens access.
 //
-// HONESTY: an unauthorized envelope renders the not-available state (the card's
-// own empty state) rather than redirect-looping or fabricating a passport.
+// HONESTY: an unauthorized envelope renders the not-available state (the
+// Fairway component's own empty state) rather than redirect-looping or
+// fabricating a passport.
+//
+// SCOPE: `/baseball/player/*` (the `(player-dashboard)` route group) has no
+// Fairway shell equivalent to `(dashboard)/BaseballFairwayShell.tsx` yet — that
+// shell is explicitly frozen to its own route group this migration (§6). This
+// page therefore carries BOTH the `.fairway-ds` token scope and the
+// `.living-annual` cream override itself (mirroring what the legacy
+// `bg-cream-100` wrapper did), same as the page-local pattern documented in
+// §1 for a surface no ancestor shell already scopes.
 // =============================================================================
 
 import { redirect } from 'next/navigation';
@@ -29,10 +39,13 @@ import {
   getPassportSettingsForEditor,
 } from '@/lib/baseball/read-models/player-passport';
 import {
-  PlayerPassportCard,
+  PlayerPassportFairway,
   PassportVisibilityControls,
 } from '@/components/baseball/passport';
-import { IconArrowLeft, IconAlertCircle, IconShieldCheck } from '@/components/icons';
+import { EditorsLetter, pressableClass } from '@/components/baseball/living-annual';
+import { fairwayScope } from '@/lib/redesign/flag';
+import { cn } from '@/lib/utils';
+import { IconArrowLeft } from '@/components/icons';
 
 export const metadata = {
   title: 'Passport · BaseballHelm',
@@ -59,65 +72,56 @@ export default async function PlayerPassportPage() {
   ]);
 
   return (
-    <div className="min-h-dvh bg-cream-100">
+    <div className={cn(fairwayScope('min-h-dvh'), 'living-annual')}>
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
         {/* Back to Today */}
         <Link
           href="/baseball/player/today"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-warm-500 transition-colors hover:text-warm-700"
+          className={pressableClass({
+            ink: 'team',
+            tint: false,
+            className:
+              'mb-6 inline-flex items-center gap-1.5 rounded-fw-sm text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary hover:text-grade-plus',
+          })}
         >
-          <IconArrowLeft size={16} />
+          <IconArrowLeft size={14} aria-hidden />
           Back to Today
         </Link>
-
-        <header className="mb-8">
-          <p className="text-eyebrow font-semibold uppercase tracking-wide text-primary-600">
-            Player Passport
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">
-            Your proof packet
-          </h1>
-          <p className="mt-1 text-warm-500">
-            Source-backed identity, measurables, development story, video, and performance —
-            everything that turns a profile into proof.
-          </p>
-        </header>
 
         {/* Exposure-state callout — surfaced prominently so the player always
             knows whether their passport is visible to scouts or locked internally.
             When staff_only, a non-alarmist nudge directs them to the controls
             below to unlock. When exposed, a confirmation keeps them informed. */}
-        {settings.playerId && (
-          <>
-            {settings.visibilityState === 'staff_only' && (
-              <div className="mb-6 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5">
-                <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                <div>
-                  <p className="text-sm font-medium text-amber-900">
-                    Your passport is internal-only
-                  </p>
-                  <p className="mt-0.5 text-sm text-amber-700">
-                    College coaches and scouts can&apos;t see it yet. Use the Visibility Controls
-                    below to set your exposure level when you&apos;re ready.
-                  </p>
-                </div>
-              </div>
-            )}
-            {(settings.visibilityState === 'public_profile' ||
-              settings.visibilityState === 'scout_packet') && (
-              <div className="mb-6 flex items-start gap-2.5 rounded-2xl border border-primary-100 bg-primary-50/60 px-4 py-3.5">
-                <IconShieldCheck size={16} className="mt-0.5 shrink-0 text-primary-600" />
-                <p className="text-sm text-primary-800">
-                  {settings.visibilityState === 'scout_packet'
-                    ? 'Your passport is exposed and scout-packet-ready. Your program can share it with college coaches.'
-                    : 'Your passport is publicly visible. Your profile fields are available to anyone with the link.'}
-                </p>
-              </div>
-            )}
-          </>
-        )}
+        {settings.playerId && settings.visibilityState === 'staff_only' ? (
+          <EditorsLetter
+            className="mb-6"
+            ink="team"
+            title="Your passport is internal-only"
+            body="College coaches and scouts can't see it yet. Use the Visibility Controls below to set your exposure level when you're ready."
+          />
+        ) : null}
+        {settings.playerId &&
+        (settings.visibilityState === 'public_profile' ||
+          settings.visibilityState === 'scout_packet') ? (
+          <EditorsLetter
+            className="mb-6"
+            ink="team"
+            live
+            liveLabel={settings.visibilityState === 'scout_packet' ? 'Scout packet ready' : 'Public'}
+            title={
+              settings.visibilityState === 'scout_packet'
+                ? 'Exposed & scout-packet-ready'
+                : 'Your passport is public'
+            }
+            body={
+              settings.visibilityState === 'scout_packet'
+                ? 'Your program can share your passport with college coaches.'
+                : 'Your profile fields are available to anyone with the link.'
+            }
+          />
+        ) : null}
 
-        <PlayerPassportCard model={passport} />
+        <PlayerPassportFairway model={passport} />
 
         {/* Visibility Controls — the WRITE surface for exposure + per-field
             visibility. Self path: no playerId. Only rendered when this player has

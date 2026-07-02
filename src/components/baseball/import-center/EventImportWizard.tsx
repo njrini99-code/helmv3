@@ -15,19 +15,21 @@
 // pitchers once, so the coach confirms a short list, not 300 rows. The diff
 // viewer (previewCommit) shows exactly what commit() will write.
 //
-// Cream/green tokens + GolfHelm primitives. Honest loading/empty/error states.
-// All writes go through the capability-gated server actions.
+// LIVING ANNUAL PRESENTATION — every step is a PaperCard on the fairway Button
+// + InkBadge vocabulary; the step mount transition runs on the kit's `<Reveal>`
+// (Stage-0 interaction layer) instead of a hand-rolled framer-motion fade.
+// Honest loading/empty/error states, never a yellow/amber box. All writes go
+// through the SAME capability-gated server actions — adapter wiring untouched.
 // =============================================================================
 
 import { useCallback, useMemo, useState } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/sonner';
 import { IconWarning } from '@/components/icons';
+import { PaperCard, InkBadge, KPIContentsStrip, Reveal } from '@/components/baseball/living-annual';
 
 import { ImportDiffViewer } from '@/components/baseball/import-center/ImportDiffViewer';
 import { SourceDetectionCard } from '@/components/baseball/import-center/SourceDetectionCard';
@@ -68,7 +70,6 @@ type Step =
   | 'manualmap'; // GAP 6 — PDF preserve-for-manual bridge
 
 export function EventImportWizard({ teamId, teamName, players, eventSources }: Props) {
-  const prefersReducedMotion = useReducedMotion();
   const { addToast } = useToast();
 
   const [step, setStep] = useState<Step>('upload');
@@ -87,14 +88,6 @@ export function EventImportWizard({ teamId, teamName, players, eventSources }: P
   const [result, setResult] = useState<CommitEventImportResult | null>(null);
 
   const activeSource = eventSources.find((s) => s.key === sourceKey) ?? eventSources[0];
-
-  const fade = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
-      };
 
   const onFile = useCallback((file: File) => {
     setError(null);
@@ -350,342 +343,315 @@ export function EventImportWizard({ teamId, teamName, players, eventSources }: P
   }, []);
 
   return (
-    <LazyMotion features={domAnimation}>
-      <div className="space-y-6">
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-error/30 bg-error/5 px-4 py-3 text-sm text-error"
-          >
-            {error}
-          </div>
+    <div className="space-y-6">
+      {error && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3"
+        >
+          <InkBadge label="Error" tone="sodium" variant="solid" />
+          <p className="text-body-sm text-text-secondary">{error}</p>
+        </div>
+      )}
+
+      <Reveal key={step}>
+        {/* UPLOAD */}
+        {step === 'upload' && (
+          <PaperCard className="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+            <div>
+              <h2 className="font-annual text-h3 font-semibold text-text-primary">Event-level import</h2>
+              <p className="mt-1 text-body-sm text-text-secondary">
+                Pitch, batted-ball and swing data parsed with the vendor&apos;s real format —
+                not as a generic spreadsheet. Every row carries its source, trust and context.
+              </p>
+            </div>
+            <NativeSelect
+              label="Source"
+              value={sourceKey}
+              onChange={(e) => setSourceKey(e.target.value as BaseballSourceKey)}
+              options={eventSources.map((s) => ({ value: s.key, label: s.label }))}
+            />
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed border-[color:var(--hairline)] bg-[var(--paper)] px-6 py-10 text-center transition-colors hover:border-grade-plus/50 hover:bg-grade-plus/[0.04]">
+              {/* eslint-disable-next-line helm/no-raw-input */}
+              <input
+                type="file"
+                accept={activeSource?.accept ?? '.csv,.xml'}
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onFile(f);
+                }}
+              />
+              <span className="text-body-sm font-medium text-text-primary">
+                {fileName || `Choose a ${activeSource?.label ?? ''} file`}
+              </span>
+              <span className="mt-1 text-caption text-text-tertiary">
+                {activeSource?.accept.includes('xml')
+                  ? 'XML play-by-play export.'
+                  : 'CSV / TSV export from the device or platform.'}
+              </span>
+            </label>
+            <div className="flex items-center justify-end">
+              <Button onClick={runPreview} busy={busy} disabled={!fileBody.trim()}>
+                Parse file
+              </Button>
+            </div>
+          </PaperCard>
         )}
 
-        <m.div key={step} {...fade}>
-          {/* UPLOAD */}
-          {step === 'upload' && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-5 p-0">
-                <div>
-                  <h2 className="text-xl font-semibold text-warm-900">Event-level import</h2>
-                  <p className="mt-1 text-sm text-warm-600">
-                    Pitch, batted-ball and swing data parsed with the vendor&apos;s real format —
-                    not as a generic spreadsheet. Every row carries its source, trust and context.
-                  </p>
-                </div>
-                <NativeSelect
-                  label="Source"
-                  value={sourceKey}
-                  onChange={(e) => setSourceKey(e.target.value as BaseballSourceKey)}
-                  options={eventSources.map((s) => ({ value: s.key, label: s.label }))}
-                />
-                <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-warm-200 bg-cream-50 px-6 py-10 text-center transition-colors hover:border-primary-400 hover:bg-primary-50/40">
-                  {/* eslint-disable-next-line helm/no-raw-input */}
-                  <input
-                    type="file"
-                    accept={activeSource?.accept ?? '.csv,.xml'}
-                    className="sr-only"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) onFile(f);
-                    }}
-                  />
-                  <span className="text-sm font-medium text-warm-800">
-                    {fileName || `Choose a ${activeSource?.label ?? ''} file`}
-                  </span>
-                  <span className="mt-1 text-xs text-warm-500">
-                    {activeSource?.accept.includes('xml')
-                      ? 'XML play-by-play export.'
-                      : 'CSV / TSV export from the device or platform.'}
-                  </span>
-                </label>
-                <div className="flex justify-end">
-                  <Button onClick={runPreview} isLoading={busy} disabled={!fileBody.trim()}>
-                    Parse file
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {/* DETECT (provider detection — source + grain + trust + auto-commit) */}
+        {step === 'detect' && preview && (
+          <PaperCard className="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+            <div>
+              <h2 className="font-annual text-h3 font-semibold text-text-primary">Provider detection</h2>
+              <p className="mt-1 text-body-sm text-text-secondary">
+                This is what we recognized in your file. Confirm it looks right before matching
+                players.
+              </p>
+            </div>
+            <SourceDetectionCard detection={preview.detection} fileName={fileName} />
+            <div className="flex items-center justify-between pt-2">
+              <Button variant="ghost" onClick={() => setStep('upload')}>
+                Back
+              </Button>
+              {preview.eventRowCount > 0 ? (
+                <Button onClick={() => setStep('match')}>Match players</Button>
+              ) : preview.detection.preservedText ? (
+                // GAP 6 — preserve-for-manual (PDF): offer the manual-mapping
+                // bridge into the flat pipeline instead of a dead end.
+                <Button onClick={() => setStep('manualmap')}>Map these lines</Button>
+              ) : (
+                <Button variant="ghost" onClick={reset}>
+                  Start over
+                </Button>
+              )}
+            </div>
+          </PaperCard>
+        )}
 
-          {/* DETECT (provider detection — source + grain + trust + auto-commit) */}
-          {step === 'detect' && preview && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-5 p-0">
-                <div>
-                  <h2 className="text-xl font-semibold text-warm-900">Provider detection</h2>
-                  <p className="mt-1 text-sm text-warm-600">
-                    This is what we recognized in your file. Confirm it looks right before matching
-                    players.
-                  </p>
+        {/* MATCH (distinct players) */}
+        {step === 'match' && preview && (
+          <PaperCard className="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-annual text-h3 font-semibold text-text-primary">Confirm players</h2>
+              <p className="text-body-sm text-text-secondary">
+                {Object.values(overrides).filter(Boolean).length}/{preview.resolutions.length}{' '}
+                matched
+              </p>
+            </div>
+            <p className="text-body-sm text-text-secondary">
+              {preview.eventRowCount} events from {preview.resolutions.length} players. Confirm
+              each one — events for unmatched players are skipped.
+            </p>
+            <div className="max-h-[26rem] overflow-auto rounded-card border border-[color:var(--hairline)]">
+              <table className="w-full min-w-[560px] text-body-sm">
+                <thead className="sticky top-0 z-10 bg-[var(--paper)] text-left text-text-tertiary">
+                  <tr>
+                    <th className="px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">From file</th>
+                    <th className="px-3 py-2 text-right text-eyebrow font-semibold uppercase tracking-[0.14em]">Events</th>
+                    <th className="px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Player</th>
+                    <th className="px-3 py-2 text-right text-eyebrow font-semibold uppercase tracking-[0.14em]">Auto match</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.resolutions.map((r) => (
+                    <tr key={r.handle} className="border-t border-[color:var(--hairline)]">
+                      <td className="px-3 py-2 text-text-primary">{r.externalName || '—'}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
+                        {r.rowCount}
+                      </td>
+                      <td className="px-3 py-2">
+                        <NativeSelect
+                          aria-label={`Match player for ${r.externalName || 'row'}`}
+                          value={overrides[r.handle] ?? ''}
+                          onChange={(e) =>
+                            setOverrides((prev) => ({
+                              ...prev,
+                              [r.handle]: e.target.value || null,
+                            }))
+                          }
+                          options={[
+                            { value: '', label: '— Unmatched —' },
+                            ...players.map((p) => ({
+                              value: p.id,
+                              label: `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim(),
+                            })),
+                          ]}
+                        />
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <ConfBadge value={r.confidence} matched={!!r.playerId} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <Button variant="ghost" onClick={() => setStep('detect')}>
+                Back
+              </Button>
+              <Button onClick={() => setStep('preview')}>Review changes</Button>
+            </div>
+          </PaperCard>
+        )}
+
+        {/* PREVIEW (Diff Viewer) */}
+        {step === 'preview' && preview && livePlan && (
+          <PaperCard className="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+            <h2 className="font-annual text-h3 font-semibold text-text-primary">Review changes</h2>
+            <ImportDiffViewer
+              sourceLabel={preview.sourceLabel}
+              rowsRead={preview.rowsRead}
+              eventRowCount={preview.eventRowCount}
+              plan={preview.plan}
+              validation={preview.validation}
+              matchedPlayers={livePlan.matchedPlayers}
+              totalPlayers={livePlan.totalPlayers}
+            />
+            <p className="text-body-sm text-text-secondary">
+              Committing writes to <strong className="font-semibold text-text-primary">{teamName}</strong> as one audited run you can roll
+              back.
+            </p>
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" onClick={() => setStep('match')}>
+                Back
+              </Button>
+              <Button onClick={() => doCommit()} busy={busy} disabled={!canCommit}>
+                Commit import
+              </Button>
+            </div>
+          </PaperCard>
+        )}
+
+        {/* MANUAL MAP (GAP 6 — PDF preserve-for-manual bridge) */}
+        {step === 'manualmap' && preview && (
+          <ManualMapPanel
+            preservedText={preview.detection.preservedText ?? ''}
+            fileName={fileName}
+            busy={busy}
+            onCancel={() => setStep('detect')}
+            onConfirm={doManualMap}
+          />
+        )}
+
+        {/* COMMITTING */}
+        {step === 'committing' && (
+          <PaperCard className="space-y-3 px-6 py-6 sm:px-8 sm:py-8">
+            <h2 className="font-annual text-h3 font-semibold text-text-primary">Writing events…</h2>
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </PaperCard>
+        )}
+
+        {/* DONE */}
+        {step === 'done' && result && (
+          <PaperCard className="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
+            {result.duplicateFileRun ? (
+              // GAP 2 — exact-duplicate file: nothing written; offer force.
+              <>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-md border border-sodium/30 bg-sodium/[0.1] text-sodium">
+                    <IconWarning size={18} />
+                  </span>
+                  <div>
+                    <h2 className="font-annual text-h3 font-semibold text-text-primary">Already imported</h2>
+                    <p className="mt-1 text-body-sm text-text-secondary">
+                      This exact file
+                      {result.duplicateFileRun.committedAt
+                        ? ` was committed on ${new Date(result.duplicateFileRun.committedAt).toLocaleDateString()}`
+                        : ' was already committed'}
+                      , so nothing was written. Re-import the identical file only if you mean to.
+                    </p>
+                  </div>
                 </div>
-                <SourceDetectionCard detection={preview.detection} fileName={fileName} />
-                <div className="flex items-center justify-between pt-2">
-                  <Button variant="ghost" onClick={() => setStep('upload')}>
-                    Back
+                <div className="flex gap-3">
+                  <Button onClick={reset}>Import another file</Button>
+                  <Button
+                    variant="ghost"
+                    busy={busy}
+                    onClick={() => doCommit(true)}
+                  >
+                    Re-import anyway
                   </Button>
-                  {preview.eventRowCount > 0 ? (
-                    <Button onClick={() => setStep('match')}>Match players</Button>
-                  ) : preview.detection.preservedText ? (
-                    // GAP 6 — preserve-for-manual (PDF): offer the manual-mapping
-                    // bridge into the flat pipeline instead of a dead end.
-                    <Button onClick={() => setStep('manualmap')}>Map these lines</Button>
-                  ) : (
-                    <Button variant="ghost" onClick={reset}>
-                      Start over
+                </div>
+              </>
+            ) : result.heldForReview ? (
+              // GAP 4 — held for review: zero rows; coach approves later.
+              <>
+                <h2 className="font-annual text-h3 font-semibold text-text-primary">Sent for review</h2>
+                <p className="text-body-sm text-text-secondary">
+                  This source holds for coach review, so no events were written. The run is in
+                  the review queue — approve or reject it from <strong className="font-semibold text-text-primary">Recent imports</strong>{' '}
+                  in the standard import center.
+                </p>
+                <div className="flex gap-3">
+                  <Button onClick={reset}>Import another file</Button>
+                  {result.importRunId && (
+                    <Button
+                      variant="primary"
+                      busy={busy}
+                      onClick={async () => {
+                        await reviewEventImportRun({
+                          teamId,
+                          importRunId: result.importRunId,
+                          decision: 'approve',
+                        });
+                        addToast({
+                          type: 'success',
+                          title: 'Approved',
+                          description: 'The held events were written.',
+                        });
+                        reset();
+                      }}
+                    >
+                      Approve now
                     </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* MATCH (distinct players) */}
-          {step === 'match' && preview && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-4 p-0">
-                <div className="flex items-baseline justify-between">
-                  <h2 className="text-xl font-semibold text-warm-900">Confirm players</h2>
-                  <p className="text-sm text-warm-600">
-                    {Object.values(overrides).filter(Boolean).length}/{preview.resolutions.length}{' '}
-                    matched
+              </>
+            ) : (
+              <>
+                <h2 className="font-annual text-h3 font-semibold text-text-primary">
+                  {result.correctionOf ? 'Correction imported' : 'Import complete'}
+                </h2>
+                {result.correctionOf && (
+                  <p className="text-body-sm text-text-secondary">
+                    This file corrected an earlier import. Prior values were superseded (kept for
+                    history) — rolling back restores them.
                   </p>
-                </div>
-                <p className="text-sm text-warm-600">
-                  {preview.eventRowCount} events from {preview.resolutions.length} players. Confirm
-                  each one — events for unmatched players are skipped.
-                </p>
-                <div className="max-h-[26rem] overflow-auto rounded-xl border border-warm-200">
-                  <table className="w-full min-w-[560px] text-sm">
-                    <thead className="sticky top-0 z-10 bg-cream-100 text-left text-warm-600">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">From file</th>
-                        <th className="px-3 py-2 font-medium text-right">Events</th>
-                        <th className="px-3 py-2 font-medium">Player</th>
-                        <th className="px-3 py-2 font-medium text-right">Auto match</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.resolutions.map((r) => (
-                        <tr key={r.handle} className="border-t border-warm-100">
-                          <td className="px-3 py-2 text-warm-800">{r.externalName || '—'}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-warm-600">
-                            {r.rowCount}
-                          </td>
-                          <td className="px-3 py-2">
-                            <NativeSelect
-                              aria-label={`Match player for ${r.externalName || 'row'}`}
-                              value={overrides[r.handle] ?? ''}
-                              onChange={(e) =>
-                                setOverrides((prev) => ({
-                                  ...prev,
-                                  [r.handle]: e.target.value || null,
-                                }))
-                              }
-                              options={[
-                                { value: '', label: '— Unmatched —' },
-                                ...players.map((p) => ({
-                                  value: p.id,
-                                  label: `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim(),
-                                })),
-                              ]}
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <ConfBadge value={r.confidence} matched={!!r.playerId} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex items-center justify-between pt-2">
-                  <Button variant="ghost" onClick={() => setStep('detect')}>
-                    Back
-                  </Button>
-                  <Button onClick={() => setStep('preview')}>Review changes</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* PREVIEW (Diff Viewer) */}
-          {step === 'preview' && preview && livePlan && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-5 p-0">
-                <h2 className="text-xl font-semibold text-warm-900">Review changes</h2>
-                <ImportDiffViewer
-                  sourceLabel={preview.sourceLabel}
-                  rowsRead={preview.rowsRead}
-                  eventRowCount={preview.eventRowCount}
-                  plan={preview.plan}
-                  validation={preview.validation}
-                  matchedPlayers={livePlan.matchedPlayers}
-                  totalPlayers={livePlan.totalPlayers}
-                />
-                <p className="text-sm text-warm-600">
-                  Committing writes to <strong>{teamName}</strong> as one audited run you can roll
-                  back.
-                </p>
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" onClick={() => setStep('match')}>
-                    Back
-                  </Button>
-                  <Button onClick={() => doCommit()} isLoading={busy} disabled={!canCommit}>
-                    Commit import
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* MANUAL MAP (GAP 6 — PDF preserve-for-manual bridge) */}
-          {step === 'manualmap' && preview && (
-            <ManualMapPanel
-              preservedText={preview.detection.preservedText ?? ''}
-              fileName={fileName}
-              busy={busy}
-              onCancel={() => setStep('detect')}
-              onConfirm={doManualMap}
-            />
-          )}
-
-          {/* COMMITTING */}
-          {step === 'committing' && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-3 p-0">
-                <h2 className="text-xl font-semibold text-warm-900">Writing events…</h2>
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-3/4" />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* DONE */}
-          {step === 'done' && result && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-4 p-0">
-                {result.duplicateFileRun ? (
-                  // GAP 2 — exact-duplicate file: nothing written; offer force.
-                  <>
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
-                        <IconWarning size={18} />
-                      </span>
-                      <div>
-                        <h2 className="text-xl font-semibold text-warm-900">Already imported</h2>
-                        <p className="mt-1 text-sm text-warm-600">
-                          This exact file
-                          {result.duplicateFileRun.committedAt
-                            ? ` was committed on ${new Date(result.duplicateFileRun.committedAt).toLocaleDateString()}`
-                            : ' was already committed'}
-                          , so nothing was written. Re-import the identical file only if you mean to.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <Button onClick={reset}>Import another file</Button>
-                      <Button
-                        variant="ghost"
-                        isLoading={busy}
-                        onClick={() => doCommit(true)}
-                      >
-                        Re-import anyway
-                      </Button>
-                    </div>
-                  </>
-                ) : result.heldForReview ? (
-                  // GAP 4 — held for review: zero rows; coach approves later.
-                  <>
-                    <h2 className="text-xl font-semibold text-warm-900">Sent for review</h2>
-                    <p className="text-sm text-warm-600">
-                      This source holds for coach review, so no events were written. The run is in
-                      the review queue — approve or reject it from <strong>Recent imports</strong>{' '}
-                      in the standard import center.
-                    </p>
-                    <div className="flex gap-3">
-                      <Button onClick={reset}>Import another file</Button>
-                      {result.importRunId && (
-                        <Button
-                          variant="primary"
-                          isLoading={busy}
-                          onClick={async () => {
-                            await reviewEventImportRun({
-                              teamId,
-                              importRunId: result.importRunId,
-                              decision: 'approve',
-                            });
-                            addToast({
-                              type: 'success',
-                              title: 'Approved',
-                              description: 'The held events were written.',
-                            });
-                            reset();
-                          }}
-                        >
-                          Approve now
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-xl font-semibold text-warm-900">
-                      {result.correctionOf ? 'Correction imported' : 'Import complete'}
-                    </h2>
-                    {result.correctionOf && (
-                      <p className="text-sm text-warm-600">
-                        This file corrected an earlier import. Prior values were superseded (kept for
-                        history) — rolling back restores them.
-                      </p>
-                    )}
-                    <div className="grid grid-cols-3 gap-3">
-                      <DoneStat label="New" value={result.created} />
-                      <DoneStat label="Updated" value={result.updated} />
-                      <DoneStat label="Skipped" value={result.skipped} muted />
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      <Button onClick={reset}>Import another file</Button>
-                      <Button variant="ghost" onClick={() => doDownload(result.importRunId)}>
-                        Download source file
-                      </Button>
-                      <Button variant="ghost" onClick={() => doRollback(result.importRunId)}>
-                        Roll back this import
-                      </Button>
-                    </div>
-                  </>
                 )}
-              </CardContent>
-            </Card>
-          )}
-        </m.div>
-      </div>
-    </LazyMotion>
+                <KPIContentsStrip
+                  columns={3}
+                  items={[
+                    { label: 'New', value: result.created, emphasis: true },
+                    { label: 'Updated', value: result.updated, emphasis: true },
+                    { label: 'Skipped', value: result.skipped },
+                  ]}
+                />
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={reset}>Import another file</Button>
+                  <Button variant="ghost" onClick={() => doDownload(result.importRunId)}>
+                    Download source file
+                  </Button>
+                  <Button variant="danger" onClick={() => doRollback(result.importRunId)}>
+                    Roll back this import
+                  </Button>
+                </div>
+              </>
+            )}
+          </PaperCard>
+        )}
+      </Reveal>
+    </div>
   );
 }
 
 function ConfBadge({ value, matched }: { value: number; matched: boolean }) {
-  if (!matched) return <span className="text-xs font-medium text-warm-400">manual</span>;
+  if (!matched) return <InkBadge label="Manual" tone="neutral" />;
   const pct = Math.round(value * 100);
-  const tone =
-    value >= 0.9
-      ? 'bg-primary-50 text-primary-700'
-      : value >= 0.7
-        ? 'bg-warning/10 text-warning'
-        : 'bg-error/10 text-error';
-  return <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>{pct}%</span>;
-}
-
-function DoneStat({ label, value, muted }: { label: string; value: number; muted?: boolean }) {
-  return (
-    <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3">
-      <div
-        className={`text-2xl font-semibold tabular-nums ${muted ? 'text-warm-400' : 'text-primary-700'}`}
-      >
-        {value}
-      </div>
-      <div className="text-xs uppercase tracking-wide text-warm-500">{label}</div>
-    </div>
-  );
+  const tone = value >= 0.9 ? 'team' : 'sodium';
+  const variant = value >= 0.9 ? 'soft' : value >= 0.7 ? 'soft' : 'solid';
+  return <InkBadge label={`${pct}%`} tone={tone} variant={variant} />;
 }

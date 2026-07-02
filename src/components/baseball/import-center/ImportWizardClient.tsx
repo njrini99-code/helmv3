@@ -17,21 +17,39 @@
 // the "Event level" tab in ImportCenterShell). Selecting it here routes the
 // coach there with a clear explanation rather than dead-ending.
 //
-// Cream/green tokens + glass/matte primitives. Honest per-step states (loading,
-// empty, error). framer-motion via LazyMotion/domAnimation + useReducedMotion.
-// All writes go through the capability-gated server actions in actions/imports.ts.
+// LIVING ANNUAL PRESENTATION — every step lives on a PaperCard; severity
+// (blocking / warning / info) reads through InkBadge tone+variant (sodium
+// solid = blocking, sodium soft = warning, neutral = info) instead of a
+// yellow/amber/red box; the step transition runs on the kit's `<Reveal>`
+// (Stage-0 interaction layer) instead of a hand-rolled framer-motion fade;
+// zero/empty states (no rows to match, no import history) render through
+// `<EditorsLetter>`. Presentation only — every server action, validation
+// pass, and dedup/duplicate-verdict computation below is UNCHANGED from the
+// prior surface; adapter wiring is untouched.
 // =============================================================================
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/sonner';
+import { IconWarning } from '@/components/icons';
+
+import {
+  PaperCard,
+  SectionMasthead,
+  Eyebrow,
+  HairlineRule,
+  InkBadge,
+  KPIContentsStrip,
+  EditorsLetter,
+  Reveal,
+  pressableClass,
+} from '@/components/baseball/living-annual';
+
+import { cn } from '@/lib/utils';
 
 import { BASEBALL_IMPORT_SOURCES } from '@/lib/baseball/import-matching';
 import { applyManualMatch, describeMatchablePlayer } from '@/lib/baseball/import-matching';
@@ -61,7 +79,6 @@ import type {
 } from '@/lib/types/baseball-imports';
 import { isBinaryFileName } from '@/lib/baseball/adapters/import-file-body';
 import { xlsxToCsv } from '@/lib/baseball/adapters/xlsx-reader';
-import { IconWarning } from '@/components/icons';
 
 // -----------------------------------------------------------------------------
 // DATA SHAPE — drives column template, target table, dedup key.
@@ -159,7 +176,7 @@ interface Props {
    */
   registeredSources?: RegisteredSourceOption[];
   /**
-   * When false the internal <h1> header and subtitle are suppressed.
+   * When false the internal header is suppressed.
    * Pass false when rendering inside a shell that already renders its own header
    * (ImportCenterShell) to avoid two stacked "Import Center" headings.
    * Defaults to true so standalone usages keep their header.
@@ -229,7 +246,6 @@ export function ImportWizardClient({
   showHeader = true,
   onRequestEventLevel,
 }: Props) {
-  const prefersReducedMotion = useReducedMotion();
   const { addToast } = useToast();
 
   // Source picker options: registered (merged) sources when provided, else the
@@ -279,14 +295,6 @@ export function ImportWizardClient({
     runId: string;
     committedAt: string | null;
   } | null>(null);
-
-  const fadeProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
-      };
 
   // ---- step 1: file selection ------------------------------------------------
   // The box-score path stores a CSV string the server parses. A workbook (.xlsx)
@@ -695,772 +703,759 @@ export function ImportWizardClient({
   const shapeMeta = DATA_SHAPE_META[dataShape];
 
   return (
-    <LazyMotion features={domAnimation}>
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
-        {showHeader && (
-          <header className="mb-6">
-            <h1 className="text-3xl font-semibold text-warm-900">Import Center</h1>
-            <p className="mt-1 text-warm-600">
-              Bring stats into <span className="font-medium text-warm-800">{teamName}</span> from an
+    <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 py-8">
+      {showHeader && (
+        <Reveal>
+          <SectionMasthead eyebrow="THE PRESSBOX · IMPORT CENTER" title="Import Center" ink="team">
+            <p className="max-w-2xl font-annual text-body-lg leading-relaxed text-text-secondary">
+              Bring stats into <span className="font-semibold text-text-primary">{teamName}</span> from an
               export. Every import is auditable and can be rolled back.
             </p>
-          </header>
-        )}
+          </SectionMasthead>
+        </Reveal>
+      )}
 
-        {/* Stepper — hidden on the 'choose' step (pre-wizard selection). */}
-        {step !== 'choose' && (
-          <div className="mb-6 flex flex-wrap items-center gap-2">
-            {/* Shape badge — shows what the coach chose. */}
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">
-              {shapeMeta.label}
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Change data shape"
-                onClick={() => { setStep('choose'); setError(null); }}
-                className="ml-0.5 rounded-full p-0.5 hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+      {/* Stepper — hidden on the 'choose' step (pre-wizard selection). */}
+      {step !== 'choose' && (
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Shape badge — shows what the coach chose. */}
+          <span className="inline-flex items-center gap-1.5">
+            <InkBadge label={shapeMeta.label} tone="team" variant="solid" />
+            {/* An icon-only affordance riding beside an InkBadge, not a CTA —
+                pressableClass (not <Button>) per the kit's interaction layer. */}
+            {/* eslint-disable-next-line helm/no-raw-button */}
+            <button
+              type="button"
+              aria-label="Change data shape"
+              onClick={() => { setStep('choose'); setError(null); }}
+              className={cn('rounded-full p-1', pressableClass({ ink: 'team' }))}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                width={11}
+                height={11}
+                fill="currentColor"
+                aria-hidden
+                className="text-text-tertiary"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  width={11}
-                  height={11}
-                  fill="currentColor"
-                  aria-hidden
+                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+              </svg>
+            </button>
+          </span>
+          <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
+            {VISIBLE_STEP_ORDER.map((s) => {
+              const idx = VISIBLE_STEP_ORDER.indexOf(s);
+              const state =
+                idx < activeStepIdx ? 'done' : idx === activeStepIdx ? 'active' : 'upcoming';
+              return (
+                <li key={s} aria-current={state === 'active' ? 'step' : undefined}>
+                  <InkBadge
+                    label={STEP_LABELS[s]}
+                    tone={state === 'upcoming' ? 'neutral' : 'team'}
+                    variant={state === 'active' ? 'solid' : 'soft'}
+                  />
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {error && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3"
+        >
+          <InkBadge label="Error" tone="sodium" variant="solid" />
+          <p className="text-body-sm text-text-secondary">{error}</p>
+        </div>
+      )}
+
+      <Reveal key={step}>
+        {/* STEP: CHOOSE ---------------------------------------------------- */}
+        {step === 'choose' && (
+          <div className="space-y-4">
+            <div className="mb-2">
+              <h2 className="font-annual text-h2 font-semibold text-text-primary">What are you uploading?</h2>
+              <p className="mt-1.5 text-body-sm text-text-secondary">
+                Choose the data shape that matches your file. Each shape targets a different
+                table and dedup model.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {(Object.values(DATA_SHAPE_META) as DataShapeMeta[]).map((meta) => (
+                // A bespoke Living Annual paper tile, not a CTA — pressableClass
+                // (not <Button>) per pressable.ts's "rows, cards, chips, paper
+                // tiles" guidance.
+                // eslint-disable-next-line helm/no-raw-button
+                <button
+                  key={meta.shape}
+                  type="button"
+                  onClick={() => {
+                    setDataShape(meta.shape);
+                    if (meta.redirectToEventLevel && onRequestEventLevel) {
+                      onRequestEventLevel();
+                    } else {
+                      setStep('upload');
+                    }
+                  }}
+                  aria-pressed={dataShape === meta.shape}
+                  className={cn(
+                    'flex flex-col items-start gap-2 rounded-card border px-5 py-5 text-left',
+                    pressableClass({ ink: 'team', lift: true }),
+                    dataShape === meta.shape
+                      ? 'border-grade-plus bg-grade-plus/[0.06]'
+                      : 'border-[color:var(--hairline)] bg-[var(--paper)]',
+                  )}
                 >
-                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
-                </svg>
-              </Button>
-            </span>
-            <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
-              {VISIBLE_STEP_ORDER.map((s) => {
-                const idx = VISIBLE_STEP_ORDER.indexOf(s);
-                const state =
-                  idx < activeStepIdx ? 'done' : idx === activeStepIdx ? 'active' : 'upcoming';
-                return (
-                  <li
-                    key={s}
-                    className={[
-                      'rounded-full px-3 py-1 text-sm font-medium transition-colors',
-                      state === 'active'
-                        ? 'bg-primary-600 text-white'
-                        : state === 'done'
-                          ? 'bg-primary-50 text-primary-700'
-                          : 'bg-cream-200 text-warm-500',
-                    ].join(' ')}
-                    aria-current={state === 'active' ? 'step' : undefined}
-                  >
-                    {STEP_LABELS[s]}
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        )}
-
-        {error && (
-          <div
-            role="alert"
-            className="mb-4 rounded-xl border border-error/30 bg-error/5 px-4 py-3 text-sm text-error"
-          >
-            {error}
-          </div>
-        )}
-
-        <m.div key={step} {...fadeProps}>
-          {/* STEP: CHOOSE ---------------------------------------------------- */}
-          {step === 'choose' && (
-            <div className="space-y-4">
-              <div className="mb-2">
-                <h2 className="text-2xl font-semibold text-warm-900">What are you uploading?</h2>
-                <p className="mt-1.5 text-warm-600">
-                  Choose the data shape that matches your file. Each shape targets a different
-                  table and dedup model.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {(Object.values(DATA_SHAPE_META) as DataShapeMeta[]).map((meta) => (
-                  <Button
-                    key={meta.shape}
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setDataShape(meta.shape);
-                      if (meta.redirectToEventLevel && onRequestEventLevel) {
-                        onRequestEventLevel();
-                      } else {
-                        setStep('upload');
-                      }
-                    }}
-                    className={[
-                      'group relative flex flex-col gap-2 rounded-2xl border px-5 py-5 text-left transition-all whitespace-normal items-start',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
-                      dataShape === meta.shape
-                        ? 'border-primary-300 bg-primary-50/60 shadow-sm'
-                        : 'border-warm-200 bg-white/70 hover:border-primary-200 hover:bg-primary-50/30',
-                    ].join(' ')}
-                    aria-pressed={dataShape === meta.shape}
-                  >
-                    <span className="text-base font-semibold text-warm-900">{meta.label}</span>
-                    <span className="text-sm text-warm-600">{meta.subtitle}</span>
-                    <div className="mt-1 space-y-1 text-xs">
-                      <span className="flex items-center gap-1.5 text-warm-500">
-                        <span className="font-medium text-warm-700">Target</span>
-                        <code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-warm-600">
-                          {meta.targetTable.split(' / ')[0]}
+                  <span className="font-annual text-body-lg font-semibold text-text-primary">{meta.label}</span>
+                  <span className="text-body-sm text-text-secondary">{meta.subtitle}</span>
+                  <div className="mt-1 space-y-1 text-caption">
+                    <span className="flex flex-wrap items-center gap-1.5 text-text-tertiary">
+                      <span className="font-medium text-text-secondary">Target</span>
+                      <code className="rounded border border-[color:var(--hairline)] px-1 py-0.5 font-mono text-text-secondary">
+                        {meta.targetTable.split(' / ')[0]}
+                      </code>
+                      {meta.targetTable.includes('/') && (
+                        <code className="rounded border border-[color:var(--hairline)] px-1 py-0.5 font-mono text-text-secondary">
+                          + pitching
                         </code>
-                        {meta.targetTable.includes('/') && (
-                          <code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-warm-600">
-                            + pitching
-                          </code>
-                        )}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-warm-500">
-                        <span className="font-medium text-warm-700">Dedup</span>
-                        <span className="text-warm-500">{meta.dedupKey}</span>
-                      </span>
-                    </div>
-                    {meta.redirectToEventLevel && (
-                      <span className="mt-1 inline-block rounded-md bg-cream-200 px-2 py-0.5 text-xs font-medium text-warm-600">
-                        Uses Event-level wizard
-                      </span>
-                    )}
-                  </Button>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-text-tertiary">
+                      <span className="font-medium text-text-secondary">Dedup</span>
+                      <span>{meta.dedupKey}</span>
+                    </span>
+                  </div>
+                  {meta.redirectToEventLevel && (
+                    <InkBadge label="Uses Event-level wizard" tone="neutral" className="mt-1" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Column template preview — shows expected headers for the chosen shape. */}
+            <div className="rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3">
+              <p className="mb-2 text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+                Expected columns for{' '}
+                <span className="text-text-secondary">{DATA_SHAPE_META[dataShape].label}</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {DATA_SHAPE_META[dataShape].columnTemplate.map((col) => (
+                  <span
+                    key={col}
+                    className="rounded border border-[color:var(--hairline)] px-2 py-0.5 font-mono text-caption text-text-secondary"
+                  >
+                    {col}
+                  </span>
                 ))}
               </div>
-
-              {/* Column template preview — shows expected headers for the chosen shape. */}
-              <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-warm-500">
-                  Expected columns for{' '}
-                  <span className="text-warm-700">{DATA_SHAPE_META[dataShape].label}</span>
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {DATA_SHAPE_META[dataShape].columnTemplate.map((col) => (
-                    <span
-                      key={col}
-                      className="rounded-md bg-cream-200 px-2 py-0.5 font-mono text-xs text-warm-600"
-                    >
-                      {col}
-                    </span>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-warm-400">
-                  Your file doesn&apos;t need to match exactly — column headers are mapped
-                  automatically.
-                </p>
-              </div>
+              <p className="mt-2 text-caption text-text-tertiary">
+                Your file doesn&apos;t need to match exactly — column headers are mapped
+                automatically.
+              </p>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* STEP: UPLOAD ---------------------------------------------------- */}
-          {step === 'upload' && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-5 p-0">
-                {/* Context strip — shape + target table. */}
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary-100 bg-primary-50/60 px-4 py-3">
-                  <span className="text-sm font-semibold text-primary-800">{shapeMeta.label}</span>
-                  <span className="text-warm-400">·</span>
-                  <span className="text-xs text-warm-600">
-                    Writes to{' '}
-                    <code className="rounded glass-standard px-1 py-0.5 font-mono text-xs text-warm-700">
-                      {shapeMeta.targetTable.split(' / ')[0]}
+        {/* STEP: UPLOAD ---------------------------------------------------- */}
+        {step === 'upload' && (
+          <PaperCard className="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+            {/* Context strip — shape + target table. */}
+            <div className="flex flex-wrap items-center gap-2 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3">
+              <InkBadge label={shapeMeta.label} tone="team" variant="solid" />
+              <span className="text-text-tertiary">·</span>
+              <span className="text-caption text-text-secondary">
+                Writes to{' '}
+                <code className="rounded border border-[color:var(--hairline)] px-1 py-0.5 font-mono text-caption text-text-secondary">
+                  {shapeMeta.targetTable.split(' / ')[0]}
+                </code>
+                {shapeMeta.targetTable.includes('/') && (
+                  <>
+                    {' '}
+                    <code className="rounded border border-[color:var(--hairline)] px-1 py-0.5 font-mono text-caption text-text-secondary">
+                      baseball_box_score_pitching
                     </code>
-                    {shapeMeta.targetTable.includes('/') && (
-                      <>
-                        {' '}
-                        <code className="rounded glass-standard px-1 py-0.5 font-mono text-xs text-warm-700">
-                          baseball_box_score_pitching
-                        </code>
-                      </>
-                    )}
-                  </span>
-                  <span className="text-warm-400">·</span>
-                  <span className="text-xs text-warm-500">Dedup: {shapeMeta.dedupKey}</span>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <NativeSelect
-                      label="Source"
-                      value={sourceId}
-                      onChange={(e) => setSourceId(e.target.value)}
-                      options={sourceOptions.map((s) => ({
-                        value: s.value,
-                        label: s.registered ? `${s.label} ✓` : s.label,
-                      }))}
-                    />
-                    {/* Show the registered policy for the chosen source so the
-                        coach sees how it will be governed BEFORE uploading. */}
-                    {selectedSourceOption?.registered ? (
-                      <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-warm-500">
-                        {selectedSourceOption.trustLevel && (
-                          <span className="rounded-md bg-cream-200 px-1.5 py-0.5 font-medium text-warm-600">
-                            {TRUST_LABEL[selectedSourceOption.trustLevel] ??
-                              selectedSourceOption.trustLevel}
-                          </span>
-                        )}
-                        {selectedSourceOption.requiredReview ? (
-                          <span className="rounded-md bg-warning/10 px-1.5 py-0.5 font-medium text-warning">
-                            Requires review before commit
-                          </span>
-                        ) : (
-                          <span className="rounded-md bg-primary-50 px-1.5 py-0.5 font-medium text-primary-700">
-                            Auto-commits
-                          </span>
-                        )}
-                      </p>
-                    ) : (
-                      <p className="mt-1.5 text-xs text-warm-400">
-                        Not configured — uses default trust (unreviewed) and auto-commits. Register
-                        it in Settings → Imports to control trust, review, and matching.
-                      </p>
-                    )}
-                  </div>
-                  <NativeSelect
-                    label="Session type"
-                    value={statType}
-                    onChange={(e) =>
-                      setStatType(e.target.value as 'game' | 'practice' | 'other')
-                    }
-                    options={STAT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-                  />
-                  <Input
-                    label={shapeMeta.sessionTypeLabel}
-                    type={dataShape === 'season_totals' ? 'number' : 'date'}
-                    value={sessionDate}
-                    onChange={(e) => setSessionDate(e.target.value)}
-                    placeholder={dataShape === 'season_totals' ? String(new Date().getFullYear()) : undefined}
-                  />
-                  <Input
-                    label={dataShape === 'game_box_score' ? 'Opponent (optional)' : 'Session name (optional)'}
-                    type="text"
-                    value={sessionName}
-                    onChange={(e) => setSessionName(e.target.value)}
-                    placeholder={dataShape === 'game_box_score' ? 'e.g. vs State, Away game' : 'e.g. Fall ball session'}
-                  />
-                </div>
-
-                <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-warm-200 bg-cream-50 px-6 py-10 text-center transition-colors hover:border-primary-400 hover:bg-primary-50/40">
-                  {/* Hidden native file input — the <Input> primitive does not
-                      support type=file; this is a visually-hidden field driving
-                      the styled dropzone label. */}
-                  {/* eslint-disable-next-line helm/no-raw-input */}
-                  <input
-                    type="file"
-                    accept=".csv,text/csv,.tsv,text/tab-separated-values,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    className="sr-only"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) onFile(f);
-                    }}
-                  />
-                  <span className="text-sm font-medium text-warm-800">
-                    {fileName ? fileName : 'Choose a CSV or Excel file'}
-                  </span>
-                  <span className="mt-1 text-xs text-warm-500">
-                    CSV or .xlsx — a header row + one row per player.
-                  </span>
-                </label>
-
-                {/* Show the expected column template for this shape so the coach
-                    can verify their file has the right columns before uploading. */}
-                <details className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-2 text-sm">
-                  <summary className="cursor-pointer py-1 font-medium text-warm-700">
-                    Expected column template
-                  </summary>
-                  <div className="mt-2 flex flex-wrap gap-1.5 pb-1">
-                    {shapeMeta.columnTemplate.map((col) => (
-                      <span
-                        key={col}
-                        className="rounded-md bg-cream-200 px-2 py-0.5 font-mono text-xs text-warm-600"
-                      >
-                        {col}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-1 text-xs text-warm-400">
-                    Column names are matched automatically — abbreviations and variations are accepted.
-                  </p>
-                </details>
-
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" onClick={() => setStep('choose')}>
-                    Back
-                  </Button>
-                  <Button onClick={runPreview} isLoading={busy} disabled={!csvContent.trim()}>
-                    Analyze file
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP: DETECT ---------------------------------------------------- */}
-          {step === 'detect' && preview && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-4 p-0">
-                <h2 className="text-xl font-semibold text-warm-900">Detected source</h2>
-                <p className="text-sm text-warm-600">
-                  We read <strong>{preview.totalRows}</strong> rows. Best match for these columns:{' '}
-                  <strong className="text-primary-700">
-                    {BASEBALL_IMPORT_SOURCES.find((s) => s.id === preview.detectedSourceId)?.label ??
-                      preview.detectedSourceId}
-                  </strong>
-                  . You selected <strong>{preview.sourceLabel}</strong>.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {preview.headers.map((h) => (
-                    <span
-                      key={h}
-                      className="rounded-md bg-cream-200 px-2 py-1 text-xs text-warm-600"
-                    >
-                      {h}
-                    </span>
-                  ))}
-                </div>
-                <StepNav
-                  onBack={() => setStep('upload')}
-                  onNext={() => setStep('map')}
-                  nextLabel="Review mapping"
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP: MAP (+ normalize note) ------------------------------------ */}
-          {step === 'map' && preview && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-4 p-0">
-                <h2 className="text-xl font-semibold text-warm-900">Column mapping</h2>
-                <p className="text-sm text-warm-600">
-                  These source columns will be normalized into stat fields. Unmapped fields are
-                  skipped.
-                </p>
-                <div className="overflow-hidden rounded-xl border border-warm-200">
-                  <table className="w-full text-sm">
-                    <thead className="bg-cream-100 text-left text-warm-600">
-                      <tr>
-                        <th className="px-4 py-2 font-medium">Stat field</th>
-                        <th className="px-4 py-2 font-medium">Source column</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(preview.mapping).map(([field, col]) => (
-                        <tr key={field} className="border-t border-warm-100">
-                          <td className="px-4 py-2 text-warm-800">{field}</td>
-                          <td className="px-4 py-2">
-                            {col ? (
-                              <span className="text-warm-700">{col}</span>
-                            ) : (
-                              <span className="text-warm-400">— not found —</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <StepNav
-                  onBack={() => setStep('detect')}
-                  onNext={() => setStep('match')}
-                  nextLabel="Match players"
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP: MATCH ----------------------------------------------------- */}
-          {step === 'match' && preview && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-4 p-0">
-                <div className="flex items-baseline justify-between">
-                  <h2 className="text-xl font-semibold text-warm-900">Match players</h2>
-                  <p className="text-sm text-warm-600">
-                    {counts.matched}/{counts.total} matched
-                    {validation.blockingCount > 0 && (
-                      <span className="ml-2 rounded-md bg-error/10 px-2 py-0.5 text-xs font-medium text-error">
-                        {validation.blockingCount} blocking
-                      </span>
-                    )}
-                  </p>
-                </div>
-                {matches.length === 0 ? (
-                  <EmptyState
-                    variant="card"
-                    title="Nothing to match"
-                    description="No rows were parsed from this file."
-                  />
-                ) : (
-                  <div className="max-h-[28rem] overflow-auto rounded-xl border border-warm-200">
-                    <table className="w-full min-w-[640px] text-sm">
-                      <thead className="sticky top-0 z-10 bg-cream-100 text-left text-warm-600">
-                        <tr>
-                          <th className="sticky left-0 z-20 bg-cream-100 px-3 py-2 font-medium min-w-[120px]">
-                            From file
-                          </th>
-                          <th className="px-3 py-2 font-medium min-w-[180px]">Player</th>
-                          <th className="px-3 py-2 font-medium min-w-[140px]">How matched</th>
-                          <th className="px-3 py-2 font-medium min-w-[96px]">Confidence</th>
-                          <th className="px-3 py-2 font-medium min-w-[150px]">On commit</th>
-                          <th className="px-3 py-2 font-medium min-w-[120px]">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {matches.map((m) => {
-                          const blocking = validation.blockingRowIndices.includes(m.rowIndex);
-                          return (
-                          <tr
-                            key={m.rowIndex}
-                            className={[
-                              'border-t border-warm-100',
-                              blocking ? 'bg-error/5' : '',
-                            ].join(' ')}
-                          >
-                            <td
-                              className={[
-                                'sticky left-0 z-10 px-3 py-2 text-warm-800 min-w-[120px]',
-                                blocking
-                                  ? 'border-l-2 border-error bg-error/5'
-                                  : 'bg-cream-50',
-                              ].join(' ')}
-                            >
-                              {m.sourceName || '—'}
-                            </td>
-                            <td className="px-3 py-2">
-                              <NativeSelect
-                                aria-label={`Match player for ${m.sourceName || 'row'}`}
-                                value={m.playerId ?? ''}
-                                onChange={(e) =>
-                                  setRowPlayer(m.rowIndex, e.target.value || null)
-                                }
-                                options={[
-                                  { value: '', label: '— Unmatched —' },
-                                  // Show jersey · class · position so a coach can
-                                  // tell two same-name players apart at the point
-                                  // of resolution (the spec's manual-review tier).
-                                  ...players.map((p) => ({
-                                    value: p.id,
-                                    label: describeMatchablePlayer(p),
-                                  })),
-                                ]}
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <MatchTierBadge tier={m.matchTier} />
-                            </td>
-                            <td className="px-3 py-2">
-                              <ConfidenceBadge value={m.confidence} matched={!!m.playerId} />
-                            </td>
-                            <td className="px-3 py-2">
-                              <DuplicateVerdictCell match={m} duplicate={liveVerdict(m)} />
-                            </td>
-                            <td className="px-3 py-2">
-                              <NativeSelect
-                                aria-label={`Import action for ${m.sourceName || 'row'}`}
-                                value={m.action}
-                                onChange={(e) =>
-                                  setRowAction(
-                                    m.rowIndex,
-                                    e.target.value as BaseballImportRowMatch['action']
-                                  )
-                                }
-                                disabled={!m.playerId}
-                                options={[
-                                  { value: 'update', label: 'Update' },
-                                  { value: 'create', label: 'Create' },
-                                  { value: 'skip', label: 'Skip' },
-                                ]}
-                              />
-                            </td>
-                          </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                <StepNav
-                  onBack={() => setStep('map')}
-                  onNext={() => setStep('preview')}
-                  nextLabel="Preview & validate"
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP: PREVIEW / VALIDATE --------------------------------------- */}
-          {step === 'preview' && preview && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-6 p-0">
-                {/* Header: what will land + the validation verdict at a glance. */}
-                <div>
-                  <h2 className="text-xl font-semibold text-warm-900">Validate &amp; commit</h2>
-                  <p className="mt-1 text-sm text-warm-600">
-                    We checked every row before anything is written to{' '}
-                    <strong className="text-warm-800">{teamName}</strong>. Resolve blockers to
-                    unlock the commit; warnings need a quick confirmation.
-                  </p>
-                </div>
-
-                {/* GAP 2 — EXACT-DUPLICATE FILE guard. The server recognized this
-                    identical file (by SHA-256) was already committed; offer skip
-                    or an explicit force re-import. */}
-                {duplicateFileRun && (
-                  <div className="rounded-2xl border border-warning/30 bg-warning/5 px-4 py-4">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning">
-                        <IconWarning size={16} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-warm-900">
-                          This exact file was already imported
-                          {duplicateFileRun.committedAt
-                            ? ` on ${new Date(duplicateFileRun.committedAt).toLocaleDateString()}`
-                            : ''}
-                          .
-                        </p>
-                        <p className="mt-0.5 text-sm text-warm-600">
-                          Its fingerprint matches a committed run, so nothing was written. Skip it,
-                          or re-import the identical file anyway.
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => doDownload(duplicateFileRun.runId)}
-                          >
-                            View the existing import
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            isLoading={busy}
-                            onClick={() => {
-                              setForceReimport(true);
-                              setDuplicateFileRun(null);
-                              void doCommit();
-                            }}
-                          >
-                            Re-import anyway
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Stat label="Rows" value={counts.total} />
-                  <Stat label="Create" value={counts.create} tone="primary" />
-                  <Stat label="Update" value={counts.update} tone="primary" />
-                  <Stat label="Skip" value={counts.skip} tone="muted" />
-                </div>
-
-                {/* Validation verdict banner — the single source of truth for the gate. */}
-                <ValidationVerdict report={validation} willWrite={counts.create + counts.update} />
-
-                {/* DUPLICATE / RE-IMPORT verdict — the create/update/skip decision
-                    against existing rows, shown BEFORE commit (duplicate_resolution_v2.md). */}
-                <DuplicateSummary
-                  summary={dupSummary}
-                  overwrites={matches
-                    .filter((m) => m.playerId && m.action !== 'skip')
-                    .map((m) => liveVerdict(m))
-                    .filter(
-                      (d): d is BaseballImportRowDuplicate =>
-                        !!d && d.verdict === 'will_update'
-                    )}
-                  matches={matches}
-                  onFix={() => setStep('match')}
-                />
-
-                {counts.create + counts.update === 0 && (
-                  <div
-                    role="alert"
-                    className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning"
-                  >
-                    Nothing will be written — every row is set to skip or is unmatched. Go back and
-                    match at least one player.
-                  </div>
-                )}
-
-                {/* Issues grouped by severity, with row-level drill-in + fast fix. */}
-                {validation.issues.length > 0 && (
-                  <div className="space-y-4">
-                    <IssueGroup
-                      severity="blocking"
-                      issues={validation.issues.filter((i) => i.severity === 'blocking')}
-                      onFix={() => setStep('match')}
-                    />
-                    <IssueGroup
-                      severity="warning"
-                      issues={validation.issues.filter((i) => i.severity === 'warning')}
-                      onFix={() => setStep('match')}
-                    />
-                    <IssueGroup
-                      severity="info"
-                      issues={validation.issues.filter((i) => i.severity === 'info')}
-                      onFix={() => setStep('match')}
-                    />
-                  </div>
-                )}
-
-                {/* Warning acknowledgement — required when warnings exist + no blockers. */}
-                {validation.hasWarnings && !validation.hasBlockers && (
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
-                    {/* eslint-disable-next-line helm/no-raw-input */}
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                      checked={warningsAcknowledged}
-                      onChange={(e) => setWarningsAcknowledged(e.target.checked)}
-                    />
-                    <span className="text-sm text-warm-700">
-                      I&apos;ve reviewed the{' '}
-                      <strong className="text-warning">
-                        {validation.warningCount} warning{validation.warningCount === 1 ? '' : 's'}
-                      </strong>{' '}
-                      above and want to import these rows anyway.
-                    </span>
-                  </label>
-                )}
-
-                <p className="text-sm text-warm-600">
-                  Committing writes a single audited run. You can roll it back from the history
-                  below.
-                </p>
-
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" onClick={() => setStep('match')}>
-                    Back
-                  </Button>
-                  <Button onClick={doCommit} isLoading={busy} disabled={commitDisabled}>
-                    {validation.hasBlockers
-                      ? `Resolve ${validation.blockingCount} blocker${validation.blockingCount === 1 ? '' : 's'} to commit`
-                      : hasCreateConflicts
-                        ? `Resolve ${dupSummary.createConflictRows.length} create conflict${
-                            dupSummary.createConflictRows.length === 1 ? '' : 's'
-                          } to commit`
-                        : 'Commit import'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP: COMMITTING ----------------------------------------------- */}
-          {step === 'committing' && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-3 p-0">
-                <h2 className="text-xl font-semibold text-warm-900">Committing import…</h2>
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-3/4" />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP: DONE ------------------------------------------------------ */}
-          {step === 'done' && result && (
-            <Card variant="overlay" hover={false} padding="lg">
-              <CardContent className="space-y-4 p-0">
-                {result.heldForReview ? (
-                  <>
-                    <h2 className="text-xl font-semibold text-warm-900">Sent for review</h2>
-                    <div
-                      role="status"
-                      className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3"
-                    >
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-warning" />
-                      <p className="text-sm text-warning">
-                        This source is configured to require review, so{' '}
-                        <strong>nothing was written yet</strong>. The {result.skipped} staged row
-                        {result.skipped === 1 ? '' : 's'} will only land once a coach approves this
-                        run from <strong>Recent imports</strong> below.
-                      </p>
-                    </div>
-                    <div className="flex gap-3">
-                      <Button onClick={resetWizard}>Import another file</Button>
-                    </div>
                   </>
+                )}
+              </span>
+              <span className="text-text-tertiary">·</span>
+              <span className="text-caption text-text-tertiary">Dedup: {shapeMeta.dedupKey}</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <NativeSelect
+                  label="Source"
+                  value={sourceId}
+                  onChange={(e) => setSourceId(e.target.value)}
+                  options={sourceOptions.map((s) => ({
+                    value: s.value,
+                    label: s.registered ? `${s.label} ✓` : s.label,
+                  }))}
+                />
+                {/* Show the registered policy for the chosen source so the
+                    coach sees how it will be governed BEFORE uploading. */}
+                {selectedSourceOption?.registered ? (
+                  <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    {selectedSourceOption.trustLevel && (
+                      <InkBadge
+                        label={TRUST_LABEL[selectedSourceOption.trustLevel] ?? selectedSourceOption.trustLevel}
+                        tone="neutral"
+                        variant="solid"
+                      />
+                    )}
+                    {selectedSourceOption.requiredReview ? (
+                      <InkBadge label="Requires review before commit" tone="sodium" variant="soft" />
+                    ) : (
+                      <InkBadge label="Auto-commits" tone="team" variant="soft" />
+                    )}
+                  </p>
                 ) : (
-                  <>
-                    <h2 className="text-xl font-semibold text-warm-900">Import complete</h2>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <Stat label="Created" value={result.created} tone="primary" />
-                      <Stat label="Updated" value={result.updated} tone="primary" />
-                      <Stat label="Duplicates" value={result.duplicatesSkipped} tone="muted" />
-                      <Stat label="Skipped" value={result.skipped} tone="muted" />
-                    </div>
-                    {/* Honored-action outcomes — only shown when they happened, so a
-                        clean import stays uncluttered (duplicate_resolution_v2.md). */}
-                    {result.createConflicts > 0 && (
-                      <div
-                        role="status"
-                        className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning"
+                  <p className="mt-1.5 text-caption text-text-tertiary">
+                    Not configured — uses default trust (unreviewed) and auto-commits. Register
+                    it in Settings → Imports to control trust, review, and matching.
+                  </p>
+                )}
+              </div>
+              <NativeSelect
+                label="Session type"
+                value={statType}
+                onChange={(e) =>
+                  setStatType(e.target.value as 'game' | 'practice' | 'other')
+                }
+                options={STAT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+              />
+              <Input
+                label={shapeMeta.sessionTypeLabel}
+                type={dataShape === 'season_totals' ? 'number' : 'date'}
+                value={sessionDate}
+                onChange={(e) => setSessionDate(e.target.value)}
+                placeholder={dataShape === 'season_totals' ? String(new Date().getFullYear()) : undefined}
+              />
+              <Input
+                label={dataShape === 'game_box_score' ? 'Opponent (optional)' : 'Session name (optional)'}
+                type="text"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                placeholder={dataShape === 'game_box_score' ? 'e.g. vs State, Away game' : 'e.g. Fall ball session'}
+              />
+            </div>
+
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed border-[color:var(--hairline)] bg-[var(--paper)] px-6 py-10 text-center transition-colors hover:border-grade-plus/50 hover:bg-grade-plus/[0.04]">
+              {/* Hidden native file input — the <Input> primitive does not
+                  support type=file; this is a visually-hidden field driving
+                  the styled dropzone label. */}
+              {/* eslint-disable-next-line helm/no-raw-input */}
+              <input
+                type="file"
+                accept=".csv,text/csv,.tsv,text/tab-separated-values,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onFile(f);
+                }}
+              />
+              <span className="text-body-sm font-medium text-text-primary">
+                {fileName ? fileName : 'Choose a CSV or Excel file'}
+              </span>
+              <span className="mt-1 text-caption text-text-tertiary">
+                CSV or .xlsx — a header row + one row per player.
+              </span>
+            </label>
+
+            {/* Show the expected column template for this shape so the coach
+                can verify their file has the right columns before uploading. */}
+            <details className="rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-2 text-body-sm">
+              <summary className="cursor-pointer py-1 font-medium text-text-primary">
+                Expected column template
+              </summary>
+              <div className="mt-2 flex flex-wrap gap-1.5 pb-1">
+                {shapeMeta.columnTemplate.map((col) => (
+                  <span
+                    key={col}
+                    className="rounded border border-[color:var(--hairline)] px-2 py-0.5 font-mono text-caption text-text-secondary"
+                  >
+                    {col}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-1 text-caption text-text-tertiary">
+                Column names are matched automatically — abbreviations and variations are accepted.
+              </p>
+            </details>
+
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" onClick={() => setStep('choose')}>
+                Back
+              </Button>
+              <Button onClick={runPreview} busy={busy} disabled={!csvContent.trim()}>
+                Analyze file
+              </Button>
+            </div>
+          </PaperCard>
+        )}
+
+        {/* STEP: DETECT ---------------------------------------------------- */}
+        {step === 'detect' && preview && (
+          <PaperCard className="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
+            <h2 className="font-annual text-h3 font-semibold text-text-primary">Detected source</h2>
+            <p className="text-body-sm text-text-secondary">
+              We read <strong className="font-semibold text-text-primary">{preview.totalRows}</strong> rows. Best match for these columns:{' '}
+              <strong className="font-semibold text-grade-plus">
+                {BASEBALL_IMPORT_SOURCES.find((s) => s.id === preview.detectedSourceId)?.label ??
+                  preview.detectedSourceId}
+              </strong>
+              . You selected <strong className="font-semibold text-text-primary">{preview.sourceLabel}</strong>.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {preview.headers.map((h) => (
+                <span
+                  key={h}
+                  className="rounded border border-[color:var(--hairline)] px-2 py-1 font-mono text-caption text-text-secondary"
+                >
+                  {h}
+                </span>
+              ))}
+            </div>
+            <StepNav
+              onBack={() => setStep('upload')}
+              onNext={() => setStep('map')}
+              nextLabel="Review mapping"
+            />
+          </PaperCard>
+        )}
+
+        {/* STEP: MAP (+ normalize note) ------------------------------------ */}
+        {step === 'map' && preview && (
+          <PaperCard className="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
+            <h2 className="font-annual text-h3 font-semibold text-text-primary">Column mapping</h2>
+            <p className="text-body-sm text-text-secondary">
+              These source columns will be normalized into stat fields. Unmapped fields are
+              skipped.
+            </p>
+            <div className="overflow-hidden rounded-card border border-[color:var(--hairline)]">
+              <table className="w-full text-body-sm">
+                <thead className="text-left text-text-tertiary">
+                  <tr>
+                    <th className="px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Stat field</th>
+                    <th className="px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Source column</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(preview.mapping).map(([field, col]) => (
+                    <tr key={field} className="border-t border-[color:var(--hairline)]">
+                      <td className="px-4 py-2 text-text-primary">{field}</td>
+                      <td className="px-4 py-2">
+                        {col ? (
+                          <span className="text-text-secondary">{col}</span>
+                        ) : (
+                          <span className="text-text-tertiary">— not found —</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <StepNav
+              onBack={() => setStep('detect')}
+              onNext={() => setStep('match')}
+              nextLabel="Match players"
+            />
+          </PaperCard>
+        )}
+
+        {/* STEP: MATCH ----------------------------------------------------- */}
+        {step === 'match' && preview && (
+          <PaperCard className="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-annual text-h3 font-semibold text-text-primary">Match players</h2>
+              <p className="flex items-center gap-2 text-body-sm text-text-secondary">
+                {counts.matched}/{counts.total} matched
+                {validation.blockingCount > 0 && (
+                  <InkBadge label={`${validation.blockingCount} blocking`} tone="sodium" variant="solid" />
+                )}
+              </p>
+            </div>
+            {matches.length === 0 ? (
+              <EditorsLetter ink="team" title="Nothing to match" body="No rows were parsed from this file." />
+            ) : (
+              <div className="max-h-[28rem] overflow-auto rounded-card border border-[color:var(--hairline)]">
+                <table className="w-full min-w-[640px] text-body-sm">
+                  <thead className="sticky top-0 z-10 bg-[var(--paper)] text-left text-text-tertiary">
+                    <tr>
+                      <th className="sticky left-0 z-20 min-w-[120px] bg-[var(--paper)] px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">
+                        From file
+                      </th>
+                      <th className="min-w-[180px] px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Player</th>
+                      <th className="min-w-[140px] px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">How matched</th>
+                      <th className="min-w-[96px] px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Confidence</th>
+                      <th className="min-w-[150px] px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">On commit</th>
+                      <th className="min-w-[120px] px-3 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matches.map((m) => {
+                      const blocking = validation.blockingRowIndices.includes(m.rowIndex);
+                      return (
+                      <tr
+                        key={m.rowIndex}
+                        className={cn(
+                          'border-t border-[color:var(--hairline)]',
+                          blocking && 'bg-sodium/[0.05]',
+                        )}
                       >
-                        <strong>
-                          {result.createConflicts} row{result.createConflicts === 1 ? '' : 's'}
-                        </strong>{' '}
-                        marked <strong>Create</strong> already existed and{' '}
-                        <strong>were not overwritten</strong>. Roll back the existing import or
-                        re-import those rows as <strong>Update</strong> to apply them.
-                      </div>
-                    )}
-                    {result.updateFellBackToInsert > 0 && (
-                      <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3 text-sm text-warm-600">
-                        <strong>
-                          {result.updateFellBackToInsert} row
-                          {result.updateFellBackToInsert === 1 ? '' : 's'}
-                        </strong>{' '}
-                        marked <strong>Update</strong> had no existing record, so a new line was
-                        created instead.
-                      </div>
-                    )}
-                    <div className="flex gap-3">
-                      <Button onClick={resetWizard}>Import another file</Button>
-                      <Button variant="ghost" onClick={() => doRollback(result.importRunId)}>
-                        Roll back this import
+                        <td
+                          className={cn(
+                            'sticky left-0 z-10 min-w-[120px] bg-[var(--paper)] px-3 py-2 text-text-primary',
+                            blocking && 'border-l-2 border-sodium',
+                          )}
+                        >
+                          {m.sourceName || '—'}
+                        </td>
+                        <td className="px-3 py-2">
+                          <NativeSelect
+                            aria-label={`Match player for ${m.sourceName || 'row'}`}
+                            value={m.playerId ?? ''}
+                            onChange={(e) =>
+                              setRowPlayer(m.rowIndex, e.target.value || null)
+                            }
+                            options={[
+                              { value: '', label: '— Unmatched —' },
+                              // Show jersey · class · position so a coach can
+                              // tell two same-name players apart at the point
+                              // of resolution (the spec's manual-review tier).
+                              ...players.map((p) => ({
+                                value: p.id,
+                                label: describeMatchablePlayer(p),
+                              })),
+                            ]}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <MatchTierBadge tier={m.matchTier} />
+                        </td>
+                        <td className="px-3 py-2">
+                          <ConfidenceBadge value={m.confidence} matched={!!m.playerId} />
+                        </td>
+                        <td className="px-3 py-2">
+                          <DuplicateVerdictCell match={m} duplicate={liveVerdict(m)} />
+                        </td>
+                        <td className="px-3 py-2">
+                          <NativeSelect
+                            aria-label={`Import action for ${m.sourceName || 'row'}`}
+                            value={m.action}
+                            onChange={(e) =>
+                              setRowAction(
+                                m.rowIndex,
+                                e.target.value as BaseballImportRowMatch['action']
+                              )
+                            }
+                            disabled={!m.playerId}
+                            options={[
+                              { value: 'update', label: 'Update' },
+                              { value: 'create', label: 'Create' },
+                              { value: 'skip', label: 'Skip' },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <StepNav
+              onBack={() => setStep('map')}
+              onNext={() => setStep('preview')}
+              nextLabel="Preview & validate"
+            />
+          </PaperCard>
+        )}
+
+        {/* STEP: PREVIEW / VALIDATE --------------------------------------- */}
+        {step === 'preview' && preview && (
+          <PaperCard className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
+            {/* Header: what will land + the validation verdict at a glance. */}
+            <div>
+              <h2 className="font-annual text-h3 font-semibold text-text-primary">Validate &amp; commit</h2>
+              <p className="mt-1 text-body-sm text-text-secondary">
+                We checked every row before anything is written to{' '}
+                <strong className="font-semibold text-text-primary">{teamName}</strong>. Resolve blockers to
+                unlock the commit; warnings need a quick confirmation.
+              </p>
+            </div>
+
+            {/* GAP 2 — EXACT-DUPLICATE FILE guard. The server recognized this
+                identical file (by SHA-256) was already committed; offer skip
+                or an explicit force re-import. */}
+            {duplicateFileRun && (
+              <div className="rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-fw-md border border-sodium/30 bg-sodium/[0.1] text-sodium">
+                    <IconWarning size={16} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-body-sm font-semibold text-text-primary">
+                      This exact file was already imported
+                      {duplicateFileRun.committedAt
+                        ? ` on ${new Date(duplicateFileRun.committedAt).toLocaleDateString()}`
+                        : ''}
+                      .
+                    </p>
+                    <p className="mt-0.5 text-body-sm text-text-secondary">
+                      Its fingerprint matches a committed run, so nothing was written. Skip it,
+                      or re-import the identical file anyway.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => doDownload(duplicateFileRun.runId)}
+                      >
+                        View the existing import
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        busy={busy}
+                        onClick={() => {
+                          setForceReimport(true);
+                          setDuplicateFileRun(null);
+                          void doCommit();
+                        }}
+                      >
+                        Re-import anyway
                       </Button>
                     </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </m.div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-        {/* RUN HISTORY ----------------------------------------------------- */}
-        <section className="mt-10">
-          <h2 className="mb-3 text-lg font-semibold text-warm-900">Recent imports</h2>
+            <KPIContentsStrip
+              columns={4}
+              items={[
+                { label: 'Rows', value: counts.total },
+                { label: 'Create', value: counts.create, emphasis: true },
+                { label: 'Update', value: counts.update, emphasis: true },
+                { label: 'Skip', value: counts.skip },
+              ]}
+            />
+
+            {/* Validation verdict banner — the single source of truth for the gate. */}
+            <ValidationVerdict report={validation} willWrite={counts.create + counts.update} />
+
+            {/* DUPLICATE / RE-IMPORT verdict — the create/update/skip decision
+                against existing rows, shown BEFORE commit (duplicate_resolution_v2.md). */}
+            <DuplicateSummary
+              summary={dupSummary}
+              overwrites={matches
+                .filter((m) => m.playerId && m.action !== 'skip')
+                .map((m) => liveVerdict(m))
+                .filter(
+                  (d): d is BaseballImportRowDuplicate =>
+                    !!d && d.verdict === 'will_update'
+                )}
+              matches={matches}
+              onFix={() => setStep('match')}
+            />
+
+            {counts.create + counts.update === 0 && (
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3"
+              >
+                <InkBadge label="Needs attention" tone="sodium" variant="solid" />
+                <p className="text-body-sm text-text-secondary">
+                  Nothing will be written — every row is set to skip or is unmatched. Go back and
+                  match at least one player.
+                </p>
+              </div>
+            )}
+
+            {/* Issues grouped by severity, with row-level drill-in + fast fix. */}
+            {validation.issues.length > 0 && (
+              <div className="space-y-4">
+                <IssueGroup
+                  severity="blocking"
+                  issues={validation.issues.filter((i) => i.severity === 'blocking')}
+                  onFix={() => setStep('match')}
+                />
+                <IssueGroup
+                  severity="warning"
+                  issues={validation.issues.filter((i) => i.severity === 'warning')}
+                  onFix={() => setStep('match')}
+                />
+                <IssueGroup
+                  severity="info"
+                  issues={validation.issues.filter((i) => i.severity === 'info')}
+                  onFix={() => setStep('match')}
+                />
+              </div>
+            )}
+
+            {/* Warning acknowledgement — required when warnings exist + no blockers. */}
+            {validation.hasWarnings && !validation.hasBlockers && (
+              <label className="flex cursor-pointer items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3">
+                {/* eslint-disable-next-line helm/no-raw-input */}
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-[color:var(--hairline)] text-grade-plus focus:ring-grade-plus"
+                  checked={warningsAcknowledged}
+                  onChange={(e) => setWarningsAcknowledged(e.target.checked)}
+                />
+                <span className="text-body-sm text-text-secondary">
+                  I&apos;ve reviewed the{' '}
+                  <strong className="font-semibold text-text-primary">
+                    {validation.warningCount} warning{validation.warningCount === 1 ? '' : 's'}
+                  </strong>{' '}
+                  above and want to import these rows anyway.
+                </span>
+              </label>
+            )}
+
+            <p className="text-body-sm text-text-secondary">
+              Committing writes a single audited run. You can roll it back from the history
+              below.
+            </p>
+
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" onClick={() => setStep('match')}>
+                Back
+              </Button>
+              <Button onClick={doCommit} busy={busy} disabled={commitDisabled}>
+                {validation.hasBlockers
+                  ? `Resolve ${validation.blockingCount} blocker${validation.blockingCount === 1 ? '' : 's'} to commit`
+                  : hasCreateConflicts
+                    ? `Resolve ${dupSummary.createConflictRows.length} create conflict${
+                        dupSummary.createConflictRows.length === 1 ? '' : 's'
+                      } to commit`
+                    : 'Commit import'}
+              </Button>
+            </div>
+          </PaperCard>
+        )}
+
+        {/* STEP: COMMITTING ----------------------------------------------- */}
+        {step === 'committing' && (
+          <PaperCard className="space-y-3 px-6 py-6 sm:px-8 sm:py-8">
+            <h2 className="font-annual text-h3 font-semibold text-text-primary">Committing import…</h2>
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </PaperCard>
+        )}
+
+        {/* STEP: DONE ------------------------------------------------------ */}
+        {step === 'done' && result && (
+          <PaperCard className="space-y-4 px-6 py-6 sm:px-8 sm:py-8">
+            {result.heldForReview ? (
+              <>
+                <h2 className="font-annual text-h3 font-semibold text-text-primary">Sent for review</h2>
+                <div
+                  role="status"
+                  className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3"
+                >
+                  <InkBadge label="Held" tone="sodium" variant="soft" />
+                  <p className="text-body-sm text-text-secondary">
+                    This source is configured to require review, so{' '}
+                    <strong className="font-semibold text-text-primary">nothing was written yet</strong>. The {result.skipped} staged row
+                    {result.skipped === 1 ? '' : 's'} will only land once a coach approves this
+                    run from <strong className="font-semibold text-text-primary">Recent imports</strong> below.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button onClick={resetWizard}>Import another file</Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="font-annual text-h3 font-semibold text-text-primary">Import complete</h2>
+                <KPIContentsStrip
+                  columns={4}
+                  items={[
+                    { label: 'Created', value: result.created, emphasis: true },
+                    { label: 'Updated', value: result.updated, emphasis: true },
+                    { label: 'Duplicates', value: result.duplicatesSkipped },
+                    { label: 'Skipped', value: result.skipped },
+                  ]}
+                />
+                {/* Honored-action outcomes — only shown when they happened, so a
+                    clean import stays uncluttered (duplicate_resolution_v2.md). */}
+                {result.createConflicts > 0 && (
+                  <div
+                    role="status"
+                    className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3"
+                  >
+                    <InkBadge label="Needs attention" tone="sodium" variant="solid" />
+                    <p className="text-body-sm text-text-secondary">
+                      <strong className="font-semibold text-text-primary">
+                        {result.createConflicts} row{result.createConflicts === 1 ? '' : 's'}
+                      </strong>{' '}
+                      marked <strong className="font-semibold text-text-primary">Create</strong> already existed and{' '}
+                      <strong className="font-semibold text-text-primary">were not overwritten</strong>. Roll back the existing import or
+                      re-import those rows as <strong className="font-semibold text-text-primary">Update</strong> to apply them.
+                    </p>
+                  </div>
+                )}
+                {result.updateFellBackToInsert > 0 && (
+                  <div className="rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3 text-body-sm text-text-secondary">
+                    <strong className="font-semibold text-text-primary">
+                      {result.updateFellBackToInsert} row
+                      {result.updateFellBackToInsert === 1 ? '' : 's'}
+                    </strong>{' '}
+                    marked <strong className="font-semibold text-text-primary">Update</strong> had no existing record, so a new line was
+                    created instead.
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <Button onClick={resetWizard}>Import another file</Button>
+                  <Button variant="danger" onClick={() => doRollback(result.importRunId)}>
+                    Roll back this import
+                  </Button>
+                </div>
+              </>
+            )}
+          </PaperCard>
+        )}
+      </Reveal>
+
+      {/* RUN HISTORY ----------------------------------------------------- */}
+      <section className="pt-4">
+        <Eyebrow ink="team">Recent imports</Eyebrow>
+        <HairlineRule ink="team" className="mt-1.5 w-12" />
+        <div className="mt-4">
           {runs.length === 0 ? (
-            <EmptyState
-              variant="card"
+            <EditorsLetter
+              ink="team"
               title="No imports yet"
-              description="Your committed imports will appear here so you can audit or roll them back."
+              body="Your committed imports will appear here so you can audit or roll them back."
             />
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-warm-200">
-              <table className="w-full min-w-[600px] text-sm">
-                <thead className="bg-cream-100 text-left text-warm-600">
+            <div className="overflow-x-auto rounded-card border border-[color:var(--hairline)]">
+              <table className="w-full min-w-[600px] text-body-sm">
+                <thead className="text-left text-text-tertiary">
                   <tr>
-                    <th className="sticky left-0 z-10 bg-cream-100 px-4 py-2 font-medium min-w-[140px]">
+                    <th className="sticky left-0 z-10 min-w-[140px] bg-[var(--paper)] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">
                       Source
                     </th>
-                    <th className="px-4 py-2 font-medium min-w-[160px]">File</th>
-                    <th className="px-4 py-2 font-medium min-w-[80px]">Rows</th>
-                    <th className="px-4 py-2 font-medium min-w-[110px]">Status</th>
-                    <th className="px-4 py-2 min-w-[110px]" />
+                    <th className="min-w-[160px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">File</th>
+                    <th className="min-w-[80px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Rows</th>
+                    <th className="min-w-[110px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Status</th>
+                    <th className="min-w-[110px] px-4 py-2" />
                   </tr>
                 </thead>
                 <tbody>
                   {runs.map((r) => (
-                    <tr key={r.id} className="border-t border-warm-100">
-                      <td className="sticky left-0 z-10 bg-cream-50 px-4 py-2 text-warm-800 min-w-[140px]">
+                    <tr key={r.id} className="border-t border-[color:var(--hairline)]">
+                      <td className="sticky left-0 z-10 min-w-[140px] bg-[var(--paper)] px-4 py-2 text-text-primary">
                         {r.source_label ?? r.source_id}
                       </td>
-                      <td className="px-4 py-2 text-warm-600">{r.file_name ?? '—'}</td>
-                      <td className="px-4 py-2 text-warm-600">
+                      <td className="px-4 py-2 text-text-secondary">{r.file_name ?? '—'}</td>
+                      <td className="px-4 py-2 text-text-secondary">
                         {r.matched_rows}/{r.total_rows}
                       </td>
                       <td className="px-4 py-2">
@@ -1484,17 +1479,16 @@ export function ImportWizardClient({
                               <Button
                                 size="sm"
                                 variant="primary"
-                                isLoading={busy}
+                                busy={busy}
                                 onClick={() => doReview(r.id, 'approve')}
                               >
                                 Approve
                               </Button>
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                isLoading={busy}
+                                variant="danger"
+                                busy={busy}
                                 onClick={() => doReview(r.id, 'reject')}
-                                className="text-error hover:text-error"
                               >
                                 Reject
                               </Button>
@@ -1503,7 +1497,7 @@ export function ImportWizardClient({
                             <Button
                               size="sm"
                               variant="ghost"
-                              isLoading={busy}
+                              busy={busy}
                               onClick={() => doRollback(r.id)}
                             >
                               Roll back
@@ -1517,9 +1511,9 @@ export function ImportWizardClient({
               </table>
             </div>
           )}
-        </section>
-      </div>
-    </LazyMotion>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -1546,64 +1540,19 @@ function StepNav({
   );
 }
 
-function Stat({
-  label,
-  value,
-  tone = 'default',
-}: {
-  label: string;
-  value: number;
-  tone?: 'default' | 'primary' | 'muted';
-}) {
-  const toneClass =
-    tone === 'primary'
-      ? 'text-primary-700'
-      : tone === 'muted'
-        ? 'text-warm-400'
-        : 'text-warm-900';
-  return (
-    <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3">
-      <div className={`text-2xl font-semibold ${toneClass}`}>{value}</div>
-      <div className="text-xs uppercase tracking-wide text-warm-500">{label}</div>
-    </div>
-  );
-}
-
 // -----------------------------------------------------------------------------
 // Validation verdict + grouped issue list (data_validation_v2.md severity model)
 // -----------------------------------------------------------------------------
 
+/** InkBadge tone/variant for a severity tier — sodium carries every advisory
+ *  (solid = blocking, soft = warning), neutral for info. Never amber/yellow/red. */
 const SEVERITY_META: Record<
   ImportSeverity,
-  { label: string; plural: string; chip: string; dot: string; border: string; bg: string; text: string }
+  { label: string; plural: string; tone: 'sodium' | 'neutral'; variant: 'soft' | 'solid' }
 > = {
-  blocking: {
-    label: 'Blocking',
-    plural: 'Blockers',
-    chip: 'bg-error/10 text-error',
-    dot: 'bg-error',
-    border: 'border-error/30',
-    bg: 'bg-error/5',
-    text: 'text-error',
-  },
-  warning: {
-    label: 'Warning',
-    plural: 'Warnings',
-    chip: 'bg-warning/10 text-warning',
-    dot: 'bg-warning',
-    border: 'border-warning/30',
-    bg: 'bg-warning/5',
-    text: 'text-warning',
-  },
-  info: {
-    label: 'Info',
-    plural: 'Info',
-    chip: 'bg-cream-200 text-warm-500',
-    dot: 'bg-warm-400',
-    border: 'border-warm-200',
-    bg: 'bg-cream-50',
-    text: 'text-warm-600',
-  },
+  blocking: { label: 'Blocking', plural: 'Blockers', tone: 'sodium', variant: 'solid' },
+  warning: { label: 'Warning', plural: 'Warnings', tone: 'sodium', variant: 'soft' },
+  info: { label: 'Info', plural: 'Info', tone: 'neutral', variant: 'soft' },
 };
 
 function ValidationVerdict({
@@ -1617,11 +1566,11 @@ function ValidationVerdict({
     return (
       <div
         role="alert"
-        className="flex items-start gap-3 rounded-xl border border-error/30 bg-error/5 px-4 py-3"
+        className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3"
       >
-        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-error" />
-        <p className="text-sm text-error">
-          <strong>
+        <InkBadge label="Blocking" tone="sodium" variant="solid" />
+        <p className="text-body-sm text-text-secondary">
+          <strong className="font-semibold text-text-primary">
             {report.blockingCount} blocker{report.blockingCount === 1 ? '' : 's'}
           </strong>{' '}
           must be resolved before this import can be committed. Nothing will be written until they
@@ -1633,10 +1582,10 @@ function ValidationVerdict({
   if (willWrite === 0) return null;
   if (report.hasWarnings) {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
-        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-warning" />
-        <p className="text-sm text-warning">
-          No blockers — <strong>{willWrite}</strong> row{willWrite === 1 ? '' : 's'} are ready to
+      <div className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3">
+        <InkBadge label="Warning" tone="sodium" variant="soft" />
+        <p className="text-body-sm text-text-secondary">
+          No blockers — <strong className="font-semibold text-text-primary">{willWrite}</strong> row{willWrite === 1 ? '' : 's'} are ready to
           import. Review the {report.warningCount} warning{report.warningCount === 1 ? '' : 's'}{' '}
           below and confirm to continue.
         </p>
@@ -1644,10 +1593,10 @@ function ValidationVerdict({
     );
   }
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/60 px-4 py-3">
-      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-600" />
-      <p className="text-sm text-primary-700">
-        All clear — <strong>{willWrite}</strong> row{willWrite === 1 ? '' : 's'} validated with no
+    <div className="flex items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3">
+      <InkBadge label="All clear" tone="team" variant="soft" />
+      <p className="text-body-sm text-text-secondary">
+        <strong className="font-semibold text-text-primary">{willWrite}</strong> row{willWrite === 1 ? '' : 's'} validated with no
         issues. Ready to commit.
       </p>
     </div>
@@ -1669,94 +1618,89 @@ function IssueGroup({
   const fixable = severity === 'blocking';
 
   return (
-    <div className={`overflow-hidden rounded-xl border ${meta.border}`}>
-      {/* Disclosure header is a full-bleed colored summary row, not a CTA — the
-          <Button> primitive's variant styling would fight the severity tint, so
-          this stays a semantic raw <button> with aria-expanded. */}
+    <div className="overflow-hidden rounded-card border border-[color:var(--hairline)] bg-[var(--paper)]">
+      {/* Disclosure header is a full-bleed summary row, not a CTA — kept a
+          semantic raw <button> with aria-expanded so the fairway <Button>'s
+          own styling never fights the severity InkBadge. */}
       {/* eslint-disable-next-line helm/no-raw-button */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={`flex w-full items-center justify-between px-4 py-2.5 text-left ${meta.bg}`}
+        className="flex w-full items-center justify-between px-4 py-2.5 text-left"
       >
         <span className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
-          <span className={`text-sm font-semibold ${meta.text}`}>
-            {issues.length} {issues.length === 1 ? meta.label : meta.plural}
-          </span>
+          <InkBadge label={`${issues.length} ${issues.length === 1 ? meta.label : meta.plural}`} tone={meta.tone} variant={meta.variant} />
         </span>
-        <span className="text-xs text-warm-500">{open ? 'Hide' : 'Show'}</span>
+        <span className="text-caption text-text-tertiary">{open ? 'Hide' : 'Show'}</span>
       </button>
       {open && (
-        <ul className="divide-y divide-warm-100 bg-cream-50">
-          {issues.map((issue, idx) => (
-            <li
-              key={`${issue.code}-${issue.rowIndex ?? 'file'}-${issue.field ?? idx}`}
-              className="flex items-start justify-between gap-3 px-4 py-2.5"
-            >
-              <div className="min-w-0">
-                <p className="text-sm text-warm-800">{issue.message}</p>
-                <p className="mt-0.5 text-xs text-warm-500">
-                  {issue.rowIndex != null
-                    ? `Row ${issue.rowIndex + 1}${issue.rowLabel ? ` · ${issue.rowLabel}` : ''}`
-                    : 'File-level'}
-                  {issue.field ? ` · ${issue.field.replace(/_/g, ' ')}` : ''}
-                </p>
-              </div>
-              {fixable && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onFix}
-                  className="shrink-0 text-xs"
-                >
-                  Fix in Match
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <>
+          <HairlineRule ink="hairline" />
+          <ul className="divide-y divide-[color:var(--hairline)]">
+            {issues.map((issue, idx) => (
+              <li
+                key={`${issue.code}-${issue.rowIndex ?? 'file'}-${issue.field ?? idx}`}
+                className="flex items-start justify-between gap-3 px-4 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-body-sm text-text-primary">{issue.message}</p>
+                  <p className="mt-0.5 text-caption text-text-tertiary">
+                    {issue.rowIndex != null
+                      ? `Row ${issue.rowIndex + 1}${issue.rowLabel ? ` · ${issue.rowLabel}` : ''}`
+                      : 'File-level'}
+                    {issue.field ? ` · ${issue.field.replace(/_/g, ' ')}` : ''}
+                  </p>
+                </div>
+                {fixable && (
+                  <Button size="sm" variant="ghost" onClick={onFix} className="shrink-0 text-xs">
+                    Fix in Match
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
 }
 
 // The chosen-resolution tier badge (player_matching_v2.md). Shows HOW a row
-// resolved — a deterministic id / clean exact match reads green; a fuzzy-only
-// name reads amber so the coach knows to give it a second look.
+// resolved — a deterministic id / clean exact match reads team-green; a
+// fuzzy-only name reads sodium so the coach knows to give it a second look.
 const MATCH_TIER_META: Record<
   BaseballImportMatchTier,
-  { label: string; tone: string; title: string }
+  { label: string; tone: 'team' | 'sodium' | 'neutral'; title: string }
 > = {
   external_id: {
     label: 'ID match',
-    tone: 'bg-primary-50 text-primary-700',
+    tone: 'team',
     title: 'Resolved by a previously-mapped external id (deterministic).',
   },
   exact_roster: {
     label: 'Exact',
-    tone: 'bg-primary-50 text-primary-700',
+    tone: 'team',
     title: 'Name is an exact, unambiguous match to one roster player.',
   },
   name_jersey_class: {
     label: 'Name + #/class',
-    tone: 'bg-primary-50 text-primary-700',
+    tone: 'team',
     title: 'Name match confirmed by jersey number and/or class (grad year).',
   },
   fuzzy_name: {
     label: 'Fuzzy name',
-    tone: 'bg-warning/10 text-warning',
+    tone: 'sodium',
     title: 'Name-similarity match only — no jersey/class to confirm it. Double-check.',
   },
   manual: {
     label: 'Manual',
-    tone: 'bg-cream-200 text-warm-600',
+    tone: 'neutral',
     title: 'A coach assigned this row by hand.',
   },
   unmatched: {
     label: 'Unmatched',
-    tone: 'bg-cream-200 text-warm-400',
+    tone: 'neutral',
     title: 'No player resolved — match it or set it to Skip.',
   },
 };
@@ -1764,29 +1708,20 @@ const MATCH_TIER_META: Record<
 function MatchTierBadge({ tier }: { tier: BaseballImportMatchTier }) {
   const meta = MATCH_TIER_META[tier] ?? MATCH_TIER_META.unmatched;
   return (
-    <span
-      className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${meta.tone}`}
-      title={meta.title}
-    >
-      {meta.label}
+    <span title={meta.title}>
+      <InkBadge label={meta.label} tone={meta.tone} />
     </span>
   );
 }
 
 function ConfidenceBadge({ value, matched }: { value: number; matched: boolean }) {
   if (!matched) {
-    return <span className="text-xs font-medium text-warm-400">unmatched</span>;
+    return <InkBadge label="Unmatched" tone="neutral" />;
   }
   const pct = Math.round(value * 100);
-  const tone =
-    value >= 0.9
-      ? 'bg-primary-50 text-primary-700'
-      : value >= 0.7
-        ? 'bg-warning/10 text-warning'
-        : 'bg-error/10 text-error';
-  return (
-    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>{pct}%</span>
-  );
+  const tone = value >= 0.9 ? 'team' : 'sodium';
+  const variant = value >= 0.7 ? 'soft' : 'solid';
+  return <InkBadge label={`${pct}%`} tone={tone} variant={variant} />;
 }
 
 // -----------------------------------------------------------------------------
@@ -1795,26 +1730,26 @@ function ConfidenceBadge({ value, matched }: { value: number; matched: boolean }
 
 const VERDICT_META: Record<
   BaseballImportDuplicateVerdict,
-  { label: string; tone: string; title: string }
+  { label: string; tone: 'team' | 'sodium' | 'neutral'; title: string }
 > = {
   new: {
     label: 'New',
-    tone: 'bg-primary-50 text-primary-700',
+    tone: 'team',
     title: 'No existing record for this player + session — commit will create a new line.',
   },
   will_update: {
     label: 'Overwrites',
-    tone: 'bg-warning/10 text-warning',
+    tone: 'sodium',
     title: 'An existing record matches — commit will OVERWRITE it. Open Preview to see what changes.',
   },
   exact_duplicate: {
     label: 'Duplicate',
-    tone: 'bg-cream-200 text-warm-500',
+    tone: 'neutral',
     title: 'Identical to an existing record from the same source — a re-import no-op you can skip.',
   },
   unresolved: {
     label: '—',
-    tone: 'bg-cream-200 text-warm-400',
+    tone: 'neutral',
     title: 'No player resolved yet — match the row to see its commit decision.',
   },
 };
@@ -1829,30 +1764,28 @@ function DuplicateVerdictCell({
   duplicate?: BaseballImportRowDuplicate;
 }) {
   if (!match.playerId || match.action === 'skip') {
-    return <span className="text-xs text-warm-400">—</span>;
+    return <span className="text-caption text-text-tertiary">—</span>;
   }
   const verdict = duplicate?.verdict ?? 'new';
   const meta = VERDICT_META[verdict];
   const conflict = match.action === 'create' && verdict !== 'new';
   if (conflict) {
     return (
-      <span
-        className="inline-flex items-center gap-1 rounded-md bg-error/10 px-2 py-0.5 text-xs font-medium text-error"
-        title="You set this row to Create, but a matching record already exists. It will be rejected — switch to Update or roll back the existing import."
-      >
-        Conflict: already exists
+      <span title="You set this row to Create, but a matching record already exists. It will be rejected — switch to Update or roll back the existing import.">
+        <InkBadge label="Conflict: already exists" tone="sodium" variant="solid" />
       </span>
     );
   }
   return (
-    <span
-      className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${meta.tone}`}
-      title={meta.title}
-    >
-      {meta.label}
-      {verdict === 'will_update' && duplicate && duplicate.changedFields.length > 0
-        ? ` · ${duplicate.changedFields.length} field${duplicate.changedFields.length === 1 ? '' : 's'}`
-        : ''}
+    <span title={meta.title}>
+      <InkBadge
+        label={`${meta.label}${
+          verdict === 'will_update' && duplicate && duplicate.changedFields.length > 0
+            ? ` · ${duplicate.changedFields.length} field${duplicate.changedFields.length === 1 ? '' : 's'}`
+            : ''
+        }`}
+        tone={meta.tone}
+      />
     </span>
   );
 }
@@ -1891,34 +1824,37 @@ function DuplicateSummary({
       {summary.createConflictRows.length > 0 && (
         <div
           role="alert"
-          className="flex items-start justify-between gap-3 rounded-xl border border-error/30 bg-error/5 px-4 py-3"
+          className="flex items-start justify-between gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3"
         >
-          <p className="text-sm text-error">
-            <strong>
-              {summary.createConflictRows.length} row
-              {summary.createConflictRows.length === 1 ? '' : 's'}
-            </strong>{' '}
-            set to <strong>Create</strong> already exist. Creating would lose the existing line —
-            switch them to Update or roll back the existing import first.
+          <p className="flex items-start gap-3 text-body-sm text-text-secondary">
+            <InkBadge label="Conflict" tone="sodium" variant="solid" />
+            <span>
+              <strong className="font-semibold text-text-primary">
+                {summary.createConflictRows.length} row
+                {summary.createConflictRows.length === 1 ? '' : 's'}
+              </strong>{' '}
+              set to <strong className="font-semibold text-text-primary">Create</strong> already exist. Creating would lose the existing line —
+              switch them to Update or roll back the existing import first.
+            </span>
           </p>
-          <Button size="sm" variant="ghost" onClick={onFix} className="shrink-0 text-xs text-error hover:text-error">
+          <Button size="sm" variant="ghost" onClick={onFix} className="shrink-0 text-xs">
             Fix in Match
           </Button>
         </div>
       )}
 
       {/* The create/update/skip roll-up — the spec's "show decisions before commit". */}
-      <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
-          <span className="font-medium text-warm-700">On commit:</span>
-          <span className="text-primary-700">
-            <strong>{summary.willCreate}</strong> new
+      <div className="rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-body-sm">
+          <span className="font-medium text-text-primary">On commit:</span>
+          <span className="text-grade-plus">
+            <strong className="font-semibold">{summary.willCreate}</strong> new
           </span>
-          <span className="text-warning">
-            <strong>{summary.willUpdate}</strong> overwrite existing
+          <span className="text-sodium">
+            <strong className="font-semibold">{summary.willUpdate}</strong> overwrite existing
           </span>
-          <span className="text-warm-500">
-            <strong>{summary.exactDuplicate}</strong> exact duplicate
+          <span className="text-text-tertiary">
+            <strong className="font-semibold">{summary.exactDuplicate}</strong> exact duplicate
             {summary.exactDuplicate === 1 ? '' : 's'}
           </span>
           {overwrites.length > 0 && (
@@ -1929,7 +1865,7 @@ function DuplicateSummary({
               type="button"
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
-              className="ml-auto text-xs font-medium text-warm-600 underline-offset-2 hover:underline"
+              className="ml-auto text-caption font-medium text-text-secondary underline-offset-2 hover:underline"
             >
               {open ? 'Hide changes' : 'Show what changes'}
             </button>
@@ -1937,64 +1873,64 @@ function DuplicateSummary({
         </div>
 
         {open && overwrites.length > 0 && (
-          <ul className="mt-3 space-y-2 border-t border-warm-100 pt-3">
-            {overwrites.map((d) => (
-              <li key={d.rowIndex} className="text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-warm-800">{nameByRow.get(d.rowIndex)}</span>
-                  {d.existingSource && (
-                    <span className="rounded bg-cream-200 px-1.5 py-0.5 text-warm-500">
-                      was {d.existingSource.replace(/^import:/, '')}
-                    </span>
-                  )}
-                </div>
-                {d.changedFields.length > 0 ? (
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {d.changedFields.slice(0, 8).map((c) => (
-                      <span
-                        key={c.field}
-                        className="rounded-md border border-warm-200 bg-cream-50 px-1.5 py-0.5 text-warm-600"
-                      >
-                        {c.field.replace(/_/g, ' ')}:{' '}
-                        <span className="text-warm-400 line-through">{c.before ?? '—'}</span>{' '}
-                        <span aria-hidden>→</span>{' '}
-                        <span className="font-medium text-warm-800">{c.after ?? '—'}</span>
-                      </span>
-                    ))}
-                    {d.changedFields.length > 8 && (
-                      <span className="text-warm-400">
-                        +{d.changedFields.length - 8} more
+          <>
+            <HairlineRule ink="hairline" className="mt-3" />
+            <ul className="mt-3 space-y-2">
+              {overwrites.map((d) => (
+                <li key={d.rowIndex} className="text-caption">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-text-primary">{nameByRow.get(d.rowIndex)}</span>
+                    {d.existingSource && (
+                      <span className="rounded border border-[color:var(--hairline)] px-1.5 py-0.5 text-text-tertiary">
+                        was {d.existingSource.replace(/^import:/, '')}
                       </span>
                     )}
                   </div>
-                ) : (
-                  <p className="mt-0.5 text-warm-400">
-                    Same values — overwrites the source/trust stamp only.
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
+                  {d.changedFields.length > 0 ? (
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {d.changedFields.slice(0, 8).map((c) => (
+                        <span
+                          key={c.field}
+                          className="rounded border border-[color:var(--hairline)] px-1.5 py-0.5 text-text-secondary"
+                        >
+                          {c.field.replace(/_/g, ' ')}:{' '}
+                          <span className="text-text-tertiary line-through">{c.before ?? '—'}</span>{' '}
+                          <span aria-hidden>→</span>{' '}
+                          <span className="font-medium text-text-primary">{c.after ?? '—'}</span>
+                        </span>
+                      ))}
+                      {d.changedFields.length > 8 && (
+                        <span className="text-text-tertiary">
+                          +{d.changedFields.length - 8} more
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-0.5 text-text-tertiary">
+                      Same values — overwrites the source/trust stamp only.
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>
   );
 }
 
+const RUN_STATUS_META: Record<string, { tone: 'team' | 'sodium' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  committed: { tone: 'team', variant: 'soft' },
+  rolled_back: { tone: 'neutral', variant: 'soft' },
+  failed: { tone: 'sodium', variant: 'solid' },
+  pending: { tone: 'neutral', variant: 'soft' },
+  parsing: { tone: 'neutral', variant: 'soft' },
+  matching: { tone: 'neutral', variant: 'soft' },
+  review: { tone: 'sodium', variant: 'soft' },
+};
+
 function RunStatus({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    committed: 'bg-primary-50 text-primary-700',
-    rolled_back: 'bg-cream-200 text-warm-500',
-    failed: 'bg-error/10 text-error',
-    pending: 'bg-cream-200 text-warm-500',
-    parsing: 'bg-cream-200 text-warm-500',
-    matching: 'bg-cream-200 text-warm-500',
-    review: 'bg-warning/10 text-warning',
-  };
-  const cls = map[status] ?? 'bg-cream-200 text-warm-500';
-  return (
-    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>
-      {status.replace('_', ' ')}
-    </span>
-  );
+  const meta = RUN_STATUS_META[status] ?? { tone: 'neutral' as const, variant: 'soft' as const };
+  return <InkBadge label={status.replace('_', ' ')} tone={meta.tone} variant={meta.variant} />;
 }

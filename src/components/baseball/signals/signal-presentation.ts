@@ -4,22 +4,30 @@
 // Packet: signal-inbox — pure presentation helpers shared by every Signals view.
 //
 // Maps the read model's honest fields (severity, category, disposition, action
-// type) onto cream/green GolfHelm visual tokens. NO golf labels. NO new palette:
-// severity + disposition use ONLY red / amber / primary-green / warm — the same
-// restricted accent set as StatVisualFrame. No blue/teal/violet categorical
-// hues (binding owner decision); info/neutral states read as warm, positive
-// outcomes read as primary green.
+// type, outcome verdict) onto the "Living Annual" ink system (spec
+// docs/baseball/design-system-living-annual.md §4.2, §7 InkBadge doctrine).
+// Signals is a THE WAR ROOM surface (clay/`pursuit` lane) — spec §4.2 rule 2
+// explicitly sanctions clay/oxblood for "hot signals," so severity leans on
+// `pursuit` ink at two weights (solid for critical, soft for warning) rather
+// than a red/amber badge. `team` (green) marks a positive/settled outcome
+// (resolved, converted, improved); `neutral` is the quiet graphite rest state.
+// NEVER red, NEVER amber/yellow — the InkBadge doctrine forbids both ("the
+// anti-toast").
 //
 // Pure module (no 'use client', no I/O) so server + client both import it.
 // =============================================================================
 
-import type { BadgeTone } from '@/components/ui/badge';
+import type { InkBadgeProps } from '@/components/baseball/living-annual';
 import type {
   BaseballSignalSeverity,
   BaseballSignalDisposition,
   BaseballActionType,
   BaseballRecommendedActionType,
 } from '@/lib/types/baseball-signals';
+import type { SignalActionRow } from '@/lib/baseball/read-models/signal-inbox';
+
+type InkTone = NonNullable<InkBadgeProps['tone']>;
+type InkVariant = NonNullable<InkBadgeProps['variant']>;
 
 // -----------------------------------------------------------------------------
 // Severity
@@ -27,9 +35,12 @@ import type {
 
 export interface SeverityPresentation {
   label: string;
-  tone: BadgeTone;
-  /** Left accent bar color class on the card. */
-  accentClass: string;
+  /** InkBadge tone for the severity stamp. */
+  tone: InkTone;
+  /** InkBadge presence — critical carries more weight than warning. */
+  variant: InkVariant;
+  /** Card accent-rule ink for the thin left-edge marker. */
+  ruleClass: string;
 }
 
 export function getSeverityPresentation(
@@ -37,12 +48,12 @@ export function getSeverityPresentation(
 ): SeverityPresentation {
   switch (severity) {
     case 'critical':
-      return { label: 'Critical', tone: 'red', accentClass: 'bg-red-500' };
+      return { label: 'Critical', tone: 'pursuit', variant: 'solid', ruleClass: 'bg-pursuit' };
     case 'warning':
-      return { label: 'Warning', tone: 'amber', accentClass: 'bg-amber-500' };
+      return { label: 'Warning', tone: 'pursuit', variant: 'soft', ruleClass: 'bg-pursuit/55' };
     case 'info':
     default:
-      return { label: 'Info', tone: 'warm', accentClass: 'bg-warm-400' };
+      return { label: 'Info', tone: 'neutral', variant: 'soft', ruleClass: 'bg-[color:var(--hairline)]' };
   }
 }
 
@@ -52,7 +63,8 @@ export function getSeverityPresentation(
 
 export interface DispositionPresentation {
   label: string;
-  tone: BadgeTone;
+  tone: InkTone;
+  variant: InkVariant;
 }
 
 export function getDispositionPresentation(
@@ -60,21 +72,55 @@ export function getDispositionPresentation(
 ): DispositionPresentation {
   switch (disposition) {
     case 'new':
-      return { label: 'New', tone: 'primary' };
+      return { label: 'New', tone: 'pursuit', variant: 'soft' };
     case 'acknowledged':
-      return { label: 'Acknowledged', tone: 'warm' };
+      return { label: 'Acknowledged', tone: 'neutral', variant: 'soft' };
     case 'sample_too_small':
-      return { label: 'Sample too small', tone: 'warm' };
+      return { label: 'Sample too small', tone: 'neutral', variant: 'soft' };
     case 'converted':
-      return { label: 'Converted', tone: 'primary' };
+      return { label: 'Converted', tone: 'team', variant: 'soft' };
     case 'dismissed':
-      return { label: 'Dismissed', tone: 'warm' };
+      return { label: 'Dismissed', tone: 'neutral', variant: 'soft' };
     case 'resolved':
-      return { label: 'Resolved', tone: 'green' };
+      return { label: 'Resolved', tone: 'team', variant: 'solid' };
     case 'expired':
-      return { label: 'Expired', tone: 'warm' };
+      return { label: 'Expired', tone: 'neutral', variant: 'soft' };
     default:
-      return { label: disposition, tone: 'warm' };
+      return { label: disposition, tone: 'neutral', variant: 'soft' };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Did-it-move verdict (converted-action outcome ledger)
+// -----------------------------------------------------------------------------
+
+export interface VerdictPresentation {
+  label: string;
+  tone: InkTone;
+  variant: InkVariant;
+}
+
+/**
+ * Honest verdict stamp: only a measured direction earns presence (green for
+ * improved, clay for regressed — never a red badge). `too_early` /
+ * `insufficient_sample` never render as a win or a loss; the caller should
+ * treat a null return as "say nothing" (insufficient_sample).
+ */
+export function getVerdictPresentation(
+  verdict: SignalActionRow['outcomeVerdict'],
+): VerdictPresentation | null {
+  switch (verdict) {
+    case 'improved':
+      return { label: 'Improved', tone: 'team', variant: 'soft' };
+    case 'regressed':
+      return { label: 'Regressed', tone: 'pursuit', variant: 'solid' };
+    case 'too_early':
+      return { label: 'Too early', tone: 'neutral', variant: 'soft' };
+    case 'no_change':
+      return { label: 'No change', tone: 'neutral', variant: 'soft' };
+    default:
+      // insufficient_sample / null → not measurable; stay quiet.
+      return null;
   }
 }
 

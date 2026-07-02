@@ -13,13 +13,16 @@
 //     real format (TrackMan / Rapsodo / Blast / Diamond Kinetics / GameChanger /
 //     StatCrew) into the elite event tables (the new EventImportWizard).
 //
-// Cream/green tokens + GolfHelm primitives. The mode switch is a segmented
-// control, not a tab-soup; the header states what each mode is for.
+// LIVING ANNUAL PRESENTATION — SectionMasthead hosts the page title (Pressbox /
+// team-ops, green ink) and the mode switch reads as an InkBadge tab pair (the
+// same pressable-tab pattern the postgame game-picker uses), not a shadcn
+// segmented control. The header states what each mode is for.
 // =============================================================================
 
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { pressableClass, InkBadge, Reveal, SectionMasthead } from '@/components/baseball/living-annual';
 import { ImportWizardClient } from '@/components/baseball/import-center/ImportWizardClient';
 import { EventImportWizard } from '@/components/baseball/import-center/EventImportWizard';
 import type { BaseballImportRunRow } from '@/lib/types/baseball-imports';
@@ -57,6 +60,11 @@ interface Props {
 
 type Mode = 'box_score' | 'event_level';
 
+const MODE_META: Record<Mode, { label: string; blurb: string }> = {
+  box_score: { label: 'Box score', blurb: 'Per-player game or season lines' },
+  event_level: { label: 'Event level', blurb: 'Pitch / batted-ball / swing data' },
+};
+
 export function ImportCenterShell({
   teamId,
   teamName,
@@ -68,36 +76,44 @@ export function ImportCenterShell({
   const [mode, setMode] = useState<Mode>('box_score');
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
-      <header className="mb-6">
-        <h1 className="text-3xl font-semibold text-warm-900">Import Center</h1>
-        <p className="mt-1 text-warm-600">
-          Bring stats into <span className="font-medium text-warm-800">{teamName}</span> from an
-          export. Every import is auditable and can be rolled back.
-        </p>
-      </header>
+    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6">
+      <Reveal>
+        <SectionMasthead eyebrow="THE PRESSBOX · IMPORT CENTER" title="Import Center" ink="team">
+          <p className="max-w-2xl font-annual text-body-lg leading-relaxed text-text-secondary">
+            Bring stats into <span className="font-semibold text-text-primary">{teamName}</span> from an
+            export. Every import is auditable and can be rolled back.
+          </p>
+        </SectionMasthead>
+      </Reveal>
 
-      {/* Mode switch — segmented control with a one-line purpose under each. */}
-      <div
-        role="tablist"
-        aria-label="Import mode"
-        className="mb-6 inline-flex rounded-xl border border-warm-200 bg-cream-50 p-1"
-      >
-        <ModeButton
-          active={mode === 'box_score'}
-          onClick={() => setMode('box_score')}
-          label="Box score"
-        />
-        <ModeButton
-          active={mode === 'event_level'}
-          onClick={() => setMode('event_level')}
-          label="Event level"
-        />
-      </div>
+      {/* Mode switch — a two-tab pressable pair, ink carries the active state
+          (spec §7.1, the postgame game-picker's pattern), with a one-line
+          purpose blurb under each so the coach knows which mode to pick. */}
+      <Reveal staggerIndex={1}>
+        <div role="tablist" aria-label="Import mode" className="flex flex-wrap gap-2">
+          {(Object.keys(MODE_META) as Mode[]).map((m) => {
+            const active = mode === m;
+            return (
+              // eslint-disable-next-line helm/no-raw-button
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setMode(m)}
+                className={cn('flex flex-col items-start gap-1 rounded-fw-lg px-4 py-2.5', pressableClass({ ink: 'team' }))}
+              >
+                <InkBadge label={MODE_META[m].label} tone={active ? 'team' : 'neutral'} variant={active ? 'solid' : 'soft'} />
+                <span className="text-caption text-text-tertiary">{MODE_META[m].blurb}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Reveal>
 
       {mode === 'box_score' ? (
-        // showHeader={false} suppresses the wizard's own <h1> since the shell
-        // already renders the "Import Center" header above the mode switcher.
+        // showHeader={false} suppresses the wizard's own header since the shell
+        // already renders the "Import Center" masthead above the mode switcher.
         // onRequestEventLevel: when the coach picks "Event log" in Step 1, we
         // switch to the "Event level" mode so they reach the EventImportWizard
         // instead of a dead end.
@@ -119,29 +135,5 @@ export function ImportCenterShell({
         />
       )}
     </div>
-  );
-}
-
-function ModeButton({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <Button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      variant={active ? 'primary' : 'ghost'}
-      size="sm"
-      className={active ? 'shadow-sm' : 'text-warm-600 hover:text-warm-900'}
-    >
-      {label}
-    </Button>
   );
 }

@@ -18,6 +18,11 @@
 // the wrapper's 401/403 — caught by the sibling error.tsx — and the sidebar
 // never surfaces the entry to players in the first place (nav-registry
 // role:'coach').
+//
+// P4.23: wraps the client in the Fairway `.fairway-ds` scope (matching every
+// other Living-Annual-migrated route, e.g. command-center/page.tsx) so the
+// StaffDecisionRoomFairway kit atoms resolve their tokens the same way they
+// do everywhere else. No auth/data-fetch behavior changes.
 // =============================================================================
 
 import { redirect } from 'next/navigation';
@@ -25,6 +30,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getDecisionRoomData } from '@/app/baseball/actions/decision-room';
 import { StaffDecisionRoomClient } from '@/components/baseball/staff-decision-room/StaffDecisionRoomClient';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
   title: 'Decision Room | Helm Baseball',
@@ -48,5 +54,9 @@ export default async function DecisionRoomPage() {
   // role, missing capability) surfaces through error.tsx.
   const data = await getDecisionRoomData();
 
-  return <StaffDecisionRoomClient data={data} />;
+  return (
+    <div className={fairwayScope('min-h-full')}>
+      <StaffDecisionRoomClient data={data} />
+    </div>
+  );
 }

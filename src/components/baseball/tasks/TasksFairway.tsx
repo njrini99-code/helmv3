@@ -2,32 +2,34 @@
 
 /**
  * ============================================================================
- * TasksFairway — Fairway (warm-premium) presentation of the baseball Tasks
- * page. Phase B leaf migration, Wave 1 · tasks. Flag-gated behind
- * `isRedesignEnabled()` — see the page fork.
+ * TasksFairway — "The Living Annual" presentation of the baseball Tasks page
+ * (spec: docs/baseball/design-system-living-annual.md; map: docs/baseball/
+ * ui-migration-map.md "announcements,tasks,documents,travel,messages/[id]" row
+ * — `SectionMasthead` + `PaperCard` + `EditorsLetter` consistency pass).
  * ----------------------------------------------------------------------------
  * PRESENTATION ONLY. Receives the SAME computed state + handlers the page owns
  * (tasks, filter, loading, overdue count, create-modal state, and the fetch
- * refresh) and migrates the CHROME — header + create action, overdue notice,
- * filter tabs, empty/loading states — to `@/components/fairway` primitives.
+ * refresh) and re-skins the chrome — masthead + create action, overdue alert,
+ * filter tabs, empty/loading states — with the Living-Annual kit. No data path
+ * is touched here.
  *
  * The task list + create modal (`TasksList`, `CreateTaskModal`) are reused
- * verbatim inside the new frame per playbook §3.5 — they keep every server
- * action (task completion, creation) they already owned. No data path is
- * touched here. Reused-component prop types are borrowed via `ComponentProps`
- * so this stays in lockstep with them.
+ * verbatim inside the new frame — they keep every server action (task
+ * completion, creation) they already owned, plus their own honest per-filter
+ * empty row (out of this task's file scope). Reused-component prop types are
+ * borrowed via `ComponentProps` so this stays in lockstep with them.
+ *
+ * LIVE ALERT, not an empty state: the overdue-task notice is real, present-tense
+ * information about existing tasks — never routed through `<EmptyIssue>` (which
+ * is reserved for the zero/nothing-here case). It stays an assertive, dismissed-
+ * by-navigation `role="alert"` banner in the danger (red) tone — never the amber
+ * `warning` tone, which this kit reserves for softer cautions.
  * ========================================================================== */
 
 import type { ComponentProps } from 'react';
-import { ClipboardList } from 'lucide-react';
-import {
-  ViewHeader,
-  Segmented,
-  Button,
-  EmptyState,
-  InlineNotice,
-  SkeletonCard,
-} from '@/components/fairway';
+import { AlertCircle } from 'lucide-react';
+import { Button, Segmented, InlineNotice, SkeletonCard } from '@/components/fairway';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 import { TasksList } from './TasksList';
 import { CreateTaskModal } from './CreateTaskModal';
 
@@ -73,21 +75,28 @@ export function TasksFairway({
 }: TasksFairwayProps) {
   return (
     <div className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 lg:px-8">
-      <ViewHeader
+      <SectionMasthead
+        eyebrow={isCoach ? 'Team tasks' : 'Your assignments'}
         title="Tasks"
-        description={isCoach ? 'Create and manage team tasks' : 'Your assigned tasks'}
-        primaryAction={
+        actions={
           isCoach && selectedTeamId ? (
             <Button variant="primary" size="sm" onClick={() => onShowCreateModal(true)}>
               Create task
             </Button>
           ) : undefined
         }
-      />
+      >
+        <p className="max-w-prose font-annual text-body text-text-secondary">
+          {isCoach ? 'Create and manage team tasks.' : 'Everything assigned to you, in one board.'}
+        </p>
+      </SectionMasthead>
 
+      {/* LIVE alert — real overdue tasks exist right now. Never demoted to an
+          <EmptyIssue> composed letter; stays an assertive danger-tone banner. */}
       {overdueCount > 0 && !loading && (
         <InlineNotice
-          tone="warning"
+          tone="danger"
+          icon={AlertCircle}
           title={`${overdueCount} overdue task${overdueCount !== 1 ? 's' : ''}`}
           className="mt-6"
           action={
@@ -122,10 +131,10 @@ export function TasksFairway({
             ))}
           </div>
         ) : !selectedTeamId ? (
-          <EmptyState
-            icon={ClipboardList}
-            title="No team selected"
-            description="Select a team from the sidebar to view tasks."
+          <EditorsLetter
+            ink="team"
+            title="No team selected."
+            body="Choose a team from the sidebar to see its task board."
           />
         ) : (
           <TasksList

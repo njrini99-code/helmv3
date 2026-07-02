@@ -19,6 +19,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getStaffSettingsData } from '@/app/baseball/actions/decision-room';
 import { StaffSettingsClient } from '@/components/baseball/staff/StaffSettingsClient';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
   title: 'Staff & Permissions | Helm Baseball',
@@ -41,5 +42,9 @@ export default async function StaffSettingsPage() {
   // role) surfaces through error.tsx.
   const data = await getStaffSettingsData();
 
-  return <StaffSettingsClient initialData={data} />;
+  return (
+    <div className={fairwayScope('min-h-full')}>
+      <StaffSettingsClient initialData={data} />
+    </div>
+  );
 }
