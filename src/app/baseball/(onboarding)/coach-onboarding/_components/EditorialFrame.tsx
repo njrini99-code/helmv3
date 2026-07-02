@@ -1,12 +1,21 @@
 /**
  * EditorialFrame — the double-bezel form panel for coach onboarding.
  *
- * A picture-frame "mat": an outer ring in the deeper `--paper-canvas` cream
- * holding an inner card in the lighter `--paper` cream, each with its own
- * warm `--hairline` border. Registration ticks at the outer corners (the
- * Living Annual "hero card" tell — see `PaperCard`'s `registrationTick`)
- * signal this is the ONE hero surface on the page. Depth stays letterpress
- * (inset shadow), never a drop-shadow, matching `PaperCard` (spec §4.3).
+ * A picture-frame "mat": an outer ring holding an inner card, each with its
+ * own warm border. Registration ticks at the outer corners (the Living
+ * Annual "hero card" tell — see `PaperCard`'s `registrationTick`) signal
+ * this is the ONE hero surface on the page. Depth stays letterpress (inset
+ * shadow), never a drop-shadow, matching `PaperCard` (spec §4.3).
+ *
+ * 2026-07-02 — "the field gets chalked" (docs/baseball/
+ * ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT): a full-bleed `<EntryField>` scene now
+ * sits behind this wizard instead of a flat cream page fill, so the double
+ * bezel's material changed from opaque `--paper-canvas`/`--paper` fills to
+ * light cream GLASS (`.entry-editorial-frame` / `.entry-editorial-frame-
+ * inner`, ../onboarding-entry.css — same blur+saturate+brass-edge-light
+ * recipe as the marketing landing's `.fl-glass-3`, with a WKWebView
+ * `@supports` fallback) so the field's chalk lines read through the panel.
+ * Structure (bezel/card/ticks/grain) is unchanged.
  *
  * Local to coach-onboarding rather than added to the shared
  * `@/components/baseball/living-annual` kit — this is a one-off editorial
@@ -56,19 +65,13 @@ export function EditorialFrame({ children, className }: EditorialFrameProps) {
   return (
     <div
       className={cn(
-        'relative rounded-3xl border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-1.5',
-        'shadow-[0_24px_60px_-32px_rgba(23,19,15,0.45)]',
+        'entry-editorial-frame relative rounded-3xl p-1.5',
         className,
       )}
     >
       <RegistrationTick side="left" />
       <RegistrationTick side="right" />
-      <div
-        className={cn(
-          'relative overflow-hidden rounded-2xl border border-[color:var(--hairline)] bg-[var(--paper)]',
-          'shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(0,0,0,0.05)]',
-        )}
-      >
+      <div className="entry-editorial-frame-inner relative overflow-hidden rounded-2xl">
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-multiply"

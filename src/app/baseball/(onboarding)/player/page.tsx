@@ -26,6 +26,11 @@ import {
   staggerContainer,
   staggerItem,
 } from '@/components/baseball/onboarding/StepIndicator';
+import { EntryField, type SceneStage } from '@/components/baseball/scenes/EntryField';
+import { resolveSceneVariant, type SceneVariant } from '@/lib/entry/greeting';
+import { flFraunces } from '@/components/marketing/first-light/fonts';
+import '@/components/marketing/first-light/first-light.css';
+import './onboarding-entry.css';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
@@ -50,6 +55,20 @@ const STEPS_CONFIG = [
 const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'OF', 'INF', 'UTIL'];
 const HANDEDNESS = ['R', 'L', 'S'];
 const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i);
+
+// ─── The onboarding arc: "the field gets chalked" ──────────────────────────
+// docs/baseball/ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT stage contract (0–4):
+// 0 bare morning air -> 1 first foul line -> 2 second foul line -> 3
+// base-path arc -> 4 batter's boxes + bloom warms. This wizard's 5 steps
+// (type/about/measurables/team/complete) map 1:1, no skipped lane (unlike
+// coach onboarding's already-authenticated shortcut).
+const STEP_SCENE_STAGE: Record<Step, SceneStage> = {
+  type: 0,
+  about: 1,
+  measurables: 2,
+  team: 3,
+  complete: 4,
+};
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -92,6 +111,16 @@ export default function BaseballPlayerOnboarding() {
   const [teamJoinError, setTeamJoinError] = useState('');
   const [teamJoined, setTeamJoined] = useState(false);
   const [teamName, setTeamName] = useState('');
+
+  // Entry-world scene — dawn/dusk resolved client-side from the local clock
+  // (server + first client render agree on the neutral 'dawn' default; the
+  // effect swaps in the real value right after mount, mirroring
+  // BaseballAuthShell's identical pattern). Declared before the auth-guard's
+  // early return below so hook order stays stable across renders.
+  const [sceneVariant, setSceneVariant] = useState<SceneVariant>('dawn');
+  useEffect(() => {
+    setSceneVariant(resolveSceneVariant());
+  }, []);
 
   // ─── Auth Guard ───────────────────────────────────────────────────────────
 
@@ -221,16 +250,19 @@ export default function BaseballPlayerOnboarding() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
+  const sceneStage = STEP_SCENE_STAGE[step];
+
   return (
-    <div className="min-h-dvh bg-auth-baseball relative">
-      {/* Floating Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-amber-400/40 to-helm-amber-500/25" />
-        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-amber-400/25 to-helm-amber-400/15" />
-        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-amber-300/20 to-helm-amber-400/15" />
+    <div className="entry-onboarding-scope entry-onboarding-root relative min-h-dvh overflow-hidden">
+      {/* Full-bleed field scene — same portrait EntryField composition as
+          the front-door auth pages; the chalk draws in per step (docs/
+          baseball/ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT). Fixed so it holds
+          steady behind the panel regardless of content height. */}
+      <div aria-hidden className="fixed inset-0 z-0">
+        <EntryField idSuffix="player-onboarding-field" stage={sceneStage} variant={sceneVariant} />
       </div>
 
-      <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="relative z-10 min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         {/* Logo */}
         <m.div
           initial={{ opacity: 0, y: -10 }}
@@ -239,7 +271,7 @@ export default function BaseballPlayerOnboarding() {
           className="mb-6 sm:mb-8"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-helm-amber-500/25 rounded-full blur-xl scale-150" />
+            <div className="absolute inset-0 rounded-full blur-xl scale-150" style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.2)' }} />
             <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
               <Image
                 src="/helm-baseball-logo.png"
@@ -280,7 +312,7 @@ export default function BaseballPlayerOnboarding() {
               >
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                    <h1 className="font-annual text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
                       What type of player are you?
                     </h1>
                     <p className="text-warm-500 mt-2 text-sm sm:text-base">
@@ -293,10 +325,10 @@ export default function BaseballPlayerOnboarding() {
                       <Button variant="ghost"
                         key={opt.value}
                         onClick={() => { setPlayerType(opt.value); setDirection(1); setStep('about'); }}
-                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
+                        className="w-full entry-glass-card rounded-2xl p-5 text-left hover:bg-[color:rgba(var(--fl-cream-high-rgb),0.9)] transition-colors group"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform" style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.14)' }}>
                             {opt.emoji}
                           </div>
                           <div>
@@ -337,7 +369,7 @@ export default function BaseballPlayerOnboarding() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                    <h1 className="font-annual text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
                       About you
                     </h1>
                     <p className="text-warm-500 mt-2 text-sm sm:text-base">
@@ -346,7 +378,7 @@ export default function BaseballPlayerOnboarding() {
                   </m.div>
 
                   {/* Form Card */}
-                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
+                  <m.div variants={staggerItem} className="entry-glass-card rounded-3xl p-6 sm:p-8">
                     <div className="space-y-5">
                       {/* Name */}
                       <div className="grid grid-cols-2 gap-3">
@@ -456,7 +488,7 @@ export default function BaseballPlayerOnboarding() {
                       <Button
                         onClick={() => goForward('measurables')}
                         disabled={!firstName.trim() || !lastName.trim() || !primaryPosition}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
+                        className="w-full bg-[color:var(--fl-sage-deep)] hover:bg-[color:var(--fl-sage-ink)] shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                         size="lg"
                       >
                         Continue
@@ -493,7 +525,7 @@ export default function BaseballPlayerOnboarding() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                    <h1 className="font-annual text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
                       Measurables
                     </h1>
                     <p className="text-warm-500 mt-2 text-sm sm:text-base">
@@ -502,7 +534,7 @@ export default function BaseballPlayerOnboarding() {
                   </m.div>
 
                   {/* Form Card */}
-                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
+                  <m.div variants={staggerItem} className="entry-glass-card rounded-3xl p-6 sm:p-8">
                     <div className="space-y-5">
                       {/* Height & Weight */}
                       <div>
@@ -583,7 +615,7 @@ export default function BaseballPlayerOnboarding() {
                     <div className="mt-8">
                       <Button
                         onClick={() => goForward('team')}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
+                        className="w-full bg-[color:var(--fl-sage-deep)] hover:bg-[color:var(--fl-sage-ink)] shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                         size="lg"
                       >
                         Continue
@@ -620,7 +652,7 @@ export default function BaseballPlayerOnboarding() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                    <h1 className="font-annual text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
                       Join a team
                     </h1>
                     <p className="text-warm-500 mt-2 text-sm sm:text-base">
@@ -631,28 +663,28 @@ export default function BaseballPlayerOnboarding() {
                   </m.div>
 
                   {/* Form Card */}
-                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
+                  <m.div variants={staggerItem} className="entry-glass-card rounded-3xl p-6 sm:p-8">
                     {teamJoined ? (
                       <m.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="text-center py-4"
                       >
-                        <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <IconCheck size={32} className="text-primary-600" />
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.14)' }}>
+                          <IconCheck size={32} className="text-[color:var(--fl-sage-deep)]" />
                         </div>
                         <h3 className="text-lg font-semibold text-warm-900 mb-1">
                           Team Joined!
                         </h3>
                         <p className="text-warm-600">
-                          You are now a member of <span className="font-medium text-primary-600">{teamName}</span>
+                          You are now a member of <span className="font-medium text-[color:var(--fl-sage-deep)]">{teamName}</span>
                         </p>
                       </m.div>
                     ) : (
                       <div className="space-y-5">
                         <div className="flex justify-center mb-2">
-                          <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
-                            <IconUsers size={24} className="text-primary-600" />
+                          <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.14)' }}>
+                            <IconUsers size={24} className="text-[color:var(--fl-sage-deep)]" />
                           </div>
                         </div>
 
@@ -688,7 +720,7 @@ export default function BaseballPlayerOnboarding() {
                           onClick={handleJoinTeam}
                           disabled={!inviteCode.trim() || joiningTeam}
                           isLoading={joiningTeam}
-                          className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 transition-[background-color,box-shadow]"
+                          className="w-full bg-[color:var(--fl-sage-deep)] hover:bg-[color:var(--fl-sage-ink)] shadow-lg shadow-primary-900/10 transition-[background-color,box-shadow]"
                         >
                           Join Team
                         </Button>
@@ -703,7 +735,7 @@ export default function BaseballPlayerOnboarding() {
                     <div className="mt-8">
                       <Button
                         onClick={() => goForward('complete')}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
+                        className="w-full bg-[color:var(--fl-sage-deep)] hover:bg-[color:var(--fl-sage-ink)] shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                         size="lg"
                       >
                         {teamJoined ? 'Continue' : 'Skip for Now'}
@@ -737,8 +769,8 @@ export default function BaseballPlayerOnboarding() {
                           className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
                           style={{
                             background: i % 2 === 0
-                              ? 'rgb(22, 163, 74)'
-                              : 'rgb(74, 222, 128)',
+                              ? 'var(--fl-sage-deep)'
+                              : 'var(--fl-sage)',
                           }}
                           initial={{ scale: 0, opacity: 1, x: 0, y: 0 }}
                           animate={{
@@ -752,14 +784,15 @@ export default function BaseballPlayerOnboarding() {
                       ))}
 
                       {/* Glow */}
-                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full scale-[2]" />
+                      <div className="absolute inset-0 rounded-full scale-[2] blur-2xl" style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.2)' }} />
 
                       {/* Check Icon */}
                       <m.div
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 })}
-                        className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
+                        className="relative w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
+                        style={{ background: 'linear-gradient(to bottom right, var(--fl-sage), var(--fl-sage-deep))' }}
                       >
                         <m.div
                           initial={{ scale: 0, opacity: 0 }}
@@ -772,9 +805,11 @@ export default function BaseballPlayerOnboarding() {
                     </div>
                   </m.div>
 
-                  {/* Personalized Heading */}
+                  {/* Personalized Heading — the serif finish moment (docs/
+                      baseball/ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT), stage 4:
+                      the plate brightens + the bloom warms behind this line. */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
+                    <h1 className={`${flFraunces.className} text-2xl sm:text-3xl font-medium tracking-tight text-[color:var(--fl-sage-ink)] mb-2`}>
                       Welcome, {firstName || 'Player'}!
                     </h1>
                     <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
@@ -788,7 +823,7 @@ export default function BaseballPlayerOnboarding() {
                       size="lg"
                       onClick={handleComplete}
                       isLoading={loading}
-                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
+                      className="w-full sm:w-auto px-10 bg-[color:var(--fl-sage-deep)] hover:bg-[color:var(--fl-sage-ink)] shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                     >
                       Go to Dashboard
                       <IconArrowRight size={16} className="ml-2" />

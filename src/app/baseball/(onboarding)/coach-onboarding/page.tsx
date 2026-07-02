@@ -27,9 +27,14 @@ import {
   IconBaseball,
 } from '@/components/icons';
 import { Eyebrow, Reveal, CommitSeal, LiveDot, DUR, EASE_GLIDE, EASE_PRESS } from '@/components/baseball/living-annual';
+import { EntryField, type SceneStage } from '@/components/baseball/scenes/EntryField';
+import { resolveSceneVariant, type SceneVariant } from '@/lib/entry/greeting';
+import { flFraunces } from '@/components/marketing/first-light/fonts';
 import { EditorialFrame } from './_components/EditorialFrame';
 import { StepProgress } from './_components/StepProgress';
 import { OptionCard } from './_components/OptionCard';
+import '@/components/marketing/first-light/first-light.css';
+import './onboarding-entry.css';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
@@ -88,6 +93,32 @@ const STEP_TRANSITION = {
 const PAGE_GRAIN =
   "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
+// ─── The onboarding arc: "the field gets chalked" ──────────────────────────
+// docs/baseball/ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT stage contract (0–4):
+// 0 bare morning air -> 1 first foul line -> 2 second foul line -> 3
+// base-path arc -> 4 batter's boxes + bloom warms. This wizard has 5 steps
+// (type/program/account/lifting/complete) mapped 1:1 across those 5 stages.
+// An already-authenticated coach skips 'account' (goes program -> lifting
+// directly), so the field jumps from stage 1 to stage 3 in one crossfade
+// for that lane — both foul lines + the base-path arc draw in together
+// rather than in three separate beats. Documented in the PR; still one
+// continuous 1.2s stroke-draw/crossfade, never a hard swap.
+const STEP_SCENE_STAGE: Record<Step, SceneStage> = {
+  type: 0,
+  program: 1,
+  account: 2,
+  lifting: 3,
+  complete: 4,
+};
+
+/** Last "word" of a full name, for the finish-step serif line ("Coach {lastName}"). */
+function extractLastName(fullName: string): string {
+  const trimmed = fullName.trim();
+  if (!trimmed) return '';
+  const parts = trimmed.split(/\s+/);
+  return parts[parts.length - 1] ?? '';
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function BaseballCoachOnboarding() {
@@ -128,6 +159,15 @@ export default function BaseballCoachOnboarding() {
   const liftingEmailInputRef = useRef<HTMLInputElement>(null);
   // Stored after account/program submission so the lifting step can call setLiftingMode
   const [pendingRedirect, setPendingRedirect] = useState('');
+
+  // Entry-world scene — dawn/dusk resolved client-side from the local clock
+  // (server + first client render agree on the neutral 'dawn' default; the
+  // effect swaps in the real value right after mount, mirroring
+  // BaseballAuthShell's identical pattern).
+  const [sceneVariant, setSceneVariant] = useState<SceneVariant>('dawn');
+  useEffect(() => {
+    setSceneVariant(resolveSceneVariant());
+  }, []);
 
   // ─── Detect Existing Auth Session ─────────────────────────────────────
 
@@ -365,25 +405,34 @@ export default function BaseballCoachOnboarding() {
 
   const stepSequence = existingUser ? STEP_SEQUENCE_AUTH : STEP_SEQUENCE_FULL;
   const stepIndexInSequence = stepSequence.indexOf(step);
+  const sceneStage = STEP_SCENE_STAGE[step];
+  const finishLastName = extractLastName(fullName || existingUser?.fullName || '');
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="living-annual relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
+    <div className="living-annual entry-onboarding-scope relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
+      {/* Full-bleed field scene — "the field gets chalked" as the wizard
+          advances (docs/baseball/ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT). Fixed
+          so it holds steady behind the panel regardless of content height. */}
+      <div aria-hidden className="fixed inset-0 z-0">
+        <EntryField idSuffix="coach-onboarding-field" stage={sceneStage} variant={sceneVariant} />
+      </div>
+
       {/* Full-bleed newsprint grain */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.025] mix-blend-multiply"
+        className="pointer-events-none absolute inset-0 z-10 opacity-[0.025] mix-blend-multiply"
         style={{ backgroundImage: PAGE_GRAIN, backgroundSize: '220px 220px' }}
       />
       {/* One restrained editorial wash behind the panel — never an "orb cluster" */}
       <span
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[38%] h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.07] blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-[38%] z-10 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.07] blur-3xl"
         style={{ background: 'var(--grade-plus)' }}
       />
 
-      <div className="relative flex w-full flex-col items-center pb-[env(safe-area-inset-bottom)]">
+      <div className="relative z-10 flex w-full flex-col items-center pb-[env(safe-area-inset-bottom)]">
         <LazyMotion features={domAnimation}>
           {/* Masthead */}
           <m.div
@@ -838,11 +887,20 @@ export default function BaseballCoachOnboarding() {
                       </Reveal>
                       <Reveal staggerIndex={1}>
                         <div>
-                          <h1 className="font-annual text-2xl font-medium leading-tight text-text-primary sm:text-3xl">
-                            {schoolName ? `${schoolName} Baseball is ready` : 'Your program is ready'}
+                          {/* The serif finish moment (docs/baseball/ENTRY_SCENES_DESIGN.md
+                              ⚠ AMENDMENT) — stage 4: batter's boxes whisper in + the
+                              bloom warms one step behind this line. */}
+                          <h1 className={cn(
+                            flFraunces.className,
+                            'text-2xl font-medium leading-tight text-[color:var(--fl-sage-ink)] sm:text-3xl',
+                          )}>
+                            {finishLastName
+                              ? `Your program is on the board, Coach ${finishLastName}.`
+                              : 'Your program is on the board.'}
                           </h1>
                           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-tertiary sm:text-base">
-                            Welcome to BaseballHelm. Head to your dashboard to start managing your team.
+                            {schoolName ? `${schoolName} Baseball is ready. ` : ''}
+                            Head to your dashboard to start managing your team.
                           </p>
                         </div>
                       </Reveal>
