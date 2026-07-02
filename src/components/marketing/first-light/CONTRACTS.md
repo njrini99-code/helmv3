@@ -150,11 +150,11 @@ before restyling.
 
 | Utility | Recipe | Consumer (per Amendment 2's M-moment map) |
 |---|---|---|
-| `.fl-aurora` | Cream field + 4 low-chroma sage radial blobs, optional 32s drift | Page/section background behind **M2, M5, M6, M7** (§A.1) |
-| `.fl-light-pool` | Radial cream-high pool, blurred, `position: absolute` default | Behind hero copy + section anchors: **M2** statement, **M5** signal card, **M7** stats (§A.2) |
+| `.fl-aurora` | Cream field + 4 low-chroma sage radial blobs (the brightest blob is cream, not cream-high — §D2), optional 32s drift | Page/section background behind **M2, M5, M6, M7** (§A.1) |
+| `.fl-light-pool` | Radial **cream** pool (§D2 — was cream-high), blurred, `position: absolute` default | Behind hero copy + section anchors: **M2** statement, **M5** signal card, **M7** stats (§A.2) |
 | `.fl-cta-glow` | Sage bloom `::after`, opacity 0→1 on hover/focus-visible | Primary CTAs only: **M1** + **M8** (§A.3, §B.8) |
-| `--fl-shadow-xs/sm/md/lg` + `--fl-specular` | Stacked warm shadows + 1px cream-high top highlight | Every elevated light surface sitewide (§B.5) |
-| `.fl-card` + `.fl-card-lift` | Solid `--fl-cream-high` card, specular + ring, hover swell | **M6**'s three vignettes (converted from `.fl-glass-2`, §B.6) + any other solid card |
+| `--fl-shadow-xs/sm/md/lg` + `--fl-specular` | Stacked warm shadows + 1px cream-high top highlight (the ONE cream-high fill §D2 still allows — a hairline, not a fill) | Every elevated light surface sitewide (§B.5) |
+| `.fl-card` + `.fl-card-lift` | Top-edge cream-high → cream gradient (18% stop, §D2 — was a flat cream-high fill), specular + ring, hover swell | **M6**'s three vignettes (converted from `.fl-glass-2`, §B.6) + any other solid card |
 | `.fl-gradient-ring` | Masked 1px conic ring (sage-deep → sage → brass → sage-deep) | **M5**'s signal card ONLY — the page's single gradient-ring moment (§B.7) |
 | `.fl-link-underline` | Sage-deep 2px wipe on hover/focus-visible | Footer + nav text links (§B.10) |
 | `.fl-grain` (flipped) | `mix-blend-mode` overlay → multiply | Sitewide standalone grain plate (§A.4) — glass-baked grain (`.fl-glass-*::before`) unchanged |
@@ -167,6 +167,100 @@ against this, code review alone does not pass a moment):**
 - Exactly one hero moment per viewport-story.
 - Grayscale test, effects-off test, squint test, 8px audit,
   reduced-motion audit all pass.
+
+### §D2 — MORE CREAM, NO WHITE (2026-07-02, Nick directive — overrides
+anything lighter elsewhere in this doc or the design doc)
+
+Nothing larger than a 1px specular/hairline may render at or near white
+(`#FFFFFF` or `--fl-cream-high` `#FBF9F2` as a FILL). `--fl-cream-high` is
+demoted to exactly three uses: **1px specular lips** (`--fl-specular`,
+`.fl-glass-*`'s brass top edge-light is unaffected — that's brass, not
+cream-high), **text-on-dark** (e.g. button labels on `--fl-sage-deep`),
+and **≤2px accents**. Every other light surface uses `--fl-cream`
+(`#F5F1E6`) or warmer — never cream-high, never white.
+
+Fixed in this pass (foundation lane, `first-light.css`):
+- `.fl-card` background — was a flat `var(--fl-cream-high)` fill; now
+  `linear-gradient(180deg, rgba(var(--fl-cream-high-rgb),0.55) 0%,
+  var(--fl-cream) 18%)` — only the top edge catches light, body reads
+  true cream.
+- `.fl-light-pool` — was `rgba(var(--fl-cream-high-rgb), 0.9)`; now
+  `rgba(var(--fl-cream-rgb), 0.9)`.
+- `.fl-aurora`'s brightest blob (bottom-left, §A.1) — was
+  `rgba(var(--fl-cream-high-rgb), 0.9)`; now `rgba(var(--fl-cream-rgb),
+  0.9)`.
+
+Left as-is (both are the hairline/text-on-dark carve-outs §D2 exempts):
+- `--fl-specular` (`inset 0 1px 0 rgba(var(--fl-cream-high-rgb), 0.9)`)
+  — a literal 1px inset highlight, the "80% move" recipe (§B.5). Do not
+  demote this one — a cream specular lip reads as no light at all.
+- Any cream-high used for text color on a sage-deep/sage-ink background
+  (button labels, CTA text) — text-on-dark is explicitly allowed.
+
+**Rule for every downstream lane:** before adding a new cream-high fill
+anywhere under `src/components/marketing/first-light/`, ask "is this
+bigger than a 1px lip and not text-on-dark?" — if yes, use `--fl-cream`
+instead. Grep `cream-high` in your file before shipping a new surface.
+
+## Brand components (Amendment 3 §A/§B, `brand/`)
+
+Added by the foundation lane per the ⚠ AMENDMENT 3 — BRAND & ARCHITECTURE
+section of `docs/LANDING_ENTRY_WORLD_DESIGN.md` (Nick: "really work hard on
+this… integrate branding, golf and baseball, and the helm"). Three
+stroke-based line-art components, all `fill="none"` / `stroke="currentColor"`
+on a shared 24×24 viewBox, all re-exported from the top-level `index.ts` —
+import `{ HelmMark, HelmRosette, SportGlyph }` from `first-light`, not from
+`./brand` directly.
+
+**The kelly-raster-never-on-chrome rule:** `public/Helm-Logo-New-Main.png`,
+`public/helm-golf-logo-transparent.png`, and
+`public/helm-baseball-logo-cropped.png` are flat kelly-green rasters — they
+NEVER render on landing/auth chrome (Amendment 3 §A). These three components
+are the *only* brand-mark rendering path on that chrome; every other lane
+should reach for one of them instead of the PNGs. Kelly itself stays
+product-only per the sage & cream amendment (real app screenshots, the M5
+signal-card replica) — these components carry no color of their own
+(`currentColor`), so a consumer accidentally coloring one kelly is a review
+catch, not a contract violation the component can prevent.
+
+| Component | Default size | Consumers (per team-lead's map) | Typical color |
+|---|---|---|---|
+| `HelmMark` | 24px (use 18–20px or ~280px per consumer) | **GlassNav lockup** — 18–20px, sage-ink, paired with "Helm Sports Labs" wordmark (§A.3) · **M9 footer watermark** — ~280px, brass at 5–7% opacity, right-anchored behind the link columns, `pointer-events-none` (§A.4) | `--fl-sage-ink` (nav) / `--fl-brass` at low opacity (footer) |
+| `HelmRosette` | 12px (10–14px range) | **M2/M5/M7 eyebrow hairlines** — sits at the center where the hairline rule would otherwise just end, brass (§A.2) · **M6 "readiness" vignette** header glyph — neutral/sage, no sport (§B.3) | `--fl-brass` (eyebrows) / `--fl-sage` (M6 readiness) |
+| `SportGlyph` | 18px (16–20px range); also usable much larger for background motifs | **M4 portal cards** — compose with `HelmRosette` side-by-side ("wheel-plus-sport", §B.2 — two components, not a fused one) · **M6 vignette headers** — passport→`sport="baseball"`, lift→`sport="lift"` (§B.3) | cream at ~8% opacity over photography (M4) / `--fl-sage` (M6 headers) |
+
+**Composing "wheel-plus-sport" (M4 portal cards, §B.2):** render `HelmRosette`
+and `SportGlyph` as two adjacent small icons (flex row, small gap) rather than
+building a fourth fused component — keeps this lane's surface to exactly
+three components and lets each portal card size/space them independently.
+
+**Geometry provenance:** `HelmMark`/`HelmRosette`'s wheel (ring + 8 spokes at
+45° from 12 o'clock, `SPOKE_INNER_R`/`SPOKE_OUTER_R`/`RING_R` constants in
+each file) is a traced approximation of `Helm-Logo-New-Main.png`, viewed via
+the `Read` tool — proportions eyeballed against the PNG, not pixel-extracted.
+`HelmMark`'s ship (mast/cabin/hull/waterline) likewise traces that PNG's ship
+silhouette in line art instead of flat fill. `SportGlyph`'s `baseball` case
+(chalk V + base-path arc) is derived from
+`docs/baseball/ENTRY_SCENES_DESIGN.md`'s field-motif description — **not**
+from `src/components/baseball/scenes/EntryField.tsx`, which doesn't exist in
+this branch yet (belongs to the not-yet-built `entry-scenes` wave). Same for
+`lift` (barbell) vs. a not-yet-built `IronRoomField`. If either scene
+component lands later with different exact angles/proportions, reconcile
+`SportGlyph`'s constants against it rather than assuming they already match.
+
+**Accessibility:** all three follow the same `role="img"` + `title` (when
+given) / `aria-hidden` + `focusable="false"` (decorative default) contract
+via the shared `brand/svgA11y.ts` helper — pass `title="Helm"` etc. only when
+the mark is the sole content of an interactive element (e.g. a logo link)
+and needs an accessible name; leave it off for purely decorative uses (M9
+watermark, M4 motifs).
+
+**The one-animated-gold budget (§C.2) does not apply here:** these three
+components render static line art — the page's single animated-gold moment
+is M7's founder-line brass rule glint sweep, built separately by that lane.
+Don't add motion to a `HelmMark`/`HelmRosette`/`SportGlyph` instance itself;
+a hover-lift on an M4 card *wrapper* is fine (§B.6), the glyph strokes inside
+stay still.
 
 ## Fonts (`fonts.ts`)
 
