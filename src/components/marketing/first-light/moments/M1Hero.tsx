@@ -7,7 +7,7 @@
  * "Palette v2 — SAGE & CREAM". Background register: a graded photo (or,
  * absent the real asset, an on-brand sage→cream gradient fallback — see
  * CONTRACTS.md "Photo asset contract") with a permanent grade overlay:
- * shadows lean sage-ink, a soft cream-high bloom lifts the sky/nav zone,
+ * shadows lean sage-ink, a soft cream bloom lifts the sky/nav zone,
  * and a moderate sage-ink vignette sits behind the centered content stack
  * for legibility. `photoLayerStyle` stacks that grade ON TOP of the photo
  * `url(...)` layer (CSS background-image layers paint first-listed-on-top),
@@ -58,15 +58,16 @@ const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];
  *     edges, so most of the frame stays bright (kept deliberately small;
  *     an early wider pass read as a flat, uniform grey-green wash across
  *     the whole photo — off-spec "murky", not "airy morning").
- *  2. A bright cream-high bloom spilling down from just above the frame
- *     (the nav zone) — the morning sun you never see directly, per the
- *     entry-scenes family rule.
+ *  2. A bright cream bloom spilling down from just above the frame (the
+ *     nav zone) — the morning sun you never see directly, per the
+ *     entry-scenes family rule. Cream, not cream-high (⚠ AMENDMENT 2 §D2,
+ *     2026-07-02 — a fill this large can't read near-white).
  *  3. A full-bleed sage-mist → cream base wash, so the fallback (no photo)
  *     reads as a complete, airy, on-brand frame with zero blank edges.
  */
 const HERO_GRADE = [
   'radial-gradient(ellipse 62% 40% at 50% 66%, rgba(var(--fl-sage-ink-rgb),0.6) 0%, rgba(var(--fl-sage-ink-rgb),0.26) 55%, rgba(var(--fl-sage-ink-rgb),0) 100%)',
-  'radial-gradient(ellipse 85% 55% at 50% -6%, rgba(var(--fl-cream-high-rgb),0.55) 0%, rgba(var(--fl-cream-high-rgb),0.18) 50%, rgba(var(--fl-cream-high-rgb),0) 82%)',
+  'radial-gradient(ellipse 85% 55% at 50% -6%, rgba(var(--fl-cream-rgb),0.55) 0%, rgba(var(--fl-cream-rgb),0.18) 50%, rgba(var(--fl-cream-rgb),0) 82%)',
   'linear-gradient(165deg, rgba(var(--fl-sage-mist-rgb),0.9) 0%, rgba(var(--fl-cream-rgb),0.95) 100%)',
 ].join(', ');
 
