@@ -77,3 +77,45 @@ export async function fetchVercelDeployments(
     return failed(`Vercel deployments fetch threw: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
+
+export interface VercelWebInsights {
+  visitors24h: number;
+  visitors7d: number;
+  visitors30d: number;
+}
+
+/** Port of the legacy fetchVercelAnalytics (admin-data.ts:1562) with the
+ *  bridge fail-soft contract instead of bare null. */
+export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelWebInsights>> {
+  const token = process.env.VERCEL_API_TOKEN;
+  const projectId = process.env.VERCEL_PROJECT_ID;
+  if (!token || !projectId) return unconfigured('Vercel API');
+
+  try {
+    const teamId = process.env.VERCEL_TEAM_ID;
+    const baseUrl = 'https://api.vercel.com/v1/web/insights/stats';
+    const daysAgo = (d: number) => new Date(Date.now() - d * 86400_000).toISOString();
+    const now = new Date().toISOString();
+
+    const fetchPeriod = async (from: string): Promise<number> => {
+      const params = new URLSearchParams({ projectId, from, to: now });
+      if (teamId) params.set('teamId', teamId);
+      const res = await fetch(`${baseUrl}?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        next: { revalidate: 900 },
+      });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return data?.data?.visitors ?? data?.visitors ?? 0;
+    };
+
+    const [v24h, v7d, v30d] = await Promise.all([
+      fetchPeriod(daysAgo(1)),
+      fetchPeriod(daysAgo(7)),
+      fetchPeriod(daysAgo(30)),
+    ]);
+    return ok({ visitors24h: v24h, visitors7d: v7d, visitors30d: v30d });
+  } catch (err) {
+    return failed(`Vercel web insights threw: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}

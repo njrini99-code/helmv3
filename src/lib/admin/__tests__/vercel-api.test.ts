@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
 
-import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+import { fetchVercelDeployments, fetchVercelWebInsights } from '@/lib/admin/vercel-api';
 
 describe('fetchVercelDeployments', () => {
   beforeEach(() => {
@@ -47,5 +47,47 @@ describe('fetchVercelDeployments', () => {
     const res = await fetchVercelDeployments();
     expect(res.status).toBe('error');
     expect(res.error).toContain('403');
+  });
+});
+
+describe('fetchVercelWebInsights', () => {
+  beforeEach(() => {
+    vi.stubEnv('VERCEL_API_TOKEN', 'tok');
+    vi.stubEnv('VERCEL_PROJECT_ID', 'prj_1');
+    vi.stubEnv('VERCEL_TEAM_ID', 'team_1');
+    fetchMock.mockReset();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('returns unconfigured when the token trio is absent', async () => {
+    vi.stubEnv('VERCEL_PROJECT_ID', '');
+    const res = await fetchVercelWebInsights();
+    expect(res.status).toBe('unconfigured');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('maps the three visitor periods on success', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { visitors: 12 } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { visitors: 84 } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { visitors: 301 } }), { status: 200 }));
+    const res = await fetchVercelWebInsights();
+    expect(res.status).toBe('ok');
+    expect(res.data).toEqual({ visitors24h: 12, visitors7d: 84, visitors30d: 301 });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('fails soft (zeros, not a crash) when an individual period request 404s', async () => {
+    fetchMock.mockResolvedValue(new Response('nope', { status: 404 }));
+    const res = await fetchVercelWebInsights();
+    expect(res.status).toBe('ok');
+    expect(res.data).toEqual({ visitors24h: 0, visitors7d: 0, visitors30d: 0 });
+  });
+
+  it('fails soft on thrown network error', async () => {
+    fetchMock.mockRejectedValue(new Error('network down'));
+    const res = await fetchVercelWebInsights();
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('network down');
   });
 });
