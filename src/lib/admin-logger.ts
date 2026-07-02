@@ -37,6 +37,10 @@ interface AdminEventInput {
   url?: string;
   stackTrace?: string;
   browserInfo?: Record<string, unknown>;
+  sport?: 'golf' | 'baseball' | 'shared';
+  teamId?: string | null;
+  fingerprint?: string;
+  source?: string;
 }
 
 
@@ -66,6 +70,10 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
         url: input.url ?? null,
         stack_trace: input.stackTrace ?? null,
         browser_info: (input.browserInfo ?? null) as Json,
+        sport: input.sport ?? null,
+        team_id: input.teamId ?? null,
+        fingerprint: input.fingerprint ?? null,
+        source: input.source ?? null,
       })
       .select('id')
       .single();
@@ -116,6 +124,7 @@ export async function logSignup(
   role: 'coach' | 'player',
   metadata?: Record<string, unknown>
 ): Promise<string | null> {
+  const sport = metadata?.sport as 'golf' | 'baseball' | 'shared' | undefined;
   return logAdminEvent({
     eventType: 'signup',
     title: `New ${role} signed up`,
@@ -124,6 +133,8 @@ export async function logSignup(
     userId,
     userEmail,
     metadata: { role, ...metadata },
+    source: 'auth',
+    sport,
   });
 }
 
@@ -135,6 +146,7 @@ export async function logLogin(
   userEmail: string,
   metadata?: Record<string, unknown>
 ): Promise<string | null> {
+  const sport = metadata?.sport as 'golf' | 'baseball' | 'shared' | undefined;
   return logAdminEvent({
     eventType: 'login',
     title: 'User logged in',
@@ -142,6 +154,8 @@ export async function logLogin(
     userId,
     userEmail,
     metadata,
+    source: 'auth',
+    sport,
   });
 }
 
@@ -197,6 +211,7 @@ export async function logSecurityEvent(
     title,
     severity,
     metadata,
+    source: 'auth',
   });
 }
 
