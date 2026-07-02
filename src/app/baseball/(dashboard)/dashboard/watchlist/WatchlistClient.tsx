@@ -1,24 +1,54 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+/**
+ * ============================================================================
+ * WatchlistClient — THE WAR ROOM watchlist, composed from the "Living Annual"
+ * kit (spec: docs/baseball/design-system-living-annual.md; plan:
+ * docs/baseball/ui-migration-execution-plan.md §3.2 watchlist row).
+ * ----------------------------------------------------------------------------
+ * PRESENTATION ONLY (P4.20). Same read/write paths as before — `useWatchlist`
+ * (read-only), the watchlist server actions, the direct client add-search
+ * query, and CSV export are untouched. Only the chrome is re-skinned onto the
+ * kit (`RecruitCard`-style rows, `SectionMasthead`, `EmptyIssue`, `CommitSeal`,
+ * `ModalShell`, …).
+ * ========================================================================== */
+
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/header';
-import { Button, IconButton } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Avatar } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Modal } from '@/components/ui/modal';
-import { Textarea } from '@/components/ui/textarea';
-import { EmptyState } from '@/components/ui/empty-state';
+import Link from 'next/link';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import {
+  SectionMasthead,
+  Eyebrow,
+  PaperCard,
+  HairlineRule,
+  InkBadge,
+  StatReadout,
+  EditorsLetter,
+  EmptyIssue,
+  CommitSeal,
+  Reveal,
+  pressableClass,
+  EASE_SOFT,
+  PACE,
+} from '@/components/baseball/living-annual';
+import {
+  Button,
+  IconButton,
+  Select,
+  Checkbox,
+  Avatar,
+  Input,
+  TextArea,
+  Skeleton,
+  ModalShell,
+} from '@/components/fairway';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { useToast } from '@/components/ui/sonner';
 import {
   IconSearch,
-  IconFilter,
   IconDownload,
   IconPlus,
   IconTrash,
@@ -37,39 +67,213 @@ import {
   addWatchlistNote,
   addToWatchlist,
 } from '@/app/baseball/actions/watchlist';
-import { getFullName } from '@/lib/utils';
+import { getFullName, getPipelineStageLabel, cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
-import type { PipelineStage, Player } from '@/lib/types';
+import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
+import type { PipelineStage, Player, WatchlistWithPlayer } from '@/lib/types';
 
 // Sortable columns
 type SortKey = 'name' | 'position' | 'state' | 'gradYear' | 'stage' | 'dateAdded';
 type SortDirection = 'asc' | 'desc';
 
-const stageOptions: { value: PipelineStage | ''; label: string }[] = [
-  { value: '', label: 'All Stages' },
-  { value: 'watchlist', label: 'Watching' },
-  { value: 'high_priority', label: 'High Priority' },
-  { value: 'offer_extended', label: 'Offer Extended' },
-  { value: 'committed', label: 'Committed' },
-  { value: 'uninterested', label: 'Not Interested' },
-];
+const statusOptions = PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label }));
 
-const stageLabels: Record<string, string> = {
-  watchlist: 'Watching',
-  high_priority: 'High Priority',
-  offer_extended: 'Offer Extended',
-  committed: 'Committed',
-  uninterested: 'Not Interested',
-};
+/** Keyboard-activate a non-`<Button>` pressable element on Enter/Space (the
+ * kit's own row/card molecules — `RecruitCard`, `PlayerRowPlate` — follow the
+ * same `role="button"` + manual keydown pattern rather than a raw `<button>`). */
+function activateOnKey(e: ReactKeyboardEvent<HTMLElement>, action: () => void) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    action();
+  }
+}
+
+/** Fairway `<Select>` needs a real option value — map the "no filter" empty
+ * string to this sentinel at the select boundary only; every other piece of
+ * filtering logic keeps comparing against `''` exactly as before. */
+const ALL = '__all__';
 
 const gradYearOptions = [
-  { value: '', label: 'All Years' },
   { value: '2025', label: '2025' },
   { value: '2026', label: '2026' },
   { value: '2027', label: '2027' },
   { value: '2028', label: '2028' },
   { value: '2029', label: '2029' },
 ];
+
+/** Committed reads sodium (a live/PR moment, spec §3.2 watchlist row); every
+ * other stage reads the WAR ROOM's clay ink. */
+function stageTone(stage: PipelineStage): 'pursuit' | 'sodium' {
+  return stage === 'committed' ? 'sodium' : 'pursuit';
+}
+
+function formatDate(dateString: string | null) {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+interface SortableHeaderProps {
+  label: string;
+  sortKeyValue: SortKey;
+  sortKey: SortKey;
+  sortDirection: SortDirection;
+  onSort: (key: SortKey) => void;
+}
+
+function SortableHeader({ label, sortKeyValue, sortKey, sortDirection, onSort }: SortableHeaderProps) {
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={() => onSort(sortKeyValue)}
+      onKeyDown={(e) => activateOnKey(e, () => onSort(sortKeyValue))}
+      className="inline-flex cursor-pointer items-center gap-1 text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary outline-none transition-colors hover:text-text-primary focus-visible:ring-2 focus-visible:ring-pursuit"
+    >
+      {label}
+      {sortKey === sortKeyValue ? (
+        sortDirection === 'asc' ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />
+      ) : null}
+    </span>
+  );
+}
+
+// ─── Loading skeleton — shape-matched, never a blank screen or a spinner ────
+
+function WatchlistSkeleton() {
+  return (
+    <div role="status" aria-busy="true" aria-label="Loading watchlist" className="space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-9 w-32" />
+        ))}
+      </div>
+      <PaperCard className="overflow-hidden p-0">
+        <div className="border-b border-[color:var(--hairline)] px-6 py-4">
+          <div className="flex items-center gap-6">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="border-b border-[color:var(--hairline)] px-6 py-4 last:border-b-0">
+            <div className="flex items-center gap-6">
+              <Skeleton className="h-4 w-4" />
+              <div className="flex items-center gap-3">
+                <Skeleton circle className="h-10 w-10" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+          </div>
+        ))}
+      </PaperCard>
+    </div>
+  );
+}
+
+// ─── Mobile card row ─────────────────────────────────────────────────────--
+
+interface WatchlistMobileCardProps {
+  item: WatchlistWithPlayer;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onOpenPeek: () => void;
+  onStageChange: (stage: PipelineStage) => void;
+  onEditNote: () => void;
+  onRemove: () => void;
+}
+
+function WatchlistMobileCard({
+  item,
+  selected,
+  onToggleSelect,
+  onOpenPeek,
+  onStageChange,
+  onEditNote,
+  onRemove,
+}: WatchlistMobileCardProps) {
+  const name = getFullName(item.player?.first_name, item.player?.last_name);
+  const stage = (item.pipeline_stage ?? 'watchlist') as PipelineStage;
+
+  return (
+    <PaperCard className="p-4">
+      <div className="flex items-start gap-3">
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select ${name}`} className="mt-1" />
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onOpenPeek}
+          onKeyDown={(e) => activateOnKey(e, onOpenPeek)}
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-3 rounded-fw-sm px-1 py-1 text-left outline-none',
+            pressableClass({ ink: 'pursuit' }),
+          )}
+        >
+          <Avatar src={item.player?.avatar_url} name={name} size="md" />
+          <div className="min-w-0 flex-1">
+            <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
+            <Eyebrow
+              items={[item.player?.primary_position, item.player?.grad_year ? String(item.player.grad_year) : undefined]}
+              ink="pursuit"
+              className="mt-0.5"
+            />
+          </div>
+        </div>
+        <InkBadge label={getPipelineStageLabel(stage)} tone={stageTone(stage)} variant="solid" className="shrink-0" />
+      </div>
+
+      <HairlineRule ink="hairline" className="my-3" />
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <span className="block text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">Location</span>
+          <span className="font-annual text-body-sm text-text-secondary">{item.player?.state || '—'}</span>
+        </div>
+        <div>
+          <span className="block text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">Added</span>
+          <span className="font-annual text-body-sm text-text-secondary">{formatDate(item.added_at || item.created_at)}</span>
+        </div>
+      </div>
+
+      {item.notes ? (
+        <p className="mt-3 line-clamp-2 rounded-fw-sm bg-surface-sunken px-3 py-2 font-annual text-body-sm text-text-secondary">
+          {item.notes}
+        </p>
+      ) : null}
+
+      <div className="mt-3">
+        <Select
+          size="sm"
+          aria-label={`Change stage for ${name}`}
+          value={stage}
+          onValueChange={(v) => v && onStageChange(v as PipelineStage)}
+          options={statusOptions}
+        />
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <Button size="sm" onClick={onOpenPeek} className="flex-1" leftIcon={<IconEye size={14} />}>
+          View
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onEditNote} leftIcon={<IconNote size={14} />}>
+          Note
+        </Button>
+        <IconButton variant="danger" size="sm" aria-label={`Remove ${name} from watchlist`} onClick={onRemove}>
+          <IconTrash size={16} />
+        </IconButton>
+      </div>
+    </PaperCard>
+  );
+}
+
+// ─── Page ───────────────────────────────────────────────────────────────--
 
 export function WatchlistClient() {
   const router = useRouter();
@@ -78,6 +282,7 @@ export function WatchlistClient() {
   const { watchlist, loading, refetch } = useWatchlist();
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  const reducedMotion = useReducedMotion() ?? false;
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,6 +304,8 @@ export function WatchlistClient() {
   const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
   const [bulkRemoveConfirm, setBulkRemoveConfirm] = useState(false);
   const [bulkStageModal, setBulkStageModal] = useState(false);
+  const [bulkNoteModal, setBulkNoteModal] = useState(false);
+  const [bulkNoteValue, setBulkNoteValue] = useState('');
 
   // Player search for add modal
   const [playerSearchQuery, setPlayerSearchQuery] = useState('');
@@ -111,7 +318,16 @@ export function WatchlistClient() {
   // Loading states
   const [removing, setRemoving] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
+  const [savingBulkNote, setSavingBulkNote] = useState(false);
   const [addingPlayer, setAddingPlayer] = useState(false);
+
+  // Commit ceremony — fires once, on a successful stage change into `committed`.
+  const [celebrateCommit, setCelebrateCommit] = useState(false);
+  useEffect(() => {
+    if (!celebrateCommit) return;
+    const timer = setTimeout(() => setCelebrateCommit(false), 1800);
+    return () => clearTimeout(timer);
+  }, [celebrateCommit]);
 
   // Get unique positions and states for filters
   const uniquePositions = useMemo(() => {
@@ -186,7 +402,7 @@ export function WatchlistClient() {
           comparison = (a.pipeline_stage || '').localeCompare(b.pipeline_stage || '');
           break;
         case 'dateAdded':
-          comparison = new Date(a.added_at || a.created_at || 0).getTime() - 
+          comparison = new Date(a.added_at || a.created_at || 0).getTime() -
                        new Date(b.added_at || b.created_at || 0).getTime();
           break;
       }
@@ -288,7 +504,8 @@ export function WatchlistClient() {
       }
       const succeededCount = results.length - failedCount;
       if (succeededCount > 0) {
-        showToast(`${succeededCount} player(s) moved to ${stageLabels[stage]}`, 'success');
+        showToast(`${succeededCount} player(s) moved to ${getPipelineStageLabel(stage)}`, 'success');
+        if (stage === 'committed') setCelebrateCommit(true);
       }
     } catch {
       showToast('Failed to update some players', 'error');
@@ -314,6 +531,32 @@ export function WatchlistClient() {
     }
   };
 
+  const handleSaveBulkNote = async () => {
+    if (!bulkNoteValue.trim()) return;
+    setSavingBulkNote(true);
+    try {
+      const results = await Promise.all(
+        Array.from(selectedIds).map(id => addWatchlistNote(id, bulkNoteValue))
+      );
+      refetch();
+      setSelectedIds(new Set());
+      setBulkNoteModal(false);
+      setBulkNoteValue('');
+      const failedCount = results.filter(r => !r.success).length;
+      if (failedCount > 0) {
+        showToast(`${failedCount} note(s) could not be saved`, 'error');
+      }
+      const succeededCount = results.length - failedCount;
+      if (succeededCount > 0) {
+        showToast('Notes added', 'success');
+      }
+    } catch {
+      showToast('Failed to save notes', 'error');
+    } finally {
+      setSavingBulkNote(false);
+    }
+  };
+
   const handleStageChange = async (watchlistId: string, stage: PipelineStage) => {
     try {
       const result = await updateWatchlistStatus(watchlistId, stage);
@@ -322,6 +565,7 @@ export function WatchlistClient() {
         return;
       }
       refetch();
+      if (stage === 'committed') setCelebrateCommit(true);
     } catch {
       showToast('Failed to update stage', 'error');
     }
@@ -336,7 +580,7 @@ export function WatchlistClient() {
     setSearchingPlayers(true);
     try {
       const existingIds = watchlist.map(w => w.player_id);
-      
+
       let queryBuilder = supabase
         .from('baseball_players')
         .select('*')
@@ -387,7 +631,7 @@ export function WatchlistClient() {
       item.player?.state || '',
       item.player?.city || '',
       item.player?.high_school_name || '',
-      stageLabels[item.pipeline_stage || 'watchlist'],
+      getPipelineStageLabel(item.pipeline_stage || 'watchlist'),
       new Date(item.added_at || item.created_at || '').toLocaleDateString(),
       (item.notes || '').replace(/"/g, '""'),
     ]);
@@ -406,27 +650,6 @@ export function WatchlistClient() {
     showToast('Watchlist exported to CSV', 'success');
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const SortableHeader = ({ label, sortKeyValue }: { label: string; sortKeyValue: SortKey }) => (
-    <Button variant="ghost"
-      onClick={() => handleSort(sortKeyValue)}
-      className="flex items-center gap-1 text-left text-label font-medium uppercase tracking-wider text-warm-500 hover:text-warm-700 transition-colors"
-    >
-      {label}
-      {sortKey === sortKeyValue && (
-        sortDirection === 'asc' ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />
-      )}
-    </Button>
-  );
-
   const clearFilters = () => {
     setSearchQuery('');
     setPositionFilter('');
@@ -435,551 +658,507 @@ export function WatchlistClient() {
     setStageFilter('');
   };
 
-  const hasActiveFilters = searchQuery || positionFilter || stateFilter || gradYearFilter || stageFilter;
+  const hasActiveFilters = Boolean(searchQuery || positionFilter || stateFilter || gradYearFilter || stageFilter);
+
+  const masthead = (
+    <SectionMasthead
+      eyebrow="THE WAR ROOM · WATCHLIST"
+      title="Watchlist"
+      ink="pursuit"
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setShowAddModal(true)} leftIcon={<IconPlus size={16} />}>
+            Add Player
+          </Button>
+          <Button variant="secondary" size="sm" onClick={handleExportCSV} leftIcon={<IconDownload size={16} />}>
+            Export CSV
+          </Button>
+        </div>
+      }
+    >
+      {watchlist.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[200px] max-w-md flex-1">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or school…"
+              leading={<IconSearch size={16} />}
+            />
+          </div>
+
+          <div className="w-36">
+            <Select
+              size="sm"
+              aria-label="Filter by position"
+              value={positionFilter || ALL}
+              onValueChange={(v) => setPositionFilter(!v || v === ALL ? '' : v)}
+              options={[{ value: ALL, label: 'All Positions' }, ...uniquePositions.map(p => ({ value: p, label: p }))]}
+            />
+          </div>
+
+          <div className="w-36">
+            <Select
+              size="sm"
+              aria-label="Filter by state"
+              value={stateFilter || ALL}
+              onValueChange={(v) => setStateFilter(!v || v === ALL ? '' : v)}
+              options={[{ value: ALL, label: 'All States' }, ...uniqueStates.map(s => ({ value: s, label: s }))]}
+            />
+          </div>
+
+          <div className="w-32">
+            <Select
+              size="sm"
+              aria-label="Filter by grad year"
+              value={gradYearFilter || ALL}
+              onValueChange={(v) => setGradYearFilter(!v || v === ALL ? '' : v)}
+              options={[{ value: ALL, label: 'All Years' }, ...gradYearOptions]}
+            />
+          </div>
+
+          <div className="w-40">
+            <Select
+              size="sm"
+              aria-label="Filter by stage"
+              value={stageFilter || ALL}
+              onValueChange={(v) => setStageFilter(!v || v === ALL ? '' : (v as PipelineStage))}
+              options={[{ value: ALL, label: 'All Stages' }, ...statusOptions]}
+            />
+          </div>
+
+          {hasActiveFilters ? (
+            <Button variant="ghost" size="sm" onClick={clearFilters} leftIcon={<IconX size={14} />}>
+              Clear
+            </Button>
+          ) : null}
+
+          <span className="ml-auto inline-flex items-baseline gap-1.5 text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+            <StatReadout value={watchlist.length} ariaLabel="Players in watchlist" className="font-annual text-body-lg text-pursuit" />
+            {watchlist.length === 1 ? 'player' : 'players'}
+          </span>
+        </div>
+      ) : null}
+    </SectionMasthead>
+  );
 
   if (loading) {
-    return null; // loading.tsx handles this
+    return (
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+        {masthead}
+        <div className="mt-8">
+          <WatchlistSkeleton />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <>
-      <Header
-        title="Watchlist"
-        subtitle={watchlist.length === 0 
-          ? 'Track and manage your recruiting prospects' 
-          : `${watchlist.length} player${watchlist.length !== 1 ? 's' : ''} in your watchlist`
-        }
-      />
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+      {masthead}
 
-      <div className="p-6 lg:p-8">
+      <div className="mt-8 space-y-6">
         {/* Empty State */}
         {watchlist.length === 0 ? (
-          <Card variant="glass">
-            <CardContent className="p-8 text-center relative overflow-hidden">
-              <ShineEffect />
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <IconUsers size={32} className="text-primary-600" />
-                </div>
-                <h2 className="text-xl font-semibold tracking-tight text-warm-900 mb-2">
-                  Your watchlist is empty
-                </h2>
-                <p className="text-sm leading-relaxed text-warm-600 mb-6">
-                  Start building your recruiting pipeline by adding players from the Discover page 
-                  or search for players below.
-                </p>
-                <div className="flex items-center justify-center gap-3">
-                  <Button onClick={() => router.push('/baseball/dashboard/discover')}>
-                    Discover Players
-                  </Button>
-                  <Button variant="secondary" onClick={() => setShowAddModal(true)}>
-                    <IconPlus size={16} className="mr-2" />
-                    Quick Add
-                  </Button>
-                </div>
+          <EmptyIssue
+            variant="pipeline"
+            ink="pursuit"
+            action={
+              <div className="flex flex-wrap items-center gap-3">
+                <Button asChild variant="primary" size="sm">
+                  <Link href="/baseball/dashboard/discover" className="inline-flex items-center gap-2">
+                    <IconUsers size={16} />
+                    Discover players
+                  </Link>
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setShowAddModal(true)} leftIcon={<IconPlus size={16} />}>
+                  Quick add
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+            }
+          />
         ) : (
           <>
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <div className="relative flex-1 min-w-[200px] max-w-md">
-                <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name or school..."
-                  className="pl-9"
-                />
-              </div>
-
-              <Select
-                options={[{ value: '', label: 'All Positions' }, ...uniquePositions.map(p => ({ value: p, label: p }))]}
-                value={positionFilter}
-                onChange={setPositionFilter}
-                className="w-36"
-              />
-
-              <Select
-                options={[{ value: '', label: 'All States' }, ...uniqueStates.map(s => ({ value: s, label: s }))]}
-                value={stateFilter}
-                onChange={setStateFilter}
-                className="w-36"
-              />
-
-              <Select
-                options={gradYearOptions}
-                value={gradYearFilter}
-                onChange={setGradYearFilter}
-                className="w-32"
-              />
-
-              <Select
-                options={stageOptions}
-                value={stageFilter}
-                onChange={(v) => setStageFilter(v as PipelineStage | '')}
-                className="w-40"
-              />
-
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <IconX size={14} className="mr-1" />
-                  Clear
-                </Button>
-              )}
-
-              <div className="flex-1" />
-
-              <Button variant="secondary" size="sm" onClick={() => setShowAddModal(true)}>
-                <IconPlus size={16} className="mr-1.5" />
-                Add Player
-              </Button>
-
-              <Button variant="secondary" size="sm" onClick={handleExportCSV}>
-                <IconDownload size={16} className="mr-1.5" />
-                Export CSV
-              </Button>
-            </div>
-
             {/* Bulk Actions Bar */}
             {selectedIds.size > 0 && (
-              <div className="relative glass-standard rounded-2xl p-4 mb-6 overflow-clip">
-                <ShineEffect />
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-primary-700">
+              <PaperCard className="p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-annual text-body-sm text-pursuit">
                     {selectedIds.size} player{selectedIds.size !== 1 ? 's' : ''} selected
                   </p>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setBulkStageModal(true)}
-                    >
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button variant="secondary" size="sm" onClick={() => setBulkStageModal(true)}>
                       Move Stage
                     </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        const note = prompt('Enter note for selected players:');
-                        if (note) {
-                          Promise.all(
-                            Array.from(selectedIds).map(id => addWatchlistNote(id, note))
-                          ).then((results) => {
-                            refetch();
-                            setSelectedIds(new Set());
-                            const failedCount = results.filter(r => !r.success).length;
-                            if (failedCount > 0) {
-                              showToast(`${failedCount} note(s) could not be saved`, 'error');
-                            }
-                            const succeededCount = results.length - failedCount;
-                            if (succeededCount > 0) {
-                              showToast('Notes added', 'success');
-                            }
-                          });
-                        }
-                      }}
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => setBulkNoteModal(true)}>
                       Add Note
                     </Button>
-                    <Button
-                      variant="ghost"
+                    <IconButton
+                      variant="danger"
                       size="sm"
+                      aria-label="Remove selected players"
                       onClick={() => setBulkRemoveConfirm(true)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
-                      <IconTrash size={14} className="mr-1" />
-                      Remove
-                    </Button>
-                    <Button variant="ghost"
-                      onClick={() => setSelectedIds(new Set())}
-                      className="text-sm text-warm-600 hover:text-warm-900 underline"
-                    >
+                      <IconTrash size={16} />
+                    </IconButton>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
                       Clear
                     </Button>
                   </div>
                 </div>
-              </div>
+              </PaperCard>
             )}
 
             {/* Results */}
             {filteredWatchlist.length === 0 ? (
-              <EmptyState
-                icon={<IconFilter size={24} />}
-                title="No players match your filters"
-                description="Try adjusting your filter criteria or clear filters to see all players."
+              <EditorsLetter
+                ink="pursuit"
+                title="No players match your filters."
+                body="Widen a filter — the rest of your watchlist is one clear away."
                 action={
-                  <Button variant="secondary" onClick={clearFilters}>
-                    Clear Filters
+                  <Button variant="secondary" size="sm" onClick={clearFilters}>
+                    Clear filters
                   </Button>
                 }
               />
             ) : (
               <>
                 {/* Mobile Card View */}
-                <div className="lg:hidden space-y-4">
-                  {filteredWatchlist.map(item => (
-                    <div key={item.id} className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm">
-                      <div className="flex items-start gap-3 mb-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(item.id)}
-                          onChange={() => toggleSelection(item.id)}
-                          className="mt-1 rounded border-warm-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
-                        />
-                        <button
-                          type="button"
-                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer text-left appearance-none bg-transparent border-0 p-0"
-                          onClick={() => setPeekPlayerId(item.player?.id || null)}
-                        >
-                          <Avatar
-                            src={item.player?.avatar_url}
-                            name={getFullName(item.player?.first_name, item.player?.last_name)}
-                            size="md"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-warm-900 truncate">
-                              {getFullName(item.player?.first_name, item.player?.last_name)}
-                            </h3>
-                            <p className="text-sm text-warm-500 truncate">
-                              {item.player?.primary_position} • {item.player?.grad_year}
-                            </p>
-                          </div>
-                        </button>
-                        <Badge
-                          variant={
-                            item.pipeline_stage === 'committed' ? 'success'
-                              : item.pipeline_stage === 'high_priority' ? 'warning'
-                              : item.pipeline_stage === 'offer_extended' ? 'primary'
-                              : item.pipeline_stage === 'uninterested' ? 'danger'
-                              : 'secondary'
-                          }
-                        >
-                          {stageLabels[item.pipeline_stage || 'watchlist']}
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                        <div>
-                          <span className="text-warm-500">Location:</span>
-                          <span className="ml-1 text-warm-900">
-                            {item.player?.state || 'N/A'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-warm-500">Added:</span>
-                          <span className="ml-1 text-warm-900">
-                            {formatDate(item.added_at || item.created_at)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {item.notes && (
-                        <p className="text-sm text-warm-600 line-clamp-2 mb-3 bg-warm-50 rounded-lg px-3 py-2">
-                          {item.notes}
-                        </p>
-                      )}
-
-                      <div className="mb-3">
-                        <Select
-                          options={stageOptions.filter(s => s.value !== '')}
-                          value={item.pipeline_stage || 'watchlist'}
-                          onChange={(v) => handleStageChange(item.id, v as PipelineStage)}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => setPeekPlayerId(item.player?.id || null)}
-                          className="flex-1 min-h-[44px]"
-                        >
-                          <IconEye size={14} className="mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setNoteModal({ id: item.id, note: item.notes || '' })}
-                          className="min-h-[44px]"
-                        >
-                          <IconNote size={14} className="mr-1" />
-                          Note
-                        </Button>
-                        <IconButton variant="default" aria-label="Delete"
-                          onClick={() => setRemoveConfirm(item.id)}
-                          className="min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center"
-                        >
-                          <IconTrash size={18} />
-                        </IconButton>
-                      </div>
-                    </div>
+                <div className="space-y-4 lg:hidden">
+                  {filteredWatchlist.map((item, index) => (
+                    <Reveal key={item.id} staggerIndex={index}>
+                      <WatchlistMobileCard
+                        item={item}
+                        selected={selectedIds.has(item.id)}
+                        onToggleSelect={() => toggleSelection(item.id)}
+                        onOpenPeek={() => setPeekPlayerId(item.player?.id || null)}
+                        onStageChange={(stage) => handleStageChange(item.id, stage)}
+                        onEditNote={() => setNoteModal({ id: item.id, note: item.notes || '' })}
+                        onRemove={() => setRemoveConfirm(item.id)}
+                      />
+                    </Reveal>
                   ))}
                 </div>
 
                 {/* Desktop Table View */}
-                <div className="hidden lg:block bg-white rounded-2xl border border-warm-200 overflow-hidden">
+                <PaperCard className="hidden overflow-hidden p-0 lg:block">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-warm-200 bg-warm-50">
-                          <th className="px-4 py-3 w-12">
-                            <input
-                              type="checkbox"
+                        <tr className="border-b border-[color:var(--hairline)]">
+                          <th className="w-12 px-4 py-3">
+                            <Checkbox
                               checked={selectedIds.size === filteredWatchlist.length && filteredWatchlist.length > 0}
-                              onChange={toggleSelectAll}
-                              className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
+                              onCheckedChange={toggleSelectAll}
+                              aria-label="Select all players"
                             />
                           </th>
                           <th className="px-6 py-3 text-left">
-                            <SortableHeader label="Player" sortKeyValue="name" />
+                            <SortableHeader label="Player" sortKeyValue="name" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} />
                           </th>
                           <th className="px-6 py-3 text-left">
-                            <SortableHeader label="Position" sortKeyValue="position" />
+                            <SortableHeader label="Position" sortKeyValue="position" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} />
                           </th>
                           <th className="px-6 py-3 text-left">
-                            <SortableHeader label="State" sortKeyValue="state" />
+                            <SortableHeader label="State" sortKeyValue="state" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} />
                           </th>
                           <th className="px-6 py-3 text-left">
-                            <SortableHeader label="Grad Year" sortKeyValue="gradYear" />
+                            <SortableHeader label="Grad Year" sortKeyValue="gradYear" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} />
                           </th>
                           <th className="px-6 py-3 text-left">
-                            <SortableHeader label="Stage" sortKeyValue="stage" />
+                            <SortableHeader label="Stage" sortKeyValue="stage" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} />
                           </th>
                           <th className="px-6 py-3 text-left">
-                            <SortableHeader label="Date Added" sortKeyValue="dateAdded" />
+                            <SortableHeader label="Date Added" sortKeyValue="dateAdded" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} />
                           </th>
-                          <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-500">
+                          <th className="px-6 py-3 text-left text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
                             Notes
                           </th>
-                          <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-500">
+                          <th className="px-6 py-3 text-left text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-warm-100">
-                        {filteredWatchlist.map(item => (
-                          <tr key={item.id} className="hover:bg-warm-50 transition-colors">
-                            <td className="px-4 py-4">
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.has(item.id)}
-                                onChange={() => toggleSelection(item.id)}
-                                className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                              />
-                            </td>
-                            <td className="px-6 py-4">
-                              <button
-                                type="button"
-                                className="flex items-center gap-3 cursor-pointer group text-left appearance-none bg-transparent border-0 p-0 w-full"
-                                onClick={() => setPeekPlayerId(item.player?.id || null)}
-                              >
-                                <Avatar
-                                  src={item.player?.avatar_url}
-                                  name={getFullName(item.player?.first_name, item.player?.last_name)}
-                                  size="md"
-                                />
-                                <div>
-                                  <p className="text-sm font-medium text-warm-900 group-hover:text-primary-600 transition-colors">
-                                    {getFullName(item.player?.first_name, item.player?.last_name)}
-                                  </p>
-                                  <p className="text-xs text-warm-500">
-                                    {item.player?.high_school_name || 'No school'}
-                                  </p>
-                                </div>
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-600">
-                              {item.player?.primary_position || '—'}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-600">
-                              {item.player?.state || '—'}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-600">
-                              {item.player?.grad_year || '—'}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Select
-                                options={stageOptions.filter(s => s.value !== '')}
-                                value={item.pipeline_stage || 'watchlist'}
-                                onChange={(v) => handleStageChange(item.id, v as PipelineStage)}
-                                className="w-40 text-sm"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-500">
-                              {formatDate(item.added_at || item.created_at)}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Button variant="ghost"
-                                onClick={() => setNoteModal({ id: item.id, note: item.notes || '' })}
-                                className="text-xs text-warm-600 hover:text-warm-900 underline max-w-[120px] truncate block"
-                                title={item.notes || 'Add note'}
-                              >
-                                {item.notes 
-                                  ? (item.notes.length > 20 ? item.notes.substring(0, 20) + '...' : item.notes)
-                                  : 'Add note'
-                                }
-                              </Button>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                      <tbody className="divide-y divide-[color:var(--hairline)]">
+                        {filteredWatchlist.map(item => {
+                          const name = getFullName(item.player?.first_name, item.player?.last_name);
+                          const stage = (item.pipeline_stage ?? 'watchlist') as PipelineStage;
+                          return (
+                            <tr key={item.id} className="align-middle transition-colors hover:bg-pursuit/[0.03]">
+                              <td className="px-4 py-4">
+                                <Checkbox checked={selectedIds.has(item.id)} onCheckedChange={() => toggleSelection(item.id)} aria-label={`Select ${name}`} />
+                              </td>
+                              <td className="px-6 py-4">
+                                <div
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={() => setPeekPlayerId(item.player?.id || null)}
+                                  onKeyDown={(e) => activateOnKey(e, () => setPeekPlayerId(item.player?.id || null))}
+                                  className={cn('flex w-full items-center gap-3 rounded-fw-sm px-1 py-1 text-left outline-none', pressableClass({ ink: 'pursuit' }))}
                                 >
-                                  <IconEye size={14} className="mr-1" />
-                                  View
-                                </Button>
-                                <IconButton variant="default" aria-label="Delete"
-                                  onClick={() => setRemoveConfirm(item.id)}
-                                  className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                  <Avatar src={item.player?.avatar_url} name={name} size="md" />
+                                  <div className="min-w-0">
+                                    <p className="truncate font-annual text-body-sm text-text-primary">{name}</p>
+                                    <p className="truncate text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 font-annual text-body-sm text-text-secondary">{item.player?.primary_position || '—'}</td>
+                              <td className="px-6 py-4 font-annual text-body-sm text-text-secondary">{item.player?.state || '—'}</td>
+                              <td className="px-6 py-4 font-annual text-body-sm text-text-secondary">{item.player?.grad_year || '—'}</td>
+                              <td className="px-6 py-4">
+                                <div className="w-44">
+                                  <Select
+                                    size="sm"
+                                    aria-label={`Change stage for ${name}`}
+                                    value={stage}
+                                    onValueChange={(v) => v && handleStageChange(item.id, v as PipelineStage)}
+                                    options={statusOptions}
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+                                {formatDate(item.added_at || item.created_at)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => setNoteModal({ id: item.id, note: item.notes || '' })}
+                                  onKeyDown={(e) => activateOnKey(e, () => setNoteModal({ id: item.id, note: item.notes || '' }))}
+                                  title={item.notes || 'Add note'}
+                                  className="block max-w-[140px] cursor-pointer truncate rounded-fw-sm px-1 py-1 text-left font-annual text-body-sm text-text-secondary underline decoration-[color:var(--hairline)] underline-offset-2 outline-none hover:text-text-primary focus-visible:ring-2 focus-visible:ring-pursuit"
                                 >
-                                  <IconTrash size={16} />
-                                </IconButton>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                  {item.notes
+                                    ? (item.notes.length > 20 ? `${item.notes.slice(0, 20)}…` : item.notes)
+                                    : 'Add note'
+                                  }
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-1">
+                                  <Button variant="ghost" size="sm" onClick={() => setPeekPlayerId(item.player?.id || null)}>
+                                    View
+                                  </Button>
+                                  <IconButton
+                                    variant="danger"
+                                    size="sm"
+                                    aria-label={`Remove ${name} from watchlist`}
+                                    onClick={() => setRemoveConfirm(item.id)}
+                                  >
+                                    <IconTrash size={16} />
+                                  </IconButton>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </PaperCard>
 
                 {/* Results count */}
-                <div className="mt-4 text-sm text-warm-500 text-center">
+                <p className="text-center text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
                   Showing {filteredWatchlist.length} of {watchlist.length} players
-                </div>
+                </p>
               </>
             )}
           </>
         )}
       </div>
 
+      {/* Commit ceremony — fires once, on a successful stage change into `committed`. */}
+      <AnimatePresence>
+        {celebrateCommit ? (
+          <m.div
+            key="commit-seal"
+            role="status"
+            aria-live="polite"
+            className="pointer-events-none fixed inset-x-0 top-20 z-50 flex flex-col items-center gap-2"
+            initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : PACE.base, ease: EASE_SOFT }}
+          >
+            <CommitSeal label="COMMITTED" size="md" />
+            <span className="sr-only">Player marked committed</span>
+          </m.div>
+        ) : null}
+      </AnimatePresence>
+
       {/* Add Player Modal */}
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setPlayerSearchQuery('');
-          setPlayerSearchResults([]);
+      <ModalShell
+        open={showAddModal}
+        onOpenChange={(open) => {
+          setShowAddModal(open);
+          if (!open) {
+            setPlayerSearchQuery('');
+            setPlayerSearchResults([]);
+          }
         }}
         title="Add Player to Watchlist"
         size="md"
       >
-        <div className="space-y-4">
-          <div className="relative">
-            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+        <ModalShell.Body>
+          <div className="space-y-4">
             <Input
               value={playerSearchQuery}
               onChange={(e) => {
                 setPlayerSearchQuery(e.target.value);
                 searchPlayers(e.target.value);
               }}
-              placeholder="Search by name or school..."
-              className="pl-9"
+              placeholder="Search by name or school…"
+              leading={<IconSearch size={16} />}
               // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary search input in add-to-watchlist dialog
               autoFocus
             />
-          </div>
 
-          {searchingPlayers && (
-            <p className="text-sm text-warm-500">Searching...</p>
-          )}
+            {searchingPlayers ? (
+              <p className="font-annual text-body-sm text-text-tertiary">Searching…</p>
+            ) : null}
 
-          {playerSearchResults.length > 0 && (
-            <div className="border border-warm-200 rounded-lg divide-y divide-warm-100 max-h-64 overflow-y-auto">
-              {playerSearchResults.map(player => (
-                <Button variant="ghost"
-                  key={player.id}
-                  onClick={() => handleAddPlayer(player)}
-                  disabled={addingPlayer}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-warm-50 transition-colors text-left disabled:opacity-50"
-                >
-                  <Avatar
-                    name={getFullName(player.first_name, player.last_name)}
-                    src={player.avatar_url}
-                    size="sm"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-warm-900 truncate">
-                      {getFullName(player.first_name, player.last_name)}
-                    </p>
-                    <p className="text-xs text-warm-500 truncate">
-                      {player.primary_position} • {player.grad_year} • {player.high_school_name}
-                    </p>
+            {playerSearchResults.length > 0 ? (
+              <div className="max-h-64 divide-y divide-[color:var(--hairline)] overflow-y-auto rounded-fw-sm border border-[color:var(--hairline)]">
+                {playerSearchResults.map(player => (
+                  <div
+                    key={player.id}
+                    role="button"
+                    tabIndex={addingPlayer ? -1 : 0}
+                    aria-disabled={addingPlayer}
+                    onClick={() => !addingPlayer && handleAddPlayer(player)}
+                    onKeyDown={(e) => !addingPlayer && activateOnKey(e, () => handleAddPlayer(player))}
+                    className={cn(
+                      'flex w-full items-center gap-3 p-3 text-left outline-none',
+                      addingPlayer ? 'cursor-not-allowed opacity-50' : pressableClass({ ink: 'pursuit' }),
+                    )}
+                  >
+                    <Avatar name={getFullName(player.first_name, player.last_name)} src={player.avatar_url} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-annual text-body-sm text-text-primary">
+                        {getFullName(player.first_name, player.last_name)}
+                      </p>
+                      <p className="truncate text-eyebrow text-text-tertiary">
+                        {player.primary_position} • {player.grad_year} • {player.high_school_name}
+                      </p>
+                    </div>
+                    <IconPlus size={16} className="text-pursuit" />
                   </div>
-                  <IconPlus size={16} className="text-primary-600" />
-                </Button>
-              ))}
+                ))}
+              </div>
+            ) : null}
+
+            {playerSearchQuery.length >= 2 && playerSearchResults.length === 0 && !searchingPlayers ? (
+              <p className="py-4 text-center font-annual text-body-sm text-text-tertiary">
+                No players found matching &quot;{playerSearchQuery}&quot;
+              </p>
+            ) : null}
+
+            <div className="border-t border-[color:var(--hairline)] pt-4">
+              <p className="text-center text-eyebrow text-text-tertiary">
+                Or{' '}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setShowAddModal(false); router.push('/baseball/dashboard/discover'); }}
+                  onKeyDown={(e) => activateOnKey(e, () => { setShowAddModal(false); router.push('/baseball/dashboard/discover'); })}
+                  className="cursor-pointer text-pursuit underline decoration-[color:var(--hairline)] underline-offset-2 outline-none hover:text-text-primary focus-visible:ring-2 focus-visible:ring-pursuit"
+                >
+                  browse all players
+                </span>
+              </p>
             </div>
-          )}
-
-          {playerSearchQuery.length >= 2 && playerSearchResults.length === 0 && !searchingPlayers && (
-            <p className="text-sm text-warm-500 text-center py-4">
-              No players found matching &quot;{playerSearchQuery}&quot;
-            </p>
-          )}
-
-          <div className="pt-4 border-t border-warm-200">
-            <p className="text-xs text-warm-500 text-center">
-              Or <Button variant="ghost" onClick={() => { setShowAddModal(false); router.push('/baseball/dashboard/discover'); }} className="text-primary-600 hover:underline">browse all players</Button>
-            </p>
           </div>
-        </div>
-      </Modal>
+        </ModalShell.Body>
+      </ModalShell>
 
       {/* Note Modal */}
-      <Modal
-        isOpen={!!noteModal}
-        onClose={() => setNoteModal(null)}
+      <ModalShell
+        open={!!noteModal}
+        onOpenChange={(open) => { if (!open) setNoteModal(null); }}
         title="Edit Note"
         size="md"
       >
-        {noteModal && (
-          <div className="space-y-4">
-            <Textarea
-              value={noteModal.note}
-              onChange={(e) => setNoteModal({ ...noteModal, note: e.target.value })}
-              placeholder="Add notes about this player..."
-              rows={4}
-            />
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setNoteModal(null)}>
+        {noteModal ? (
+          <>
+            <ModalShell.Body>
+              <TextArea
+                value={noteModal.note}
+                onChange={(e) => setNoteModal({ ...noteModal, note: e.target.value })}
+                placeholder="Add notes about this player…"
+                rows={4}
+              />
+            </ModalShell.Body>
+            <ModalShell.Footer>
+              <Button variant="ghost" onClick={() => setNoteModal(null)}>
                 Cancel
               </Button>
               <Button onClick={handleSaveNote} disabled={savingNote}>
-                {savingNote ? 'Saving...' : 'Save Note'}
+                {savingNote ? 'Saving…' : 'Save Note'}
               </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+            </ModalShell.Footer>
+          </>
+        ) : null}
+      </ModalShell>
+
+      {/* Bulk Note Modal (kit replacement for the previous window.prompt()) */}
+      <ModalShell
+        open={bulkNoteModal}
+        onOpenChange={(open) => { setBulkNoteModal(open); if (!open) setBulkNoteValue(''); }}
+        title="Add Note to Selected Players"
+        size="sm"
+      >
+        <ModalShell.Body>
+          <p className="mb-3 font-annual text-body-sm text-text-secondary">
+            Add a note to {selectedIds.size} selected player{selectedIds.size !== 1 ? 's' : ''}:
+          </p>
+          <TextArea
+            value={bulkNoteValue}
+            onChange={(e) => setBulkNoteValue(e.target.value)}
+            placeholder="Enter note…"
+            rows={4}
+          />
+        </ModalShell.Body>
+        <ModalShell.Footer>
+          <Button variant="ghost" onClick={() => setBulkNoteModal(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSaveBulkNote} disabled={savingBulkNote || !bulkNoteValue.trim()}>
+            {savingBulkNote ? 'Saving…' : 'Save Note'}
+          </Button>
+        </ModalShell.Footer>
+      </ModalShell>
 
       {/* Bulk Stage Change Modal */}
-      <Modal
-        isOpen={bulkStageModal}
-        onClose={() => setBulkStageModal(false)}
+      <ModalShell
+        open={bulkStageModal}
+        onOpenChange={setBulkStageModal}
         title="Move to Stage"
         size="sm"
       >
-        <div className="space-y-3">
-          <p className="text-sm text-warm-600 mb-4">
+        <ModalShell.Body>
+          <p className="mb-4 font-annual text-body-sm text-text-secondary">
             Move {selectedIds.size} player{selectedIds.size !== 1 ? 's' : ''} to:
           </p>
-          {stageOptions.filter(s => s.value !== '').map(option => (
-            <Button variant="ghost"
-              key={option.value}
-              onClick={() => handleBulkStageChange(option.value as PipelineStage)}
-              className="w-full text-left px-4 py-3 rounded-lg hover:bg-warm-50 transition-colors border border-warm-200"
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
-      </Modal>
+          <div className="space-y-2">
+            {PIPELINE_STAGES.map(stage => (
+              <div
+                key={stage.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleBulkStageChange(stage.id)}
+                onKeyDown={(e) => activateOnKey(e, () => handleBulkStageChange(stage.id))}
+                className={cn(
+                  'w-full rounded-fw-sm border border-[color:var(--hairline)] px-4 py-3 text-left font-annual text-body-sm text-text-primary outline-none',
+                  pressableClass({ ink: 'pursuit' }),
+                )}
+              >
+                {stage.label}
+              </div>
+            ))}
+          </div>
+        </ModalShell.Body>
+      </ModalShell>
 
       {/* Remove Confirmation */}
       <ConfirmDialog
@@ -1010,6 +1189,6 @@ export function WatchlistClient() {
         playerId={peekPlayerId}
         onClose={() => setPeekPlayerId(null)}
       />
-    </>
+    </div>
   );
 }
