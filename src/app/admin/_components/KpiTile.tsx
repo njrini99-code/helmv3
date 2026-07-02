@@ -25,7 +25,18 @@ export function KpiTile({
     <Link
       href={href}
       className={cn(
-        'block rounded-2xl transition-shadow hover:shadow-card-hover focus-visible:outline-2',
+        // Full-height block so the tile (and its inner StatTile panel) fills
+        // the grid row when a sibling cell is taller — see StatTile's own
+        // `h-full` for the other half of this contract (phone-width KPI grid
+        // audit, 2026-07-02: orphaned label + mismatched cell heights).
+        'block h-full rounded-2xl transition-shadow hover:shadow-card-hover',
+        // Fairway's real focus token (matches src/components/fairway/data-table/data-table.tsx
+        // etc.) — the PRIOR `focus-visible:outline-2` set only outline-WIDTH
+        // with no color/style, so the browser's own default blue focus ring
+        // painted through on tap (iOS Safari can retain :focus-visible on a
+        // tapped link after an in-page refresh). This is the stray blue ring
+        // fix, not a new interaction — no other affordance changes.
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
         tone === 'danger' && 'ring-1 ring-fw-danger/40',
         tone === 'warning' && 'ring-1 ring-fw-warning/40',
       )}

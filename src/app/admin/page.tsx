@@ -28,7 +28,7 @@ async function BannerAndKpis() {
         attentionCount={banner.attentionCount}
         checkedAt={banner.checkedAt}
       />
-      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 xl:grid-cols-6">
         <KpiTile label="Sentry unresolved" value={kpis.sentryUnresolved} href="/admin/errors" tone={kpis.sentryUnresolved ? 'danger' : 'neutral'} goodDirection="down" />
         <KpiTile
           label="Errors 24h"
@@ -81,7 +81,7 @@ async function TriagePanel() {
   const regressed = items.filter((i) => i.substatus === 'regressed');
   return (
     <div className="grid gap-4 xl:grid-cols-3">
-      <Surface as="section" padding="sm" className="xl:col-span-2">
+      <Surface as="section" padding="sm" className="min-w-0 xl:col-span-2">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
           Triage queue
         </h2>
@@ -89,13 +89,13 @@ async function TriagePanel() {
           <div className="mt-2"><PanelStale label="Sentry feed" error={sentry.error} /></div>
         ) : null}
         {sentry.status === 'unconfigured' ? (
-          <p className="mt-2 text-xs text-warm-500">
+          <p className="mt-2 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">
             Sentry live pull not configured (SENTRY_READ_TOKEN) — showing in-app incidents only.
           </p>
         ) : null}
         <TriageQueue items={items.slice(0, 25)} />
       </Surface>
-      <Surface as="section" padding="sm">
+      <Surface as="section" padding="sm" className="min-w-0">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
           Regressed — a fix failed
         </h2>
