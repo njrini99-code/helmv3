@@ -10,7 +10,7 @@
 import { redirect } from 'next/navigation';
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
-import { getPlayerLiftHome } from '@/lib/baseball/read-models/player-lift';
+import { getPlayerLiftHome, getPlayerLiftOnboardingState } from '@/lib/baseball/read-models/player-lift';
 import { PlayerLiftHomeClient } from '@/components/baseball/performance/PlayerLiftHomeClient';
 
 export default async function PlayerLiftPage() {
@@ -20,7 +20,13 @@ export default async function PlayerLiftPage() {
     redirect('/baseball/dashboard/performance');
   }
 
-  const home = await getPlayerLiftHome(context.activePlayerId);
+  // Task C (additive): getPlayerLiftOnboardingState runs alongside the
+  // existing getPlayerLiftHome fetch — independent reads, safe to
+  // parallelize; getPlayerLiftHome's own behavior is untouched.
+  const [home, onboarding] = await Promise.all([
+    getPlayerLiftHome(context.activePlayerId),
+    getPlayerLiftOnboardingState(context.activePlayerId),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
@@ -28,6 +34,8 @@ export default async function PlayerLiftPage() {
         upcoming={home.upcoming}
         recent={home.recent}
         readinessSubmittedToday={home.readinessSubmittedToday}
+        isNewToLab={onboarding.isNewToLab}
+        athleteId={onboarding.athleteId}
       />
     </div>
   );

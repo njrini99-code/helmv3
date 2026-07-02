@@ -8,6 +8,7 @@
 // Cream/green palette, reuses Card / EmptyState. No staff data shown.
 // =============================================================================
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -15,11 +16,25 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconHeart, IconDumbbell, IconChevronRight } from '@/components/icons';
 import type { BaseballLiftSessionRow } from '@/lib/types/baseball-lifting-v11';
+import {
+  LiftOnboardingGate,
+  LiftOnboardingFlow,
+  LiftLabWelcomeState,
+} from '@/components/baseball/performance/lift-onboarding';
 
 interface Props {
   upcoming: BaseballLiftSessionRow[];
   recent: BaseballLiftSessionRow[];
   readinessSubmittedToday: boolean;
+  /**
+   * Task C — Lift Lab entry + onboarding (additive). True when the athlete
+   * has zero prior Lab activity: gates the first-run tour AND swaps the
+   * bare "No lift today" empty state for a branded welcome. Defaults false
+   * so any caller that doesn't pass it keeps today's exact behavior.
+   */
+  isNewToLab?: boolean;
+  /** helm_lifting_athletes.id — only needed when isNewToLab is true. */
+  athleteId?: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -33,10 +48,20 @@ function formatDate(d: string): string {
   return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday }: Props) {
+export function PlayerLiftHomeClient({
+  upcoming,
+  recent,
+  readinessSubmittedToday,
+  isNewToLab = false,
+  athleteId = null,
+}: Props) {
   const today = new Date().toISOString().slice(0, 10);
   const todaysSession = upcoming.find((s) => s.scheduled_date === today) ?? null;
   const prefersReducedMotion = useReducedMotion();
+  // "Retake the welcome tour" (from LiftLabWelcomeState) re-opens the same
+  // first-run flow on demand — separate from the auto-shown-once gate below,
+  // which only fires automatically on a genuine first visit.
+  const [manualTourOpen, setManualTourOpen] = useState(false);
 
   return (
     <motion.div
@@ -45,6 +70,13 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22 }}
     >
+      {isNewToLab ? (
+        <LiftOnboardingGate athleteId={athleteId} eligibleForOnboarding={isNewToLab} />
+      ) : null}
+      {manualTourOpen ? (
+        <LiftOnboardingFlow onDone={() => setManualTourOpen(false)} onSkip={() => setManualTourOpen(false)} />
+      ) : null}
+
       <div>
         <p className="text-eyebrow uppercase text-primary-700">Strength &amp; conditioning</p>
         <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Lift</h1>
@@ -96,6 +128,8 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
                 {todaysSession.status === 'started' ? 'Continue' : 'Start'}
               </Link>
             </div>
+          ) : isNewToLab ? (
+            <LiftLabWelcomeState onOpenTour={() => setManualTourOpen(true)} />
           ) : (
             <EmptyState
               icon={<IconDumbbell size={28} />}
