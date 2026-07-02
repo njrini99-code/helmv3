@@ -4,8 +4,15 @@
 // src/components/baseball/practice-planner/PracticePlannerClient.tsx
 //
 // Wave 8 / packet: practice-planner
+// MIGRATED to "The Living Annual" kit (design-system-living-annual.md §6 —
+// practice · Class B · L): a `SectionMasthead` replaces the old chrome
+// `Header`, the editor + every practice record renders as a `PaperCard` (the
+// block detail editor nests a second PaperCard inside it — double-bezel), the
+// publish/backlog/attendance pills are `InkBadge` ink stamps (never a colored
+// pill), and every list settles in via the shared `Reveal` interaction layer.
 //
-// Practice Planner Lite UI:
+// This is a PRESENTATION migration only. Every data flow is preserved
+// verbatim:
 //   - Coaches (can_manage_practice) build practices from timed activity blocks
 //     (stations) with per-block location + staff owner, save as DRAFT, then
 //     PUBLISH (which optionally attaches a team-calendar event) + take
@@ -13,14 +20,21 @@
 //   - Players see only PUBLISHED practices as a read-only schedule (writes are
 //     gated server-side; this UI hides the editor for non-staff).
 //
-// Design: GolfHelm primitives (Card / Button / EmptyState / skeletons) on the
-// cream + helm-green system, glass cards, real empty/loading/error states.
-// framer-motion is loaded via LazyMotion + domAnimation with reduced-motion
-// respected. No black backgrounds.
+// HONEST STATES (spec §7, "no yellow warning boxes"): the practice list empty
+// state renders through `EmptyIssue`, publish-validation issues render as a
+// quiet `InkBadge` + `HairlineRule` (never amber text), and the dismissible
+// load-error banner is a quiet editorial line (never a red/yellow box).
+//
+// The seven practice-planner sub-components (TimeRailBuilder,
+// PracticeIntelligenceBoard, ScrimmagePanel, BlockObjectiveEditor,
+// PracticeRecapPanel, PracticePrintExport, ScrimmageLineupBuilder) are OUT OF
+// SCOPE for this pass (a separate W16 task) — they keep their existing
+// cream/green chrome and are mounted as-is, nested inside the new PaperCard
+// surfaces (their own bordered boxes read as the inner half of the
+// double-bezel).
 // =============================================================================
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import {
   Clock,
   MapPin,
@@ -39,14 +53,12 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-import { Header } from '@/components/layout/header';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { NativeSelect } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { EmptyState } from '@/components/ui/empty-state';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
@@ -76,6 +88,17 @@ import type {
   BaseballScrimmageWithDetail,
 } from '@/lib/types/baseball-practice-deep';
 import { getPracticeObjectives, type PracticeObjectiveView } from '@/app/baseball/actions/practice-effectiveness';
+import {
+  SectionMasthead,
+  Eyebrow,
+  HairlineRule,
+  InkBadge,
+  PaperCard,
+  EmptyIssue,
+  Reveal,
+  StatReadout,
+} from '@/components/baseball/living-annual';
+import type { InkBadgeProps } from '@/components/baseball/living-annual';
 import { TimeRailBuilder, type RailBlock } from './TimeRailBuilder';
 import { PracticeIntelligenceBoard } from './PracticeIntelligenceBoard';
 import { ScrimmagePanel } from './ScrimmagePanel';
@@ -111,6 +134,13 @@ const ATTENDANCE_OPTIONS: { value: BaseballPracticeAttendanceStatus; label: stri
   { value: 'excused', label: 'Excused' },
 ];
 
+// Shared field chrome for the form primitives (Input/Textarea/NativeSelect) —
+// reskins the container only; the form components themselves are unchanged.
+const FIELD_CLASS =
+  'rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-2 text-sm text-text-primary focus:border-grade-plus focus:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/40';
+const FIELD_CLASS_SM =
+  'rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] px-2 py-1.5 text-sm text-text-primary focus:border-grade-plus focus:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/40';
+
 function newKey() {
   return `b_${Math.random().toString(36).slice(2)}_${Date.now()}`;
 }
@@ -125,39 +155,38 @@ function fmtOffset(startMin: number, durationMin: number) {
 }
 
 /**
- * Practice-card-shaped skeleton — mirrors the real PracticeCard layout (title +
- * status pill, focus line, two block rows) so the loading state has no layout
- * shift when real content arrives.
+ * Practice-card-shaped skeleton — mirrors the real PaperCard practice record
+ * (title + status stamp, focus line, two block rows) so the loading state has
+ * no layout shift when real content arrives. Shimmer, not a spinner.
  */
 function PracticeCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
-    <div
-      className="relative overflow-clip rounded-2xl border border-warm-200 bg-cream-50 p-5"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+    <PaperCard className="p-5 sm:p-6" grain={false}>
+      <div
+        className="absolute inset-0 skeleton-shimmer pointer-events-none"
+        style={{ animationDelay: `${delay}ms` }}
+      />
       <div className="relative space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
-            <div className="h-5 w-48 rounded bg-warm-200/60 skeleton-shimmer" />
-            <div className="h-3 w-32 rounded bg-warm-100/60 skeleton-shimmer" />
+            <div className="h-5 w-48 rounded bg-[color:var(--hairline)]/50 skeleton-shimmer" />
+            <div className="h-3 w-32 rounded bg-[color:var(--hairline)]/30 skeleton-shimmer" />
           </div>
-          <div className="h-7 w-20 rounded-lg bg-warm-100/60 skeleton-shimmer" />
+          <div className="h-7 w-20 rounded-fw-md bg-[color:var(--hairline)]/30 skeleton-shimmer" />
         </div>
         <div className="space-y-2">
           {[0, 1].map((i) => (
-            <div key={i} className="h-9 w-full rounded-xl bg-cream-50 skeleton-shimmer" />
+            <div key={i} className="h-9 w-full rounded-fw-md bg-[color:var(--hairline)]/20 skeleton-shimmer" />
           ))}
         </div>
       </div>
-    </div>
+    </PaperCard>
   );
 }
 
 export function PracticePlannerClient() {
   const { user, player: ownPlayerProfile, loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
-  const prefersReduced = useReducedMotion();
 
   const isCoach = user?.role === 'coach';
   // The logged-in player's baseball_players.id, used to look up their own
@@ -539,398 +568,394 @@ export function PracticePlannerClient() {
 
   if (authLoading || loading) {
     return (
-      <>
-        <Header title="Practice Planner" subtitle="Plan timed practices, stations & attendance" />
-        <div className="space-y-4 p-6 lg:p-8">
+      <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead
+          eyebrow={isCoach ? 'BUILD & PUBLISH' : 'YOUR SCHEDULE'}
+          title="Practice Planner"
+        />
+        <div className="mt-8 space-y-4">
           {[0, 1, 2].map((i) => (
             <PracticeCardSkeleton key={i} delay={i * 70} />
           ))}
         </div>
-      </>
+      </div>
     );
   }
 
-  return (
-    <LazyMotion features={domAnimation}>
-      <Header
-        title="Practice Planner"
-        subtitle={isCoach ? 'Plan timed practices, stations & attendance' : 'Your published practice schedule'}
-      >
-        {isCoach && selectedTeamId && !editing && (
-          <Button onClick={startNew} leftIcon={<Plus className="h-4 w-4" />}>
-            New Practice
-          </Button>
-        )}
-      </Header>
+  const mastheadActions =
+    isCoach && selectedTeamId && !editing ? (
+      <Button onClick={startNew} leftIcon={<Plus className="h-4 w-4" />}>
+        New Practice
+      </Button>
+    ) : undefined;
 
-      <div className="p-6 lg:p-8 space-y-6">
+  return (
+    <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6 lg:px-8">
+      <SectionMasthead
+        eyebrow={isCoach ? 'BUILD & PUBLISH' : 'YOUR SCHEDULE'}
+        title="Practice Planner"
+        actions={mastheadActions}
+      />
+
+      <div className="mt-8 space-y-6">
+        {/* Quiet editorial error line — never a red/yellow box (spec §7). */}
         {error && (
-          <m.div
-            initial={prefersReduced ? false : { opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            role="alert"
-          >
-            <Card className="border-error/30 bg-error/5">
-              <CardContent className="flex items-start justify-between gap-3 py-4">
-                <p className="flex items-start gap-2 text-sm text-error">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <Reveal>
+            <div role="alert" className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <HairlineRule ink="hairline" className="mb-2 w-10" />
+                <p className="flex items-start gap-2 font-annual text-body-sm text-text-secondary">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
                   <span>{error}</span>
                 </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setError(null)}
-                  aria-label="Dismiss error"
-                  className="-mr-1 -mt-0.5 shrink-0 rounded-md p-1 text-error/70 transition-colors hover:bg-error/10 hover:text-error"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </CardContent>
-            </Card>
-          </m.div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setError(null)}
+                aria-label="Dismiss error"
+                className="-mr-1 -mt-0.5 shrink-0 rounded-fw-sm p-1 text-text-tertiary hover:text-text-secondary"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </Reveal>
         )}
 
         {/* ---------- Editor (coach only) ---------- */}
         {isCoach && editing && (
-          <m.div
-            initial={prefersReduced ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <Card>
-              <CardContent className="space-y-5 py-6">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Input
-                    label="Practice title"
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Tuesday — Defense & Baserunning"
-                    className="rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
+          <Reveal>
+            <PaperCard className="space-y-5 p-5 sm:p-6" registrationTick>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Practice title"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Tuesday — Defense & Baserunning"
+                  className={FIELD_CLASS}
+                />
+                <Input
+                  label="Focus (optional)"
+                  type="text"
+                  value={focus}
+                  onChange={(e) => setFocus(e.target.value)}
+                  placeholder="Cutoffs, first-step reads"
+                  className={FIELD_CLASS}
+                />
+              </div>
+
+              {/* Time rail + block detail editor (left) and Intelligence Board (right) */}
+              <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                {/* LEFT: 5-min time rail + selected-block detail editor */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Eyebrow ink="team" className="inline-flex items-baseline gap-1.5">
+                      Time rail
+                      <span className="normal-case tracking-normal font-normal text-text-tertiary">
+                        (<StatReadout value={totalMinutes} className="text-text-tertiary" ariaLabel="minutes total" /> min total)
+                      </span>
+                    </Eyebrow>
+                    <Button variant="ghost" onClick={addBlock} leftIcon={<Plus className="h-4 w-4" />}>
+                      Add block
+                    </Button>
+                  </div>
+
+                  <TimeRailBuilder
+                    blocks={blocks as RailBlock[]}
+                    selectedKey={selectedBlockKey}
+                    onSelect={setSelectedBlockKey}
+                    onValidation={setValidation}
+                    onChange={(key, patch) => updateBlock(key, patch as Partial<DraftBlock>)}
                   />
-                  <Input
-                    label="Focus (optional)"
-                    type="text"
-                    value={focus}
-                    onChange={(e) => setFocus(e.target.value)}
-                    placeholder="Cutoffs, first-step reads"
-                    className="rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
-                  />
-                </div>
 
-                {/* Time rail + block detail editor (left) and Intelligence Board (right) */}
-                <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-                  {/* LEFT: 5-min time rail + selected-block detail editor */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-warm-800">
-                        Time rail{' '}
-                        <span className="font-normal text-warm-500">({totalMinutes} min total)</span>
-                      </h3>
-                      <Button variant="ghost" onClick={addBlock} leftIcon={<Plus className="h-4 w-4" />}>
-                        Add block
-                      </Button>
-                    </div>
-
-                    <TimeRailBuilder
-                      blocks={blocks as RailBlock[]}
-                      selectedKey={selectedBlockKey}
-                      onSelect={setSelectedBlockKey}
-                      onValidation={setValidation}
-                      onChange={(key, patch) => updateBlock(key, patch as Partial<DraftBlock>)}
-                    />
-
-                    {/* Selected block detail editor */}
-                    {selectedBlock && (
-                      <div className="rounded-2xl border border-warm-200 bg-cream-50/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-                        <div className="mb-3 flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.06em] text-warm-600">
-                            <ClipboardList className="h-3.5 w-3.5 text-primary-600" />
-                            Block details
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeBlock(selectedBlock.key)}
-                            leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-                            className="text-error"
-                          >
-                            Remove
-                          </Button>
+                  {/* Selected block detail editor — nested PaperCard (double-bezel). */}
+                  {selectedBlock && (
+                    <PaperCard className="p-4" grain={false}>
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus">
+                          <ClipboardList className="h-3.5 w-3.5" />
+                          Block details
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeBlock(selectedBlock.key)}
+                          leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                          className="text-error"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-12">
+                        <div className="sm:col-span-7">
+                          <Input
+                            label="Headline"
+                            type="text"
+                            value={selectedBlock.activity}
+                            onChange={(e) => updateBlock(selectedBlock.key, { activity: e.target.value })}
+                            placeholder="Two-strike chase station"
+                            className={FIELD_CLASS_SM}
+                          />
                         </div>
-                        <div className="grid gap-3 sm:grid-cols-12">
-                          <div className="sm:col-span-7">
+                        <div className="sm:col-span-5">
+                          <Input
+                            label="Station type"
+                            type="text"
+                            value={selectedBlock.stationType ?? ''}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, { stationType: e.target.value || null })
+                            }
+                            placeholder="hitting / defense / bullpen"
+                            className={FIELD_CLASS_SM}
+                          />
+                        </div>
+                        <div className="sm:col-span-12">
+                          <Textarea
+                            label="Description (optional)"
+                            value={selectedBlock.description ?? ''}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, { description: e.target.value || null })
+                            }
+                            rows={2}
+                            placeholder="Group A sees breaking balls below the zone; record swing/take decisions."
+                            className={cn(FIELD_CLASS_SM, 'w-full resize-none')}
+                          />
+                        </div>
+                        <div className="sm:col-span-4">
+                          <Input
+                            label="Location"
+                            type="text"
+                            value={selectedBlock.location ?? ''}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, { location: e.target.value || null })
+                            }
+                            placeholder="Field 2 / Cage 1"
+                            className={FIELD_CLASS_SM}
+                          />
+                        </div>
+                        <div className="sm:col-span-4">
+                          <Input
+                            label="Group"
+                            type="text"
+                            value={selectedBlock.groupLabel ?? ''}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, { groupLabel: e.target.value || null })
+                            }
+                            placeholder="Hitters 1–6"
+                            className={FIELD_CLASS_SM}
+                          />
+                        </div>
+                        <div className="sm:col-span-4">
+                          <NativeSelect
+                            label="Staff owner"
+                            value={selectedBlock.coachOwnerId ?? ''}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, { coachOwnerId: e.target.value || null })
+                            }
+                            className={FIELD_CLASS_SM}
+                            aria-label="Assigned staff"
+                          >
+                            <option value="">Staff…</option>
+                            {staff.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </NativeSelect>
+                        </div>
+                        <div className="sm:col-span-4">
+                          <Input
+                            label="Equipment"
+                            type="text"
+                            value={selectedBlock.equipment ?? ''}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, { equipment: e.target.value || null })
+                            }
+                            placeholder="Machine, screens"
+                            className={FIELD_CLASS_SM}
+                          />
+                        </div>
+                        <div className="sm:col-span-4">
+                          <NativeSelect
+                            label="Visibility"
+                            value={selectedBlock.visibility ?? DEFAULT_VISIBILITY}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, {
+                                visibility: e.target.value as BaseballBlockVisibility,
+                              })
+                            }
+                            className={FIELD_CLASS_SM}
+                            aria-label="Block visibility"
+                          >
+                            <option value="player_visible">Players can see</option>
+                            <option value="staff_only">Staff only</option>
+                            <option value="restricted">Restricted</option>
+                          </NativeSelect>
+                        </div>
+                        <div className="flex items-end sm:col-span-4">
+                          <Checkbox
+                            checked={selectedBlock.isMeasured ?? false}
+                            onChange={(e) =>
+                              updateBlock(selectedBlock.key, { isMeasured: e.target.checked })
+                            }
+                            label="Measured station"
+                          />
+                        </div>
+                        {selectedBlock.isMeasured && (
+                          <div className="sm:col-span-8">
                             <Input
-                              label="Headline"
+                              label="Measurement target"
                               type="text"
-                              value={selectedBlock.activity}
-                              onChange={(e) => updateBlock(selectedBlock.key, { activity: e.target.value })}
-                              placeholder="Two-strike chase station"
-                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                            />
-                          </div>
-                          <div className="sm:col-span-5">
-                            <Input
-                              label="Station type"
-                              type="text"
-                              value={selectedBlock.stationType ?? ''}
-                              onChange={(e) =>
-                                updateBlock(selectedBlock.key, { stationType: e.target.value || null })
-                              }
-                              placeholder="hitting / defense / bullpen"
-                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                            />
-                          </div>
-                          <div className="sm:col-span-12">
-                            <Textarea
-                              label="Description (optional)"
-                              value={selectedBlock.description ?? ''}
-                              onChange={(e) =>
-                                updateBlock(selectedBlock.key, { description: e.target.value || null })
-                              }
-                              rows={2}
-                              placeholder="Group A sees breaking balls below the zone; record swing/take decisions."
-                              className="w-full resize-none rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                            />
-                          </div>
-                          <div className="sm:col-span-4">
-                            <Input
-                              label="Location"
-                              type="text"
-                              value={selectedBlock.location ?? ''}
-                              onChange={(e) =>
-                                updateBlock(selectedBlock.key, { location: e.target.value || null })
-                              }
-                              placeholder="Field 2 / Cage 1"
-                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                            />
-                          </div>
-                          <div className="sm:col-span-4">
-                            <Input
-                              label="Group"
-                              type="text"
-                              value={selectedBlock.groupLabel ?? ''}
-                              onChange={(e) =>
-                                updateBlock(selectedBlock.key, { groupLabel: e.target.value || null })
-                              }
-                              placeholder="Hitters 1–6"
-                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                            />
-                          </div>
-                          <div className="sm:col-span-4">
-                            <NativeSelect
-                              label="Staff owner"
-                              value={selectedBlock.coachOwnerId ?? ''}
-                              onChange={(e) =>
-                                updateBlock(selectedBlock.key, { coachOwnerId: e.target.value || null })
-                              }
-                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                              aria-label="Assigned staff"
-                            >
-                              <option value="">Staff…</option>
-                              {staff.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                  {s.name}
-                                </option>
-                              ))}
-                            </NativeSelect>
-                          </div>
-                          <div className="sm:col-span-4">
-                            <Input
-                              label="Equipment"
-                              type="text"
-                              value={selectedBlock.equipment ?? ''}
-                              onChange={(e) =>
-                                updateBlock(selectedBlock.key, { equipment: e.target.value || null })
-                              }
-                              placeholder="Machine, screens"
-                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                            />
-                          </div>
-                          <div className="sm:col-span-4">
-                            <NativeSelect
-                              label="Visibility"
-                              value={selectedBlock.visibility ?? DEFAULT_VISIBILITY}
+                              value={selectedBlock.measurementTarget ?? ''}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, {
-                                  visibility: e.target.value as BaseballBlockVisibility,
+                                  measurementTarget: e.target.value || null,
                                 })
                               }
-                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                              aria-label="Block visibility"
-                            >
-                              <option value="player_visible">Players can see</option>
-                              <option value="staff_only">Staff only</option>
-                              <option value="restricted">Restricted</option>
-                            </NativeSelect>
-                          </div>
-                          <div className="flex items-end sm:col-span-4">
-                            <Checkbox
-                              checked={selectedBlock.isMeasured ?? false}
-                              onChange={(e) =>
-                                updateBlock(selectedBlock.key, { isMeasured: e.target.checked })
-                              }
-                              label="Measured station"
+                              placeholder="Track swing/take decisions"
+                              className={FIELD_CLASS_SM}
                             />
                           </div>
-                          {selectedBlock.isMeasured && (
-                            <div className="sm:col-span-8">
-                              <Input
-                                label="Measurement target"
-                                type="text"
-                                value={selectedBlock.measurementTarget ?? ''}
-                                onChange={(e) =>
-                                  updateBlock(selectedBlock.key, {
-                                    measurementTarget: e.target.value || null,
-                                  })
-                                }
-                                placeholder="Track swing/take decisions"
-                                className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-                              />
-                            </div>
-                          )}
-                          {selectedBlock.sourceReason && (
-                            <p className="sm:col-span-12 text-eyebrow text-primary-600">
-                              {selectedBlock.sourceReason}
-                            </p>
-                          )}
+                        )}
+                        {selectedBlock.sourceReason && (
+                          <p className="sm:col-span-12 font-annual text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus">
+                            {selectedBlock.sourceReason}
+                          </p>
+                        )}
 
-                          {/* Measurable objectives — the effectiveness engine's
-                              SOURCE layer (focus + target metric + players + reps).
-                              Without this capture the engine has no input set. */}
-                          <div className="sm:col-span-12">
-                            <BlockObjectiveEditor
-                              practiceId={editPracticeId}
-                              blockId={null}
-                              blockKey={selectedBlock.key}
-                              roster={roster.map((p) => ({ id: p.id, name: p.name }))}
-                              objectives={objectives}
-                              onChanged={() => loadObjectives(editPracticeId)}
-                              ensurePersisted={ensureObjectiveParent}
-                            />
-                          </div>
+                        {/* Measurable objectives — the effectiveness engine's
+                            SOURCE layer (focus + target metric + players + reps).
+                            Without this capture the engine has no input set. */}
+                        <div className="sm:col-span-12">
+                          <BlockObjectiveEditor
+                            practiceId={editPracticeId}
+                            blockId={null}
+                            blockKey={selectedBlock.key}
+                            roster={roster.map((p) => ({ id: p.id, name: p.name }))}
+                            objectives={objectives}
+                            onChanged={() => loadObjectives(editPracticeId)}
+                            ensurePersisted={ensureObjectiveParent}
+                          />
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </PaperCard>
+                  )}
+                </div>
 
-                  {/* RIGHT: Practice Intelligence Board (signals -> blocks) */}
-                  <div className="rounded-2xl border border-warm-200 glass-standard p-4">
-                    <PracticeIntelligenceBoard
-                      signals={signals}
-                      suggestions={suggestions}
-                      canConvert={true}
-                      onConvert={handleConvertSignal}
-                      convertingId={convertingId}
-                      loading={intelLoading}
+                {/* RIGHT: Practice Intelligence Board (signals -> blocks) — nested
+                    PaperCard (double-bezel). */}
+                <PaperCard className="p-4" grain={false}>
+                  <PracticeIntelligenceBoard
+                    signals={signals}
+                    suggestions={suggestions}
+                    canConvert={true}
+                    onConvert={handleConvertSignal}
+                    convertingId={convertingId}
+                    loading={intelLoading}
+                  />
+                </PaperCard>
+              </div>
+
+              {/* Controlled scrimmage builder (V7) — attaches to this practice. */}
+              <ScrimmagePanel practiceId={editPracticeId} roster={scrimmageRoster} />
+
+              <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--hairline)] pt-4">
+                <Button onClick={handleSave} isLoading={saving} disabled={!canSave}>
+                  {editPracticeId ? 'Save changes' : 'Save draft'}
+                </Button>
+                <Button variant="ghost" onClick={resetEditor} disabled={saving}>
+                  Cancel
+                </Button>
+                {!canSave && (
+                  <span className="font-annual text-caption text-text-tertiary">
+                    Add a title and an activity for every block to save.
+                  </span>
+                )}
+                {canSave && validation && !validation.ok && (
+                  <div className="flex items-center gap-2">
+                    <HairlineRule ink="hairline" className="w-6" />
+                    <InkBadge
+                      label={`${validation.errors.length} ISSUE${validation.errors.length === 1 ? '' : 'S'}`}
+                      tone="neutral"
+                      variant="solid"
                     />
+                    <span className="font-annual text-caption text-text-tertiary">
+                      must be fixed before this practice can be published.
+                    </span>
                   </div>
-                </div>
-
-                {/* Controlled scrimmage builder (V7) — attaches to this practice. */}
-                <ScrimmagePanel practiceId={editPracticeId} roster={scrimmageRoster} />
-
-                <div className="flex items-center gap-3 pt-2">
-                  <Button onClick={handleSave} isLoading={saving} disabled={!canSave}>
-                    {editPracticeId ? 'Save changes' : 'Save draft'}
-                  </Button>
-                  <Button variant="ghost" onClick={resetEditor} disabled={saving}>
-                    Cancel
-                  </Button>
-                  {!canSave && (
-                    <span className="text-xs text-warm-500">
-                      Add a title and an activity for every block to save.
-                    </span>
-                  )}
-                  {canSave && validation && !validation.ok && (
-                    <span className="text-xs text-amber-600">
-                      {validation.errors.length} issue
-                      {validation.errors.length === 1 ? '' : 's'} must be fixed before this practice can
-                      be published.
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </m.div>
+                )}
+              </div>
+            </PaperCard>
+          </Reveal>
         )}
 
         {/* Calendar attach controls are now per-practice-card (inline in publish action). */}
 
         {/* ---------- Practice list ---------- */}
         {practices.length === 0 ? (
-          <EmptyState
-            icon={<ClipboardList className="h-8 w-8" />}
-            title={isCoach ? 'No practices yet' : 'No published practices'}
-            description={
-              isCoach
-                ? 'Build your first practice with timed blocks, stations and staff assignments.'
-                : 'When your coaches publish a practice plan, it will appear here.'
-            }
+          <EmptyIssue
+            variant="generic"
+            ink="team"
             action={
-              isCoach && selectedTeamId
-                ? { label: 'New Practice', onClick: startNew }
-                : undefined
+              isCoach && selectedTeamId ? (
+                <Button onClick={startNew} leftIcon={<Plus className="h-4 w-4" />}>
+                  New Practice
+                </Button>
+              ) : undefined
             }
           />
         ) : (
           <div className="space-y-4">
             <div className="flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-warm-500">
-                {isCoach ? 'Practices' : 'Your schedule'}
-              </h2>
-              <span className="text-xs font-medium text-warm-400">
-                {practices.length} {practices.length === 1 ? 'plan' : 'plans'}
+              <Eyebrow ink="team">{isCoach ? 'Practices' : 'Your schedule'}</Eyebrow>
+              <span className="font-annual text-caption text-text-tertiary">
+                <StatReadout value={practices.length} className="text-text-tertiary" ariaLabel="practice plans" />{' '}
+                {practices.length === 1 ? 'plan' : 'plans'}
               </span>
             </div>
-            {practices.map((p, idx) => (
-              <m.div
-                key={p.id}
-                initial={prefersReduced ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={
-                  prefersReduced ? undefined : { duration: 0.25, delay: Math.min(idx * 0.04, 0.2) }
-                }
-              >
-                <PracticeCard
-                  practice={p}
-                  isCoach={isCoach}
-                  roster={roster}
-                  ownPlayerId={ownPlayerId}
-                  onEdit={() => startEdit(p)}
-                  onPublishToggle={(publish, cal) => handlePublishToggle(p, publish, cal)}
-                  onAttendanceSaved={loadPractices}
-                  onError={setError}
-                  // Conflicts loaded only for the practice currently open in the
-                  // editor. For all other cards the map is empty (no fake flags).
-                  classConflicts={
-                    editPracticeId === p.id ? classConflicts : { byPlayer: {} }
-                  }
-                />
-              </m.div>
-            ))}
+            <div className="space-y-4">
+              {practices.map((p, idx) => (
+                <Reveal key={p.id} staggerIndex={Math.min(idx, 10)}>
+                  <PracticeCard
+                    practice={p}
+                    isCoach={isCoach}
+                    roster={roster}
+                    ownPlayerId={ownPlayerId}
+                    onEdit={() => startEdit(p)}
+                    onPublishToggle={(publish, cal) => handlePublishToggle(p, publish, cal)}
+                    onAttendanceSaved={loadPractices}
+                    onError={setError}
+                    // Conflicts loaded only for the practice currently open in the
+                    // editor. For all other cards the map is empty (no fake flags).
+                    classConflicts={
+                      editPracticeId === p.id ? classConflicts : { byPlayer: {} }
+                    }
+                  />
+                </Reveal>
+              ))}
+            </div>
           </div>
         )}
       </div>
-    </LazyMotion>
+    </div>
   );
 }
 
 // =============================================================================
-// PracticeCard — one practice, with blocks + (coach) attendance.
+// PracticeCard — one practice record, with blocks + (coach) attendance.
 // =============================================================================
 
-/** Attendance status -> display label + color for the player self-status pill. */
+/** Attendance status -> display label + ink tone for the player self-status stamp. */
 const ATTENDANCE_STATUS_DISPLAY: Record<
   BaseballPracticeAttendanceStatus,
-  { label: string; className: string }
+  { label: string; tone: NonNullable<InkBadgeProps['tone']> }
 > = {
-  present: { label: 'Present', className: 'bg-primary-100 text-primary-700' },
-  limited: { label: 'Limited', className: 'bg-amber-100 text-amber-700' },
-  absent: { label: 'Absent', className: 'bg-red-100 text-red-700' },
-  excused: { label: 'Excused', className: 'bg-warm-100 text-warm-600' },
+  present: { label: 'Present', tone: 'team' },
+  limited: { label: 'Limited', tone: 'neutral' },
+  absent: { label: 'Absent', tone: 'neutral' },
+  excused: { label: 'Excused', tone: 'neutral' },
 };
 
 function PracticeCard({
@@ -985,6 +1010,8 @@ function PracticeCard({
   const [attendance, setAttendance] =
     useState<Record<string, BaseballPracticeAttendanceStatus>>(initialAttendance);
 
+  const conflictCount = Object.keys(classConflicts.byPlayer).length;
+
   const handleSaveAttendance = async () => {
     setSavingAtt(true);
     onError(null);
@@ -1008,258 +1035,253 @@ function PracticeCard({
   };
 
   return (
-    <Card
-      className={
-        isBacklog
-          ? 'border-primary-200 bg-primary-50/30 transition-shadow hover:shadow-card-hover'
-          : 'transition-shadow hover:shadow-card-hover'
-      }
-    >
-      <CardContent className="space-y-4 py-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-semibold text-warm-900">{practice.title}</h3>
-              {isBacklog ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
-                  <Inbox className="h-3 w-3" />
-                  Signal backlog
-                </span>
-              ) : (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                    published
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-warm-100 text-warm-600'
-                  }`}
-                >
-                  {published ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                  {published ? 'Published' : 'Draft'}
-                </span>
-              )}
-              {/* Player self-attendance pill (players only). */}
-              {!isCoach && ownAttendanceStatus && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                    ATTENDANCE_STATUS_DISPLAY[ownAttendanceStatus].className
-                  }`}
-                >
-                  <CheckCircle2 className="h-3 w-3" />
-                  You: {ATTENDANCE_STATUS_DISPLAY[ownAttendanceStatus].label}
-                </span>
-              )}
-              {/* Class-conflict badge (coach only, shown when conflict data is loaded). */}
-              {isCoach && Object.keys(classConflicts.byPlayer).length > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                  <AlertTriangle className="h-3 w-3" />
-                  {Object.keys(classConflicts.byPlayer).length} player
-                  {Object.keys(classConflicts.byPlayer).length !== 1 ? 's' : ''} with class conflicts
-                </span>
-              )}
-            </div>
-            {practice.focus && <p className="mt-1 text-sm text-warm-500">{practice.focus}</p>}
-            {isBacklog && (
-              <p className="mt-1 text-xs text-primary-600">
-                Blocks converted from CoachHelm signals. Drag these into a scheduled practice.
-              </p>
+    <PaperCard className="space-y-4 p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-annual text-h3 text-text-primary">{practice.title}</h3>
+            {isBacklog ? (
+              <span className="inline-flex items-center gap-1">
+                <Inbox className="h-3 w-3 text-grade-plus" />
+                <InkBadge label="Signal backlog" tone="team" variant="solid" />
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                {published ? (
+                  <Eye className="h-3 w-3 text-grade-plus" />
+                ) : (
+                  <EyeOff className="h-3 w-3 text-text-tertiary" />
+                )}
+                <InkBadge
+                  label={published ? 'Published' : 'Draft'}
+                  tone={published ? 'team' : 'neutral'}
+                />
+              </span>
+            )}
+            {/* Player self-attendance stamp (players only). */}
+            {!isCoach && ownAttendanceStatus && (
+              <span className="inline-flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-text-tertiary" />
+                <InkBadge
+                  label={`You: ${ATTENDANCE_STATUS_DISPLAY[ownAttendanceStatus].label}`}
+                  tone={ATTENDANCE_STATUS_DISPLAY[ownAttendanceStatus].tone}
+                />
+              </span>
+            )}
+            {/* Class-conflict stamp (coach only, shown when conflict data is loaded). */}
+            {isCoach && conflictCount > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3 text-text-tertiary" />
+                <InkBadge
+                  label={`${conflictCount} PLAYER${conflictCount !== 1 ? 'S' : ''} · CLASS CONFLICT`}
+                  tone="neutral"
+                  variant="solid"
+                />
+              </span>
             )}
           </div>
-
-          {isCoach && (
-            <div className="flex items-center gap-2">
-              {!published && (
-                <Button variant="ghost" onClick={onEdit}>
-                  Edit
-                </Button>
-              )}
-              {!isBacklog && !published && !showCalendarAttach && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCalendarAttach(true)}
-                  leftIcon={<CalendarPlus className="h-4 w-4" />}
-                >
-                  Add to calendar
-                </Button>
-              )}
-              {/* Export + share affordance — visible on published plans only */}
-              {published && !isBacklog && (
-                <PracticePrintExport practice={practice} />
-              )}
-              {!isBacklog && (
-                <Button
-                  variant={published ? 'outline' : 'primary'}
-                  onClick={() =>
-                    onPublishToggle(
-                      !published,
-                      !published && showCalendarAttach && calDate
-                        ? { date: calDate, startTime: calStart || null, endTime: calEnd || null }
-                        : null,
-                    )
-                  }
-                  leftIcon={published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                >
-                  {published ? 'Unpublish' : 'Publish'}
-                </Button>
-              )}
-            </div>
+          {practice.focus && (
+            <p className="mt-1 font-annual text-body-sm text-text-secondary">{practice.focus}</p>
+          )}
+          {isBacklog && (
+            <p className="mt-1 font-annual text-body-sm text-grade-plus">
+              Blocks converted from CoachHelm signals. Drag these into a scheduled practice.
+            </p>
           )}
         </div>
 
-        {/* Calendar attach (inline, coach only, draft only) */}
-        {isCoach && !published && !isBacklog && showCalendarAttach && (
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary-100 bg-primary-50/40 px-3 py-2.5">
-            <CalendarPlus className="h-4 w-4 shrink-0 text-primary-600" />
-            <span className="text-xs font-medium text-warm-700">Add to calendar when publishing:</span>
-            <Input
-              type="date"
-              value={calDate}
-              onChange={(e) => setCalDate(e.target.value)}
-              className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
-              aria-label="Practice date"
-            />
-            <Input
-              type="time"
-              value={calStart}
-              onChange={(e) => setCalStart(e.target.value)}
-              aria-label="Start time"
-              className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
-            />
-            <Input
-              type="time"
-              value={calEnd}
-              onChange={(e) => setCalEnd(e.target.value)}
-              aria-label="End time"
-              className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => { setShowCalendarAttach(false); setCalDate(''); setCalStart(''); setCalEnd(''); }}
-              className="text-xs text-warm-400 hover:text-warm-600"
-            >
-              Remove
-            </Button>
-          </div>
-        )}
-
-        {/* Blocks timeline */}
-        <ol className="space-y-2">
-          {practice.blocks.length === 0 ? (
-            <li className="text-sm text-warm-500">No blocks in this practice yet.</li>
-          ) : (
-            practice.blocks.map((b) => (
-              <li
-                key={b.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-warm-100 bg-cream-50/60 px-3 py-2 text-sm transition-colors hover:border-warm-200 hover:bg-cream-50"
-              >
-                <span className="inline-flex items-center gap-1.5 font-medium text-warm-800">
-                  <Clock className="h-3.5 w-3.5 text-primary-600" />
-                  {fmtOffset(b.start_offset_min, b.duration_min)}
-                </span>
-                <span className="font-medium text-warm-900">{b.activity}</span>
-                {b.location && (
-                  <span className="inline-flex items-center gap-1 text-warm-500">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {b.location}
-                  </span>
-                )}
-                {b.coach_owner_name && (
-                  <span className="inline-flex items-center gap-1 text-warm-500">
-                    <UserCircle2 className="h-3.5 w-3.5" />
-                    {b.coach_owner_name}
-                  </span>
-                )}
-              </li>
-            ))
-          )}
-        </ol>
-
-        {/* Attendance (coach only) */}
         {isCoach && (
-          <div className="border-t border-warm-100 pt-4">
-            {!takingAttendance ? (
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setTakingAttendance(true)}
-                  leftIcon={<CheckCircle2 className="h-4 w-4" />}
-                >
-                  Take attendance
-                </Button>
-                {practice.attendance.length > 0 && (
-                  <span className="text-xs text-warm-500">
-                    {practice.attendance.length} marked
-                  </span>
-                )}
-              </div>
-            ) : roster.length === 0 ? (
-              <p className="text-sm text-warm-500">No players on the roster yet.</p>
-            ) : (
-              <div className="space-y-3">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {roster.map((pl) => (
-                    <div
-                      key={pl.id}
-                      className="flex items-center justify-between rounded-lg border border-warm-100 bg-cream-50/60 px-3 py-2"
-                    >
-                      <span className="text-sm text-warm-800">{pl.name}</span>
-                      <NativeSelect
-                        value={attendance[pl.id] ?? ''}
-                        onChange={(e) =>
-                          setAttendance((a) => ({
-                            ...a,
-                            [pl.id]: e.target.value as BaseballPracticeAttendanceStatus,
-                          }))
-                        }
-                        className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
-                        aria-label={`Attendance for ${pl.name}`}
-                      >
-                        <option value="" disabled>
-                          Mark…
-                        </option>
-                        {ATTENDANCE_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </NativeSelect>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={handleSaveAttendance}
-                    isLoading={savingAtt}
-                    disabled={Object.keys(attendance).length === 0}
-                  >
-                    Save attendance
-                  </Button>
-                  <Button variant="ghost" onClick={() => setTakingAttendance(false)} disabled={savingAtt}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {!published && (
+              <Button variant="ghost" onClick={onEdit}>
+                Edit
+              </Button>
+            )}
+            {!isBacklog && !published && !showCalendarAttach && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCalendarAttach(true)}
+                leftIcon={<CalendarPlus className="h-4 w-4" />}
+              >
+                Add to calendar
+              </Button>
+            )}
+            {/* Export + share affordance — visible on published plans only */}
+            {published && !isBacklog && <PracticePrintExport practice={practice} />}
+            {!isBacklog && (
+              <Button
+                variant={published ? 'outline' : 'primary'}
+                onClick={() =>
+                  onPublishToggle(
+                    !published,
+                    !published && showCalendarAttach && calDate
+                      ? { date: calDate, startTime: calStart || null, endTime: calEnd || null }
+                      : null,
+                  )
+                }
+                leftIcon={published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              >
+                {published ? 'Unpublish' : 'Publish'}
+              </Button>
             )}
           </div>
         )}
+      </div>
 
-        {/* Practice recap + effectiveness measurement (coach, published only) —
-            the v10 human-entered completion flow that feeds the engine. */}
-        {isCoach && published && (
-          <PracticeRecapPanel
-            practiceId={practice.id}
-            roster={roster.map((p) => ({ id: p.id, name: p.name }))}
-            onSaved={onAttendanceSaved}
+      {/* Calendar attach (inline, coach only, draft only) */}
+      {isCoach && !published && !isBacklog && showCalendarAttach && (
+        <div className="flex flex-wrap items-center gap-2 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-3 py-2.5">
+          <CalendarPlus className="h-4 w-4 shrink-0 text-grade-plus" />
+          <span className="font-annual text-caption font-medium text-text-secondary">
+            Add to calendar when publishing:
+          </span>
+          <Input
+            type="date"
+            value={calDate}
+            onChange={(e) => setCalDate(e.target.value)}
+            className={FIELD_CLASS_SM}
+            aria-label="Practice date"
           />
-        )}
+          <Input
+            type="time"
+            value={calStart}
+            onChange={(e) => setCalStart(e.target.value)}
+            aria-label="Start time"
+            className={FIELD_CLASS_SM}
+          />
+          <Input
+            type="time"
+            value={calEnd}
+            onChange={(e) => setCalEnd(e.target.value)}
+            aria-label="End time"
+            className={FIELD_CLASS_SM}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => { setShowCalendarAttach(false); setCalDate(''); setCalStart(''); setCalEnd(''); }}
+            className="font-annual text-caption text-text-tertiary hover:text-text-secondary"
+          >
+            Remove
+          </Button>
+        </div>
+      )}
 
-        {/* Player parity: published scrimmage lineup summary (player view). */}
-        {!isCoach && published && (
-          <PublishedScrimmageViewer practiceId={practice.id} />
+      {/* Blocks timeline */}
+      <ol className="divide-y divide-[color:var(--hairline)]">
+        {practice.blocks.length === 0 ? (
+          <li className="py-2 font-annual text-body-sm text-text-tertiary">No blocks in this practice yet.</li>
+        ) : (
+          practice.blocks.map((b) => (
+            <li
+              key={b.id}
+              className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 font-annual text-body-sm"
+            >
+              <span className="inline-flex items-center gap-1.5 font-medium text-text-primary">
+                <Clock className="h-3.5 w-3.5 text-grade-plus" />
+                {fmtOffset(b.start_offset_min, b.duration_min)}
+              </span>
+              <span className="font-medium text-text-primary">{b.activity}</span>
+              {b.location && (
+                <span className="inline-flex items-center gap-1 text-text-tertiary">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {b.location}
+                </span>
+              )}
+              {b.coach_owner_name && (
+                <span className="inline-flex items-center gap-1 text-text-tertiary">
+                  <UserCircle2 className="h-3.5 w-3.5" />
+                  {b.coach_owner_name}
+                </span>
+              )}
+            </li>
+          ))
         )}
-      </CardContent>
-    </Card>
+      </ol>
+
+      {/* Attendance (coach only) */}
+      {isCoach && (
+        <div className="border-t border-[color:var(--hairline)] pt-4">
+          {!takingAttendance ? (
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setTakingAttendance(true)}
+                leftIcon={<CheckCircle2 className="h-4 w-4" />}
+              >
+                Take attendance
+              </Button>
+              {practice.attendance.length > 0 && (
+                <span className="font-annual text-caption text-text-tertiary">
+                  <StatReadout value={practice.attendance.length} className="text-text-tertiary" ariaLabel="players marked" /> marked
+                </span>
+              )}
+            </div>
+          ) : roster.length === 0 ? (
+            <p className="font-annual text-body-sm text-text-tertiary">No players on the roster yet.</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {roster.map((pl) => (
+                  <div
+                    key={pl.id}
+                    className="flex items-center justify-between rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-3 py-2"
+                  >
+                    <span className="font-annual text-body-sm text-text-primary">{pl.name}</span>
+                    <NativeSelect
+                      value={attendance[pl.id] ?? ''}
+                      onChange={(e) =>
+                        setAttendance((a) => ({
+                          ...a,
+                          [pl.id]: e.target.value as BaseballPracticeAttendanceStatus,
+                        }))
+                      }
+                      className={FIELD_CLASS_SM}
+                      aria-label={`Attendance for ${pl.name}`}
+                    >
+                      <option value="" disabled>
+                        Mark…
+                      </option>
+                      {ATTENDANCE_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleSaveAttendance}
+                  isLoading={savingAtt}
+                  disabled={Object.keys(attendance).length === 0}
+                >
+                  Save attendance
+                </Button>
+                <Button variant="ghost" onClick={() => setTakingAttendance(false)} disabled={savingAtt}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Practice recap + effectiveness measurement (coach, published only) —
+          the v10 human-entered completion flow that feeds the engine. */}
+      {isCoach && published && (
+        <PracticeRecapPanel
+          practiceId={practice.id}
+          roster={roster.map((p) => ({ id: p.id, name: p.name }))}
+          onSaved={onAttendanceSaved}
+        />
+      )}
+
+      {/* Player parity: published scrimmage lineup summary (player view). */}
+      {!isCoach && published && <PublishedScrimmageViewer practiceId={practice.id} />}
+    </PaperCard>
   );
 }
 
@@ -1295,11 +1317,11 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
   if (!loaded || scrimmages.length === 0) return null;
 
   return (
-    <div className="border-t border-warm-100 pt-4">
-      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-warm-500">
-        <Ruler className="h-3.5 w-3.5 text-primary-600" />
+    <div className="border-t border-[color:var(--hairline)] pt-4">
+      <Eyebrow ink="team" className="mb-2 inline-flex items-center gap-1.5">
+        <Ruler className="h-3.5 w-3.5" />
         {scrimmages.length === 1 ? 'Scrimmage' : `Scrimmages (${scrimmages.length})`}
-      </div>
+      </Eyebrow>
       <ul className="space-y-2">
         {scrimmages.map((s) => {
           const isExpanded = expanded === s.id;
@@ -1307,28 +1329,28 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
           return (
             <li
               key={s.id}
-              className="rounded-xl border border-warm-100 bg-cream-50/60 p-3"
+              className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3"
             >
               <Button
                 type="button"
                 variant="ghost"
-                className="flex w-full items-center justify-between gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                 aria-expanded={isExpanded}
                 onClick={() => setExpanded(isExpanded ? null : s.id)}
+                className="flex w-full items-center justify-between gap-2 rounded-fw-md px-1 py-0.5 text-left"
               >
-                <div>
-                  <span className="text-sm font-semibold text-warm-900">{s.title}</span>
-                  <span className="ml-2 text-xs text-warm-400">
+                <div className="min-w-0">
+                  <span className="font-annual text-body-sm font-semibold text-text-primary">{s.title}</span>
+                  <span className="ml-2 font-annual text-caption text-text-tertiary">
                     {s.mode.replace(/_/g, ' ')} · {s.slots.length} players
                     {completed && s.blue_score != null && (
-                      <span className="ml-1 font-medium text-warm-700">
+                      <span className="ml-1 font-medium text-text-secondary">
                         — Blue {s.blue_score} · White {s.white_score ?? '–'}
                         {s.innings_played != null ? ` (${s.innings_played} inn)` : ''}
                       </span>
                     )}
                   </span>
                 </div>
-                <span className="text-xs text-warm-400" aria-hidden>
+                <span className="text-text-tertiary" aria-hidden>
                   {isExpanded ? '▲' : '▼'}
                 </span>
               </Button>
@@ -1342,21 +1364,26 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
                       .map((sl) => (
                         <div
                           key={sl.id}
-                          className="flex items-center gap-1.5 rounded-lg border border-warm-100 glass-standard px-2 py-1"
+                          className="flex items-center gap-1.5 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] px-2 py-1"
                         >
-                          <span className="text-micro font-bold text-warm-400">
+                          <span className="font-annual text-microbadge font-bold text-text-tertiary">
                             {sl.defensive_position}
                           </span>
                           {sl.batting_order != null && (
-                            <span className="text-micro tabular-nums text-warm-400">
+                            <span className="font-annual text-microbadge tabular-nums text-text-tertiary">
                               #{sl.batting_order}
                             </span>
                           )}
-                          <span className="min-w-0 flex-1 truncate text-xs font-medium text-warm-800">
+                          <span className="min-w-0 flex-1 truncate font-annual text-caption font-medium text-text-primary">
                             {sl.player_name}
                           </span>
                           {sl.side && (
-                            <span className={`text-microbadge font-semibold uppercase ${sl.side === 'blue' ? 'text-primary-600' : 'text-warm-500'}`}>
+                            <span
+                              className={cn(
+                                'font-annual text-microbadge font-semibold uppercase',
+                                sl.side === 'blue' ? 'text-grade-plus' : 'text-text-tertiary',
+                              )}
+                            >
                               {sl.side}
                             </span>
                           )}
@@ -1364,7 +1391,7 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
                       ))}
                   </div>
                   {s.result_note && (
-                    <p className="mt-1 text-xs italic text-warm-500">{s.result_note}</p>
+                    <p className="mt-1 font-annual text-caption italic text-text-tertiary">{s.result_note}</p>
                   )}
                 </div>
               )}
