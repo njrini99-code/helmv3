@@ -75,6 +75,20 @@ export async function proxy(request: NextRequest) {
       console.warn('[Proxy] Stale refresh token; treating session as logged out:', message);
     } else {
       console.warn('[Proxy] Session update failed:', message);
+      // Helm Bridge capture class #3: session-update failures were
+      // console.warn-swallowed and invisible. Fire-and-forget to the node
+      // logging route (edge-safe: plain fetch, never awaited-to-throw).
+      const key = process.env.INTERNAL_LOG_KEY;
+      if (key) {
+        fetch(new URL('/api/internal/log-auth-failure', request.url), {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-internal-log-key': key },
+          body: JSON.stringify({
+            message: `updateSession failed: ${message}`.slice(0, 2000),
+            pathname: request.nextUrl.pathname,
+          }),
+        }).catch(() => {});
+      }
     }
     return NextResponse.next();
   }

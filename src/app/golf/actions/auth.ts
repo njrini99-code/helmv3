@@ -391,6 +391,11 @@ export async function requestPasswordResetAction(
     redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/golf/reset-password`,
   });
 
+  // Log password-reset request (fire-and-forget) — closes the golf auth
+  // capture gap: logins/failed-logins/signups were already tracked, but
+  // reset requests were invisible to the admin auth feed.
+  logSecurityEvent('Password reset requested', 'info', { email: normalizedEmail, sport: 'golf' }).catch(() => {});
+
   // Generic response - don't reveal if email exists
   return {
     success: true,

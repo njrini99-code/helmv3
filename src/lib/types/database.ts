@@ -20486,6 +20486,10 @@ export type Database = {
         Args: { p_event_ids: string[] }
         Returns: number
       }
+      revoke_user_sessions: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       save_baseball_full_box_score: {
         Args: {
           p_batting: Json
