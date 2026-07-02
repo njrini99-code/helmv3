@@ -19,6 +19,7 @@ import {
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
 import { logServerError } from '@/lib/server-error-logger';
+import { mapBattingToInput, mapPitchingToInput } from '@/components/baseball/box-score/mappers';
 import {
   getStatsCenter,
   type StatsCenterOptions,
@@ -549,156 +550,58 @@ export interface SaveBoxScoreResult {
   error?: string;
 }
 
-const saveBoxScoreBattingAction = withBaseballAction(
-  'saveBoxScoreBatting',
-  { featureArea: 'baseball-games' },
-  async (
-    _ctx,
-    gameId: string,
-    battingLines: BoxScoreBattingInput[],
-  ): Promise<SaveBoxScoreResult> => {
-    const supabase = await createClient();
-
-    const { data: game } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_games')
-      .select('team_id')
-      .eq('id', gameId)
-      .single();
-
-    if (!game) return { success: false, error: 'Game not found' };
-
-    await requireBaseballCapability(game.team_id, 'can_manage_stats');
-
-    await (supabase as unknown as SupabaseClient)
-      .from('baseball_box_score_batting')
-      .delete()
-      .eq('game_id', gameId);
-
-    const rows = battingLines.map((line) => {
-      const rates = computeBattingRates(line);
-      return {
-        game_id: gameId,
-        player_id: line.player_id,
-        team_id: game.team_id,
-        batting_order: line.batting_order ?? null,
-        ab: line.ab,
-        r: line.r,
-        h: line.h,
-        doubles: line.doubles,
-        triples: line.triples,
-        hr: line.hr,
-        rbi: line.rbi,
-        bb: line.bb,
-        k: line.k,
-        sb: line.sb,
-        cs: line.cs,
-        hbp: line.hbp,
-        sac: line.sac,
-        sf: line.sf,
-        lob: line.lob,
-        avg: rates.avg,
-        obp: rates.obp,
-        slg: rates.slg,
-        ops: rates.ops,
-      };
-    });
-
-    const { error } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_box_score_batting')
-      .insert(rows);
-
-    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-    return { success: true };
-  },
-);
-
-export async function saveBoxScoreBatting(
-  gameId: string,
-  battingLines: BoxScoreBattingInput[]
-): Promise<SaveBoxScoreResult> {
-  try {
-    return await saveBoxScoreBattingAction(gameId, battingLines);
-  } catch (error) {
-    await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'baseball_games.saveBoxScoreBatting', featureArea: 'baseball-games' },
-    );
-    return mapGameActionError(error);
-  }
+/** Shapes a batting Input row into the jsonb payload `save_baseball_full_box_score` expects. */
+function buildBattingRpcPayload(batting: BoxScoreBattingInput[]) {
+  return batting.map((line) => {
+    const rates = computeBattingRates(line);
+    return {
+      player_id: line.player_id,
+      batting_order: line.batting_order ?? null,
+      ab: line.ab,
+      r: line.r,
+      h: line.h,
+      doubles: line.doubles,
+      triples: line.triples,
+      hr: line.hr,
+      rbi: line.rbi,
+      bb: line.bb,
+      k: line.k,
+      sb: line.sb,
+      cs: line.cs,
+      hbp: line.hbp,
+      sac: line.sac,
+      sf: line.sf,
+      lob: line.lob,
+      avg: rates.avg,
+      obp: rates.obp,
+      slg: rates.slg,
+      ops: rates.ops,
+    };
+  });
 }
 
-const saveBoxScorePitchingAction = withBaseballAction(
-  'saveBoxScorePitching',
-  { featureArea: 'baseball-games' },
-  async (
-    _ctx,
-    gameId: string,
-    pitchingLines: BoxScorePitchingInput[],
-  ): Promise<SaveBoxScoreResult> => {
-    const supabase = await createClient();
-
-    const { data: game } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_games')
-      .select('team_id')
-      .eq('id', gameId)
-      .single();
-
-    if (!game) return { success: false, error: 'Game not found' };
-
-    await requireBaseballCapability(game.team_id, 'can_manage_stats');
-
-    await (supabase as unknown as SupabaseClient)
-      .from('baseball_box_score_pitching')
-      .delete()
-      .eq('game_id', gameId);
-
-    const rows = pitchingLines.map((line) => {
-      const rates = computePitchingRates(line);
-      return {
-        game_id: gameId,
-        player_id: line.player_id,
-        team_id: game.team_id,
-        ip: line.ip,
-        h: line.h,
-        r: line.r,
-        er: line.er,
-        bb: line.bb,
-        k: line.k,
-        hr: line.hr,
-        pitch_count: line.pitch_count ?? null,
-        strikes: line.strikes ?? null,
-        result: line.result ?? null,
-        era: rates.era,
-        whip: rates.whip,
-        k9: rates.k9,
-        bb9: rates.bb9,
-      };
-    });
-
-    const { error } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_box_score_pitching')
-      .insert(rows);
-
-    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-    return { success: true };
-  },
-);
-
-export async function saveBoxScorePitching(
-  gameId: string,
-  pitchingLines: BoxScorePitchingInput[]
-): Promise<SaveBoxScoreResult> {
-  try {
-    return await saveBoxScorePitchingAction(gameId, pitchingLines);
-  } catch (error) {
-    await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'baseball_games.saveBoxScorePitching', featureArea: 'baseball-games' },
-    );
-    return mapGameActionError(error);
-  }
+/** Shapes a pitching Input row into the jsonb payload `save_baseball_full_box_score` expects. */
+function buildPitchingRpcPayload(pitching: BoxScorePitchingInput[]) {
+  return pitching.map((line) => {
+    const rates = computePitchingRates(line);
+    return {
+      player_id: line.player_id,
+      ip: line.ip,
+      h: line.h,
+      r: line.r,
+      er: line.er,
+      bb: line.bb,
+      k: line.k,
+      hr: line.hr,
+      pitch_count: line.pitch_count ?? null,
+      strikes: line.strikes ?? null,
+      result: line.result ?? null,
+      era: rates.era,
+      whip: rates.whip,
+      k9: rates.k9,
+      bb9: rates.bb9,
+    };
+  });
 }
 
 interface CompleteGameScoreUpdate {
@@ -809,6 +712,78 @@ function deriveScoreUpdateFromCsv(
   return { opponentScore: pitchingRows.reduce((total, row) => total + (row.r ?? 0), 0) };
 }
 
+/**
+ * Persists a CSV-derived batting or pitching batch via the atomic
+ * `save_baseball_full_box_score` RPC instead of the forbidden
+ * delete-then-insert pattern.
+ *
+ * The RPC replaces BOTH sides of the box score in one call, so the side NOT
+ * present in this CSV upload is fetched from the DB and passed straight
+ * through unchanged — otherwise a batting-only CSV would silently wipe any
+ * previously saved pitching lines (and vice versa). Also marks the game
+ * completed and recalculates season stats in the same transaction, so
+ * callers no longer need a separate `completeGameAndRecalculate` step.
+ */
+async function saveCsvBoxScoreViaRpc(
+  gameId: string,
+  csvType: 'batting' | 'pitching',
+  battingRows: BoxScoreBattingInput[],
+  pitchingRows: BoxScorePitchingInput[],
+): Promise<SaveBoxScoreResult> {
+  const supabase = await createClient();
+  const db = supabase as unknown as SupabaseClient;
+
+  const { data: game } = await db
+    .from('baseball_games')
+    .select('team_id, our_score, opponent_score')
+    .eq('id', gameId)
+    .single();
+
+  if (!game) return { success: false, error: 'Game not found' };
+
+  await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+  let finalBatting = battingRows;
+  let finalPitching = pitchingRows;
+
+  if (csvType === 'batting') {
+    const { data: existingPitching } = await db
+      .from('baseball_box_score_pitching')
+      .select('*')
+      .eq('game_id', gameId);
+    finalPitching = ((existingPitching ?? []) as BaseballBoxScorePitching[]).map(mapPitchingToInput);
+  } else {
+    const { data: existingBatting } = await db
+      .from('baseball_box_score_batting')
+      .select('*')
+      .eq('game_id', gameId);
+    finalBatting = ((existingBatting ?? []) as BaseballBoxScoreBatting[]).map(mapBattingToInput);
+  }
+
+  const scoreUpdate = deriveScoreUpdateFromCsv(csvType, battingRows, pitchingRows);
+  const ourScore = scoreUpdate.ourScore ?? game.our_score ?? 0;
+  const opponentScore = scoreUpdate.opponentScore ?? game.opponent_score ?? 0;
+
+  const { data, error } = await db.rpc('save_baseball_full_box_score', {
+    p_game_id: gameId,
+    p_batting: buildBattingRpcPayload(finalBatting),
+    p_pitching: buildPitchingRpcPayload(finalPitching),
+    p_our_score: ourScore,
+    p_opponent_score: opponentScore,
+  });
+
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+  const result = data as { success?: boolean; error?: string } | null;
+  if (!result?.success) {
+    return { success: false, error: result?.error ?? 'Box score save failed' };
+  }
+
+  revalidateStatsPaths();
+  revalidatePath(`/baseball/dashboard/players`);
+  return { success: true };
+}
+
 const markGameCompletedAction = withBaseballAction(
   'markGameCompleted',
   { featureArea: 'baseball-games' },
@@ -868,53 +843,8 @@ const saveFullBoxScoreAction = withBaseballAction(
 
     await requireBaseballCapability(game.team_id, 'can_manage_stats');
 
-    const battingPayload = batting.map((line) => {
-      const rates = computeBattingRates(line);
-      return {
-        player_id: line.player_id,
-        batting_order: line.batting_order ?? null,
-        ab: line.ab,
-        r: line.r,
-        h: line.h,
-        doubles: line.doubles,
-        triples: line.triples,
-        hr: line.hr,
-        rbi: line.rbi,
-        bb: line.bb,
-        k: line.k,
-        sb: line.sb,
-        cs: line.cs,
-        hbp: line.hbp,
-        sac: line.sac,
-        sf: line.sf,
-        lob: line.lob,
-        avg: rates.avg,
-        obp: rates.obp,
-        slg: rates.slg,
-        ops: rates.ops,
-      };
-    });
-
-    const pitchingPayload = pitching.map((line) => {
-      const rates = computePitchingRates(line);
-      return {
-        player_id: line.player_id,
-        ip: line.ip,
-        h: line.h,
-        r: line.r,
-        er: line.er,
-        bb: line.bb,
-        k: line.k,
-        hr: line.hr,
-        pitch_count: line.pitch_count ?? null,
-        strikes: line.strikes ?? null,
-        result: line.result ?? null,
-        era: rates.era,
-        whip: rates.whip,
-        k9: rates.k9,
-        bb9: rates.bb9,
-      };
-    });
+    const battingPayload = buildBattingRpcPayload(batting);
+    const pitchingPayload = buildPitchingRpcPayload(pitching);
 
     const db = supabase as unknown as SupabaseClient;
     const { data, error } = await db.rpc('save_baseball_full_box_score', {
@@ -1111,25 +1041,13 @@ export async function uploadBoxScoreCSV(
 
   let completionError: string | undefined;
 
-  // If all matched, auto-save the box score, then finalize the game and
-  // recalculate season stats — reusing the same completion path as the
-  // manual save flow so the game/season data doesn't sit stale until a
-  // second manual action runs.
+  // If all matched, auto-save the box score via the atomic RPC — it saves
+  // both sides (preserving whichever side isn't in this CSV), finalizes the
+  // game, and recalculates season stats in one transaction, so the game/
+  // season data doesn't sit stale until a second manual action runs.
   if (allMatched && rows.length > 0) {
-    const saveResult =
-      csvType === 'batting'
-        ? await saveBoxScoreBatting(gameId, battingRows)
-        : await saveBoxScorePitching(gameId, pitchingRows);
-
-    if (!saveResult.success) {
-      completionError = saveResult.error;
-    } else {
-      const completion = await completeGameAndRecalculate(
-        gameId,
-        deriveScoreUpdateFromCsv(csvType, battingRows, pitchingRows),
-      );
-      if (!completion.success) completionError = completion.error;
-    }
+    const saveResult = await saveCsvBoxScoreViaRpc(gameId, csvType, battingRows, pitchingRows);
+    if (!saveResult.success) completionError = saveResult.error;
   }
 
   return {
@@ -1255,29 +1173,16 @@ export async function resolveBoxScoreUpload(
     }
   }
 
-  // Save
-  let result: SaveBoxScoreResult;
-  if (csvType === 'batting') {
-    result = await saveBoxScoreBatting(gameId, battingRows);
-  } else {
-    result = await saveBoxScorePitching(gameId, pitchingRows);
-  }
+  // Save via the atomic RPC — preserves the other side's rows, finalizes the
+  // game, and recalculates season stats in one transaction, so the manual-
+  // resolution path reaches the same end-state as the auto-save path.
+  const result = await saveCsvBoxScoreViaRpc(gameId, csvType, battingRows, pitchingRows);
 
   if (result.success) {
     await (supabase as unknown as SupabaseClient)
       .from('baseball_box_score_uploads')
       .update({ status: 'completed' })
       .eq('id', uploadId);
-
-    // Rows are saved — finalize the game and recalc season stats too, so the
-    // manual-resolution path reaches the same end-state as the auto-save path.
-    const completion = await completeGameAndRecalculate(
-      gameId,
-      deriveScoreUpdateFromCsv(csvType, battingRows, pitchingRows),
-    );
-    if (!completion.success) {
-      return { success: false, error: completion.error };
-    }
   }
 
   return result;
