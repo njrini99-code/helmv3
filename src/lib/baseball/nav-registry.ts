@@ -80,6 +80,24 @@ import {
  */
 export type BaseballNavRole = ActiveBaseballRole | 'both';
 
+/**
+ * The 8 top-level GROUPED HUBS the coach sidebar condenses ~32 destinations
+ * into (COACH_NAV_8TAB_PROPOSAL.md, approved 2026-07-01). 'messages' is
+ * deliberately absent — Messages lives outside the registry as a persistent
+ * cross-cutting slot (see BASEBALL_MESSAGES_NAV below), so it is never a
+ * grouping target here. Every coach/both registry entry below declares
+ * exactly one of these (nav-manifest.test.ts asserts it), so hub-definitions.ts
+ * can GROUP BY this field instead of hand-listing routes per hub.
+ */
+export type BaseballNavHub =
+  | 'dashboard'
+  | 'team'
+  | 'stats-performance'
+  | 'development'
+  | 'recruiting'
+  | 'academics'
+  | 'management';
+
 /** Stable identifier for a Phase-1 feature. Used as React keys + test anchors. */
 export type BaseballNavId =
   | 'command-center'
@@ -202,6 +220,15 @@ export interface BaseballNavEntry {
    * in this list (#367 — showcase-only org surfaces).
    */
   allowedProgramTypes?: readonly BaseballProgramType[];
+  /**
+   * The grouped-hub this entry folds into (COACH_NAV_8TAB_PROPOSAL.md). REQUIRED
+   * for every entry whose role is 'coach' or 'both' — hub-definitions.ts derives
+   * every hub's sub-nav tab list by grouping BASEBALL_NAV_REGISTRY on this field,
+   * so a coach/both entry without a hub is invisible to that grouping (silently
+   * orphaned, the exact bug this field exists to prevent). Left undefined for
+   * role: 'player' entries, which never appear in a coach hub.
+   */
+  hub?: BaseballNavHub;
 }
 
 /**
@@ -260,6 +287,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
+    hub: 'dashboard',
   },
   {
     id: 'signals',
@@ -272,6 +300,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // inside the page. Players never see it (role 'coach').
     requiredCapability: null,
     section: 'primary',
+    hub: 'dashboard',
   },
   {
     id: 'player-today',
@@ -301,6 +330,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
+    hub: 'team',
   },
   {
     id: 'calendar',
@@ -322,6 +352,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'both',
     requiredCapability: null,
     section: 'primary',
+    hub: 'team',
   },
   {
     id: 'player-tasks',
@@ -394,6 +425,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // Visibility ungated (read), write-gated server-side.
     requiredCapability: null,
     section: 'primary',
+    hub: 'stats-performance',
   },
 
   // --- Coach feature verticals (capability-gated) ------------------------------
@@ -405,6 +437,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_manage_imports',
     section: 'primary',
+    hub: 'stats-performance',
   },
   {
     id: 'practice-planner',
@@ -417,6 +450,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // Coaches need can_manage_practice to plan; players see the published plan.
     requiredCapability: null,
     section: 'primary',
+    hub: 'stats-performance',
   },
   {
     id: 'practice-effectiveness',
@@ -429,6 +463,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // so this is gated on can_manage_practice (the read model enforces it too).
     requiredCapability: 'can_manage_practice',
     section: 'primary',
+    hub: 'stats-performance',
   },
   {
     id: 'postgame-review',
@@ -441,6 +476,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // can_manage_stats (the action + RLS enforce it server-side too).
     requiredCapability: 'can_manage_stats',
     section: 'primary',
+    hub: 'stats-performance',
   },
   {
     id: 'performance',
@@ -452,6 +488,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     requiredAnyCapabilities: ['can_manage_lifting', 'can_view_readiness'],
     section: 'primary',
+    hub: 'stats-performance',
   },
   {
     id: 'staff-decision-room',
@@ -464,6 +501,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // is added.
     requiredCapability: 'can_manage_settings',
     section: 'primary',
+    hub: 'management',
   },
 
   // --- Secondary ("More") group ------------------------------------------------
@@ -475,6 +513,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_invite_staff',
     section: 'secondary',
+    hub: 'management',
   },
   {
     id: 'program-settings',
@@ -484,6 +523,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_manage_settings',
     section: 'secondary',
+    hub: 'management',
   },
 
   // -----------------------------------------------------------------------
@@ -509,6 +549,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
+    hub: 'recruiting',
   },
   {
     id: 'discover',
@@ -520,6 +561,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
+    hub: 'recruiting',
   },
   {
     id: 'watchlist',
@@ -530,6 +572,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
+    hub: 'recruiting',
   },
   {
     id: 'compare',
@@ -541,6 +584,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_manage_roster',
     section: 'primary',
+    hub: 'recruiting',
   },
   {
     id: 'comparisons',
@@ -551,6 +595,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_manage_roster',
     section: 'primary',
+    hub: 'recruiting',
   },
   {
     id: 'scout-packets',
@@ -563,6 +608,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_export_reports',
     section: 'primary',
+    hub: 'recruiting',
   },
   {
     id: 'dev-plans',
@@ -575,6 +621,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
+    hub: 'development',
   },
   {
     id: 'academics',
@@ -586,6 +633,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_view_academics',
     section: 'primary',
+    hub: 'academics',
   },
   {
     id: 'camps',
@@ -598,6 +646,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
+    hub: 'recruiting',
   },
   {
     id: 'organization',
@@ -611,6 +660,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_settings',
     allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'secondary',
+    hub: 'management',
   },
   {
     id: 'teams',
@@ -623,6 +673,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_settings',
     allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'secondary',
+    hub: 'management',
   },
   {
     id: 'program',
@@ -635,6 +686,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'coach',
     requiredCapability: 'can_manage_settings',
     section: 'secondary',
+    hub: 'management',
   },
 
   // --- Shared team surfaces (coach + player) --------------------------------
@@ -649,6 +701,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'both',
     requiredCapability: null,
     section: 'primary',
+    hub: 'team',
   },
   {
     id: 'documents',
@@ -660,6 +713,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'both',
     requiredCapability: null,
     section: 'primary',
+    hub: 'team',
   },
   {
     id: 'travel',
@@ -671,6 +725,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'both',
     requiredCapability: null,
     section: 'primary',
+    hub: 'team',
   },
   {
     id: 'videos',
@@ -682,6 +737,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'both',
     requiredCapability: null,
     section: 'primary',
+    hub: 'development',
   },
   {
     id: 'events',
@@ -695,6 +751,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'primary',
+    hub: 'management',
   },
   {
     id: 'team',
@@ -703,10 +760,15 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     playerHref: '/baseball/player/today',
     icon: IconUsers,
     // Backward-compatible secondary landing. The old team dashboard route now
-    // redirects here for coaches and to Player Today for players.
+    // redirects here for coaches and to Player Today for players. Classified
+    // 'dashboard' for the hub-required-field invariant, but hub-definitions.ts
+    // deliberately EXCLUDES this id from the Dashboard hub's rendered sub-tabs
+    // (its href is an exact duplicate of 'command-center' for coaches — it is a
+    // legacy alias, never a distinct destination worth its own tab).
     role: 'both',
     requiredCapability: null,
     section: 'secondary',
+    hub: 'dashboard',
   },
   {
     id: 'analytics',
