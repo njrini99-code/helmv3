@@ -324,29 +324,34 @@ a pure asset swap.
 `public/marketing/first-light/screens/{command-center,stats-center,
 decision-room,lift-lab}.png` — LIVE, shipped by the `landing-cinema` lane.
 
-**Revised 2026-07-02** (superseding this lane's own earlier approach):
-these are now **dignified neutral placeholders**, not real product
-captures. The first pass used real screenshots pulled from the overnight
-BaseballHelm visual-verification fleet — but those frames were empty-state
-QA captures (all-zero counters, a near-black sidebar, a stray cursor, an
-awkward crop), which read as raw dev output, not staged product cinema.
-Nick's sage/cream redirect made the call explicit: build palette-true
-placeholders instead. Each PNG (`Pillow`, one-off, not committed as a
-script) is a cream-high→cream card at its frame's aspect ratio (`16/10`
-for the three desktop screens at 1280×800, `9/19.5` for Lift Lab's phone
-at 480×1039) with a soft corner bloom (the entry-scene "warm bloom"
-motif), a sage-mist badge holding a simple drawn line glyph per screen
-(grid / bar-chart / checklist / barbell), a Georgia-serif screen label in
-sage-ink, a short tagline, brass hairline dividers, and a cheap low-res
-upsampled grain — zero fake data, zero product chrome, palette-true
-throughout (no kelly). Palette-quantized (256-color, Floyd–Steinberg
-dither) to keep the set reasonably light (~770KB combined; the low-res
-grain-upsample trick keeps this well under what per-pixel noise would
-cost). `M3ProductCinema.tsx` renders them the `photoBg.ts` way: a solid
-cream-toned tint `<div>` behind (not the old dark pine gradient), an
-`<Image fill sizes=... className="object-cover">` on top, inside a fixed
-aspect-ratio container — a slow load or a future missing file never
-collapses the frame's layout, and never flashes dark.
+**Revised 2026-07-02, twice.** First pass (superseding this lane's
+original real-screenshot approach — those were empty-state QA captures
+pulled from the overnight BaseballHelm visual-verification fleet, and
+read as raw dev output, not staged product cinema) built **dignified
+neutral placeholders**: a Georgia-serif label, a sage-mist badge with a
+generic line glyph, a tagline, zero kelly. Nick's A-OVERRIDE ("doesn't
+give sports on landing," Amendment 3 §2, 2026-07-02 ~18:00) called that
+out as still not sport-obvious enough — a viewer scrolling past couldn't
+tell this was golf/baseball software. **Second pass (current):** each
+PNG (`Pillow`, one-off, not committed as a script, same paths/dimensions
+— `16/10` for the three desktop screens at 1280×800, `9/19.5` for Lift
+Lab's phone at 480×1039) is now a sport-obvious idiom instead of a label
+card — command-center is a golf leaderboard (POS/PLAYER/THRU/SG TOTAL,
+tabular-nums SG figures, one sage-deep leader row), stats-center is a
+baseball box score (1–9 innings grid, R/H/E, two team rows), decision-room
+is the CoachHelm signal list (three rows, confidence pills), lift-lab is
+a barbell glyph over a readiness score/meter/check-in ledger. Still cream
+paper + sage-ink + brass hairlines throughout, still zero real athlete
+data — but **kelly now appears as tiny accents** (a leader/live tick, the
+confidence pills, a meter tick, a sync dot): allowed because these ARE
+simulated product screenshots (content, not landing chrome) per the
+amendment's own kelly-demotion carve-out, and real captures at
+integration will show the same real kelly in the same spots. ~340KB
+combined. `M3ProductCinema.tsx` renders them the `photoBg.ts` way: a
+solid cream-toned tint `<div>` behind (not the old dark pine gradient),
+an `<Image fill sizes=... className="object-cover">` on top, inside a
+fixed aspect-ratio container — a slow load or a future missing file
+never collapses the frame's layout, and never flashes dark.
 
 **Real Living-Annual captures (pristine, on-brand — not raw QA frames)
 swap in at integration**: drop the file in place at the same path, same

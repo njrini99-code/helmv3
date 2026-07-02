@@ -53,18 +53,32 @@
  * frame's existing dock-in (`HardwareFrame`'s `scale`/`y` over `[0,
  * DOCK_END]`) still supplies a subtle entrance without any color veil.
  *
- * Screens are dignified neutral placeholders (see "Screenshot asset
- * contract" in CONTRACTS.md) — `public/marketing/first-light/screens/*.png`,
- * generated this lane (Pillow, one-off, not committed as a script): a
- * cream paper card, a sage-mist badge with a simple line glyph, a Georgia
- * serif screen label in sage-ink, a short tagline, and brass hairline
- * dividers — palette-true, zero fake data, zero product chrome. Real
- * BaseballHelm Living-Annual captures (which correctly DO show the
- * product's kelly — kelly is product-only content, not landing chrome per
- * the amendment) swap in at integration; no code changes needed on either
- * side, it's a pure asset swap. Every panel keeps a solid cream-toned tint
- * layer underneath the `<Image fill>` so a slow load never flashes an
- * empty/dark frame (CONTRACTS.md's photoBg pattern, screenshot variant).
+ * SPORT-OBVIOUS REPLICAS (⚠ A-OVERRIDE, Amendment 3 §2, Nick 2026-07-02
+ * 18:00: "doesn't give sports on landing" — M3's screens were generic
+ * label cards with no sport signal). `public/marketing/first-light/
+ * screens/*.png`, regenerated this lane (Pillow, one-off, not committed
+ * as a script) at the same paths/dimensions — a pure asset swap, zero
+ * code changes needed. Each is a dignified, palette-true idiom that reads
+ * as real sports software at a glance, not a stock screenshot:
+ *  - **command-center.png** — a golf leaderboard: POS/PLAYER/THRU/SG
+ *    TOTAL columns, five rows, tabular-nums SG figures (+1.8/−0.4), one
+ *    sage-deep leader row.
+ *  - **stats-center.png** — a baseball box score: the 1–9 innings grid
+ *    with R/H/E, two team rows, the batting team's current inning called
+ *    out with a hairline kelly tick.
+ *  - **decision-room.png** — the CoachHelm signal-list idiom: three rows,
+ *    each with a confidence pill (92%/78%/64%).
+ *  - **lift-lab.png** (phone) — a barbell (bar + plates) glyph over a
+ *    readiness score, meter, and a short check-in ledger.
+ * Kelly appears only as tiny accents inside these mockups (leader tick,
+ * live-inning tick, confidence pills, meter tick, sync dot) — legitimate
+ * per the amendment, since these ARE simulated product screenshots
+ * (content), not landing chrome; real captures at integration will show
+ * the same real kelly. Cream paper background, sage-ink type, brass
+ * hairline dividers throughout — same idiom as the rest of the page.
+ * Every panel keeps a solid cream-toned tint layer underneath the
+ * `<Image fill>` so a slow load never flashes an empty/dark frame
+ * (CONTRACTS.md's photoBg pattern, screenshot variant).
  *
  * Motion: transform/opacity only (`y`/`x`/`scale`/`rotate` on the column,
  * frame, and phone; `opacity` reserved for the dock-in, the cream veil,
