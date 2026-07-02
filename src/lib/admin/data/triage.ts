@@ -44,6 +44,23 @@ function normalizeSport(raw: string | null): TriageItem['sport'] {
   return raw === 'golf' || raw === 'baseball' || raw === 'shared' ? raw : null;
 }
 
+/**
+ * Noise Charter — expected auth-state control flow is not an incident.
+ * Legacy baseball/lifting emitters (held code, can't fix at the source yet)
+ * log "must be signed in" rejections from background polls; a signed-out
+ * tab retrying getUnreadNotificationCount is routine, not triage-worthy.
+ * Deliberately narrow: access DENIALS for signed-in users stay visible.
+ */
+const EXPECTED_AUTH_NOISE = [
+  /you must be signed in/i,
+  /no active baseball team for this account/i,
+];
+
+export function isExpectedAuthNoise(row: Pick<AppTriageEventRow, 'title' | 'message'>): boolean {
+  const text = `${row.title} ${row.message ?? ''}`;
+  return EXPECTED_AUTH_NOISE.some((re) => re.test(text));
+}
+
 /** Pure merge — unit-tested; the async fetcher below just feeds it. */
 export function mergeTriage(input: {
   sentryIssues: SentryIssue[];
@@ -66,6 +83,7 @@ export function mergeTriage(input: {
 
   const buckets = new Map<string, { rows: AppTriageEventRow[]; users: Set<string> }>();
   for (const row of input.appEvents) {
+    if (isExpectedAuthNoise(row)) continue;
     const fp = row.fingerprint ?? `row:${row.id}`;
     const bucket = buckets.get(fp) ?? { rows: [], users: new Set<string>() };
     bucket.rows.push(row);

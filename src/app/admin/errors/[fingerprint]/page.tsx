@@ -23,8 +23,10 @@ export default async function FingerprintDetailPage({
   params: Promise<{ fingerprint: string }>;
 }) {
   await requireSuperAdmin();
-  const { fingerprint } = await params;
-  const { events } = await fetchFingerprintDetail(fingerprint);
+  const { fingerprint: rawFingerprint } = await params;
+  // Decode for display — the data layer decodes again idempotently.
+  const fingerprint = decodeURIComponent(rawFingerprint);
+  const { events } = await fetchFingerprintDetail(rawFingerprint);
 
   return (
     <main className="space-y-4 p-6">

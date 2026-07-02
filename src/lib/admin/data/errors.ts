@@ -109,12 +109,18 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   };
 }
 
-export async function fetchFingerprintDetail(fingerprint: string) {
+export async function fetchFingerprintDetail(rawFingerprint: string) {
   const admin = createAdminClient();
-  const { data } = await admin
+  // Route params arrive URL-encoded (`row%3A<id>`); events without a stored
+  // fingerprint carry a synthetic `row:<id>` key from the triage merge —
+  // those resolve by primary key, not by the fingerprint column.
+  const fingerprint = decodeURIComponent(rawFingerprint);
+  const base = admin
     .from('admin_events')
-    .select('id, title, message, severity, created_at, user_email, user_id, team_id, url, stack_trace')
-    .eq('fingerprint', fingerprint)
+    .select('id, title, message, severity, created_at, user_email, user_id, team_id, url, stack_trace');
+  const { data } = await (fingerprint.startsWith('row:')
+    ? base.eq('id', fingerprint.slice('row:'.length))
+    : base.eq('fingerprint', fingerprint))
     .order('created_at', { ascending: false })
     .limit(100);
   return { events: data ?? [] };

@@ -54,13 +54,10 @@ async function GolfBody() {
             goodDirection="down"
           />
         </div>
+        {/* No valueFormatter on TrendChart: functions can't cross the RSC boundary
+            from this server component, and the data is already integer counts. */}
         {roundsTrend.length > 0 ? (
-          <TrendChart
-            title="Rounds per week (12w)"
-            data={roundsTrend}
-            height={180}
-            valueFormatter={(v) => String(Math.round(v))}
-          />
+          <TrendChart title="Rounds per week (12w)" data={roundsTrend} height={180} />
         ) : (
           <PanelNoData
             label="No round history yet"

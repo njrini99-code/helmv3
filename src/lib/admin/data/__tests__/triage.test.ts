@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mergeTriage, type AppTriageEventRow } from '@/lib/admin/data/triage';
+import { mergeTriage, isExpectedAuthNoise, type AppTriageEventRow } from '@/lib/admin/data/triage';
 import type { SentryIssue } from '@/lib/admin/sentry-api';
 
 const sentryIssue = (over: Partial<SentryIssue>): SentryIssue => ({
@@ -54,5 +54,39 @@ describe('mergeTriage', () => {
     expect(items[0]).toMatchObject({
       origin: 'sentry', substatus: 'regressed', permalink: 'https://sentry.io/x', eventIds: [],
     });
+  });
+
+  it('drops expected auth-state control flow (Noise Charter) but keeps real denials', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({
+          id: 'n1', fingerprint: null, severity: 'warning',
+          title: '[getUnreadNotificationCount] You must be signed in.',
+          message: 'You must be signed in.',
+        }),
+        appEvent({
+          id: 'n2', fingerprint: null, severity: 'warning',
+          title: '[getUnreadNotificationCount] No active baseball team for this account.',
+          message: 'No active baseball team for this account.',
+        }),
+        // Access denial for a signed-in user is a real signal — must survive.
+        appEvent({
+          id: 'k1', fingerprint: null, severity: 'error',
+          title: '[getPlayerBodyweightHistory] You do not have access to this Lifting Lab.',
+          message: 'You do not have access to this Lifting Lab.',
+        }),
+      ],
+    });
+    expect(items).toHaveLength(1);
+    expect(items[0]!.key).toBe('app:row:k1');
+  });
+});
+
+describe('isExpectedAuthNoise', () => {
+  it('matches in title or message, case-insensitively', () => {
+    expect(isExpectedAuthNoise({ title: 'x', message: 'YOU MUST BE SIGNED IN' })).toBe(true);
+    expect(isExpectedAuthNoise({ title: 'No active baseball team for this account.', message: null })).toBe(true);
+    expect(isExpectedAuthNoise({ title: 'savePartialRound failed', message: 'permission denied' })).toBe(false);
   });
 });
