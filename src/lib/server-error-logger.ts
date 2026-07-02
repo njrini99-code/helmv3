@@ -11,7 +11,11 @@ export type ServerTraceSource =
   | 'route_handler'
   | 'server_component'
   | 'background_job'
-  | 'request_hook';
+  | 'request_hook'
+  | 'rls_denial'
+  | 'auth'
+  | 'cron'
+  | 'integrity';
 
 interface RoundErrorContext {
   action: string;
