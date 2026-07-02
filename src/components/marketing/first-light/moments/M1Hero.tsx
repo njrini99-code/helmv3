@@ -41,6 +41,7 @@ import { MaskedReveal } from '../scroll/MaskedReveal';
 import { flFraunces } from '../fonts';
 import { photoLayerStyle } from '../lib/photoBg';
 import { GlassNav } from '../nav/GlassNav';
+import { SportGlyph } from '../brand';
 
 export interface M1HeroProps {
   className?: string;
@@ -48,6 +49,18 @@ export interface M1HeroProps {
 
 /** House cinematic-settle curve — see CONTRACTS.md "Motion discipline". */
 const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+/**
+ * Quiet two-sport chip row (⚠ A-OVERRIDE, Amendment 3 §2, Nick 2026-07-02
+ * 18:00: "doesn't give sports on landing"). Two small `fl-glass-1` pills
+ * under the CTA pair, both pointing at `#fields` — the M4 "Two Fields"
+ * section anchor (the `landing-portals+cta` lane adds `id="fields"` to
+ * that section; this lane only needs the hash, not the target file).
+ */
+const SPORT_CHIPS = [
+  { sport: 'golf', label: 'GolfHelm' },
+  { sport: 'baseball', label: 'BaseballHelm' },
+] as const;
 
 /**
  * The permanent sage→cream grade, painted ON TOP of the photo (or, if the
@@ -218,6 +231,29 @@ export function M1Hero({ className }: M1HeroProps) {
           >
             <span className="relative z-10">Join your team</span>
           </Link>
+        </m.div>
+
+        <m.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={reducedMotion ? { duration: 0 } : { duration: 0.6, delay: 0.65, ease: EASE_GLIDE }}
+          className="mt-6 flex flex-wrap items-center justify-center gap-2.5"
+        >
+          {SPORT_CHIPS.map((chip) => (
+            <Link
+              key={chip.sport}
+              href="#fields"
+              style={{
+                backgroundColor: 'rgba(var(--fl-cream-rgb), 0.86)',
+                boxShadow: 'var(--fl-specular), inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.3)',
+              }}
+              className="fl-glass-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[var(--fl-sage-ink)] transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <SportGlyph sport={chip.sport} size={13} className="relative z-10 shrink-0 text-[var(--fl-sage-deep)]" />
+              <span className="relative z-10">{chip.label}</span>
+            </Link>
+          ))}
         </m.div>
       </m.div>
     </section>

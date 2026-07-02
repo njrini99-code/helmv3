@@ -22,25 +22,38 @@
  * trigger. Mobile (< `sm`): it becomes a small bottom sheet with a scrim,
  * per the lane brief ("popover becomes a small bottom sheet").
  *
- * Brand lockup (Amendment 3 §A.3): `HelmMark` (18–20px, sage-ink) +
+ * Brand lockup (⚠ A-OVERRIDE, Amendment 3, Nick 2026-07-02 18:00: "that's
+ * not my logo"): the REAL mark — `next/image` of
+ * `public/Helm-Logo-New-Main.png` (the 8-spoke wheel + ship silhouette,
+ * confirmed clean alpha, no baked white disc/backing) — replaces the
+ * traced `HelmMark` line-art in this lockup. The logo is exempt from the
+ * kelly-demotion rule (a real logo is content, not chrome), so it renders
+ * in its true baked-in brand green, not `currentColor`/sage-ink.
+ * `HelmMark` itself is untouched and still used elsewhere (M9 watermark,
+ * `HelmRosette` punctuation) — only this nav lockup swaps to the raster.
  * "Helm Sports Labs" — no more type-only wordmark. The mark sits in its own
  * `group`-hovered span so the wordmark link's hover/focus state turns it a
  * few degrees on the house spring easing (§B.8's `cubic-bezier(0.34,1.56,
- * 0.64,1)`) — a ship's wheel turning a notch. Transform-only; dead under
- * `prefers-reduced-motion` via `motion-reduce:` (pure CSS, no JS state
- * needed for a hover-only effect). The underline wipe (`fl-link-underline`)
- * moves to just the text span so it doesn't run under the icon.
+ * 0.64,1)`) — a ship's wheel turning a notch, kept because it composes
+ * fine on the raster (a whole-image rotate, no distortion). Transform-only;
+ * dead under `prefers-reduced-motion` via `motion-reduce:` (pure CSS, no
+ * JS state needed for a hover-only effect). The underline wipe
+ * (`fl-link-underline`) moves to just the text span so it doesn't run
+ * under the icon. `aria-hidden` stays on the icon wrapper (the adjacent
+ * "Helm Sports Labs" text already carries the accessible name); the
+ * `<Image>` still gets a real `alt` for when CSS/assets fail.
  *
  * UI chrome uses `font-annual` (Space Grotesk) — Fraunces is reserved for
  * display/serif moments (see `../fonts.ts`).
  */
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { HelmMark, SportGlyph } from '../brand';
+import { SportGlyph } from '../brand';
 
 export interface GlassNavProps {
   className?: string;
@@ -98,9 +111,16 @@ export function GlassNav({ className }: GlassNavProps) {
           <Link href="/" className="group flex items-center gap-2.5 pr-2 sm:pr-3">
             <span
               aria-hidden="true"
-              className="flex shrink-0 items-center justify-center text-[var(--fl-sage-ink)] transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[15deg] group-focus-visible:rotate-[15deg] motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-focus-visible:rotate-0"
+              className="flex shrink-0 items-center justify-center transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[15deg] group-focus-visible:rotate-[15deg] motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-focus-visible:rotate-0"
             >
-              <HelmMark size={18} className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+              <Image
+                src="/Helm-Logo-New-Main.png"
+                alt="Helm Sports Labs"
+                width={40}
+                height={40}
+                priority
+                className="h-[18px] w-[18px] object-contain sm:h-5 sm:w-5"
+              />
             </span>
             <span className="fl-link-underline font-annual text-body-sm font-semibold tracking-tight text-[var(--fl-sage-ink)] sm:text-sm">
               Helm
