@@ -1,16 +1,25 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { IconFile, IconUpload, IconSearch } from '@/components/icons';
 import { DocumentCard } from '@/components/baseball/documents/DocumentCard';
 import { DocumentPreview } from '@/components/baseball/documents/DocumentPreview';
 import { UploadNewVersionModal } from '@/components/baseball/documents/UploadNewVersionModal';
+import { EditDocumentModal, type EditDocumentSaveData } from '@/components/baseball/documents/EditDocumentModal';
+import { MoveToFolderModal, type MoveToFolderSaveData } from '@/components/baseball/documents/MoveToFolderModal';
+import {
+  DocumentVersionHistoryModal,
+  type DocumentVersionRevertPatch,
+} from '@/components/baseball/documents/DocumentVersionHistoryModal';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
 import {
   createBaseballDocument,
   deleteBaseballDocument,
+  updateBaseballDocument,
   uploadBaseballDocument,
   uploadNewVersion,
 } from '@/app/baseball/actions/documents';
@@ -41,14 +50,25 @@ interface DocumentsClientProps {
   isCoach: boolean;
 }
 
+// Category options available for the upload-time picker / edit modal.
+// Excludes the 'all' pseudo-category used only by the filter tabs.
+const DOCUMENT_UPLOAD_CATEGORIES = CATEGORIES.filter((c) => c.value !== 'all');
+
 export function DocumentsClient({ documents: initialDocuments, coachId, teamId, isCoach }: DocumentsClientProps) {
   const [documents, setDocuments] = useState(initialDocuments);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [previewDoc, setPreviewDoc] = useState<BaseballDocument | null>(null);
   const [versionDoc, setVersionDoc] = useState<BaseballDocument | null>(null);
+  const [editingDoc, setEditingDoc] = useState<BaseballDocument | null>(null);
+  const [historyDoc, setHistoryDoc] = useState<BaseballDocument | null>(null);
+  const [movingDoc, setMovingDoc] = useState<BaseballDocument | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  // Upload-time picker state — replaces the previously hardcoded
+  // category: 'general' / is_player_visible: true on every upload.
+  const [uploadCategory, setUploadCategory] = useState('general');
+  const [uploadIsPlayerVisible, setUploadIsPlayerVisible] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
@@ -57,6 +77,14 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     const matchesCategory = category === 'all' || doc.category === category;
     return matchesSearch && matchesCategory;
   });
+
+  const existingFolders = useMemo(() => {
+    const set = new Set<string>();
+    for (const doc of documents) {
+      if (doc.folder) set.add(doc.folder);
+    }
+    return Array.from(set).sort();
+  }, [documents]);
 
   async function handleDelete(doc: BaseballDocument) {
     if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
@@ -95,8 +123,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         storage_path: uploadResult.storage_path,
         file_type: file.type || 'application/octet-stream',
         file_size: file.size,
-        category: 'general',
-        is_player_visible: true,
+        category: uploadCategory,
+        is_player_visible: uploadIsPlayerVisible,
         uploaded_by: coachId,
       });
 
@@ -135,6 +163,82 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     showToast('New version uploaded', 'success');
   }
 
+  function openEditModal(doc: BaseballDocument) {
+    setEditingDoc(doc);
+  }
+
+  async function handleSaveEdit(data: EditDocumentSaveData) {
+    const result = await updateBaseballDocument({
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      is_player_visible: data.is_player_visible,
+    });
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Failed to save changes');
+    }
+
+    // Patch only the edited metadata fields — never replace the whole
+    // document with the server row. `updateBaseballDocumentAction` returns
+    // the raw DB row, whose file_url is a signed URL persisted at
+    // upload/version time (no re-signing on update); a full-object replace
+    // would clobber the fresh signed URL already held in local state
+    // (from initial load's withFreshDocumentUrls / an upload / a version
+    // action) with a value that's likely already expired.
+    const updated = result.data;
+    setDocuments(prev => prev.map(d => (d.id === data.id
+      ? {
+          ...d,
+          title: updated.title,
+          description: updated.description,
+          category: updated.category,
+          is_player_visible: updated.is_player_visible,
+        }
+      : d
+    )));
+    showToast('Document updated', 'success');
+    setEditingDoc(null);
+  }
+
+  function openVersionHistory(doc: BaseballDocument) {
+    setHistoryDoc(doc);
+  }
+
+  function handleDocumentReverted(patch: DocumentVersionRevertPatch) {
+    setDocuments(prev => prev.map(d => (d.id === patch.id
+      ? {
+          ...d,
+          version_count: patch.version_count,
+          file_type: patch.file_type,
+          file_size: patch.file_size,
+          file_url: patch.file_url,
+        }
+      : d
+    )));
+    showToast(`Reverted to version ${patch.reverted_to_version_number}`, 'success');
+  }
+
+  function openMoveModal(doc: BaseballDocument) {
+    setMovingDoc(doc);
+  }
+
+  async function handleSaveMove(data: MoveToFolderSaveData) {
+    const result = await updateBaseballDocument({ id: data.id, folder: data.folder });
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Failed to move document');
+    }
+
+    // Patch only the moved field for the same reason as handleSaveEdit above:
+    // never replace the whole document with the server's un-re-signed row.
+    const moved = result.data;
+    setDocuments(prev => prev.map(d => (d.id === data.id ? { ...d, folder: moved.folder } : d)));
+    showToast(data.folder ? `Moved to "${data.folder}"` : 'Removed from folder', 'success');
+    setMovingDoc(null);
+  }
+
   if (isRedesignEnabled()) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -148,11 +252,18 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           onCategoryChange={setCategory}
           isUploadingDocument={isUploadingDocument}
           onUpload={openUploadPicker}
+          uploadCategory={uploadCategory}
+          onUploadCategoryChange={setUploadCategory}
+          uploadIsPlayerVisible={uploadIsPlayerVisible}
+          onUploadVisibilityChange={setUploadIsPlayerVisible}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
           onPreview={(d) => setPreviewDoc(d)}
           onUploadVersion={isCoach ? (d) => setVersionDoc(d) : undefined}
           onDelete={isCoach ? handleDelete : undefined}
+          onEdit={isCoach ? openEditModal : undefined}
+          onViewHistory={isCoach ? openVersionHistory : undefined}
+          onMoveToFolder={isCoach ? openMoveModal : undefined}
           fileInputSlot={
             isCoach ? (
               // eslint-disable-next-line helm/no-raw-input -- hidden native file picker (no design-system equivalent)
@@ -182,6 +293,38 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 documentTitle={versionDoc.title}
                 currentFileType={versionDoc.file_type || null}
                 onUpload={handleUploadNewVersion}
+              />
+            ) : null
+          }
+          editSlot={
+            isCoach ? (
+              <EditDocumentModal
+                open={!!editingDoc}
+                document={editingDoc}
+                categories={DOCUMENT_UPLOAD_CATEGORIES}
+                onClose={() => setEditingDoc(null)}
+                onSave={handleSaveEdit}
+              />
+            ) : null
+          }
+          historySlot={
+            isCoach ? (
+              <DocumentVersionHistoryModal
+                open={!!historyDoc}
+                document={historyDoc}
+                onClose={() => setHistoryDoc(null)}
+                onReverted={handleDocumentReverted}
+              />
+            ) : null
+          }
+          moveSlot={
+            isCoach ? (
+              <MoveToFolderModal
+                open={!!movingDoc}
+                document={movingDoc}
+                folders={existingFolders}
+                onClose={() => setMovingDoc(null)}
+                onMove={handleSaveMove}
               />
             ) : null
           }
@@ -245,6 +388,27 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         )}
       </div>
 
+      {/* Upload-time picker — category + visibility applied to the next file selected */}
+      {isCoach && (
+        <div className="flex flex-wrap items-center gap-4 mb-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-warm-400">Next upload</span>
+            <div className="w-40">
+              <Select
+                options={DOCUMENT_UPLOAD_CATEGORIES}
+                value={uploadCategory}
+                onChange={setUploadCategory}
+              />
+            </div>
+          </div>
+          <Checkbox
+            label="Visible to players"
+            checked={uploadIsPlayerVisible}
+            onChange={(e) => setUploadIsPlayerVisible(e.target.checked)}
+          />
+        </div>
+      )}
+
       {/* Documents Grid */}
       {filtered.length === 0 ? (
         <Card variant="glass">
@@ -285,6 +449,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               onPreview={(d) => setPreviewDoc(d)}
               onUploadVersion={isCoach ? (d) => setVersionDoc(d) : undefined}
               onDelete={isCoach ? handleDelete : undefined}
+              onEdit={isCoach ? openEditModal : undefined}
+              onViewHistory={isCoach ? openVersionHistory : undefined}
+              onMoveToFolder={isCoach ? openMoveModal : undefined}
             />
           ))}
         </div>
@@ -305,6 +472,38 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           documentTitle={versionDoc.title}
           currentFileType={versionDoc.file_type || null}
           onUpload={handleUploadNewVersion}
+        />
+      )}
+
+      {/* Edit Details Modal */}
+      {isCoach && (
+        <EditDocumentModal
+          open={!!editingDoc}
+          document={editingDoc}
+          categories={DOCUMENT_UPLOAD_CATEGORIES}
+          onClose={() => setEditingDoc(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
+
+      {/* Version History Modal */}
+      {isCoach && (
+        <DocumentVersionHistoryModal
+          open={!!historyDoc}
+          document={historyDoc}
+          onClose={() => setHistoryDoc(null)}
+          onReverted={handleDocumentReverted}
+        />
+      )}
+
+      {/* Move to Folder Modal */}
+      {isCoach && (
+        <MoveToFolderModal
+          open={!!movingDoc}
+          document={movingDoc}
+          folders={existingFolders}
+          onClose={() => setMovingDoc(null)}
+          onMove={handleSaveMove}
         />
       )}
     </div>

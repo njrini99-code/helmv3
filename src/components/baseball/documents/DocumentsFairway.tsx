@@ -25,6 +25,8 @@ import {
   Segmented,
   Button,
   EmptyState,
+  Select,
+  Switch,
 } from '@/components/fairway';
 import { DocumentCard } from './DocumentCard';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
@@ -53,14 +55,26 @@ export interface DocumentsFairwayProps {
   onCategoryChange: (c: string) => void;
   isUploadingDocument: boolean;
   onUpload: () => void;
+  /** Category applied to the next upload (coach-only picker, replaces the old hardcoded 'general'). */
+  uploadCategory: string;
+  onUploadCategoryChange: (c: string) => void;
+  /** Player-visibility applied to the next upload (coach-only picker, replaces the old hardcoded true). */
+  uploadIsPlayerVisible: boolean;
+  onUploadVisibilityChange: (v: boolean) => void;
   activeDropdown: CardProps['activeDropdown'];
   setActiveDropdown: CardProps['setActiveDropdown'];
   onPreview: CardProps['onPreview'];
   onUploadVersion: CardProps['onUploadVersion'];
   onDelete: CardProps['onDelete'];
+  onEdit: CardProps['onEdit'];
+  onViewHistory: CardProps['onViewHistory'];
+  onMoveToFolder: CardProps['onMoveToFolder'];
   fileInputSlot: ReactNode;
   previewSlot: ReactNode;
   versionSlot: ReactNode;
+  editSlot: ReactNode;
+  historySlot: ReactNode;
+  moveSlot: ReactNode;
 }
 
 export function DocumentsFairway({
@@ -73,15 +87,26 @@ export function DocumentsFairway({
   onCategoryChange,
   isUploadingDocument,
   onUpload,
+  uploadCategory,
+  onUploadCategoryChange,
+  uploadIsPlayerVisible,
+  onUploadVisibilityChange,
   activeDropdown,
   setActiveDropdown,
   onPreview,
   onUploadVersion,
   onDelete,
+  onEdit,
+  onViewHistory,
+  onMoveToFolder,
   fileInputSlot,
   previewSlot,
   versionSlot,
+  editSlot,
+  historySlot,
+  moveSlot,
 }: DocumentsFairwayProps) {
+  const uploadCategoryOptions = CATEGORIES.filter((c) => c.value !== 'all');
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
       {fileInputSlot}
@@ -126,6 +151,31 @@ export function DocumentsFairway({
         </div>
       </div>
 
+      {isCoach && (
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-text-secondary">
+          <div className="flex items-center gap-2">
+            <span className="text-caption font-medium uppercase tracking-[0.06em] text-text-tertiary">
+              Next upload
+            </span>
+            <Select
+              size="sm"
+              value={uploadCategory}
+              onValueChange={(value) => {
+                if (value) onUploadCategoryChange(value);
+              }}
+              options={uploadCategoryOptions}
+              aria-label="Category for the next upload"
+              className="min-w-[9rem]"
+            />
+          </div>
+          <Switch
+            checked={uploadIsPlayerVisible}
+            onCheckedChange={onUploadVisibilityChange}
+            label="Visible to players"
+          />
+        </div>
+      )}
+
       <div className="mt-6">
         {filtered.length === 0 ? (
           <EmptyState
@@ -164,6 +214,9 @@ export function DocumentsFairway({
                 onPreview={onPreview}
                 onUploadVersion={onUploadVersion}
                 onDelete={onDelete}
+                onEdit={onEdit}
+                onViewHistory={onViewHistory}
+                onMoveToFolder={onMoveToFolder}
               />
             ))}
           </div>
@@ -172,6 +225,9 @@ export function DocumentsFairway({
 
       {previewSlot}
       {versionSlot}
+      {editSlot}
+      {historySlot}
+      {moveSlot}
     </div>
   );
 }
