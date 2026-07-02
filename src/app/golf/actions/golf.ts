@@ -6038,7 +6038,7 @@ export interface SaveCourseInput {
  * Get all saved courses for the current player
  * Returns courses sorted by most recently used
  */
-export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[]>> {
+async function getPlayerSavedCoursesImpl(): Promise<ActionResult<SavedCourse[]>> {
   const supabase = await createClient();
 
   // Get the current user
@@ -6093,10 +6093,20 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
   return { success: true, data: savedCourses };
 }
 
+const observedGetPlayerSavedCourses = withAdminObserved(
+  'getPlayerSavedCourses',
+  { sport: 'golf', feature: 'course_library' },
+  getPlayerSavedCoursesImpl,
+);
+
+export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[]>> {
+  return observedGetPlayerSavedCourses();
+}
+
 /**
  * Save a new course configuration or update existing one
  */
-export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionResult<SavedCourse>> {
+async function savePlayerCourseImpl(input: SaveCourseInput): Promise<ActionResult<SavedCourse>> {
   const supabase = await createClient();
 
   // Get the current user
@@ -6188,10 +6198,20 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   return { success: true, data: savedCourse };
 }
 
+const observedSavePlayerCourse = withAdminObserved(
+  'savePlayerCourse',
+  { sport: 'golf', feature: 'course_library' },
+  savePlayerCourseImpl,
+);
+
+export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionResult<SavedCourse>> {
+  return observedSavePlayerCourse(input);
+}
+
 /**
  * Update the last_used_at timestamp for a saved course
  */
-export async function touchSavedCourse(courseId: string): Promise<ActionResult<void>> {
+async function touchSavedCourseImpl(courseId: string): Promise<ActionResult<void>> {
   const supabase = await createClient();
 
   // Get the current user
@@ -6211,6 +6231,16 @@ export async function touchSavedCourse(courseId: string): Promise<ActionResult<v
   }
 
   return { success: true, data: undefined };
+}
+
+const observedTouchSavedCourse = withAdminObserved(
+  'touchSavedCourse',
+  { sport: 'golf', feature: 'course_library' },
+  touchSavedCourseImpl,
+);
+
+export async function touchSavedCourse(courseId: string): Promise<ActionResult<void>> {
+  return observedTouchSavedCourse(courseId);
 }
 
 /**
@@ -6234,7 +6264,7 @@ export interface RecentPlayedCourse extends SavedCourse {
  *
  * Sorted by `last_played_at` DESC, capped to `limit` (default 8).
  */
-export async function getRecentCoursesForPlayer(
+async function getRecentCoursesForPlayerImpl(
   limit = 8,
 ): Promise<ActionResult<RecentPlayedCourse[]>> {
   const supabase = await createClient();
@@ -6340,6 +6370,18 @@ export async function getRecentCoursesForPlayer(
   });
 
   return { success: true, data: enriched };
+}
+
+const observedGetRecentCoursesForPlayer = withAdminObserved(
+  'getRecentCoursesForPlayer',
+  { sport: 'golf', feature: 'course_library' },
+  getRecentCoursesForPlayerImpl,
+);
+
+export async function getRecentCoursesForPlayer(
+  limit = 8,
+): Promise<ActionResult<RecentPlayedCourse[]>> {
+  return observedGetRecentCoursesForPlayer(limit);
 }
 
 // ============================================================================

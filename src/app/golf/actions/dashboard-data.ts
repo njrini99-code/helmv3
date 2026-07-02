@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTodayRangeForTz } from '@/lib/utils/timezone';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -228,7 +229,7 @@ function buildSparkline(
 
 export type DashboardDateRange = '7d' | '30d' | '90d' | 'season' | 'all';
 
-export async function getCoachDashboardData(
+async function getCoachDashboardDataImpl(
     _coachId: string,
     userId: string,
     teamId: string,
@@ -715,11 +716,26 @@ export async function getCoachDashboardData(
     };
 }
 
+const observedGetCoachDashboardData = withAdminObserved(
+    'getCoachDashboardData',
+    { sport: 'golf', feature: 'coach_dashboard' },
+    getCoachDashboardDataImpl,
+);
+
+export async function getCoachDashboardData(
+    _coachId: string,
+    userId: string,
+    teamId: string,
+    dateRange: DashboardDateRange = 'all'
+): Promise<CoachDashboardPayload> {
+    return observedGetCoachDashboardData(_coachId, userId, teamId, dateRange);
+}
+
 // ============================================================================
 // PLAYER DASHBOARD DATA
 // ============================================================================
 
-export async function getPlayerDashboardData(
+async function getPlayerDashboardDataImpl(
     playerId: string,
     _userId: string,
     teamId: string | null
@@ -1037,6 +1053,20 @@ export async function getPlayerDashboardData(
     };
 }
 
+const observedGetPlayerDashboardData = withAdminObserved(
+    'getPlayerDashboardData',
+    { sport: 'golf', feature: 'player_hub' },
+    getPlayerDashboardDataImpl,
+);
+
+export async function getPlayerDashboardData(
+    playerId: string,
+    _userId: string,
+    teamId: string | null
+): Promise<PlayerDashboardPayload> {
+    return observedGetPlayerDashboardData(playerId, _userId, teamId);
+}
+
 // ============================================================================
 // DIRECT EXPORTS — for server component pages
 // ============================================================================
@@ -1044,9 +1074,26 @@ export async function getPlayerDashboardData(
 // cookies() via createClient(), which is not supported in Next.js 16.
 // The page is force-dynamic anyway, so caching provides minimal benefit.
 
-export async function getCachedCoachDashboardData(...args: Parameters<typeof getCoachDashboardData>) {
+async function getCachedCoachDashboardDataImpl(...args: Parameters<typeof getCoachDashboardData>) {
   return getCoachDashboardData(...args);
 }
-export async function getCachedPlayerDashboardData(...args: Parameters<typeof getPlayerDashboardData>) {
+const observedGetCachedCoachDashboardData = withAdminObserved(
+  'getCachedCoachDashboardData',
+  { sport: 'golf', feature: 'coach_dashboard' },
+  getCachedCoachDashboardDataImpl,
+);
+export async function getCachedCoachDashboardData(...args: Parameters<typeof getCoachDashboardData>) {
+  return observedGetCachedCoachDashboardData(...args);
+}
+
+async function getCachedPlayerDashboardDataImpl(...args: Parameters<typeof getPlayerDashboardData>) {
   return getPlayerDashboardData(...args);
+}
+const observedGetCachedPlayerDashboardData = withAdminObserved(
+  'getCachedPlayerDashboardData',
+  { sport: 'golf', feature: 'player_hub' },
+  getCachedPlayerDashboardDataImpl,
+);
+export async function getCachedPlayerDashboardData(...args: Parameters<typeof getPlayerDashboardData>) {
+  return observedGetCachedPlayerDashboardData(...args);
 }

@@ -11,103 +11,62 @@ describe('coverage-scanner', () => {
     expect(scanned.wrapped.get('savePartialRound')).toEqual({ feature: 'round_tracking' });
     // invitePlayerToTeam is now wrapped (roster_management, W15 Batch 5) —
     // proves the scanner distinguishes wrapped from unwrapped exports within
-    // the same partially-wrapped file (getPlayerSavedCourses et al. remain
-    // bare until B6).
+    // the same file. golf.ts's LAST 4 exports (getPlayerSavedCourses et al.)
+    // landed in Batch 6, so as of B6 the whole file is fully wrapped.
     expect(scanned.wrapped.get('invitePlayerToTeam')).toEqual({ feature: 'roster_management' });
+    expect(scanned.wrapped.get('getPlayerSavedCourses')).toEqual({ feature: 'course_library' });
   });
 
   it('exports list matches a fresh regex scan (sanity: scanner is not hard-coded)', () => {
-    // course-library.ts is untouched until W15 Batch 6 (course_library) — a
-    // stable fully-unwrapped fixture for this scanner sanity check
-    // (roster.ts moved to fully wrapped in Batch 5, so it no longer fits
-    // this assertion — same handoff message-attachments.ts → roster.ts did
-    // after Batch 4).
-    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/course-library.ts'));
+    // alerts.ts is untouched until W15 Batch 7 (alerts_system) — a stable
+    // fully-unwrapped fixture for this scanner sanity check (course-library.ts
+    // moved to fully wrapped in Batch 6, so it no longer fits this assertion —
+    // same handoff roster.ts → course-library.ts did after Batch 5).
+    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/alerts.ts'));
     expect(scanned.exports.sort()).toEqual(
-      [
-        'listCourses',
-        'listCoursesStrict',
-        'getRecentlyPlayedCourses',
-        'getCourseTeeCounts',
-        'getCourseTeeCountsStrict',
-        'getCourseDetail',
-        'getTeeWithHoles',
-        'getTeeRoundDefaults',
-        'getCourseEditHistory',
-        'getTeamSavedCourses',
-        'getTeamSavedCoursesStrict',
-        'createCourse',
-        'updateCourse',
-        'softDeleteCourse',
-        'restoreCourse',
-        'setCourseImageUrl',
-        'removeCourseImage',
-        'createTee',
-        'contributeCourseFromRound',
-        'updateTee',
-        'softDeleteTee',
-        'restoreTee',
-        'saveTeamCourse',
-        'unsaveTeamCourse',
-        'setTeamCourseDefaultTee',
-        'setTeamCoursePinned',
-      ].sort(),
+      ['getAlertCounts', 'generateAlerts'].sort(),
     );
     expect(scanned.wrapped.size).toBe(0);
   });
 });
 
 describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)', () => {
-  it('does NOT throw for golf.ts scoped to only the Batch 0+1+2+4+5 wrapped exports', () => {
+  it('does NOT throw for golf.ts — fully wrapped as of Batch 6', () => {
+    // Batch 1 (round_tracking/qualifiers/my_qualifiers, 13 exports incl. the
+    // pre-existing savePartialRound exemplar) + Batch 2 (calendar_events/
+    // notifications, 18 exports) + Batch 4 (createAnnouncement) + Batch 5
+    // (roster_management: invitePlayerToTeam, updatePlayerStatus,
+    // getPendingInvitations) + Batch 6 (course_library: getPlayerSavedCourses,
+    // savePlayerCourse, touchSavedCourse, getRecentCoursesForPlayer) cover all
+    // 39 golf.ts exports — no exclusions needed anymore.
     expect(() =>
-      assertAreaFullyWrapped(['src/app/golf/actions/golf.ts'], {
-        exclude: {
-          // Batch 1 (round_tracking/qualifiers/my_qualifiers, 13 exports incl.
-          // the pre-existing savePartialRound exemplar) + Batch 2
-          // (calendar_events/notifications, 18 exports) + Batch 4
-          // (createAnnouncement) + Batch 5 (roster_management: invitePlayerToTeam,
-          // updatePlayerStatus, getPendingInvitations) are now wrapped; every
-          // other golf.ts export belongs to a later batch (B6) and is still
-          // bare — scope this self-test accordingly.
-          'src/app/golf/actions/golf.ts': [
-            'getPlayerSavedCourses',
-            'savePlayerCourse',
-            'touchSavedCourse',
-            'getRecentCoursesForPlayer',
-          ],
-        },
-      }),
+      assertAreaFullyWrapped(['src/app/golf/actions/golf.ts']),
     ).not.toThrow();
   });
 
-  it('THROWS listing every unwrapped export in course-library.ts (still bare — W15 Batch 6)', () => {
-    // course-library.ts is untouched until Batch 6; roster.ts (the fixture
-    // here through Batch 4) moved to fully wrapped in Batch 5, so it no
-    // longer proves gap-detection — course-library.ts takes over that role
-    // (same handoff message-attachments.ts → roster.ts did after Batch 4).
+  it('THROWS listing every unwrapped export in alerts.ts (still bare — W15 Batch 7)', () => {
+    // alerts.ts is untouched until Batch 7; course-library.ts (the fixture
+    // here through Batch 5) moved to fully wrapped in Batch 6, so it no
+    // longer proves gap-detection — alerts.ts takes over that role (same
+    // handoff roster.ts → course-library.ts did after Batch 5).
     let thrown: Error | null = null;
     try {
-      assertAreaFullyWrapped(['src/app/golf/actions/course-library.ts']);
+      assertAreaFullyWrapped(['src/app/golf/actions/alerts.ts']);
     } catch (err) {
       thrown = err instanceof Error ? err : new Error(String(err));
     }
     expect(thrown).not.toBeNull();
     const message = thrown?.message ?? '';
-    expect(message).toContain('listCourses');
-    expect(message).toContain('createCourse');
-    expect(message).toContain('setTeamCoursePinned');
-    expect(message).toContain('26 coverage gap(s)');
+    expect(message).toContain('getAlertCounts');
+    expect(message).toContain('generateAlerts');
+    expect(message).toContain('2 coverage gap(s)');
   });
 
-  it('throws when a wrap carries an invalid feature key', () => {
-    // golf.ts's savePartialRound is wrapped with a VALID feature
-    // (round_tracking); asserting it against a manifest exclusion that
-    // forces the harness to check feature validity for an unexcluded,
-    // unwrapped export still surfaces as a gap (not a false pass).
+  it('throws when an export is not wrapped', () => {
+    // alerts.ts is entirely unwrapped (Batch 7 scope) — asserting it proves
+    // the harness surfaces a gap rather than a false pass.
     expect(() =>
-      assertAreaFullyWrapped(['src/app/golf/actions/golf.ts'], {
-        exclude: {}, // no exclusions — every other export in golf.ts is unwrapped
-      }),
+      assertAreaFullyWrapped(['src/app/golf/actions/alerts.ts']),
     ).toThrow(/NOT wrapped with withAdminObserved/);
   });
 });
