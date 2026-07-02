@@ -277,9 +277,10 @@ export default function CollegeInterestClient() {
       );
     }
 
-    // Activated non-college player — this is a coach surface; redirect is handled
-    // by the gate hook. Show nothing while redirect is in flight.
-    return null;
+    // Non-college player — this is a coach surface; redirect is handled by the
+    // gate hook (now fires for all non-college players, activated or not).
+    // Show a loading state while the redirect is in flight.
+    return <PageLoading />;
   }
 
   if (user?.role !== 'coach') {

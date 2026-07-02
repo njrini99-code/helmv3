@@ -111,7 +111,6 @@ export type BaseballNavId =
   | 'dev-plans'
   | 'player-journey'
   | 'player-lift'
-  | 'player-college-interest'
   | 'colleges'
   | 'compare'
   | 'comparisons'
@@ -743,17 +742,6 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // Player's school-interest tracker — the list of programs the player is
     // researching/contacted/offered by. Drives the useJourney hook + interest
     // status updates. Player-only; coaches never need this view.
-    role: 'player',
-    requiredCapability: null,
-    section: 'primary',
-  },
-  {
-    id: 'player-college-interest',
-    label: 'College Interest',
-    href: '/baseball/dashboard/college-interest',
-    icon: IconStar,
-    // Player's college interest management (CollegeInterestClient). Companion
-    // to My Journey — allows the player to flag schools and track status.
     role: 'player',
     requiredCapability: null,
     section: 'primary',
