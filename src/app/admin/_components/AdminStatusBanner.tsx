@@ -25,11 +25,11 @@ export function AdminStatusBanner({
   return (
     <div
       role="status"
-      className="flex items-center justify-between rounded-2xl bg-[var(--fw-color-nav-bg)] px-5 py-3 text-white"
+      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-2xl bg-[var(--fw-color-nav-bg)] px-5 py-3 text-white"
     >
-      <div className="flex items-center gap-3">
-        <span className={cn('h-2.5 w-2.5 rounded-full', s.dot)} aria-hidden />
-        <Icon size={16} aria-hidden />
+      <div className="flex min-w-0 items-center gap-3">
+        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', s.dot)} aria-hidden />
+        <Icon size={16} className="shrink-0" aria-hidden />
         <span className="text-sm font-medium">{s.label(attentionCount)}</span>
       </div>
       <span className="font-fw-mono text-xs tabular-nums text-white/60">

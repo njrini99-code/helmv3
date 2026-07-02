@@ -160,7 +160,7 @@ async function GolfBody() {
         {/* AI / LLM spend */}
         <Surface padding="sm">
           <SectionLabel>AI / LLM spend (30d)</SectionLabel>
-          <div className="mt-3 grid grid-cols-3 gap-3">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <StatTile label="Spend 30d" value={tab.llm.cost30d} format={USD_FORMAT} mono />
             <StatTile label="Calls 30d" value={tab.llm.calls30d} mono />
             <StatTile

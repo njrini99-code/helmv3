@@ -68,8 +68,8 @@ async function TracerBody() {
         ) : (
           <ul className="mt-2 divide-y divide-warm-200/60">
             {sortedPlayers.slice(0, 100).map((p) => (
-              <li key={p.player_id} className="flex items-center gap-3 py-2 text-sm">
-                <span className="min-w-0 flex-1 truncate text-warm-900">{playerName(p)}</span>
+              <li key={p.player_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+                <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{playerName(p)}</span>
                 <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                   {p.completed_rounds}/{p.total_rounds} completed
                 </span>
@@ -97,11 +97,11 @@ async function TracerBody() {
         ) : (
           <ul className="mt-2 divide-y divide-warm-200/60">
             {data.recentErrors.slice(0, 50).map((incident) => (
-              <li key={incident.id} className="flex items-center gap-3 py-2 text-sm">
+              <li key={incident.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                 <StatusPill tone={SEVERITY_TONE[incident.severity]} dot size="sm">
                   {incident.severity}
                 </StatusPill>
-                <span className="min-w-0 flex-1 truncate text-warm-900">{incident.title}</span>
+                <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{incident.title}</span>
                 <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                   {incident.occurrences} occurrence{incident.occurrences === 1 ? '' : 's'}
                 </span>

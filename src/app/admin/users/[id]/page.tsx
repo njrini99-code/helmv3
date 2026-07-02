@@ -119,19 +119,19 @@ export default async function UserDetailPage({
               ) : (
                 <ul className="divide-y divide-warm-200/60">
                   {detail.errorEvents.map((e) => (
-                    <li key={e.id} className="flex items-center gap-2 py-1.5 text-sm">
+                    <li key={e.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-sm">
                       <StatusPill tone={SEVERITY_TONE[e.severity] ?? 'neutral'} dot size="sm">
                         {e.severity}
                       </StatusPill>
                       {e.fingerprint ? (
                         <Link
                           href={`/admin/errors/${e.fingerprint}`}
-                          className="min-w-0 flex-1 truncate text-warm-800 hover:underline"
+                          className="min-w-0 flex-1 basis-full truncate text-warm-800 hover:underline sm:basis-auto"
                         >
                           {e.title}
                         </Link>
                       ) : (
-                        <span className="min-w-0 flex-1 truncate text-warm-800">{e.title}</span>
+                        <span className="min-w-0 flex-1 basis-full truncate text-warm-800 sm:basis-auto">{e.title}</span>
                       )}
                       <span className="font-fw-mono text-xs tabular-nums text-warm-500">
                         {new Date(e.created_at).toLocaleString()}

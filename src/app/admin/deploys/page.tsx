@@ -195,7 +195,7 @@ async function WebVitals() {
     );
   }
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <StatTile label="Visitors 24h" value={insights.data.visitors24h} mono />
       <StatTile label="Visitors 7d" value={insights.data.visitors7d} mono />
       <StatTile label="Visitors 30d" value={insights.data.visitors30d} mono />

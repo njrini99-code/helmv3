@@ -71,10 +71,10 @@ export default async function UsersPage({
             ) : (
               <ul className="divide-y divide-warm-200/60">
                 {tab.users.map((u) => (
-                  <li key={u.id} className="flex items-center gap-3 py-2 text-sm">
+                  <li key={u.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                     <Link
                       href={`/admin/users/${u.id}`}
-                      className="min-w-0 flex-1 truncate font-medium text-warm-900 hover:underline"
+                      className="min-w-0 flex-1 basis-full truncate font-medium text-warm-900 hover:underline sm:basis-auto"
                     >
                       {u.email}
                     </Link>
@@ -113,11 +113,11 @@ export default async function UsersPage({
             ) : (
               <ul className="divide-y divide-warm-200/60">
                 {tab.atRisk.map((u) => (
-                  <li key={u.id} className="flex items-center gap-3 py-2 text-sm">
+                  <li key={u.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                     <StatusPill tone="warning" dot size="sm">
                       {u.lastSeen ? 'at-risk' : 'never seen'}
                     </StatusPill>
-                    <Link href={`/admin/users/${u.id}`} className="min-w-0 flex-1 truncate text-warm-900 hover:underline">
+                    <Link href={`/admin/users/${u.id}`} className="min-w-0 flex-1 basis-full truncate text-warm-900 hover:underline sm:basis-auto">
                       {u.email}
                     </Link>
                     {/* CRM boundary: link OUT only — zero email capability here. */}

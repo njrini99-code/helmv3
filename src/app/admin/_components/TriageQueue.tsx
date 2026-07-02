@@ -51,11 +51,11 @@ export function TriageQueue({
   return (
     <ul className="divide-y divide-warm-200/60">
       {visible.map((item) => (
-        <li key={item.key} className="flex items-center gap-3 py-3">
+        <li key={item.key} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
           <StatusPill tone={SEVERITY_TONE[item.severity]} dot size="sm">
             {item.severity}
           </StatusPill>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 basis-full sm:basis-auto">
             {item.origin === 'app' ? (
               <Link
                 href={`/admin/errors/${item.key.slice(4)}`}

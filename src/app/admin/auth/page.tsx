@@ -73,11 +73,11 @@ async function AuthBody() {
                 const lockedUntilDate = l.locked_until ? new Date(l.locked_until) : null;
                 const isLocked = Boolean(lockedUntilDate && lockedUntilDate > new Date());
                 return (
-                  <li key={l.email} className="flex items-center gap-3 py-2 text-sm">
+                  <li key={l.email} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                     <StatusPill tone={isLocked ? 'danger' : 'warning'} dot size="sm">
                       {isLocked ? 'locked' : 'failed'}
                     </StatusPill>
-                    <span className="min-w-0 flex-1 truncate text-warm-900">{l.email}</span>
+                    <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{l.email}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
                       {l.failed_attempts} failed
                     </span>
@@ -107,14 +107,14 @@ async function AuthBody() {
           ) : (
             <ul className="divide-y divide-warm-200/60">
               {tab.feed.map((row) => (
-                <li key={row.id} className="flex items-center gap-3 py-2 text-sm">
+                <li key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                   <StatusPill tone={SEVERITY_TONE[row.severity] ?? 'neutral'} dot size="sm">
                     {row.severity}
                   </StatusPill>
                   <span className="w-16 shrink-0 font-fw-mono text-eyebrow uppercase text-warm-500">
                     {row.event_type}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-warm-900">
+                  <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">
                     {row.title}
                     {row.user_email ? ` — ${row.user_email}` : ''}
                   </span>

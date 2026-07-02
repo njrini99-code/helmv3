@@ -94,12 +94,12 @@ export default async function ErrorsPage({
             ) : (
               <ul className="divide-y divide-warm-200/60">
                 {tab.sentry.data.map((issue) => (
-                  <li key={issue.id} className="flex items-center gap-3 py-2">
+                  <li key={issue.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                     <StatusPill tone={SENTRY_LEVEL_TONE[issue.level] ?? 'danger'} dot size="sm">
                       {issue.level}
                     </StatusPill>
                     <span className="w-20 shrink-0 font-fw-mono text-xs tabular-nums text-warm-500">{issue.shortId}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-warm-900">{issue.title}</span>
+                    <span className="min-w-0 flex-1 basis-full truncate text-sm text-warm-900 sm:basis-auto">{issue.title}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                       {issue.userCount} users · {issue.count} events
                     </span>
@@ -133,13 +133,13 @@ export default async function ErrorsPage({
       <AutoRefresh />
       {filters.feature ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-warm-900 px-3 py-1 text-xs text-white">
+          <span className="inline-flex min-h-10 items-center rounded-full bg-warm-900 px-3 text-xs text-white">
             feature: {FEATURE_LABELS[filters.feature] ?? filters.feature}
           </span>
           <Link
             href={clearParamHref(current, 'feature')}
             aria-label="Clear feature filter"
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:bg-warm-100"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:bg-warm-100"
           >
             <X size={12} aria-hidden />
           </Link>
@@ -153,8 +153,8 @@ export default async function ErrorsPage({
               href={chipHref(current, param, v)}
               className={
                 current.get(param) === v
-                  ? 'rounded-full bg-warm-900 px-3 py-1 text-xs text-white'
-                  : 'rounded-full border border-warm-300 px-3 py-1 text-xs text-warm-700 hover:bg-warm-100'
+                  ? 'inline-flex min-h-10 items-center rounded-full bg-warm-900 px-3 text-xs text-white'
+                  : 'inline-flex min-h-10 items-center rounded-full border border-warm-300 px-3 text-xs text-warm-700 hover:bg-warm-100'
               }
             >
               {param}: {v}
