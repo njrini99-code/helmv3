@@ -60,7 +60,10 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
         duration,
         is_primary,
         video_type,
-        created_at
+        created_at,
+        is_clip,
+        clip_start_time,
+        clip_end_time
       ),
       player_achievements (
         id,

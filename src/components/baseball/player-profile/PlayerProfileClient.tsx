@@ -47,6 +47,7 @@ import { PlayerNotesSection } from './PlayerNotesSection';
 import { ProfileTimeline } from './ProfileTimeline';
 import { SnapshotHeaderBand } from './snapshot-cards';
 import { Button, IconButton } from '@/components/ui/button';
+import { VideoPlayer } from '@/components/features/video-player';
 import { Textarea } from '@/components/ui/textarea';
 import { NativeSelect } from '@/components/ui/select';
 import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
@@ -93,6 +94,9 @@ interface PlayerProfileClientProps {
     video_url: string | null;
     created_at: string;
     video_type?: string;
+    is_clip?: boolean | null;
+    clip_start_time?: number | null;
+    clip_end_time?: number | null;
   }>;
   teamId: string;
   teamName: string;
@@ -1586,18 +1590,20 @@ export function PlayerProfileClient({
                 <IconX size={18} />
               </IconButton>
 
-              {/* Video player */}
+              {/* Video player — clipStart/clipEnd clamp playback to the clip's
+                  bounds instead of playing the full parent video (mirrors
+                  video-detail-client.tsx and VideoLibraryClient's VideoModal). */}
               <div className="aspect-video bg-black">
                 {selectedVideo.video_url ? (
-                  // eslint-disable-next-line jsx-a11y/media-has-caption -- user-uploaded video, no captions available
-                  <video
+                  <VideoPlayer
                     src={selectedVideo.video_url}
-                    controls
+                    thumbnail={selectedVideo.thumbnail_url}
+                    title={selectedVideo.title ?? undefined}
                     autoPlay
-                    className="w-full h-full"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                    className="rounded-none aspect-auto h-full"
+                    clipStart={selectedVideo.clip_start_time ?? undefined}
+                    clipEnd={selectedVideo.clip_end_time ?? undefined}
+                  />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                     <IconVideo size={40} className="text-warm-600" />
