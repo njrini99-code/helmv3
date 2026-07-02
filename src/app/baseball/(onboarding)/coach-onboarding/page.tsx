@@ -26,29 +26,27 @@ import {
   IconSchool,
   IconBaseball,
 } from '@/components/icons';
-import {
-  StepIndicator,
-  slideVariants,
-  staggerContainer,
-  staggerItem,
-} from '@/components/baseball/onboarding/StepIndicator';
+import { Eyebrow, Reveal, CommitSeal, LiveDot, DUR, EASE_GLIDE, EASE_PRESS } from '@/components/baseball/living-annual';
+import { EditorialFrame } from './_components/EditorialFrame';
+import { StepProgress } from './_components/StepProgress';
+import { OptionCard } from './_components/OptionCard';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
 type Step = 'type' | 'program' | 'account' | 'lifting' | 'complete';
 
-const STEPS_CONFIG_FULL = [
-  { id: 'program' as const, label: 'Program', Icon: IconBuilding },
-  { id: 'account' as const, label: 'Account', Icon: IconUser },
-  { id: 'lifting' as const, label: 'Lifting', Icon: IconCheck },
-  { id: 'complete' as const, label: 'Done', Icon: IconCheck },
-];
-
-const STEPS_CONFIG_AUTH = [
-  { id: 'program' as const, label: 'Program', Icon: IconBuilding },
-  { id: 'lifting' as const, label: 'Lifting', Icon: IconCheck },
-  { id: 'complete' as const, label: 'Done', Icon: IconCheck },
-];
+// Step order + eyebrow labels for <StepProgress> — the editorial "numbered
+// eyebrow + thin progress rule" replacement for a generic wizard dot-bar.
+// Two sequences because an already-authenticated coach skips 'account'.
+const STEP_SEQUENCE_FULL: Step[] = ['program', 'account', 'lifting', 'complete'];
+const STEP_SEQUENCE_AUTH: Step[] = ['program', 'lifting', 'complete'];
+const STEP_LABELS: Record<Step, string> = {
+  type: 'COACH TYPE',
+  program: 'PROGRAM',
+  account: 'ACCOUNT',
+  lifting: 'LIFTING',
+  complete: 'DONE',
+};
 
 const COACH_TYPES = [
   { value: 'college' as const, label: 'College Coach', desc: 'NCAA D1, D2, D3, or NAIA program', Icon: IconBuilding },
@@ -62,6 +60,33 @@ type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
 const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA'];
 
 const STORAGE_KEY = 'baseballhelm_coach_onboarding';
+
+// ─── Motion (local — the Living Annual "page turn": ink settles up/down,
+// never a horizontal slide-carousel; EASE_GLIDE/EASE_PRESS from the kit) ────
+
+const STEP_TRANSITION = {
+  initial: (direction: number) => ({
+    opacity: 0,
+    y: direction > 0 ? 14 : -14,
+    filter: 'blur(2px)',
+  }),
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: DUR.ink, ease: EASE_GLIDE },
+  },
+  exit: (direction: number) => ({
+    opacity: 0,
+    y: direction > 0 ? -10 : 10,
+    filter: 'blur(2px)',
+    transition: { duration: 0.18, ease: EASE_PRESS },
+  }),
+};
+
+/** ~2.5% fractal-noise page grain (inline data-uri, no network) — mirrors PaperCard/EditorialFrame. */
+const PAGE_GRAIN =
+  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -336,51 +361,60 @@ export default function BaseballCoachOnboarding() {
     router.refresh();
   }
 
+  // ─── Derived progress ───────────────────────────────────────────────────
+
+  const stepSequence = existingUser ? STEP_SEQUENCE_AUTH : STEP_SEQUENCE_FULL;
+  const stepIndexInSequence = stepSequence.indexOf(step);
+
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-dvh bg-auth-baseball relative">
-      {/* Floating Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-amber-400/40 to-helm-amber-500/25" />
-        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-amber-400/25 to-helm-amber-400/15" />
-        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-amber-300/20 to-helm-amber-400/15" />
-      </div>
+    <div className="living-annual relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
+      {/* Full-bleed newsprint grain */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.025] mix-blend-multiply"
+        style={{ backgroundImage: PAGE_GRAIN, backgroundSize: '220px 220px' }}
+      />
+      {/* One restrained editorial wash behind the panel — never an "orb cluster" */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[38%] h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.07] blur-3xl"
+        style={{ background: 'var(--grade-plus)' }}
+      />
 
-      <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="relative flex w-full flex-col items-center pb-[env(safe-area-inset-bottom)]">
         <LazyMotion features={domAnimation}>
-          {/* Logo */}
+          {/* Masthead */}
           <m.div
             initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.1 })}
-            className="mb-6 sm:mb-8"
+            className="mb-7 flex flex-col items-center gap-2 sm:mb-9"
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-helm-amber-500/25 rounded-full blur-xl scale-150" />
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
-                <Image
-                  src="/helm-baseball-logo.png"
-                  alt="BaseballHelm Logo"
-                  width={48}
-                  height={48}
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
-                  priority
-                  unoptimized
-                />
-              </div>
+            <div className="relative h-10 w-10 sm:h-12 sm:w-12">
+              <Image
+                src="/helm-baseball-logo.png"
+                alt="BaseballHelm Logo"
+                width={48}
+                height={48}
+                className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+                priority
+                unoptimized
+              />
             </div>
+            <Eyebrow ink="team">BaseballHelm · Coach Onboarding</Eyebrow>
           </m.div>
 
-          {/* Step Indicator - only after type selection */}
-          {step !== 'type' && (
-            <m.div
-              initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
-              animate={{ opacity: 1, y: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.2 })}
-            >
-              <StepIndicator currentStep={step} steps={existingUser ? STEPS_CONFIG_AUTH : STEPS_CONFIG_FULL} />
-            </m.div>
+          {/* Progress — numbered eyebrow + thin draw-on rule, not a wizard dot-bar */}
+          {step !== 'type' && stepIndexInSequence >= 0 && (
+            <div className="w-full max-w-[460px]">
+              <StepProgress
+                current={stepIndexInSequence + 1}
+                total={stepSequence.length}
+                label={STEP_LABELS[step]}
+              />
+            </div>
           )}
 
           <AnimatePresence mode="wait" custom={direction}>
@@ -389,43 +423,36 @@ export default function BaseballCoachOnboarding() {
               <m.div
                 key="type"
                 custom={direction}
-                variants={slideVariants}
-                initial={prefersReducedMotion ? false : "initial"}
+                variants={STEP_TRANSITION}
+                initial={prefersReducedMotion ? false : 'initial'}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[460px]"
               >
-                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
-                  <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                <Reveal>
+                  <div className="mb-6 text-center">
+                    <Eyebrow ink="muted">Getting Started</Eyebrow>
+                    <h1 className="mt-2 font-annual text-3xl font-medium tracking-tight text-text-primary sm:text-4xl">
                       What type of coach are you?
                     </h1>
-                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
-                      This determines your dashboard experience
+                    <p className="mt-2 text-sm text-text-tertiary sm:text-base">
+                      This determines your dashboard experience.
                     </p>
-                  </m.div>
+                  </div>
+                </Reveal>
 
-                  <m.div variants={staggerItem} className="space-y-3">
-                    {COACH_TYPES.map((opt) => (
-                      <Button variant="ghost"
-                        key={opt.value}
-                        onClick={() => { setCoachType(opt.value); goForward('program'); }}
-                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-[transform,background-color]">
-                            <opt.Icon size={24} className="text-primary-600" />
-                          </div>
-                          <div>
-                            <p className="text-lg font-semibold text-warm-900">{opt.label}</p>
-                            <p className="text-sm text-warm-500">{opt.desc}</p>
-                          </div>
-                          <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
-                        </div>
-                      </Button>
-                    ))}
-                  </m.div>
-                </m.div>
+                <div className="space-y-3">
+                  {COACH_TYPES.map((opt, i) => (
+                    <OptionCard
+                      key={opt.value}
+                      icon={opt.Icon}
+                      title={opt.label}
+                      description={opt.desc}
+                      staggerIndex={i + 1}
+                      onClick={() => { setCoachType(opt.value); goForward('program'); }}
+                    />
+                  ))}
+                </div>
               </m.div>
             )}
 
@@ -434,35 +461,38 @@ export default function BaseballCoachOnboarding() {
               <m.div
                 key="program"
                 custom={direction}
-                variants={slideVariants}
-                initial={prefersReducedMotion ? false : "initial"}
+                variants={STEP_TRANSITION}
+                initial={prefersReducedMotion ? false : 'initial'}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[460px]"
               >
-                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
-                  <m.div variants={staggerItem}>
-                    <Button variant="ghost"
-                      onClick={() => goBack('type')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
-                    >
-                      <IconArrowLeft size={16} />
-                      Back
-                    </Button>
-                  </m.div>
+                <Reveal>
+                  <Button
+                    variant="ghost"
+                    onClick={() => goBack('type')}
+                    className="-ml-2 mb-2 flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary active:bg-[var(--fw-color-surface-sunken)]"
+                  >
+                    <IconArrowLeft size={16} />
+                    Back
+                  </Button>
+                </Reveal>
 
-                  <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                <Reveal staggerIndex={1}>
+                  <div className="mb-6 text-center">
+                    <h1 className="font-annual text-3xl font-medium tracking-tight text-text-primary sm:text-4xl">
                       Set up your program
                     </h1>
-                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                    <p className="mt-2 text-sm text-text-tertiary sm:text-base">
                       Tell us about your school and team
                     </p>
-                  </m.div>
+                  </div>
+                </Reveal>
 
-                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
-                    <div className="space-y-5">
-                      {coachType === 'college' && (
+                <EditorialFrame>
+                  <div className="space-y-5">
+                    {coachType === 'college' && (
+                      <Reveal staggerIndex={2}>
                         <NativeSelect
                           label="Division"
                           value={division}
@@ -473,10 +503,12 @@ export default function BaseballCoachOnboarding() {
                             <option key={div} value={div}>{div}</option>
                           ))}
                         </NativeSelect>
-                      )}
+                      </Reveal>
+                    )}
 
-                      {/* Coaching title - shown here when user is already authenticated (skips Account step) */}
-                      {existingUser && (
+                    {/* Coaching title - shown here when user is already authenticated (skips Account step) */}
+                    {existingUser && (
+                      <Reveal staggerIndex={3}>
                         <Input
                           label="Coaching Title"
                           value={title}
@@ -484,8 +516,10 @@ export default function BaseballCoachOnboarding() {
                           placeholder="Head Coach"
                           required
                         />
-                      )}
+                      </Reveal>
+                    )}
 
+                    <Reveal staggerIndex={4}>
                       <Input
                         label="School / Organization"
                         value={schoolName}
@@ -493,9 +527,11 @@ export default function BaseballCoachOnboarding() {
                         placeholder="Texas A&M University"
                         required
                       />
+                    </Reveal>
 
+                    <Reveal staggerIndex={5}>
                       <div>
-                        <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                        <p className="mb-3 text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary">
                           Location
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -516,31 +552,34 @@ export default function BaseballCoachOnboarding() {
                           />
                         </div>
                       </div>
-                    </div>
+                    </Reveal>
+                  </div>
 
+                  <Reveal staggerIndex={6}>
                     <div className="mt-8">
                       <Button
                         onClick={() => (existingUser ? handleFinalContinue() : goForward('account'))}
                         disabled={!schoolName.trim() || (!!existingUser && (!title.trim() || loading || !authChecked))}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
+                        isLoading={!!existingUser && loading}
+                        className="w-full shadow-lg shadow-primary-900/10 transition-colors hover:shadow-xl hover:shadow-primary-900/15"
                         size="lg"
                       >
                         Continue
                         <IconArrowRight size={16} className="ml-2" />
                       </Button>
                     </div>
+                  </Reveal>
 
-                    {existingUser && error && (
-                      <m.p
-                        initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
-                      >
-                        {error}
-                      </m.p>
-                    )}
-                  </m.div>
-                </m.div>
+                  {existingUser && error && (
+                    <m.p
+                      initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-center text-sm text-red-700"
+                    >
+                      {error}
+                    </m.p>
+                  )}
+                </EditorialFrame>
               </m.div>
             )}
 
@@ -549,34 +588,37 @@ export default function BaseballCoachOnboarding() {
               <m.div
                 key="account"
                 custom={direction}
-                variants={slideVariants}
-                initial={prefersReducedMotion ? false : "initial"}
+                variants={STEP_TRANSITION}
+                initial={prefersReducedMotion ? false : 'initial'}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[460px]"
               >
-                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
-                  <m.div variants={staggerItem}>
-                    <Button variant="ghost"
-                      onClick={() => goBack('program')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
-                    >
-                      <IconArrowLeft size={16} />
-                      Back
-                    </Button>
-                  </m.div>
+                <Reveal>
+                  <Button
+                    variant="ghost"
+                    onClick={() => goBack('program')}
+                    className="-ml-2 mb-2 flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary active:bg-[var(--fw-color-surface-sunken)]"
+                  >
+                    <IconArrowLeft size={16} />
+                    Back
+                  </Button>
+                </Reveal>
 
-                  <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                <Reveal staggerIndex={1}>
+                  <div className="mb-6 text-center">
+                    <h1 className="font-annual text-3xl font-medium tracking-tight text-text-primary sm:text-4xl">
                       Create your account
                     </h1>
-                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                    <p className="mt-2 text-sm text-text-tertiary sm:text-base">
                       Your coaching profile and login credentials
                     </p>
-                  </m.div>
+                  </div>
+                </Reveal>
 
-                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
-                    <div className="space-y-5">
+                <EditorialFrame>
+                  <div className="space-y-5">
+                    <Reveal staggerIndex={2}>
                       <Input
                         label="Full Name"
                         value={fullName}
@@ -586,6 +628,8 @@ export default function BaseballCoachOnboarding() {
                         // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in onboarding wizard step
                         autoFocus
                       />
+                    </Reveal>
+                    <Reveal staggerIndex={3}>
                       <Input
                         label="Title"
                         value={title}
@@ -593,6 +637,8 @@ export default function BaseballCoachOnboarding() {
                         placeholder="Head Coach"
                         required
                       />
+                    </Reveal>
+                    <Reveal staggerIndex={4}>
                       <Input
                         label="Email"
                         type="email"
@@ -601,6 +647,8 @@ export default function BaseballCoachOnboarding() {
                         placeholder="you@example.com"
                         required
                       />
+                    </Reveal>
+                    <Reveal staggerIndex={5}>
                       <div>
                         <Input
                           label="Password"
@@ -611,39 +659,42 @@ export default function BaseballCoachOnboarding() {
                           required
                         />
                         <p className={cn(
-                          'text-xs mt-1.5',
-                          password && !passwordCheck.valid ? 'text-red-600' : 'text-warm-400'
+                          'mt-1.5 text-xs',
+                          password && !passwordCheck.valid ? 'text-red-600' : 'text-text-tertiary'
                         )}>
                           {password && !passwordCheck.valid
                             ? passwordCheck.feedback[0]
                             : 'At least 8 characters with uppercase, lowercase, number, and special character'}
                         </p>
                       </div>
-                    </div>
+                    </Reveal>
+                  </div>
 
+                  <Reveal staggerIndex={6}>
                     <div className="mt-8">
                       <Button
                         onClick={handleFinalContinue}
                         disabled={!fullName.trim() || !title.trim() || !email.trim() || !passwordCheck.valid || loading || !authChecked}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
+                        isLoading={loading}
+                        className="w-full shadow-lg shadow-primary-900/10 transition-colors hover:shadow-xl hover:shadow-primary-900/15"
                         size="lg"
                       >
                         Continue
                         <IconArrowRight size={16} className="ml-2" />
                       </Button>
                     </div>
+                  </Reveal>
 
-                    {error && (
-                      <m.p
-                        initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
-                      >
-                        {error}
-                      </m.p>
-                    )}
-                  </m.div>
-                </m.div>
+                  {error && (
+                    <m.p
+                      initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-center text-sm text-red-700"
+                    >
+                      {error}
+                    </m.p>
+                  )}
+                </EditorialFrame>
               </m.div>
             )}
 
@@ -652,105 +703,93 @@ export default function BaseballCoachOnboarding() {
               <m.div
                 key="lifting"
                 custom={direction}
-                variants={slideVariants}
-                initial={prefersReducedMotion ? false : "initial"}
+                variants={STEP_TRANSITION}
+                initial={prefersReducedMotion ? false : 'initial'}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[480px]"
               >
-                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
-                  <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                <Reveal>
+                  <div className="mb-6 text-center">
+                    <h1 className="font-annual text-3xl font-medium tracking-tight text-text-primary sm:text-4xl">
                       Do you have a strength &amp; conditioning coach?
                     </h1>
-                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                    <p className="mt-2 text-sm text-text-tertiary sm:text-base">
                       Helm Lifting Lab connects your coaching staff for integrated player development.
                     </p>
-                  </m.div>
+                  </div>
+                </Reveal>
 
-                  <m.div variants={staggerItem} className="space-y-3">
-                    <Button
-                      variant="ghost"
+                <EditorialFrame>
+                  <div className="space-y-3">
+                    <OptionCard
+                      icon={IconCheck}
+                      title="Yes — invite them"
+                      description="Send an invite to your S&C coach"
                       disabled={loading}
+                      staggerIndex={1}
                       onClick={() => handleLiftingAnswer('yes')}
-                      className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-[transform,background-color]">
-                          <IconCheck size={24} className="text-primary-600" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-semibold text-warm-900">Yes — invite them</p>
-                          <p className="text-sm text-warm-500">Send an invite to your S&amp;C coach</p>
-                        </div>
-                        <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
-                      </div>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      disabled={loading}
-                      onClick={() => handleLiftingAnswer('no')}
-                      className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-[transform,background-color]">
-                          <IconUser size={24} className="text-primary-600" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-semibold text-warm-900">No — I manage lifting myself</p>
-                          <p className="text-sm text-warm-500">You&apos;ll have full access to Lifting Lab</p>
-                        </div>
-                        <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
-                      </div>
-                    </Button>
-                  </m.div>
-
-                  {/* Invite email — shown when user intends to invite an S&C coach */}
-                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8 space-y-4">
-                    <p className="text-sm font-medium text-warm-700">
-                      Invite by email (optional — you can do this later from settings)
-                    </p>
-                    <Input
-                      ref={liftingEmailInputRef}
-                      label="S&C Coach Email"
-                      type="email"
-                      value={liftingInviteEmail}
-                      onChange={(e) => setLiftingInviteEmail(e.target.value)}
-                      placeholder="coach@university.edu"
                     />
-                    <Button
-                      disabled={loading || !liftingInviteEmail.trim()}
-                      onClick={() => handleLiftingAnswer('yes')}
-                      className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
-                      size="lg"
-                    >
-                      Send Invite &amp; Continue
-                      <IconArrowRight size={16} className="ml-2" />
-                    </Button>
-                  </m.div>
-
-                  <m.div variants={staggerItem} className="text-center">
-                    <Button
-                      variant="ghost"
+                    <OptionCard
+                      icon={IconUser}
+                      title="No — I manage lifting myself"
+                      description="You'll have full access to Lifting Lab"
                       disabled={loading}
-                      onClick={() => handleLiftingAnswer('later')}
-                      className="text-sm text-warm-500 hover:text-warm-700 font-medium transition-colors"
-                    >
-                      Skip for now — set up later
-                    </Button>
-                  </m.div>
+                      staggerIndex={2}
+                      onClick={() => handleLiftingAnswer('no')}
+                    />
+                  </div>
+
+                  {/* Invite email — an inset sunken panel, distinct from the two primary choices above */}
+                  <Reveal staggerIndex={3}>
+                    <div className="mt-5 space-y-4 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--fw-color-surface-sunken)] p-5">
+                      <p className="text-sm font-medium text-text-secondary">
+                        Invite by email (optional — you can do this later from settings)
+                      </p>
+                      <Input
+                        ref={liftingEmailInputRef}
+                        label="S&C Coach Email"
+                        type="email"
+                        value={liftingInviteEmail}
+                        onChange={(e) => setLiftingInviteEmail(e.target.value)}
+                        placeholder="coach@university.edu"
+                      />
+                      <Button
+                        disabled={loading || !liftingInviteEmail.trim()}
+                        isLoading={loading}
+                        onClick={() => handleLiftingAnswer('yes')}
+                        className="w-full shadow-lg shadow-primary-900/10 transition-colors hover:shadow-xl hover:shadow-primary-900/15"
+                        size="lg"
+                      >
+                        Send Invite &amp; Continue
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
+                    </div>
+                  </Reveal>
+
+                  <Reveal staggerIndex={4}>
+                    <div className="mt-5 text-center">
+                      <Button
+                        variant="ghost"
+                        disabled={loading}
+                        onClick={() => handleLiftingAnswer('later')}
+                        className="text-sm font-medium text-text-tertiary transition-colors hover:text-text-primary"
+                      >
+                        Skip for now — set up later
+                      </Button>
+                    </div>
+                  </Reveal>
 
                   {error && (
                     <m.p
                       initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
                       animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                      className="mt-4 rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-center text-sm text-red-700"
                     >
                       {error}
                     </m.p>
                   )}
-                </m.div>
+                </EditorialFrame>
               </m.div>
             )}
 
@@ -759,102 +798,67 @@ export default function BaseballCoachOnboarding() {
               <m.div
                 key="complete"
                 custom={direction}
-                variants={slideVariants}
-                initial={prefersReducedMotion ? false : "initial"}
+                variants={STEP_TRANSITION}
+                initial={prefersReducedMotion ? false : 'initial'}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[480px]"
               >
-                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-6">
-                  <m.div variants={staggerItem} className="flex justify-center">
-                    <div className="relative">
-                      {[...Array(8)].map((_, i) => (
-                        <m.div
-                          key={i}
-                          className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
-                          style={{
-                            background: i % 2 === 0 ? 'rgb(22, 163, 74)' : 'rgb(74, 222, 128)',
-                          }}
-                          initial={prefersReducedMotion ? false : ({ scale: 0, opacity: 1, x: 0, y: 0 })}
-                          animate={{
-                            scale: [0, 1.2, 0],
-                            opacity: [0, 1, 0],
-                            x: Math.cos((i / 8) * Math.PI * 2) * 50,
-                            y: Math.sin((i / 8) * Math.PI * 2) * 50,
-                          }}
-                          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' })}
-                        />
-                      ))}
-                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full scale-[2]" />
-                      <m.div
-                        initial={prefersReducedMotion ? false : ({ scale: 0, rotate: -20 })}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 })}
-                        className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
-                      >
-                        <m.div
-                          initial={prefersReducedMotion ? false : ({ scale: 0, opacity: 0 })}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, type: 'spring', stiffness: 300 })}
-                        >
-                          <IconCheck size={40} className="text-white" />
-                        </m.div>
-                      </m.div>
-                    </div>
-                  </m.div>
-
+                <EditorialFrame>
                   {loading ? (
-                    <m.div variants={staggerItem} className="text-center">
-                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
-                        Setting up your program...
-                      </h1>
-                      <p className="text-warm-500 text-sm sm:text-base">
-                        This will only take a moment.
-                      </p>
-                    </m.div>
+                    <div className="flex flex-col items-center gap-6 py-2 text-center">
+                      {/* Skeleton placeholder for the CommitSeal ceremony below */}
+                      <div
+                        aria-hidden
+                        className="h-24 w-24 animate-pulse rounded-full border border-dashed border-[color:var(--hairline)] bg-[var(--fw-color-surface-sunken)]"
+                      />
+                      <LiveDot label="Setting up your program" />
+                      <p className="text-sm text-text-tertiary">This will only take a moment.</p>
+                    </div>
                   ) : error ? (
-                    <>
-                      <m.div variants={staggerItem} className="text-center">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
-                          Something went wrong
-                        </h1>
-                        <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                          {error}
-                        </p>
-                      </m.div>
-                      <m.div variants={staggerItem} className="text-center">
-                        <Button
-                          variant="secondary"
-                          onClick={() => { setError(''); goBack(existingUser ? 'program' : 'account'); }}
-                        >
-                          Try Again
-                        </Button>
-                      </m.div>
-                    </>
+                    <div className="flex flex-col items-center gap-5 py-2 text-center">
+                      <Eyebrow ink="pursuit">Something Went Wrong</Eyebrow>
+                      <h1 className="font-annual text-2xl font-medium text-text-primary sm:text-3xl">
+                        We hit a snag
+                      </h1>
+                      <p className="rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-sm text-red-700">
+                        {error}
+                      </p>
+                      <Button
+                        variant="secondary"
+                        onClick={() => { setError(''); goBack(existingUser ? 'program' : 'account'); }}
+                      >
+                        Try Again
+                      </Button>
+                    </div>
                   ) : (
-                    <>
-                      <m.div variants={staggerItem} className="text-center">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
-                          {schoolName ? `${schoolName} Baseball is ready!` : 'Your program is ready!'}
-                        </h1>
-                        <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
-                          Welcome to BaseballHelm. Head to your dashboard to start managing your team.
-                        </p>
-                      </m.div>
-
-                      <m.div variants={staggerItem} className="text-center">
+                    <div className="flex flex-col items-center gap-6 py-2 text-center">
+                      <Reveal>
+                        <CommitSeal label="WELCOME" size="lg" />
+                      </Reveal>
+                      <Reveal staggerIndex={1}>
+                        <div>
+                          <h1 className="font-annual text-2xl font-medium leading-tight text-text-primary sm:text-3xl">
+                            {schoolName ? `${schoolName} Baseball is ready` : 'Your program is ready'}
+                          </h1>
+                          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-tertiary sm:text-base">
+                            Welcome to BaseballHelm. Head to your dashboard to start managing your team.
+                          </p>
+                        </div>
+                      </Reveal>
+                      <Reveal staggerIndex={2}>
                         <Button
                           size="lg"
                           onClick={handleGoToDashboard}
-                          className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
+                          className="w-full px-10 shadow-lg shadow-primary-900/10 transition-colors hover:shadow-xl hover:shadow-primary-900/15 sm:w-auto"
                         >
                           Go to Dashboard
                           <IconArrowRight size={16} className="ml-2" />
                         </Button>
-                      </m.div>
-                    </>
+                      </Reveal>
+                    </div>
                   )}
-                </m.div>
+                </EditorialFrame>
               </m.div>
             )}
           </AnimatePresence>
