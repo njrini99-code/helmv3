@@ -80,10 +80,6 @@ helm-vid/
 *.png
 # Hosted email assets must reach prod — exempt them from the global *.png ignore.
 !public/email/*.png
-# M3 product-cinema placeholder screens (First Light landing) must reach
-# prod until real Living-Annual captures are swapped in at integration —
-# exempt them from the global *.png ignore too.
-!public/marketing/first-light/screens/*.png
 GolfHelm-Prospect-Deck.pptx
 .claude/worktrees/
 
