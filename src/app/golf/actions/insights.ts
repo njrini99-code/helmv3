@@ -1182,7 +1182,7 @@ export async function getActiveInsights(limit: number = 10) {
 // ACKNOWLEDGE INSIGHT
 // ============================================================================
 
-export async function acknowledgeInsight(insightId: string) {
+async function acknowledgeInsightImpl(insightId: string) {
   const supabase = await createClient();
 
   try {
@@ -1258,11 +1258,20 @@ export async function acknowledgeInsight(insightId: string) {
   }
 }
 
+const observedAcknowledgeInsight = withAdminObserved(
+  'acknowledgeInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  acknowledgeInsightImpl,
+);
+export async function acknowledgeInsight(insightId: string) {
+  return observedAcknowledgeInsight(insightId);
+}
+
 // ============================================================================
 // DISMISS INSIGHT
 // ============================================================================
 
-export async function dismissInsight(insightId: string) {
+async function dismissInsightImpl(insightId: string) {
   const supabase = await createClient();
 
   try {
@@ -1329,6 +1338,15 @@ export async function dismissInsight(insightId: string) {
   }
 }
 
+const observedDismissInsight = withAdminObserved(
+  'dismissInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  dismissInsightImpl,
+);
+export async function dismissInsight(insightId: string) {
+  return observedDismissInsight(insightId);
+}
+
 // ============================================================================
 // REACTIVATE INSIGHT (undo for acknowledge / dismiss)
 // ============================================================================
@@ -1343,7 +1361,7 @@ export async function dismissInsight(insightId: string) {
  * row reappears in the canonical V3 feed). Same auth + ownership boundary as the
  * forward actions. Additive — no existing action's contract changes.
  */
-export async function reactivateInsight(
+async function reactivateInsightImpl(
   insightId: string,
   priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
 ) {
@@ -1404,11 +1422,23 @@ export async function reactivateInsight(
   }
 }
 
+const observedReactivateInsight = withAdminObserved(
+  'reactivateInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  reactivateInsightImpl,
+);
+export async function reactivateInsight(
+  insightId: string,
+  priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
+) {
+  return observedReactivateInsight(insightId, priorLifecycleState);
+}
+
 // ============================================================================
 // RESOLVE INSIGHT
 // ============================================================================
 
-export async function resolveInsight(insightId: string) {
+async function resolveInsightImpl(insightId: string) {
   const supabase = await createClient();
 
   try {
@@ -1474,6 +1504,15 @@ export async function resolveInsight(insightId: string) {
   }
 }
 
+const observedResolveInsight = withAdminObserved(
+  'resolveInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  resolveInsightImpl,
+);
+export async function resolveInsight(insightId: string) {
+  return observedResolveInsight(insightId);
+}
+
 // ============================================================================
 // RATE INSIGHT (feedback mechanism)
 // ============================================================================
@@ -1482,7 +1521,7 @@ export async function resolveInsight(insightId: string) {
  * Allows coaches to rate an insight as helpful or not helpful.
  * Feeds the rating back to the behavior learner to improve future insights.
  */
-export async function rateInsight(
+async function rateInsightImpl(
   insightId: string,
   rating: 'helpful' | 'not_helpful' | 'actionable'
 ): Promise<{ success: boolean; error?: string }> {
@@ -1563,11 +1602,23 @@ export async function rateInsight(
   }
 }
 
+const observedRateInsight = withAdminObserved(
+  'rateInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  rateInsightImpl,
+);
+export async function rateInsight(
+  insightId: string,
+  rating: 'helpful' | 'not_helpful' | 'actionable'
+): Promise<{ success: boolean; error?: string }> {
+  return observedRateInsight(insightId, rating);
+}
+
 // ============================================================================
 // GET PLAYER FOCUS AREAS
 // ============================================================================
 
-export async function getPlayerFocusAreas(playerId: string) {
+async function getPlayerFocusAreasImpl(playerId: string) {
   const supabase = await createClient();
 
   try {
@@ -1608,6 +1659,15 @@ export async function getPlayerFocusAreas(playerId: string) {
     });
     return { success: false, error: 'An unexpected error occurred', focus_areas: [] };
   }
+}
+
+const observedGetPlayerFocusAreas = withAdminObserved(
+  'getPlayerFocusAreas',
+  { sport: 'golf', feature: 'my_development' },
+  getPlayerFocusAreasImpl,
+);
+export async function getPlayerFocusAreas(playerId: string) {
+  return observedGetPlayerFocusAreas(playerId);
 }
 
 // ============================================================================
@@ -2646,7 +2706,7 @@ export async function getPlayerPatterns(playerId: string): Promise<{
 // GENERATE ROUND REVIEW
 // ============================================================================
 
-export async function generateRoundReview(
+async function generateRoundReviewImpl(
   roundId: string,
   playerId: string
 ): Promise<{
@@ -2689,6 +2749,22 @@ export async function generateRoundReview(
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGenerateRoundReview = withAdminObserved(
+  'generateRoundReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  generateRoundReviewImpl,
+);
+export async function generateRoundReview(
+  roundId: string,
+  playerId: string
+): Promise<{
+  success: boolean;
+  review?: Awaited<ReturnType<typeof coachHelmIntelligence.generateRoundReview>>;
+  error?: string;
+}> {
+  return observedGenerateRoundReview(roundId, playerId);
 }
 
 // ============================================================================
@@ -2830,7 +2906,7 @@ export interface PlayerCoachHelmDashboardData {
   alertLevel: 'none' | 'info' | 'warning' | 'critical';
 }
 
-export async function getPlayerCoachHelmDashboard(
+async function getPlayerCoachHelmDashboardImpl(
   playerId: string
 ): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
   const supabase = await createClient();
@@ -2944,6 +3020,17 @@ export async function getPlayerCoachHelmDashboard(
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGetPlayerCoachHelmDashboard = withAdminObserved(
+  'getPlayerCoachHelmDashboard',
+  { sport: 'golf', feature: 'player_coachhelm_dashboard' },
+  getPlayerCoachHelmDashboardImpl,
+);
+export async function getPlayerCoachHelmDashboard(
+  playerId: string
+): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
+  return observedGetPlayerCoachHelmDashboard(playerId);
 }
 
 /**
@@ -3423,7 +3510,7 @@ function buildStatInsightsForTeam(
  * it as acknowledged in one operation. Used for V2 insights that are generated
  * in-memory and don't have a database ID yet.
  */
-export async function acknowledgeComposedInsight(
+async function acknowledgeComposedInsightImpl(
   insight: ComposedInsight,
   playerId?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -3507,6 +3594,18 @@ export async function acknowledgeComposedInsight(
   }
 }
 
+const observedAcknowledgeComposedInsight = withAdminObserved(
+  'acknowledgeComposedInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  acknowledgeComposedInsightImpl,
+);
+export async function acknowledgeComposedInsight(
+  insight: ComposedInsight,
+  playerId?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedAcknowledgeComposedInsight(insight, playerId);
+}
+
 // ============================================================================
 // DISMISS COMPOSED INSIGHT (For V2 in-memory insights)
 // ============================================================================
@@ -3516,7 +3615,7 @@ export async function acknowledgeComposedInsight(
  * it as dismissed in one operation. Used for V2 insights that are generated
  * in-memory and don't have a database ID yet.
  */
-export async function dismissComposedInsight(
+async function dismissComposedInsightImpl(
   insight: ComposedInsight,
   playerId?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -3599,6 +3698,18 @@ export async function dismissComposedInsight(
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedDismissComposedInsight = withAdminObserved(
+  'dismissComposedInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  dismissComposedInsightImpl,
+);
+export async function dismissComposedInsight(
+  insight: ComposedInsight,
+  playerId?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedDismissComposedInsight(insight, playerId);
 }
 
 // ============================================================================
