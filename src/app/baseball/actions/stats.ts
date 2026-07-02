@@ -65,6 +65,12 @@ export interface UploadResult {
   unmatchedRows?: number;
   unmatchedNames?: string[];
   error?: string;
+  /**
+   * SECURITY: populated (and success:false) when coach-supplied playerMatches
+   * referenced a playerId that is not on the target team's roster. Lets
+   * callers surface exactly which coach-supplied matches were rejected.
+   */
+  invalidPlayerMatches?: Array<{ csvName: string; playerId: string }>;
 }
 
 export interface StatsFilter {
@@ -126,6 +132,8 @@ const uploadStatsCSVAction = withBaseballAction(
       _statType?: 'practice' | 'game' | 'other',
       _sessionDate?: string,
       _sessionName?: string,
+      _columnMappings?: Record<string, string | null>,
+      _playerMatches?: PlayerMatch[],
     ) => teamId,
   },
   async (
@@ -134,7 +142,9 @@ const uploadStatsCSVAction = withBaseballAction(
     csvContent: string,
     statType: 'practice' | 'game' | 'other',
     sessionDate: string,
-    sessionName?: string
+    sessionName?: string,
+    columnMappings?: Record<string, string | null>,
+    playerMatches?: PlayerMatch[],
   ): Promise<UploadResult> => {
   const supabase = await createClient();
 
@@ -162,6 +172,38 @@ const uploadStatsCSVAction = withBaseballAction(
     last_name: (tm.baseball_players as { last_name: string | null }).last_name,
   }));
 
+  // SECURITY: playerMatches is coach-supplied client state from the
+  // Match-Players wizard step. Never trust a playerId from it without
+  // verifying it belongs to the target team's own roster (fetched above,
+  // server-side) — otherwise a coach could fabricate baseball_player_stats
+  // rows for a player on a completely different team. Reject the whole
+  // upload up front (before creating any upload/stat rows) with a
+  // structured error listing every offending match, rather than silently
+  // dropping or accepting the tampered assignment.
+  if (playerMatches) {
+    const rosterPlayerIds = new Set(players.map((p) => p.id));
+    const invalidPlayerMatches = playerMatches
+      .filter((m) => !!m.playerId && !rosterPlayerIds.has(m.playerId))
+      .map((m) => ({ csvName: m.csvName, playerId: m.playerId! }));
+
+    if (invalidPlayerMatches.length > 0) {
+      await logServerError(
+        `Rejected uploadStatsCSV: ${invalidPlayerMatches.length} playerMatches entr${invalidPlayerMatches.length === 1 ? 'y references' : 'ies reference'} a player not on team ${teamId}'s roster`,
+        {
+          action: 'stats.uploadStatsCSV',
+          metadata: { teamId, coachId, invalidPlayerMatches },
+        },
+      );
+      return {
+        success: false,
+        error: `Some player matches are not on this team's roster: ${invalidPlayerMatches
+          .map((m) => `"${m.csvName}"`)
+          .join(', ')}. Please re-match these players and try again.`,
+        invalidPlayerMatches,
+      };
+    }
+  }
+
   // Parse CSV
   const rows = parseCSV(csvContent);
   if (rows.length === 0) {
@@ -169,7 +211,25 @@ const uploadStatsCSVAction = withBaseballAction(
   }
 
   const headers = Object.keys(rows[0]!);
-  const playerNameCol = findColumnMapping(headers, 'player_name');
+
+  // Resolve a stat field to its CSV column. When the coach's Map-Columns step
+  // supplied explicit column -> field assignments, honor those verbatim (a
+  // coach override always wins, including "unmap this column" via null).
+  // Falls back to header-alias auto-detection when no mapping was supplied,
+  // matching the same explicit-first / auto-detect-fallback pattern used by
+  // the newer import path (actions/imports.ts's resolveNameColumn).
+  const resolveColumn = (field: string): string | null => {
+    if (columnMappings) {
+      const explicit = Object.entries(columnMappings).find(
+        ([csvColumn, mappedTo]) => mappedTo === field && headers.includes(csvColumn)
+      );
+      if (explicit) return explicit[0];
+      return null;
+    }
+    return findColumnMapping(headers, field);
+  };
+
+  const playerNameCol = resolveColumn('player_name');
 
   if (!playerNameCol) {
     return { success: false, error: 'Could not find player name column in CSV' };
@@ -189,6 +249,8 @@ const uploadStatsCSVAction = withBaseballAction(
       total_rows: rows.length,
       matched_rows: 0,
       unmatched_rows: 0,
+      row_count: rows.length,
+      processed_count: 0,
       status: 'processing',
     })
     .select()
@@ -197,6 +259,14 @@ const uploadStatsCSVAction = withBaseballAction(
   if (uploadError || !upload) {
     return { success: false, error: 'Failed to create upload record' };
   }
+
+  // Coach's Match-Players step, keyed by the CSV name it was resolved against.
+  // Falls back to auto-matching (findBestPlayerMatch) for any csvName the
+  // coach's wizard state doesn't cover, so partial/omitted matches never
+  // silently drop rows that would otherwise have auto-matched cleanly.
+  const coachMatchesByName = playerMatches
+    ? new Map(playerMatches.map((m) => [m.csvName, m]))
+    : null;
 
   // Match and insert stats
   const unmatchedNames: string[] = [];
@@ -207,60 +277,84 @@ const uploadStatsCSVAction = withBaseballAction(
     const csvName = row[playerNameCol] || '';
     if (!csvName) continue;
 
-    const match = findBestPlayerMatch(csvName, players);
+    const coachMatch = coachMatchesByName?.get(csvName);
+    let resolvedPlayerId: string | null = null;
 
-    if (match.confidence >= 0.7 && match.playerId) {
-      // Good match - prepare stat record
-      const statRecord: Partial<BaseballPlayerStats> = {
-        player_id: match.playerId,
-        team_id: teamId,
-        coach_id: coachId,
-        stat_type: statType,
-        session_date: sessionDate,
-        session_name: sessionName || undefined,
-        upload_batch_id: upload.id,
-        source: 'csv_upload',
-      };
-
-      // Map CSV columns to stat fields
-      const atBatsCol = findColumnMapping(headers, 'at_bats');
-      if (atBatsCol) statRecord.at_bats = parseInt(row[atBatsCol] || '0') || 0;
-
-      const hitsCol = findColumnMapping(headers, 'hits');
-      if (hitsCol) statRecord.hits = parseInt(row[hitsCol] || '0') || 0;
-
-      const doublesCol = findColumnMapping(headers, 'doubles');
-      if (doublesCol) statRecord.doubles = parseInt(row[doublesCol] || '0') || 0;
-
-      const triplesCol = findColumnMapping(headers, 'triples');
-      if (triplesCol) statRecord.triples = parseInt(row[triplesCol] || '0') || 0;
-
-      const hrCol = findColumnMapping(headers, 'home_runs');
-      if (hrCol) statRecord.home_runs = parseInt(row[hrCol] || '0') || 0;
-
-      const rbiCol = findColumnMapping(headers, 'rbis');
-      if (rbiCol) statRecord.rbis = parseInt(row[rbiCol] || '0') || 0;
-
-      const walksCol = findColumnMapping(headers, 'walks');
-      if (walksCol) statRecord.walks = parseInt(row[walksCol] || '0') || 0;
-
-      const soCol = findColumnMapping(headers, 'strikeouts');
-      if (soCol) statRecord.strikeouts = parseInt(row[soCol] || '0') || 0;
-
-      const sbCol = findColumnMapping(headers, 'stolen_bases');
-      if (sbCol) statRecord.stolen_bases = parseInt(row[sbCol] || '0') || 0;
-
-      const evCol = findColumnMapping(headers, 'exit_velocity');
-      if (evCol) statRecord.exit_velocity = parseFloat(row[evCol] || '0') || undefined;
-
-      const laCol = findColumnMapping(headers, 'launch_angle');
-      if (laCol) statRecord.launch_angle = parseFloat(row[laCol] || '0') || undefined;
-
-      statsToInsert.push(statRecord);
-      matchedCount++;
+    if (coachMatch) {
+      if (coachMatch.playerId && (coachMatch.confidence >= 0.7 || coachMatch.isManualMatch)) {
+        // Auto-match the coach kept, or a manual re-assignment.
+        resolvedPlayerId = coachMatch.playerId;
+      } else if (coachMatch.isManualMatch && !coachMatch.playerId) {
+        // Coach explicitly chose "skip this player" in the Match step —
+        // honor it as a deliberate do-not-insert, not an unmatched failure.
+        continue;
+      } else {
+        unmatchedNames.push(csvName);
+        continue;
+      }
     } else {
-      unmatchedNames.push(csvName);
+      const autoMatch = findBestPlayerMatch(csvName, players);
+      if (autoMatch.confidence >= 0.7 && autoMatch.playerId) {
+        resolvedPlayerId = autoMatch.playerId;
+      } else {
+        unmatchedNames.push(csvName);
+        continue;
+      }
     }
+
+    if (!resolvedPlayerId) {
+      unmatchedNames.push(csvName);
+      continue;
+    }
+
+    // Good match - prepare stat record
+    const statRecord: Partial<BaseballPlayerStats> = {
+      player_id: resolvedPlayerId,
+      team_id: teamId,
+      coach_id: coachId,
+      stat_type: statType,
+      session_date: sessionDate,
+      session_name: sessionName || undefined,
+      upload_batch_id: upload.id,
+      source: 'csv_upload',
+    };
+
+    // Map CSV columns to stat fields
+    const atBatsCol = resolveColumn('at_bats');
+    if (atBatsCol) statRecord.at_bats = parseInt(row[atBatsCol] || '0') || 0;
+
+    const hitsCol = resolveColumn('hits');
+    if (hitsCol) statRecord.hits = parseInt(row[hitsCol] || '0') || 0;
+
+    const doublesCol = resolveColumn('doubles');
+    if (doublesCol) statRecord.doubles = parseInt(row[doublesCol] || '0') || 0;
+
+    const triplesCol = resolveColumn('triples');
+    if (triplesCol) statRecord.triples = parseInt(row[triplesCol] || '0') || 0;
+
+    const hrCol = resolveColumn('home_runs');
+    if (hrCol) statRecord.home_runs = parseInt(row[hrCol] || '0') || 0;
+
+    const rbiCol = resolveColumn('rbis');
+    if (rbiCol) statRecord.rbis = parseInt(row[rbiCol] || '0') || 0;
+
+    const walksCol = resolveColumn('walks');
+    if (walksCol) statRecord.walks = parseInt(row[walksCol] || '0') || 0;
+
+    const soCol = resolveColumn('strikeouts');
+    if (soCol) statRecord.strikeouts = parseInt(row[soCol] || '0') || 0;
+
+    const sbCol = resolveColumn('stolen_bases');
+    if (sbCol) statRecord.stolen_bases = parseInt(row[sbCol] || '0') || 0;
+
+    const evCol = resolveColumn('exit_velocity');
+    if (evCol) statRecord.exit_velocity = parseFloat(row[evCol] || '0') || undefined;
+
+    const laCol = resolveColumn('launch_angle');
+    if (laCol) statRecord.launch_angle = parseFloat(row[laCol] || '0') || undefined;
+
+    statsToInsert.push(statRecord);
+    matchedCount++;
   }
 
   // Insert stats
@@ -271,7 +365,38 @@ const uploadStatsCSVAction = withBaseballAction(
       .insert(statsToInsert);
 
     if (insertError) {
-      await logServerError(`Failed to insert stats: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'stats.uploadStatsCSV' });
+      const insertErrorMessage =
+        insertError instanceof Error ? insertError.message : String(insertError);
+      await logServerError(`Failed to insert stats: ${insertErrorMessage}`, { action: 'stats.uploadStatsCSV' });
+
+      // HONESTY FIX: the bulk insert persisted zero rows — never stamp this
+      // upload 'completed' (UploadHistory reads status + processed_count to
+      // show a success badge with a nonzero processed count). Record the
+      // real failure status + error_message so the coach sees an honest
+      // failed upload instead of a false "completed" with lost data.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('baseball_stat_uploads')
+        .update({
+          matched_rows: 0,
+          unmatched_rows: unmatchedNames.length,
+          unmatched_data: unmatchedNames,
+          processed_count: 0,
+          completed_at: new Date().toISOString(),
+          status: 'failed',
+          error_message: insertErrorMessage,
+        })
+        .eq('id', upload.id);
+
+      return {
+        success: false,
+        uploadId: upload.id,
+        totalRows: rows.length,
+        matchedRows: 0,
+        unmatchedRows: unmatchedNames.length,
+        unmatchedNames,
+        error: 'Failed to save stats. Please try again.',
+      };
     }
   }
 
@@ -283,6 +408,8 @@ const uploadStatsCSVAction = withBaseballAction(
       matched_rows: matchedCount,
       unmatched_rows: unmatchedNames.length,
       unmatched_data: unmatchedNames,
+      processed_count: matchedCount,
+      completed_at: new Date().toISOString(),
       status: 'completed',
     })
     .eq('id', upload.id);
@@ -312,10 +439,20 @@ export async function uploadStatsCSV(
   csvContent: string,
   statType: 'practice' | 'game' | 'other',
   sessionDate: string,
-  sessionName?: string
+  sessionName?: string,
+  columnMappings?: Record<string, string | null>,
+  playerMatches?: PlayerMatch[],
 ): Promise<UploadResult> {
   try {
-    return await uploadStatsCSVAction(teamId, csvContent, statType, sessionDate, sessionName);
+    return await uploadStatsCSVAction(
+      teamId,
+      csvContent,
+      statType,
+      sessionDate,
+      sessionName,
+      columnMappings,
+      playerMatches,
+    );
   } catch (error) {
     await logServerError(
       `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,

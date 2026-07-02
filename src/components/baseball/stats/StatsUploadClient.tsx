@@ -349,12 +349,21 @@ export function StatsUploadClient({
     setIsUploading(true);
 
     try {
+      // Carry the coach's Map-Columns + Match-Players edits into the server
+      // action so overrides made in those steps are actually honored instead
+      // of being silently re-derived (and discarded) server-side.
+      const columnMappingsPayload: Record<string, string | null> = Object.fromEntries(
+        columnMappings.map((m) => [m.csvColumn, m.mappedTo])
+      );
+
       const result = await uploadStatsCSV(
         teamId,
         csvContent,
         statType,
         sessionDate,
-        sessionName || undefined
+        sessionName || undefined,
+        columnMappingsPayload,
+        playerMatches
       );
 
       setUploadResult(result);
