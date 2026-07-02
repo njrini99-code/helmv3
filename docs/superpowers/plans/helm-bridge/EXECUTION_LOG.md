@@ -86,5 +86,17 @@ Running record of what was actually applied per wave, plus any deviations from t
 - 11 new tests; typecheck exit 0; lint 0 errors; gate-coverage passes. All column/RPC/Fairway-prop names verified vs real source.
 - CLEANUP TODO (polish pass): 2 lint warnings in TriageQueue.tsx (helm/no-arbitrary-text-px, helm/no-raw-button) from verbatim doc code — under ceiling, tidy later.
 
-## W6 — Errors Tab + RLS-Denial Capture + withAdminObserved (no migration)
-**Status:** in progress (Sonnet).
+## ⚑ SCOPE DIRECTIVES (owner, mid-build 2026-07-01)
+
+1. **Signal, not noise:** capture MEANINGFUL failures wired correctly — do NOT flood. Skip expected control flow (NEXT_REDIRECT/NEXT_NOT_FOUND), validation rejections, empty/not-found, aborts, succeeded-retries. Severity: only error+critical drive a RED feature dot / Overview banner; warnings on drill-in only. Dedupe by fingerprint (one line + count, never N rows); emitters rate-limit. Health dots use grouped rate + trend + hysteresis (no flapping); expected-empty = neutral, never red. Digest/banner = meaningful state changes only.
+2. **BaseballHelm is iffy in prod → HOLD OFF.** Focus = **GolfHelm + CoachHelm (golf AI layer)**. Any task that MODIFIES baseball or lifting app code is DEFERRED (no wrapping baseball/lifting actions, no baseball auth emitters, W9 Baseball tab deferred). Command-center pieces that only READ baseball data (Overview KPIs, Users directory) may stay — read-only, admin-gated, zero prod impact. Feature-health + total coverage (W15/W16) scoped to golf+coachhelm; baseball is a "paused" appendix.
+
+## W6 — Errors Tab + RLS-Denial Capture + withAdminObserved (no migration) — DONE
+- Commits `64c6a744f` (centralized RLS-denial capture), `2bcdde74b` (withAdminObserved + savePartialRound exemplar), `4fc033e13` (errors tab: Sentry table, deploy-marked series, incident feed, fingerprint detail).
+- 14 new tests; typecheck exit 0; lint 0 errors (+5 `no-arbitrary-bg-white` warnings — matches the app's documented glass-card recipe / W4-W5 convention; under ceiling). gate-coverage passes (both new pages gate first-line).
+- UI elevated per directive: ChartFrame (matte + table-fallback), StatusPill severity (dot+tone+label), KpiTile Fragment Mono numerals. `savePartialRound` → impl+wrapped delegate ('use server' gotcha handled).
+- Note: local `next build` prerender fails on unrelated pages (missing NEXT_PUBLIC_SUPABASE_URL locally) — pre-existing env limit, validated on Vercel preview instead.
+- POLISH TODO: consider Fairway surface primitives over raw bg-white/70 in a final sweep (optional; current is on-brand).
+
+## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
+**Status:** migration pending orchestrator; code in progress (Sonnet).
