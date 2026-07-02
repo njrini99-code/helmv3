@@ -1,6 +1,10 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { classifyTeamHealth, type GolfTeamHealthRow } from '@/lib/admin/data/golf';
+import type { Database } from '@/lib/types/database';
+
+type UserRole = Database['public']['Enums']['user_role'];
+const USER_ROLES: readonly UserRole[] = ['coach', 'player', 'admin'];
 
 export interface DirectoryUser {
   id: string;
@@ -70,7 +74,12 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     .order('last_seen', { ascending: false, nullsFirst: false })
     .limit(500);
   if (filters.q) userQuery = userQuery.ilike('email', `%${filters.q}%`);
-  if (filters.role) userQuery = userQuery.eq('role', filters.role);
+  // Narrow to the real `user_role` enum before filtering — an unrecognized
+  // `?role=` value is silently ignored rather than sent to PostgREST (which
+  // would 400 on an invalid enum literal).
+  if (filters.role && (USER_ROLES as readonly string[]).includes(filters.role)) {
+    userQuery = userQuery.eq('role', filters.role as UserRole);
+  }
 
   const [
     usersRes,
