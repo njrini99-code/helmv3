@@ -25,6 +25,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { getPerformanceCommandData } from '@/lib/baseball/read-models/performance-command';
 import { PerformanceCommandCenter } from '@/components/baseball/performance/PerformanceCommandCenter';
 import { PerformanceDashboardClient } from '@/components/baseball/performance/PerformanceDashboardClient';
@@ -232,7 +233,7 @@ export default async function PerformancePage() {
   const teamName = (teamRow as { name?: string } | null)?.name ?? 'Team';
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-6">
+    <div className={fairwayScope('mx-auto max-w-7xl space-y-8 px-4 py-6')}>
       {/*
         ONE performance surface. The Command Center is the primary dashboard
         (header + KPI strip + Today Weight Room board + readiness queue). The
