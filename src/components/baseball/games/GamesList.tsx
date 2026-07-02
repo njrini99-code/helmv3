@@ -189,17 +189,25 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       ) : (
         <div className="space-y-3">
           {games.map((game) => (
-            <div key={game.id} className="relative">
+            <div key={game.id} className="relative group">
               <GameCard game={game} />
               {deletingId === game.id && (
                 <div className="absolute inset-0 bg-cream-100/82 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                   <span className="text-sm text-warm-500">Deleting...</span>
                 </div>
               )}
-              {/* Delete action - accessible via right-click context or small button */}
+              {/* Delete action. Desktop (hover-capable pointers): hidden by
+                  default and fully non-interactive (pointer-events-none)
+                  until the row is hovered or the button receives keyboard
+                  focus, so it can never intercept a click meant for
+                  GameCard's content underneath. Touch (no hover — e.g.
+                  iPad/phone in this Capacitor app): there is no hover to
+                  reveal it, so it stays always visible in a muted style and
+                  tappable — it must never be invisible-yet-interactive. */}
               <Button variant="danger"
                 onClick={() => handleDelete(game.id)}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-warm-300 hover:text-red-500 transition-all text-xs hidden"
+                disabled={deletingId === game.id}
+                className="absolute top-3 right-3 text-xs text-warm-300 hover:text-red-500 transition-all opacity-60 pointer-events-auto [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
                 aria-label="Delete game"
               >
                 ×
