@@ -6,17 +6,22 @@
 //   rate is `null` when IP is zero — never a fabricated 0.00 ERA for a pitcher
 //   who has not thrown an inning.
 //
+// #434 UPDATE: `stats-center.ts`'s `finalizePitching` (and its season
+// aggregation, `dst.ip = sumInningsPitched(...)`) now correctly treats the
+// tenths digit of `ip` as OUTS in traditional box-score notation — "6.1" /
+// "6.2" mean 6⅓ / 6⅔ innings (19 / 20 outs), NOT 6.1/6.2 decimal innings —
+// converting via `ipToInnings`/`sumInningsPitched` (src/lib/baseball/innings.ts,
+// see also innings.test.ts) before any rate divides by it. This file pins that
+// corrected behavior.
+//
 // NEEDS-DECISION (documented in
-// docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md): `finalizePitching`
-// (and the box-score save path) treat `ip` as a plain accumulated float with NO
-// traditional-notation conversion. Real college box scores often enter IP as
-// "6.1" / "6.2" (6⅓ / 6⅔ innings, NOT 6.1/6.2 decimal innings). Nothing in this
-// codebase converts that notation to true thirds before storing or summing —
-// `games.ts`'s CSV parser does `getFloat('innings_pitched')` verbatim, and
-// `addPitching` sums raw floats across appearances. This file pins the ACTUAL
-// behavior (raw decimal arithmetic, no thirds conversion) rather than the
-// aspirational "innings are normalized" claim, because that normalization does
-// not exist in the source.
+// docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md): the box-score
+// SAVE path (`games.ts`'s `computePitchingRates` + CSV `getFloat('innings_pitched')`)
+// is a SEPARATE, still-unconverted code path — it still divides by the raw
+// notation value with no thirds conversion. That gap is unaffected by #434 and
+// is pinned as-is by the second describe block below (games.ts mirrors its own,
+// still-raw formula) — do not "fix" that block to match `ipToInnings`; it is
+// pinning actual, unchanged behavior.
 // =============================================================================
 
 import { readFileSync } from 'node:fs';
@@ -28,6 +33,7 @@ import {
   finalizePitching,
   type PitchingSplit,
 } from '@/lib/baseball/read-models/stats-center';
+import { ipToInnings } from '@/lib/baseball/innings';
 
 function pitchingFixture(overrides: Partial<PitchingSplit> = {}): PitchingSplit {
   return { ...emptyPitching(), ...overrides };
@@ -60,14 +66,19 @@ describe('Pitching invariants (#377) — stats-center.finalizePitching', () => {
     expect(p.h9).toBeNull();
   });
 
-  it('innings accumulate as raw float addition with no thirds-notation conversion (ground truth, not aspirational)', () => {
-    // Two relief outings entered in traditional notation as "0.2" (2/3 inning
-    // each) sum to 1.4 here, NOT the true 1⅓ (1.333...) a thirds-aware
-    // accumulator would produce. This is the documented needs-decision gap.
-    const ip = 0.2 + 0.2;
-    expect(ip).toBeCloseTo(0.4, 5);
-    const p = finalizePitching(pitchingFixture({ ip, er: 1, bb: 0, h: 0, k: 0 }));
-    expect(p.era).toBeCloseTo((1 * 9) / 0.4, 2);
+  it('rates divide by TRUE innings (outs / 3), not the raw notation value — 6.2 means 6⅔, not 6.2 decimal innings (#434)', () => {
+    // "6.2" in traditional box-score notation is 6 innings + 2 outs (20 outs
+    // total), i.e. 6⅔ true innings — NOT 6.2 decimal innings. Dividing by the
+    // raw notation value (pre-#434 behavior) understates true innings and
+    // inflates every rate stat.
+    const trueInnings = ipToInnings(6.2);
+    expect(trueInnings).toBeCloseTo(20 / 3, 4);
+
+    const p = finalizePitching(pitchingFixture({ ip: 6.2, er: 5, bb: 2, h: 6, k: 8 }));
+    expect(p.era).toBeCloseTo((5 * 9) / trueInnings, 2);
+    expect(p.whip).toBeCloseTo((2 + 6) / trueInnings, 2);
+    expect(p.k9).toBeCloseTo((8 * 9) / trueInnings, 2);
+    expect(p.bb9).toBeCloseTo((2 * 9) / trueInnings, 2);
   });
 });
 
