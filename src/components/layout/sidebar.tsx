@@ -293,13 +293,14 @@ function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubIt
     }
     if (hubId === 'academics' && !ids.has('academics')) continue;
 
-    // Dashboard (Command Center) and Management (Program Info/Settings) each
-    // always carry a member every coach can see, so — matching pre-
-    // consolidation behavior where Command was always item #1 and Management
-    // was always pushed last — they are never hidden for lacking a visible
-    // member the way Team/Stats/Development legitimately can be.
-    const alwaysShow = hubId === 'dashboard' || hubId === 'management';
-    if (!alwaysShow && !hasAnyVisible(ids, def.tabs.map((t) => t.id))) continue;
+    // Every other hub (including Management) hides itself when NO member is
+    // visible for this coach — Command Center/Signals (Dashboard) are always
+    // capability-free, so Dashboard is never actually hidden by this in
+    // practice; Management legitimately can be for a narrow staff role with
+    // none of can_manage_settings/can_invite_staff. This mirrors
+    // resolveActiveHub's own "empty hub → null, no strip" precedent and keeps
+    // this shell and BaseballFairwayShell.tsx's section builder in lockstep.
+    if (!hasAnyVisible(ids, def.tabs.map((t) => t.id))) continue;
 
     items.push({
       name: def.label,
