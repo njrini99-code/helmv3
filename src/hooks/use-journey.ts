@@ -12,7 +12,6 @@ export interface JourneySchool {
   status: string;
   interest_level: string | null;
   notes: string | null;
-  coach_name: string | null;
   last_contact_at: string | null;
   created_at: string;
   organization_id: string | null;
@@ -125,7 +124,6 @@ export function useJourney() {
         status: interest.status || 'interested',
         interest_level: interest.interest_level,
         notes: interest.notes,
-        coach_name: null, // Not available in current schema
         last_contact_at: null, // Not available in current schema
         created_at: interest.created_at || new Date().toISOString(),
         organization_id: interest.organization_id,
@@ -222,21 +220,11 @@ export function useJourney() {
   return { schools, events, stats, loading, refetch: fetchJourneyData };
 }
 
-export async function updateInterestStatus(interestId: string, status: string) {
-  const supabase = createClient();
-
-  const { error } = await supabase
-    .from('baseball_recruiting_interests')
-    .update({
-      status,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', interestId);
-
-  if (error) {
-    throw new Error('Failed to update status');
-  }
-
-  return { success: true };
-}
+// NOTE: status updates now go through the validated, ownership-checked
+// server action `updateInterestStatus` in
+// `@/app/baseball/actions/interests` (RecruitingSchemas.updateStatus).
+// The previous export here mutated `baseball_recruiting_interests`
+// directly from the browser client with no status validation and no
+// ownership check (any authenticated player could update any interest
+// row by id).
 

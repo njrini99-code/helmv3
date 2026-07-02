@@ -18,7 +18,8 @@ import {
   IconPlus,
   IconChevronRight
 } from '@/components/icons';
-import { useJourney, updateInterestStatus, type JourneySchool, type JourneyEvent } from '@/hooks/use-journey';
+import { useJourney, type JourneySchool, type JourneyEvent } from '@/hooks/use-journey';
+import { updateInterestStatus } from '@/app/baseball/actions/interests';
 import { cn } from '@/lib/utils';
 
 const statusOptions = [
@@ -140,11 +141,6 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
             <div className="flex items-center gap-1.5 text-sm">
               <IconStar size={14} className="text-amber-500" />
               <span className="text-warm-600">On watchlist</span>
-            </div>
-          )}
-          {school.coach_name && (
-            <div className="text-sm leading-relaxed text-warm-500">
-              Contact: {school.coach_name}
             </div>
           )}
         </div>

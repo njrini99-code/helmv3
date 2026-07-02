@@ -18,6 +18,19 @@ export const RecruitingSchemas = {
   removeInterest: z.object({
     organization_id: CommonSchemas.uuid,
   }),
+
+  // Player-reported journey stage for a single school. This is an
+  // intentionally separate vocabulary from `WatchlistSchemas.updateStatus`
+  // (the coach-facing `baseball_pipeline_stage` DB enum documented in
+  // CLAUDE.md as the only 5 valid `PipelineStage` values). The player's
+  // status tracks their own self-reported progress with a school; the
+  // coach's pipeline_stage tracks the coach's classification of the
+  // player. They are related but not the same value, and are never
+  // written to the same column.
+  updateStatus: z.object({
+    interest_id: CommonSchemas.uuid,
+    status: z.enum(['interested', 'researching', 'contacted', 'visited', 'offered', 'committed']),
+  }),
 };
 
 /**
