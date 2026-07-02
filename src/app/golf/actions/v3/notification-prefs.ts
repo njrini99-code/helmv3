@@ -7,6 +7,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import type { Json } from '@/lib/types/database';
 import type {
   NotificationCategory,
@@ -21,7 +22,7 @@ export interface PrefsActionResult {
   error?: string;
 }
 
-export async function loadMyNotificationPrefs(): Promise<PrefsActionResult> {
+async function loadMyNotificationPrefsImpl(): Promise<PrefsActionResult> {
   try {
     const sb = await createClient();
     const { data: { user } } = await sb.auth.getUser();
@@ -56,7 +57,17 @@ export async function loadMyNotificationPrefs(): Promise<PrefsActionResult> {
   }
 }
 
-export async function setCategoryChannel(
+const observedLoadMyNotificationPrefs = withAdminObserved(
+  'loadMyNotificationPrefs',
+  { sport: 'golf', feature: 'settings' },
+  loadMyNotificationPrefsImpl,
+);
+
+export async function loadMyNotificationPrefs(): Promise<PrefsActionResult> {
+  return observedLoadMyNotificationPrefs();
+}
+
+async function setCategoryChannelImpl(
   category: NotificationCategory,
   channel: keyof ChannelPref,
   enabled: boolean,
@@ -115,6 +126,20 @@ export async function setCategoryChannel(
   }
 }
 
+const observedSetCategoryChannel = withAdminObserved(
+  'setCategoryChannel',
+  { sport: 'golf', feature: 'settings' },
+  setCategoryChannelImpl,
+);
+
+export async function setCategoryChannel(
+  category: NotificationCategory,
+  channel: keyof ChannelPref,
+  enabled: boolean,
+): Promise<PrefsActionResult> {
+  return observedSetCategoryChannel(category, channel, enabled);
+}
+
 /**
  * Atomically replace the ENTIRE per-category prefs object in one
  * read-modify-write. Use this for bulk operations (reset defaults,
@@ -122,7 +147,7 @@ export async function setCategoryChannel(
  * calls — those each read the same stale snapshot and clobber each
  * other (last-write-wins) against the shared `prefs` JSONB column.
  */
-export async function setAllChannels(
+async function setAllChannelsImpl(
   prefs: PrefsByCategory,
 ): Promise<PrefsActionResult> {
   try {
@@ -174,7 +199,19 @@ export async function setAllChannels(
   }
 }
 
-export async function setQuietMode(enabled: boolean): Promise<PrefsActionResult> {
+const observedSetAllChannels = withAdminObserved(
+  'setAllChannels',
+  { sport: 'golf', feature: 'settings' },
+  setAllChannelsImpl,
+);
+
+export async function setAllChannels(
+  prefs: PrefsByCategory,
+): Promise<PrefsActionResult> {
+  return observedSetAllChannels(prefs);
+}
+
+async function setQuietModeImpl(enabled: boolean): Promise<PrefsActionResult> {
   try {
     const sb = await createClient();
     const { data: { user } } = await sb.auth.getUser();
@@ -214,4 +251,14 @@ export async function setQuietMode(enabled: boolean): Promise<PrefsActionResult>
     );
     return { ok: false, error: 'Internal error' };
   }
+}
+
+const observedSetQuietMode = withAdminObserved(
+  'setQuietMode',
+  { sport: 'golf', feature: 'settings' },
+  setQuietModeImpl,
+);
+
+export async function setQuietMode(enabled: boolean): Promise<PrefsActionResult> {
+  return observedSetQuietMode(enabled);
 }

@@ -21,6 +21,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { DEMO_ENTER_EVENT } from '@/lib/demo/config';
 import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { captureServer } from '@/lib/analytics/posthog-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export type LoginResult = {
   success: boolean;
@@ -46,7 +47,7 @@ function sanitizeRef(raw: string | null | undefined): string | undefined {
 /**
  * Golf-specific login with rate limiting and account lockout protection
  */
-export async function loginAction(
+async function loginActionImpl(
   email: string,
   password: string,
   ref?: string
@@ -219,6 +220,20 @@ export async function loginAction(
   };
 }
 
+const observedLoginAction = withAdminObserved(
+  'loginAction',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  loginActionImpl,
+);
+
+export async function loginAction(
+  email: string,
+  password: string,
+  ref?: string
+): Promise<LoginResult> {
+  return observedLoginAction(email, password, ref);
+}
+
 export type SignupResult = {
   success: boolean;
   error?: string;
@@ -228,7 +243,7 @@ export type SignupResult = {
 /**
  * Golf-specific signup with rate limiting
  */
-export async function signupAction(
+async function signupActionImpl(
   email: string,
   password: string,
   role: 'player' | 'coach',
@@ -357,6 +372,22 @@ export async function signupAction(
   };
 }
 
+const observedSignupAction = withAdminObserved(
+  'signupAction',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  signupActionImpl,
+);
+
+export async function signupAction(
+  email: string,
+  password: string,
+  role: 'player' | 'coach',
+  firstName?: string,
+  lastName?: string
+): Promise<SignupResult> {
+  return observedSignupAction(email, password, role, firstName, lastName);
+}
+
 export type PasswordResetResult = {
   success: boolean;
   error?: string;
@@ -366,7 +397,7 @@ export type PasswordResetResult = {
 /**
  * Password reset request with rate limiting (shared logic)
  */
-export async function requestPasswordResetAction(
+async function requestPasswordResetActionImpl(
   email: string
 ): Promise<PasswordResetResult> {
   const normalizedEmail = email.toLowerCase().trim();
@@ -401,4 +432,16 @@ export async function requestPasswordResetAction(
     success: true,
     message: 'If an account exists with this email, a password reset link will be sent.',
   };
+}
+
+const observedRequestPasswordResetAction = withAdminObserved(
+  'requestPasswordResetAction',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  requestPasswordResetActionImpl,
+);
+
+export async function requestPasswordResetAction(
+  email: string
+): Promise<PasswordResetResult> {
+  return observedRequestPasswordResetAction(email);
 }

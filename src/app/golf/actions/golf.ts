@@ -3328,8 +3328,8 @@ export async function createAnnouncement(data: {
 // PLAYER ACTIONS
 // ============================================================================
 
-export async function invitePlayerToTeam(
-   
+async function invitePlayerToTeamImpl(
+
   _email: string // Email parameter reserved for future email invitations
 ): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
   try {
@@ -3396,7 +3396,19 @@ export async function invitePlayerToTeam(
   }
 }
 
-export async function updatePlayerStatus(
+const observedInvitePlayerToTeam = withAdminObserved(
+  'invitePlayerToTeam',
+  { sport: 'golf', feature: 'roster_management' },
+  invitePlayerToTeamImpl,
+);
+
+export async function invitePlayerToTeam(
+  _email: string // Email parameter reserved for future email invitations
+): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
+  return observedInvitePlayerToTeam(_email);
+}
+
+async function updatePlayerStatusImpl(
   playerId: string,
   // The golf_team_members.status column allows active/inactive/removed; the
   // roster UI now offers active/inactive only (B4/F007). 'injured'/'redshirt'
@@ -3472,6 +3484,19 @@ export async function updatePlayerStatus(
     }
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedUpdatePlayerStatus = withAdminObserved(
+  'updatePlayerStatus',
+  { sport: 'golf', feature: 'roster_management' },
+  updatePlayerStatusImpl,
+);
+
+export async function updatePlayerStatus(
+  playerId: string,
+  status: 'active' | 'injured' | 'redshirt' | 'inactive'
+): Promise<{ success: boolean; error?: string }> {
+  return observedUpdatePlayerStatus(playerId, status);
 }
 
 // ============================================================================
@@ -4160,7 +4185,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
 /**
  * Get pending event invitations for the current player
  */
-export async function getPendingInvitations(): Promise<ActionResult<EventInvitation[]>> {
+async function getPendingInvitationsImpl(): Promise<ActionResult<EventInvitation[]>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -4188,6 +4213,16 @@ export async function getPendingInvitations(): Promise<ActionResult<EventInvitat
   } catch {
     return { success: false, error: 'Failed to fetch invitations' };
   }
+}
+
+const observedGetPendingInvitations = withAdminObserved(
+  'getPendingInvitations',
+  { sport: 'golf', feature: 'roster_management' },
+  getPendingInvitationsImpl,
+);
+
+export async function getPendingInvitations(): Promise<ActionResult<EventInvitation[]>> {
+  return observedGetPendingInvitations();
 }
 
 /**

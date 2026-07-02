@@ -7,6 +7,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { revalidatePath } from 'next/cache';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -73,7 +74,7 @@ function generateJoinCode(): string {
  * Golf players can only be on ONE team at a time
  * Note: golf_players doesn't have team_id - we check golf_team_members
  */
-export async function validateGolfPlayerCanJoinTeam(
+async function validateGolfPlayerCanJoinTeamImpl(
   playerId: string,
   teamId: string
 ): Promise<TeamValidationResult> {
@@ -168,11 +169,24 @@ export async function validateGolfPlayerCanJoinTeam(
   };
 }
 
+const observedValidateGolfPlayerCanJoinTeam = withAdminObserved(
+  'validateGolfPlayerCanJoinTeam',
+  { sport: 'golf', feature: 'join_team_flow' },
+  validateGolfPlayerCanJoinTeamImpl,
+);
+
+export async function validateGolfPlayerCanJoinTeam(
+  playerId: string,
+  teamId: string
+): Promise<TeamValidationResult> {
+  return observedValidateGolfPlayerCanJoinTeam(playerId, teamId);
+}
+
 /**
  * Add a golf player to a team via golf_team_members
  * Also notifies coaches when a player joins
  */
-export async function joinGolfTeam(playerId: string, teamId: string) {
+async function joinGolfTeamImpl(playerId: string, teamId: string) {
   const supabase = await createClient();
 
   // Validate first
@@ -266,11 +280,21 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
   };
 }
 
+const observedJoinGolfTeam = withAdminObserved(
+  'joinGolfTeam',
+  { sport: 'golf', feature: 'join_team_flow' },
+  joinGolfTeamImpl,
+);
+
+export async function joinGolfTeam(playerId: string, teamId: string) {
+  return observedJoinGolfTeam(playerId, teamId);
+}
+
 /**
  * Process a golf team join code
  * Note: golf_teams uses join_code, not invite_code
  */
-export async function processGolfTeamInvitation(joinCode: string, playerId: string) {
+async function processGolfTeamInvitationImpl(joinCode: string, playerId: string) {
   const supabase = await createClient();
 
   // Normalize join code to uppercase for case-insensitive matching
@@ -294,6 +318,16 @@ export async function processGolfTeamInvitation(joinCode: string, playerId: stri
   return await joinGolfTeam(playerId, team.id);
 }
 
+const observedProcessGolfTeamInvitation = withAdminObserved(
+  'processGolfTeamInvitation',
+  { sport: 'golf', feature: 'join_team_flow' },
+  processGolfTeamInvitationImpl,
+);
+
+export async function processGolfTeamInvitation(joinCode: string, playerId: string) {
+  return observedProcessGolfTeamInvitation(joinCode, playerId);
+}
+
 // ============================================================================
 // TEAM CRUD OPERATIONS
 // ============================================================================
@@ -301,7 +335,7 @@ export async function processGolfTeamInvitation(joinCode: string, playerId: stri
 /**
  * Create a new team and link it to the current coach's organization
  */
-export async function createTeam(
+async function createTeamImpl(
   name: string,
   season: string,
   gender: 'mens' | 'womens' = 'mens'
@@ -385,11 +419,25 @@ export async function createTeam(
   };
 }
 
+const observedCreateTeam = withAdminObserved(
+  'createTeam',
+  { sport: 'golf', feature: 'team_info' },
+  createTeamImpl,
+);
+
+export async function createTeam(
+  name: string,
+  season: string,
+  gender: 'mens' | 'womens' = 'mens'
+): Promise<TeamActionResult<TeamData>> {
+  return observedCreateTeam(name, season, gender);
+}
+
 /**
  * Update team details
  * Only the team owner (coach linked to team via organization) can update
  */
-export async function updateTeam(
+async function updateTeamImpl(
   teamId: string,
   updates: { name?: string; season?: string }
 ): Promise<TeamActionResult<TeamData>> {
@@ -465,11 +513,24 @@ export async function updateTeam(
   };
 }
 
+const observedUpdateTeam = withAdminObserved(
+  'updateTeam',
+  { sport: 'golf', feature: 'team_info' },
+  updateTeamImpl,
+);
+
+export async function updateTeam(
+  teamId: string,
+  updates: { name?: string; season?: string }
+): Promise<TeamActionResult<TeamData>> {
+  return observedUpdateTeam(teamId, updates);
+}
+
 /**
  * Regenerate team join code
  * Invalidates the old code immediately
  */
-export async function regenerateJoinCode(
+async function regenerateJoinCodeImpl(
   teamId: string
 ): Promise<TeamActionResult<{ joinCode: string }>> {
   const supabase = await createClient();
@@ -520,6 +581,18 @@ export async function regenerateJoinCode(
   };
 }
 
+const observedRegenerateJoinCode = withAdminObserved(
+  'regenerateJoinCode',
+  { sport: 'golf', feature: 'team_info' },
+  regenerateJoinCodeImpl,
+);
+
+export async function regenerateJoinCode(
+  teamId: string
+): Promise<TeamActionResult<{ joinCode: string }>> {
+  return observedRegenerateJoinCode(teamId);
+}
+
 // ============================================================================
 // TEAM JOIN REQUEST OPERATIONS (Request-based flow)
 // ============================================================================
@@ -546,7 +619,7 @@ export interface JoinRequestData {
  * Create a join request for a team
  * Player requests to join → Coach reviews → Accept/Reject
  */
-export async function createTeamJoinRequest(
+async function createTeamJoinRequestImpl(
   joinCode: string,
   playerId: string,
   message?: string
@@ -681,10 +754,24 @@ export async function createTeamJoinRequest(
   };
 }
 
+const observedCreateTeamJoinRequest = withAdminObserved(
+  'createTeamJoinRequest',
+  { sport: 'golf', feature: 'join_team_flow' },
+  createTeamJoinRequestImpl,
+);
+
+export async function createTeamJoinRequest(
+  joinCode: string,
+  playerId: string,
+  message?: string
+): Promise<TeamActionResult<JoinRequestData>> {
+  return observedCreateTeamJoinRequest(joinCode, playerId, message);
+}
+
 /**
  * Get pending join requests for the coach's team
  */
-export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinRequestData[]>> {
+async function getTeamJoinRequestsImpl(): Promise<TeamActionResult<JoinRequestData[]>> {
   const supabase = await createClient();
 
   // Verify user is authenticated
@@ -742,10 +829,20 @@ export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinReques
   };
 }
 
+const observedGetTeamJoinRequests = withAdminObserved(
+  'getTeamJoinRequests',
+  { sport: 'golf', feature: 'join_team_flow' },
+  getTeamJoinRequestsImpl,
+);
+
+export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinRequestData[]>> {
+  return observedGetTeamJoinRequests();
+}
+
 /**
  * Accept a join request - adds player to the team
  */
-export async function acceptJoinRequest(
+async function acceptJoinRequestImpl(
   requestId: string
 ): Promise<TeamActionResult> {
   const supabase = await createClient();
@@ -885,10 +982,22 @@ export async function acceptJoinRequest(
   return { success: true };
 }
 
+const observedAcceptJoinRequest = withAdminObserved(
+  'acceptJoinRequest',
+  { sport: 'golf', feature: 'join_team_flow' },
+  acceptJoinRequestImpl,
+);
+
+export async function acceptJoinRequest(
+  requestId: string
+): Promise<TeamActionResult> {
+  return observedAcceptJoinRequest(requestId);
+}
+
 /**
  * Reject a join request
  */
-export async function rejectJoinRequest(
+async function rejectJoinRequestImpl(
   requestId: string,
   reason?: string
 ): Promise<TeamActionResult> {
@@ -997,10 +1106,23 @@ export async function rejectJoinRequest(
   return { success: true };
 }
 
+const observedRejectJoinRequest = withAdminObserved(
+  'rejectJoinRequest',
+  { sport: 'golf', feature: 'join_team_flow' },
+  rejectJoinRequestImpl,
+);
+
+export async function rejectJoinRequest(
+  requestId: string,
+  reason?: string
+): Promise<TeamActionResult> {
+  return observedRejectJoinRequest(requestId, reason);
+}
+
 /**
  * Cancel a pending join request (by the player)
  */
-export async function cancelJoinRequest(
+async function cancelJoinRequestImpl(
   requestId: string
 ): Promise<TeamActionResult> {
   const supabase = await createClient();
@@ -1045,10 +1167,22 @@ export async function cancelJoinRequest(
   return { success: true };
 }
 
+const observedCancelJoinRequest = withAdminObserved(
+  'cancelJoinRequest',
+  { sport: 'golf', feature: 'join_team_flow' },
+  cancelJoinRequestImpl,
+);
+
+export async function cancelJoinRequest(
+  requestId: string
+): Promise<TeamActionResult> {
+  return observedCancelJoinRequest(requestId);
+}
+
 /**
  * Get player's pending join requests
  */
-export async function getPlayerJoinRequests(
+async function getPlayerJoinRequestsImpl(
   playerId: string
 ): Promise<TeamActionResult<Array<{
   id: string;
@@ -1119,6 +1253,28 @@ export async function getPlayerJoinRequests(
   };
 }
 
+const observedGetPlayerJoinRequests = withAdminObserved(
+  'getPlayerJoinRequests',
+  { sport: 'golf', feature: 'join_team_flow' },
+  getPlayerJoinRequestsImpl,
+);
+
+export async function getPlayerJoinRequests(
+  playerId: string
+): Promise<TeamActionResult<Array<{
+  id: string;
+  status: string;
+  message: string | null;
+  created_at: string;
+  team: {
+    id: string;
+    name: string;
+    organization?: { name: string } | null;
+  };
+}>>> {
+  return observedGetPlayerJoinRequests(playerId);
+}
+
 // ============================================================================
 // PROGRAM HEAD: ADD SECOND TEAM
 // ============================================================================
@@ -1136,7 +1292,7 @@ export async function getPlayerJoinRequests(
  * onboarding) so the RLS "primary coach on the team" pre-condition is satisfied
  * for the new row without a chicken-and-egg problem.
  */
-export async function addSecondTeam(
+async function addSecondTeamImpl(
   name: string,
   gender: 'mens' | 'womens'
 ): Promise<TeamActionResult<TeamData & { gender: string }>> {
@@ -1283,4 +1439,17 @@ export async function addSecondTeam(
     success: true,
     data: { ...newTeam, gender },
   };
+}
+
+const observedAddSecondTeam = withAdminObserved(
+  'addSecondTeam',
+  { sport: 'golf', feature: 'join_team_flow' },
+  addSecondTeamImpl,
+);
+
+export async function addSecondTeam(
+  name: string,
+  gender: 'mens' | 'womens'
+): Promise<TeamActionResult<TeamData & { gender: string }>> {
+  return observedAddSecondTeam(name, gender);
 }
