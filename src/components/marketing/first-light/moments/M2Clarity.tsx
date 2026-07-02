@@ -2,7 +2,8 @@
 
 /**
  * M2 · CLARITY — the what-is-it moment. docs/LANDING_ENTRY_WORLD_DESIGN.md
- * M2. Background register: ecru editorial (flat `var(--fl-ecru)`).
+ * M2, SAGE & CREAM amendment. Background register: cream editorial (flat
+ * `var(--fl-cream)`).
  *
  * This is the landing moment of the M1 exit scrub (spec's scroll
  * choreography map: "M1 → M2 exit... M2's serif statement writes itself
@@ -12,8 +13,8 @@
  * the build brief so M3's scrubbed set piece lands harder next.
  *
  * Below: three hairline-ruled ledger lines — explicitly NOT cards.
- * Graphite ordinal numerals (font-annual/Space Grotesk, the app's UI
- * register) + green rules, the app's own idiom, pre-echoed on the
+ * Sage-ink ordinal numerals (font-annual/Space Grotesk, the app's UI
+ * register) + sage rules, the app's own idiom, pre-echoed on the
  * marketing surface.
  */
 import { cn } from '@/lib/utils';
@@ -49,7 +50,7 @@ export function M2Clarity({ className }: M2ClarityProps) {
   return (
     <section
       className={cn('relative px-6 py-24 sm:py-32', className)}
-      style={{ backgroundColor: 'var(--fl-ecru)' }}
+      style={{ backgroundColor: 'var(--fl-cream)' }}
     >
       <div className="mx-auto max-w-3xl">
         <MaskedReveal
@@ -61,7 +62,7 @@ export function M2Clarity({ className }: M2ClarityProps) {
           ]}
           className={cn(
             flFraunces.className,
-            'text-[clamp(1.75rem,3.6vw,2.75rem)] font-normal leading-[1.15] tracking-tight text-[var(--fl-pine)]',
+            'text-[clamp(1.75rem,3.6vw,2.75rem)] font-normal leading-[1.15] tracking-tight text-[var(--fl-sage-ink)]',
           )}
         />
 
@@ -83,14 +84,14 @@ export function M2Clarity({ className }: M2ClarityProps) {
               <div className="mb-5 flex items-center gap-3">
                 <span
                   aria-hidden="true"
-                  className="font-annual text-caption font-medium tabular-nums text-warm-400"
+                  className="font-annual text-caption font-medium tabular-nums text-[var(--fl-sage-ink)]"
                 >
                   {line.n}
                 </span>
-                <div className="fl-rule flex-1 origin-left" style={{ background: 'var(--fl-green)' }} />
+                <div className="fl-rule flex-1 origin-left" style={{ background: 'var(--fl-sage)' }} />
               </div>
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:justify-between">
-                <span className={cn(flFraunces.className, 'text-xl font-medium text-[var(--fl-pine)] sm:text-2xl')}>
+                <span className={cn(flFraunces.className, 'text-xl font-medium text-[var(--fl-sage-ink)] sm:text-2xl')}>
                   {line.label}
                 </span>
                 <span className="max-w-sm text-body text-warm-500 sm:text-right">{line.detail}</span>

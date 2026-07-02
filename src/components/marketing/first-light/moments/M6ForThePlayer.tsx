@@ -2,13 +2,18 @@
 
 /**
  * M6 · FOR THE PLAYER — the player as audience, not afterthought.
- * docs/LANDING_ENTRY_WORLD_DESIGN.md M6. Background register: warm (clay).
+ * docs/LANDING_ENTRY_WORLD_DESIGN.md M6, SAGE & CREAM amendment.
+ * Background register: warm cream → sage-mist (daylight — replaces the
+ * pre-amendment dark clay/pine dusk gradient, which read moody/off-spec).
+ *
  * Three small `fl-glass-2` vignettes: passport completeness, Lift Lab
  * check-in, readiness. Copy speaks to the athlete, not the buyer. Each
  * vignette carries one small real-product detail (a completeness bar, a
  * logged-session line, a readiness band dot) rather than being pure copy —
  * echoes M5's "show, don't just tell" without competing with it for
  * attention (calm entry reveals only, no scroll-linked motion here).
+ * Accents use sage-deep (landing/auth chrome) — kelly stays product-only
+ * per the amendment, so nothing here reaches for it.
  */
 import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -44,19 +49,19 @@ export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
       className={cn('relative px-6 py-24 sm:py-32', className)}
       style={{
         background:
-          'linear-gradient(165deg, var(--fl-clay) 0%, #8f5a2f 55%, var(--fl-pine) 130%)',
+          'linear-gradient(160deg, var(--fl-cream) 0%, var(--fl-sage-mist) 62%, var(--fl-cream-high) 100%)',
       }}
     >
-      <div className="mx-auto max-w-2xl text-center">
-        <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-white/60">
+      <div className="relative z-10 mx-auto max-w-2xl text-center">
+        <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-[var(--fl-sage-deep)]">
           For the Player
         </span>
-        <h2 className={cn(flFraunces.className, 'mt-4 text-[clamp(1.75rem,3.4vw,2.5rem)] font-normal leading-tight text-white')}>
+        <h2 className={cn(flFraunces.className, 'mt-4 text-[clamp(1.75rem,3.4vw,2.5rem)] font-normal leading-tight text-[var(--fl-sage-ink)]')}>
           You&rsquo;re not just on the roster.
         </h2>
       </div>
 
-      <div className="mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="relative z-10 mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-5 sm:grid-cols-3">
         {VIGNETTES.map((v, i) => (
           <m.div
             key={v.title}
@@ -69,9 +74,9 @@ export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
             className="fl-glass-2 rounded-2xl p-6"
           >
             <div className="relative z-10">
-              <h3 className={cn(flFraunces.className, 'text-lg font-medium text-white')}>{v.title}</h3>
-              <p className="mt-2 text-body-sm leading-relaxed text-white/75">{v.line}</p>
-              <div className="mt-4 border-t border-white/15 pt-4">{v.detail}</div>
+              <h3 className={cn(flFraunces.className, 'text-lg font-medium text-[var(--fl-sage-ink)]')}>{v.title}</h3>
+              <p className="mt-2 text-body-sm leading-relaxed text-warm-600">{v.line}</p>
+              <div className="mt-4 border-t border-[rgba(var(--fl-sage-ink-rgb),0.12)] pt-4">{v.detail}</div>
             </div>
           </m.div>
         ))}
@@ -85,13 +90,13 @@ function PassportDetail() {
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="font-annual text-caption font-medium uppercase tracking-[0.1em] text-white/55">
+        <span className="font-annual text-caption font-medium uppercase tracking-[0.1em] text-[rgba(var(--fl-sage-ink-rgb),0.55)]">
           Complete
         </span>
-        <span className="font-annual text-body-sm font-medium tabular-nums text-white">{pct}%</span>
+        <span className="font-annual text-body-sm font-medium tabular-nums text-[var(--fl-sage-ink)]">{pct}%</span>
       </div>
-      <div className="mt-2 h-1 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--fl-green)' }} />
+      <div className="mt-2 h-1 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(var(--fl-sage-ink-rgb), 0.12)' }}>
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--fl-sage-deep)' }} />
       </div>
     </div>
   );
@@ -102,15 +107,15 @@ function LiftLabDetail() {
     <div className="flex items-center gap-2">
       <span
         className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
-        style={{ backgroundColor: 'var(--fl-green)' }}
+        style={{ backgroundColor: 'var(--fl-sage-deep)' }}
         aria-hidden="true"
       >
-        <svg viewBox="0 0 12 12" width={8} height={8} fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 12 12" width={8} height={8} fill="none" stroke="var(--fl-cream-high)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <path d="M2 6.5l2.5 2.5L10 3" />
         </svg>
       </span>
-      <span className="font-annual text-body-sm text-white/80">
-        Today logged <span className="tabular-nums text-white">· 4 sets</span>
+      <span className="font-annual text-body-sm text-warm-600">
+        Today logged <span className="tabular-nums text-[var(--fl-sage-ink)]">· 4 sets</span>
       </span>
     </div>
   );
@@ -119,9 +124,9 @@ function LiftLabDetail() {
 function ReadinessDetail() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--fl-green)' }} aria-hidden="true" />
-      <span className="font-annual text-body-sm text-white/80">
-        <span className="tabular-nums text-white">4.6</span> of 5 &mdash; ready to go
+      <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--fl-sage-deep)' }} aria-hidden="true" />
+      <span className="font-annual text-body-sm text-warm-600">
+        <span className="tabular-nums text-[var(--fl-sage-ink)]">4.6</span> of 5 &mdash; ready to go
       </span>
     </div>
   );

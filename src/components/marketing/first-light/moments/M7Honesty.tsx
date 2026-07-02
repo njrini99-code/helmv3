@@ -2,7 +2,8 @@
 
 /**
  * M7 · HONESTY BAND — pre-revenue social proof, done honestly.
- * docs/LANDING_ENTRY_WORLD_DESIGN.md M7. Background register: ecru.
+ * docs/LANDING_ENTRY_WORLD_DESIGN.md M7, SAGE & CREAM amendment.
+ * Background register: sage-mist tint (was flat ecru pre-amendment).
  * No fake logos. The founder line, what Helm refuses to claim, two live-
  * product stats (`AnimatedNumber` — the kit's StatRoll) that roll in on
  * FIRST VIEWPORT ENTRY, not on page mount: `AnimatedNumber` itself only
@@ -36,7 +37,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
   return (
     <section
       className={cn('relative px-6 py-24 sm:py-32', className)}
-      style={{ backgroundColor: 'var(--fl-ecru)' }}
+      style={{ backgroundColor: 'var(--fl-sage-mist)' }}
     >
       <div className="mx-auto max-w-2xl text-center">
         <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-warm-500">
@@ -47,7 +48,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-15%' }}
           transition={reduced ? { duration: 0 } : { duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className={cn(flFraunces.className, 'mt-4 text-[clamp(1.5rem,3vw,2.1rem)] font-normal leading-snug text-[var(--fl-pine)]')}
+          className={cn(flFraunces.className, 'mt-4 text-[clamp(1.5rem,3vw,2.1rem)] font-normal leading-snug text-[var(--fl-sage-ink)]')}
         >
           Built by two former collegiate athletes who got tired of running a program on spreadsheets and group texts.
         </m.p>
@@ -75,7 +76,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
             <AnimatedNumber
               value={statsInView ? stat.value : 0}
               suffix={stat.suffix}
-              className={cn(flFraunces.className, 'text-4xl font-medium tabular-nums text-[var(--fl-pine)]')}
+              className={cn(flFraunces.className, 'text-4xl font-medium tabular-nums text-[var(--fl-sage-ink)]')}
             />
             <p className="mt-1.5 max-w-[13rem] text-caption text-warm-500">{stat.label}</p>
           </div>
