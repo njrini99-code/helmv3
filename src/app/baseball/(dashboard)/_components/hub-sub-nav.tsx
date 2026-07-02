@@ -31,6 +31,7 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { BaseballNavIcon } from '@/lib/baseball/nav-registry';
 import type { BaseballCapability } from '@/lib/baseball/capabilities';
+import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -56,6 +57,13 @@ export interface HubSubNavTab {
   requiredCapability?: BaseballCapability;
   /** Staff must hold at least one of these capabilities (#370 / #408). */
   requiredAnyCapabilities?: readonly BaseballCapability[];
+  /**
+   * When set, this tab is only visible when the active team's program_type is
+   * in this list (#367 — showcase-only org surfaces). Copied verbatim from the
+   * registry entry's `allowedProgramTypes` by hub-definitions.ts — never
+   * re-declared, so it can never drift from the registry's gate.
+   */
+  allowedProgramTypes?: readonly BaseballProgramType[];
 }
 
 export interface HubSubNavProps {

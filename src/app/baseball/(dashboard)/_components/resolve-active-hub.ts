@@ -9,16 +9,19 @@
 // one Next route-group layout). The shell asks this resolver "which hub owns the
 // current route?" and renders that hub's tabs.
 //
+// Coach hub MEMBERSHIP is driven entirely by COACH_HUB_ORDER / COACH_HUB_DEFS
+// (hub-definitions.ts, itself derived from BASEBALL_NAV_REGISTRY's `hub` field)
+// — this module only decides which hubs are VISIBLE for the current
+// role/programType (Recruiting/Academics gating) and does the longest-prefix
+// route match + capability/program-type tab filtering. It never hand-lists a
+// hub's member routes.
+//
 // PURE. No React, no Supabase. Longest-prefix match across every hub's tabs.
 // =============================================================================
 
 import {
-  COACH_TEAM_TABS,
-  COACH_STATS_TABS,
-  COACH_DEVELOPMENT_TABS,
-  COACH_MANAGEMENT_TABS,
-  COACH_RECRUITING_TABS,
-  COACH_ACADEMICS_TABS,
+  COACH_HUB_ORDER,
+  COACH_HUB_DEFS,
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
@@ -26,6 +29,7 @@ import {
 import type { HubSubNavTab } from './hub-sub-nav';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 import type { BaseballCapability } from '@/lib/baseball/capabilities';
+import type { BaseballNavHub } from '@/lib/baseball/nav-registry';
 
 const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'college',
@@ -34,6 +38,23 @@ const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'academy',
   'club',
 ]);
+
+/**
+ * Stable short ids for telemetry/tests, decoupled from the hub's display label
+ * (BaseballNavHub / COACH_HUB_DEFS id) so relabeling a hub in the sidebar can
+ * never break a test anchor. 'stats-performance' keeps its pre-consolidation
+ * 'stats' id — the hub's CONTENT grew (Practice/Postgame/Import folded in),
+ * its identity did not.
+ */
+const RESOLVE_HUB_ID: Readonly<Record<BaseballNavHub, string>> = {
+  dashboard: 'dashboard',
+  team: 'team',
+  'stats-performance': 'stats',
+  development: 'development',
+  recruiting: 'recruiting',
+  academics: 'academics',
+  management: 'management',
+};
 
 export interface ResolvedHub {
   /** Stable hub id (telemetry / test anchor). */
@@ -52,49 +73,19 @@ interface HubDef extends ResolvedHub {
 // Coach hubs. Order matters only for tie-breaking; resolution is longest-prefix
 // across ALL tabs of ALL hubs, so a deeper route wins regardless of hub order.
 function coachHubs(opts: { showRecruiting: boolean; showAcademics: boolean }): HubDef[] {
-  const hubs: HubDef[] = [
-    {
-      id: 'team',
-      ariaLabel: 'Team sections',
-      tabs: COACH_TEAM_TABS,
-      ownedPrefixes: COACH_TEAM_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    },
-    {
-      id: 'stats',
-      ariaLabel: 'Stats sections',
-      tabs: COACH_STATS_TABS,
-      ownedPrefixes: COACH_STATS_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    },
-    {
-      id: 'development',
-      ariaLabel: 'Development sections',
-      tabs: COACH_DEVELOPMENT_TABS,
-      ownedPrefixes: COACH_DEVELOPMENT_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    },
-    {
-      id: 'management',
-      ariaLabel: 'Management sections',
-      tabs: COACH_MANAGEMENT_TABS,
-      ownedPrefixes: COACH_MANAGEMENT_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    },
-  ];
-  if (opts.showRecruiting) {
-    hubs.push({
-      id: 'recruiting',
-      ariaLabel: 'Recruiting sections',
-      tabs: COACH_RECRUITING_TABS,
-      ownedPrefixes: COACH_RECRUITING_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    });
-  }
-  if (opts.showAcademics) {
-    hubs.push({
-      id: 'academics',
-      ariaLabel: 'Academics sections',
-      tabs: COACH_ACADEMICS_TABS,
-      ownedPrefixes: COACH_ACADEMICS_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    });
-  }
-  return hubs;
+  return COACH_HUB_ORDER.filter((hub) => {
+    if (hub === 'recruiting') return opts.showRecruiting;
+    if (hub === 'academics') return opts.showAcademics;
+    return true;
+  }).map((hub) => {
+    const def = COACH_HUB_DEFS[hub];
+    return {
+      id: RESOLVE_HUB_ID[hub],
+      ariaLabel: `${def.label} sections`,
+      tabs: def.tabs,
+      ownedPrefixes: def.tabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
+    };
+  });
 }
 
 function playerHubs(): HubDef[] {
@@ -149,10 +140,28 @@ export function filterHubTabsByCapabilities(
 }
 
 /**
+ * Hide hub sub-tabs the current team's program_type doesn't allow (#367 —
+ * Organization/Teams/Events inside the Management hub, showcase-only). Mirrors
+ * isBaseballNavEntryVisible's program-type gate in nav-registry.ts exactly, so
+ * a tab carrying `allowedProgramTypes` (copied verbatim from its registry
+ * entry) is never shown for a program type the registry itself would hide it
+ * for.
+ */
+export function filterHubTabsByProgramType(
+  tabs: readonly HubSubNavTab[],
+  programType?: BaseballProgramType | null,
+): HubSubNavTab[] {
+  return tabs.filter((tab) => {
+    if (!tab.allowedProgramTypes?.length) return true;
+    return Boolean(programType && tab.allowedProgramTypes.includes(programType));
+  });
+}
+
+/**
  * Resolve the hub (and thus the sub-tab strip) that owns the current route, or
  * null when the active page is a top-level surface that is NOT inside any hub
- * (Dashboard, Profile, Calendar, Messages for players, etc.) — those render with
- * no sub-nav strip, exactly like a flat top-level tab.
+ * (Profile, Messages for players, etc.) — those render with no sub-nav strip,
+ * exactly like a flat top-level tab.
  */
 export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null {
   const { pathname, role, programType } = args;
@@ -181,10 +190,13 @@ export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null
 
   if (!best) return null;
   const { id, ariaLabel, tabs } = best.hub;
-  const visibleTabs =
+  let visibleTabs =
     role === 'coach'
       ? filterHubTabsByCapabilities(tabs, role, args.capabilities ?? {})
       : [...tabs];
+  if (role === 'coach') {
+    visibleTabs = filterHubTabsByProgramType(visibleTabs, programType);
+  }
   if (visibleTabs.length === 0) return null;
   return { id, ariaLabel, tabs: visibleTabs };
 }

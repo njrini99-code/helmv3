@@ -67,11 +67,22 @@ import { usePlayerTeams } from '@/hooks/use-player-teams';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import {
   getVisibleBaseballNav,
+  getBaseballTerminology,
   BASEBALL_MESSAGES_NAV,
   type BaseballNavContext,
   type BaseballNavEntry,
 } from '@/lib/baseball/nav-registry';
-import { IconSettings, IconLogout } from '@/components/icons';
+import {
+  COACH_HUB_ORDER,
+  COACH_HUB_DEFS,
+} from '@/app/baseball/(dashboard)/_components/hub-definitions';
+import {
+  filterHubTabsByCapabilities,
+  filterHubTabsByProgramType,
+} from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
+import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
+import type { BaseballProgramType } from '@/lib/types/baseball-settings';
+import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 // PERF: lazy-load the same heavy global the legacy BaseballDashboardShell
@@ -119,25 +130,128 @@ function toNavItem(entry: Pick<BaseballNavEntry, 'href' | 'label' | 'icon'>, bad
   return { label: entry.label, href: entry.href, icon: entry.icon as unknown as NavItem['icon'], badge };
 }
 
+/** Same structural narrowing as toNavItem, for a hub sub-tab (whose `icon` is
+ *  optional in HubSubNavTab — every tab this shell renders always sets one). */
+function hubTabToNavItem(tab: HubSubNavTab, badge?: number): NavItem {
+  return { label: tab.label, href: tab.href, icon: tab.icon as unknown as NavItem['icon'], badge };
+}
+
+const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>(['college', 'juco', 'showcase', 'academy', 'club']);
+
 /**
- * Grouped rail sections derived straight from `getVisibleBaseballNav()` — the
- * SAME resolved, capability-gated list Sidebar/MobileBottomNav read (no
- * hardcoded nav array here). Messages is injected explicitly: it is
- * deliberately excluded from BASEBALL_NAV_REGISTRY (see nav-registry.ts —
- * "the one cross-cutting surface that lives OUTSIDE the feature registry"),
- * so every nav consumer must add it itself.
+ * Player rail sections — UNCHANGED by the coach-nav-8tab consolidation
+ * (COACH_NAV_8TAB_PROPOSAL.md is scoped to the coach nav). Derived straight
+ * from `getVisibleBaseballNav()`, exactly as before.
  */
-function buildNavSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
+function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
   const visible = getVisibleBaseballNav(ctx);
   const primary: NavItem[] = visible.filter((e) => e.section === 'primary').map((e) => toNavItem(e));
   const secondary: NavItem[] = visible.filter((e) => e.section === 'secondary').map((e) => toNavItem(e));
 
   primary.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined));
 
-  const sections: NavSection[] = [
-    { heading: ctx.role === 'coach' ? 'Team' : 'My Baseball', items: primary },
-  ];
+  const sections: NavSection[] = [{ heading: 'My Baseball', items: primary }];
   if (secondary.length) sections.push({ heading: 'More', items: secondary });
+  return sections;
+}
+
+/**
+ * Coach rail sections — GROUPED BY `entry.hub` (COACH_HUB_ORDER / COACH_HUB_DEFS
+ * in hub-definitions.ts, itself derived from BASEBALL_NAV_REGISTRY), the same
+ * single source of truth src/components/layout/sidebar.tsx's
+ * buildCondensedBaseballNavigation groups by. One NavSection per visible hub
+ * (heading = hub label, items = the hub's capability/program-type-filtered
+ * tabs) — the Fairway rail shows every tab inline (no separate landing-item +
+ * sub-nav-strip split the legacy shell needs), so "hub label > sub-items" is
+ * literally the section heading over its item list.
+ *
+ * A hub section is omitted entirely once its tabs filter down to zero (mirrors
+ * resolveActiveHub's own "empty hub → no strip" precedent), so this shell and
+ * the legacy sidebar can never show a dead-end top-level item for a coach
+ * missing every capability a hub's members require.
+ *
+ * Messages is injected into the DASHBOARD section (golf-style: FairwayDashboard
+ * Shell.tsx puts Messages inside its first/primary section, never a section of
+ * its own) — it is deliberately excluded from BASEBALL_NAV_REGISTRY (see
+ * nav-registry.ts), so every nav consumer must add it explicitly.
+ */
+function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
+  const sections: NavSection[] = [];
+
+  for (const hubId of COACH_HUB_ORDER) {
+    const def = COACH_HUB_DEFS[hubId];
+
+    // Recruiting/Academics are MODE-gated (RECRUITING_PROGRAM_TYPES / JUCO-only)
+    // — same gate resolveActiveHub.ts's coachHubs() uses — checked up front so
+    // a recruiting-ineligible program type never shows the hub.
+    if (hubId === 'recruiting' && !(ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType))) {
+      continue;
+    }
+    if (hubId === 'academics' && ctx.programType !== 'juco') continue;
+
+    const capFiltered = filterHubTabsByCapabilities(def.tabs, 'coach', ctx.capabilities);
+    const visibleTabs = filterHubTabsByProgramType(capFiltered, ctx.programType);
+    const items = visibleTabs.map((t) => hubTabToNavItem(t));
+
+    if (hubId === 'dashboard') {
+      items.push(hubTabToNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined));
+    }
+    if (items.length === 0) continue;
+
+    // Recruiting reframed per mode (JUCO → "Transfer Exposure") using the SAME
+    // terminology engine program-type-variants.ts already provides — never a
+    // second hand-maintained label map.
+    const heading = hubId === 'recruiting' ? getBaseballTerminology(ctx).exposureNoun : def.label;
+    sections.push({ heading, items });
+  }
+
+  return sections;
+}
+
+/**
+ * Showcase ORG-level rail (no team selected yet) — the documented two-level
+ * org→team exception (COACH_NAV_8TAB_PROPOSAL.md): org-wide Dashboard/Teams/
+ * Events, mirroring src/components/layout/sidebar.tsx's `showcaseOrgNav`
+ * exactly (same routes/icons/order), plus the persistent Messages slot.
+ */
+function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
+  return [
+    {
+      heading: 'Organization',
+      items: [
+        { label: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
+        { label: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
+        { label: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
+        hubTabToNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined),
+      ],
+    },
+  ];
+}
+
+/**
+ * Showcase TEAM-level rail (a team is selected) — the other half of the
+ * two-level exception, mirroring `showcaseTeamNav`: Team / Stats & Performance
+ * / Development only (no Recruiting/Academics/Management — those are org-level
+ * or not part of the showcase team surface), plus Dashboard + Messages so the
+ * rail is never just three orphaned sections with no way back to Today.
+ */
+function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
+  const sections: NavSection[] = [];
+  const dashboardTabs = filterHubTabsByCapabilities(COACH_HUB_DEFS.dashboard.tabs, 'coach', ctx.capabilities);
+  sections.push({
+    heading: COACH_HUB_DEFS.dashboard.label,
+    items: [
+      ...dashboardTabs.map((t) => hubTabToNavItem(t)),
+      hubTabToNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined),
+    ],
+  });
+  for (const hubId of ['team', 'stats-performance', 'development'] as const) {
+    const def = COACH_HUB_DEFS[hubId];
+    const capFiltered = filterHubTabsByCapabilities(def.tabs, 'coach', ctx.capabilities);
+    const visibleTabs = filterHubTabsByProgramType(capFiltered, ctx.programType);
+    if (visibleTabs.length === 0) continue;
+    sections.push({ heading: def.label, items: visibleTabs.map((t) => hubTabToNavItem(t)) });
+  }
   return sections;
 }
 
@@ -279,7 +393,17 @@ function BaseballFairwayContent({
   );
   const homeHref = role === 'coach' ? '/baseball/dashboard/command-center' : '/baseball/player/today';
 
-  const sections = useMemo(() => buildNavSections(ctx, unreadCount), [ctx, unreadCount]);
+  // Showcase two-level org→team exception (COACH_NAV_8TAB_PROPOSAL.md,
+  // mirrors sidebar.tsx's showcaseOrgNav/showcaseTeamNav split): org-wide rail
+  // until a team is picked, then the team-scoped hub rail.
+  const isShowcaseCoach = role === 'coach' && coach?.coach_type === 'showcase';
+  const sections = useMemo(() => {
+    if (role !== 'coach') return buildPlayerNavSections(ctx, unreadCount);
+    if (isShowcaseCoach) {
+      return selectedTeam ? buildShowcaseTeamSections(ctx, unreadCount) : buildShowcaseOrgSections(unreadCount);
+    }
+    return buildCoachHubSections(ctx, unreadCount);
+  }, [ctx, unreadCount, role, isShowcaseCoach, selectedTeam]);
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname, ctx, homeHref), [pathname, ctx, homeHref]);
   // P413-equivalent: persistent mobile bottom-tab bar (subset of the rail).
   const bottomNavItems = useMemo(() => buildBottomNavItems(ctx, unreadCount), [ctx, unreadCount]);

@@ -54,8 +54,14 @@ describe('program-type variant engine — live runtime behavior', () => {
   it('coach nav ORDER differs between College and Showcase', () => {
     const college = primaryIds(coachCtx('college'));
     const showcase = primaryIds(coachCtx('showcase'));
-    // Same visible set (head coach holds every capability) but different order.
-    expect(new Set(college)).toEqual(new Set(showcase));
+    // Events is a Management-hub, org-level surface gated to
+    // SHOWCASE_ORG_PROGRAM_TYPES (nav-registry.ts's allowedProgramTypes) — it is
+    // genuinely absent for College, not just reordered, so the two sets are
+    // equal only once that one showcase-only id is excluded from both sides.
+    const SHOWCASE_ONLY_IDS = new Set(['events']);
+    const collegeSet = new Set(college.filter((id) => !SHOWCASE_ONLY_IDS.has(id)));
+    const showcaseSet = new Set(showcase.filter((id) => !SHOWCASE_ONLY_IDS.has(id)));
+    expect(collegeSet).toEqual(showcaseSet);
     expect(college).not.toEqual(showcase);
   });
 
@@ -89,13 +95,23 @@ describe('program-type variant engine — live runtime behavior', () => {
 
   it('absent programType falls back to declaration (college-neutral) order', () => {
     const neutral = primaryIds(coachCtx(null));
+    // Entries carrying allowedProgramTypes (e.g. `events`, gated to
+    // SHOWCASE_ORG_PROGRAM_TYPES) are never visible without a resolved
+    // programType (isBaseballNavEntryVisible's program-type gate), so the
+    // "declaration order" baseline must exclude them too, or this test would
+    // expect a route the real visibility filter never shows.
     const registryOrder = BASEBALL_NAV_REGISTRY.filter(
-      (e) => e.section === 'primary' && e.role !== 'player',
+      (e) => e.section === 'primary' && e.role !== 'player' && !e.allowedProgramTypes?.length,
     ).map((e) => e.id);
     expect(neutral).toEqual(registryOrder);
   });
 
-  it('re-ordering never adds or drops entries (set is conserved)', () => {
+  it('re-ordering never adds or drops entries beyond intentional program-type gating (set is conserved)', () => {
+    // The null-programType baseline hides every allowedProgramTypes-gated entry
+    // (organization/teams/events — SHOWCASE_ORG_PROGRAM_TYPES). Re-ordering by
+    // mode must conserve the neutral set PLUS exactly the entries that mode's
+    // programType unlocks — never anything beyond that (and never less).
+    const neutralIds = new Set(getVisibleBaseballNav(coachCtx(null)).map((e) => e.id));
     for (const pt of [
       'college',
       'high_school',
@@ -105,9 +121,12 @@ describe('program-type variant engine — live runtime behavior', () => {
       'club',
     ] as const) {
       const ordered = getVisibleBaseballNav(coachCtx(pt)).map((e) => e.id);
-      const neutral = getVisibleBaseballNav(coachCtx(null)).map((e) => e.id);
-      expect(new Set(ordered)).toEqual(new Set(neutral));
-      expect(ordered.length).toBe(neutral.length);
+      const programGatedIds = BASEBALL_NAV_REGISTRY.filter((e) => e.allowedProgramTypes?.includes(pt)).map(
+        (e) => e.id,
+      );
+      const expected = new Set([...neutralIds, ...programGatedIds]);
+      expect(new Set(ordered)).toEqual(expected);
+      expect(ordered.length).toBe(expected.size);
     }
   });
 
