@@ -9,25 +9,24 @@ describe('coverage-scanner', () => {
     expect(scanned.exports).toContain('savePartialRound');
     expect(scanned.exports).toContain('createAnnouncement');
     expect(scanned.wrapped.get('savePartialRound')).toEqual({ feature: 'round_tracking' });
-    // createAnnouncement belongs to a later batch (announcements, W15 Batch 4) —
-    // still bare post-Batch-2, proving the scanner distinguishes wrapped from
-    // unwrapped exports within the same partially-wrapped file.
-    expect(scanned.wrapped.has('createAnnouncement')).toBe(false);
+    // createAnnouncement is now wrapped (announcements, W15 Batch 4) —
+    // proves the scanner distinguishes wrapped from unwrapped exports within
+    // the same partially-wrapped file (invitePlayerToTeam et al. remain bare
+    // until B5).
+    expect(scanned.wrapped.get('createAnnouncement')).toEqual({ feature: 'announcements' });
   });
 
   it('exports list matches a fresh regex scan (sanity: scanner is not hard-coded)', () => {
-    // message-attachments.ts is untouched until W15 Batch 4 (messaging) — a
+    // roster.ts is untouched until W15 Batch 5 (roster_management) — a
     // stable fully-unwrapped fixture for this scanner sanity check
-    // (documents.ts moved to fully wrapped in Batch 3, so it no longer fits
-    // this assertion — same handoff round-drafts.ts → documents.ts did after
-    // Batch 1).
-    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/message-attachments.ts'));
+    // (message-attachments.ts moved to fully wrapped in Batch 4, so it no
+    // longer fits this assertion — same handoff documents.ts →
+    // message-attachments.ts did after Batch 3).
+    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/roster.ts'));
     expect(scanned.exports.sort()).toEqual(
       [
-        'sendGolfMessageWithAttachments',
-        'getGolfMessageAttachments',
-        'deleteGolfMessageAttachment',
-        'getSignedUrlsForAttachments',
+        'removePlayerFromTeam',
+        'getTeamPlayers',
       ].sort(),
     );
     expect(scanned.wrapped.size).toBe(0);
@@ -35,17 +34,17 @@ describe('coverage-scanner', () => {
 });
 
 describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)', () => {
-  it('does NOT throw for golf.ts scoped to only the Batch 0+1+2 wrapped exports', () => {
+  it('does NOT throw for golf.ts scoped to only the Batch 0+1+2+4 wrapped exports', () => {
     expect(() =>
       assertAreaFullyWrapped(['src/app/golf/actions/golf.ts'], {
         exclude: {
           // Batch 1 (round_tracking/qualifiers/my_qualifiers, 13 exports incl.
           // the pre-existing savePartialRound exemplar) + Batch 2
-          // (calendar_events/notifications, 18 exports) are now wrapped; every
-          // other golf.ts export belongs to a later batch (B4/B5/B6) and is
-          // still bare — scope this self-test accordingly.
+          // (calendar_events/notifications, 18 exports) + Batch 4
+          // (createAnnouncement) are now wrapped; every other golf.ts export
+          // belongs to a later batch (B5/B6) and is still bare — scope this
+          // self-test accordingly.
           'src/app/golf/actions/golf.ts': [
-            'createAnnouncement',
             'invitePlayerToTeam',
             'updatePlayerStatus',
             'getPendingInvitations',
@@ -59,24 +58,22 @@ describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)
     ).not.toThrow();
   });
 
-  it('THROWS listing every unwrapped export in message-attachments.ts (still bare — W15 Batch 4)', () => {
-    // message-attachments.ts is untouched until Batch 4; documents.ts (the
-    // fixture here through Batch 2) moved to fully wrapped in Batch 3, so it
-    // no longer proves gap-detection — message-attachments.ts takes over
-    // that role (same handoff round-drafts.ts → documents.ts did after
-    // Batch 1).
+  it('THROWS listing every unwrapped export in roster.ts (still bare — W15 Batch 5)', () => {
+    // roster.ts is untouched until Batch 5; message-attachments.ts (the
+    // fixture here through Batch 3) moved to fully wrapped in Batch 4, so it
+    // no longer proves gap-detection — roster.ts takes over that role (same
+    // handoff documents.ts → message-attachments.ts did after Batch 3).
     let thrown: Error | null = null;
     try {
-      assertAreaFullyWrapped(['src/app/golf/actions/message-attachments.ts']);
+      assertAreaFullyWrapped(['src/app/golf/actions/roster.ts']);
     } catch (err) {
       thrown = err instanceof Error ? err : new Error(String(err));
     }
     expect(thrown).not.toBeNull();
     const message = thrown?.message ?? '';
-    expect(message).toContain('sendGolfMessageWithAttachments');
-    expect(message).toContain('getGolfMessageAttachments');
-    expect(message).toContain('deleteGolfMessageAttachment');
-    expect(message).toContain('4 coverage gap(s)');
+    expect(message).toContain('removePlayerFromTeam');
+    expect(message).toContain('getTeamPlayers');
+    expect(message).toContain('2 coverage gap(s)');
   });
 
   it('throws when a wrap carries an invalid feature key', () => {

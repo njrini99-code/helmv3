@@ -23,6 +23,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // CONSTANTS
@@ -105,7 +106,7 @@ async function getTeamPlayerIds(
 // CREATE ENRICHED ANNOUNCEMENT
 // ============================================================================
 
-export async function createEnrichedAnnouncement(input: {
+async function createEnrichedAnnouncementImpl(input: {
   title: string;
   body: string;
   urgency: 'low' | 'normal' | 'high' | 'urgent';
@@ -329,11 +330,29 @@ export async function createEnrichedAnnouncement(input: {
   }
 }
 
+const observedCreateEnrichedAnnouncement = withAdminObserved(
+  'createEnrichedAnnouncement',
+  { sport: 'golf', feature: 'announcements' },
+  createEnrichedAnnouncementImpl,
+);
+
+export async function createEnrichedAnnouncement(input: {
+  title: string;
+  body: string;
+  urgency: 'low' | 'normal' | 'high' | 'urgent';
+  requiresAcknowledgement: boolean;
+  recipientPlayerIds: string[] | null;
+  documentIds: string[];
+  inlineTasks: Array<{ title: string; description?: string; dueDate?: string }>;
+}): Promise<ActionResult<{ announcementId: string }>> {
+  return observedCreateEnrichedAnnouncement(input);
+}
+
 // ============================================================================
 // GET ANNOUNCEMENTS WITH META (list view)
 // ============================================================================
 
-export async function getAnnouncementsWithMeta(
+async function getAnnouncementsWithMetaImpl(
   teamId: string,
   _userId: string,
   isCoach: boolean,
@@ -528,11 +547,26 @@ export async function getAnnouncementsWithMeta(
   }
 }
 
+const observedGetAnnouncementsWithMeta = withAdminObserved(
+  'getAnnouncementsWithMeta',
+  { sport: 'golf', feature: 'announcements' },
+  getAnnouncementsWithMetaImpl,
+);
+
+export async function getAnnouncementsWithMeta(
+  teamId: string,
+  _userId: string,
+  isCoach: boolean,
+  playerId?: string | null,
+): Promise<ActionResult<GolfAnnouncementMeta[]>> {
+  return observedGetAnnouncementsWithMeta(teamId, _userId, isCoach, playerId);
+}
+
 // ============================================================================
 // GET ANNOUNCEMENT DETAIL (expanded view)
 // ============================================================================
 
-export async function getAnnouncementDetail(
+async function getAnnouncementDetailImpl(
   announcementId: string
 ): Promise<ActionResult<GolfAnnouncementEnriched>> {
   try {
@@ -743,11 +777,23 @@ export async function getAnnouncementDetail(
   }
 }
 
+const observedGetAnnouncementDetail = withAdminObserved(
+  'getAnnouncementDetail',
+  { sport: 'golf', feature: 'announcements' },
+  getAnnouncementDetailImpl,
+);
+
+export async function getAnnouncementDetail(
+  announcementId: string
+): Promise<ActionResult<GolfAnnouncementEnriched>> {
+  return observedGetAnnouncementDetail(announcementId);
+}
+
 // ============================================================================
 // COMPLETE ANNOUNCEMENT TASK (player action)
 // ============================================================================
 
-export async function completeAnnouncementTask(
+async function completeAnnouncementTaskImpl(
   taskId: string
 ): Promise<ActionResult> {
   try {
@@ -784,11 +830,23 @@ export async function completeAnnouncementTask(
   }
 }
 
+const observedCompleteAnnouncementTask = withAdminObserved(
+  'completeAnnouncementTask',
+  { sport: 'golf', feature: 'announcements' },
+  completeAnnouncementTaskImpl,
+);
+
+export async function completeAnnouncementTask(
+  taskId: string
+): Promise<ActionResult> {
+  return observedCompleteAnnouncementTask(taskId);
+}
+
 // ============================================================================
 // DELETE ANNOUNCEMENT (coach action)
 // ============================================================================
 
-export async function deleteAnnouncement(
+async function deleteAnnouncementImpl(
   announcementId: string
 ): Promise<ActionResult> {
   try {
@@ -839,6 +897,18 @@ export async function deleteAnnouncement(
   } catch (error) {
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedDeleteAnnouncement = withAdminObserved(
+  'deleteAnnouncement',
+  { sport: 'golf', feature: 'announcements' },
+  deleteAnnouncementImpl,
+);
+
+export async function deleteAnnouncement(
+  announcementId: string
+): Promise<ActionResult> {
+  return observedDeleteAnnouncement(announcementId);
 }
 
 // ============================================================================

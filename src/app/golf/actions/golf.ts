@@ -3242,7 +3242,7 @@ export async function updateQualifierStatus(
 // ANNOUNCEMENT ACTIONS
 // ============================================================================
 
-export async function createAnnouncement(data: {
+async function createAnnouncementImpl(data: {
   title: string;
   body: string;
   urgency: 'low' | 'normal' | 'high' | 'urgent';
@@ -3307,6 +3307,21 @@ export async function createAnnouncement(data: {
     }
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedCreateAnnouncement = withAdminObserved(
+  'createAnnouncement',
+  { sport: 'golf', feature: 'announcements' },
+  createAnnouncementImpl,
+);
+
+export async function createAnnouncement(data: {
+  title: string;
+  body: string;
+  urgency: 'low' | 'normal' | 'high' | 'urgent';
+  requiresAcknowledgement: boolean;
+}): Promise<ActionResult<{ announcementId: string }>> {
+  return observedCreateAnnouncement(data);
 }
 
 // ============================================================================
