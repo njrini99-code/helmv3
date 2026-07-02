@@ -459,7 +459,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
       )}
       {/* Logo */}
       <div className={cn(
-        'h-16 flex items-center border-b border-white/10',
+        'h-16 shrink-0 flex items-center border-b border-white/10',
         'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
@@ -515,12 +515,29 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className={cn(
-        'flex-1 py-4 overflow-y-auto overflow-x-hidden custom-scrollbar',
-        'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-        isCollapsed ? 'px-2' : 'px-3'
-      )}>
+      {/* Navigation
+          `min-h-0` is required here: this is a flex child inside a
+          `flex flex-col h-dvh` column alongside the fixed-height logo header
+          and the non-growing bottom (Settings/Sign-out) block. Without an
+          explicit min-height, some WebKit builds (notably Capacitor's iOS
+          WKWebView) size this item to its content instead of the remaining
+          flex space, which pushes the bottom block off-screen and clips the
+          list's last item(s) behind it. `pb-8` (vs. the `pt-4` top inset)
+          gives the last item real breathing room at the scroll end instead
+          of ending flush against the bottom block's top border, and the
+          inline styles enable native momentum scrolling on touch devices
+          without letting an exhausted scroll chain up into the page. */}
+      <nav
+        className={cn(
+          'flex-1 min-h-0 pt-4 pb-8 overflow-y-auto overflow-x-hidden custom-scrollbar',
+          'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
+          isCollapsed ? 'px-2' : 'px-3'
+        )}
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}
+      >
         {/* ARCHIVED: Recruiting mode toggle hidden — re-enable when recruiting is ready */}
         {/* {showModeToggle && !isCollapsed && (
           <div className="mb-4 px-1 animate-fade-in">
@@ -692,9 +709,13 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Bottom section */}
+      {/* Bottom section (Settings / Sign-out) — pinned below the scrollable
+          nav by normal flex flow (not `position: sticky`); `shrink-0` keeps
+          it at its natural content height so it never gets compressed by
+          the flex layout on short viewports, which would otherwise let its
+          own content (or the nav list above it) overlap/clip. */}
       <div className={cn(
-        'border-t border-white/10 space-y-0.5',
+        'shrink-0 border-t border-white/10 space-y-0.5',
         'transition-[padding] duration-300',
         isCollapsed ? 'p-2' : 'p-3'
       )}>
