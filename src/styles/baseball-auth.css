@@ -37,7 +37,9 @@
    rendering the panel as a dark gray-green slab.) The combined selector
    always outranks `.fl-glass-3` alone regardless of order. */
 .fl-glass-3.baseball-auth-panel {
-  background: rgba(var(--fl-cream-high-rgb), 0.88);
+  /* §D2 (Nick): MORE CREAM, NO WHITE — the panel fill is true cream, never
+     the near-white cream-high (that stays for the 1px specular lip below). */
+  background: rgba(var(--fl-cream-rgb), 0.9);
   backdrop-filter: blur(24px) saturate(1.15);
   -webkit-backdrop-filter: blur(24px) saturate(1.15);
   /* Replaces `.fl-glass-3`'s own brass top edge-light box-shadow with a
@@ -51,7 +53,8 @@
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .fl-glass-3.baseball-auth-panel {
-    background: rgba(var(--fl-cream-high-rgb), 0.97);
+    /* §D2: fallback fill is true cream too — never near-white. */
+    background: rgba(var(--fl-cream-rgb), 0.97);
   }
 }
 
