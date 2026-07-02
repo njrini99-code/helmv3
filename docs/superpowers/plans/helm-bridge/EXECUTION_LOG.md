@@ -42,3 +42,13 @@ Running record of what was actually applied per wave, plus any deviations from t
 - No deviations: plan line numbers matched; `AdminNativeGuard` named export; `framer-motion` (not motion/react); warm tokens exist.
 - Gates: typecheck exit 0; lint 0 errors / 2275 warns (< 6000 ceiling); `test:run` only the 6 pre-existing failures; `nav-capability-gating` middleware contract 9/9.
 - Live browser smoke deferred to the foundation checkpoint.
+
+## W2 — admin_events Additive Schema + Writer Extension
+
+**Status:** DB migration applied + verified on prod (2026-07-01). Writer code (Tasks 2–3) in progress (Sonnet).
+
+### Task 1 — additive columns + indexes + ACL revoke
+- Migration `20260701120000_admin_events_bridge_columns.sql` applied to prod via Supabase MCP.
+- Added `sport`/`team_id`/`fingerprint`/`source` (+ NOT VALID CHECKs) + 4 triage indexes. Verified all 4 columns live.
+- **DEVIATION (plan over-revoked):** plan's migration did `REVOKE ALL FROM anon, authenticated` and asserted authenticated has NO SELECT — that would break the still-live `/golf/admin` (its "Admins can read/update admin_events" RLS policies use the authenticated user-scoped client + Realtime). Corrected to: **REVOKE anon (all) + authenticated INSERT** (no INSERT policy = dead weight); **KEEP authenticated SELECT/UPDATE** (legacy admin needs them) — removed in W14 at retirement. Verified: anon_select=false, authed_insert=false, authed_select=true.
+- CHECK `source` list is the union of the design's 8 + the 5 existing `ServerTraceSource` values (else it'd reject today's writers).
