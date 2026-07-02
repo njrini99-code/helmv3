@@ -64,7 +64,7 @@ async function TriagePanel() {
   const regressed = items.filter((i) => i.substatus === 'regressed');
   return (
     <div className="grid gap-4 xl:grid-cols-3">
-      <section className="xl:col-span-2 rounded-2xl border border-warm-200 bg-white/70 p-4">
+      <Surface as="section" padding="sm" className="xl:col-span-2">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
           Triage queue
         </h2>
@@ -77,8 +77,8 @@ async function TriagePanel() {
           </p>
         ) : null}
         <TriageQueue items={items.slice(0, 25)} />
-      </section>
-      <section className="rounded-2xl border border-warm-200 bg-white/70 p-4">
+      </Surface>
+      <Surface as="section" padding="sm">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
           Regressed — a fix failed
         </h2>
@@ -87,7 +87,7 @@ async function TriagePanel() {
         ) : (
           <TriageQueue items={regressed} />
         )}
-      </section>
+      </Surface>
     </div>
   );
 }
@@ -116,7 +116,7 @@ async function DeployRail() {
   return (
     <ul className="flex flex-wrap gap-3">
       {deploys.data.map((d) => (
-        <li key={d.uid} className="rounded-xl border border-warm-200 bg-white/70 px-3 py-2">
+        <li key={d.uid} className="rounded-xl border border-warm-200 bg-surface px-3 py-2">
           <p className="font-fw-mono text-xs tabular-nums text-warm-900">
             {d.commitSha?.slice(0, 7) ?? d.uid.slice(0, 7)} · {d.state}
           </p>

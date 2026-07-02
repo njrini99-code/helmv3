@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { parseErrorsFilters, fetchErrorsTab } from '@/lib/admin/data/errors';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
-import { StatusPill, type FwStatusTone } from '@/components/fairway';
+import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import { TriageQueue } from '../_components/TriageQueue';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
 import { KpiTile } from '../_components/KpiTile';
@@ -69,13 +69,13 @@ export default async function ErrorsPage({
           {tab.hourly.status === 'ok' && tab.hourly.data ? (
             <ErrorsOverTime points={tab.hourly.data} deployMarkers={tab.deployMarkers} />
           ) : tab.hourly.status === 'unconfigured' ? (
-            <div className="rounded-2xl border border-warm-200 bg-white/70 p-4">
+            <Surface padding="sm">
               <PanelNoData label="Hourly series not configured" description="Provision SENTRY_READ_TOKEN to light this chart up." />
-            </div>
+            </Surface>
           ) : (
-            <div className="rounded-2xl border border-warm-200 bg-white/70 p-4">
+            <Surface padding="sm">
               <PanelStale label="Hourly series" error={tab.hourly.error} />
-            </div>
+            </Surface>
           )}
           <KpiTile
             label="RLS denials · 24h"
@@ -86,7 +86,7 @@ export default async function ErrorsPage({
           />
         </section>
 
-        <section className="rounded-2xl border border-warm-200 bg-white/70 p-4">
+        <Surface as="section" padding="sm">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Sentry unresolved</h2>
           {tab.sentry.status === 'ok' && tab.sentry.data ? (
             tab.sentry.data.length === 0 ? (
@@ -115,15 +115,15 @@ export default async function ErrorsPage({
           ) : (
             <PanelStale label="Sentry issues" error={tab.sentry.error} />
           )}
-        </section>
+        </Surface>
 
-        <section className="rounded-2xl border border-warm-200 bg-white/70 p-4">
+        <Surface as="section" padding="sm">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">In-app incidents</h2>
           <TriageQueue items={tab.incidents} />
           <p className="mt-2 text-xs text-warm-500">
             Row detail: <span className="font-fw-mono">/admin/errors/&lt;fingerprint&gt;</span> (click-through from each app row title)
           </p>
-        </section>
+        </Surface>
       </div>
     );
   }

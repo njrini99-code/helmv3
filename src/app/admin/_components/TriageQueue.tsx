@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ExternalLink, CheckCheck } from 'lucide-react';
-import { StatusPill } from '@/components/fairway';
+import { Button, StatusPill } from '@/components/fairway';
 import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
 import { resolveTriageEvents } from '@/app/admin/actions/triage';
 import { SportBadge } from './SportBadge';
@@ -73,26 +73,25 @@ export function TriageQueue({
             </p>
           </div>
           <SportBadge sport={item.sport} />
-          <span className="rounded bg-warm-100 px-1.5 py-0.5 text-[10px] uppercase text-warm-600">
+          <span className="rounded bg-warm-100 px-1.5 py-0.5 text-eyebrow uppercase text-warm-600">
             {item.origin === 'sentry' ? 'Sentry' : 'App'}
           </span>
           {item.origin === 'app' ? (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => resolve(item)}
-              className="inline-flex items-center gap-1 rounded-lg border border-warm-300 px-2.5 py-1 text-xs font-medium text-warm-700 hover:bg-warm-100"
+              leftIcon={<CheckCheck size={13} aria-hidden />}
             >
-              <CheckCheck size={13} aria-hidden /> Resolve
-            </button>
+              Resolve
+            </Button>
           ) : (
-            <a
-              href={item.permalink ?? '#'}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg border border-warm-300 px-2.5 py-1 text-xs font-medium text-warm-700 hover:bg-warm-100"
-            >
-              <ExternalLink size={13} aria-hidden /> Open in Sentry
-            </a>
+            <Button asChild variant="secondary" size="sm">
+              <a href={item.permalink ?? '#'} target="_blank" rel="noreferrer">
+                <ExternalLink size={13} aria-hidden /> Open in Sentry
+              </a>
+            </Button>
           )}
         </li>
       ))}

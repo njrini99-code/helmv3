@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
-import { StatusPill, type FwStatusTone } from '@/components/fairway';
+import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,7 @@ export default async function FingerprintDetailPage({
       <p className="text-sm text-warm-600">{events.length} events · affected users link to Users & Teams</p>
       <ul className="space-y-3">
         {events.map((e) => (
-          <li key={e.id} className="rounded-2xl border border-warm-200 bg-white/70 p-4">
+          <Surface as="li" key={e.id} padding="sm">
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium text-warm-900">{e.title}</p>
               <StatusPill tone={severityTone(e.severity)} dot size="sm">
@@ -51,7 +51,7 @@ export default async function FingerprintDetailPage({
             {e.stack_trace ? (
               <pre className="mt-2 max-h-48 overflow-auto rounded bg-warm-100 p-2 text-caption">{e.stack_trace}</pre>
             ) : null}
-          </li>
+          </Surface>
         ))}
       </ul>
     </main>
