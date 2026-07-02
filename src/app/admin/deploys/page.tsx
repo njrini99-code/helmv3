@@ -2,6 +2,7 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchVercelDeployments,
   fetchVercelWebInsights,
+  formatDeployAge,
   type VercelDeployState,
 } from '@/lib/admin/vercel-api';
 import { fetchSentryReleaseHealth } from '@/lib/admin/sentry-api';
@@ -32,14 +33,6 @@ function sentryReleaseHref(sha: string | null): string | null {
   const org = process.env.SENTRY_ORG;
   if (!org || !sha) return null;
   return `https://sentry.io/organizations/${org}/issues/?query=${encodeURIComponent(`release:${sha}`)}`;
-}
-
-function formatAge(createdAt: number): string {
-  const minutes = Math.round((Date.now() - createdAt) / 60_000);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) return `${hours}h`;
-  return `${Math.round(hours / 24)}d`;
 }
 
 /**
@@ -128,7 +121,7 @@ async function DeploymentsTable() {
                 </td>
                 <td className="px-3 text-xs text-warm-600">{d.target ?? 'preview'}</td>
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                  {formatAge(d.createdAt)}
+                  {formatDeployAge(d.createdAt)}
                 </td>
                 <td className="px-3 text-xs">
                   {sentryHref ? (
@@ -206,7 +199,7 @@ async function WebVitals() {
 export default async function DeploysPage() {
   await requireSuperAdmin();
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
       <CurrentBuildCard />
 
@@ -237,6 +230,6 @@ export default async function DeploysPage() {
           </div>
         </Surface>
       </div>
-    </main>
+    </div>
   );
 }

@@ -23,11 +23,16 @@ CREATE OR REPLACE FUNCTION public.is_super_admin() RETURNS boolean
 $$;
 
 COMMENT ON FUNCTION public.is_super_admin() IS
-  'Helm Bridge gate: true iff auth.uid() is in admin_allowlist. SECURITY DEFINER so RLS policies and internally-gated RPCs can consult the (RLS-locked) allowlist. auth.uid() is NULL under service_role, so this returns false for service-role callers by design.';
+  'Helm Bridge gate: true iff auth.uid() is in admin_allowlist. Runs with definer-rights (elevated, not caller''s) privileges so RLS policies and internally-gated RPCs can consult the (RLS-locked) allowlist. auth.uid() is NULL under service_role, so this returns false for service-role callers by design.';
 
 -- Seed: Nick only (admin@helmsportslabs.com, id confirmed via auth.users).
+-- INSERT ... SELECT ... WHERE EXISTS (not a bare VALUES INSERT) — fresh
+-- instances (CI, local resets) have an empty auth.users, and the FK on
+-- user_id would otherwise abort the migration. Prod already has this row;
+-- this guard only affects replays where the seed user doesn't exist yet.
 INSERT INTO public.admin_allowlist (user_id, email, note)
-VALUES ('b9673959-1c90-405b-93f7-b468a9f4daa3', 'admin@helmsportslabs.com', 'Helm Bridge super admin — seeded W1')
+SELECT 'b9673959-1c90-405b-93f7-b468a9f4daa3'::uuid, 'admin@helmsportslabs.com', 'Helm Bridge super admin — seeded W1'
+WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = 'b9673959-1c90-405b-93f7-b468a9f4daa3'::uuid)
 ON CONFLICT (user_id) DO NOTHING;
 
 -- ── Safety rails ──────────────────────────────────────────────────────────
@@ -60,7 +65,13 @@ BEGIN
     RAISE EXCEPTION 'ACL check failed: is_super_admin NOT executable by authenticated (RLS policies need it)';
   END IF;
 
-  IF (SELECT count(*) FROM public.admin_allowlist) <> 1 THEN
-    RAISE EXCEPTION 'Seed check failed: admin_allowlist must contain exactly 1 row';
+  -- Exactly 1 row when the seed user exists in auth.users (prod, and any
+  -- replay against a real snapshot); 0 on a fresh instance (CI, empty local
+  -- reset) where the WHERE EXISTS guard above skipped the insert entirely.
+  IF (SELECT count(*) FROM public.admin_allowlist) <> (
+    CASE WHEN EXISTS (SELECT 1 FROM auth.users WHERE id = 'b9673959-1c90-405b-93f7-b468a9f4daa3'::uuid)
+         THEN 1 ELSE 0 END
+  ) THEN
+    RAISE EXCEPTION 'Seed check failed: admin_allowlist row count does not match whether the seed user exists in auth.users';
   END IF;
 END $$;

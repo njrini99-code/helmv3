@@ -162,11 +162,11 @@ async function JobsBody() {
 export default async function JobsPage() {
   await requireSuperAdmin();
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
       <PanelBoundary title="Jobs & Integrity">
         <JobsBody />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

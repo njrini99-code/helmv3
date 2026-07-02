@@ -156,7 +156,7 @@ async function Sessions() {
 export default async function AuthPage() {
   await requireSuperAdmin();
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <AutoRefresh />
       <PanelBoundary title="Auth & sign-ins">
         <AuthBody />
@@ -164,6 +164,6 @@ export default async function AuthPage() {
       <PanelBoundary title="Active sessions">
         <Sessions />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

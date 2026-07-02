@@ -50,15 +50,47 @@ function normalizeSport(raw: string | null): TriageItem['sport'] {
  * log "must be signed in" rejections from background polls; a signed-out
  * tab retrying getUnreadNotificationCount is routine, not triage-worthy.
  * Deliberately narrow: access DENIALS for signed-in users stay visible.
+ *
+ * Known-expected application noise — NOT real incidents. An unauthenticated
+ * hit on a server action, or a baseball user without an active team context,
+ * are both routine control-flow, not bugs. Raw admin_events counts that feed
+ * KPI tiles / the ops digest exclude these so a genuine incident is never
+ * buried under expected noise.
  */
-const EXPECTED_AUTH_NOISE = [
+export const AUTH_NOISE_MESSAGE_PATTERNS: readonly RegExp[] = [
   /you must be signed in/i,
-  /no active baseball team for this account/i,
+  /no active baseball team/i,
 ];
 
-export function isExpectedAuthNoise(row: Pick<AppTriageEventRow, 'title' | 'message'>): boolean {
-  const text = `${row.title} ${row.message ?? ''}`;
-  return EXPECTED_AUTH_NOISE.some((re) => re.test(text));
+/** ILIKE patterns mirroring AUTH_NOISE_MESSAGE_PATTERNS, for PostgREST queries. */
+export const AUTH_NOISE_ILIKE_PATTERNS: readonly string[] = [
+  '%you must be signed in%',
+  '%no active baseball team%',
+];
+
+/**
+ * Accepts either a raw message string (PostgREST/digest call sites) or an
+ * app-event row (mergeTriage, which checks title + message together since
+ * some emitters only set the title). Deliberately narrow: access DENIALS
+ * for signed-in users stay visible.
+ */
+export function isExpectedAuthNoise(
+  input: Pick<AppTriageEventRow, 'title' | 'message'> | string | null | undefined,
+): boolean {
+  if (input == null) return false;
+  const text = typeof input === 'string' ? input : `${input.title} ${input.message ?? ''}`;
+  return AUTH_NOISE_MESSAGE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+/**
+ * Chain onto any admin_events PostgREST query (builder) to exclude expected
+ * auth noise from a count/select. Keeps overview.ts + admin-digest's
+ * route.ts "Errors 24h" counts in sync with the same noise semantics.
+ */
+export function excludeAuthNoise<T extends { not(column: string, operator: string, value: unknown): T }>(
+  query: T,
+): T {
+  return AUTH_NOISE_ILIKE_PATTERNS.reduce((q, pattern) => q.not('message', 'ilike', pattern), query);
 }
 
 /** Pure merge — unit-tested; the async fetcher below just feeds it. */

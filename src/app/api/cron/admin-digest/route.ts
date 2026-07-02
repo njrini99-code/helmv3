@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
-import { fetchTriageQueue } from '@/lib/admin/data/triage';
+import { fetchTriageQueue, excludeAuthNoise } from '@/lib/admin/data/triage';
 import { buildDigestEmail, type DigestData } from '@/lib/admin/digest/build-digest';
 import { sendOpsDigest } from '@/lib/admin/digest/transport';
 import { CRON_REGISTRY, classifyCronStatus } from '@/lib/admin/cron-registry';
@@ -24,8 +24,10 @@ export async function GET(req: NextRequest) {
 
     const [errors, criticals, signups, golf, baseball, lifts, integrityFails, jobRows, regressed, triage] =
       await Promise.all([
-        admin.from('admin_events').select('id', { count: 'exact', head: true })
-          .eq('event_type', 'error').gte('created_at', ago24h),
+        excludeAuthNoise(
+          admin.from('admin_events').select('id', { count: 'exact', head: true })
+            .eq('event_type', 'error').gte('created_at', ago24h),
+        ),
         admin.from('admin_events').select('id', { count: 'exact', head: true })
           .eq('event_type', 'error').eq('severity', 'critical').gte('created_at', ago24h),
         admin.from('users').select('email, role').gte('created_at', ago24h).limit(50),

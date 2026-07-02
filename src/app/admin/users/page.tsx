@@ -135,11 +135,11 @@ export default async function UsersPage({
   }
 
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
       <PanelBoundary title="Users & Teams">
         <Body />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

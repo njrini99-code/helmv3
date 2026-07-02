@@ -118,10 +118,17 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
   const base = admin
     .from('admin_events')
     .select('id, title, message, severity, created_at, user_email, user_id, team_id, url, stack_trace');
-  const { data } = await (fingerprint.startsWith('row:')
+  const { data, error } = await (fingerprint.startsWith('row:')
     ? base.eq('id', fingerprint.slice('row:'.length))
     : base.eq('fingerprint', fingerprint))
     .order('created_at', { ascending: false })
     .limit(100);
+  // Throw (rather than silently degrading to []) so PanelBoundary's error
+  // boundary catches a real query failure and renders PanelStale — a
+  // genuinely-empty fingerprint (zero rows, no error) is a distinct state
+  // the page itself renders via PanelNoData.
+  if (error) {
+    throw new Error(`fetchFingerprintDetail(${fingerprint}): ${error.message}`);
+  }
   return { events: data ?? [] };
 }

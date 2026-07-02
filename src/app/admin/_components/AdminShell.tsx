@@ -7,8 +7,47 @@ import {
   LayoutDashboard, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink,
 } from 'lucide-react';
-import { AppShell, CommandMenu, type NavSection, type CommandGroup, type CommandItem } from '@/components/fairway';
+import {
+  AppShell,
+  CommandMenu,
+  type Breadcrumb,
+  type NavSection,
+  type CommandGroup,
+  type CommandItem,
+} from '@/components/fairway';
 import { ADMIN_NAV, hrefForShortcut } from './admin-nav';
+
+/** Sub-route leaf labels the Breadcrumb trail can't derive from ADMIN_NAV
+ *  (dynamic `[id]`/`[fingerprint]` segments render as "Detail" instead of
+ *  the raw id/uuid). */
+const SUBROUTE_LABELS: Record<string, string> = {
+  tracer: 'Tracer',
+  'view-as': 'View as',
+};
+
+/** Dynamic-route segments (uuids, opaque ids) are never surfaced verbatim. */
+function isOpaqueIdSegment(segment: string): boolean {
+  return /^[0-9a-f-]{8,}$/i.test(segment) || segment.length > 24;
+}
+
+function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
+  const tab = ADMIN_NAV.find((entry) =>
+    entry.href === '/admin' ? pathname === '/admin' : pathname.startsWith(entry.href),
+  );
+  if (!tab) return [{ label: 'Bridge', href: '/admin' }];
+
+  const rest = pathname.slice(tab.href.length).split('/').filter(Boolean);
+  const crumbs: Breadcrumb[] = [
+    { label: 'Bridge', href: '/admin' },
+    { label: tab.label, href: rest.length > 0 ? tab.href : undefined },
+  ];
+  rest.forEach((segment, i) => {
+    const isLast = i === rest.length - 1;
+    const label = SUBROUTE_LABELS[segment] ?? (isOpaqueIdSegment(segment) ? 'Detail' : segment);
+    crumbs.push({ label, href: isLast ? undefined : pathname });
+  });
+  return crumbs;
+}
 
 const NAV_ICONS = [
   LayoutDashboard, AlertTriangle, KeyRound, Flag, CircleDot, Users, Timer, Rocket, HeartPulse,
@@ -17,7 +56,7 @@ const NAV_ICONS = [
 /**
  * Helm Bridge chrome: Fairway AppShell (warm-black rail + cream canvas) as
  * the neutral ops shell. Sport inks appear ONLY inside sport-scoped panes.
- * Keyboard: 1-8 jump tabs, R refreshes, ⌘K opens the command menu —
+ * Keyboard: 1-9 jump tabs, R refreshes, ⌘K opens the command menu —
  * preserving the old admin's muscle memory.
  */
 export function AdminShell({
@@ -55,6 +94,11 @@ export function AdminShell({
     ],
     [],
   );
+
+  // Mobile parity (375px mandate): FairwayTopBar collapses the full trail to
+  // just the last crumb below `md`, which is the ONLY on-screen "where am I"
+  // signal on pages whose body starts straight into KPI tiles with no h1.
+  const breadcrumbs = useMemo(() => computeBreadcrumbs(pathname), [pathname]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -102,6 +146,7 @@ export function AdminShell({
         user={{ name: 'Super admin', teamName: email }}
         pathname={pathname}
         linkComponent={Link}
+        breadcrumbs={breadcrumbs}
         onSearchOpen={() => setCommandOpen(true)}
         searchPlaceholder="Jump to tab, user, team…"
       >

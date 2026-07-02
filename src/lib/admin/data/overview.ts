@@ -1,7 +1,8 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
-import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
+import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import {
   fetchFeatureHealth,
   summarizeFeatureHealth,
@@ -42,6 +43,27 @@ export function isSignalStale(signal: WatcherSignal, now: Date): boolean {
   return ageMs > signal.staleAfterHours * 60 * 60 * 1000;
 }
 
+export type KpiTone = 'neutral' | 'warning' | 'danger';
+
+/**
+ * KPI-tile escalation for raw 24h counts (already noise-filtered). Signal-
+ * not-noise: zero is calm (neutral); any occurrence deserves a look (amber);
+ * a sustained/high volume in a single day is unambiguously worth a red flag.
+ * Mirrors the feature-health classifier's spirit (computeFeatureStatus:
+ * escalate hard once a line is crossed) without borrowing its per-feature
+ * fingerprint thresholds, which are calibrated to one feature's traffic —
+ * not a platform-wide raw event count.
+ */
+export function classifyKpiTone(count: number, redAt: number): KpiTone {
+  if (count <= 0) return 'neutral';
+  if (count >= redAt) return 'danger';
+  return 'warning';
+}
+
+/** "Sustained/high" lines for the Overview KPI tiles (classifyKpiTone). */
+export const ERRORS_24H_RED_AT = 10;
+export const AUTH_FAILURES_24H_RED_AT = 5;
+
 function isoHoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 3600_000).toISOString();
 }
@@ -74,8 +96,10 @@ export async function fetchOverviewSnapshot() {
   ] = await Promise.all([
     fetchSentryIssues({ limit: 1 }),
     fetchVercelDeployments(5),
-    admin.from('admin_events').select('id', { count: 'exact', head: true })
-      .eq('event_type', 'error').gte('created_at', ago24h),
+    excludeAuthNoise(
+      admin.from('admin_events').select('id', { count: 'exact', head: true })
+        .eq('event_type', 'error').gte('created_at', ago24h),
+    ),
     admin.from('admin_events').select('id', { count: 'exact', head: true })
       .eq('event_type', 'error').eq('severity', 'critical').eq('resolved', false),
     admin.from('admin_events').select('id', { count: 'exact', head: true })
@@ -115,7 +139,7 @@ export async function fetchOverviewSnapshot() {
     lastDeploy: lastDeployRow
       ? {
           state: lastDeployRow.state,
-          ageMinutes: Math.round((Date.now() - lastDeployRow.createdAt) / 60000),
+          ageMinutes: deployAgeMinutes(lastDeployRow.createdAt),
         }
       : null,
   };

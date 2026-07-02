@@ -159,10 +159,10 @@ export default async function UserDetailPage({
   }
 
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <PanelBoundary title="User detail">
         <Body />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

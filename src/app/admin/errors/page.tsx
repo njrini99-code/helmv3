@@ -10,6 +10,7 @@ import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { ErrorsFilterChips } from './ErrorsFilterChips';
 
 export const dynamic = 'force-dynamic';
 
@@ -129,7 +130,7 @@ export default async function ErrorsPage({
   }
 
   return (
-    <main className="space-y-4 p-6">
+    <div className="space-y-4">
       <AutoRefresh />
       {filters.feature ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -145,26 +146,19 @@ export default async function ErrorsPage({
           </Link>
         </div>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        {CHIP_SETS.flatMap(({ param, values }) =>
-          values.map((v) => (
-            <Link
-              key={`${param}:${v}`}
-              href={chipHref(current, param, v)}
-              className={
-                current.get(param) === v
-                  ? 'inline-flex min-h-10 items-center rounded-full bg-warm-900 px-3 text-xs text-white'
-                  : 'inline-flex min-h-10 items-center rounded-full border border-warm-300 px-3 text-xs text-warm-700 hover:bg-warm-100'
-              }
-            >
-              {param}: {v}
-            </Link>
-          )),
+      <ErrorsFilterChips
+        chips={CHIP_SETS.flatMap(({ param, values }) =>
+          values.map((v) => ({
+            key: `${param}:${v}`,
+            label: `${param}: ${v}`,
+            href: chipHref(current, param, v),
+            selected: current.get(param) === v,
+          })),
         )}
-      </div>
+      />
       <PanelBoundary title="Errors">
         <Body />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

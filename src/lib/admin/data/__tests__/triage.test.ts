@@ -90,3 +90,20 @@ describe('isExpectedAuthNoise', () => {
     expect(isExpectedAuthNoise({ title: 'savePartialRound failed', message: 'permission denied' })).toBe(false);
   });
 });
+
+describe('isExpectedAuthNoise', () => {
+  it('flags the "you must be signed in" family, case-insensitively', () => {
+    expect(isExpectedAuthNoise('You must be signed in')).toBe(true);
+    expect(isExpectedAuthNoise('you must be signed in to submit rounds')).toBe(true);
+  });
+  it('flags the baseball no-active-team message', () => {
+    expect(isExpectedAuthNoise('No active baseball team context')).toBe(true);
+  });
+  it('does not flag a real incident message', () => {
+    expect(isExpectedAuthNoise('insert failed: duplicate key value')).toBe(false);
+  });
+  it('treats null/undefined as not-noise', () => {
+    expect(isExpectedAuthNoise(null)).toBe(false);
+    expect(isExpectedAuthNoise(undefined)).toBe(false);
+  });
+});

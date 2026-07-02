@@ -192,8 +192,8 @@ async function GolfBody() {
       <Surface as={Link} href="/admin/golf/tracer" interactive padding="sm" className="block">
         <p className="text-sm font-medium text-accent-700">Tracer data-quality suite →</p>
         <p className="text-xs text-warm-500">
-          Diagnostics + the only admin surface with write powers (recalculate totals/GIR/strokes gained,
-          resolve stuck rounds).
+          Read-only diagnostics today (player round data quality + recent incidents). Write fixes
+          (recalculate totals/GIR/strokes gained, resolve stuck rounds) land in W14.
         </p>
       </Surface>
     </div>
@@ -203,11 +203,11 @@ async function GolfBody() {
 export default async function GolfAdminPage() {
   await requireSuperAdmin();
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <AutoRefresh />
       <PanelBoundary title="Golf">
         <GolfBody />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

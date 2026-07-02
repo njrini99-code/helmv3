@@ -40,7 +40,7 @@ export default async function ViewAsPage({
   const user = detail.user;
 
   return (
-    <main className="space-y-4 p-6">
+    <div className="space-y-4">
       <ViewAsBanner email={user.email} expiresAtMs={token.expiresAtMs} />
 
       <Surface padding="sm">
@@ -82,6 +82,6 @@ export default async function ViewAsPage({
           )}
         </div>
       </Surface>
-    </main>
+    </div>
   );
 }
