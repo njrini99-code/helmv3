@@ -20490,6 +20490,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      run_integrity_checks: { Args: Record<string, never>; Returns: Json }
       save_baseball_full_box_score: {
         Args: {
           p_batting: Json
