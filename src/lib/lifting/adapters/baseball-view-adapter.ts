@@ -585,33 +585,42 @@ export function adaptSessionToAssignment(
 //                     + arm_status; arm_status is extracted via regex below)
 // -----------------------------------------------------------------------------
 
+/**
+ * Extract arm_status from a helm_lifting_readiness_checkins.notes string, if it
+ * was encoded there by submitReadinessCheckin (format: "arm_status: <value> | ...").
+ * Shared by every readiness read model that needs arm_status but reads columns
+ * directly (i.e. does not route through adaptHelmReadinessCheckin) because it
+ * also needs helm-native fields (readiness_score/band/illness_flag/stress_level/
+ * lower_body_status) the adapter's BaseballReadinessCheckinRow output shape does
+ * not carry.
+ */
+export function extractArmStatusFromNotes(
+  notes: string | null | undefined,
+): BaseballReadinessCheckinRow['arm_status'] {
+  if (!notes) return null;
+  const m = notes.match(/arm_status:\s*(fresh|normal|tight|sore|pain)/i);
+  return m?.[1] ? (m[1].toLowerCase() as BaseballReadinessCheckinRow['arm_status']) : null;
+}
+
+/** Reverse the sleep_quality 1-5 quintile → approximate hours (quintile * 2). Null-safe. */
+export function sleepQualityToHours(sleepQuality: number | null | undefined): number | null {
+  return sleepQuality != null ? sleepQuality * 2 : null;
+}
+
 export function adaptHelmReadinessCheckin(
   r: HelmLiftingReadinessCheckinRow,
   fallbackTeamId: string,
   athleteToPlayer: HelmToBaseballIdMap,
 ): BaseballReadinessCheckinRow {
-  // Extract arm_status from the notes field if it was encoded by submitReadinessCheckin.
-  // Format: "arm_status: <value> | ..."
-  let armStatus: BaseballReadinessCheckinRow['arm_status'] = null;
-  if (r.notes) {
-    const m = r.notes.match(/arm_status:\s*(fresh|normal|tight|sore|pain)/i);
-    if (m?.[1]) {
-      armStatus = m[1].toLowerCase() as BaseballReadinessCheckinRow['arm_status'];
-    }
-  }
-
-  // Reverse the sleep_quality quintile → approximate hours (quintile * 2).
-  const sleepHours = r.sleep_quality != null ? r.sleep_quality * 2 : null;
-
   return {
     id: r.id,
     team_id: fallbackTeamId,
     player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
     check_date: r.checkin_date,
-    sleep_hours: sleepHours,
+    sleep_hours: sleepQualityToHours(r.sleep_quality),
     energy_level: r.energy_level,
     soreness_level: r.soreness_overall,
-    arm_status: armStatus,
+    arm_status: extractArmStatusFromNotes(r.notes),
     mood: null,
     notes: r.notes,
     created_at: r.created_at,

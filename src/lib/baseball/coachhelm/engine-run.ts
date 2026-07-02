@@ -87,6 +87,7 @@ import { OPEN_SIGNAL_DISPOSITIONS, type BaseballSignalInsert } from '@/lib/types
 import { decideAiGenerationAllowed, type AiPolicy } from '@/lib/baseball/ai-policy';
 import type { BaseballAiAuditInsert } from '@/lib/types/baseball-ai-audit';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { extractArmStatusFromNotes, sleepQualityToHours } from '@/lib/lifting/adapters/baseball-view-adapter';
 
 // Engine provenance stamps for the v4 AI-audit row. The baseball CoachHelm engine
 // is a deterministic rules engine (not an LLM), so we record it honestly: the
@@ -333,13 +334,70 @@ export async function runBaseballEngineCore(
     .order('start_time', { ascending: true });
 
   // V10 facts: readiness, lift compliance/RPE, recent imports.
+  //
+  // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
+  // helm_lifting_readiness_checkins now — the legacy baseball_readiness_checkins
+  // table is write-dead. This core is client-agnostic (RLS session client from
+  // the server action OR a service-role admin client from the Inngest cron), so
+  // org/athlete resolution is done inline against the SAME passed `db` client
+  // rather than via resolveBaseballLiftingOrg/resolveBaseballAthleteIds (those
+  // helpers open their own cookie-session client internally and would silently
+  // no-op under the service-role cron path).
   const readinessSinceIso = new Date(Date.parse(nowIso) - 14 * 86400_000).toISOString().slice(0, 10);
-  const { data: readinessRows } = await db
-    .from('baseball_readiness_checkins')
-    .select('id, player_id, check_date, sleep_hours, energy_level, soreness_level, arm_status')
-    .eq('team_id', teamId)
-    .in('player_id', playerIds)
-    .gte('check_date', readinessSinceIso);
+  let readinessRows: ReadinessRow[] = [];
+  {
+    const { data: teamRow } = await db
+      .from('baseball_teams')
+      .select('organization_id')
+      .eq('id', teamId)
+      .maybeSingle();
+    const organizationId = (teamRow as { organization_id: string | null } | null)?.organization_id ?? null;
+
+    if (organizationId) {
+      const { data: athleteRows } = await db
+        .from('helm_lifting_athletes')
+        .select('id, sport_player_id')
+        .eq('organization_id', organizationId)
+        .eq('sport', 'baseball')
+        .in('sport_player_id', playerIds);
+      const athleteToPlayer = new Map<string, string>();
+      const athleteIds: string[] = [];
+      for (const row of (athleteRows ?? []) as Array<{ id: string; sport_player_id: string | null }>) {
+        if (!row.sport_player_id) continue;
+        athleteToPlayer.set(row.id, row.sport_player_id);
+        athleteIds.push(row.id);
+      }
+
+      if (athleteIds.length) {
+        const { data: helmCheckins } = await db
+          .from('helm_lifting_readiness_checkins')
+          .select('id, athlete_id, checkin_date, sleep_quality, energy_level, soreness_overall, notes')
+          .eq('organization_id', organizationId)
+          .in('athlete_id', athleteIds)
+          .gte('checkin_date', readinessSinceIso);
+
+        const mapped: ReadinessRow[] = [];
+        for (const r of (helmCheckins ?? []) as Array<{
+          id: string; athlete_id: string; checkin_date: string | null;
+          sleep_quality: number | null; energy_level: number | null;
+          soreness_overall: number | null; notes: string | null;
+        }>) {
+          const playerId = athleteToPlayer.get(r.athlete_id);
+          if (!playerId) continue;
+          mapped.push({
+            id: r.id,
+            player_id: playerId,
+            check_date: r.checkin_date,
+            sleep_hours: sleepQualityToHours(r.sleep_quality),
+            energy_level: r.energy_level,
+            soreness_level: r.soreness_overall,
+            arm_status: extractArmStatusFromNotes(r.notes),
+          });
+        }
+        readinessRows = mapped;
+      }
+    }
+  }
 
   const { data: liftSessionRows } = await db
     .from('baseball_lift_sessions')
