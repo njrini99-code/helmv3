@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ExternalLink, CheckCheck } from 'lucide-react';
 import { StatusPill } from '@/components/fairway';
 import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
@@ -55,7 +56,16 @@ export function TriageQueue({
             {item.severity}
           </StatusPill>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-warm-900">{item.title}</p>
+            {item.origin === 'app' ? (
+              <Link
+                href={`/admin/errors/${item.key.slice(4)}`}
+                className="truncate text-sm font-medium text-warm-900 hover:underline block"
+              >
+                {item.title}
+              </Link>
+            ) : (
+              <p className="truncate text-sm font-medium text-warm-900">{item.title}</p>
+            )}
             <p className="font-fw-mono text-xs tabular-nums text-warm-500">
               {item.affectedUsers} users · {item.occurrences} events · last{' '}
               {new Date(item.lastSeen).toLocaleTimeString()}

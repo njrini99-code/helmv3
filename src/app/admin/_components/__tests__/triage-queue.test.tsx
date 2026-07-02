@@ -1,10 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { TriageQueue } from '@/app/admin/_components/TriageQueue';
 import type { TriageItem } from '@/lib/admin/data/triage';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+
+// next/link's prefetch path calls `new IntersectionObserver(...)`; the
+// global jsdom mock in src/test/setup.tsx is a plain vi.fn() (not
+// constructor-callable), so any real next/link in a mounted tree throws.
+// Swap in a plain anchor for this suite (app-row click-through, W6).
+vi.mock('next/link', () => ({
+  default: ({ children, href, className }: { children: ReactNode; href: string; className?: string }) => (
+    <a href={href} className={className}>{children}</a>
+  ),
 }));
 
 const appItem: TriageItem = {
