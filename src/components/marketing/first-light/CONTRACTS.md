@@ -19,7 +19,7 @@ Scaffold for the "First Light" landing redesign
 | `lib/photoBg.ts` | foundation (this lane) — shared, edit-with-care | LIVE |
 | `moments/M1Hero.tsx` | `landing-hero+nav` | STUB — replace in place |
 | `moments/M2Clarity.tsx` | `landing-editorial` | STUB — replace in place |
-| `moments/M3ProductCinema.tsx` | `landing-cinema` | STUB — replace in place |
+| `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — pinned scrub set piece + real screenshots (`screens/` below) |
 | `moments/M4TwoFields.tsx` | `landing-portals+cta` | STUB — replace in place |
 | `moments/M5Intelligence.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M6ForThePlayer.tsx` | `landing-editorial` | STUB — replace in place |
@@ -196,14 +196,22 @@ a pure asset swap.
 
 ## Screenshot asset contract
 
-`public/marketing/first-light/screens/` — real Living-Annual product
-screenshots for M3's product-cinema sequence, sourced by the
-`landing-cinema` lane. Until they land, M3 renders labeled gradient
-placeholder panels (`Command Center` / `Stats Center` / `Decision Room`).
-Swap in real screenshots the same way `photoBg.ts` is used elsewhere: a
-solid/gradient panel behind, an `<Image>` on top, sized so a slow load or
-missing file never collapses the frame's layout (fixed aspect-ratio
-container, `object-cover`).
+`public/marketing/first-light/screens/{command-center,stats-center,
+decision-room,lift-lab}.png` — LIVE, shipped by the `landing-cinema` lane.
+Real BaseballHelm Living-Annual captures pulled from the overnight
+visual-verification fleet's frames (Command Center / a real box score for
+Stats Center / Decision Room / player Lift Lab), each cropped to its
+frame's aspect ratio (`16/10` for the three desktop screens, `9/19.5` for
+Lift Lab's phone), any incidental browser-chrome/breadcrumb-UUID text
+painted out with the surrounding cream fill, then resized + palette-
+quantized (256-color PNG, `Pillow`, one-off — not committed as a script)
+to keep the set under ~650KB combined. `M3ProductCinema.tsx` renders them
+the `photoBg.ts` way: a solid tint `<div>` behind, an `<Image fill
+sizes=... className="object-cover">` on top, inside a fixed aspect-ratio
+container — a slow load or a future missing file never collapses the
+frame's layout. If a pristine on-brand capture (rather than an overnight
+QA-fleet frame) becomes available later, swap the file in place at the
+same path; no code changes needed on either side.
 
 ## Motion discipline (recap — see CLAUDE.md + this repo's motion rules)
 
