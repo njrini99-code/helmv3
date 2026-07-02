@@ -58,8 +58,8 @@ export default function LandingPage() {
         <div id="main-content">
           <M1Hero />
           <M2Clarity />
-          <M3ProductCinema />
           <M4TwoFields />
+          <M3ProductCinema />
           <M5Intelligence />
           <M6ForThePlayer />
           <M7Honesty />

@@ -558,7 +558,23 @@ now match this table; M1's own coach/player CTA pair is that lane's call)
 
 Preserves: the `metadata` export, `<NativeRedirect to="/golf/login" />`,
 and the skip-to-content link (`id="main-content"` target). Composes
-`LenisRoot` wrapping `M1Hero` → `M9Footer` in order. Imports
-`first-light.css` directly (not through `globals.css`). The old
-`Hero`/`Footer`/`SmoothScroll` components are left on disk, unused —
-don't delete them from this lane (out of scope; another lane's call).
+`LenisRoot` wrapping the moments in order. Imports `first-light.css`
+directly (not through `globals.css`). The old `Hero`/`Footer`/
+`SmoothScroll` components are left on disk, unused — don't delete them
+from this lane (out of scope; another lane's call).
+
+**Moment order (A-OVERRIDE, 2026-07-02 — Nick: "doesn't give sports on
+landing"):** `M1 → M2 → M4 → M3 → M5 → M6 → M7 → M8 → M9`. M4 (Two
+Fields — the sport portals) moved ahead of M3 (Product Cinema) so a
+visitor hits sport-specific content by viewport ~3 instead of ~4.
+Verified safe to reorder: M4 has no scroll-position dependency (local
+`useState` hover only, no `useScrollProgress`); M3's `PinnedScrub` is
+self-contained and doesn't assume a particular predecessor. No
+cream-fade "veil" exists in the M3 entrance today (checked
+`M3ProductCinema.tsx` — the pine background is a flat fill, no gradient
+veil), so there's nothing to break at the M2→M4 seam; that seam is a
+flat cream→pine cut with the same weight as the previous M2→M3 cut it
+replaces. The M4→M5 seam (dark photography into M5's ecru→pine
+gradient) is unchanged from before the reorder. If a future lane adds
+the bottom-veil-into-cream treatment from Amendment 2 §12 to M1, that
+work is unaffected by this order change (M1's neighbor is still M2).
