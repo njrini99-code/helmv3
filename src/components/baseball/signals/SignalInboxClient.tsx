@@ -3,40 +3,45 @@
 // =============================================================================
 // src/components/baseball/signals/SignalInboxClient.tsx
 //
-// Packet: signal-inbox — the Signal Inbox workspace (V10 §Signals tab). The
-// central triage surface with FOUR views (V10 §Views):
+// Packet: signal-inbox — the Signal Inbox workspace (V10 §Signals tab), rebuilt
+// on the "Living Annual" kit (spec: docs/baseball/design-system-living-annual.md;
+// plan: docs/baseball/ui-migration-execution-plan.md §3.2 signals row). THE WAR
+// ROOM lane (`pursuit`/clay ink). This is an operational TRIAGE INBOX with four
+// views (V10 §Views):
 //
 //   - Feed     : open signals, severity-then-recency (daily triage).
 //   - Compact  : dense list for staff meetings / quick review.
 //   - Grouped  : by player / category / source / owner (filter chips, URL state).
 //   - Board    : action-lifecycle columns (new / acknowledged / converted / resolved).
 //
-// Triage + convert-to-action wire to the signals server actions; the page
-// re-renders via revalidatePath. Cream/green GolfHelm look. Empty/loading/error
-// handled (loading is the route's loading.tsx; error is the read-model error +
-// route error.tsx). NO golf labels.
+// It is NOT a commit/offer/milestone ticker — no `<CommitSeal>` anywhere on
+// this surface. Triage + convert-to-action wire to the SAME signals server
+// actions as before; the page re-renders via `router.refresh()`. Every
+// zero/degraded state renders through `<EditorsLetter>` / `<InlineNotice>` —
+// never a yellow/amber box. NO golf labels.
 // =============================================================================
 
 import * as React from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
+import {
+  SectionMasthead,
+  Eyebrow,
+  PaperCard,
+  HairlineRule,
+  InkBadge,
+  StatReadout,
+  EditorsLetter,
+  LiveDot,
+} from '@/components/baseball/living-annual';
+import { Button, InlineNotice, Segmented, SelectablePill } from '@/components/fairway';
 import {
   IconShieldAlert,
   IconList,
   IconLayoutGrid,
   IconLayers,
-  IconWarning,
   IconRefresh,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import {
-  DURATION,
-  EASE_CINEMATIC,
-  useReducedMotionGuard,
-} from '@/lib/coachhelm/v3/motion';
 import { SignalCard } from './SignalCard';
 import {
   ConvertToActionDialog,
@@ -93,7 +98,6 @@ export function SignalInboxClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const reduce = useReducedMotionGuard();
 
   // ── URL-backed view + grouping + severity filter ─────────────────────────
   const isView = (v: string | null): v is SignalView =>
@@ -213,7 +217,7 @@ export function SignalInboxClient({
     }
   };
 
-  const renderCard = (s: SignalInboxRow, variant: 'full' | 'compact' = 'full') => (
+  const renderCard = (s: SignalInboxRow, index: number, variant: 'full' | 'compact' = 'full') => (
     <SignalCard
       key={s.id}
       signal={s}
@@ -221,6 +225,7 @@ export function SignalInboxClient({
       variant={variant}
       canManage={canManage}
       pending={pendingId === s.id}
+      index={index}
       onAcknowledge={handleAcknowledge}
       onDismiss={handleDismiss}
       onResolve={handleResolve}
@@ -232,15 +237,12 @@ export function SignalInboxClient({
   // ── Unauthorized envelope ────────────────────────────────────────────────
   if (!model.authorized) {
     return (
-      <div className="min-h-dvh bg-cream-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
-          <EmptyState
-            icon={<IconShieldAlert size={28} />}
-            title="Signals are staff-only"
-            description="The Signal Inbox is a coaching surface. Ask a head coach for staff access on this team."
-            variant="card"
-          />
-        </div>
+      <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">
+        <EditorsLetter
+          ink="pursuit"
+          title="Signals are staff-only."
+          body="The Signal Inbox is a coaching surface. Ask a head coach for staff access on this team."
+        />
       </div>
     );
   }
@@ -248,250 +250,202 @@ export function SignalInboxClient({
   const summary = model.summary;
 
   return (
-    <LazyMotion features={domAnimation} strict>
-    <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* ── Header ───────────────────────────────────────────────── */}
-        <m.div
-          initial={reduce ? false : { opacity: 0, y: 8 }}
-          animate={reduce ? false : { opacity: 1, y: 0 }}
-          transition={{ duration: DURATION.medium, ease: EASE_CINEMATIC }}
-          className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-        >
-          <div>
-            <p className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-primary-600/90">
-              Coaching intelligence
-            </p>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
-              Signals
-            </h1>
-            <p className="text-warm-500 mt-1 text-sm leading-relaxed">
-              Source-backed triage. Convert a signal into an assignable action.
-            </p>
-          </div>
-          {canManage && (
+    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+      {/* ── Header ───────────────────────────────────────────────── */}
+      <SectionMasthead
+        eyebrow="THE WAR ROOM · SIGNALS"
+        title="Signals"
+        ink="pursuit"
+        actions={
+          canManage ? (
             <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
               <Button
                 variant="secondary"
                 onClick={handleScan}
                 disabled={scanState.busy}
-                aria-busy={scanState.busy}
-                className="flex items-center gap-2 whitespace-nowrap"
+                busy={scanState.busy}
+                leftIcon={!scanState.busy ? <IconRefresh size={15} aria-hidden /> : undefined}
               >
-                <IconRefresh
-                  size={15}
-                  className={cn(scanState.busy && 'animate-spin')}
-                  aria-hidden
-                />
-                {scanState.busy ? 'Scanning…' : 'Scan for signals'}
+                {scanState.busy ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    Scanning
+                    <LiveDot ink="sodium" />
+                  </span>
+                ) : (
+                  'Scan for signals'
+                )}
               </Button>
               <span
-                className="min-h-[1rem] text-xs leading-relaxed text-warm-500 sm:text-right"
+                className="min-h-[1rem] font-annual text-body-sm text-text-tertiary sm:text-right"
                 role="status"
                 aria-live="polite"
               >
                 {scanState.note}
               </span>
             </div>
-          )}
-        </m.div>
+          ) : undefined
+        }
+      >
+        <p className="max-w-prose font-annual text-body-lg leading-relaxed text-text-secondary">
+          Source-backed triage. Convert a signal into an assignable action.
+        </p>
+      </SectionMasthead>
 
-        {/* ── Summary strip (no generic KPI wall — counts only) ────── */}
-        <div className="flex flex-wrap items-center gap-2 mb-5">
-          <SummaryChip
-            label="Open"
-            count={summary.open}
-            active={!severityFilter}
-            onClick={() => updateParams({ sev: null })}
-          />
-          <SummaryChip
-            label="Critical"
-            count={summary.critical}
-            tone="red"
-            active={severityFilter === 'critical'}
-            onClick={() =>
-              updateParams({ sev: severityFilter === 'critical' ? null : 'critical' })
-            }
-          />
-          <SummaryChip
-            label="Warning"
-            count={summary.warning}
-            tone="amber"
-            active={severityFilter === 'warning'}
-            onClick={() =>
-              updateParams({ sev: severityFilter === 'warning' ? null : 'warning' })
-            }
-          />
-          <SummaryChip
-            label="Info"
-            count={summary.info}
-            tone="warm"
-            active={severityFilter === 'info'}
-            onClick={() =>
-              updateParams({ sev: severityFilter === 'info' ? null : 'info' })
-            }
-          />
-          <span className="mx-1 h-4 w-px bg-warm-200" aria-hidden />
-          <Badge tone="warm" appearance="soft" size="sm">
-            {summary.sampleTooSmall} sample-too-small
-          </Badge>
-          <Badge tone="primary" appearance="soft" size="sm">
-            {summary.converted} converted
-          </Badge>
-          <Badge tone="primary" appearance="soft" size="sm">
-            {summary.activeActions} active actions
-          </Badge>
+      {/* ── Summary strip: loud numerals double as severity filters ─────── */}
+      <div className="mt-6 flex flex-wrap items-end gap-2">
+        <SeverityStatChip
+          label="Open"
+          count={summary.open}
+          active={!severityFilter}
+          onClick={() => updateParams({ sev: null })}
+        />
+        <SeverityStatChip
+          label="Critical"
+          count={summary.critical}
+          active={severityFilter === 'critical'}
+          onClick={() => updateParams({ sev: severityFilter === 'critical' ? null : 'critical' })}
+        />
+        <SeverityStatChip
+          label="Warning"
+          count={summary.warning}
+          active={severityFilter === 'warning'}
+          onClick={() => updateParams({ sev: severityFilter === 'warning' ? null : 'warning' })}
+        />
+        <SeverityStatChip
+          label="Info"
+          count={summary.info}
+          active={severityFilter === 'info'}
+          onClick={() => updateParams({ sev: severityFilter === 'info' ? null : 'info' })}
+        />
+        <span className="mx-1 mb-2 h-8 w-px bg-[color:var(--hairline)]" aria-hidden />
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <InkBadge label={`${summary.sampleTooSmall} sample-too-small`} tone="neutral" />
+          <InkBadge label={`${summary.converted} converted`} tone="team" />
+          <InkBadge label={`${summary.activeActions} active actions`} tone="team" />
         </div>
+      </div>
 
-        {/* ── Honest degraded-feed error ───────────────────────────── */}
-        {model.error && (
-          <div
-            role="alert"
-            className="mb-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200/80 px-3 py-2.5"
-          >
-            <IconWarning size={15} className="text-amber-500 mt-0.5 flex-shrink-0" aria-hidden />
-            <p className="text-sm leading-relaxed text-amber-800">{model.error}</p>
-          </div>
-        )}
+      {/* ── Honest degraded-feed error ───────────────────────────── */}
+      {model.error && (
+        <InlineNotice tone="warning" className="mt-4">
+          {model.error}
+        </InlineNotice>
+      )}
 
-        {/* ── View toggle ──────────────────────────────────────────── */}
-        <div
-          role="group"
+      {/* ── View toggle ──────────────────────────────────────────── */}
+      <div className="mt-6 mb-5">
+        <Segmented
           aria-label="Signal view"
-          className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-2xl p-1 gap-1 shadow-sm mb-5 w-fit"
-        >
-          {VIEWS.map(({ id, label, icon }) => (
-            <Button
-              key={id}
-              variant="ghost"
-              onClick={() => updateParams({ view: id === 'feed' ? null : id })}
-              aria-pressed={view === id}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 ease-out',
-                view === id
-                  ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600'
-                  : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50',
-              )}
-            >
-              <span aria-hidden>{icon}</span>
-              {label}
-            </Button>
-          ))}
-        </div>
+          value={view}
+          onValueChange={(v) => updateParams({ view: v === 'feed' ? null : v })}
+          options={VIEWS.map((v) => ({ value: v.id, label: v.label, icon: v.icon }))}
+        />
+      </div>
 
-        {/* ── Empty state ──────────────────────────────────────────── */}
-        {model.signals.length === 0 ? (
-          <EmptyState
-            icon={<IconShieldAlert size={28} />}
-            title="No open signals"
-            description="Signals appear here when stats imports, readiness check-ins, schedule conflicts, or the CoachHelm engine surface something worth a coach's attention."
-            variant="card"
-          />
-        ) : (
-          <>
-            {/* FEED / COMPACT */}
-            {(view === 'feed' || view === 'compact') && (
-              <div className={cn('grid gap-3', view === 'feed' ? 'grid-cols-1' : 'grid-cols-1')}>
-                {filteredFeed.length === 0 ? (
-                  <EmptyState
-                    title="Nothing matches this filter"
-                    description="Clear the severity filter to see all open signals."
-                    variant="minimal"
-                    action={{ label: 'Clear filter', onClick: () => updateParams({ sev: null }) }}
-                  />
-                ) : (
-                  filteredFeed.map((s) => renderCard(s, view === 'compact' ? 'compact' : 'full'))
-                )}
-              </div>
-            )}
-
-            {/* GROUPED */}
-            {view === 'grouped' && (
-              <div>
-                <div
-                  role="group"
-                  aria-label="Group signals by"
-                  className="flex flex-wrap gap-1.5 mb-4"
-                >
-                  {GROUPINGS.map((g) => (
-                    <Button
-                      key={g.id}
-                      variant="ghost"
-                      onClick={() => updateParams({ group: g.id === 'player' ? null : g.id })}
-                      aria-pressed={grouping === g.id}
-                      className={cn(
-                        'h-8 px-3 rounded-lg text-xs font-medium transition-colors duration-200 ease-out',
-                        grouping === g.id
-                          ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                          : 'text-warm-500 hover:text-warm-800 border border-transparent hover:border-warm-200',
-                      )}
-                    >
-                      By {g.label}
+      {/* ── Empty state ──────────────────────────────────────────── */}
+      {model.signals.length === 0 ? (
+        <EditorsLetter
+          ink="pursuit"
+          title="No open signals."
+          body="Signals appear here when stats imports, readiness check-ins, schedule conflicts, or the CoachHelm engine surface something worth a coach's attention."
+        />
+      ) : (
+        <>
+          {/* FEED / COMPACT */}
+          {(view === 'feed' || view === 'compact') && (
+            <div className="grid grid-cols-1 gap-3">
+              {filteredFeed.length === 0 ? (
+                <EditorsLetter
+                  ink="pursuit"
+                  title="Nothing matches this filter."
+                  body="Clear the severity filter to see all open signals."
+                  action={
+                    <Button variant="secondary" size="sm" onClick={() => updateParams({ sev: null })}>
+                      Clear filter
                     </Button>
-                  ))}
-                </div>
-                <div className="space-y-6">
-                  {model.grouped[grouping].map((group) => (
-                    <div key={group.key}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-sm font-semibold text-warm-800">
-                          {group.label}
-                        </h3>
-                        <Badge tone="warm" appearance="soft" size="sm">
-                          {group.count}
-                        </Badge>
-                      </div>
-                      <div className="grid gap-3">
-                        {group.signalIds
-                          .map((id) => byId.get(id))
-                          .filter(Boolean)
-                          .map((s) => renderCard(s as SignalInboxRow, 'compact'))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  }
+                />
+              ) : (
+                filteredFeed.map((s, i) => renderCard(s, i, view === 'compact' ? 'compact' : 'full'))
+              )}
+            </div>
+          )}
 
-            {/* BOARD */}
-            {view === 'board' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                {(
-                  [
-                    { key: 'new', label: 'New', ids: model.board.new },
-                    { key: 'acknowledged', label: 'Acknowledged', ids: model.board.acknowledged },
-                    { key: 'converted', label: 'Converted', ids: model.board.converted },
-                    { key: 'resolved', label: 'Resolved', ids: model.board.resolved },
-                  ] as const
-                ).map((col) => (
-                  <div key={col.key} className="flex flex-col">
-                    <div className="flex items-center gap-2 mb-2 px-1">
-                      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide">
-                        {col.label}
-                      </h3>
-                      <Badge tone="warm" appearance="soft" size="sm">
-                        {col.ids.length}
-                      </Badge>
+          {/* GROUPED */}
+          {view === 'grouped' && (
+            <div>
+              <div role="group" aria-label="Group signals by" className="mb-4 flex flex-wrap gap-1.5">
+                {GROUPINGS.map((g) => (
+                  <SelectablePill
+                    key={g.id}
+                    shape="round"
+                    selected={grouping === g.id}
+                    onClick={() => updateParams({ group: g.id === 'player' ? null : g.id })}
+                    className="min-h-[32px] px-3 text-caption font-medium"
+                  >
+                    By {g.label}
+                  </SelectablePill>
+                ))}
+              </div>
+              <div className="space-y-6">
+                {model.grouped[grouping].map((group) => (
+                  <div key={group.key}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <Eyebrow ink="pursuit">{group.label}</Eyebrow>
+                      <InkBadge label={String(group.count)} tone="pursuit" />
                     </div>
-                    <div className="flex flex-col gap-3 min-h-[60px] rounded-2xl border border-warm-200/40 bg-warm-50/50 p-2">
-                      {col.ids.length === 0 ? (
-                        <p className="text-xs text-warm-500 text-center py-6">
-                          Nothing here
-                        </p>
-                      ) : (
-                        col.ids
-                          .map((id) => byId.get(id))
-                          .filter(Boolean)
-                          .map((s) => renderCard(s as SignalInboxRow, 'compact'))
-                      )}
+                    <HairlineRule ink="pursuit" className="mb-3" />
+                    <div className="grid gap-3">
+                      {group.signalIds
+                        .map((id) => byId.get(id))
+                        .filter(Boolean)
+                        .map((s, i) => renderCard(s as SignalInboxRow, i, 'compact'))}
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </>
-        )}
-      </div>
+            </div>
+          )}
+
+          {/* BOARD */}
+          {view === 'board' && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {(
+                [
+                  { key: 'new', label: 'New', ids: model.board.new },
+                  { key: 'acknowledged', label: 'Acknowledged', ids: model.board.acknowledged },
+                  { key: 'converted', label: 'Converted', ids: model.board.converted },
+                  { key: 'resolved', label: 'Resolved', ids: model.board.resolved },
+                ] as const
+              ).map((col) => (
+                <PaperCard key={col.key} className="flex flex-col p-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <Eyebrow ink="pursuit">{col.label}</Eyebrow>
+                    <InkBadge
+                      label={String(col.ids.length)}
+                      tone="pursuit"
+                      variant={col.ids.length > 0 ? 'solid' : 'soft'}
+                    />
+                  </div>
+                  <HairlineRule ink="pursuit" className="mb-3" />
+                  <div className="flex flex-1 flex-col gap-3">
+                    {col.ids.length === 0 ? (
+                      <p className="py-6 text-center font-annual text-body-sm text-text-tertiary">
+                        Nothing here
+                      </p>
+                    ) : (
+                      col.ids
+                        .map((id) => byId.get(id))
+                        .filter(Boolean)
+                        .map((s, i) => renderCard(s as SignalInboxRow, i, 'compact'))
+                    )}
+                  </div>
+                </PaperCard>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Convert-to-action dialog */}
       <ConvertToActionDialog
@@ -504,54 +458,48 @@ export function SignalInboxClient({
         onConvert={handleConvert}
       />
     </div>
-    </LazyMotion>
   );
 }
 
-// ── Summary chip ────────────────────────────────────────────────────────────
+// ── Severity stat chip — a loud RuledStatLine-style numeral that also acts as
+// a click-to-filter toggle. Built on the shared `<Button ghost>` (its own
+// press/hover physics own this, per pressable.ts's own guidance not to layer
+// pressableClass on top of a `<Button>`) so no bespoke hover/press CSS lives
+// here. ──────────────────────────────────────────────────────────────────
 
-function SummaryChip({
+function SeverityStatChip({
   label,
   count,
-  tone = 'warm',
   active,
   onClick,
 }: {
   label: string;
   count: number;
-  tone?: 'warm' | 'red' | 'amber';
   active: boolean;
   onClick: () => void;
 }) {
-  const toneRing =
-    tone === 'red'
-      ? 'ring-red-300'
-      : tone === 'amber'
-        ? 'ring-amber-300'
-        : 'ring-warm-300';
-  const toneDot =
-    tone === 'red'
-      ? 'bg-red-500'
-      : tone === 'amber'
-        ? 'bg-amber-500'
-        : 'bg-warm-400';
   return (
     <Button
+      type="button"
       variant="ghost"
       onClick={onClick}
       aria-pressed={active}
       aria-label={`${label}: ${count}${active ? ' (filter active)' : ''}`}
       className={cn(
-        'h-9 gap-1.5 rounded-xl border border-warm-200/70 bg-cream-100/75 px-3 text-sm font-medium text-warm-700 transition-[box-shadow,background-color,border-color] duration-200 ease-out hover:bg-cream-50 hover:border-warm-200',
-        active && cn('ring-2 ring-offset-1 ring-offset-cream-50', toneRing),
+        'h-auto min-h-0 flex-col items-start justify-start gap-1 rounded-fw-sm px-3 py-2 text-left',
+        active && 'bg-pursuit/[0.07] hover:bg-pursuit/[0.1]',
       )}
     >
-      <span
-        aria-hidden
-        className={cn('h-1.5 w-1.5 rounded-full', toneDot)}
+      <span className="font-annual text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">
+        {label}
+      </span>
+      <StatReadout
+        value={count}
+        flashOnChange
+        ariaLabel={label}
+        className={cn('text-h2 leading-none', active ? 'text-pursuit' : 'text-text-primary')}
       />
-      {label}
-      <span className="tabular-nums font-semibold text-warm-900">{count}</span>
+      <HairlineRule ink={active ? 'pursuit' : 'hairline'} weight={1.5} className="mt-0.5" />
     </Button>
   );
 }
