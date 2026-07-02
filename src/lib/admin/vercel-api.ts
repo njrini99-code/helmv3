@@ -41,6 +41,26 @@ interface RawDeployment {
   };
 }
 
+/**
+ * Minutes elapsed since a Vercel deployment's `createdAt` (epoch ms). Single
+ * source of truth for "how old" — shared by the Overview "Last deploy" KPI
+ * (raw number, fed through StatTile's own formatter) and the Deploys table's
+ * "Age" column (compact string via `formatDeployAge`) so the two surfaces
+ * never drift on what "age" means.
+ */
+export function deployAgeMinutes(createdAt: number, now: number = Date.now()): number {
+  return Math.round((now - createdAt) / 60_000);
+}
+
+/** Compact age string ("7m" / "3h" / "2d") for the deployments table. */
+export function formatDeployAge(createdAt: number, now: number = Date.now()): string {
+  const minutes = deployAgeMinutes(createdAt, now);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
 export async function fetchVercelDeployments(
   limit = 20,
 ): Promise<AdminFetchResult<VercelDeployment[]>> {

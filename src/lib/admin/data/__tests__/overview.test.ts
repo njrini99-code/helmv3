@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeBannerState, isSignalStale } from '@/lib/admin/data/overview';
+import { computeBannerState, isSignalStale, classifyKpiTone } from '@/lib/admin/data/overview';
 
 describe('computeBannerState', () => {
   it('critical wins over everything', () => {
@@ -30,5 +30,19 @@ describe('isSignalStale', () => {
   });
   it('treats never-seen as stale', () => {
     expect(isSignalStale({ label: 'cron outcomes', lastSeenAt: null, staleAfterHours: 26 }, now)).toBe(true);
+  });
+});
+
+describe('classifyKpiTone', () => {
+  it('zero is calm — neutral', () => {
+    expect(classifyKpiTone(0, 10)).toBe('neutral');
+  });
+  it('any occurrence below the red line is amber', () => {
+    expect(classifyKpiTone(1, 10)).toBe('warning');
+    expect(classifyKpiTone(9, 10)).toBe('warning');
+  });
+  it('at or past the red line is danger', () => {
+    expect(classifyKpiTone(10, 10)).toBe('danger');
+    expect(classifyKpiTone(50, 10)).toBe('danger');
   });
 });

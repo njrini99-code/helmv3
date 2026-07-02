@@ -29,21 +29,32 @@ export function SessionsPanel({ sessions }: { sessions: SessionRow[] }) {
               </p>
             </div>
             {confirming === s.user_id ? (
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                busy={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    await revokeSessionsForUser(s.user_id);
-                    setConfirming(null);
-                    router.refresh();
-                  })
-                }
-              >
-                Confirm sign-out everywhere
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => setConfirming(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  busy={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      await revokeSessionsForUser(s.user_id);
+                      setConfirming(null);
+                      router.refresh();
+                    })
+                  }
+                >
+                  Confirm sign-out everywhere
+                </Button>
+              </div>
             ) : (
               <Button
                 type="button"

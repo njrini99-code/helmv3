@@ -45,7 +45,10 @@ export function FeatureHealthCard({ feature }: { feature: FeatureHealth }) {
         <ul className="mt-3 space-y-1">
           {feature.topSignatures.slice(0, 3).map((sig) => (
             <li key={sig.fingerprint} className="truncate text-xs text-warm-700">
-              <StatusPill tone={sig.severity === 'critical' ? 'danger' : 'warning'} size="sm" dot>
+              {/* 'error' AND 'critical' both read as danger/red — matches the
+                  console-wide severity tone (TriageQueue, errors/[fingerprint]),
+                  which never demotes 'error' to amber. */}
+              <StatusPill tone="danger" size="sm" dot>
                 {sig.severity}
               </StatusPill>{' '}
               <span className="font-medium text-warm-900">&ldquo;{sig.title}&rdquo;</span>{' '}

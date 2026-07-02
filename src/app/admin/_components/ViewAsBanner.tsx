@@ -12,7 +12,10 @@ export function ViewAsBanner({ email, expiresAtMs }: { email: string; expiresAtM
     <InlineNotice
       tone="warning"
       title={`Viewing as ${email} — read-only`}
-      className="sticky top-0 z-50"
+      // Offset below FairwayTopBar (sticky top-0, --golf-mobile-header-offset
+      // set on the AppShell content column = topbar height + safe-area) so
+      // the two sticky surfaces never z-fight for the same y=0 slot.
+      className="sticky top-[var(--golf-mobile-header-offset)] z-[var(--fw-z-sticky)]"
       action={
         <form action={exitViewAs}>
           <Button type="submit" variant="danger" size="sm">

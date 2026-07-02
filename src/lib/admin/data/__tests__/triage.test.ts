@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mergeTriage, type AppTriageEventRow } from '@/lib/admin/data/triage';
+import { mergeTriage, isExpectedAuthNoise, type AppTriageEventRow } from '@/lib/admin/data/triage';
 import type { SentryIssue } from '@/lib/admin/sentry-api';
 
 const sentryIssue = (over: Partial<SentryIssue>): SentryIssue => ({
@@ -54,5 +54,22 @@ describe('mergeTriage', () => {
     expect(items[0]).toMatchObject({
       origin: 'sentry', substatus: 'regressed', permalink: 'https://sentry.io/x', eventIds: [],
     });
+  });
+});
+
+describe('isExpectedAuthNoise', () => {
+  it('flags the "you must be signed in" family, case-insensitively', () => {
+    expect(isExpectedAuthNoise('You must be signed in')).toBe(true);
+    expect(isExpectedAuthNoise('you must be signed in to submit rounds')).toBe(true);
+  });
+  it('flags the baseball no-active-team message', () => {
+    expect(isExpectedAuthNoise('No active baseball team context')).toBe(true);
+  });
+  it('does not flag a real incident message', () => {
+    expect(isExpectedAuthNoise('insert failed: duplicate key value')).toBe(false);
+  });
+  it('treats null/undefined as not-noise', () => {
+    expect(isExpectedAuthNoise(null)).toBe(false);
+    expect(isExpectedAuthNoise(undefined)).toBe(false);
   });
 });

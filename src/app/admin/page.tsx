@@ -1,5 +1,10 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchOverviewSnapshot } from '@/lib/admin/data/overview';
+import {
+  fetchOverviewSnapshot,
+  classifyKpiTone,
+  ERRORS_24H_RED_AT,
+  AUTH_FAILURES_24H_RED_AT,
+} from '@/lib/admin/data/overview';
 import { fetchTriageQueue } from '@/lib/admin/data/triage';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
@@ -25,8 +30,20 @@ async function BannerAndKpis() {
       />
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <KpiTile label="Sentry unresolved" value={kpis.sentryUnresolved} href="/admin/errors" tone={kpis.sentryUnresolved ? 'danger' : 'neutral'} goodDirection="down" />
-        <KpiTile label="Errors 24h" value={kpis.eventErrors24h} href="/admin/errors" goodDirection="down" />
-        <KpiTile label="Auth failures 24h" value={kpis.authFailures24h} href="/admin/auth" goodDirection="down" />
+        <KpiTile
+          label="Errors 24h"
+          value={kpis.eventErrors24h}
+          href="/admin/errors"
+          goodDirection="down"
+          tone={classifyKpiTone(kpis.eventErrors24h, ERRORS_24H_RED_AT)}
+        />
+        <KpiTile
+          label="Auth failures 24h"
+          value={kpis.authFailures24h}
+          href="/admin/auth"
+          goodDirection="down"
+          tone={classifyKpiTone(kpis.authFailures24h, AUTH_FAILURES_24H_RED_AT)}
+        />
         <KpiTile label="Active users today" value={kpis.activeUsersToday} href="/admin/users" />
         <KpiTile
           label="Activity today"
@@ -131,7 +148,7 @@ export default async function AdminOverviewPage() {
   await requireSuperAdmin();
 
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <AutoRefresh />
       <PanelBoundary title="Status" skeleton={<SkeletonStat />}>
         <BannerAndKpis />
@@ -145,6 +162,6 @@ export default async function AdminOverviewPage() {
       <PanelBoundary title="Deploys" skeleton={<SkeletonStat />}>
         <DeployRail />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

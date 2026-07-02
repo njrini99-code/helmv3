@@ -6,7 +6,7 @@ export type BannerState = 'nominal' | 'attention' | 'critical' | 'stale';
 const STATES: Record<BannerState, { icon: typeof CheckCircle2; dot: string; label: (n: number) => string }> = {
   nominal: { icon: CheckCircle2, dot: 'bg-fw-success', label: () => 'All systems nominal' },
   attention: { icon: AlertTriangle, dot: 'bg-fw-warning', label: (n) => `${n} item${n === 1 ? '' : 's'} need attention` },
-  critical: { icon: AlertOctagon, dot: 'bg-fw-danger', label: (n) => `${n} item${n === 1 ? '' : 's'} need attention` },
+  critical: { icon: AlertOctagon, dot: 'bg-fw-danger', label: (n) => `${n} critical item${n === 1 ? '' : 's'} — immediate attention needed` },
   stale: { icon: CloudOff, dot: 'bg-fw-warning', label: () => 'Status feed stale — showing last known state' },
 };
 

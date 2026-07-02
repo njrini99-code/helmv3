@@ -41,7 +41,7 @@ export default async function FeatureHealthPage() {
   }
 
   return (
-    <main className="space-y-4 p-6">
+    <div className="space-y-4">
       <AutoRefresh />
       <div>
         <Eyebrow as="p" tone="accent">
@@ -56,6 +56,6 @@ export default async function FeatureHealthPage() {
       <PanelBoundary title="Feature Health">
         <Body />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

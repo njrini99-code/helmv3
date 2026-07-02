@@ -44,6 +44,40 @@ function normalizeSport(raw: string | null): TriageItem['sport'] {
   return raw === 'golf' || raw === 'baseball' || raw === 'shared' ? raw : null;
 }
 
+/**
+ * Known-expected application noise — NOT real incidents. An unauthenticated
+ * hit on a server action, or a baseball user without an active team context,
+ * are both routine control-flow, not bugs. Raw admin_events counts that feed
+ * KPI tiles / the ops digest exclude these so a genuine incident is never
+ * buried under expected noise.
+ */
+export const AUTH_NOISE_MESSAGE_PATTERNS: readonly RegExp[] = [
+  /you must be signed in/i,
+  /no active baseball team/i,
+];
+
+/** ILIKE patterns mirroring AUTH_NOISE_MESSAGE_PATTERNS, for PostgREST queries. */
+export const AUTH_NOISE_ILIKE_PATTERNS: readonly string[] = [
+  '%you must be signed in%',
+  '%no active baseball team%',
+];
+
+export function isExpectedAuthNoise(message: string | null | undefined): boolean {
+  if (!message) return false;
+  return AUTH_NOISE_MESSAGE_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+/**
+ * Chain onto any admin_events PostgREST query (builder) to exclude expected
+ * auth noise from a count/select. Keeps overview.ts + admin-digest's
+ * route.ts "Errors 24h" counts in sync with the same noise semantics.
+ */
+export function excludeAuthNoise<T extends { not(column: string, operator: string, value: unknown): T }>(
+  query: T,
+): T {
+  return AUTH_NOISE_ILIKE_PATTERNS.reduce((q, pattern) => q.not('message', 'ilike', pattern), query);
+}
+
 /** Pure merge — unit-tested; the async fetcher below just feeds it. */
 export function mergeTriage(input: {
   sentryIssues: SentryIssue[];

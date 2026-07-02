@@ -120,11 +120,11 @@ async function TracerBody() {
 export default async function TracerPage() {
   await requireSuperAdmin();
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
       <PanelBoundary title="Tracer">
         <TracerBody />
       </PanelBoundary>
-    </main>
+    </div>
   );
 }

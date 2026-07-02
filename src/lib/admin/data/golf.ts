@@ -4,6 +4,21 @@ import { fetchAdminRollupA, type RollupA } from '@/app/golf/actions/admin/rollup
 
 export type TeamHealth = 'active' | 'cooling' | 'dormant';
 
+/** Red-first ordering for the TeamHealthTable — at-risk/dormant teams need
+ *  eyes on them before healthy ones, never alphabetical (which happens to
+ *  put 'active' first). */
+const HEALTH_SORT_RANK: Record<TeamHealth, number> = { dormant: 0, cooling: 1, active: 2 };
+
+/** Pure, unit-tested comparator: dormant first, cooling next, active last;
+ *  ties within a health bucket break by most 7d errors first. */
+export function sortTeamsByHealth(teams: GolfTeamHealthRow[]): GolfTeamHealthRow[] {
+  return [...teams].sort((a, b) =>
+    a.health === b.health
+      ? b.errors7d - a.errors7d
+      : HEALTH_SORT_RANK[a.health] - HEALTH_SORT_RANK[b.health],
+  );
+}
+
 export function classifyTeamHealth(lastActivityIso: string | null, now: Date): TeamHealth {
   if (!lastActivityIso) return 'dormant';
   const ageDays = (now.getTime() - new Date(lastActivityIso).getTime()) / 86400_000;
@@ -105,7 +120,7 @@ export async function fetchGolfTab(): Promise<{
 
   return {
     rollup,
-    teams: teams.sort((a, b) => (a.health === b.health ? b.errors7d - a.errors7d : a.health.localeCompare(b.health))),
+    teams: sortTeamsByHealth(teams),
     llm: {
       calls30d: llmCalls.length,
       cost30d: llmCalls.reduce((sum, c) => sum + (c.cost_usd ?? 0), 0),
