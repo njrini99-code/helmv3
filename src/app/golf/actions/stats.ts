@@ -22,6 +22,7 @@ import {
   type PlayerStatsCache,
 } from '@/lib/cache/golf-stats-calculator';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
@@ -41,7 +42,7 @@ export type ActionResult<T = void> =
  * Get player stats summary from cache
  * Fast endpoint for dashboard display
  */
-export async function getPlayerStatsSummaryAction(
+async function getPlayerStatsSummaryActionImpl(
   playerId?: string
 ): Promise<ActionResult<PlayerStatsSummary>> {
   try {
@@ -112,11 +113,23 @@ export async function getPlayerStatsSummaryAction(
   }
 }
 
+const observedGetPlayerStatsSummaryAction = withAdminObserved(
+  'getPlayerStatsSummaryAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerStatsSummaryActionImpl,
+);
+
+export async function getPlayerStatsSummaryAction(
+  playerId?: string
+): Promise<ActionResult<PlayerStatsSummary>> {
+  return observedGetPlayerStatsSummaryAction(playerId);
+}
+
 /**
  * Get full player stats from cache
  * Complete stats for detailed stats page
  */
-export async function getFullPlayerStatsAction(
+async function getFullPlayerStatsActionImpl(
   playerId?: string
 ): Promise<ActionResult<PlayerStatsCache | null>> {
   try {
@@ -163,11 +176,23 @@ export async function getFullPlayerStatsAction(
   }
 }
 
+const observedGetFullPlayerStatsAction = withAdminObserved(
+  'getFullPlayerStatsAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getFullPlayerStatsActionImpl,
+);
+
+export async function getFullPlayerStatsAction(
+  playerId?: string
+): Promise<ActionResult<PlayerStatsCache | null>> {
+  return observedGetFullPlayerStatsAction(playerId);
+}
+
 /**
  * Force refresh of stats cache for a player
  * Used after manual data corrections
  */
-export async function refreshStatsCacheAction(
+async function refreshStatsCacheActionImpl(
   playerId?: string
 ): Promise<ActionResult<void>> {
   try {
@@ -253,6 +278,18 @@ export async function refreshStatsCacheAction(
   }
 }
 
+const observedRefreshStatsCacheAction = withAdminObserved(
+  'refreshStatsCacheAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  refreshStatsCacheActionImpl,
+);
+
+export async function refreshStatsCacheAction(
+  playerId?: string
+): Promise<ActionResult<void>> {
+  return observedRefreshStatsCacheAction(playerId);
+}
+
 // ============================================================================
 // TEAM STATS ACTIONS (for coaches)
 // ============================================================================
@@ -260,7 +297,7 @@ export async function refreshStatsCacheAction(
 /**
  * Get stats summary for all players on coach's team
  */
-export async function getTeamStatsAction(): Promise<
+async function getTeamStatsActionImpl(): Promise<
   ActionResult<Map<string, PlayerStatsSummary>>
 > {
   try {
@@ -307,10 +344,22 @@ export async function getTeamStatsAction(): Promise<
   }
 }
 
+const observedGetTeamStatsAction = withAdminObserved(
+  'getTeamStatsAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getTeamStatsActionImpl,
+);
+
+export async function getTeamStatsAction(): Promise<
+  ActionResult<Map<string, PlayerStatsSummary>>
+> {
+  return observedGetTeamStatsAction();
+}
+
 /**
  * Get top performers on coach's team
  */
-export async function getTeamTopPlayersAction(
+async function getTeamTopPlayersActionImpl(
   limit: number = 5
 ): Promise<ActionResult<Array<{ playerId: string; name: string; avgScore: number; rounds: number }>>> {
   try {
@@ -356,6 +405,18 @@ export async function getTeamTopPlayersAction(
     });
     return { success: false, error: 'Failed to load top players' };
   }
+}
+
+const observedGetTeamTopPlayersAction = withAdminObserved(
+  'getTeamTopPlayersAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getTeamTopPlayersActionImpl,
+);
+
+export async function getTeamTopPlayersAction(
+  limit: number = 5
+): Promise<ActionResult<Array<{ playerId: string; name: string; avgScore: number; rounds: number }>>> {
+  return observedGetTeamTopPlayersAction(limit);
 }
 
 // ============================================================================
@@ -411,7 +472,7 @@ async function verifyPlayerOwnershipOrCoach(
  * Called after a round is completed/submitted
  * Triggers cache refresh for the player
  */
-export async function onRoundCompleteAction(
+async function onRoundCompleteActionImpl(
   playerId: string,
   roundId: string
 ): Promise<void> {
@@ -441,10 +502,23 @@ export async function onRoundCompleteAction(
   }
 }
 
+const observedOnRoundCompleteAction = withAdminObserved(
+  'onRoundCompleteAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  onRoundCompleteActionImpl,
+);
+
+export async function onRoundCompleteAction(
+  playerId: string,
+  roundId: string
+): Promise<void> {
+  return observedOnRoundCompleteAction(playerId, roundId);
+}
+
 /**
  * Mark stats as stale (used when edits happen but full recalc not needed)
  */
-export async function markStatsStaleAction(playerId: string): Promise<void> {
+async function markStatsStaleActionImpl(playerId: string): Promise<void> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -469,6 +543,16 @@ export async function markStatsStaleAction(playerId: string): Promise<void> {
   }
 }
 
+const observedMarkStatsStaleAction = withAdminObserved(
+  'markStatsStaleAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  markStatsStaleActionImpl,
+);
+
+export async function markStatsStaleAction(playerId: string): Promise<void> {
+  return observedMarkStatsStaleAction(playerId);
+}
+
 // ============================================================================
 // DIRECT DATABASE STATS (fallback when cache not available)
 // ============================================================================
@@ -477,7 +561,7 @@ export async function markStatsStaleAction(playerId: string): Promise<void> {
  * Get player stats directly from database (no cache)
  * Used as fallback or for real-time accuracy
  */
-export async function getPlayerStatsDirectAction(
+async function getPlayerStatsDirectActionImpl(
   playerId?: string
 ): Promise<ActionResult<{
   scoringAverage: number | null;
@@ -621,4 +705,24 @@ export async function getPlayerStatsDirectAction(
     });
     return { success: false, error: 'Failed to load stats' };
   }
+}
+
+const observedGetPlayerStatsDirectAction = withAdminObserved(
+  'getPlayerStatsDirectAction',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerStatsDirectActionImpl,
+);
+
+export async function getPlayerStatsDirectAction(
+  playerId?: string
+): Promise<ActionResult<{
+  scoringAverage: number | null;
+  roundsPlayed: number;
+  bestRound: number | null;
+  worstRound: number | null;
+  girPercentage: number | null;
+  fairwayPercentage: number | null;
+  puttsPerRound: number | null;
+}>> {
+  return observedGetPlayerStatsDirectAction(playerId);
 }

@@ -11,6 +11,7 @@ import type {
   GolfTask,
 } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // Database record type for golf_task_templates (not in generated types)
 interface DbTaskTemplate {
@@ -47,7 +48,7 @@ function mapDbToTaskTemplate(record: DbTaskTemplate): TaskTemplate {
 /**
  * Create a new task template
  */
-export async function createTemplate(
+async function createTemplateImpl(
   data: CreateTemplateData
 ): Promise<{ data: TaskTemplate | null; error?: string }> {
   try {
@@ -117,10 +118,22 @@ export async function createTemplate(
   }
 }
 
+const observedCreateTemplate = withAdminObserved(
+  'createTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  createTemplateImpl,
+);
+
+export async function createTemplate(
+  data: CreateTemplateData
+): Promise<{ data: TaskTemplate | null; error?: string }> {
+  return observedCreateTemplate(data);
+}
+
 /**
  * Update an existing task template
  */
-export async function updateTemplate(
+async function updateTemplateImpl(
   id: string,
   data: UpdateTemplateData
 ): Promise<{ data: TaskTemplate | null; error?: string }> {
@@ -171,10 +184,23 @@ export async function updateTemplate(
   }
 }
 
+const observedUpdateTemplate = withAdminObserved(
+  'updateTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  updateTemplateImpl,
+);
+
+export async function updateTemplate(
+  id: string,
+  data: UpdateTemplateData
+): Promise<{ data: TaskTemplate | null; error?: string }> {
+  return observedUpdateTemplate(id, data);
+}
+
 /**
  * Delete a task template (hard delete since is_active doesn't exist in DB)
  */
-export async function deleteTemplate(
+async function deleteTemplateImpl(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -200,20 +226,44 @@ export async function deleteTemplate(
   }
 }
 
+const observedDeleteTemplate = withAdminObserved(
+  'deleteTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  deleteTemplateImpl,
+);
+
+export async function deleteTemplate(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedDeleteTemplate(id);
+}
+
 /**
  * Hard delete a task template (permanent)
  * Note: This is the same as deleteTemplate since soft-delete doesn't exist
  */
-export async function permanentlyDeleteTemplate(
+async function permanentlyDeleteTemplateImpl(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   return deleteTemplate(id);
 }
 
+const observedPermanentlyDeleteTemplate = withAdminObserved(
+  'permanentlyDeleteTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  permanentlyDeleteTemplateImpl,
+);
+
+export async function permanentlyDeleteTemplate(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedPermanentlyDeleteTemplate(id);
+}
+
 /**
  * Get all templates for a team
  */
-export async function getTeamTemplates(
+async function getTeamTemplatesImpl(
   teamId: string,
    
   _includeInactive: boolean = false // param kept for API compat but unused (no is_active column)
@@ -240,10 +290,24 @@ export async function getTeamTemplates(
   }
 }
 
+const observedGetTeamTemplates = withAdminObserved(
+  'getTeamTemplates',
+  { sport: 'golf', feature: 'task_management' },
+  getTeamTemplatesImpl,
+);
+
+export async function getTeamTemplates(
+  teamId: string,
+   
+  _includeInactive: boolean = false // param kept for API compat but unused (no is_active column)
+): Promise<{ data: TaskTemplate[] | null; error?: string }> {
+  return observedGetTeamTemplates(teamId, _includeInactive);
+}
+
 /**
  * Get a single template by ID
  */
-export async function getTemplate(
+async function getTemplateImpl(
   id: string
 ): Promise<{ data: TaskTemplate | null; error?: string }> {
   try {
@@ -268,10 +332,22 @@ export async function getTemplate(
   }
 }
 
+const observedGetTemplate = withAdminObserved(
+  'getTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  getTemplateImpl,
+);
+
+export async function getTemplate(
+  id: string
+): Promise<{ data: TaskTemplate | null; error?: string }> {
+  return observedGetTemplate(id);
+}
+
 /**
  * Create a task from a template
  */
-export async function createTaskFromTemplate(
+async function createTaskFromTemplateImpl(
   data: CreateTaskFromTemplate
 ): Promise<{ data: GolfTask[] | null; error?: string }> {
   try {
@@ -354,10 +430,22 @@ export async function createTaskFromTemplate(
   }
 }
 
+const observedCreateTaskFromTemplate = withAdminObserved(
+  'createTaskFromTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  createTaskFromTemplateImpl,
+);
+
+export async function createTaskFromTemplate(
+  data: CreateTaskFromTemplate
+): Promise<{ data: GolfTask[] | null; error?: string }> {
+  return observedCreateTaskFromTemplate(data);
+}
+
 /**
  * Duplicate a template
  */
-export async function duplicateTemplate(
+async function duplicateTemplateImpl(
   id: string
 ): Promise<{ data: TaskTemplate | null; error?: string }> {
   try {
@@ -405,11 +493,23 @@ export async function duplicateTemplate(
   }
 }
 
+const observedDuplicateTemplate = withAdminObserved(
+  'duplicateTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  duplicateTemplateImpl,
+);
+
+export async function duplicateTemplate(
+  id: string
+): Promise<{ data: TaskTemplate | null; error?: string }> {
+  return observedDuplicateTemplate(id);
+}
+
 /**
  * Seed default templates for a team
  * Call this when a team first accesses templates
  */
-export async function seedDefaultTemplates(
+async function seedDefaultTemplatesImpl(
   teamId: string,
   templates: Omit<CreateTemplateData, 'team_id'>[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
@@ -457,10 +557,23 @@ export async function seedDefaultTemplates(
   }
 }
 
+const observedSeedDefaultTemplates = withAdminObserved(
+  'seedDefaultTemplates',
+  { sport: 'golf', feature: 'task_management' },
+  seedDefaultTemplatesImpl,
+);
+
+export async function seedDefaultTemplates(
+  teamId: string,
+  templates: Omit<CreateTemplateData, 'team_id'>[]
+): Promise<{ success: boolean; count: number; error?: string }> {
+  return observedSeedDefaultTemplates(teamId, templates);
+}
+
 /**
  * Get templates by category
  */
-export async function getTemplatesByCategory(
+async function getTemplatesByCategoryImpl(
   teamId: string,
   category: string
 ): Promise<{ data: TaskTemplate[] | null; error?: string }> {
@@ -487,10 +600,23 @@ export async function getTemplatesByCategory(
   }
 }
 
+const observedGetTemplatesByCategory = withAdminObserved(
+  'getTemplatesByCategory',
+  { sport: 'golf', feature: 'task_management' },
+  getTemplatesByCategoryImpl,
+);
+
+export async function getTemplatesByCategory(
+  teamId: string,
+  category: string
+): Promise<{ data: TaskTemplate[] | null; error?: string }> {
+  return observedGetTemplatesByCategory(teamId, category);
+}
+
 /**
  * Search templates
  */
-export async function searchTemplates(
+async function searchTemplatesImpl(
   teamId: string,
   query: string
 ): Promise<{ data: TaskTemplate[] | null; error?: string }> {
@@ -518,12 +644,25 @@ export async function searchTemplates(
   }
 }
 
+const observedSearchTemplates = withAdminObserved(
+  'searchTemplates',
+  { sport: 'golf', feature: 'task_management' },
+  searchTemplatesImpl,
+);
+
+export async function searchTemplates(
+  teamId: string,
+  query: string
+): Promise<{ data: TaskTemplate[] | null; error?: string }> {
+  return observedSearchTemplates(teamId, query);
+}
+
 /**
  * Get recurring templates that are due to be processed
  * Note: Recurring functionality is not implemented in current DB schema.
  * This is a placeholder that returns empty array.
  */
-export async function getRecurringTemplatesDue(): Promise<{
+async function getRecurringTemplatesDueImpl(): Promise<{
   data: TaskTemplate[] | null;
   error?: string;
 }> {
@@ -532,12 +671,25 @@ export async function getRecurringTemplatesDue(): Promise<{
   return { data: [] };
 }
 
+const observedGetRecurringTemplatesDue = withAdminObserved(
+  'getRecurringTemplatesDue',
+  { sport: 'golf', feature: 'task_management' },
+  getRecurringTemplatesDueImpl,
+);
+
+export async function getRecurringTemplatesDue(): Promise<{
+  data: TaskTemplate[] | null;
+  error?: string;
+}> {
+  return observedGetRecurringTemplatesDue();
+}
+
 /**
  * Process recurring templates and create tasks
  * Called by cron/edge function
  * Note: Recurring functionality is not implemented in current DB schema.
  */
-export async function processRecurringTemplates(): Promise<{
+async function processRecurringTemplatesImpl(): Promise<{
   created: number;
   failed: number;
   errors: string[];
@@ -582,4 +734,18 @@ export async function processRecurringTemplates(): Promise<{
     results.errors.push('Failed to process recurring templates');
     return results;
   }
+}
+
+const observedProcessRecurringTemplates = withAdminObserved(
+  'processRecurringTemplates',
+  { sport: 'golf', feature: 'task_management' },
+  processRecurringTemplatesImpl,
+);
+
+export async function processRecurringTemplates(): Promise<{
+  created: number;
+  failed: number;
+  errors: string[];
+}> {
+  return observedProcessRecurringTemplates();
 }

@@ -18,15 +18,52 @@
  *       .order('id', { ascending: true })
  *       .range(from, to)
  *   );
+ *
+ * W15 Task 15 — RLS-denial centralization: an optional third `rlsCtx` argument
+ * threads a table/action/feature descriptor into `maybeCaptureRlsDenial`
+ * (src/lib/admin/rls-denial.ts) on the `if (error)` branches. Capture is
+ * fire-and-forget and never changes the return/throw contract below. Omitting
+ * `rlsCtx` still routes through `maybeCaptureRlsDenial` with a `table: 'unknown'`
+ * fallback — the capture itself no-ops unless the error looks like an RLS
+ * denial (isRlsDenial), so non-denial errors from un-threaded call sites are
+ * still silent.
  */
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
+import type { FeatureKey } from '@/lib/admin/feature-registry';
+
 const DEFAULT_PAGE_SIZE = 1000;
+
+export interface RlsCaptureCtx {
+  table: string;
+  action: string;
+  feature?: FeatureKey;
+  sport?: 'golf' | 'shared';
+  verb?: 'select'; // helpers are read-paths; defaults 'select'
+  userId?: string | null;
+}
+
+function captureIfDenial(
+  error: { message: string; code?: string | null },
+  rlsCtx: RlsCaptureCtx | undefined,
+  defaultAction: string,
+): void {
+  maybeCaptureRlsDenial(error, {
+    table: rlsCtx?.table ?? 'unknown',
+    verb: rlsCtx?.verb ?? 'select',
+    action: rlsCtx?.action ?? defaultAction,
+    userId: rlsCtx?.userId,
+    sport: rlsCtx?.sport,
+    feature: rlsCtx?.feature,
+  });
+}
 
 export async function fetchAllRows<T>(
   makeQuery: (
     from: number,
     to: number,
-  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  ) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string | null } | null }>,
   pageSize: number = DEFAULT_PAGE_SIZE,
+  rlsCtx?: RlsCaptureCtx,
 ): Promise<T[]> {
   const all: T[] = [];
   let from = 0;
@@ -37,6 +74,7 @@ export async function fetchAllRows<T>(
   for (let page = 0; page < 1000; page += 1) {
     const { data, error } = await makeQuery(from, from + pageSize - 1);
     if (error) {
+      captureIfDenial(error, rlsCtx, 'fetchAllRows');
       throw new Error(`fetchAllRows: ${error.message}`);
     }
     const rows = data ?? [];
@@ -66,15 +104,17 @@ export async function fetchAllRowsResult<T>(
   makeQuery: (
     from: number,
     to: number,
-  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  ) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string | null } | null }>,
   pageSize: number = DEFAULT_PAGE_SIZE,
-): Promise<{ data: T[] | null; error: { message: string } | null }> {
+  rlsCtx?: RlsCaptureCtx,
+): Promise<{ data: T[] | null; error: { message: string; code?: string | null } | null }> {
   const all: T[] = [];
   let from = 0;
 
   for (let page = 0; page < 1000; page += 1) {
     const { data, error } = await makeQuery(from, from + pageSize - 1);
     if (error) {
+      captureIfDenial(error, rlsCtx, 'fetchAllRowsResult');
       // Preserve the unpaginated contract: surface the error, null data.
       return { data: from === 0 ? null : all, error };
     }

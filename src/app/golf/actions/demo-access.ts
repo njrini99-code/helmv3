@@ -8,6 +8,7 @@ import { logLogin } from '@/lib/admin-logger';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
 import { DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { getDemoCoachCredentials } from '@/lib/demo/config.server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // posthog capture handled client-side via ?demo=1
 
@@ -76,7 +77,7 @@ function validateInput(input: EnterDemoInput): string | null {
  * suppressed inline at the single DB write below. Abuse is bounded by the
  * per-IP rate limit above (RATE_LIMITS.DEMO_GATE).
  */
-export async function enterDemo(input: EnterDemoInput): Promise<EnterDemoResult> {
+async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   // --- 1. Validate input ---------------------------------------------------
   const validationError = validateInput(input);
   if (validationError) {
@@ -169,4 +170,18 @@ export async function enterDemo(input: EnterDemoInput): Promise<EnterDemoResult>
 
   // --- 7. Redirect with ?demo=1 so the client fires the PostHog event ------
   redirect(`${DEMO_LANDING_PATH}?demo=1`);
+}
+
+// enterDemo's redirect() throws a NEXT_REDIRECT digest, which
+// isNextControlFlowError (observed-action.ts:10-15) already skips from
+// logging while still rethrowing — confirmed safe to wrap (W15 plan Batch 5
+// note).
+const observedEnterDemo = withAdminObserved(
+  'enterDemo',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  enterDemoImpl,
+);
+
+export async function enterDemo(input: EnterDemoInput): Promise<EnterDemoResult> {
+  return observedEnterDemo(input);
 }

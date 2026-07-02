@@ -24,8 +24,9 @@ import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 // docs/architecture/coachhelm-evidence-contract.md and Plan 04. The previous
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
-import { logCritical, logError } from '@/lib/error-monitoring';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Json } from '@/lib/types/database';
@@ -1142,7 +1143,7 @@ type GolfEventUpdateData = {
 /**
  * Submit a golf round with comprehensive shot-by-shot stats
  */
-export async function submitGolfRoundComprehensive(
+async function submitGolfRoundComprehensiveImpl(
   data: GolfRoundInputComprehensive,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
@@ -1584,7 +1585,7 @@ export async function submitGolfRoundComprehensive(
       );
 
       if (rpcError) {
-        logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc' });
+        await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc' });
         await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
           action: 'submitGolfRoundComprehensive',
           roundId: existingRoundId,
@@ -1721,7 +1722,7 @@ export async function submitGolfRoundComprehensive(
         // Do NOT delete the round — preserve it so the user can retry.
         // Deleting here caused permanent data loss when the RPC failed
         // (e.g., trigger errors, network timeouts, race conditions).
-        logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc.new' });
+        await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new' });
         await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
           action: 'submitGolfRoundComprehensive',
           roundId: newRound.id,
@@ -2024,11 +2025,24 @@ export async function submitGolfRoundComprehensive(
   }
 }
 
+const observedSubmitGolfRoundComprehensive = withAdminObserved(
+  'submitGolfRoundComprehensive',
+  { sport: 'golf', feature: 'round_tracking' },
+  submitGolfRoundComprehensiveImpl,
+);
+
+export async function submitGolfRoundComprehensive(
+  data: GolfRoundInputComprehensive,
+  existingRoundId?: string
+): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
+  return observedSubmitGolfRoundComprehensive(data, existingRoundId);
+}
+
 // ============================================================================
 // EVENT ACTIONS
 // ============================================================================
 
-export async function createGolfEvent(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
+async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
   try {
     // Validate input
     const validatedData = golfEventSchema.parse(data);
@@ -2274,6 +2288,16 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
   }
 }
 
+const observedCreateGolfEvent = withAdminObserved(
+  'createGolfEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  createGolfEventImpl,
+);
+
+export async function createGolfEvent(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
+  return observedCreateGolfEvent(data);
+}
+
 // Validation schema for golf event updates
 const golfEventUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -2304,7 +2328,7 @@ const golfEventUpdateSchema = z.object({
   status: z.literal('confirmed').optional(),
 }).superRefine(refineEventEndAfterStart);
 
-export async function updateGolfEvent(
+async function updateGolfEventImpl(
   eventId: string,
   data: GolfEventUpdateInput
 ): Promise<{ success: boolean; error?: string }> {
@@ -2513,6 +2537,19 @@ export async function updateGolfEvent(
   }
 }
 
+const observedUpdateGolfEvent = withAdminObserved(
+  'updateGolfEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  updateGolfEventImpl,
+);
+
+export async function updateGolfEvent(
+  eventId: string,
+  data: GolfEventUpdateInput
+): Promise<{ success: boolean; error?: string }> {
+  return observedUpdateGolfEvent(eventId, data);
+}
+
 /**
  * Delete a golf event.
  *
@@ -2526,7 +2563,7 @@ export async function updateGolfEvent(
  * A hard delete ({ hard: true } or deleteGolfEventPermanently) is only
  * permitted when the event is already cancelled OR has zero attendance rows.
  */
-export async function deleteGolfEvent(
+async function deleteGolfEventImpl(
   eventId: string,
   options?: DeleteGolfEventOptions
 ): Promise<{ success: boolean; error?: string }> {
@@ -2748,21 +2785,46 @@ export async function deleteGolfEvent(
   }
 }
 
+const observedDeleteGolfEvent = withAdminObserved(
+  'deleteGolfEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteGolfEventImpl,
+);
+
+export async function deleteGolfEvent(
+  eventId: string,
+  options?: DeleteGolfEventOptions
+): Promise<{ success: boolean; error?: string }> {
+  return observedDeleteGolfEvent(eventId, options);
+}
+
 /**
  * Permanently delete an event. Gated: only allowed when the event is already
  * cancelled OR has zero attendance rows (see deleteGolfEvent).
  */
-export async function deleteGolfEventPermanently(
+async function deleteGolfEventPermanentlyImpl(
   eventId: string
 ): Promise<{ success: boolean; error?: string }> {
   return deleteGolfEvent(eventId, { hard: true });
+}
+
+const observedDeleteGolfEventPermanently = withAdminObserved(
+  'deleteGolfEventPermanently',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteGolfEventPermanentlyImpl,
+);
+
+export async function deleteGolfEventPermanently(
+  eventId: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedDeleteGolfEventPermanently(eventId);
 }
 
 // ============================================================================
 // QUALIFIER ACTIONS
 // ============================================================================
 
-export async function createGolfQualifier(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
+async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
   try {
     // Validate input
     const validatedData = golfQualifierSchema.parse(data);
@@ -2952,6 +3014,16 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
   }
 }
 
+const observedCreateGolfQualifier = withAdminObserved(
+  'createGolfQualifier',
+  { sport: 'golf', feature: 'qualifiers' },
+  createGolfQualifierImpl,
+);
+
+export async function createGolfQualifier(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
+  return observedCreateGolfQualifier(data);
+}
+
 /**
  * Feature G — read the per-round course assignments for a qualifier.
  * Returns one entry per assigned round (ascending). RLS lets any team member
@@ -2959,7 +3031,7 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
  * and the player detail view. Reads through fromUntyped because the table is not
  * yet in the generated Database types (migration unapplied).
  */
-export async function getQualifierRoundCourses(
+async function getQualifierRoundCoursesImpl(
   qualifierId: string,
 ): Promise<QualifierRoundCourse[]> {
   try {
@@ -2994,6 +3066,18 @@ export async function getQualifierRoundCourses(
   }
 }
 
+const observedGetQualifierRoundCourses = withAdminObserved(
+  'getQualifierRoundCourses',
+  { sport: 'golf', feature: 'qualifiers' },
+  getQualifierRoundCoursesImpl,
+);
+
+export async function getQualifierRoundCourses(
+  qualifierId: string,
+): Promise<QualifierRoundCourse[]> {
+  return observedGetQualifierRoundCourses(qualifierId);
+}
+
 /**
  * Feature G — set (replace) the round count + per-round course assignments for an
  * existing qualifier. Coach-only; RLS enforces team ownership on every write.
@@ -3004,7 +3088,7 @@ export async function getQualifierRoundCourses(
  * destroy assignments on a transient failure). Reads/writes through fromUntyped
  * because the table is not yet in the generated Database types.
  */
-export async function setQualifierRoundCourses(
+async function setQualifierRoundCoursesImpl(
   qualifierId: string,
   numRounds: number,
   roundCourses: QualifierRoundCourseInput[],
@@ -3072,7 +3156,21 @@ export async function setQualifierRoundCourses(
   }
 }
 
-export async function updateQualifierStatus(
+const observedSetQualifierRoundCourses = withAdminObserved(
+  'setQualifierRoundCourses',
+  { sport: 'golf', feature: 'qualifiers' },
+  setQualifierRoundCoursesImpl,
+);
+
+export async function setQualifierRoundCourses(
+  qualifierId: string,
+  numRounds: number,
+  roundCourses: QualifierRoundCourseInput[],
+): Promise<ActionResult> {
+  return observedSetQualifierRoundCourses(qualifierId, numRounds, roundCourses);
+}
+
+async function updateQualifierStatusImpl(
   qualifierId: string,
   status: 'upcoming' | 'in_progress' | 'completed'
 ): Promise<ActionResult> {
@@ -3128,11 +3226,24 @@ export async function updateQualifierStatus(
   }
 }
 
+const observedUpdateQualifierStatus = withAdminObserved(
+  'updateQualifierStatus',
+  { sport: 'golf', feature: 'qualifiers' },
+  updateQualifierStatusImpl,
+);
+
+export async function updateQualifierStatus(
+  qualifierId: string,
+  status: 'upcoming' | 'in_progress' | 'completed'
+): Promise<ActionResult> {
+  return observedUpdateQualifierStatus(qualifierId, status);
+}
+
 // ============================================================================
 // ANNOUNCEMENT ACTIONS
 // ============================================================================
 
-export async function createAnnouncement(data: {
+async function createAnnouncementImpl(data: {
   title: string;
   body: string;
   urgency: 'low' | 'normal' | 'high' | 'urgent';
@@ -3199,12 +3310,27 @@ export async function createAnnouncement(data: {
   }
 }
 
+const observedCreateAnnouncement = withAdminObserved(
+  'createAnnouncement',
+  { sport: 'golf', feature: 'announcements' },
+  createAnnouncementImpl,
+);
+
+export async function createAnnouncement(data: {
+  title: string;
+  body: string;
+  urgency: 'low' | 'normal' | 'high' | 'urgent';
+  requiresAcknowledgement: boolean;
+}): Promise<ActionResult<{ announcementId: string }>> {
+  return observedCreateAnnouncement(data);
+}
+
 // ============================================================================
 // PLAYER ACTIONS
 // ============================================================================
 
-export async function invitePlayerToTeam(
-   
+async function invitePlayerToTeamImpl(
+
   _email: string // Email parameter reserved for future email invitations
 ): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
   try {
@@ -3271,7 +3397,19 @@ export async function invitePlayerToTeam(
   }
 }
 
-export async function updatePlayerStatus(
+const observedInvitePlayerToTeam = withAdminObserved(
+  'invitePlayerToTeam',
+  { sport: 'golf', feature: 'roster_management' },
+  invitePlayerToTeamImpl,
+);
+
+export async function invitePlayerToTeam(
+  _email: string // Email parameter reserved for future email invitations
+): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
+  return observedInvitePlayerToTeam(_email);
+}
+
+async function updatePlayerStatusImpl(
   playerId: string,
   // The golf_team_members.status column allows active/inactive/removed; the
   // roster UI now offers active/inactive only (B4/F007). 'injured'/'redshirt'
@@ -3349,6 +3487,19 @@ export async function updatePlayerStatus(
   }
 }
 
+const observedUpdatePlayerStatus = withAdminObserved(
+  'updatePlayerStatus',
+  { sport: 'golf', feature: 'roster_management' },
+  updatePlayerStatusImpl,
+);
+
+export async function updatePlayerStatus(
+  playerId: string,
+  status: 'active' | 'injured' | 'redshirt' | 'inactive'
+): Promise<{ success: boolean; error?: string }> {
+  return observedUpdatePlayerStatus(playerId, status);
+}
+
 // ============================================================================
 // RSVP & CALENDAR ACTIONS
 // ============================================================================
@@ -3369,7 +3520,7 @@ export async function updatePlayerStatus(
  *   (enforced inside updateRSVP). Failures carry a machine-readable `code`
  *   the UI can branch on.
  */
-export async function respondToEvent(
+async function respondToEventImpl(
   eventId: string,
   status: 'pending' | 'accepted' | 'declined' | 'tentative'
 ): Promise<RespondToEventResult> {
@@ -3475,13 +3626,26 @@ export async function respondToEvent(
   }
 }
 
+const observedRespondToEvent = withAdminObserved(
+  'respondToEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  respondToEventImpl,
+);
+
+export async function respondToEvent(
+  eventId: string,
+  status: 'pending' | 'accepted' | 'declined' | 'tentative'
+): Promise<RespondToEventResult> {
+  return observedRespondToEvent(eventId, status);
+}
+
 /**
  * Coach-triggered reminder: drops in-app rows into golf_calendar_notifications
  * for the supplied players, deduplicated against the cron-generated reminders
  * by a distinct notification_type. Use admin client because notifications are
  * inserted on behalf of other users.
  */
-export async function sendEventReminderToPlayers(
+async function sendEventReminderToPlayersImpl(
   eventId: string,
   playerIds: string[],
 ): Promise<ActionResult<{ sent: number }>> {
@@ -3605,10 +3769,23 @@ export async function sendEventReminderToPlayers(
   }
 }
 
+const observedSendEventReminderToPlayers = withAdminObserved(
+  'sendEventReminderToPlayers',
+  { sport: 'golf', feature: 'calendar_events' },
+  sendEventReminderToPlayersImpl,
+);
+
+export async function sendEventReminderToPlayers(
+  eventId: string,
+  playerIds: string[],
+): Promise<ActionResult<{ sent: number }>> {
+  return observedSendEventReminderToPlayers(eventId, playerIds);
+}
+
 /**
  * Check for scheduling conflicts when creating/editing an event
  */
-export async function checkScheduleConflicts(
+async function checkScheduleConflictsImpl(
   startDate: string,
   startTime: string,
   endDate: string,
@@ -3654,11 +3831,29 @@ export async function checkScheduleConflicts(
   }
 }
 
+const observedCheckScheduleConflicts = withAdminObserved(
+  'checkScheduleConflicts',
+  { sport: 'golf', feature: 'calendar_events' },
+  checkScheduleConflictsImpl,
+);
+
+export async function checkScheduleConflicts(
+  startDate: string,
+  startTime: string,
+  endDate: string,
+  endTime: string,
+  attendeeIds: string[],
+  excludeEventId?: string,
+  timezoneOffset?: number
+): Promise<ActionResult<ConflictResult>> {
+  return observedCheckScheduleConflicts(startDate, startTime, endDate, endTime, attendeeIds, excludeEventId, timezoneOffset);
+}
+
 /**
  * Get availability for a specific player on a specific date
  * Used for the availability day view overlay
  */
-export async function getPlayerAvailability(
+async function getPlayerAvailabilityImpl(
   memberId: string,
   startDate: string, // YYYY-MM-DD
   endDate: string, // YYYY-MM-DD
@@ -3794,11 +3989,26 @@ export async function getPlayerAvailability(
   }
 }
 
+const observedGetPlayerAvailability = withAdminObserved(
+  'getPlayerAvailability',
+  { sport: 'golf', feature: 'calendar_events' },
+  getPlayerAvailabilityImpl,
+);
+
+export async function getPlayerAvailability(
+  memberId: string,
+  startDate: string, // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  timezoneOffset?: number
+): Promise<ActionResult<SerializedBusyPeriod[]>> {
+  return observedGetPlayerAvailability(memberId, startDate, endDate, timezoneOffset);
+}
+
 /**
  * Get the current user's busy periods (works for both coaches and players)
  * Used to show YOUR schedule when viewing availability alongside a team member
  */
-export async function getCurrentUserBusyPeriods(
+async function getCurrentUserBusyPeriodsImpl(
   startDate: string, // YYYY-MM-DD
   endDate: string, // YYYY-MM-DD
   /** Client timezone offset (Date.getTimezoneOffset() minutes) — see
@@ -3840,11 +4050,25 @@ export async function getCurrentUserBusyPeriods(
   }
 }
 
+const observedGetCurrentUserBusyPeriods = withAdminObserved(
+  'getCurrentUserBusyPeriods',
+  { sport: 'golf', feature: 'calendar_events' },
+  getCurrentUserBusyPeriodsImpl,
+);
+
+export async function getCurrentUserBusyPeriods(
+  startDate: string, // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  timezoneOffset?: number
+): Promise<ActionResult<SerializedBusyPeriod[]>> {
+  return observedGetCurrentUserBusyPeriods(startDate, endDate, timezoneOffset);
+}
+
 /**
  * Get all calendar notifications for the current user
  * Note: golf_calendar_notifications table may not be in types
  */
-export async function getNotifications(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
+async function getNotificationsImpl(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -3872,11 +4096,21 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
   }
 }
 
+const observedGetNotifications = withAdminObserved(
+  'getNotifications',
+  { sport: 'golf', feature: 'notifications' },
+  getNotificationsImpl,
+);
+
+export async function getNotifications(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
+  return observedGetNotifications(limit);
+}
+
 /**
  * Mark a notification as read
  * Note: golf_calendar_notifications table may not be in types
  */
-export async function markNotificationRead(
+async function markNotificationReadImpl(
   notificationId: string
 ): Promise<ActionResult> {
   try {
@@ -3899,11 +4133,23 @@ export async function markNotificationRead(
   }
 }
 
+const observedMarkNotificationRead = withAdminObserved(
+  'markNotificationRead',
+  { sport: 'golf', feature: 'notifications' },
+  markNotificationReadImpl,
+);
+
+export async function markNotificationRead(
+  notificationId: string
+): Promise<ActionResult> {
+  return observedMarkNotificationRead(notificationId);
+}
+
 /**
  * Mark all notifications as read for the current user
  * Note: golf_calendar_notifications table may not be in types
  */
-export async function markAllNotificationsRead(): Promise<ActionResult> {
+async function markAllNotificationsReadImpl(): Promise<ActionResult> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -3927,10 +4173,20 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
   }
 }
 
+const observedMarkAllNotificationsRead = withAdminObserved(
+  'markAllNotificationsRead',
+  { sport: 'golf', feature: 'notifications' },
+  markAllNotificationsReadImpl,
+);
+
+export async function markAllNotificationsRead(): Promise<ActionResult> {
+  return observedMarkAllNotificationsRead();
+}
+
 /**
  * Get pending event invitations for the current player
  */
-export async function getPendingInvitations(): Promise<ActionResult<EventInvitation[]>> {
+async function getPendingInvitationsImpl(): Promise<ActionResult<EventInvitation[]>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -3960,10 +4216,20 @@ export async function getPendingInvitations(): Promise<ActionResult<EventInvitat
   }
 }
 
+const observedGetPendingInvitations = withAdminObserved(
+  'getPendingInvitations',
+  { sport: 'golf', feature: 'roster_management' },
+  getPendingInvitationsImpl,
+);
+
+export async function getPendingInvitations(): Promise<ActionResult<EventInvitation[]>> {
+  return observedGetPendingInvitations();
+}
+
 /**
  * Get the current player's RSVP status for an event
  */
-export async function getPlayerEventRSVP(
+async function getPlayerEventRSVPImpl(
   eventId: string
 ): Promise<ActionResult<{ status: RSVPStatus; respondedAt: string | null } | null>> {
   try {
@@ -4008,10 +4274,22 @@ export async function getPlayerEventRSVP(
   }
 }
 
+const observedGetPlayerEventRSVP = withAdminObserved(
+  'getPlayerEventRSVP',
+  { sport: 'golf', feature: 'calendar_events' },
+  getPlayerEventRSVPImpl,
+);
+
+export async function getPlayerEventRSVP(
+  eventId: string
+): Promise<ActionResult<{ status: RSVPStatus; respondedAt: string | null } | null>> {
+  return observedGetPlayerEventRSVP(eventId);
+}
+
 /**
  * Get RSVP summary for an event (coach view)
  */
-export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPStats>> {
+async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -4025,6 +4303,16 @@ export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPSt
   } catch {
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
+}
+
+const observedGetEventRSVP = withAdminObserved(
+  'getEventRSVP',
+  { sport: 'golf', feature: 'calendar_events' },
+  getEventRSVPImpl,
+);
+
+export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPStats>> {
+  return observedGetEventRSVP(eventId);
 }
 
 // ============================================================================
@@ -4045,7 +4333,7 @@ const blockedTimeSchema = z.object({
 /**
  * Add coach blocked time
  */
-export async function addCoachBlockedTime(
+async function addCoachBlockedTimeImpl(
   data: z.infer<typeof blockedTimeSchema>
 ): Promise<ActionResult<{ id: string }>> {
   try {
@@ -4104,10 +4392,22 @@ export async function addCoachBlockedTime(
   }
 }
 
+const observedAddCoachBlockedTime = withAdminObserved(
+  'addCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  addCoachBlockedTimeImpl,
+);
+
+export async function addCoachBlockedTime(
+  data: z.infer<typeof blockedTimeSchema>
+): Promise<ActionResult<{ id: string }>> {
+  return observedAddCoachBlockedTime(data);
+}
+
 /**
  * Delete coach blocked time
  */
-export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<void>> {
+async function deleteCoachBlockedTimeImpl(id: string): Promise<ActionResult<void>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -4160,10 +4460,20 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
   }
 }
 
+const observedDeleteCoachBlockedTime = withAdminObserved(
+  'deleteCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteCoachBlockedTimeImpl,
+);
+
+export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<void>> {
+  return observedDeleteCoachBlockedTime(id);
+}
+
 /**
  * Update coach blocked time
  */
-export async function updateCoachBlockedTime(
+async function updateCoachBlockedTimeImpl(
   id: string,
   data: Partial<z.infer<typeof blockedTimeSchema>>
 ): Promise<ActionResult<void>> {
@@ -4230,10 +4540,23 @@ export async function updateCoachBlockedTime(
   }
 }
 
+const observedUpdateCoachBlockedTime = withAdminObserved(
+  'updateCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  updateCoachBlockedTimeImpl,
+);
+
+export async function updateCoachBlockedTime(
+  id: string,
+  data: Partial<z.infer<typeof blockedTimeSchema>>
+): Promise<ActionResult<void>> {
+  return observedUpdateCoachBlockedTime(id, data);
+}
+
 /**
  * Get coach blocked time periods
  */
-export async function getCoachBlockedTime(
+async function getCoachBlockedTimeImpl(
   startDate: string,
   endDate: string
 ): Promise<ActionResult<BlockedTimePeriod[]>> {
@@ -4274,6 +4597,19 @@ export async function getCoachBlockedTime(
   } catch (error) {
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedGetCoachBlockedTime = withAdminObserved(
+  'getCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  getCoachBlockedTimeImpl,
+);
+
+export async function getCoachBlockedTime(
+  startDate: string,
+  endDate: string
+): Promise<ActionResult<BlockedTimePeriod[]>> {
+  return observedGetCoachBlockedTime(startDate, endDate);
 }
 
 // ============================================================================
@@ -4323,8 +4659,12 @@ export interface PartialRoundData {
  *
  * For existing rounds, uses an atomic RPC (save_partial_round_atomic) that wraps
  * delete+insert in a single DB transaction to prevent data loss on partial failures.
+ *
+ * Wrapped in withAdminObserved below (Helm Bridge W6 exemplar retrofit) —
+ * the mutation-heaviest golf path. Renamed to *Impl and re-exported under
+ * the original name so no caller changes.
  */
-export async function savePartialRound(
+async function savePartialRoundImpl(
   data: PartialRoundData,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
@@ -4590,7 +4930,7 @@ export async function savePartialRound(
       );
 
       if (rpcError) {
-        logError(new Error(rpcError.message), undefined, { action: 'savePartialRound.rpc' });
+        await logServerException(new Error(rpcError.message), { action: 'savePartialRound.rpc' });
         await logServerError(`Auto-save RPC failed: ${rpcError.message}`, {
           action: 'savePartialRound',
           roundId: existingRoundId,
@@ -4694,7 +5034,7 @@ export async function savePartialRound(
           .select()
           .maybeSingle();
         if (updateError) {
-          logError(new Error(updateError.message), undefined, { action: 'savePartialRound.updateExisting' });
+          await logServerException(new Error(updateError.message), { action: 'savePartialRound.updateExisting' });
           await logServerError(`Auto-save update failed: ${updateError.message}`, {
             action: 'savePartialRound.updateExisting',
             roundId: existingRound.id,
@@ -4704,6 +5044,13 @@ export async function savePartialRound(
             errorCode: updateError.code,
             errorHint: updateError.hint,
             errorDetails: updateError.details,
+          });
+          maybeCaptureRlsDenial(updateError, {
+            table: 'golf_rounds',
+            verb: 'update',
+            action: 'savePartialRound',
+            feature: 'round_tracking',
+            sport: 'golf',
           });
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
@@ -4723,7 +5070,7 @@ export async function savePartialRound(
           .single();
 
         if (roundError) {
-          logError(new Error(roundError.message), undefined, { action: 'savePartialRound.insertRound' });
+          await logServerException(new Error(roundError.message), { action: 'savePartialRound.insertRound' });
           await logServerError(`Auto-save insert round failed: ${roundError.message}`, {
             action: 'savePartialRound.insertRound',
             playerId: player.id,
@@ -4731,6 +5078,13 @@ export async function savePartialRound(
             userEmail: user.email,
             errorCode: roundError.code,
             errorDetails: roundError.details,
+          });
+          maybeCaptureRlsDenial(roundError, {
+            table: 'golf_rounds',
+            verb: 'insert',
+            action: 'savePartialRound',
+            feature: 'round_tracking',
+            sport: 'golf',
           });
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
@@ -4753,7 +5107,7 @@ export async function savePartialRound(
           .select('id, hole_number');
 
         if (holesError) {
-          logError(new Error(holesError.message), undefined, { action: 'savePartialRound.insertHoles' });
+          await logServerException(new Error(holesError.message), { action: 'savePartialRound.insertHoles' });
           await logServerError(`Auto-save insert holes failed: ${holesError.message}`, {
             action: 'savePartialRound.insertHoles',
             roundId,
@@ -4804,7 +5158,7 @@ export async function savePartialRound(
               .upsert(shotsData, { onConflict: 'round_id,hole_number,shot_number' })
               .select('id, hole_number, shot_number');
             if (shotsError) {
-              logError(new Error(shotsError.message), undefined, { action: 'savePartialRound.insertShots' });
+              await logServerException(new Error(shotsError.message), { action: 'savePartialRound.insertShots' });
               await logServerError(`Auto-save insert shots failed: ${shotsError.message}`, {
                 action: 'savePartialRound.insertShots',
                 roundId,
@@ -4923,7 +5277,7 @@ export async function savePartialRound(
     return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
 
   } catch (err) {
-    logCritical(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' });
+    await logServerException(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' }, 'critical');
     await logServerError(`Auto-save unexpected error: ${err instanceof Error ? err.message : String(err)}`, {
       action: 'savePartialRound.catch',
       extra: { stack: err instanceof Error ? err.stack : undefined },
@@ -4936,9 +5290,29 @@ export async function savePartialRound(
 }
 
 /**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedSavePartialRound = withAdminObserved(
+  'savePartialRound',
+  { sport: 'golf', feature: 'round_tracking' },
+  savePartialRoundImpl,
+);
+
+export async function savePartialRound(
+  data: PartialRoundData,
+  existingRoundId?: string
+): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
+  return observedSavePartialRound(data, existingRoundId);
+}
+
+/**
  * Delete an in-progress round
  */
-export async function deleteInProgressRound(roundId: string): Promise<ActionResult<void>> {
+async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<void>> {
   try {
     // Validate UUID format
     const validId = CommonSchemas.uuid.safeParse(roundId);
@@ -4997,6 +5371,16 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
   }
 }
 
+const observedDeleteInProgressRound = withAdminObserved(
+  'deleteInProgressRound',
+  { sport: 'golf', feature: 'round_tracking' },
+  deleteInProgressRoundImpl,
+);
+
+export async function deleteInProgressRound(roundId: string): Promise<ActionResult<void>> {
+  return observedDeleteInProgressRound(roundId);
+}
+
 // ============================================================================
 // QUALIFIER ACTIONS (PLAYER)
 // ============================================================================
@@ -5025,7 +5409,7 @@ export interface PlayerQualifierInfo {
  * Get all qualifiers the current player is entered in
  * Returns qualifier info along with player's round completion status
  */
-export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifierInfo[]>> {
+async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierInfo[]>> {
   try {
     const supabase = await createClient();
 
@@ -5164,10 +5548,20 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
   }
 }
 
+const observedGetPlayerQualifiers = withAdminObserved(
+  'getPlayerQualifiers',
+  { sport: 'golf', feature: 'my_qualifiers' },
+  getPlayerQualifiersImpl,
+);
+
+export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifierInfo[]>> {
+  return observedGetPlayerQualifiers();
+}
+
 /**
  * Get the next available round number for a qualifier
  */
-export async function getNextQualifierRoundNumber(
+async function getNextQualifierRoundNumberImpl(
   qualifierId: string
 ): Promise<ActionResult<{ nextRoundNumber: number; availableRounds: number[] }>> {
   try {
@@ -5252,6 +5646,18 @@ export async function getNextQualifierRoundNumber(
   }
 }
 
+const observedGetNextQualifierRoundNumber = withAdminObserved(
+  'getNextQualifierRoundNumber',
+  { sport: 'golf', feature: 'qualifiers' },
+  getNextQualifierRoundNumberImpl,
+);
+
+export async function getNextQualifierRoundNumber(
+  qualifierId: string
+): Promise<ActionResult<{ nextRoundNumber: number; availableRounds: number[] }>> {
+  return observedGetNextQualifierRoundNumber(qualifierId);
+}
+
 /**
  * Get qualifier leaderboard (accessible to both coaches and players)
  */
@@ -5290,7 +5696,7 @@ export interface QualifierLeaderboardData {
   currentPlayerId: string | null;
 }
 
-export async function getQualifierLeaderboard(
+async function getQualifierLeaderboardImpl(
   qualifierId: string
 ): Promise<ActionResult<QualifierLeaderboardData>> {
   try {
@@ -5486,6 +5892,18 @@ export async function getQualifierLeaderboard(
   }
 }
 
+const observedGetQualifierLeaderboard = withAdminObserved(
+  'getQualifierLeaderboard',
+  { sport: 'golf', feature: 'qualifiers' },
+  getQualifierLeaderboardImpl,
+);
+
+export async function getQualifierLeaderboard(
+  qualifierId: string
+): Promise<ActionResult<QualifierLeaderboardData>> {
+  return observedGetQualifierLeaderboard(qualifierId);
+}
+
 /**
  * Update qualifier entry statistics after a round is submitted
  * This is called automatically after submitGolfRoundComprehensive
@@ -5635,7 +6053,7 @@ export interface SaveCourseInput {
  * Get all saved courses for the current player
  * Returns courses sorted by most recently used
  */
-export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[]>> {
+async function getPlayerSavedCoursesImpl(): Promise<ActionResult<SavedCourse[]>> {
   const supabase = await createClient();
 
   // Get the current user
@@ -5690,10 +6108,20 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
   return { success: true, data: savedCourses };
 }
 
+const observedGetPlayerSavedCourses = withAdminObserved(
+  'getPlayerSavedCourses',
+  { sport: 'golf', feature: 'course_library' },
+  getPlayerSavedCoursesImpl,
+);
+
+export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[]>> {
+  return observedGetPlayerSavedCourses();
+}
+
 /**
  * Save a new course configuration or update existing one
  */
-export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionResult<SavedCourse>> {
+async function savePlayerCourseImpl(input: SaveCourseInput): Promise<ActionResult<SavedCourse>> {
   const supabase = await createClient();
 
   // Get the current user
@@ -5785,10 +6213,20 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   return { success: true, data: savedCourse };
 }
 
+const observedSavePlayerCourse = withAdminObserved(
+  'savePlayerCourse',
+  { sport: 'golf', feature: 'course_library' },
+  savePlayerCourseImpl,
+);
+
+export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionResult<SavedCourse>> {
+  return observedSavePlayerCourse(input);
+}
+
 /**
  * Update the last_used_at timestamp for a saved course
  */
-export async function touchSavedCourse(courseId: string): Promise<ActionResult<void>> {
+async function touchSavedCourseImpl(courseId: string): Promise<ActionResult<void>> {
   const supabase = await createClient();
 
   // Get the current user
@@ -5808,6 +6246,16 @@ export async function touchSavedCourse(courseId: string): Promise<ActionResult<v
   }
 
   return { success: true, data: undefined };
+}
+
+const observedTouchSavedCourse = withAdminObserved(
+  'touchSavedCourse',
+  { sport: 'golf', feature: 'course_library' },
+  touchSavedCourseImpl,
+);
+
+export async function touchSavedCourse(courseId: string): Promise<ActionResult<void>> {
+  return observedTouchSavedCourse(courseId);
 }
 
 /**
@@ -5831,7 +6279,7 @@ export interface RecentPlayedCourse extends SavedCourse {
  *
  * Sorted by `last_played_at` DESC, capped to `limit` (default 8).
  */
-export async function getRecentCoursesForPlayer(
+async function getRecentCoursesForPlayerImpl(
   limit = 8,
 ): Promise<ActionResult<RecentPlayedCourse[]>> {
   const supabase = await createClient();
@@ -5939,6 +6387,18 @@ export async function getRecentCoursesForPlayer(
   return { success: true, data: enriched };
 }
 
+const observedGetRecentCoursesForPlayer = withAdminObserved(
+  'getRecentCoursesForPlayer',
+  { sport: 'golf', feature: 'course_library' },
+  getRecentCoursesForPlayerImpl,
+);
+
+export async function getRecentCoursesForPlayer(
+  limit = 8,
+): Promise<ActionResult<RecentPlayedCourse[]>> {
+  return observedGetRecentCoursesForPlayer(limit);
+}
+
 // ============================================================================
 // SHOT MANAGEMENT ACTIONS
 // ============================================================================
@@ -5947,7 +6407,7 @@ export async function getRecentCoursesForPlayer(
  * Delete a specific shot from a round
  * The database trigger will automatically resequence remaining shots
  */
-export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
+async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
   try {
     // Validate UUID format
     const validId = CommonSchemas.uuid.safeParse(shotId);
@@ -6047,9 +6507,19 @@ export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
     return { success: true, data: undefined };
 
   } catch (error) {
-    logError(error instanceof Error ? error : new Error(String(error)), undefined, { action: 'deleteShot' });
+    await logServerException(error instanceof Error ? error : new Error(String(error)), { action: 'deleteShot' });
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedDeleteShot = withAdminObserved(
+  'deleteShot',
+  { sport: 'golf', feature: 'round_tracking' },
+  deleteShotImpl,
+);
+
+export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
+  return observedDeleteShot(shotId);
 }
 
 /**
@@ -6081,7 +6551,7 @@ export interface ShotUpdateData {
 /**
  * Update a specific shot in a round
  */
-export async function updateShot(
+async function updateShotImpl(
   shotId: string,
   data: ShotUpdateData
 ): Promise<ActionResult<void>> {
@@ -6259,9 +6729,22 @@ export async function updateShot(
     return { success: true, data: undefined };
 
   } catch (error) {
-    logError(error instanceof Error ? error : new Error(String(error)), undefined, { action: 'updateShot' });
+    await logServerException(error instanceof Error ? error : new Error(String(error)), { action: 'updateShot' });
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedUpdateShot = withAdminObserved(
+  'updateShot',
+  { sport: 'golf', feature: 'round_tracking' },
+  updateShotImpl,
+);
+
+export async function updateShot(
+  shotId: string,
+  data: ShotUpdateData
+): Promise<ActionResult<void>> {
+  return observedUpdateShot(shotId, data);
 }
 
 // ============================================================================
@@ -6330,7 +6813,7 @@ export interface RoundShotReviewData {
  * Get detailed shot-by-shot data for a round
  * Used for the shot-by-shot review feature
  */
-export async function getRoundShotDetails(
+async function getRoundShotDetailsImpl(
   roundId: string
 ): Promise<ActionResult<RoundShotReviewData>> {
   try {
@@ -6610,4 +7093,16 @@ export async function getRoundShotDetails(
     );
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedGetRoundShotDetails = withAdminObserved(
+  'getRoundShotDetails',
+  { sport: 'golf', feature: 'round_tracking' },
+  getRoundShotDetailsImpl,
+);
+
+export async function getRoundShotDetails(
+  roundId: string
+): Promise<ActionResult<RoundShotReviewData>> {
+  return observedGetRoundShotDetails(roundId);
 }

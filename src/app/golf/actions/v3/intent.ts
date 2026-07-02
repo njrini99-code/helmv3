@@ -13,6 +13,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import type { NarrativeGoal, AlertPosture } from '@/lib/coachhelm/v3/intent/types';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface SetIntentInput {
   player_id: string;
@@ -33,7 +34,7 @@ export interface ActionResult {
  *
  * Idempotent: same (coach_id, player_id) tuple updates the same row.
  */
-export async function setIntent(input: SetIntentInput): Promise<ActionResult> {
+async function setIntentImpl(input: SetIntentInput): Promise<ActionResult> {
   try {
     const supabase = await createClient();
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
@@ -82,11 +83,21 @@ export async function setIntent(input: SetIntentInput): Promise<ActionResult> {
   }
 }
 
+const observedSetIntent = withAdminObserved(
+  'setIntent',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  setIntentImpl,
+);
+
+export async function setIntent(input: SetIntentInput): Promise<ActionResult> {
+  return observedSetIntent(input);
+}
+
 /**
  * Bulk-set the SAME intent across multiple players. UI exposes this
  * for "select 4 players, set them all to bubble before tournament week."
  */
-export async function bulkSetIntent(
+async function bulkSetIntentImpl(
   playerIds: string[],
   intent: Pick<SetIntentInput, 'narrative_goal' | 'alert_posture'>,
 ): Promise<ActionResult> {
@@ -122,4 +133,14 @@ export async function bulkSetIntent(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+const observedBulkSetIntent = withAdminObserved(
+  'bulkSetIntent',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  bulkSetIntentImpl,
+);
+
+export async function bulkSetIntent(playerIds: string[], intent: Pick<SetIntentInput, 'narrative_goal' | 'alert_posture'>): Promise<ActionResult> {
+  return observedBulkSetIntent(playerIds, intent);
 }

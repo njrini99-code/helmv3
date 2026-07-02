@@ -47,6 +47,7 @@ import { calcConfidence, type InsightEvidence, type InsightLifecycleState } from
 import { rollupInsightEffectivenessForYesterday } from '@/lib/coachhelm/v2/analytics/effectiveness-writer';
 import { rollupPredictionPerformanceRolling30d } from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -131,6 +132,10 @@ export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
 
+  return recordJobRun('coachhelm-insight-lifecycle', () => handleLifecycle(req));
+}
+
+async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
   const supabase = createAdminClient();
   const nowIso = new Date().toISOString();
   const now = Date.now();

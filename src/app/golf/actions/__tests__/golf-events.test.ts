@@ -60,11 +60,6 @@ vi.mock('@/lib/admin-logger', () => ({
   logRoundSubmitted: vi.fn(async () => {}),
 }));
 
-vi.mock('@/lib/error-monitoring', () => ({
-  logCritical: vi.fn(async () => {}),
-  logError: vi.fn(async () => {}),
-}));
-
 vi.mock('@/lib/notifications', () => ({
   notifyQualifierCreated: vi.fn(async () => {}),
 }));

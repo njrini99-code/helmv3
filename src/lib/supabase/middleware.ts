@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-shared';
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
+import { evaluateAdminGate } from '@/lib/admin/super-admin-shared';
 
 /**
  * STAFF_CAPABILITY_ROUTES — the middleware mirror of every nav-registry entry
@@ -58,6 +59,7 @@ const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
 const APP_ROUTE_PREFIXES = [
   '/golf',
   '/baseball',
+  '/admin',
   '/api',
   '/auth',
   '/support',
@@ -358,6 +360,28 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   const activeTeamCookie = request.cookies.get(ACTIVE_BASEBALL_TEAM_COOKIE)?.value ?? null;
+
+  // ── Helm Bridge Layer 1: /admin gate ──────────────────────────────────────
+  // Explicit native block (App Store 4.2.2/3.1.1) + Nick-only allowlist.
+  // This is the cheap first filter — NEVER the sole gate (Next middleware has
+  // had bypass CVEs). Layer 2 is requireSuperAdmin() in every server entry
+  // point; Layer 3 is deny-by-default RLS via is_super_admin().
+  const adminGate = evaluateAdminGate({
+    pathname,
+    isNative: isNativeUserAgent(request),
+    userId: user?.id ?? null,
+    allowlistRaw: process.env.SUPER_ADMIN_USER_IDS,
+  });
+  if (adminGate === 'block-native' || adminGate === 'redirect-dashboard') {
+    return NextResponse.redirect(new URL('/golf/dashboard', request.url));
+  }
+  if (adminGate === 'redirect-login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/golf/login';
+    url.searchParams.set('returnTo', pathname);
+    return NextResponse.redirect(url);
+  }
+  // 'pass' and 'not-admin-path' fall through to the existing logic.
 
   // Dashboard routes require full authentication (not onboarding routes)
   const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||

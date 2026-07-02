@@ -14,10 +14,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ success: false }, { status: 401 });
-    }
+    // Was: 401 for unauthenticated users — which blinded us to login/signup
+    // flow client errors (they reached Sentry but never error_logs).
+    // Anonymous writes are accepted, flagged, and severity-capped.
+    const isAnonymous = !user;
 
     const errorReport = await request.json();
     const adminClient = createAdminClient();
@@ -28,7 +28,13 @@ export async function POST(request: NextRequest) {
       high: 'error',
       critical: 'critical',
     };
-    const severity = severityMap[errorReport.severity] || 'error';
+    let severity = severityMap[errorReport.severity] || 'error';
+    // Anonymous (pre-auth) reports are capped at 'error' — an unauthenticated
+    // client claiming 'critical' should never page the on-call team the same
+    // way an authenticated user's report does.
+    if (isAnonymous && severity === 'critical') {
+      severity = 'error';
+    }
     const message = String(errorReport.message || 'Unknown error').slice(0, 2000);
     const stack = errorReport.stack ? String(errorReport.stack).slice(0, 8000) : null;
     const url = errorReport.url || request.headers.get('referer') || null;
@@ -49,11 +55,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Flag anonymous reports in the context jsonb itself, not just the
+    // (nullable) user_id column — this survives joins/exports and lets the
+    // admin feed distinguish "no user found" from "genuinely anonymous".
+    const contextWithAnonymity: Json =
+      sanitizedContext && typeof sanitizedContext === 'object' && !Array.isArray(sanitizedContext)
+        ? { ...sanitizedContext, anonymous: isAnonymous }
+        : { anonymous: isAnonymous, raw: sanitizedContext };
+
     const adminMetadata = {
       source: 'client_runtime',
       reportedSeverity: errorReport.severity || 'medium',
       timestamp,
-      context: sanitizedContext,
+      context: contextWithAnonymity,
       userAgent,
       ip,
     } as Json;
@@ -63,11 +77,11 @@ export async function POST(request: NextRequest) {
         message,
         severity,
         stack,
-        context: sanitizedContext,
+        context: contextWithAnonymity,
         user_agent: userAgent,
         ip,
         url,
-        user_id: user.id,
+        user_id: user?.id ?? null,
         timestamp,
       }),
       adminClient.from('admin_events').insert({
@@ -76,11 +90,11 @@ export async function POST(request: NextRequest) {
         severity,
         message,
         metadata: adminMetadata,
-        user_id: user.id,
-        user_email: user.email ?? null,
+        user_id: user?.id ?? null,
+        user_email: user?.email ?? null,
         url,
         stack_trace: stack,
-        browser_info: sanitizedContext,
+        browser_info: contextWithAnonymity,
       }),
     ]);
 

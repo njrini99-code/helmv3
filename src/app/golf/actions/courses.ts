@@ -14,13 +14,14 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { CourseSetupData, GolfCourse, GolfCourseHole } from '@/lib/types/golf-course';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /**
  * Get all saved courses for the current user
  * Note: golf_courses table has a simpler schema than GolfCourse type
  * We cast results to match the expected type, filling in missing fields
  */
-export async function getSavedCourses(): Promise<GolfCourse[]> {
+async function getSavedCoursesImpl(): Promise<GolfCourse[]> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -55,11 +56,21 @@ export async function getSavedCourses(): Promise<GolfCourse[]> {
   }));
 }
 
+const observedGetSavedCourses = withAdminObserved(
+  'getSavedCourses',
+  { sport: 'golf', feature: 'course_library' },
+  getSavedCoursesImpl,
+);
+
+export async function getSavedCourses(): Promise<GolfCourse[]> {
+  return observedGetSavedCourses();
+}
+
 /**
  * Get a single course with its holes
  * Note: golf_courses table has a simpler schema than GolfCourse type
  */
-export async function getCourseWithHoles(courseId: string): Promise<{
+async function getCourseWithHolesImpl(courseId: string): Promise<{
   course: GolfCourse | null;
   holes: GolfCourseHole[];
 }> {
@@ -123,11 +134,24 @@ export async function getCourseWithHoles(courseId: string): Promise<{
   }
 }
 
+const observedGetCourseWithHoles = withAdminObserved(
+  'getCourseWithHoles',
+  { sport: 'golf', feature: 'course_library' },
+  getCourseWithHolesImpl,
+);
+
+export async function getCourseWithHoles(courseId: string): Promise<{
+  course: GolfCourse | null;
+  holes: GolfCourseHole[];
+}> {
+  return observedGetCourseWithHoles(courseId);
+}
+
 /**
  * Create a new course with hole configurations
  * Note: golf_courses table has a simpler schema - only basic fields like name, city, state, par, course_rating, slope_rating
  */
-export async function createCourse(data: CourseSetupData): Promise<{
+async function createCourseImpl(data: CourseSetupData): Promise<{
   success: boolean;
   courseId?: string;
   error?: string
@@ -191,11 +215,25 @@ export async function createCourse(data: CourseSetupData): Promise<{
   return { success: true, courseId: course.id };
 }
 
+const observedCreateCourse = withAdminObserved(
+  'createCourse',
+  { sport: 'golf', feature: 'course_library' },
+  createCourseImpl,
+);
+
+export async function createCourse(data: CourseSetupData): Promise<{
+  success: boolean;
+  courseId?: string;
+  error?: string
+}> {
+  return observedCreateCourse(data);
+}
+
 /**
  * Update an existing course
  * Note: golf_courses table has a simpler schema without created_by or total_yardage
  */
-export async function updateCourse(
+async function updateCourseImpl(
   courseId: string,
   data: Partial<CourseSetupData>
 ): Promise<{ success: boolean; error?: string }> {
@@ -276,11 +314,24 @@ export async function updateCourse(
   return { success: true };
 }
 
+const observedUpdateCourse = withAdminObserved(
+  'updateCourse',
+  { sport: 'golf', feature: 'course_library' },
+  updateCourseImpl,
+);
+
+export async function updateCourse(
+  courseId: string,
+  data: Partial<CourseSetupData>
+): Promise<{ success: boolean; error?: string }> {
+  return observedUpdateCourse(courseId, data);
+}
+
 /**
  * Delete a course
  * Note: golf_courses table doesn't have created_by column
  */
-export async function deleteCourse(courseId: string): Promise<{
+async function deleteCourseImpl(courseId: string): Promise<{
   success: boolean;
   error?: string
 }> {
@@ -308,4 +359,17 @@ export async function deleteCourse(courseId: string): Promise<{
   revalidatePath('/golf/dashboard/rounds');
 
   return { success: true };
+}
+
+const observedDeleteCourse = withAdminObserved(
+  'deleteCourse',
+  { sport: 'golf', feature: 'course_library' },
+  deleteCourseImpl,
+);
+
+export async function deleteCourse(courseId: string): Promise<{
+  success: boolean;
+  error?: string
+}> {
+  return observedDeleteCourse(courseId);
 }

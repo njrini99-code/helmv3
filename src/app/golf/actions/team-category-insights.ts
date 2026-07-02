@@ -5,6 +5,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   samplePerPlayerRounds,
   computeTeamHealth,
@@ -300,7 +301,7 @@ export interface TeamOverviewResult {
  * Aggregates team-level composite rating, category breakdown, and shot analysis.
  * Returns data suitable for the TeamCompositeCard and TeamShotOverview components.
  */
-export async function getTeamOverview(
+async function getTeamOverviewImpl(
   teamIdArg?: string,
 ): Promise<TeamOverviewResult> {
   try {
@@ -515,7 +516,7 @@ export async function getTeamOverview(
       .eq('status', 'completed')
       .gte('round_date', sinceDateStr)
       .order('id', { ascending: true })
-      .range(from, to));
+      .range(from, to), undefined, { table: 'golf_rounds', action: 'getTeamOverview', feature: 'intelligence_dashboard', sport: 'golf' });
 
     let yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }> = [];
     let deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }> = [];
@@ -541,7 +542,7 @@ export async function getTeamOverview(
           // PostgREST's 1000-row default: a 100-round batch is ~7400 shots, so
           // we paginate to fetch every row instead of silently truncating.
           .order('id', { ascending: true })
-          .range(from, to)); // paginate past PostgREST 1000-row cap
+          .range(from, to), undefined, { table: 'golf_shots', action: 'getTeamOverview', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
         if (shotsData) {
           allShotsRaw.push(...(shotsData as unknown as Array<Record<string, unknown>>));
         }
@@ -633,11 +634,23 @@ export async function getTeamOverview(
   }
 }
 
+const observedGetTeamOverview = withAdminObserved(
+  'getTeamOverview',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getTeamOverviewImpl,
+);
+
+export async function getTeamOverview(
+  teamIdArg?: string,
+): Promise<TeamOverviewResult> {
+  return observedGetTeamOverview(teamIdArg);
+}
+
 // ============================================================================
 // MAIN ACTION — getTeamCategoryInsights
 // ============================================================================
 
-export async function getTeamCategoryInsights(
+async function getTeamCategoryInsightsImpl(
   teamIdArg?: string,
 ): Promise<TeamCategoryInsightsResult> {
   try {
@@ -752,7 +765,7 @@ export async function getTeamCategoryInsights(
         .range(from, to) as unknown as PromiseLike<{
           data: Record<string, unknown>[] | null;
           error: { message: string } | null;
-        }>),
+        }>, undefined, { table: 'golf_rounds', action: 'getTeamCategoryInsights', feature: 'intelligence_dashboard', sport: 'golf' }),
     ]);
 
     if (statsResult.error) {
@@ -924,4 +937,16 @@ export async function getTeamCategoryInsights(
     await logServerError(message, { action: 'getTeamCategoryInsights' }, 'error');
     return { success: false, error: message };
   }
+}
+
+const observedGetTeamCategoryInsights = withAdminObserved(
+  'getTeamCategoryInsights',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getTeamCategoryInsightsImpl,
+);
+
+export async function getTeamCategoryInsights(
+  teamIdArg?: string,
+): Promise<TeamCategoryInsightsResult> {
+  return observedGetTeamCategoryInsights(teamIdArg);
 }

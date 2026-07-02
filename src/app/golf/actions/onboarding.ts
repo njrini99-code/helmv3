@@ -8,6 +8,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -57,7 +58,7 @@ export type PlayerOnboardingInput = z.infer<typeof playerOnboardingSchema>;
  * Creates: organization -> team -> coach record
  * Cleans up partial data if any step fails
  */
-export async function completeCoachOnboarding(input: CoachOnboardingInput) {
+async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
   const supabase = await createClient();
 
   // Track created resources for cleanup
@@ -254,6 +255,16 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
   }
 }
 
+const observedCompleteCoachOnboarding = withAdminObserved(
+  'completeCoachOnboarding',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  completeCoachOnboardingImpl,
+);
+
+export async function completeCoachOnboarding(input: CoachOnboardingInput) {
+  return observedCompleteCoachOnboarding(input);
+}
+
 // ============================================================================
 // ENSURE PLAYER RECORD EXISTS (called early in onboarding)
 // ============================================================================
@@ -264,7 +275,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
  * abandons onboarding before clicking "Go to Dashboard".
  * Sets onboarding_completed = false — the final step flips it to true.
  */
-export async function ensurePlayerRecord() {
+async function ensurePlayerRecordImpl() {
   const supabase = await createClient();
 
   try {
@@ -342,6 +353,16 @@ export async function ensurePlayerRecord() {
   }
 }
 
+const observedEnsurePlayerRecord = withAdminObserved(
+  'ensurePlayerRecord',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  ensurePlayerRecordImpl,
+);
+
+export async function ensurePlayerRecord() {
+  return observedEnsurePlayerRecord();
+}
+
 // ============================================================================
 // PLAYER ONBOARDING ACTION
 // ============================================================================
@@ -350,7 +371,7 @@ export async function ensurePlayerRecord() {
  * Complete player onboarding
  * Creates or updates player record, optionally auto-joins a team via joinCode
  */
-export async function completePlayerOnboarding(input: PlayerOnboardingInput, joinCode?: string) {
+async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCode?: string) {
   const supabase = await createClient();
 
   try {
@@ -475,6 +496,16 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput, joi
     await logServerError(`[Onboarding] Unexpected error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedCompletePlayerOnboarding = withAdminObserved(
+  'completePlayerOnboarding',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  completePlayerOnboardingImpl,
+);
+
+export async function completePlayerOnboarding(input: PlayerOnboardingInput, joinCode?: string) {
+  return observedCompletePlayerOnboarding(input, joinCode);
 }
 
 // ============================================================================

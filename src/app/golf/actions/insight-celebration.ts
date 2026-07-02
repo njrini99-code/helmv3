@@ -23,6 +23,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import type { Database } from '@/lib/types/database';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 type CoachInsightRow = Database['public']['Tables']['golf_coach_insights']['Row'];
 
@@ -41,7 +42,7 @@ export interface MarkCelebrationResult {
  * `supabaseOverride` is accepted so tests can inject a mock client. In
  * production callers should omit it and let the action build its own.
  */
-export async function markCelebrationShown(
+async function markCelebrationShownImpl(
   insightId: string,
   supabaseOverride?: SupabaseClient,
 ): Promise<MarkCelebrationResult> {
@@ -135,4 +136,14 @@ export async function markCelebrationShown(
   revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true, celebration_shown_at: shownAt };
+}
+
+const observedMarkCelebrationShown = withAdminObserved(
+  'markCelebrationShown',
+  { sport: 'golf', feature: 'player_coachhelm_dashboard' },
+  markCelebrationShownImpl,
+);
+
+export async function markCelebrationShown(insightId: string, supabaseOverride?: SupabaseClient): Promise<MarkCelebrationResult> {
+  return observedMarkCelebrationShown(insightId, supabaseOverride);
 }

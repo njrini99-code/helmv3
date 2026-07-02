@@ -16,6 +16,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 type Sport = 'baseball' | 'golf';
 
@@ -419,7 +420,7 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 // SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
-export async function sendGolfMessage(conversationId: string, content: string) {
+async function sendGolfMessageImpl(conversationId: string, content: string) {
   const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false });
 
   if (result.success) {
@@ -511,12 +512,42 @@ export async function sendGolfMessage(conversationId: string, content: string) {
   return result;
 }
 
-export async function createGolfConversation(participantUserIds: string[], teamId?: string) {
+const observedSendGolfMessage = withAdminObserved(
+  'sendGolfMessage',
+  { sport: 'golf', feature: 'messaging' },
+  sendGolfMessageImpl,
+);
+
+export async function sendGolfMessage(conversationId: string, content: string) {
+  return observedSendGolfMessage(conversationId, content);
+}
+
+async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
   return createConversation({ participantUserIds, sport: 'golf', teamId });
 }
 
-export async function markGolfMessagesAsRead(conversationId: string) {
+const observedCreateGolfConversation = withAdminObserved(
+  'createGolfConversation',
+  { sport: 'golf', feature: 'messaging' },
+  createGolfConversationImpl,
+);
+
+export async function createGolfConversation(participantUserIds: string[], teamId?: string) {
+  return observedCreateGolfConversation(participantUserIds, teamId);
+}
+
+async function markGolfMessagesAsReadImpl(conversationId: string) {
   return markMessagesAsRead({ conversationId, sport: 'golf' });
+}
+
+const observedMarkGolfMessagesAsRead = withAdminObserved(
+  'markGolfMessagesAsRead',
+  { sport: 'golf', feature: 'messaging' },
+  markGolfMessagesAsReadImpl,
+);
+
+export async function markGolfMessagesAsRead(conversationId: string) {
+  return observedMarkGolfMessagesAsRead(conversationId);
 }
 
 // ============================================================================
@@ -535,7 +566,7 @@ interface CreateTeamBroadcastOptions {
  * @param title - The conversation title (e.g., "Team Updates", "Practice Reminder")
  * @param selectedPlayerIds - Optional array of specific player IDs to include (if not provided, all team players are included)
  */
-export async function createGolfTeamBroadcast({
+async function createGolfTeamBroadcastImpl({
   teamId,
   title,
   selectedPlayerIds,
@@ -675,11 +706,23 @@ export async function createGolfTeamBroadcast({
   }
 }
 
+const observedCreateGolfTeamBroadcast = withAdminObserved(
+  'createGolfTeamBroadcast',
+  { sport: 'golf', feature: 'messaging' },
+  createGolfTeamBroadcastImpl,
+);
+
+export async function createGolfTeamBroadcast(
+  options: CreateTeamBroadcastOptions,
+): Promise<{ conversationId: string } | { error: string }> {
+  return observedCreateGolfTeamBroadcast(options);
+}
+
 /**
  * Get all team players for the broadcast selection UI
  * @param teamId - The team ID
  */
-export async function getGolfTeamPlayersForBroadcast(teamId: string): Promise<{
+async function getGolfTeamPlayersForBroadcastImpl(teamId: string): Promise<{
   players: Array<{ id: string; userId: string; name: string; gradYear: number | null; avatarUrl: string | null }>
 } | { error: string }> {
   try {
@@ -750,6 +793,18 @@ export async function getGolfTeamPlayersForBroadcast(teamId: string): Promise<{
   } catch (err) {
     return formatSafeErrorResponse(err);
   }
+}
+
+const observedGetGolfTeamPlayersForBroadcast = withAdminObserved(
+  'getGolfTeamPlayersForBroadcast',
+  { sport: 'golf', feature: 'messaging' },
+  getGolfTeamPlayersForBroadcastImpl,
+);
+
+export async function getGolfTeamPlayersForBroadcast(teamId: string): Promise<{
+  players: Array<{ id: string; userId: string; name: string; gradYear: number | null; avatarUrl: string | null }>
+} | { error: string }> {
+  return observedGetGolfTeamPlayersForBroadcast(teamId);
 }
 
 // ============================================================================
@@ -922,12 +977,32 @@ export async function deleteMessage({
 }
 
 // Golf-specific edit/delete exports
-export async function updateGolfMessage(messageId: string, content: string) {
+async function updateGolfMessageImpl(messageId: string, content: string) {
   return updateMessage({ messageId, content, sport: 'golf' });
 }
 
-export async function deleteGolfMessage(messageId: string) {
+const observedUpdateGolfMessage = withAdminObserved(
+  'updateGolfMessage',
+  { sport: 'golf', feature: 'messaging' },
+  updateGolfMessageImpl,
+);
+
+export async function updateGolfMessage(messageId: string, content: string) {
+  return observedUpdateGolfMessage(messageId, content);
+}
+
+async function deleteGolfMessageImpl(messageId: string) {
   return deleteMessage({ messageId, sport: 'golf' });
+}
+
+const observedDeleteGolfMessage = withAdminObserved(
+  'deleteGolfMessage',
+  { sport: 'golf', feature: 'messaging' },
+  deleteGolfMessageImpl,
+);
+
+export async function deleteGolfMessage(messageId: string) {
+  return observedDeleteGolfMessage(messageId);
 }
 
 // Baseball-specific edit/delete exports
@@ -943,7 +1018,7 @@ export async function deleteBaseballMessage(messageId: string) {
  * Get the user_id for a golf player by their player_id
  * Used when starting conversations from the roster page
  */
-export async function getGolfPlayerUserId(playerId: string): Promise<string | null> {
+async function getGolfPlayerUserIdImpl(playerId: string): Promise<string | null> {
   const supabase = await createClient();
 
   const { data: player, error } = await supabase
@@ -958,6 +1033,16 @@ export async function getGolfPlayerUserId(playerId: string): Promise<string | nu
   }
 
   return player.user_id;
+}
+
+const observedGetGolfPlayerUserId = withAdminObserved(
+  'getGolfPlayerUserId',
+  { sport: 'golf', feature: 'messaging' },
+  getGolfPlayerUserIdImpl,
+);
+
+export async function getGolfPlayerUserId(playerId: string): Promise<string | null> {
+  return observedGetGolfPlayerUserId(playerId);
 }
 
 // ============================================================================
@@ -980,7 +1065,7 @@ export interface MessageSearchResult {
  * @param teamId - Optional team ID to scope the search
  * @returns Array of matching messages with context
  */
-export async function searchGolfMessages(
+async function searchGolfMessagesImpl(
   query: string,
   teamId?: string
 ): Promise<{ results: MessageSearchResult[] } | { error: string }> {
@@ -1142,6 +1227,19 @@ export async function searchGolfMessages(
   }
 }
 
+const observedSearchGolfMessages = withAdminObserved(
+  'searchGolfMessages',
+  { sport: 'golf', feature: 'messaging' },
+  searchGolfMessagesImpl,
+);
+
+export async function searchGolfMessages(
+  query: string,
+  teamId?: string
+): Promise<{ results: MessageSearchResult[] } | { error: string }> {
+  return observedSearchGolfMessages(query, teamId);
+}
+
 /**
  * Active-team scoping for the golf conversation rail.
  *
@@ -1165,7 +1263,7 @@ export async function searchGolfMessages(
  *
  * @returns conversation ids for the active team, or `null` for no scoping.
  */
-export async function getGolfActiveTeamConversationIds(): Promise<string[] | null> {
+async function getGolfActiveTeamConversationIdsImpl(): Promise<string[] | null> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -1221,4 +1319,14 @@ export async function getGolfActiveTeamConversationIds(): Promise<string[] | nul
     );
     return null;
   }
+}
+
+const observedGetGolfActiveTeamConversationIds = withAdminObserved(
+  'getGolfActiveTeamConversationIds',
+  { sport: 'golf', feature: 'messaging' },
+  getGolfActiveTeamConversationIdsImpl,
+);
+
+export async function getGolfActiveTeamConversationIds(): Promise<string[] | null> {
+  return observedGetGolfActiveTeamConversationIds();
 }

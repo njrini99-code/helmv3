@@ -20,6 +20,8 @@ import type {
   RoundReviewWithDetails,
 } from '@/lib/types/golf';
 import type { Json } from '@/lib/types/database';
+import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 // ============================================================================
 // INTERNAL TYPES
@@ -349,7 +351,7 @@ async function verifyReviewAccess(
 /**
  * Generate a review for a completed round
  */
-export async function generateRoundReview(
+async function generateRoundReviewImpl(
   roundId: string,
   forceRegenerate: boolean = false
 ): Promise<GenerateReviewResponse> {
@@ -566,10 +568,20 @@ export async function generateRoundReview(
   }
 }
 
+const observedGenerateRoundReview = withAdminObserved(
+  'generateRoundReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  generateRoundReviewImpl,
+);
+
+export async function generateRoundReview(roundId: string, forceRegenerate: boolean = false): Promise<GenerateReviewResponse> {
+  return observedGenerateRoundReview(roundId, forceRegenerate);
+}
+
 /**
  * Get a review by ID with full details
  */
-export async function getReviewById(reviewId: string): Promise<{
+async function getReviewByIdImpl(reviewId: string): Promise<{
   success: boolean;
   review?: RoundReviewWithDetails;
   error?: string;
@@ -620,10 +632,24 @@ export async function getReviewById(reviewId: string): Promise<{
   }
 }
 
+const observedGetReviewById = withAdminObserved(
+  'getReviewById',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getReviewByIdImpl,
+);
+
+export async function getReviewById(reviewId: string): Promise<{
+  success: boolean;
+  review?: RoundReviewWithDetails;
+  error?: string;
+}> {
+  return observedGetReviewById(reviewId);
+}
+
 /**
  * Get review by round ID
  */
-export async function getReviewByRoundId(roundId: string): Promise<{
+async function getReviewByRoundIdImpl(roundId: string): Promise<{
   success: boolean;
   review?: GolfRoundReview;
   error?: string;
@@ -665,10 +691,24 @@ export async function getReviewByRoundId(roundId: string): Promise<{
   }
 }
 
+const observedGetReviewByRoundId = withAdminObserved(
+  'getReviewByRoundId',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getReviewByRoundIdImpl,
+);
+
+export async function getReviewByRoundId(roundId: string): Promise<{
+  success: boolean;
+  review?: GolfRoundReview;
+  error?: string;
+}> {
+  return observedGetReviewByRoundId(roundId);
+}
+
 /**
  * Add or update coach feedback on a review
  */
-export async function saveCoachFeedback(
+async function saveCoachFeedbackImpl(
   reviewId: string,
   feedback: CoachFeedbackInput,
   approve: boolean = false
@@ -763,6 +803,13 @@ export async function saveCoachFeedback(
         featureArea: 'round_reviews',
         extra: { reviewId, errorCode: updateError.code },
       });
+      maybeCaptureRlsDenial(updateError, {
+        table: 'golf_round_reviews',
+        verb: 'update',
+        action: 'saveCoachFeedback',
+        feature: 'round_review_ai',
+        sport: 'golf',
+      });
       return { success: false, error: 'Failed to save feedback' };
     }
 
@@ -785,10 +832,20 @@ export async function saveCoachFeedback(
   }
 }
 
+const observedSaveCoachFeedback = withAdminObserved(
+  'saveCoachFeedback',
+  { sport: 'golf', feature: 'round_review_ai' },
+  saveCoachFeedbackImpl,
+);
+
+export async function saveCoachFeedback(reviewId: string, feedback: CoachFeedbackInput, approve: boolean = false): Promise<{ success: boolean; error?: string }> {
+  return observedSaveCoachFeedback(reviewId, feedback, approve);
+}
+
 /**
  * Share a review with the player
  */
-export async function shareReviewWithPlayer(
+async function shareReviewWithPlayerImpl(
   reviewId: string,
 
   _includeCoachNotes: boolean = true
@@ -864,10 +921,20 @@ export async function shareReviewWithPlayer(
   }
 }
 
+const observedShareReviewWithPlayer = withAdminObserved(
+  'shareReviewWithPlayer',
+  { sport: 'golf', feature: 'round_review_ai' },
+  shareReviewWithPlayerImpl,
+);
+
+export async function shareReviewWithPlayer(reviewId: string, _includeCoachNotes: boolean = true): Promise<{ success: boolean; error?: string }> {
+  return observedShareReviewWithPlayer(reviewId, _includeCoachNotes);
+}
+
 /**
  * Get all reviews for a team (for coach view)
  */
-export async function getTeamReviews(
+async function getTeamReviewsImpl(
   teamId: string,
   options: {
     status?: ReviewStatus;
@@ -968,11 +1035,30 @@ export async function getTeamReviews(
   }
 }
 
+const observedGetTeamReviews = withAdminObserved(
+  'getTeamReviews',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getTeamReviewsImpl,
+);
+
+export async function getTeamReviews(teamId: string, options: {
+    status?: ReviewStatus;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<{
+  success: boolean;
+  reviews?: RoundReviewWithDetails[];
+  total?: number;
+  error?: string;
+}> {
+  return observedGetTeamReviews(teamId, options);
+}
+
 /**
  * Get reviews pending coach action
  */
  
-export async function getPendingCoachReviews(_coachId?: string): Promise<{
+async function getPendingCoachReviewsImpl(_coachId?: string): Promise<{
   success: boolean;
   reviews?: RoundReviewWithDetails[];
   error?: string;
@@ -1068,10 +1154,24 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
   }
 }
 
+const observedGetPendingCoachReviews = withAdminObserved(
+  'getPendingCoachReviews',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getPendingCoachReviewsImpl,
+);
+
+export async function getPendingCoachReviews(_coachId?: string): Promise<{
+  success: boolean;
+  reviews?: RoundReviewWithDetails[];
+  error?: string;
+}> {
+  return observedGetPendingCoachReviews(_coachId);
+}
+
 /**
  * Get player's review history
  */
-export async function getPlayerReviewHistory(playerId: string): Promise<{
+async function getPlayerReviewHistoryImpl(playerId: string): Promise<{
   success: boolean;
   reviews?: GolfRoundReview[];
   error?: string;
@@ -1116,10 +1216,24 @@ export async function getPlayerReviewHistory(playerId: string): Promise<{
   }
 }
 
+const observedGetPlayerReviewHistory = withAdminObserved(
+  'getPlayerReviewHistory',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getPlayerReviewHistoryImpl,
+);
+
+export async function getPlayerReviewHistory(playerId: string): Promise<{
+  success: boolean;
+  reviews?: GolfRoundReview[];
+  error?: string;
+}> {
+  return observedGetPlayerReviewHistory(playerId);
+}
+
 /**
  * Mark review as viewed by player
  */
-export async function markReviewAsViewed(reviewId: string): Promise<{
+async function markReviewAsViewedImpl(reviewId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -1176,10 +1290,23 @@ export async function markReviewAsViewed(reviewId: string): Promise<{
   }
 }
 
+const observedMarkReviewAsViewed = withAdminObserved(
+  'markReviewAsViewed',
+  { sport: 'golf', feature: 'round_review_ai' },
+  markReviewAsViewedImpl,
+);
+
+export async function markReviewAsViewed(reviewId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return observedMarkReviewAsViewed(reviewId);
+}
+
 /**
  * Add player feedback to a review
  */
-export async function addPlayerFeedback(
+async function addPlayerFeedbackImpl(
   reviewId: string,
   feedback: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -1241,10 +1368,20 @@ export async function addPlayerFeedback(
   }
 }
 
+const observedAddPlayerFeedback = withAdminObserved(
+  'addPlayerFeedback',
+  { sport: 'golf', feature: 'round_review_ai' },
+  addPlayerFeedbackImpl,
+);
+
+export async function addPlayerFeedback(reviewId: string, feedback: string): Promise<{ success: boolean; error?: string }> {
+  return observedAddPlayerFeedback(reviewId, feedback);
+}
+
 /**
  * Retry failed review generation
  */
-export async function retryReviewGeneration(reviewId: string): Promise<GenerateReviewResponse> {
+async function retryReviewGenerationImpl(reviewId: string): Promise<GenerateReviewResponse> {
   if (!isValidUuid(reviewId)) {
     return { success: false, error: 'Invalid review ID' };
   }
@@ -1285,10 +1422,20 @@ export async function retryReviewGeneration(reviewId: string): Promise<GenerateR
   }
 }
 
+const observedRetryReviewGeneration = withAdminObserved(
+  'retryReviewGeneration',
+  { sport: 'golf', feature: 'round_review_ai' },
+  retryReviewGenerationImpl,
+);
+
+export async function retryReviewGeneration(reviewId: string): Promise<GenerateReviewResponse> {
+  return observedRetryReviewGeneration(reviewId);
+}
+
 /**
  * Get review generation status for polling
  */
-export async function getReviewGenerationStatus(reviewId: string): Promise<{
+async function getReviewGenerationStatusImpl(reviewId: string): Promise<{
   success: boolean;
   status?: ReviewStatus;
   message?: string;
@@ -1343,6 +1490,22 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
   }
 }
 
+const observedGetReviewGenerationStatus = withAdminObserved(
+  'getReviewGenerationStatus',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getReviewGenerationStatusImpl,
+);
+
+export async function getReviewGenerationStatus(reviewId: string): Promise<{
+  success: boolean;
+  status?: ReviewStatus;
+  message?: string;
+  progress?: number;
+  error?: string;
+}> {
+  return observedGetReviewGenerationStatus(reviewId);
+}
+
 // ============================================================================
 // ANNOTATION FUNCTIONS
 // ============================================================================
@@ -1352,7 +1515,7 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
 /**
  * Add or update coach notes on a review
  */
-export async function annotateReview(
+async function annotateReviewImpl(
   reviewId: string,
   annotation: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -1403,10 +1566,20 @@ export async function annotateReview(
   }
 }
 
+const observedAnnotateReview = withAdminObserved(
+  'annotateReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  annotateReviewImpl,
+);
+
+export async function annotateReview(reviewId: string, annotation: string): Promise<{ success: boolean; error?: string }> {
+  return observedAnnotateReview(reviewId, annotation);
+}
+
 /**
  * Publish a review to make it visible to the player
  */
-export async function publishReview(
+async function publishReviewImpl(
   reviewId: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
@@ -1459,10 +1632,20 @@ export async function publishReview(
   }
 }
 
+const observedPublishReview = withAdminObserved(
+  'publishReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  publishReviewImpl,
+);
+
+export async function publishReview(reviewId: string): Promise<{ success: boolean; error?: string }> {
+  return observedPublishReview(reviewId);
+}
+
 /**
  * Create a focus area from a review insight
  */
-export async function createFocusAreaFromReview(
+async function createFocusAreaFromReviewImpl(
   reviewId: string,
   focusAreaData: { name: string; description?: string }
 ): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
@@ -1532,16 +1715,36 @@ export async function createFocusAreaFromReview(
   }
 }
 
-export async function markReviewViewedByPlayer(
+const observedCreateFocusAreaFromReview = withAdminObserved(
+  'createFocusAreaFromReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  createFocusAreaFromReviewImpl,
+);
+
+export async function createFocusAreaFromReview(reviewId: string, focusAreaData: { name: string; description?: string }): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+  return observedCreateFocusAreaFromReview(reviewId, focusAreaData);
+}
+
+async function markReviewViewedByPlayerImpl(
   reviewId: string
 ): Promise<{ success: boolean; error?: string }> {
   return markReviewAsViewed(reviewId);
 }
 
+const observedMarkReviewViewedByPlayer = withAdminObserved(
+  'markReviewViewedByPlayer',
+  { sport: 'golf', feature: 'round_review_ai' },
+  markReviewViewedByPlayerImpl,
+);
+
+export async function markReviewViewedByPlayer(reviewId: string): Promise<{ success: boolean; error?: string }> {
+  return observedMarkReviewViewedByPlayer(reviewId);
+}
+
 /**
  * Player acknowledges they have read and understood a review
  */
-export async function acknowledgeReview(
+async function acknowledgeReviewImpl(
   reviewId: string,
   acknowledgement?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -1625,7 +1828,17 @@ export async function acknowledgeReview(
   }
 }
 
-export async function markReviewViewedByCoach(
+const observedAcknowledgeReview = withAdminObserved(
+  'acknowledgeReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  acknowledgeReviewImpl,
+);
+
+export async function acknowledgeReview(reviewId: string, acknowledgement?: string): Promise<{ success: boolean; error?: string }> {
+  return observedAcknowledgeReview(reviewId, acknowledgement);
+}
+
+async function markReviewViewedByCoachImpl(
   reviewId: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
@@ -1703,4 +1916,14 @@ export async function markReviewViewedByCoach(
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedMarkReviewViewedByCoach = withAdminObserved(
+  'markReviewViewedByCoach',
+  { sport: 'golf', feature: 'round_review_ai' },
+  markReviewViewedByCoachImpl,
+);
+
+export async function markReviewViewedByCoach(reviewId: string): Promise<{ success: boolean; error?: string }> {
+  return observedMarkReviewViewedByCoach(reviewId);
 }

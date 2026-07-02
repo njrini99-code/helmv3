@@ -5,6 +5,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // UUID format validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -71,7 +72,7 @@ export interface DraftInfo {
  * Save or update a round draft with auto-save data.
  * Creates a new draft if no roundId provided, updates existing if provided.
  */
-export async function saveRoundDraft(
+async function saveRoundDraftImpl(
   data: RoundDraftData,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; lastAutoSave: string }>> {
@@ -315,6 +316,19 @@ export async function saveRoundDraft(
   }
 }
 
+const observedSaveRoundDraft = withAdminObserved(
+  'saveRoundDraft',
+  { sport: 'golf', feature: 'round_tracking' },
+  saveRoundDraftImpl,
+);
+
+export async function saveRoundDraft(
+  data: RoundDraftData,
+  existingRoundId?: string
+): Promise<ActionResult<{ roundId: string; lastAutoSave: string }>> {
+  return observedSaveRoundDraft(data, existingRoundId);
+}
+
 // ============================================================================
 // LOAD ROUND DRAFT
 // ============================================================================
@@ -323,7 +337,7 @@ export async function saveRoundDraft(
  * Load the most recent draft for the current player.
  * Returns null if no draft exists.
  */
-export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> {
+async function loadRoundDraftImpl(): Promise<ActionResult<DraftInfo | null>> {
   try {
     const supabase = await createClient();
 
@@ -429,6 +443,16 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
   }
 }
 
+const observedLoadRoundDraft = withAdminObserved(
+  'loadRoundDraft',
+  { sport: 'golf', feature: 'round_tracking' },
+  loadRoundDraftImpl,
+);
+
+export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> {
+  return observedLoadRoundDraft();
+}
+
 // ============================================================================
 // CLEAR ROUND DRAFT
 // ============================================================================
@@ -436,7 +460,7 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
 /**
  * Delete a draft round completely.
  */
-export async function clearRoundDraft(roundId: string): Promise<ActionResult<void>> {
+async function clearRoundDraftImpl(roundId: string): Promise<ActionResult<void>> {
   try {
     // Bug #43: Validate UUID format before passing to Supabase query
     if (!isValidUuid(roundId)) {
@@ -503,6 +527,16 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
   }
 }
 
+const observedClearRoundDraft = withAdminObserved(
+  'clearRoundDraft',
+  { sport: 'golf', feature: 'round_tracking' },
+  clearRoundDraftImpl,
+);
+
+export async function clearRoundDraft(roundId: string): Promise<ActionResult<void>> {
+  return observedClearRoundDraft(roundId);
+}
+
 // ============================================================================
 // CLEANUP ORPHANED DRAFTS (REMOVED)
 // ============================================================================
@@ -519,7 +553,7 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
  * Used before final submission to detect multi-device conflicts.
  * Returns the current updated_at from the DB so the client can compare.
  */
-export async function checkRoundStaleness(
+async function checkRoundStalenessImpl(
   roundId: string,
   expectedUpdatedAt?: string
 ): Promise<ActionResult<{ isStale: boolean; currentUpdatedAt: string | null; status: string | null }>> {
@@ -600,4 +634,17 @@ export async function checkRoundStaleness(
     }, 'critical');
     return { success: false, error: 'Failed to check round status' };
   }
+}
+
+const observedCheckRoundStaleness = withAdminObserved(
+  'checkRoundStaleness',
+  { sport: 'golf', feature: 'round_tracking' },
+  checkRoundStalenessImpl,
+);
+
+export async function checkRoundStaleness(
+  roundId: string,
+  expectedUpdatedAt?: string
+): Promise<ActionResult<{ isStale: boolean; currentUpdatedAt: string | null; status: string | null }>> {
+  return observedCheckRoundStaleness(roundId, expectedUpdatedAt);
 }

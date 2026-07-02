@@ -20,6 +20,7 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import type { AdminDashboardData } from '../admin-data';
 import type { RollupC, AllRoundsMinimal } from './rollup-c.shared';
 
@@ -170,7 +171,7 @@ function activityStatus(
 // Public entry point
 // ----------------------------------------------------------------------------
 
-export async function fetchAdminRollupC(
+async function fetchAdminRollupCImpl(
   allRoundsMinimal: AllRoundsMinimal[],
 ): Promise<RollupC> {
   // Use the request-scoped client so auth.uid() is the invoking admin.
@@ -1100,4 +1101,23 @@ export async function fetchAdminRollupC(
     stickiness,
     playerFunnel,
   };
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedFetchAdminRollupC = withAdminObserved(
+  'fetchAdminRollupC',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  fetchAdminRollupCImpl,
+);
+
+export async function fetchAdminRollupC(
+  allRoundsMinimal: AllRoundsMinimal[],
+): Promise<RollupC> {
+  return observedFetchAdminRollupC(allRoundsMinimal);
 }

@@ -1,0 +1,129 @@
+[
+  {
+    "angle": "A one-founder command center is not a NOC wall \u2014 it is a triage inbox plus a health strip. The 2025/2026 consensus (Google SRE, Sentry, Datadog, Chronosphere, Better Stack) is an \"inverted pyramid\": a top row that answers \"is anything wrong right now?\" in under 5 seconds (golden signals + release health), a middle band that answers \"what changed and who is affected?\" (new/regressed/escalating issues, deploy markers, affected-user counts), and drill-down for everything else. \"Surface every error\" is achieved through grouping + state, not through listing every event: every error lands in exactly one fingerprint-grouped issue with a lifecycle state (new / ongoing / escalating / regressed / resolved / archived), so 100% coverage coexists with a short actionable worklist. For Nick specifically: Sentry (pulled server-side) supplies grouped runtime errors, spike detection, and affected users; the new Supabase event-log table supplies what Sentry structurally misses (failed server actions, RLS denials, auth failures, cron/job outcomes, data-integrity checks) \u2014 and the command center's job is to merge both into ONE triage queue with deploy annotations, because ~19% of incidents are deploy regressions and \"what changed?\" is the fastest diagnostic question. Since one person is both operator and on-call, every widget must pass the test: \"can Nick take a specific action from this?\" \u2014 otherwise it is decoration.",
+    "mustHaveWidgets": [
+      "Health strip (Level 1 top row): overall status dot per surface (web app, auth, DB, crons) + error-rate sparkline (24h, deploy markers overlaid) + p95 latency + active-users-now \u2014 answers 'is anything on fire?' in <5s",
+      "Unified triage queue: merged Sentry (new/regressed/escalating) + event_log groups, sorted by affected users; each row = title, sport/team badges, event count, user count, first/last seen, 'since deploy X' badge, and inline actions (acknowledge / resolve / ignore / open in Sentry)",
+      "Regressed-issues callout: dedicated strip (not buried in the queue) for resolved-then-returned issues \u2014 the single highest-signal error category",
+      "Release/deploy rail: last 10 production deploys with commit/PR link, new-issues-introduced count, and error-rate delta in the first hour post-deploy",
+      "Auth & sign-in panel: sign-ins over time split by sport, failed-auth count with spike flag, RLS-denial count, and a searchable recent sign-in feed (who, when, which team) \u2014 covers the 'every sign-in/auth event' requirement",
+      "Activity pulse per sport: rounds saved / games logged / lifting check-ins per day (Fairway-styled golf column, Living-Annual-styled baseball column), each with 7d sparkline and week-over-week delta \u2014 doubles as a canary (activity flatlining = something silently broke)",
+      "Users & teams table: all teams with sport, member counts, last-activity timestamp, error count (7d), and drill-down to per-team event timeline",
+      "Data-integrity board: latest result per automated check (orphaned rows, schema-drift/migration verification via information_schema, stat-cache freshness, dangling grants to anon) with pass/fail, last-run time, and drill-down to failing rows",
+      "Cron & jobs board: expected-vs-actual matrix per job (last run, status, duration, next expected) with missed-run highlighting",
+      "Affected-user drill-down on every issue: which specific users/teams hit this error, with links to their profile/team pages",
+      "Watch-the-watcher meta widget: Sentry pull freshness, event_log staleness per event_type, and admin-page self-diagnostics",
+      "Daily digest view (and optional email): yesterday's new issues, regressions, deploys, auth anomalies, integrity results in one screen \u2014 the 'coffee check' replacing ad-hoc paging"
+    ],
+    "antiPatterns": [
+      "The flat error firehose: a chronological list of raw error events as the main view. Guarantees the operator stops reading it within a week. Group by fingerprint, show states, sort by affected users.",
+      "Panel sprawl / equal visual weight: cramming 30+ widgets on one screen so nothing stands out. Hard-cap Level 1 (~10 panels, <12 per view per AWS/Grafana guidance); everything else lives behind a tab.",
+      "Paging on everything (or nothing): alert rules on raw counts ('any error \u2192 email') produce fatigue then blindness; zero alerts means outages are discovered by users. Two tiers: a handful of actionable tier-1 pages, dashboard+digest for the rest.",
+      "Naked numbers without baseline: '37 errors' with no sparkline, no comparison window, no threshold color. Every metric needs trend + normal-range context.",
+      "Volume as severity: ranking by event count lets one retry-looping job dominate while a low-volume auth bug affecting many real users hides on page 2. Rank by distinct affected users.",
+      "No deploy correlation: time-series charts without release markers force manual 'what changed?' archaeology on every incident \u2014 the single most expensive omission for a deploy-regression-heavy stack.",
+      "Client-side secret exposure: fetching Sentry from the browser or shipping admin data through client components leaks tokens and data. All Sentry pulls and event_log reads happen server-side behind the three-layer is_admin gate; the Sentry auth token lives only in server env.",
+      "Logging that can break production: an event-log helper that throws, blocks the request path, or (worse) does destructive writes. Fire-and-forget, try/catch-swallowed, insert-only \u2014 and never let admin instrumentation add latency to user-facing actions on the shared prod DB.",
+      "Unbounded event tables on shared prod: an append-only log with no retention policy competing for shared-database resources with live golf/baseball users. Ship the retention cron in the same PR wave as the table.",
+      "Silence read as health: no monitoring of the monitoring \u2014 a dead Sentry token or wedged log writer shows a beautiful green dashboard during an outage. Staleness checks are mandatory.",
+      "Static build-and-forget dashboards: never pruning panels or re-tuning thresholds; dashboards are living documents \u2014 schedule a monthly 15-minute prune.",
+      "Scope creep into the CRM: crm_* tables, /crm and helmv3-crm routes, crm_email_templates/Gmail outreach are explicitly OUT of this command center; no event_log hooks, no widgets, no queries touching crm_* \u2014 per locked decision 5."
+    ]
+  },
+  {
+    "angle": "A founder-operated SaaS command center is not a BI dashboard \u2014 it is an operational cockpit that answers three questions in under 10 seconds: \"Is anything broken right now?\", \"Is anyone using the product right now?\", and \"Does anything need my action?\". Industry consensus (EnterpriseReady, WorkOS, AWS SaaS Lens, Datadog, LaunchDarkly) converges on a layered model: (1) a top strip of health/attention signals (errors, auth anomalies, failed jobs, integrity failures), (2) a middle band of live activity (per-tenant/per-team usage, sign-in feed, rounds/games/lifting volume), (3) drill-down registries (users, teams, sessions, audit log, flags), and (4) action surfaces (impersonate, revoke session, toggle flag, re-run check) \u2014 every action itself audit-logged. For a single super-admin over a shared prod DB, the differentiators vs. enterprise tooling are: hard 3-layer allowlist gating instead of RBAC complexity, an append-only in-app event_log capturing what Sentry misses (failed server actions, RLS denials, auth failures, cron outcomes, integrity results), and per-tenant (per-team) health views that unify BOTH sports while explicitly fencing off the CRM subsystem.",
+    "mustHaveWidgets": [
+      "System status header: 'all clear / N items need attention' with red/amber/green, last-refreshed timestamp",
+      "Unified error feed: Sentry unresolved issues (server-side API, helm-xs) merged with event_log failures, source-badged, severity-sorted, deep links to Sentry and to affected user/team",
+      "Auth events feed: logins/signups/failures/password-resets last 24h\u20137d, with anomaly flags (failure bursts per account/IP, signup spikes, new-location sign-ins)",
+      "Founder KPI strip: WAU (DAU secondary), active teams / total teams, new signups + activation rate, weekly activity volume split golf vs baseball, stickiness ratio \u2014 all with vs-prior-period deltas",
+      "Live activity feed: reverse-chron stream of rounds saved, games logged, lifting check-ins, signups, team creations, with sport badges (Fairway green / Living Annual cream)",
+      "Teams registry with health score: roster size, coaches, last activity, 7/30-day trend arrow, active/cooling/dormant status, per-team drill-down page per sport",
+      "Users registry: search/filter by role/sport/team, last sign-in, status; per-user drill-down (profile, memberships, activity, auth history, active sessions)",
+      "Active sessions panel: per-user session list with device/IP/last-active, revoke-one and sign-out-everywhere actions (service-role, audited)",
+      "Impersonation launcher ('View as') with persistent banner, read-only default, TTL, and start/end audit events",
+      "Audit log explorer: filterable event_log browser (event_type, actor, team, outcome, date range) with jsonb metadata expansion \u2014 includes all admin actions themselves",
+      "Data-integrity checks grid: each named check with last-run, pass/fail, offending-row count, trend; manual re-run button; red banner escalation to page 1",
+      "Cron/job monitor: every job's last run, duration, outcome, and OVERDUE detection for silently dead schedules",
+      "Feature flags panel: flag registry with on/off toggles, per-team/user targeting, updated-by/when, kill switches for risky subsystems",
+      "Deploys/infra panel: recent Vercel deployments (server-side API) with state, commit, duration; error-rate overlay to correlate 'deploy N minutes before spike'",
+      "Sign-up funnel mini-view: signups \u2192 activated (first round/game/lift within 7d) \u2192 still-active-30d, per sport"
+    ],
+    "antiPatterns": [
+      "Vanity-metric headline tiles (total users ever, all-time rounds) \u2014 always-increasing counts that signal success while engagement declines; lead with rates, deltas, and WAU instead",
+      "Metric/widget overload above the fold \u2014 cramming every datapoint on page 1 causes analysis paralysis; exceptions first, registries one click deep",
+      "Alert fatigue: surfacing every atomic event as an alert (studies show 40\u201350% of alerts never get processed); aggregate related events into single incidents and only escalate actionable ones",
+      "Middleware-only or UI-only admin gating \u2014 Next.js middleware alone is bypassable; every server entry point and every table needs its own check (defense in depth: middleware + server + RLS)",
+      "Building the event_log as mutable or granting the app role UPDATE/DELETE on it \u2014 audit logs must be append-only or they're worthless for forensics",
+      "Unstructured 'data jsonb' audit rows with no enforced event_type taxonomy \u2014 different code paths log differently and the log becomes unqueryable; enforce a typed schema per event_type",
+      "Impersonation without a persistent visual banner, TTL, action blocklist, and dual-identity audit rows \u2014 the single riskiest admin feature to get wrong",
+      "Calling the Sentry API from the client or proxying it through an unauthenticated route \u2014 token must stay server-side only",
+      "Recreating matviews/tables for the dashboard without re-REVOKEing anon/authenticated (this repo's documented recurring failure mode) \u2014 verify pg_class.relacl after every migration",
+      "Heavy live aggregate queries against the shared prod DB on every dashboard load \u2014 use cached RPCs/matviews with scheduled refresh so the admin page can never degrade live golf/baseball users",
+      "Dead-man's-switch blindness: only showing job FAILURES \u2014 a dead cron writes nothing; must detect 'expected run missing' (OVERDUE) explicitly",
+      "Letting the command center's scope creep into the CRM \u2014 crm_* tables, /crm routes, email outreach are a separate system and must be explicitly excluded from queries, nav, and event capture",
+      "Uniform-severity single-color 'wall of red' error lists \u2014 without severity tiers and intelligent filtering the operator learns to ignore the page",
+      "Building per-sport duplicate admin pages again \u2014 the exact fragmentation this project retires; one shell, sport-badged data, shared registries"
+    ]
+  },
+  {
+    "angle": "Treat the command center as a \"mission control, not a report\" \u2014 an ops console optimized for one expert operator (Nick) doing 10-second triage scans many times a day, not an analytics BI dashboard. The governing model is Shneiderman's mantra (overview first \u2192 zoom/filter \u2192 details on demand): a fixed KPI status strip answers \"is anything on fire?\" in one glance, an asymmetric bento grid below gives per-domain health (errors, auth, golf activity, baseball activity, deploys, data integrity), and every tile is a click-through to a filtered drill-down table. Aesthetic recommendation: give the admin surface its OWN third identity \u2014 a dark graphite \"command center\" shell (near-black background, high-contrast numerals, JetBrains-Mono-style tabular figures for metrics) deliberately distinct from both the light Fairway and cream Living Annual user-facing skins. This (a) instantly signals \"you are in admin mode\" against a shared prod DB, (b) makes green/amber/red severity pop the way Grafana/Datadog dark modes do, and (c) still reads premium via generous whitespace, rounded bento tiles, restrained accent color (Fairway green for golf panels, Living Annual cream/green for baseball panels as tile-level accents only). Freshness model: polling (30\u201360s SWR revalidation) not websockets \u2014 correct for a single-admin console \u2014 with per-panel \"updated Xs ago\" chips and an explicit amber STALE state when a fetch fails, showing last-known-good data rather than blanking.",
+    "mustHaveWidgets": [
+      "Global health banner/strip \u2014 single worst-severity rollup ('All systems nominal' green vs '2 critical issues' red) pinned at very top; the 1-second answer",
+      "KPI header row (5\u20137 tiles): unresolved Sentry issues, event-log errors (24h), auth failures/RLS denials, active users today, rounds+games+lift check-ins today, last deploy status, data-integrity score \u2014 each with delta, sparkline, severity dot+icon",
+      "Unified live event feed (largest tile): merged Sentry + in-app event log, severity-coded rows with source and sport badges, filter chips, drill-down per row",
+      "Golf health panel (Fairway-green accent): teams count, rounds logged (7d sparkline), active coaches/players, golf-specific errors, most-active team leaderboard",
+      "Baseball health panel (Living Annual accent): teams, games/at-bats logged, Lift Lab check-ins (7d), baseball-specific errors",
+      "Auth & sign-ins widget: recent sign-ins (who/when/success-fail), failed-attempt spike detection, new-user signups",
+      "Deploys & infra widget: latest Vercel deployment (status, commit, age), recent failed builds, environment badge",
+      "Cron/jobs outcomes widget: last-run status + timestamp per scheduled job, red on missed/failed runs",
+      "Data-integrity widget: pass/fail per automated check (orphan rows, schema drift, RLS coverage) with last-run time and drill-down to failing rows",
+      "Users & teams directory (drill-down page, not overview tile): searchable table across both sports with last-active, role, team",
+      "Per-panel freshness chips ('updated 12s ago') + one global manual refresh + amber STALE overlay on fetch failure",
+      "Error drill-down page: filterable/sortable table (severity, source, sport, time window, user) with row-level detail drawer and deep links to Sentry"
+    ],
+    "antiPatterns": [
+      "Wall-of-charts / dashboard overload: cramming every available metric on the overview \u2014 dilutes focus into analysis paralysis; if everything is important, nothing is. Cap the overview and push depth into drill-downs.",
+      "Vanity metrics on the overview (total rows ever, lifetime signups) \u2014 always-up numbers that answer no action-question; they belong in drill-downs at most.",
+      "Color-only severity encoding (bare red/green dots with no icon or label) \u2014 unreadable for red-green colorblind users and ambiguous on dark backgrounds (the 'dark yellow problem').",
+      "Silent staleness: no last-updated indicator, so a dead poller looks identical to a healthy quiet system \u2014 the operator makes decisions on data they assume is live. Every panel must show freshness and an explicit stale state.",
+      "Blanking or white-screening on partial failure: one Sentry API hiccup taking down the whole console. The monitor must be more reliable than the monitored \u2014 panel-level error boundaries with last-known-good data.",
+      "Generic 'No data' empty states for error lists \u2014 creates doubt whether the system is healthy or the pipeline is broken; zero errors must render as an explicit, timestamped all-clear.",
+      "Spinner-only loading and unfixed tile heights \u2014 layout shift on every poll cycle makes the console feel janky; use layout-matching skeletons and fixed tile dimensions.",
+      "Alert/badge fatigue: marking WARN for routine conditions so amber becomes wallpaper and real reds get ignored \u2014 reserve non-green states for actionable conditions only.",
+      "Reusing a user-facing sport skin for the admin shell \u2014 visually blurs 'admin mode' on a shared production database; the command center should be unmistakably its own surface.",
+      "Websocket/streaming infrastructure for a single-admin console \u2014 operational complexity with no UX payoff over 30\u201360s polling; also risks hammering Sentry rate limits from the client (all Sentry calls must be server-side and cached).",
+      "Uniform card grids with no size hierarchy \u2014 every tile equally weighted forces reading instead of scanning; use asymmetric bento sizing so importance is spatially encoded.",
+      "Numbers without context: lone counts with no delta, target, or sparkline \u2014 uninterpretable at a glance and push the operator into mental arithmetic."
+    ]
+  },
+  {
+    "angle": "Concrete wiring guide for a server-side observability layer in a Next.js 16 App Router + Supabase + Sentry + Vercel stack: pull live Sentry data via its REST API from route handlers/server components (never the client), mirror what Sentry cannot see (server-action failures, RLS denials, auth events, cron/integrity outcomes) into an append-only Supabase event_log table, and surface Vercel deployments/runtime errors via the Vercel REST API \u2014 all behind a service-role/server-only boundary. Repo context confirmed: helmv3 already has src/instrumentation.ts + src/instrumentation-client.ts and .env.example carries SENTRY_AUTH_TOKEN (build/sourcemap use), SENTRY_ORG, SENTRY_PROJECT, NEXT_PUBLIC_SENTRY_DSN, and SUPABASE_SERVICE_ROLE_KEY \u2014 so the read-API token is the main NEW secret needed.",
+    "mustHaveWidgets": [
+      "Sentry unresolved-issues feed (org issues endpoint, is:unresolved, sorted by freq) with 24h sparkline per issue and permalink drill-down into Sentry",
+      "Errors-over-time chart from stats_v2 (interval=1h, groupBy=outcome) with deploy markers overlaid from the Vercel v6 deployments list",
+      "Release health strip: crash_free_rate(session)/crash_free_rate(user) per release from /sessions/ (only if SDK session tracking is confirmed on)",
+      "Auth activity stream from auth.audit_log_entries: latest logins/signups/logouts/recovery with actor, provider, IP, and per-day signup/login counters split by sport",
+      "event_log severity inbox: unresolved error/critical rows grouped by fingerprint, with resolve/annotate action (the only writable admin mutation), filterable by source and sport",
+      "RLS-denial counter + recent denials table (source='rls_denial') \u2014 spikes here have historically meant missing grants/unapplied migrations",
+      "Deployments rail: last N production/preview deploys (state, branch, sha, commit message, duration, promoted target) from Vercel v6 API",
+      "Cron & integrity board: latest outcome per job/check (green/red), last run time, duration \u2014 from event_log source in ('cron','integrity')",
+      "Per-sport activity counters: rounds submitted / games logged / lift check-ins today + 7d trend (direct counts on golf_/baseball_ tables via service-role, paginated past the PostgREST 1000-row cap or using head:true count queries)",
+      "User directory: auth.users joined to profiles/teams with last_sign_in_at, sport, team, and recent-activity flag"
+    ],
+    "antiPatterns": [
+      "Prefixing any of SENTRY_READ_TOKEN / VERCEL_TOKEN / SUPABASE_SERVICE_ROLE_KEY with NEXT_PUBLIC_ or importing the API client modules into client components \u2014 all three grant broad account/data access; use the server-only package to make accidental client imports a build error",
+      "Reusing the existing SENTRY_AUTH_TOKEN (org token for sourcemap upload) for the read API \u2014 org-token scopes are immutable and typically lack event:read; you need a separate internal-integration or user token",
+      "Paginating Sentry with page/offset params or ignoring the Link header cursor \u2014 results silently truncate at 100; also ignoring 429 Retry-After gets the org throttled",
+      "Calling Sentry/Vercel APIs from the client or on every render with cache: 'no-store' everywhere \u2014 proxy through gated route handlers/server components with ~60s revalidation instead",
+      "Giving anon or authenticated ANY insert/select policy on admin_event_log (log-spam and data-exfil vector on a shared prod DB) \u2014 writes go through the service-role server path only; also re-check grants after any matview/table recreate since Postgres re-grants anon automatically (repeat incident in this project)",
+      "Letting the event-log insert throw inside a server action \u2014 logging must be fire-and-forget (own try/catch or next/server after()) so observability can never break golf/baseball users' requests",
+      "Capturing NEXT_REDIRECT / NEXT_NOT_FOUND control-flow throws as errors (classic withServerActionInstrumentation noise) and double-capturing the same exception in both wrapper and manual captureException",
+      "Treating Vercel runtime logs as a durable error store \u2014 1-day retention on Pro means the API can't backfill; durable history belongs to Sentry + event_log (or a Log Drain later)",
+      "Relying on client-side onAuthStateChange as the auth-event source \u2014 it misses other clients and can be spoofed/blocked; auth.audit_log_entries is the server-truth source",
+      "Logging PII, JWTs, or raw request bodies into context jsonb \u2014 store user IDs and error codes, not tokens or passwords; the event_log outlives sessions",
+      "Building the event_log without a fingerprint/grouping column or retention job \u2014 an ungrouped, ever-growing log table on the SHARED prod DB degrades into noise and storage cost",
+      "Forgetting teamId on Vercel API calls (empty results) and forgetting that team-scoped Vercel env vars are invisible to `vercel env ls` but present at runtime"
+    ]
+  }
+]
