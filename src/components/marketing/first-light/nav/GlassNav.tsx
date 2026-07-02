@@ -2,12 +2,21 @@
 
 /**
  * GlassNav — the M1 hero's floating G1 glass pill.
- * docs/LANDING_ENTRY_WORLD_DESIGN.md M1 ("G1 glass nav floating") + the
+ * docs/LANDING_ENTRY_WORLD_DESIGN.md M1 ("G1 glass nav floating"), built
+ * under the ⚠ SAGE & CREAM AMENDMENT (Nick, 2026-07-02) + the
  * `landing-hero+nav` lane brief. One detached, centered `.fl-glass-1` pill:
  * wordmark, "Log in" (opens a sport-chooser popover → `/golf/login` /
  * `/baseball/login`), "See it in action" (→ `#cta`, the M8 anchor the
  * `landing-portals+cta` lane owns the real handler for — see CONTRACTS.md
  * "CTA architecture").
+ *
+ * Ink note: `.fl-glass-1`'s own tint (`rgba(var(--fl-cream-rgb), 0.55)`) is
+ * a bright, cream-leaning glass by design — it reads light regardless of
+ * what's behind it (photo highlight or the darker vignette further down
+ * the hero). Cream-on-cream text there would be close to illegible, so
+ * every label on `.fl-glass-1`/`.fl-glass-2` surfaces in this file uses
+ * sage-ink, not cream — the inverse of the solid sage-deep CTA pill, which
+ * keeps cream text (dark chrome → light ink; light glass → dark ink).
  *
  * Desktop: the popover is a small dropdown anchored under the "Log in"
  * trigger. Mobile (< `sm`): it becomes a small bottom sheet with a scrim,
@@ -74,13 +83,13 @@ export function GlassNav({ className }: GlassNavProps) {
         <span className="relative z-10 flex items-center gap-0.5 sm:gap-1">
           <Link
             href="/"
-            className="font-annual pr-2 text-body-sm font-semibold tracking-tight text-[var(--fl-ecru)] sm:pr-3 sm:text-sm"
+            className="font-annual pr-2 text-body-sm font-semibold tracking-tight text-[var(--fl-sage-ink)] sm:pr-3 sm:text-sm"
           >
             Helm
             <span className="hidden sm:inline"> Sports Labs</span>
           </Link>
 
-          <span className="h-4 w-px bg-[rgba(var(--fl-brass-rgb),0.35)]" aria-hidden="true" />
+          <span className="h-4 w-px bg-[rgba(var(--fl-brass-rgb),0.4)]" aria-hidden="true" />
 
           <Button
             ref={triggerRef}
@@ -97,14 +106,14 @@ export function GlassNav({ className }: GlassNavProps) {
                 aria-hidden="true"
               />
             }
-            className="min-h-0 h-auto rounded-full px-3 py-2 font-annual text-body-sm font-medium text-[rgba(var(--fl-ecru-rgb),0.85)] hover:bg-[rgba(var(--fl-ecru-rgb),0.12)] hover:text-[var(--fl-ecru)] sm:px-4 sm:text-sm"
+            className="min-h-0 h-auto rounded-full px-3 py-2 font-annual text-body-sm font-medium text-[rgba(var(--fl-sage-ink-rgb),0.8)] hover:bg-[rgba(var(--fl-sage-ink-rgb),0.1)] hover:text-[var(--fl-sage-ink)] sm:px-4 sm:text-sm"
           >
             Log in
           </Button>
 
           <Link
             href="#cta"
-            className="font-annual rounded-full bg-[var(--fl-green)] px-3.5 py-2 text-body-sm font-semibold text-white transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-primary-500 active:translate-y-0 sm:px-4 sm:text-sm"
+            className="font-annual rounded-full bg-[var(--fl-sage-deep)] px-3.5 py-2 text-body-sm font-semibold text-[var(--fl-cream-high)] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[var(--fl-sage-ink)] active:translate-y-0 sm:px-4 sm:text-sm"
           >
             <span className="sm:hidden">See it</span>
             <span className="hidden sm:inline">See it in action</span>
@@ -125,7 +134,7 @@ export function GlassNav({ className }: GlassNavProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: reduced ? 0 : 0.2 }}
-              className="fixed inset-0 z-40 bg-[rgba(8,20,15,0.55)] sm:hidden"
+              className="fixed inset-0 z-40 bg-[rgba(var(--fl-sage-ink-rgb),0.4)] sm:hidden"
             />
             <m.div
               key="glassnav-panel"
@@ -133,13 +142,14 @@ export function GlassNav({ className }: GlassNavProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
               transition={{ duration: reduced ? 0 : 0.32, ease: EASE_GLIDE }}
+              style={{ backgroundColor: 'rgba(var(--fl-cream-rgb), 0.92)' }}
               className={cn(
                 'fl-glass-2 fixed inset-x-4 bottom-4 z-50 rounded-3xl p-2',
                 'sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[calc(100%+0.75rem)] sm:w-64 sm:-translate-x-1/2 sm:rounded-2xl',
               )}
             >
               <nav aria-label="Choose your sport" className="relative z-10 flex flex-col gap-1 p-1">
-                <p className="font-annual px-3 pb-1 pt-2 text-eyebrow uppercase tracking-[0.18em] text-[rgba(var(--fl-ecru-rgb),0.55)]">
+                <p className="font-annual px-3 pb-1 pt-2 text-eyebrow uppercase tracking-[0.18em] text-[rgba(var(--fl-sage-ink-rgb),0.55)]">
                   Choose your sport
                 </p>
                 {SPORT_LINKS.map((sport) => (
@@ -147,10 +157,10 @@ export function GlassNav({ className }: GlassNavProps) {
                     key={sport.href}
                     href={sport.href}
                     onClick={() => setOpen(false)}
-                    className="group flex flex-col rounded-xl px-3 py-2.5 transition-colors duration-200 hover:bg-[rgba(var(--fl-ecru-rgb),0.1)]"
+                    className="group flex flex-col rounded-xl px-3 py-2.5 transition-colors duration-200 hover:bg-[rgba(var(--fl-sage-ink-rgb),0.08)]"
                   >
-                    <span className="font-annual text-sm font-semibold text-[var(--fl-ecru)]">{sport.label}</span>
-                    <span className="text-xs text-[rgba(var(--fl-ecru-rgb),0.55)]">{sport.tagline}</span>
+                    <span className="font-annual text-sm font-semibold text-[var(--fl-sage-ink)]">{sport.label}</span>
+                    <span className="text-xs text-[rgba(var(--fl-sage-ink-rgb),0.6)]">{sport.tagline}</span>
                   </Link>
                 ))}
               </nav>

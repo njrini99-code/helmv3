@@ -1,30 +1,35 @@
 'use client';
 
 /**
- * M1 · HERO — full-bleed dawn-field photo cinema + G1 glass nav pill.
- * docs/LANDING_ENTRY_WORLD_DESIGN.md M1. Background register: photo-dark
- * with a pine/ecru graded gradient layered over it (doubles as the fallback
- * when `public/marketing/first-light/photos/hero.jpg` isn't shipped yet —
- * see CONTRACTS.md "Photo asset contract"; `photoLayerStyle` paints the
- * gradient ON TOP of the photo URL layer per CSS background-image stacking,
- * so it's a permanent grade whenever the photo loads AND the on-brand
- * fallback whenever it 404s).
+ * M1 · HERO — full-bleed morning-field photo cinema + G1 glass nav pill.
+ * docs/LANDING_ENTRY_WORLD_DESIGN.md M1, built under the ⚠ SAGE & CREAM
+ * AMENDMENT at the top of that doc (Nick, 2026-07-02) — see CONTRACTS.md
+ * "Palette v2 — SAGE & CREAM". Background register: a graded photo (or,
+ * absent the real asset, an on-brand sage→cream gradient fallback — see
+ * CONTRACTS.md "Photo asset contract") with a permanent grade overlay:
+ * shadows lean sage-ink, a soft cream-high bloom lifts the sky/nav zone,
+ * and a moderate sage-ink vignette sits behind the centered content stack
+ * for legibility. `photoLayerStyle` stacks that grade ON TOP of the photo
+ * `url(...)` layer (CSS background-image layers paint first-listed-on-top),
+ * so it doubles as the on-brand fallback whenever the photo 404s.
  *
- * Motion — near-still at rest: a slow 1.02→1.06 scale drift on the photo
- * (the drift itself is driven by the M1→M2 exit scrub below, so "at rest"
- * reads as scale 1), grain, a staggered mount reveal on the
- * eyebrow/headline/subhead/CTAs.
+ * Motion — near-still at rest: a slow, independent 1→1.02 ambient
+ * "breathing" scale drift on the photo (Ken-Burns, always looping while
+ * the hero is idle), grain, a staggered mount reveal on the
+ * eyebrow → headline → subhead → CTAs.
  *
  * M1→M2 EXIT SCRUB (docs/LANDING_ENTRY_WORLD_DESIGN.md "scroll choreography
- * map"): as the section scrolls out from under the viewport, the photo
- * scales to 1.06 and darkens under a pine wash while the headline stack
- * lifts and dissolves — one continuous camera move, driven by
- * `useScrollProgress`'s `['start start', 'end start']` window (0 while the
- * hero is pinned to the top of the viewport, 1 once it's fully scrolled
- * past). Transform/opacity only. Disabled — final "at rest" frame held
- * static — under `prefers-reduced-motion` and coarse-pointer/touch, per the
- * lane brief ("Static on mobile/reduced-motion"), matching `LenisRoot`'s
- * own disablement heuristic.
+ * map", brightened per the amendment): as the section scrolls out from
+ * under the viewport, the photo scales further to 1.06 while a cream wash
+ * ramps in over it — the frame BRIGHTENS toward M2's own cream field
+ * rather than darkening — as the headline stack lifts and dissolves. One
+ * continuous camera move, driven by `useScrollProgress`'s
+ * `['start start', 'end start']` window (0 while the hero is pinned to the
+ * top of the viewport, 1 once it's fully scrolled past). Transform/opacity
+ * only. Both the ambient drift and the exit scrub are disabled — final "at
+ * rest" frame held static — under `prefers-reduced-motion` and
+ * coarse-pointer/touch, per the lane brief ("Static on mobile/reduced-
+ * motion"), matching `LenisRoot`'s own disablement heuristic.
  */
 import Link from 'next/link';
 import { m, useTransform, useReducedMotion } from 'framer-motion';
@@ -44,8 +49,26 @@ export interface M1HeroProps {
 /** House cinematic-settle curve — see CONTRACTS.md "Motion discipline". */
 const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-const HERO_FALLBACK_GRADIENT =
-  'linear-gradient(165deg, rgba(20,53,39,0.4) 0%, rgba(20,53,39,0.82) 58%, rgba(8,20,15,0.96) 100%), radial-gradient(ellipse 85% 55% at 26% 10%, rgba(245,241,230,0.16), transparent 62%), radial-gradient(ellipse 60% 40% at 76% 6%, rgba(176,141,87,0.14), transparent 60%)';
+/**
+ * The permanent sage→cream grade, painted ON TOP of the photo (or, if the
+ * photo is missing, standing alone as the fallback — see file header).
+ * Three stacked layers, first-listed = topmost:
+ *  1. A TIGHT sage-ink vignette pocketed behind the content stack (~66%
+ *     down) for cream-text legibility — tapers to nothing well before the
+ *     edges, so most of the frame stays bright (kept deliberately small;
+ *     an early wider pass read as a flat, uniform grey-green wash across
+ *     the whole photo — off-spec "murky", not "airy morning").
+ *  2. A bright cream-high bloom spilling down from just above the frame
+ *     (the nav zone) — the morning sun you never see directly, per the
+ *     entry-scenes family rule.
+ *  3. A full-bleed sage-mist → cream base wash, so the fallback (no photo)
+ *     reads as a complete, airy, on-brand frame with zero blank edges.
+ */
+const HERO_GRADE = [
+  'radial-gradient(ellipse 62% 40% at 50% 66%, rgba(var(--fl-sage-ink-rgb),0.6) 0%, rgba(var(--fl-sage-ink-rgb),0.26) 55%, rgba(var(--fl-sage-ink-rgb),0) 100%)',
+  'radial-gradient(ellipse 85% 55% at 50% -6%, rgba(var(--fl-cream-high-rgb),0.55) 0%, rgba(var(--fl-cream-high-rgb),0.18) 50%, rgba(var(--fl-cream-high-rgb),0) 82%)',
+  'linear-gradient(165deg, rgba(var(--fl-sage-mist-rgb),0.9) 0%, rgba(var(--fl-cream-rgb),0.95) 100%)',
+].join(', ');
 
 export function M1Hero({ className }: M1HeroProps) {
   const { ref, progress } = useScrollProgress<HTMLElement>({
@@ -55,10 +78,11 @@ export function M1Hero({ className }: M1HeroProps) {
   const coarsePointer = useMediaQuery('(pointer: coarse)');
   const scrubDisabled = Boolean(reducedMotion) || coarsePointer;
 
-  // One continuous camera move: photo scales + darkens while the headline
-  // stack lifts + dissolves, all keyed off the same scroll progress.
+  // One continuous camera move: photo scales + brightens toward cream
+  // while the headline stack lifts + dissolves, all keyed off the same
+  // scroll progress.
   const photoScale = useTransform(progress, [0, 1], [1, 1.06]);
-  const darkenOpacity = useTransform(progress, [0, 1], [0, 0.55]);
+  const brightenOpacity = useTransform(progress, [0, 1], [0, 0.94]);
   const contentOpacity = useTransform(progress, [0, 0.65], [1, 0]);
   const contentY = useTransform(progress, [0, 1], [0, -56]);
 
@@ -66,22 +90,31 @@ export function M1Hero({ className }: M1HeroProps) {
     <section
       ref={ref}
       className={cn('relative min-h-[100svh] min-h-dvh overflow-hidden', className)}
-      style={{ backgroundColor: 'var(--fl-pine)' }}
+      style={{ backgroundColor: 'var(--fl-sage-mist)' }}
     >
-      {/* Background register — graded photo over a pine/ecru gradient. */}
+      {/* Background register — ambient Ken-Burns wrapper (outer) holding
+          the scroll-linked exit-scrub scale (inner) + the graded photo. */}
       <m.div
         aria-hidden="true"
         className="absolute inset-0"
-        style={{
-          ...photoLayerStyle({ src: '/marketing/first-light/photos/hero.jpg', fallbackGradient: HERO_FALLBACK_GRADIENT }),
-          scale: scrubDisabled ? 1 : photoScale,
-        }}
-      />
-      {/* Exit-scrub darken wash — pine, ramps in as the section scrolls out. */}
+        animate={scrubDisabled ? undefined : { scale: [1, 1.02, 1] }}
+        transition={scrubDisabled ? undefined : { duration: 20, repeat: Infinity, ease: EASE_GLIDE }}
+      >
+        <m.div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            ...photoLayerStyle({ src: '/marketing/first-light/photos/hero.jpg', fallbackGradient: HERO_GRADE }),
+            scale: scrubDisabled ? 1 : photoScale,
+          }}
+        />
+      </m.div>
+      {/* Exit-scrub brighten wash — cream, ramps in as the section scrolls
+          out, bleaching the frame toward M2's own cream field. */}
       <m.div
         aria-hidden="true"
         className="absolute inset-0"
-        style={{ backgroundColor: 'var(--fl-pine)', opacity: scrubDisabled ? 0 : darkenOpacity }}
+        style={{ backgroundColor: 'var(--fl-cream)', opacity: scrubDisabled ? 0 : brightenOpacity }}
       />
       <div className="fl-grain" aria-hidden="true" />
 
@@ -106,7 +139,7 @@ export function M1Hero({ className }: M1HeroProps) {
           className="mb-6 flex items-center gap-3"
         >
           <span className="h-px w-8 bg-[rgba(var(--fl-brass-rgb),0.7)]" />
-          <span className="text-eyebrow font-annual font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-ecru-rgb),0.6)]">
+          <span className="text-eyebrow font-annual font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-cream-rgb),0.62)]">
             Helm Sports Labs
           </span>
           <span className="h-px w-8 bg-[rgba(var(--fl-brass-rgb),0.7)]" />
@@ -114,15 +147,16 @@ export function M1Hero({ className }: M1HeroProps) {
 
         <MaskedReveal
           as="h1"
+          delay={0.15}
           lines={[
             'The program,',
-            <span key="seen" className="text-[var(--fl-green)]">
+            <span key="seen" className="font-bold">
               seen clearly.
             </span>,
           ]}
           className={cn(
             flFraunces.className,
-            'text-[clamp(2.75rem,6vw,5.25rem)] font-normal leading-[0.98] tracking-tight text-[var(--fl-ecru)]',
+            'text-[clamp(2.75rem,6vw,5.25rem)] font-normal leading-[0.98] tracking-tight text-[var(--fl-cream)]',
           )}
         />
 
@@ -131,7 +165,7 @@ export function M1Hero({ className }: M1HeroProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={reducedMotion ? { duration: 0 } : { duration: 0.6, delay: 0.35, ease: EASE_GLIDE }}
-          className="mt-6 max-w-lg text-body-lg leading-relaxed text-[rgba(var(--fl-ecru-rgb),0.7)]"
+          className="mt-6 max-w-lg text-body-lg leading-relaxed text-[rgba(var(--fl-cream-rgb),0.75)]"
         >
           One Helm. Two fields. Roster, schedule, stats, and an AI that reads the game with you.
         </m.p>
@@ -145,14 +179,15 @@ export function M1Hero({ className }: M1HeroProps) {
         >
           <Link
             href="#cta"
-            className="group inline-flex items-center gap-2 rounded-full bg-[var(--fl-green)] px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-primary-500 active:translate-y-0"
+            className="group inline-flex items-center gap-2 rounded-full bg-[var(--fl-sage-deep)] px-7 py-3.5 text-sm font-semibold text-[var(--fl-cream-high)] shadow-[0_16px_32px_-14px_rgba(var(--fl-sage-ink-rgb),0.55)] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[var(--fl-sage-ink)] active:translate-y-0"
           >
             See it in action
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </Link>
           <Link
             href="#cta"
-            className="fl-glass-1 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium text-[var(--fl-ecru)] transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0"
+            style={{ backgroundColor: 'rgba(var(--fl-cream-rgb), 0.86)' }}
+            className="fl-glass-1 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium text-[var(--fl-sage-ink)] transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0"
           >
             <span className="relative z-10">Join your team</span>
           </Link>
