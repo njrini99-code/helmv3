@@ -8,6 +8,7 @@
  * exists to fix). Server component (no interactivity needed).
  */
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { HelmMark } from '../brand';
 
@@ -63,15 +64,26 @@ export function M9Footer({ className }: M9FooterProps) {
         className="h-px w-full"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(var(--fl-brass-rgb), 0.44), transparent)' }}
       />
-      {/* Amendment 3 §A.4 — the Helm wheel as a large quiet watermark: brass
-          at low opacity, right-anchored behind the link columns, kept out
-          of layout flow (absolute + aria-hidden) so it never competes with
-          the real links rendered on top of it (z-10 below). `overflow-hidden`
-          on the footer clips whatever bleeds past the edge at narrow
-          viewports. */}
-      <HelmMark
-        size={280}
-        className="pointer-events-none absolute -right-16 top-1/2 -translate-y-1/2 text-[rgba(var(--fl-brass-rgb),0.06)]"
+      {/* A-OVERRIDE (Nick, 2026-07-02 18:00): "that's not my logo" — the
+          line-art HelmMark traced silhouette doesn't represent the brand to
+          Nick, so the watermark uses the real asset instead. A logo is
+          exempt from the kelly-demotion rule (content, not chrome) —
+          `helm-main-logo-transparent-white-trim.png` chosen over
+          `Helm-Logo-New-Main.png` because its white trim stroke around the
+          wheel spokes stays legible at low opacity on this dark sage-ink
+          band, where New-Main's solid white interior disc would read as a
+          flat white patch (violates the "no white fill" rule even faded).
+          Right-anchored behind the link columns, kept out of layout flow
+          (absolute + aria-hidden) so it never competes with the real links
+          rendered on top of it (z-10 below). `overflow-hidden` on the
+          footer clips whatever bleeds past the edge at narrow viewports. */}
+      <Image
+        src="/helm-main-logo-transparent-white-trim.png"
+        alt=""
+        aria-hidden="true"
+        width={280}
+        height={280}
+        className="pointer-events-none absolute -right-16 top-1/2 -translate-y-1/2 select-none opacity-[0.07]"
       />
       <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 sm:py-16">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
