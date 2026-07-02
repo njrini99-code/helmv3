@@ -1,0 +1,199 @@
+import 'server-only';
+import {
+  type AdminFetchResult,
+  unconfigured,
+  failed,
+  ok,
+} from '@/lib/admin/fetch-result';
+
+/**
+ * Helm Bridge — server-only Sentry REST client (READ side; SDK ingest is a
+ * separate, complete system). Uses SENTRY_READ_TOKEN — a NEW token with
+ * org:read + project:read + event:read. NEVER reuse the CI SENTRY_AUTH_TOKEN
+ * (org token for sourcemaps; scopes immutable, typically lacks event:read).
+ *
+ * Fail-soft contract: this module NEVER throws. Missing token →
+ * 'unconfigured' (panels render a neutral not-configured state); any HTTP /
+ * network failure → 'error' (panels render amber STALE with last-known-good).
+ * 60s Next revalidate so N page loads = 1 Sentry call per minute.
+ */
+
+const API = 'https://sentry.io/api/0';
+const REVALIDATE_SECONDS = 60;
+const MAX_PAGES = 3;
+
+function config(): { token: string; org: string; project: string } | null {
+  const token = process.env.SENTRY_READ_TOKEN;
+  const org = process.env.SENTRY_ORG;
+  const project = process.env.SENTRY_PROJECT;
+  if (!token || !org || !project) return null;
+  return { token, org, project };
+}
+
+export interface SentryIssue {
+  id: string;
+  shortId: string;
+  title: string;
+  culprit: string | null;
+  level: string;
+  status: string;
+  substatus: string | null;
+  count: number;
+  userCount: number;
+  firstSeen: string;
+  lastSeen: string;
+  permalink: string;
+  /** [epochSeconds, count] pairs from the issue's baked-in 24h stats. */
+  stats24h: Array<[number, number]>;
+}
+
+interface RawIssue {
+  id: string; shortId: string; title: string; culprit?: string | null;
+  level: string; status: string; substatus?: string | null;
+  count: string | number; userCount: number;
+  firstSeen: string; lastSeen: string; permalink: string;
+  stats?: { '24h'?: Array<[number, number]> };
+}
+
+function mapIssue(raw: RawIssue): SentryIssue {
+  return {
+    id: raw.id,
+    shortId: raw.shortId,
+    title: raw.title,
+    culprit: raw.culprit ?? null,
+    level: raw.level,
+    status: raw.status,
+    substatus: raw.substatus ?? null,
+    count: Number(raw.count) || 0,
+    userCount: raw.userCount ?? 0,
+    firstSeen: raw.firstSeen,
+    lastSeen: raw.lastSeen,
+    permalink: raw.permalink,
+    stats24h: raw.stats?.['24h'] ?? [],
+  };
+}
+
+function nextCursor(linkHeader: string | null): string | null {
+  if (!linkHeader) return null;
+  // Sentry Link header: <url>; rel="next"; results="true"; cursor="0:100:0"
+  const next = linkHeader
+    .split(',')
+    .find((part) => part.includes('rel="next"') && part.includes('results="true"'));
+  const m = next?.match(/cursor="([^"]+)"/);
+  return m?.[1] ?? null;
+}
+
+async function sentryGet(path: string, params: URLSearchParams, token: string): Promise<Response> {
+  return fetch(`${API}${path}?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    next: { revalidate: REVALIDATE_SECONDS },
+  });
+}
+
+export async function fetchSentryIssues(opts?: {
+  query?: string;
+  limit?: number;
+}): Promise<AdminFetchResult<SentryIssue[]>> {
+  const cfg = config();
+  if (!cfg) return unconfigured('Sentry read API');
+
+  const query = opts?.query ?? 'is:unresolved';
+  const limit = String(opts?.limit ?? 50);
+  const issues: SentryIssue[] = [];
+  let cursor: string | null = null;
+
+  try {
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const params = new URLSearchParams({
+        query,
+        limit,
+        sort: 'freq',
+        statsPeriod: '24h',
+        project: '-1',
+      });
+      if (cursor) params.set('cursor', cursor);
+
+      const res = await sentryGet(`/organizations/${cfg.org}/issues/`, params, cfg.token);
+      if (!res.ok) {
+        const retryAfter = res.headers.get('retry-after');
+        return failed(
+          `Sentry issues fetch failed: ${res.status}${retryAfter ? ` (retry-after ${retryAfter}s)` : ''}`,
+        );
+      }
+      const rows = (await res.json()) as RawIssue[];
+      issues.push(...rows.map(mapIssue));
+
+      cursor = nextCursor(res.headers.get('link'));
+      if (!cursor) break;
+    }
+    return ok(issues);
+  } catch (err) {
+    return failed(`Sentry issues fetch threw: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+export interface SentryStatsPoint {
+  timestamp: number;
+  accepted: number;
+  total: number;
+}
+
+export async function fetchSentryHourlyStats(): Promise<AdminFetchResult<SentryStatsPoint[]>> {
+  const cfg = config();
+  if (!cfg) return unconfigured('Sentry read API');
+  try {
+    const params = new URLSearchParams({
+      field: 'sum(quantity)',
+      groupBy: 'outcome',
+      interval: '1h',
+      statsPeriod: '24h',
+      category: 'error',
+    });
+    const res = await sentryGet(`/organizations/${cfg.org}/stats_v2/`, params, cfg.token);
+    if (!res.ok) return failed(`Sentry stats fetch failed: ${res.status}`);
+    const body = (await res.json()) as {
+      intervals: string[];
+      groups: Array<{ by: { outcome: string }; series: { 'sum(quantity)': number[] } }>;
+    };
+    const accepted = body.groups.find((g) => g.by.outcome === 'accepted')?.series['sum(quantity)'] ?? [];
+    const points: SentryStatsPoint[] = body.intervals.map((iso, i) => {
+      const total = body.groups.reduce((sum, g) => sum + (g.series['sum(quantity)'][i] ?? 0), 0);
+      return { timestamp: Date.parse(iso), accepted: accepted[i] ?? 0, total };
+    });
+    return ok(points);
+  } catch (err) {
+    return failed(`Sentry stats fetch threw: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+export interface SentryReleaseHealth {
+  crashFreeSessions: number | null;
+  crashFreeUsers: number | null;
+}
+
+/** CONDITIONAL widget (OQ3): renders 'not configured' until session
+ *  tracking is confirmed sending sessions for helm-xs. */
+export async function fetchSentryReleaseHealth(): Promise<AdminFetchResult<SentryReleaseHealth>> {
+  const cfg = config();
+  if (!cfg) return unconfigured('Sentry read API');
+  try {
+    const params = new URLSearchParams({
+      field: 'crash_free_rate(session)',
+      statsPeriod: '24h',
+      project: '-1',
+    });
+    params.append('field', 'crash_free_rate(user)');
+    const res = await sentryGet(`/organizations/${cfg.org}/sessions/`, params, cfg.token);
+    if (!res.ok) return failed(`Sentry sessions fetch failed: ${res.status}`);
+    const body = (await res.json()) as {
+      groups: Array<{ totals: Record<string, number | null> }>;
+    };
+    const totals = body.groups[0]?.totals ?? {};
+    return ok({
+      crashFreeSessions: totals['crash_free_rate(session)'] ?? null,
+      crashFreeUsers: totals['crash_free_rate(user)'] ?? null,
+    });
+  } catch (err) {
+    return failed(`Sentry sessions fetch threw: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
