@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { composePracticeRx, type PracticePlan } from '@/lib/coachhelm/v3/practice-rx/composer';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface PracticeRxActionResult {
   ok: boolean;
@@ -18,7 +19,7 @@ export interface PracticeRxActionResult {
   error?: string;
 }
 
-export async function generatePracticeRx(goal_id: string): Promise<PracticeRxActionResult> {
+async function generatePracticeRxImpl(goal_id: string): Promise<PracticeRxActionResult> {
   try {
     const sb = await createClient();
     const { data: { user } } = await sb.auth.getUser();
@@ -107,4 +108,14 @@ export async function generatePracticeRx(goal_id: string): Promise<PracticeRxAct
     );
     return { ok: false, error: 'Internal error' };
   }
+}
+
+const observedGeneratePracticeRx = withAdminObserved(
+  'generatePracticeRx',
+  { sport: 'golf', feature: 'drills_practice_rx' },
+  generatePracticeRxImpl,
+);
+
+export async function generatePracticeRx(goal_id: string): Promise<PracticeRxActionResult> {
+  return observedGeneratePracticeRx(goal_id);
 }

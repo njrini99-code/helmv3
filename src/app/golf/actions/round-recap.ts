@@ -30,6 +30,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
 import { pct } from '@/lib/golf/stat-formulas';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 interface RoundContext {
   id: string;
@@ -57,7 +58,7 @@ interface PlayerStatContext {
   rounds_played: number | null;
 }
 
-export async function generateRoundRecap(roundId: string): Promise<{ recap: string | null; cached: boolean }> {
+async function generateRoundRecapImpl(roundId: string): Promise<{ recap: string | null; cached: boolean }> {
   const supabase = await createClient();
 
   // 1. Fetch round + verify status
@@ -108,6 +109,16 @@ export async function generateRoundRecap(roundId: string): Promise<{ recap: stri
   revalidatePath(`/golf/dashboard/rounds/${roundId}`);
 
   return { recap, cached: false };
+}
+
+const observedGenerateRoundRecap = withAdminObserved(
+  'generateRoundRecap',
+  { sport: 'golf', feature: 'round_review_ai' },
+  generateRoundRecapImpl,
+);
+
+export async function generateRoundRecap(roundId: string): Promise<{ recap: string | null; cached: boolean }> {
+  return observedGenerateRoundRecap(roundId);
 }
 
 // --- LLM path -------------------------------------------------------------
