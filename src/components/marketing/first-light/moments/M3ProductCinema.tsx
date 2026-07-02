@@ -41,10 +41,17 @@
  *   rotation overshoot past level before settling at 0°), docking
  *   overlapping the frame's lower-right edge. The main frame eases -2% in
  *   `x` over the same window — "the desk rebalances to make room."
- * - **Cream veil** (`CreamVeil`) — M2 hands off in cream, not a hard
- *   section cut: a full-band cream veil sits at opacity 1 at progress 0
- *   and lifts across the first sliver of scrub, reading as a camera move
- *   into the sage-ink depth rather than a seam.
+ *
+ * PAGE-ORDER UPDATE 2026-07-02 (foundation commit "M4 two-fields moves ahead
+ * of M3", Nick A-override): M3's predecessor moment is now M4 (dark-grounded
+ * two-fields photography), not cream M2. The section used to open on a
+ * full-band `CreamVeil` (a cream overlay at opacity 1 lifting across the
+ * first sliver of scrub) so the cream→sage-ink handoff read as one camera
+ * move rather than a hard cut. With a dark predecessor that veil would
+ * flash cream at the seam instead — removed entirely; the sage-ink band now
+ * flows directly from M4's own dark grounding, no handoff layer needed. The
+ * frame's existing dock-in (`HardwareFrame`'s `scale`/`y` over `[0,
+ * DOCK_END]`) still supplies a subtle entrance without any color veil.
  *
  * Screens are dignified neutral placeholders (see "Screenshot asset
  * contract" in CONTRACTS.md) — `public/marketing/first-light/screens/*.png`,
@@ -163,10 +170,6 @@ const PHONE_ARC_END = 0.78;
 const PHONE_ROTATE_OVERSHOOT_AT = 0.74;
 const PHONE_OPACITY_IN_END = 0.64;
 
-/** How far the cream veil (M2 handoff) lifts before the frame is doing
- * anything else — a sliver of the scrub, not a beat. */
-const CREAM_VEIL_END = 0.07;
-
 const DWELL_PROGRESS_STOPS = [DOCK_END, SCREEN0_HOLD_END, HANDOFF_01_END, SCREEN1_HOLD_END, HANDOFF_12_END, SCREEN2_HOLD_END];
 const DWELL_Y_KEYFRAMES = ['0%', '0%', '-33.333%', '-33.333%', '-66.667%', '-66.667%'];
 
@@ -234,7 +237,6 @@ function ProductFrame({ progress }: { progress: MotionValue<number> }) {
 
   return (
     <>
-      <CreamVeil progress={progress} />
       <div className="relative mx-auto w-full max-w-4xl">
         <Eyebrow />
         <HardwareFrame progress={progress} columnY={columnY} handoff01={handoff01} handoff12={handoff12} />
@@ -242,28 +244,6 @@ function ProductFrame({ progress }: { progress: MotionValue<number> }) {
         <PhoneArc progress={progress} />
       </div>
     </>
-  );
-}
-
-/**
- * A full-band cream veil over the whole pinned viewport — opacity 1 at
- * progress 0, lifting across `[0, CREAM_VEIL_END]`. Reads as a camera move
- * from M2's cream into this section's sage-ink depth rather than a hard
- * section boundary. `-inset-6` (not `inset-0`) deliberately overshoots
- * `PinnedScrub`'s `px-6` inner padding — an absolutely positioned child's
- * containing block is the padding *box*, not the border box, so `inset-0`
- * alone would leave two 24px sage-ink slivers at the left/right edges
- * during the veil's window; the sticky container's own `overflow-hidden`
- * clips the deliberate overshoot back to exactly the viewport edge.
- */
-function CreamVeil({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0, CREAM_VEIL_END], [1, 0]);
-  return (
-    <m.div
-      style={{ opacity, backgroundColor: 'var(--fl-cream)' }}
-      className="pointer-events-none absolute -inset-6 z-40"
-      aria-hidden="true"
-    />
   );
 }
 

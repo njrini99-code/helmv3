@@ -270,16 +270,20 @@ the contract downstream lanes should hold to if they touch the file again.
   on the SAME transform as its dock-in scale/y (one element, one
   `style={{ scale, y, x }}` — not a second wrapper) — "the desk
   rebalances to make room."
-- **Cream veil, not a hard cut.** `CreamVeil` is a full-band
-  `var(--fl-cream)` overlay at opacity 1 at progress 0, lifting across
-  `[0, CREAM_VEIL_END]` (0.07) — M2's cream hands off into this section's
-  sage-ink depth as a camera move, not a section boundary. It deliberately
-  overshoots `PinnedScrub`'s `px-6` inner padding (`-inset-6`, not
-  `inset-0`) because an absolutely positioned child's containing block is
-  the padding *box*; the sticky container's `overflow-hidden` clips the
-  overshoot back to the exact viewport edge. If `PinnedScrub`'s
-  `innerClassName` padding value ever changes, this offset needs to change
-  with it.
+- **No cream veil — M3's predecessor is now M4, not M2.** An earlier
+  `CreamVeil` (a full-band `var(--fl-cream)` overlay at opacity 1 at
+  progress 0, lifting across the first sliver of scrub) existed so M2's
+  cream could hand off into this section's sage-ink depth as a camera
+  move rather than a hard cut. The foundation lane's page-order change
+  ("M4 two-fields moves ahead of M3", Nick A-override) put M4's
+  dark-grounded two-fields photography directly before M3 instead —
+  with a dark predecessor, that same veil would flash cream at the seam.
+  Removed entirely (2026-07-02): the sage-ink band now flows straight
+  from M4's own dark grounding with no handoff layer. Don't reintroduce
+  a cream veil here unless M3's predecessor moment changes back to a
+  cream/light one — check the current page order in `src/app/page.tsx`
+  first. The frame's existing dock-in (`HardwareFrame`'s `scale`/`y` over
+  `[0, DOCK_END]`) still supplies the section's only entrance motion.
 - **`noUncheckedIndexedAccess` traps, already worked around** — worth
   knowing if you touch this file again: `SCREENS` is typed as a literal
   3-tuple (not `CinemaScreen[]`) specifically so `Ledger`'s
