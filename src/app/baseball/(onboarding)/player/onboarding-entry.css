@@ -1,0 +1,133 @@
+/* ============================================================================
+ * BaseballHelm — Player Onboarding "the field gets chalked"
+ * (docs/baseball/ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT + docs/
+ * LANDING_ENTRY_WORLD_DESIGN.md ⚠ SAGE & CREAM AMENDMENT). ADDITIVE, scoped
+ * to `.entry-onboarding-scope` (applied on this page's root) so it can
+ * never bleed into any other surface.
+ *
+ * A full-bleed <EntryField> now sits behind this wizard instead of the
+ * retired amber `.bg-auth-baseball` + floating-orb chrome. Most of this
+ * page's own kelly-amber accents were recolored directly in page.tsx (owned
+ * file, plain JSX className edits). This stylesheet only reaches into the
+ * TWO shared, unowned components this page still renders as-is —
+ * `StepIndicator` (@/components/baseball/onboarding/StepIndicator, literal
+ * kelly Tailwind classes, no var indirection) and the shared Input/
+ * NativeSelect/Button primitives (@/components/ui/*) — using the same
+ * specificity techniques as the sibling auth-page recolor
+ * (src/styles/baseball-auth.css); see that file's header comment for the
+ * full "why".
+ * ========================================================================== */
+
+.entry-onboarding-scope {
+  --grade-plus: var(--fl-sage-deep);
+  --pursuit-ink: var(--fl-sage-deep);
+  --pursuit-deep: var(--fl-sage-ink);
+  /* Recolors the shared Input/NativeSelect/Button's
+     `focus-visible:ring-[color:var(--focus-ring)]` from kelly to sage-deep. */
+  --focus-ring: rgba(var(--fl-sage-deep-rgb), 0.4);
+}
+
+/* Base fill behind the full-bleed scene — only visible for the instant
+   before the scene SVG paints. */
+.entry-onboarding-root {
+  background: var(--fl-cream);
+}
+
+/* ----------------------------------------------------------------------
+ * StepIndicator (@/components/baseball/onboarding/StepIndicator) — shared
+ * with GolfHelm's onboarding wizards, so it stays untouched as a file; its
+ * literal kelly Tailwind classes (no var indirection) are overridden here
+ * by selector instead. Unprefixed (not `button.`) since the indicator's
+ * dots/rule are plain `<div>`/`<span>` elements.
+ * ---------------------------------------------------------------------- */
+.entry-onboarding-scope .bg-primary-500 {
+  background-color: var(--fl-sage);
+}
+.entry-onboarding-scope .bg-primary-600 {
+  background-color: var(--fl-sage-deep);
+}
+.entry-onboarding-scope .hover\:bg-primary-700:hover {
+  background-color: var(--fl-sage-ink);
+}
+.entry-onboarding-scope .text-primary-600,
+.entry-onboarding-scope .text-primary-700 {
+  color: var(--fl-sage-deep);
+}
+.entry-onboarding-scope .border-primary-600 {
+  border-color: var(--fl-sage-deep);
+}
+.entry-onboarding-scope .shadow-primary-600\/30 {
+  --tw-shadow-color: rgba(var(--fl-sage-deep-rgb), 0.3);
+}
+
+/* The shared Button's focus ring is a literal kelly box-shadow baked into
+   every variant — full replacement, not a --tw-ring-* var poke. */
+.entry-onboarding-scope button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--fl-cream-high),
+    0 0 0 4px rgba(var(--fl-sage-deep-rgb), 0.55);
+}
+
+/* The NativeSelect trigger button + dropdown popover, and Input — inset
+   glass wells / warm cream, NEVER a white or near-white rectangle. */
+.entry-onboarding-scope input,
+.entry-onboarding-scope button.bg-cream-50\/92 {
+  background-color: rgba(var(--fl-cream-high-rgb), 0.55);
+  box-shadow:
+    inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.12),
+    inset 0 1px 0 rgba(var(--fl-cream-high-rgb), 0.5);
+}
+.entry-onboarding-scope input:not([aria-invalid='true']),
+.entry-onboarding-scope button.bg-cream-50\/92:not([aria-invalid='true']) {
+  border-color: rgba(var(--fl-brass-rgb), 0.28);
+}
+.entry-onboarding-scope input:not([aria-invalid='true']):hover,
+.entry-onboarding-scope button.bg-cream-50\/92:not([aria-invalid='true']):hover {
+  border-color: rgba(var(--fl-brass-rgb), 0.45);
+}
+.entry-onboarding-scope input:not([aria-invalid='true']):focus,
+.entry-onboarding-scope input:not([aria-invalid='true']):focus-visible,
+.entry-onboarding-scope button.bg-cream-50\/92:not([aria-invalid='true']):focus,
+.entry-onboarding-scope button.bg-cream-50\/92:not([aria-invalid='true']):focus-visible {
+  border-color: var(--fl-sage-deep);
+  box-shadow:
+    inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.12),
+    0 0 0 3px rgba(var(--fl-sage-deep-rgb), 0.3);
+}
+.entry-onboarding-scope label {
+  color: var(--fl-sage-ink);
+}
+.entry-onboarding-scope .bg-white {
+  background-color: rgba(var(--fl-cream-high-rgb), 0.94);
+}
+
+/* ----------------------------------------------------------------------
+ * entry-glass-card — the single-layer glass replacement for the retired
+ * `.auth-glass-card` (globals.css, still golf/join-flow-owned, untouched).
+ * Same blur+saturate+brass-edge-light recipe as `.fl-glass-3` / coach
+ * onboarding's `.entry-editorial-frame`, single-layer since this page's
+ * cards were never a double bezel. Counts as the page's ONE blur layer
+ * (budget: ≤2 per viewport).
+ * ---------------------------------------------------------------------- */
+.entry-glass-card {
+  position: relative;
+  background: rgba(var(--fl-cream-high-rgb), 0.6);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  border: 1px solid rgba(var(--fl-brass-rgb), 0.3);
+  box-shadow:
+    inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35),
+    0 20px 50px -28px rgba(46, 58, 44, 0.4);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .entry-glass-card {
+    background: rgba(var(--fl-cream-high-rgb), 0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-glass-card {
+    transition: none !important;
+  }
+}
