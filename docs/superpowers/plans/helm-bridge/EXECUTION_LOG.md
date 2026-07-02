@@ -72,3 +72,14 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Deferred per file-map: `fetchVercelWebInsights` → W12; `fetchActiveSessions` → W7.
 
 **FOUNDATION (W0–W3) COMPLETE.** 4 prod migrations live + verified; auth gate + /admin shell + server data layer built; all gates green.
+
+## W4 — Design Foundation (no migration) — DONE
+- Commits `587f415f` (clay ink token + SportBadge), `af7b3f59` (AdminShell chrome), `8a1aed0b` (status banner + KPI tile), `1df1efff` (PanelBoundary + states), `d55a4a2e` (AutoRefresh).
+- 16 new tests; typecheck exit 0; lint 0 errors; gate-coverage passes; ZERO changes under src/components/fairway (composed, not forked).
+- Shared component signatures match the plan's Shared Interfaces exactly.
+- Deviations (verified vs real source): NavItem uses `activeMatch` not `isActive`; CommandMenu uses top-level `onSelect`; React 19 dropped global JSX namespace (used ReactElement); `noImplicitOverride` needed `override`; PanelBoundary STALE label genericized to avoid a title/heading test collision; added `--fw-color-team-baseball:#C2703D` + `team-baseball` tailwind color.
+
+**★ FOUNDATION (W0–W4) COMPLETE ★** — 4 prod migrations, 3-layer auth gate, gated /admin shell + ops chrome + data layer. All gates green. Building tabs next (W5–W13); W14 retirement held for prod verification.
+
+## W5 — Overview Tab (no migration)
+**Status:** in progress (Sonnet).
