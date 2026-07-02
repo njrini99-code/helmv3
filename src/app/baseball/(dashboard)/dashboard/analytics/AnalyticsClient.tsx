@@ -53,7 +53,7 @@ function AnalyticsSkeleton() {
         <Skeleton className="h-[3px] w-16 rounded-full" />
       </div>
 
-      <div className="grid grid-cols-2 gap-x-8 gap-y-7 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="flex flex-col gap-2">
             <Skeleton variant="text" width="70%" height={11} />
