@@ -38,6 +38,17 @@ function mapCampsActionError(error: unknown): { success: false; error: string } 
   return { success: false, error: 'An unexpected error occurred' };
 }
 
+export interface CampInput {
+  name: string;
+  description: string | null;
+  location: string | null;
+  start_date: string;
+  end_date: string;
+  capacity: number | null;
+  price_cents: number | null;
+  is_free: boolean;
+}
+
 async function requireAuthPlayer() {
   const supabase = await createClient();
   const {
@@ -64,6 +75,158 @@ async function requireAuthPlayer() {
 // ============================================================================
 // COACH — CAMP MANAGEMENT
 // ============================================================================
+
+/**
+ * Create a new camp.
+ *
+ * Always writes `status: 'published'` — the RLS SELECT policy on
+ * `baseball_camps` only exposes non-owner (player) reads when
+ * `status = 'published'`. A camp created with any other status is
+ * invisible to players even though the coach (who passes via the owner
+ * EXISTS clause) sees it fine, so this must never drift.
+ */
+export async function createCamp(
+  input: CampInput
+): Promise<{ success: boolean; error?: string; campId?: string }> {
+  try {
+    return await createCampAction(input);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'camps.createCamp', featureArea: 'baseball-camps' },
+    );
+    return mapCampsActionError(error);
+  }
+}
+
+const createCampAction = withBaseballAction(
+  'createCamp',
+  { featureArea: 'baseball-camps', requiredCapability: 'can_manage_settings' },
+  async (
+    ctx,
+    input: CampInput,
+  ): Promise<{ success: boolean; error?: string; campId?: string }> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    const { data: coachRow } = await fromUntyped(supabase, 'baseball_coaches')
+      .select('organization_id')
+      .eq('id', coachId)
+      .single();
+
+    const { data, error } = await fromUntyped(supabase, 'baseball_camps')
+      .insert({
+        name: input.name,
+        description: input.description,
+        location: input.location,
+        start_date: input.start_date,
+        end_date: input.end_date,
+        capacity: input.capacity,
+        price_cents: input.price_cents,
+        is_free: input.is_free,
+        coach_id: coachId,
+        organization_id: coachRow?.organization_id ?? null,
+        status: 'published',
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      await logServerError(`createCamp: failed to create camp: ${error.message}`, {
+        action: 'camps.createCamp',
+        metadata: { coachId },
+      });
+      return { success: false, error: 'Failed to create camp' };
+    }
+
+    revalidatePath(CAMPS_PATH);
+    return { success: true, campId: data?.id };
+  },
+);
+
+/**
+ * Update an existing camp.
+ * Verifies the caller is the coach who owns the camp.
+ *
+ * Also writes `status: 'published'` — see createCamp for why. Edits made
+ * through this action always keep the camp visible to players; there is
+ * no separate "unpublish" flow today.
+ */
+export async function updateCamp(
+  campId: string,
+  input: CampInput,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    return await updateCampAction(campId, input);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'camps.updateCamp', featureArea: 'baseball-camps' },
+    );
+    return mapCampsActionError(error);
+  }
+}
+
+const updateCampAction = withBaseballAction(
+  'updateCamp',
+  { featureArea: 'baseball-camps', requiredCapability: 'can_manage_settings' },
+  async (
+    ctx,
+    campId: string,
+    input: CampInput,
+  ): Promise<{ success: boolean; error?: string }> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    const { data: camp } = await fromUntyped(supabase, 'baseball_camps')
+      .select('id, coach_id')
+      .eq('id', campId)
+      .single();
+
+    if (!camp) {
+      return { success: false, error: 'Camp not found' };
+    }
+
+    if (camp.coach_id !== coachId) {
+      await logServerError('[Security] updateCamp: coach does not own camp', {
+        action: 'camps.updateCamp',
+        metadata: { campId, coachId, campCoachId: camp.coach_id },
+      });
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const { error } = await fromUntyped(supabase, 'baseball_camps')
+      .update({
+        name: input.name,
+        description: input.description,
+        location: input.location,
+        start_date: input.start_date,
+        end_date: input.end_date,
+        capacity: input.capacity,
+        price_cents: input.price_cents,
+        is_free: input.is_free,
+        status: 'published',
+      })
+      .eq('id', campId);
+
+    if (error) {
+      await logServerError(`updateCamp: failed to update camp: ${error.message}`, {
+        action: 'camps.updateCamp',
+        metadata: { campId },
+      });
+      return { success: false, error: 'Failed to update camp' };
+    }
+
+    revalidatePath(CAMPS_PATH);
+    return { success: true };
+  },
+);
 
 /**
  * Delete a camp and its registrations.

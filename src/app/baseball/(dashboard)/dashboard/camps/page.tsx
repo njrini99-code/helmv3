@@ -14,7 +14,7 @@ import { CreateCampModal } from '@/components/coach/CreateCampModal';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
-import { registerForCamp } from '@/app/baseball/actions/camps';
+import { registerForCamp, unregisterFromCamp, deleteCamp } from '@/app/baseball/actions/camps';
 import { activeCampCountsByCamp, formatCampDate } from '@/lib/baseball/camp-utils';
 
 interface Camp {
@@ -69,7 +69,7 @@ async function loadCamps(
   const filtered =
     'coachId' in opts
       ? base.eq('coach_id', opts.coachId)
-      : base.eq('status', 'active').gte('end_date', new Date().toISOString());
+      : base.eq('status', 'published').gte('end_date', new Date().toISOString());
   const { data, error } = await filtered.order('start_date', { ascending: true });
   if (error) throw error;
   return attachActiveCounts(supabase, (data as Camp[]) ?? []);
@@ -130,9 +130,9 @@ function CampCard({
           </div>
           <div className="flex flex-col items-end gap-2">
             <Badge
-              variant={camp.status === 'active' ? 'success' : 'secondary'}
+              variant={camp.status === 'published' ? 'success' : 'secondary'}
             >
-              {camp.status === 'active' ? 'Open' : camp.status || 'Pending'}
+              {camp.status === 'published' ? 'Open' : camp.status || 'Pending'}
             </Badge>
             {camp.price_cents && !camp.is_free && (
               <p className="text-lg font-semibold tracking-tight text-warm-900">
@@ -322,13 +322,11 @@ export default function CampsPage() {
   const handleUnregister = async (campId: string) => {
     if (!player) return;
 
-    const { error } = await supabase
-      .from('baseball_camp_registrations')
-      .update({ status: 'cancelled' })
-      .eq('camp_id', campId)
-      .eq('player_id', player.id);
+    // Go through the audited server-action layer instead of a raw
+    // client-side write.
+    const result = await unregisterFromCamp(campId);
 
-    if (!error) {
+    if (result.success) {
       setRegisteredCamps(prev => {
         const newSet = new Set(prev);
         newSet.delete(campId);
@@ -340,7 +338,7 @@ export default function CampsPage() {
           : c
       ));
     } else {
-      showToast('Failed to cancel camp registration', 'error');
+      showToast(result.error || 'Failed to cancel camp registration', 'error');
     }
   };
 
@@ -353,20 +351,12 @@ export default function CampsPage() {
 
     setDeleting(true);
     try {
-      // First delete all registrations for this camp
-      await supabase
-        .from('baseball_camp_registrations')
-        .delete()
-        .eq('camp_id', deleteConfirm);
+      // Go through the audited server-action layer (deletes registrations +
+      // the camp, with an ownership check) instead of raw client-side deletes.
+      const result = await deleteCamp(deleteConfirm);
 
-      // Then delete the camp
-      const { error } = await supabase
-        .from('baseball_camps')
-        .delete()
-        .eq('id', deleteConfirm);
-
-      if (error) {
-        showToast('Failed to delete camp', 'error');
+      if (!result.success) {
+        showToast(result.error || 'Failed to delete camp', 'error');
         return;
       }
 
