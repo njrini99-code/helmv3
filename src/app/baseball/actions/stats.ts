@@ -65,6 +65,12 @@ export interface UploadResult {
   unmatchedRows?: number;
   unmatchedNames?: string[];
   error?: string;
+  /**
+   * SECURITY: populated (and success:false) when coach-supplied playerMatches
+   * referenced a playerId that is not on the target team's roster. Lets
+   * callers surface exactly which coach-supplied matches were rejected.
+   */
+  invalidPlayerMatches?: Array<{ csvName: string; playerId: string }>;
 }
 
 export interface StatsFilter {
@@ -165,6 +171,38 @@ const uploadStatsCSVAction = withBaseballAction(
     first_name: (tm.baseball_players as { first_name: string | null }).first_name,
     last_name: (tm.baseball_players as { last_name: string | null }).last_name,
   }));
+
+  // SECURITY: playerMatches is coach-supplied client state from the
+  // Match-Players wizard step. Never trust a playerId from it without
+  // verifying it belongs to the target team's own roster (fetched above,
+  // server-side) — otherwise a coach could fabricate baseball_player_stats
+  // rows for a player on a completely different team. Reject the whole
+  // upload up front (before creating any upload/stat rows) with a
+  // structured error listing every offending match, rather than silently
+  // dropping or accepting the tampered assignment.
+  if (playerMatches) {
+    const rosterPlayerIds = new Set(players.map((p) => p.id));
+    const invalidPlayerMatches = playerMatches
+      .filter((m) => !!m.playerId && !rosterPlayerIds.has(m.playerId))
+      .map((m) => ({ csvName: m.csvName, playerId: m.playerId! }));
+
+    if (invalidPlayerMatches.length > 0) {
+      await logServerError(
+        `Rejected uploadStatsCSV: ${invalidPlayerMatches.length} playerMatches entr${invalidPlayerMatches.length === 1 ? 'y references' : 'ies reference'} a player not on team ${teamId}'s roster`,
+        {
+          action: 'stats.uploadStatsCSV',
+          metadata: { teamId, coachId, invalidPlayerMatches },
+        },
+      );
+      return {
+        success: false,
+        error: `Some player matches are not on this team's roster: ${invalidPlayerMatches
+          .map((m) => `"${m.csvName}"`)
+          .join(', ')}. Please re-match these players and try again.`,
+        invalidPlayerMatches,
+      };
+    }
+  }
 
   // Parse CSV
   const rows = parseCSV(csvContent);
@@ -327,7 +365,38 @@ const uploadStatsCSVAction = withBaseballAction(
       .insert(statsToInsert);
 
     if (insertError) {
-      await logServerError(`Failed to insert stats: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'stats.uploadStatsCSV' });
+      const insertErrorMessage =
+        insertError instanceof Error ? insertError.message : String(insertError);
+      await logServerError(`Failed to insert stats: ${insertErrorMessage}`, { action: 'stats.uploadStatsCSV' });
+
+      // HONESTY FIX: the bulk insert persisted zero rows — never stamp this
+      // upload 'completed' (UploadHistory reads status + processed_count to
+      // show a success badge with a nonzero processed count). Record the
+      // real failure status + error_message so the coach sees an honest
+      // failed upload instead of a false "completed" with lost data.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('baseball_stat_uploads')
+        .update({
+          matched_rows: 0,
+          unmatched_rows: unmatchedNames.length,
+          unmatched_data: unmatchedNames,
+          processed_count: 0,
+          completed_at: new Date().toISOString(),
+          status: 'failed',
+          error_message: insertErrorMessage,
+        })
+        .eq('id', upload.id);
+
+      return {
+        success: false,
+        uploadId: upload.id,
+        totalRows: rows.length,
+        matchedRows: 0,
+        unmatchedRows: unmatchedNames.length,
+        unmatchedNames,
+        error: 'Failed to save stats. Please try again.',
+      };
     }
   }
 
