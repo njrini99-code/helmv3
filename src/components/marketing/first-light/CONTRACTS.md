@@ -149,11 +149,11 @@ before restyling.
 
 | Utility | Recipe | Consumer (per Amendment 2's M-moment map) |
 |---|---|---|
-| `.fl-aurora` | Cream field + 4 low-chroma sage radial blobs, optional 32s drift | Page/section background behind **M2, M5, M6, M7** (§A.1) |
-| `.fl-light-pool` | Radial cream-high pool, blurred, `position: absolute` default | Behind hero copy + section anchors: **M2** statement, **M5** signal card, **M7** stats (§A.2) |
+| `.fl-aurora` | Cream field + 4 low-chroma sage radial blobs (the brightest blob is cream, not cream-high — §D2), optional 32s drift | Page/section background behind **M2, M5, M6, M7** (§A.1) |
+| `.fl-light-pool` | Radial **cream** pool (§D2 — was cream-high), blurred, `position: absolute` default | Behind hero copy + section anchors: **M2** statement, **M5** signal card, **M7** stats (§A.2) |
 | `.fl-cta-glow` | Sage bloom `::after`, opacity 0→1 on hover/focus-visible | Primary CTAs only: **M1** + **M8** (§A.3, §B.8) |
-| `--fl-shadow-xs/sm/md/lg` + `--fl-specular` | Stacked warm shadows + 1px cream-high top highlight | Every elevated light surface sitewide (§B.5) |
-| `.fl-card` + `.fl-card-lift` | Solid `--fl-cream-high` card, specular + ring, hover swell | **M6**'s three vignettes (converted from `.fl-glass-2`, §B.6) + any other solid card |
+| `--fl-shadow-xs/sm/md/lg` + `--fl-specular` | Stacked warm shadows + 1px cream-high top highlight (the ONE cream-high fill §D2 still allows — a hairline, not a fill) | Every elevated light surface sitewide (§B.5) |
+| `.fl-card` + `.fl-card-lift` | Top-edge cream-high → cream gradient (18% stop, §D2 — was a flat cream-high fill), specular + ring, hover swell | **M6**'s three vignettes (converted from `.fl-glass-2`, §B.6) + any other solid card |
 | `.fl-gradient-ring` | Masked 1px conic ring (sage-deep → sage → brass → sage-deep) | **M5**'s signal card ONLY — the page's single gradient-ring moment (§B.7) |
 | `.fl-link-underline` | Sage-deep 2px wipe on hover/focus-visible | Footer + nav text links (§B.10) |
 | `.fl-grain` (flipped) | `mix-blend-mode` overlay → multiply | Sitewide standalone grain plate (§A.4) — glass-baked grain (`.fl-glass-*::before`) unchanged |
@@ -166,6 +166,40 @@ against this, code review alone does not pass a moment):**
 - Exactly one hero moment per viewport-story.
 - Grayscale test, effects-off test, squint test, 8px audit,
   reduced-motion audit all pass.
+
+### §D2 — MORE CREAM, NO WHITE (2026-07-02, Nick directive — overrides
+anything lighter elsewhere in this doc or the design doc)
+
+Nothing larger than a 1px specular/hairline may render at or near white
+(`#FFFFFF` or `--fl-cream-high` `#FBF9F2` as a FILL). `--fl-cream-high` is
+demoted to exactly three uses: **1px specular lips** (`--fl-specular`,
+`.fl-glass-*`'s brass top edge-light is unaffected — that's brass, not
+cream-high), **text-on-dark** (e.g. button labels on `--fl-sage-deep`),
+and **≤2px accents**. Every other light surface uses `--fl-cream`
+(`#F5F1E6`) or warmer — never cream-high, never white.
+
+Fixed in this pass (foundation lane, `first-light.css`):
+- `.fl-card` background — was a flat `var(--fl-cream-high)` fill; now
+  `linear-gradient(180deg, rgba(var(--fl-cream-high-rgb),0.55) 0%,
+  var(--fl-cream) 18%)` — only the top edge catches light, body reads
+  true cream.
+- `.fl-light-pool` — was `rgba(var(--fl-cream-high-rgb), 0.9)`; now
+  `rgba(var(--fl-cream-rgb), 0.9)`.
+- `.fl-aurora`'s brightest blob (bottom-left, §A.1) — was
+  `rgba(var(--fl-cream-high-rgb), 0.9)`; now `rgba(var(--fl-cream-rgb),
+  0.9)`.
+
+Left as-is (both are the hairline/text-on-dark carve-outs §D2 exempts):
+- `--fl-specular` (`inset 0 1px 0 rgba(var(--fl-cream-high-rgb), 0.9)`)
+  — a literal 1px inset highlight, the "80% move" recipe (§B.5). Do not
+  demote this one — a cream specular lip reads as no light at all.
+- Any cream-high used for text color on a sage-deep/sage-ink background
+  (button labels, CTA text) — text-on-dark is explicitly allowed.
+
+**Rule for every downstream lane:** before adding a new cream-high fill
+anywhere under `src/components/marketing/first-light/`, ask "is this
+bigger than a 1px lip and not text-on-dark?" — if yes, use `--fl-cream`
+instead. Grep `cream-high` in your file before shipping a new surface.
 
 ## Fonts (`fonts.ts`)
 
