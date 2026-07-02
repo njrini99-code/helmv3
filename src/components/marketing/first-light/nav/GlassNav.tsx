@@ -78,12 +78,16 @@ export function GlassNav({ className }: GlassNavProps) {
     <div ref={rootRef} className={cn('relative z-30 mx-auto w-fit max-w-[calc(100vw-2rem)]', className)}>
       <nav
         aria-label="Primary"
+        style={{
+          boxShadow:
+            'var(--fl-specular), inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35), 0 0 0 1px rgba(var(--fl-sage-ink-rgb), 0.06)',
+        }}
         className="fl-glass-1 flex items-center gap-0.5 rounded-full py-1.5 pl-4 pr-1.5 sm:gap-1 sm:pl-5 sm:pr-2"
       >
         <span className="relative z-10 flex items-center gap-0.5 sm:gap-1">
           <Link
             href="/"
-            className="font-annual pr-2 text-body-sm font-semibold tracking-tight text-[var(--fl-sage-ink)] sm:pr-3 sm:text-sm"
+            className="fl-link-underline font-annual pr-2 text-body-sm font-semibold tracking-tight text-[var(--fl-sage-ink)] sm:pr-3 sm:text-sm"
           >
             Helm
             <span className="hidden sm:inline"> Sports Labs</span>
@@ -106,14 +110,14 @@ export function GlassNav({ className }: GlassNavProps) {
                 aria-hidden="true"
               />
             }
-            className="min-h-0 h-auto rounded-full px-3 py-2 font-annual text-body-sm font-medium text-[rgba(var(--fl-sage-ink-rgb),0.8)] hover:bg-[rgba(var(--fl-sage-ink-rgb),0.1)] hover:text-[var(--fl-sage-ink)] sm:px-4 sm:text-sm"
+            className="fl-link-underline min-h-0 h-auto rounded-full px-3 py-2 font-annual text-body-sm font-medium text-[rgba(var(--fl-sage-ink-rgb),0.8)] hover:bg-[rgba(var(--fl-sage-ink-rgb),0.1)] hover:text-[var(--fl-sage-ink)] sm:px-4 sm:text-sm"
           >
             Log in
           </Button>
 
           <Link
             href="#cta"
-            className="font-annual rounded-full bg-[var(--fl-sage-deep)] px-3.5 py-2 text-body-sm font-semibold text-[var(--fl-cream-high)] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[var(--fl-sage-ink)] active:translate-y-0 sm:px-4 sm:text-sm"
+            className="font-annual rounded-full bg-[var(--fl-sage-deep)] px-3.5 py-2 text-body-sm font-semibold text-[var(--fl-cream-high)] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[var(--fl-sage-ink)] active:translate-y-0 active:scale-[0.98] sm:px-4 sm:text-sm"
           >
             <span className="sm:hidden">See it</span>
             <span className="hidden sm:inline">See it in action</span>
@@ -159,7 +163,7 @@ export function GlassNav({ className }: GlassNavProps) {
                     onClick={() => setOpen(false)}
                     className="group flex flex-col rounded-xl px-3 py-2.5 transition-colors duration-200 hover:bg-[rgba(var(--fl-sage-ink-rgb),0.08)]"
                   >
-                    <span className="font-annual text-sm font-semibold text-[var(--fl-sage-ink)]">{sport.label}</span>
+                    <span className="fl-link-underline font-annual text-sm font-semibold text-[var(--fl-sage-ink)]">{sport.label}</span>
                     <span className="text-xs text-[rgba(var(--fl-sage-ink-rgb),0.6)]">{sport.tagline}</span>
                   </Link>
                 ))}

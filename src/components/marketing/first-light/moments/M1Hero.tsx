@@ -106,9 +106,25 @@ export function M1Hero({ className }: M1HeroProps) {
           style={{
             ...photoLayerStyle({ src: '/marketing/first-light/photos/hero.jpg', fallbackGradient: HERO_GRADE }),
             scale: scrubDisabled ? 1 : photoScale,
+            filter: 'saturate(0.92) contrast(1.02)',
           }}
         />
       </m.div>
+      {/* Directional corner light (Amendment 2 §C.13, research §1.4) — the
+          "morning sun you never see," top-left, partially off-canvas. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-24 top-0 h-96 w-96 rounded-full blur-2xl"
+        style={{ background: 'radial-gradient(circle, rgba(var(--fl-sage-rgb),0.18), transparent 70%)' }}
+      />
+      {/* Static bottom dissolve veil (Amendment 2 §C.12) — hands M1 into
+          M2's cream field with no hard seam at rest; the scroll-linked
+          brighten wash below layers on top of this at exit. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-[14%]"
+        style={{ backgroundImage: 'linear-gradient(to top, var(--fl-cream), transparent)' }}
+      />
       {/* Exit-scrub brighten wash — cream, ramps in as the section scrolls
           out, bleaching the frame toward M2's own cream field. */}
       <m.div
@@ -156,7 +172,7 @@ export function M1Hero({ className }: M1HeroProps) {
           ]}
           className={cn(
             flFraunces.className,
-            'text-[clamp(2.75rem,6vw,5.25rem)] font-normal leading-[0.98] tracking-tight text-[var(--fl-cream)]',
+            'text-balance text-[clamp(2.75rem,6vw,5.25rem)] font-normal leading-[0.98] tracking-tight text-[var(--fl-cream)]',
           )}
         />
 
@@ -165,7 +181,7 @@ export function M1Hero({ className }: M1HeroProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={reducedMotion ? { duration: 0 } : { duration: 0.6, delay: 0.35, ease: EASE_GLIDE }}
-          className="mt-6 max-w-lg text-body-lg leading-relaxed text-[rgba(var(--fl-cream-rgb),0.75)]"
+          className="mt-6 max-w-lg text-pretty text-body-lg leading-relaxed text-[rgba(var(--fl-cream-rgb),0.75)]"
         >
           One Helm. Two fields. Roster, schedule, stats, and an AI that reads the game with you.
         </m.p>
@@ -179,14 +195,19 @@ export function M1Hero({ className }: M1HeroProps) {
         >
           <Link
             href="#cta"
-            className="group inline-flex items-center gap-2 rounded-full bg-[var(--fl-sage-deep)] px-7 py-3.5 text-sm font-semibold text-[var(--fl-cream-high)] shadow-[0_16px_32px_-14px_rgba(var(--fl-sage-ink-rgb),0.55)] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[var(--fl-sage-ink)] active:translate-y-0"
+            className="fl-cta-glow group inline-flex items-center gap-2 rounded-full bg-[var(--fl-sage-deep)] px-7 py-3.5 text-sm font-semibold text-[var(--fl-cream-high)] shadow-[0_16px_32px_-14px_rgba(var(--fl-sage-ink-rgb),0.55)] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[var(--fl-sage-ink)] active:translate-y-0 active:scale-[0.98]"
           >
             See it in action
-            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-[rgba(var(--fl-cream-high-rgb),0.15)] transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px group-hover:scale-105">
+              <ArrowRight className="h-4 w-4" />
+            </span>
           </Link>
           <Link
             href="#cta"
-            style={{ backgroundColor: 'rgba(var(--fl-cream-rgb), 0.86)' }}
+            style={{
+              backgroundColor: 'rgba(var(--fl-cream-rgb), 0.86)',
+              boxShadow: 'var(--fl-specular), inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35)',
+            }}
             className="fl-glass-1 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium text-[var(--fl-sage-ink)] transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0"
           >
             <span className="relative z-10">Join your team</span>
