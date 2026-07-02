@@ -14,16 +14,17 @@
 // stamping, the timeline, review-hold AND rollback, exactly like any CSV.
 //
 // It does NOT commit here — it hands the edited text up to the parent, which feeds
-// it as csvContent into the flat path. Cream/green tokens, GolfHelm primitives.
+// it as csvContent into the flat path. LIVING ANNUAL PRESENTATION — PaperCard,
+// fairway Button, Reveal for the mount transition (the kit's Stage-0 interaction
+// layer replaces the bespoke framer-motion fade this file used to hand-roll).
 // =============================================================================
 
 import { useMemo, useState } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway';
 import { Input } from '@/components/ui/input';
 import { IconFile, IconChevronRight } from '@/components/icons';
+import { PaperCard, Eyebrow, InkBadge, Reveal } from '@/components/baseball/living-annual';
 
 interface Props {
   /** The recovered PDF text, pre-loaded into the editor as a starting point. */
@@ -49,19 +50,10 @@ export function ManualMapPanel({
   onCancel,
   busy,
 }: Props) {
-  const prefersReducedMotion = useReducedMotion();
   const [header, setHeader] = useState(DEFAULT_HEADER);
   // Seed the body with the recovered text so the coach edits down, not up from blank.
   const [body, setBody] = useState(preservedText.trim());
   const [delimiter, setDelimiter] = useState<'comma' | 'tab' | 'whitespace'>('whitespace');
-
-  const fade = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
-      };
 
   // Normalize the edited body into a clean CSV block the flat parser reads. A
   // whitespace/tab block is collapsed to single commas so the generic CSV path
@@ -88,119 +80,112 @@ export function ManualMapPanel({
   const canConfirm = rowCount > 0 && header.trim().length > 0;
 
   return (
-    <LazyMotion features={domAnimation}>
-      <m.div {...fade}>
-        <Card variant="overlay" hover={false} padding="lg">
-          <CardContent className="space-y-5 p-0">
-            {/* Editorial split header: machined source chip + intent copy. */}
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-inset ring-primary-100">
-                <IconFile size={18} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-500">
-                  Manual mapping
-                </p>
-                <h3 className="text-lg font-semibold text-warm-900">
-                  Map the lines from {fileName || 'this PDF'}
-                </h3>
-                <p className="mt-0.5 text-sm text-warm-600">
-                  We never auto-commit numbers guessed from a PDF. Tidy the recovered lines below
-                  into one row per player, then they go through the same validation, matching and
-                  rollback as any spreadsheet import.
-                </p>
-              </div>
-            </div>
+    <Reveal>
+      <PaperCard className="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+        {/* Editorial split header: machined source chip + intent copy. */}
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md border border-grade-plus/30 bg-grade-plus/[0.08] text-grade-plus">
+            <IconFile size={18} />
+          </span>
+          <div className="min-w-0">
+            <Eyebrow ink="team">Manual mapping</Eyebrow>
+            <h3 className="mt-1 font-annual text-h3 font-semibold text-text-primary">
+              Map the lines from {fileName || 'this PDF'}
+            </h3>
+            <p className="mt-1 text-body-sm leading-relaxed text-text-secondary">
+              We never auto-commit numbers guessed from a PDF. Tidy the recovered lines below
+              into one row per player, then they go through the same validation, matching and
+              rollback as any spreadsheet import.
+            </p>
+          </div>
+        </div>
 
-            {/* Delimiter chooser — how the pasted lines separate columns. */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-eyebrow font-semibold uppercase tracking-wide text-warm-500">
-                Columns split by
-              </span>
-              {(
-                [
-                  ['whitespace', 'Spaces'],
-                  ['tab', 'Tabs'],
-                  ['comma', 'Commas'],
-                ] as const
-              ).map(([val, label]) => (
-                <Button
-                  key={val}
-                  size="sm"
-                  variant={delimiter === val ? 'primary' : 'ghost'}
-                  onClick={() => setDelimiter(val)}
-                  aria-pressed={delimiter === val}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
+        {/* Delimiter chooser — how the pasted lines separate columns. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+            Columns split by
+          </span>
+          {(
+            [
+              ['whitespace', 'Spaces'],
+              ['tab', 'Tabs'],
+              ['comma', 'Commas'],
+            ] as const
+          ).map(([val, label]) => (
+            <Button
+              key={val}
+              type="button"
+              size="sm"
+              variant={delimiter === val ? 'primary' : 'ghost'}
+              onClick={() => setDelimiter(val)}
+              aria-pressed={delimiter === val}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
 
-            {/* Header row editor. */}
-            <div>
-              <label
-                htmlFor="manualmap-header"
-                className="mb-1.5 block text-sm font-medium text-warm-700"
-              >
-                Column headers (comma-separated)
-              </label>
-              <Input
-                id="manualmap-header"
-                value={header}
-                onChange={(e) => setHeader(e.target.value)}
-                placeholder={DEFAULT_HEADER}
-                className="font-mono text-sm"
-              />
-              <p className="mt-1 text-xs text-warm-500">
-                The first column should be the player name; the rest are stat columns.
-              </p>
-            </div>
+        {/* Header row editor. */}
+        <div>
+          <label
+            htmlFor="manualmap-header"
+            className="mb-1.5 block text-body-sm font-medium text-text-primary"
+          >
+            Column headers (comma-separated)
+          </label>
+          <Input
+            id="manualmap-header"
+            value={header}
+            onChange={(e) => setHeader(e.target.value)}
+            placeholder={DEFAULT_HEADER}
+            className="font-mono text-sm"
+          />
+          <p className="mt-1 text-caption text-text-tertiary">
+            The first column should be the player name; the rest are stat columns.
+          </p>
+        </div>
 
-            {/* Body editor: the recovered/hand-entered lines. */}
-            <div>
-              <label
-                htmlFor="manualmap-body"
-                className="mb-1.5 block text-sm font-medium text-warm-700"
-              >
-                One player per line
-              </label>
-              {/* eslint-disable-next-line helm/no-raw-input */}
-              <textarea
-                id="manualmap-body"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={10}
-                spellCheck={false}
-                className="w-full rounded-xl border border-warm-200 bg-cream-50 px-3 py-2.5 font-mono text-xs leading-relaxed text-warm-800 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                placeholder={'Smith J  4 2 1 1 0 1 0\nDoe A    3 1 0 0 1 1 0'}
-              />
-              <p className="mt-1 text-xs text-warm-500">
-                {rowCount > 0
-                  ? `${rowCount} row${rowCount === 1 ? '' : 's'} ready to map.`
-                  : 'Paste or edit the recovered lines above.'}
-              </p>
-            </div>
+        {/* Body editor: the recovered/hand-entered lines. */}
+        <div>
+          <label
+            htmlFor="manualmap-body"
+            className="mb-1.5 block text-body-sm font-medium text-text-primary"
+          >
+            One player per line
+          </label>
+          {/* eslint-disable-next-line helm/no-raw-input */}
+          <textarea
+            id="manualmap-body"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={10}
+            spellCheck={false}
+            className="w-full rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-2.5 font-mono text-xs leading-relaxed text-text-primary outline-none transition-colors focus:border-grade-plus focus-visible:ring-2 focus-visible:ring-grade-plus"
+            placeholder={'Smith J  4 2 1 1 0 1 0\nDoe A    3 1 0 0 1 1 0'}
+          />
+          <p className="mt-1 text-caption text-text-tertiary">
+            {rowCount > 0 ? (
+              <InkBadge label={`${rowCount} row${rowCount === 1 ? '' : 's'} ready`} tone="team" />
+            ) : (
+              'Paste or edit the recovered lines above.'
+            )}
+          </p>
+        </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <Button variant="ghost" onClick={onCancel}>
-                Back
-              </Button>
-              <Button
-                onClick={() => onConfirm(csvBlock)}
-                disabled={!canConfirm}
-                isLoading={busy}
-                className="group"
-              >
-                Map these lines
-                <IconChevronRight
-                  size={16}
-                  className="ml-1 transition-transform group-hover:translate-x-0.5"
-                />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </m.div>
-    </LazyMotion>
+        <div className="flex items-center justify-between pt-1">
+          <Button variant="ghost" onClick={onCancel}>
+            Back
+          </Button>
+          <Button
+            onClick={() => onConfirm(csvBlock)}
+            disabled={!canConfirm}
+            busy={busy}
+            rightIcon={<IconChevronRight size={16} />}
+          >
+            Map these lines
+          </Button>
+        </div>
+      </PaperCard>
+    </Reveal>
   );
 }
