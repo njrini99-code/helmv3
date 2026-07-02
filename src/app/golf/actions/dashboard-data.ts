@@ -388,7 +388,7 @@ async function getCoachDashboardDataImpl(
                 .order('round_date', { ascending: false })
                 .order('id', { ascending: true })
                 .range(from, to);
-        });
+        }, undefined, { table: 'golf_rounds', action: 'getCoachDashboardData', feature: 'coach_dashboard', sport: 'golf' });
 
         // All rounds query with optional date filter + holes_played for normalization
         const allRoundsPromise = fetchAllRowsResult((from, to) => {
@@ -403,7 +403,7 @@ async function getCoachDashboardDataImpl(
                 .order('round_date', { ascending: false })
                 .order('id', { ascending: true })
                 .range(from, to);
-        });
+        }, undefined, { table: 'golf_rounds', action: 'getCoachDashboardData', feature: 'coach_dashboard', sport: 'golf' });
 
         const [recentRoundsResult, allRoundsResult, weekRoundsResult] = await Promise.all([
             recentRoundsPromise,

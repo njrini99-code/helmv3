@@ -244,6 +244,8 @@ async function syncClassToCalendarImpl(
       .like('description', `%${classTag}%`)
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_events', action: 'syncClassToCalendar', feature: 'academics_classes', sport: 'golf' },
   );
 
   if (existingError) {

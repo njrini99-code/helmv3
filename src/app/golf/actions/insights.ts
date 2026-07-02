@@ -75,6 +75,7 @@ async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ al
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 // ============================================================================
 // TYPES
@@ -1638,6 +1639,13 @@ async function getPlayerFocusAreasImpl(playerId: string) {
     if (error) {
       // PGRST116 = no rows, 42501 = RLS permission denied - both are expected for players without focus areas
       // Return empty array instead of error to show graceful empty state
+      maybeCaptureRlsDenial(error, {
+        table: 'golf_player_focus_areas',
+        verb: 'select',
+        action: 'getPlayerFocusAreas',
+        feature: 'my_development',
+        sport: 'golf',
+      });
       if (error.code === 'PGRST116' || error.code === '42501' || error.code === '42P01') {
         return { success: true, focus_areas: [] };
       }

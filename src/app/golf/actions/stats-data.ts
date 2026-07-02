@@ -723,7 +723,7 @@ async function getStatsSummaryImpl(
     .not('score', 'is', null)
     .eq('gir', false)
     .order('id', { ascending: true })
-    .range(from, to)); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_holes', action: 'getStatsSummary', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
   let scramblingAttempts = 0;
   let scramblingMade = 0;
@@ -969,7 +969,7 @@ async function queryDetailedStatsWithClient(
         .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_holes', action: 'queryDetailedStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
       fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
@@ -1002,7 +1002,7 @@ async function queryDetailedStatsWithClient(
         .order('hole_number')
         .order('shot_number')
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_shots', action: 'queryDetailedStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -1318,7 +1318,7 @@ async function getSprayChartDataImpl(
         .select('id, round_id, hole_number, par')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_holes', action: 'getSprayChartData', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
       fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
@@ -1347,7 +1347,7 @@ async function getSprayChartDataImpl(
         .order('hole_number')
         .order('shot_number')
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_shots', action: 'getSprayChartData', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -1892,7 +1892,7 @@ async function getTeamComparisonImpl(
     .not('total_score', 'is', null)
     .gte('round_date', seasonStartDate)
     .order('id', { ascending: true })
-    .range(from, to));
+    .range(from, to), undefined, { table: 'golf_rounds', action: 'getTeamComparison', feature: 'stats_analytics', sport: 'golf' });
 
   if (!roundsData || roundsData.length === 0 || !playersData) {
     return {
@@ -1913,7 +1913,7 @@ async function getTeamComparisonImpl(
     .not('score', 'is', null)
     .eq('gir', false)
     .order('id', { ascending: true })
-    .range(from, to)); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_holes', action: 'getTeamComparison', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
   // Build a map of round_id -> player_id for scrambling aggregation
   const roundToPlayer = new Map<string, string>();
@@ -2331,7 +2331,7 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
     .order('round_id')
     .order('hole_number')
     .order('id', { ascending: true })
-    .range(from, to)); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_holes', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
   if (!holesData || holesData.length === 0) {
     return {
@@ -2576,7 +2576,7 @@ async function getCoachRosterStatsImpl(teamId: string): Promise<CoachRosterPlaye
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
       .order('id', { ascending: true })
-      .range(from, to)), // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_rounds', action: 'getCoachRosterStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
   ]);
 
   if (!teamPlayers || teamPlayers.length === 0) return [];

@@ -140,7 +140,7 @@ async function getPlayerProfileStatsImpl(
       .order('hole_number')
       .order('shot_number')
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_shots', action: 'getPlayerProfileStats', feature: 'my_game_profile', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     if (shotsError) {
       await logServerError(`[getPlayerProfileStats] Error fetching shots: ${shotsError instanceof Error ? shotsError.message : String(shotsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
@@ -165,7 +165,7 @@ async function getPlayerProfileStatsImpl(
       .select('round_id, hole_number, par, yardage, gir, score, putts, fairway_hit, sand_save')
       .in('round_id', roundIdsToFetch)
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerProfileStats', feature: 'my_game_profile', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     // 5. Build data structures for calculator
     const selectedRounds = roundId === 'overall'

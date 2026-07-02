@@ -728,7 +728,7 @@ async function getPlayerShotContextImpl(
       .order('hole_number')
       .order('shot_number')
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_shots', action: 'getPlayerShotContext', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     if (shotsError) {
       return { success: false, error: 'Failed to fetch shot data' };
@@ -816,7 +816,7 @@ async function getPlayerShotContextImpl(
       .select('hole_number, par, score, gir, putts, round_id')
       .in('round_id', roundIds)
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerShotContext', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     const scrambleHoles = (holesData ?? [])
       .filter((h): h is typeof h & { par: number; score: number; gir: boolean } =>

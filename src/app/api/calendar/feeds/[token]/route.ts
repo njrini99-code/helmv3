@@ -286,7 +286,7 @@ export async function GET(
         .order('start_time', { ascending: true })
         .order('id', { ascending: true }) // unique tiebreaker: stable page boundaries
         .range(from, to);
-    });
+    }, undefined, { table: 'golf_events', action: 'calendarFeed', feature: 'calendar_events', sport: 'golf' });
 
     if (eventsError) {
       return new NextResponse('Failed to fetch events', { status: 500 });

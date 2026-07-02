@@ -730,6 +730,8 @@ async function getCoachHelmOverviewImpl(
         .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_coach_insights', action: 'getCoachHelmOverview', feature: 'coachhelm_analytics', sport: 'golf' },
     );
 
     // Headline counts use the SELECTED window; the week-over-week deltas stay
@@ -930,6 +932,8 @@ async function calculateInsightEffectivenessFromInsights(
         .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_coach_insights', action: 'getInsightEffectiveness', feature: 'coachhelm_analytics', sport: 'golf' },
     );
 
     if (error) {
@@ -1070,6 +1074,8 @@ async function calculatePredictionPerformanceFromPredictions(
         .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_predictions', action: 'getPredictionPerformance', feature: 'coachhelm_analytics', sport: 'golf' },
     );
 
     if (error) {

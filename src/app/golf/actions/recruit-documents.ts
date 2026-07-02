@@ -19,6 +19,7 @@ import { logServerError } from '@/lib/server-error-logger';
 // export async functions, so the const array cannot be exported from here.
 import { RECRUIT_DOC_CATEGORIES, type RecruitDocCategory } from './recruit-documents-categories';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 const BUCKET = 'recruit-documents';
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB — matches the bucket file_size_limit
@@ -219,6 +220,13 @@ async function uploadRecruitDocumentImpl(
         featureArea: 'recruiting',
         extra: { recruitId, code: insertError.code },
       });
+      maybeCaptureRlsDenial(insertError, {
+        table: 'golf_recruit_documents',
+        verb: 'insert',
+        action: 'uploadRecruitDocument',
+        feature: 'recruiting_prospect_tracking',
+        sport: 'golf',
+      });
       return {
         success: false,
         error: insertError.code === '42501'
@@ -285,6 +293,13 @@ async function deleteRecruitDocumentImpl(documentId: string): Promise<ActionResu
         action: 'recruit_documents.deleteRecruitDocument',
         featureArea: 'recruiting',
         extra: { documentId, code: deleteError.code },
+      });
+      maybeCaptureRlsDenial(deleteError, {
+        table: 'golf_recruit_documents',
+        verb: 'delete',
+        action: 'deleteRecruitDocument',
+        feature: 'recruiting_prospect_tracking',
+        sport: 'golf',
       });
       return {
         success: false,

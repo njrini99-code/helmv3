@@ -156,6 +156,8 @@ async function dispatchReminders(
       .neq('status', 'cancelled')
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_events', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
   );
 
   if (eventsErr) {
@@ -180,6 +182,8 @@ async function dispatchReminders(
         .in('event_id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_event_attendance', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (attendanceErr) {
       throw new Error(`fetch attendance: ${attendanceErr.message}`);
@@ -201,6 +205,8 @@ async function dispatchReminders(
         .in('id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_players', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (playersErr) {
       throw new Error(`fetch players: ${playersErr.message}`);
@@ -225,6 +231,8 @@ async function dispatchReminders(
         .in('event_id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_calendar_notifications', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (existingErr) {
       throw new Error(`fetch existing notifications: ${existingErr.message}`);
@@ -264,6 +272,8 @@ async function dispatchReminders(
         .in('id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'users', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (usersErr) {
       throw new Error(`fetch users: ${usersErr.message}`);
