@@ -52,3 +52,15 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Added `sport`/`team_id`/`fingerprint`/`source` (+ NOT VALID CHECKs) + 4 triage indexes. Verified all 4 columns live.
 - **DEVIATION (plan over-revoked):** plan's migration did `REVOKE ALL FROM anon, authenticated` and asserted authenticated has NO SELECT — that would break the still-live `/golf/admin` (its "Admins can read/update admin_events" RLS policies use the authenticated user-scoped client + Realtime). Corrected to: **REVOKE anon (all) + authenticated INSERT** (no INSERT policy = dead weight); **KEEP authenticated SELECT/UPDATE** (legacy admin needs them) — removed in W14 at retirement. Verified: anon_select=false, authed_insert=false, authed_select=true.
 - CHECK `source` list is the union of the design's 8 + the 5 existing `ServerTraceSource` values (else it'd reject today's writers).
+
+### Tasks 2–3 — writer extensions (Sonnet) — DONE
+- Commits `4a09bde6e` (server-error-logger + database.ts types), `b542ff669` (admin-logger).
+- Additive only; all existing signatures frozen. `buildIncidentSignature` matched the plan. database.ts surgically patched (db:types can't run headless). typecheck exit 0; backward-compat proven (`demo-access` 8/8); only the 6 known pre-existing failures.
+
+## W3 — Server Data Layer
+
+**Status:** RPC migration applied + verified on prod (2026-07-01). Code (Sentry/Vercel clients, triage) in progress (Sonnet).
+
+### Task 1 — get_active_sessions() + resolve_admin_event() RPCs
+- Migration `20260701130000_bridge_rpcs_sessions_resolve.sql` applied to prod via Supabase MCP. No deviations (new objects; plan SQL was correct).
+- Both SECURITY DEFINER, internally gated on `is_super_admin()`, REVOKE PUBLIC/anon + GRANT authenticated. Verified: anon denied, authenticated allowed, secdef=true. (Calling under service_role raises Forbidden 42501 by design = pass.)
