@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
+import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -44,6 +45,17 @@ interface RoundErrorContext {
    * without creating Sentry issues that drown out real bugs.
    */
   skipSentry?: boolean;
+  /** Helm Bridge wayfinding: which product surface emitted this. */
+  sport?: 'golf' | 'baseball' | 'shared';
+  /** Helm Bridge: owning team (golf_teams.id or baseball_teams.id). */
+  teamId?: string | null;
+  /**
+   * Helm Bridge: single stable DB grouping key written to
+   * admin_events.fingerprint. Distinct from the Sentry `fingerprint`
+   * string[] above. Defaults to buildIncidentSignature(severity, errorCode,
+   * route, message) so identical failures collapse in the triage queue.
+   */
+  dbFingerprint?: string;
 }
 
 const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
@@ -76,6 +88,8 @@ function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
     tags: context.tags ?? {},
     metadata: context.metadata ?? {},
     extra: context.extra ?? {},
+    sport: context.sport ?? null,
+    teamId: context.teamId ?? null,
   }));
 }
 
@@ -137,6 +151,15 @@ async function writeAdminTables(
     timestamp,
   });
 
+  const dbFingerprint =
+    context.dbFingerprint ??
+    buildIncidentSignature({
+      severity: severity as IncidentSeverity,
+      errorCode: context.errorCode ?? null,
+      route: context.route ?? context.url ?? null,
+      message,
+    });
+
   const adminEventInsert = admin.from('admin_events').insert({
     event_type: 'error',
     title,
@@ -148,6 +171,10 @@ async function writeAdminTables(
     url,
     stack_trace: stack,
     browser_info: null,
+    sport: context.sport ?? null,
+    team_id: context.teamId ?? null,
+    fingerprint: dbFingerprint,
+    source: context.source ?? 'server_action',
   });
 
   await Promise.allSettled([errorLogInsert, adminEventInsert]);

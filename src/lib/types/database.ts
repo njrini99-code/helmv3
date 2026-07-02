@@ -146,6 +146,7 @@ export type Database = {
           browser_info: Json | null
           created_at: string | null
           event_type: string
+          fingerprint: string | null
           id: string
           message: string | null
           metadata: Json | null
@@ -153,7 +154,10 @@ export type Database = {
           resolved_at: string | null
           resolved_by: string | null
           severity: Database["public"]["Enums"]["admin_event_severity"]
+          source: string | null
+          sport: string | null
           stack_trace: string | null
+          team_id: string | null
           title: string
           url: string | null
           user_email: string | null
@@ -163,6 +167,7 @@ export type Database = {
           browser_info?: Json | null
           created_at?: string | null
           event_type: string
+          fingerprint?: string | null
           id?: string
           message?: string | null
           metadata?: Json | null
@@ -170,7 +175,10 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: Database["public"]["Enums"]["admin_event_severity"]
+          source?: string | null
+          sport?: string | null
           stack_trace?: string | null
+          team_id?: string | null
           title: string
           url?: string | null
           user_email?: string | null
@@ -180,6 +188,7 @@ export type Database = {
           browser_info?: Json | null
           created_at?: string | null
           event_type?: string
+          fingerprint?: string | null
           id?: string
           message?: string | null
           metadata?: Json | null
@@ -187,7 +196,10 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: Database["public"]["Enums"]["admin_event_severity"]
+          source?: string | null
+          sport?: string | null
           stack_trace?: string | null
+          team_id?: string | null
           title?: string
           url?: string | null
           user_email?: string | null
