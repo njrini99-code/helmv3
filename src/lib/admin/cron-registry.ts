@@ -24,6 +24,8 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'v3-weekly-coach-email', path: '/api/cron/v3/weekly-coach-email', cadenceMinutes: WEEKLY },
   { jobType: 'v3-goal-suggestions-write', path: '/api/cron/v3/goal-suggestions-write', cadenceMinutes: DAILY },
   { jobType: 'v3-goal-suggestions-evaluate', path: '/api/cron/v3/goal-suggestions-evaluate', cadenceMinutes: DAILY },
+  { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY },
+  { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY },
 ] as const;
 
 export type CronBoardStatus = 'ok' | 'overdue' | 'never-ran' | 'failed';

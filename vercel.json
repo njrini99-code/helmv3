@@ -92,6 +92,14 @@
     {
       "path": "/api/cron/v3/goal-suggestions-evaluate",
       "schedule": "45 3 * * *"
+    },
+    {
+      "path": "/api/cron/integrity-check",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/log-retention",
+      "schedule": "30 7 * * *"
     }
   ]
 }
