@@ -166,6 +166,53 @@ export async function fetchSentryHourlyStats(): Promise<AdminFetchResult<SentryS
   }
 }
 
+/**
+ * W16 Task 2 — per-feature unresolved-issue counts for the Feature Health
+ * board.
+ *
+ * SPIKE (time-boxed, 2026-07-02): does the org issues list endpoint return
+ * per-issue `tags` at LIST scope, so we could pull once and bucket
+ * client-side by the `feature` tag (server-error-logger.ts:209, set since
+ * W15 Task 2)? No — confirmed by inspection of `RawIssue`/`mapIssue()` above:
+ * the list endpoint's default response shape has no `tags` field (Appendix B
+ * item 1 of FEATURE_COVERAGE.md already flagged this as open). Sentry's
+ * `/issues/` list endpoint does not expose per-issue tags without an
+ * additional per-issue detail call, which would cost MORE round trips than
+ * the documented fallback for the same 60s revalidate window. We take the
+ * documented fallback: N batched, parallel `is:unresolved feature:<key>`
+ * queries reusing the existing `fetchSentryIssues({query})` plumbing (same
+ * 60s Next revalidate, same fail-soft contract). 37 features → 37 parallel
+ * queries once per minute — acceptable rate-limit headroom per Appendix B.
+ *
+ * All-or-nothing degrade: if ANY per-feature query fails, the whole result
+ * is `null` (never a partially-populated, misleading map) — every feature's
+ * `sentryUnresolved` then reads null in computeFeatureStatus, which degrades
+ * gracefully to DB-only signals (never fake-green, never fake-red).
+ */
+export async function fetchSentryFeatureCounts(
+  keys: readonly string[],
+): Promise<Record<string, { total: number; critical: number }> | null> {
+  const cfg = config();
+  if (!cfg) return null;
+  if (keys.length === 0) return {};
+
+  try {
+    const entries = await Promise.all(
+      keys.map(async (key) => {
+        const res = await fetchSentryIssues({ query: `is:unresolved feature:${key}`, limit: 100 });
+        if (res.status !== 'ok' || !res.data) return null;
+        const total = res.data.length;
+        const critical = res.data.filter((issue) => issue.level === 'fatal').length;
+        return [key, { total, critical }] as const;
+      }),
+    );
+    if (entries.some((e) => e === null)) return null;
+    return Object.fromEntries(entries as Array<readonly [string, { total: number; critical: number }]>);
+  } catch {
+    return null;
+  }
+}
+
 export interface SentryReleaseHealth {
   crashFreeSessions: number | null;
   crashFreeUsers: number | null;
