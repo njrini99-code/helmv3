@@ -61,4 +61,29 @@ describe('server-error-logger bridge columns', () => {
     const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');
     expect(adminEvent?.row).toMatchObject({ sport: null, team_id: null, source: 'server_action' });
   });
+
+  it('writes feature onto the admin_events row (W15 Task 2)', async () => {
+    await logServerError('feature-tagged', {
+      action: 'test.feature',
+      sport: 'golf',
+      feature: 'round_tracking',
+    });
+    const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');
+    expect(adminEvent?.row).toMatchObject({ feature: 'round_tracking' });
+  });
+
+  it('falls back to featureArea for feature when feature is omitted (continuity)', async () => {
+    await logServerError('legacy-feature-area', {
+      action: 'test.featureArea',
+      featureArea: 'rounds',
+    });
+    const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');
+    expect(adminEvent?.row).toMatchObject({ feature: 'rounds' });
+  });
+
+  it('feature is null when neither feature nor featureArea is given', async () => {
+    await logServerError('no-feature', { action: 'test.none' });
+    const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');
+    expect(adminEvent?.row).toMatchObject({ feature: null });
+  });
 });

@@ -49,4 +49,31 @@ describe('maybeCaptureRlsDenial', () => {
       maybeCaptureRlsDenial({ code: '42501', message: 'denied' }, { table: 't', verb: 'select', action: 'x' }),
     ).not.toThrow();
   });
+
+  it('carries an explicit feature through to the emitted context', () => {
+    maybeCaptureRlsDenial(
+      { code: '42501', message: 'denied' },
+      { table: 'golf_courses', verb: 'update', action: 'updateCourse', feature: 'course_library' },
+    );
+    const [, ctx] = mocks.logServerEvent.mock.calls[0]!;
+    expect(ctx).toMatchObject({ feature: 'course_library' });
+  });
+
+  it('defaults feature from the table map (featureForTable) when omitted', () => {
+    maybeCaptureRlsDenial(
+      { code: '42501', message: 'denied' },
+      { table: 'golf_rounds', verb: 'update', action: 'saveRound' },
+    );
+    const [, ctx] = mocks.logServerEvent.mock.calls[0]!;
+    expect(ctx).toMatchObject({ feature: 'round_tracking' });
+  });
+
+  it('feature is null for an unrecognized table with no explicit override', () => {
+    maybeCaptureRlsDenial(
+      { code: '42501', message: 'denied' },
+      { table: 'some_unregistered_table', verb: 'select', action: 'x' },
+    );
+    const [, ctx] = mocks.logServerEvent.mock.calls[0]!;
+    expect(ctx).toMatchObject({ feature: null });
+  });
 });

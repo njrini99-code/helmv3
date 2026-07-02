@@ -1,4 +1,5 @@
 import { logServerEvent } from '@/lib/server-error-logger';
+import { featureForTable, type FeatureKey } from '@/lib/admin/feature-registry';
 
 /**
  * Helm Bridge capture class #1 — RLS denials. Spikes here have historically
@@ -24,10 +25,13 @@ export function maybeCaptureRlsDenial(
     action: string;
     userId?: string | null;
     sport?: 'golf' | 'baseball' | 'shared';
+    /** Defaults via featureForTable(ctx.table) from the registry when omitted. */
+    feature?: FeatureKey;
   },
 ): void {
   if (!isRlsDenial(error)) return;
   try {
+    const feature = ctx.feature ?? featureForTable(ctx.table) ?? undefined;
     void logServerEvent(
       `RLS denial: ${ctx.verb} on ${ctx.table}`,
       {
@@ -36,6 +40,7 @@ export function maybeCaptureRlsDenial(
         errorCode: error?.code ?? '42501',
         userId: ctx.userId ?? null,
         sport: ctx.sport,
+        feature: feature ?? null,
         metadata: { table: ctx.table, verb: ctx.verb, message: error?.message ?? null },
         skipSentry: true, // operational telemetry — admin feed, not a Sentry issue
       },

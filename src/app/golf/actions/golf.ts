@@ -4948,7 +4948,7 @@ async function savePartialRoundImpl(
  */
 const observedSavePartialRound = withAdminObserved(
   'savePartialRound',
-  { sport: 'golf', featureArea: 'rounds' },
+  { sport: 'golf', feature: 'round_tracking' },
   savePartialRoundImpl,
 );
 

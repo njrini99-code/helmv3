@@ -6,6 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 // ============================================
 // TYPES
@@ -41,6 +42,8 @@ interface AdminEventInput {
   teamId?: string | null;
   fingerprint?: string;
   source?: string;
+  /** Helm Bridge: canonical feature key (src/lib/admin/feature-registry.ts). */
+  feature?: FeatureKey | string | null;
 }
 
 
@@ -74,6 +77,7 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
         team_id: input.teamId ?? null,
         fingerprint: input.fingerprint ?? null,
         source: input.source ?? null,
+        feature: input.feature ?? null,
       })
       .select('id')
       .single();

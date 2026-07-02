@@ -23,6 +23,14 @@ interface RoundErrorContext {
   route?: string | null;
   url?: string | null;
   featureArea?: string | null;
+  /**
+   * Helm Bridge: canonical feature key from
+   * src/lib/admin/feature-registry.ts (FEATURE_COVERAGE.md §1). Written to
+   * admin_events.feature (W15 Task 1 migration). Distinct from the older
+   * free-text `featureArea` — both are kept for continuity of saved Sentry
+   * searches tagged on `feature_area`.
+   */
+  feature?: string | null;
   source?: ServerTraceSource;
   statusCode?: number | null;
   requestId?: string | null;
@@ -75,6 +83,7 @@ function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
     route: context.route ?? null,
     url: context.url ?? null,
     featureArea: context.featureArea ?? null,
+    feature: context.feature ?? context.featureArea ?? null,
     source: context.source ?? 'server_action',
     statusCode: context.statusCode ?? null,
     requestId: context.requestId ?? null,
@@ -179,6 +188,7 @@ async function writeAdminTables(
     team_id: context.teamId ?? null,
     fingerprint: dbFingerprint,
     source: context.source ?? 'server_action',
+    feature: context.feature ?? context.featureArea ?? null,
   });
 
   await Promise.allSettled([errorLogInsert, adminEventInsert]);
@@ -196,6 +206,7 @@ function captureSentryTrace(
     scope.setTag('action', context.action);
     scope.setTag('error_source', context.source ?? 'server_action');
     scope.setTag('feature_area', context.featureArea ?? 'unknown');
+    scope.setTag('feature', context.feature ?? context.featureArea ?? 'unknown');
     scope.setTag('handled', String(context.handled ?? true));
     if (context.errorCode) scope.setTag('pg_error_code', context.errorCode);
     if (context.statusCode) scope.setTag('http_status', String(context.statusCode));
