@@ -147,7 +147,7 @@ function CoachAnnouncementCard({ announcement: ann, onDeleted }: { announcement:
                 </span>
               )}
             </div>
-            <p className="text-sm text-warm-500 line-clamp-2">{ann.content}</p>
+            <p className="text-sm text-warm-500 line-clamp-2 break-words">{ann.content}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className="text-xs text-warm-400">{publishedDate}</span>
               <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
