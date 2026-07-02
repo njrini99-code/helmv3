@@ -43,7 +43,9 @@ export default function SignupPage() {
     <BaseballAuthShell
       skipTargetId="signup-form"
       skipLabel="Skip to signup form"
+      sceneIdSuffix="signup"
       eyebrow="COACHES · PLAYERS · PROGRAMS"
+      welcomeLine="Build your program at the Yard."
       tagline="Start building your championship roster."
       footer={
         <Suspense fallback={<AuthFooterLinks switchLabel="Already have an account?" switchHref="/baseball/login" switchCta="Sign in" />}>

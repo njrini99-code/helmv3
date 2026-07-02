@@ -94,7 +94,9 @@ export default function ResetPasswordPage() {
     <BaseballAuthShell
       skipTargetId="reset-form"
       skipLabel="Skip to form"
+      sceneIdSuffix="reset-password"
       eyebrow="ACCOUNT RECOVERY"
+      welcomeLine="A fresh key to the Yard."
       tagline={sessionValid ? 'Enter your new password below.' : undefined}
       footer={
         <AuthFooterLinks
