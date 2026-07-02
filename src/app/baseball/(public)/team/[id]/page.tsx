@@ -255,6 +255,8 @@ export default async function TeamProfilePage({ params }: PageProps) {
     });
 
   // Fetch coaching staff via baseball_team_coach_staff -> baseball_coaches (scoped to this team)
+  // NOTE: baseball_coaches has `full_name`, not first_name/last_name — do not select
+  // first_name/last_name here, PostgREST will 400 (see database.ts baseball_coaches.Row).
   const { data: staffRows } = await supabase
     .from('baseball_team_coach_staff')
     .select(`
@@ -262,8 +264,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
       role,
       baseball_coaches!inner(
         id,
-        first_name,
-        last_name,
+        full_name,
         bio,
         avatar_url
       )
@@ -280,8 +281,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
     sortedStaffRows.forEach((row, index) => {
       const c = row.baseball_coaches as unknown as {
         id: string;
-        first_name: string | null;
-        last_name: string | null;
+        full_name: string | null;
         bio: string | null;
         avatar_url: string | null;
       } | null;
@@ -289,7 +289,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
       seen.add(c.id);
       staff.push({
         id: c.id,
-        name: `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Coach',
+        name: c.full_name?.trim() || 'Coach',
         title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
         bio: c.bio,
         headshot_url: c.avatar_url,
