@@ -130,8 +130,12 @@ const createExpenseSchema = z.object({
 export async function getTeamItineraries(teamId: string) {
   const supabase = await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false as const, error: 'Not authenticated', data: [] as BaseballTravelItinerary[] };
+  }
+
+  const { data, error } = await supabase
     .from('baseball_travel_itineraries')
     .select('*')
     .eq('team_id', teamId)
@@ -192,13 +196,15 @@ const createItineraryAction = withBaseballAction(
       await requireBaseballCapability(teamId, 'can_manage_settings');
     }
 
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false as const, error: 'Coach profile not found.' };
+
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: created, error } = await (supabase as any)
+    const { data: created, error } = await supabase
       .from('baseball_travel_itineraries')
       .insert({
         ...validated,
-        created_by: ctx.user.id,
+        created_by: coachId,
       })
       .select()
       .single();
@@ -250,8 +256,7 @@ const updateItineraryAction = withBaseballAction(
     void _id;
 
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('baseball_travel_itineraries')
       .select('team_id')
       .eq('id', id)
@@ -263,8 +268,7 @@ const updateItineraryAction = withBaseballAction(
 
     await requireBaseballCapability(String(existing.team_id), 'can_manage_settings');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updated, error } = await (supabase as any)
+    const { data: updated, error } = await supabase
       .from('baseball_travel_itineraries')
       .update(updateData)
       .eq('id', id)
@@ -295,8 +299,7 @@ const deleteItineraryAction = withBaseballAction(
   async (_ctx, id: string) => {
     const supabase = await createClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('baseball_travel_itineraries')
       .select('team_id')
       .eq('id', id)
@@ -308,14 +311,12 @@ const deleteItineraryAction = withBaseballAction(
 
     await requireBaseballCapability(String(existing.team_id), 'can_manage_settings');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
       .from('baseball_travel_expenses')
       .delete()
       .eq('itinerary_id', id);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('baseball_travel_itineraries')
       .delete()
       .eq('id', id);
@@ -384,8 +385,7 @@ const addExpenseAction = withBaseballAction(
 
     const supabase = await createClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: itinerary } = await (supabase as any)
+    const { data: itinerary } = await supabase
       .from('baseball_travel_itineraries')
       .select('team_id')
       .eq('id', itineraryId)
@@ -395,8 +395,7 @@ const addExpenseAction = withBaseballAction(
       return { success: false as const, error: 'Itinerary not found.' };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: created, error } = await (supabase as any)
+    const { data: created, error } = await supabase
       .from('baseball_travel_expenses')
       .insert({
         ...validated,
@@ -418,8 +417,12 @@ const addExpenseAction = withBaseballAction(
 export async function getItineraryExpenses(itineraryId: string) {
   const supabase = await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false as const, error: 'Not authenticated', data: [] as BaseballTravelExpense[] };
+  }
+
+  const { data, error } = await supabase
     .from('baseball_travel_expenses')
     .select('*')
     .eq('itinerary_id', itineraryId)
@@ -447,8 +450,7 @@ const deleteExpenseAction = withBaseballAction(
   async (_ctx, expenseId: string) => {
     const supabase = await createClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('baseball_travel_expenses')
       .select('team_id')
       .eq('id', expenseId)
@@ -460,8 +462,7 @@ const deleteExpenseAction = withBaseballAction(
 
     await requireBaseballCapability(String(existing.team_id), 'can_manage_settings');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('baseball_travel_expenses')
       .delete()
       .eq('id', expenseId);
@@ -479,8 +480,12 @@ const deleteExpenseAction = withBaseballAction(
 export async function getExpenseSummary(itineraryId: string): Promise<{ success: boolean; data?: BaseballExpenseSummary; error?: string }> {
   const supabase = await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data, error } = await supabase
     .from('baseball_travel_expenses')
     .select('category, amount, paid_by')
     .eq('itinerary_id', itineraryId);
@@ -499,12 +504,15 @@ export async function getExpenseSummary(itineraryId: string): Promise<{ success:
   };
 
   for (const expense of expenses) {
-    const amount = parseFloat(expense.amount) || 0;
+    // amount comes back as a numeric-string from Postgres NUMERIC columns at
+    // runtime even though the generated type says `number`; String() is a
+    // no-op when it's already a number, so this is behavior-preserving.
+    const amount = parseFloat(String(expense.amount)) || 0;
     summary.total += amount;
     if (expense.category in summary.byCategory) {
       summary.byCategory[expense.category as ExpenseCategory] += amount;
     }
-    if (expense.paid_by in summary.byPaidBy) {
+    if (expense.paid_by && expense.paid_by in summary.byPaidBy) {
       summary.byPaidBy[expense.paid_by as ExpensePaidBy] += amount;
     }
   }
