@@ -65,6 +65,14 @@ export interface DevelopmentalPlanWithGoals {
     id: string;
     full_name: string | null;
   } | null;
+  player?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
+    primary_position: string | null;
+    grad_year: number | null;
+  } | null;
 }
 
 /**
@@ -122,6 +130,57 @@ export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalP
   return {
     ...row,
     goals: parseGoals(row.goals),
+  };
+}
+
+/**
+ * Get a single development plan by ID for the coach detail view
+ * (coach-ownership-checked). Returns null (not thrown) for "not found" and
+ * "not the owning coach" so the detail page can render one consistent
+ * not-found state without leaking whether a plan id belongs to someone else.
+ */
+export async function getDevPlanById(planId: string): Promise<DevelopmentalPlanWithGoals | null> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: coachProfile } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coachProfile) throw new Error('Coach profile not found');
+
+  const { data: plan, error } = await supabase
+    .from('baseball_developmental_plans')
+    .select(`
+      *,
+      player:baseball_players (
+        id,
+        first_name,
+        last_name,
+        avatar_url,
+        primary_position,
+        grad_year
+      )
+    `)
+    .eq('id', planId)
+    .maybeSingle();
+
+  if (error) {
+    await logServerError(`Error fetching dev plan by id: ${error instanceof Error ? error.message : String(error)}`, { action: 'dev_plans.getDevPlanById' });
+    throw error;
+  }
+
+  if (!plan || plan.coach_id !== coachProfile.id) {
+    return null;
+  }
+
+  return {
+    ...plan,
+    goals: parseGoals(plan.goals),
   };
 }
 
@@ -369,6 +428,8 @@ const completeGoalAction = withBaseballAction(
     }
 
     revalidatePath(DEV_PLAN_PATH);
+    revalidatePath('/baseball/dashboard/dev-plans');
+    revalidatePath(`/baseball/dashboard/dev-plans/${planId}`);
   },
 );
 
@@ -448,6 +509,8 @@ const uncompleteGoalAction = withBaseballAction(
     }
 
     revalidatePath(DEV_PLAN_PATH);
+    revalidatePath('/baseball/dashboard/dev-plans');
+    revalidatePath(`/baseball/dashboard/dev-plans/${planId}`);
   },
 );
 
