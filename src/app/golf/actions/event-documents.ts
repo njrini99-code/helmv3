@@ -21,6 +21,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import type { GolfDocument } from '@/lib/types/golf';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -48,7 +49,7 @@ export interface EventDocumentRow {
  * Returns an empty array on missing event / no permission so callers can
  * render a "no attachments" affordance without try/catch noise.
  */
-export async function getEventDocuments(
+async function getEventDocumentsImpl(
   eventId: string,
 ): Promise<ActionResult<EventDocumentRow[]>> {
   if (!eventId) return { success: true, data: [] };
@@ -109,11 +110,23 @@ export async function getEventDocuments(
   }
 }
 
+const observedGetEventDocuments = withAdminObserved(
+  'getEventDocuments',
+  { sport: 'golf', feature: 'calendar_events' },
+  getEventDocumentsImpl,
+);
+
+export async function getEventDocuments(
+  eventId: string,
+): Promise<ActionResult<EventDocumentRow[]>> {
+  return observedGetEventDocuments(eventId);
+}
+
 /**
  * Attach an existing team document to an event. Idempotent — the composite
  * primary key (event_id, document_id) means a duplicate attach is a no-op.
  */
-export async function attachDocumentToEvent(
+async function attachDocumentToEventImpl(
   eventId: string,
   documentId: string,
   note?: string,
@@ -187,7 +200,21 @@ export async function attachDocumentToEvent(
   }
 }
 
-export async function detachDocumentFromEvent(
+const observedAttachDocumentToEvent = withAdminObserved(
+  'attachDocumentToEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  attachDocumentToEventImpl,
+);
+
+export async function attachDocumentToEvent(
+  eventId: string,
+  documentId: string,
+  note?: string,
+): Promise<ActionResult> {
+  return observedAttachDocumentToEvent(eventId, documentId, note);
+}
+
+async function detachDocumentFromEventImpl(
   eventId: string,
   documentId: string,
 ): Promise<ActionResult> {
@@ -230,4 +257,17 @@ export async function detachDocumentFromEvent(
     });
     return { success: false, error: 'Failed to detach document' };
   }
+}
+
+const observedDetachDocumentFromEvent = withAdminObserved(
+  'detachDocumentFromEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  detachDocumentFromEventImpl,
+);
+
+export async function detachDocumentFromEvent(
+  eventId: string,
+  documentId: string,
+): Promise<ActionResult> {
+  return observedDetachDocumentFromEvent(eventId, documentId);
 }

@@ -2041,7 +2041,7 @@ export async function submitGolfRoundComprehensive(
 // EVENT ACTIONS
 // ============================================================================
 
-export async function createGolfEvent(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
+async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
   try {
     // Validate input
     const validatedData = golfEventSchema.parse(data);
@@ -2287,6 +2287,16 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
   }
 }
 
+const observedCreateGolfEvent = withAdminObserved(
+  'createGolfEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  createGolfEventImpl,
+);
+
+export async function createGolfEvent(data: GolfEventInput): Promise<ActionResult<{ eventId: string }>> {
+  return observedCreateGolfEvent(data);
+}
+
 // Validation schema for golf event updates
 const golfEventUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -2317,7 +2327,7 @@ const golfEventUpdateSchema = z.object({
   status: z.literal('confirmed').optional(),
 }).superRefine(refineEventEndAfterStart);
 
-export async function updateGolfEvent(
+async function updateGolfEventImpl(
   eventId: string,
   data: GolfEventUpdateInput
 ): Promise<{ success: boolean; error?: string }> {
@@ -2526,6 +2536,19 @@ export async function updateGolfEvent(
   }
 }
 
+const observedUpdateGolfEvent = withAdminObserved(
+  'updateGolfEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  updateGolfEventImpl,
+);
+
+export async function updateGolfEvent(
+  eventId: string,
+  data: GolfEventUpdateInput
+): Promise<{ success: boolean; error?: string }> {
+  return observedUpdateGolfEvent(eventId, data);
+}
+
 /**
  * Delete a golf event.
  *
@@ -2539,7 +2562,7 @@ export async function updateGolfEvent(
  * A hard delete ({ hard: true } or deleteGolfEventPermanently) is only
  * permitted when the event is already cancelled OR has zero attendance rows.
  */
-export async function deleteGolfEvent(
+async function deleteGolfEventImpl(
   eventId: string,
   options?: DeleteGolfEventOptions
 ): Promise<{ success: boolean; error?: string }> {
@@ -2761,14 +2784,39 @@ export async function deleteGolfEvent(
   }
 }
 
+const observedDeleteGolfEvent = withAdminObserved(
+  'deleteGolfEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteGolfEventImpl,
+);
+
+export async function deleteGolfEvent(
+  eventId: string,
+  options?: DeleteGolfEventOptions
+): Promise<{ success: boolean; error?: string }> {
+  return observedDeleteGolfEvent(eventId, options);
+}
+
 /**
  * Permanently delete an event. Gated: only allowed when the event is already
  * cancelled OR has zero attendance rows (see deleteGolfEvent).
  */
-export async function deleteGolfEventPermanently(
+async function deleteGolfEventPermanentlyImpl(
   eventId: string
 ): Promise<{ success: boolean; error?: string }> {
   return deleteGolfEvent(eventId, { hard: true });
+}
+
+const observedDeleteGolfEventPermanently = withAdminObserved(
+  'deleteGolfEventPermanently',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteGolfEventPermanentlyImpl,
+);
+
+export async function deleteGolfEventPermanently(
+  eventId: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedDeleteGolfEventPermanently(eventId);
 }
 
 // ============================================================================
@@ -3431,7 +3479,7 @@ export async function updatePlayerStatus(
  *   (enforced inside updateRSVP). Failures carry a machine-readable `code`
  *   the UI can branch on.
  */
-export async function respondToEvent(
+async function respondToEventImpl(
   eventId: string,
   status: 'pending' | 'accepted' | 'declined' | 'tentative'
 ): Promise<RespondToEventResult> {
@@ -3537,13 +3585,26 @@ export async function respondToEvent(
   }
 }
 
+const observedRespondToEvent = withAdminObserved(
+  'respondToEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  respondToEventImpl,
+);
+
+export async function respondToEvent(
+  eventId: string,
+  status: 'pending' | 'accepted' | 'declined' | 'tentative'
+): Promise<RespondToEventResult> {
+  return observedRespondToEvent(eventId, status);
+}
+
 /**
  * Coach-triggered reminder: drops in-app rows into golf_calendar_notifications
  * for the supplied players, deduplicated against the cron-generated reminders
  * by a distinct notification_type. Use admin client because notifications are
  * inserted on behalf of other users.
  */
-export async function sendEventReminderToPlayers(
+async function sendEventReminderToPlayersImpl(
   eventId: string,
   playerIds: string[],
 ): Promise<ActionResult<{ sent: number }>> {
@@ -3667,10 +3728,23 @@ export async function sendEventReminderToPlayers(
   }
 }
 
+const observedSendEventReminderToPlayers = withAdminObserved(
+  'sendEventReminderToPlayers',
+  { sport: 'golf', feature: 'calendar_events' },
+  sendEventReminderToPlayersImpl,
+);
+
+export async function sendEventReminderToPlayers(
+  eventId: string,
+  playerIds: string[],
+): Promise<ActionResult<{ sent: number }>> {
+  return observedSendEventReminderToPlayers(eventId, playerIds);
+}
+
 /**
  * Check for scheduling conflicts when creating/editing an event
  */
-export async function checkScheduleConflicts(
+async function checkScheduleConflictsImpl(
   startDate: string,
   startTime: string,
   endDate: string,
@@ -3716,11 +3790,29 @@ export async function checkScheduleConflicts(
   }
 }
 
+const observedCheckScheduleConflicts = withAdminObserved(
+  'checkScheduleConflicts',
+  { sport: 'golf', feature: 'calendar_events' },
+  checkScheduleConflictsImpl,
+);
+
+export async function checkScheduleConflicts(
+  startDate: string,
+  startTime: string,
+  endDate: string,
+  endTime: string,
+  attendeeIds: string[],
+  excludeEventId?: string,
+  timezoneOffset?: number
+): Promise<ActionResult<ConflictResult>> {
+  return observedCheckScheduleConflicts(startDate, startTime, endDate, endTime, attendeeIds, excludeEventId, timezoneOffset);
+}
+
 /**
  * Get availability for a specific player on a specific date
  * Used for the availability day view overlay
  */
-export async function getPlayerAvailability(
+async function getPlayerAvailabilityImpl(
   memberId: string,
   startDate: string, // YYYY-MM-DD
   endDate: string, // YYYY-MM-DD
@@ -3856,11 +3948,26 @@ export async function getPlayerAvailability(
   }
 }
 
+const observedGetPlayerAvailability = withAdminObserved(
+  'getPlayerAvailability',
+  { sport: 'golf', feature: 'calendar_events' },
+  getPlayerAvailabilityImpl,
+);
+
+export async function getPlayerAvailability(
+  memberId: string,
+  startDate: string, // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  timezoneOffset?: number
+): Promise<ActionResult<SerializedBusyPeriod[]>> {
+  return observedGetPlayerAvailability(memberId, startDate, endDate, timezoneOffset);
+}
+
 /**
  * Get the current user's busy periods (works for both coaches and players)
  * Used to show YOUR schedule when viewing availability alongside a team member
  */
-export async function getCurrentUserBusyPeriods(
+async function getCurrentUserBusyPeriodsImpl(
   startDate: string, // YYYY-MM-DD
   endDate: string, // YYYY-MM-DD
   /** Client timezone offset (Date.getTimezoneOffset() minutes) — see
@@ -3902,11 +4009,25 @@ export async function getCurrentUserBusyPeriods(
   }
 }
 
+const observedGetCurrentUserBusyPeriods = withAdminObserved(
+  'getCurrentUserBusyPeriods',
+  { sport: 'golf', feature: 'calendar_events' },
+  getCurrentUserBusyPeriodsImpl,
+);
+
+export async function getCurrentUserBusyPeriods(
+  startDate: string, // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  timezoneOffset?: number
+): Promise<ActionResult<SerializedBusyPeriod[]>> {
+  return observedGetCurrentUserBusyPeriods(startDate, endDate, timezoneOffset);
+}
+
 /**
  * Get all calendar notifications for the current user
  * Note: golf_calendar_notifications table may not be in types
  */
-export async function getNotifications(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
+async function getNotificationsImpl(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -3934,11 +4055,21 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
   }
 }
 
+const observedGetNotifications = withAdminObserved(
+  'getNotifications',
+  { sport: 'golf', feature: 'notifications' },
+  getNotificationsImpl,
+);
+
+export async function getNotifications(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
+  return observedGetNotifications(limit);
+}
+
 /**
  * Mark a notification as read
  * Note: golf_calendar_notifications table may not be in types
  */
-export async function markNotificationRead(
+async function markNotificationReadImpl(
   notificationId: string
 ): Promise<ActionResult> {
   try {
@@ -3961,11 +4092,23 @@ export async function markNotificationRead(
   }
 }
 
+const observedMarkNotificationRead = withAdminObserved(
+  'markNotificationRead',
+  { sport: 'golf', feature: 'notifications' },
+  markNotificationReadImpl,
+);
+
+export async function markNotificationRead(
+  notificationId: string
+): Promise<ActionResult> {
+  return observedMarkNotificationRead(notificationId);
+}
+
 /**
  * Mark all notifications as read for the current user
  * Note: golf_calendar_notifications table may not be in types
  */
-export async function markAllNotificationsRead(): Promise<ActionResult> {
+async function markAllNotificationsReadImpl(): Promise<ActionResult> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -3987,6 +4130,16 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
   } catch {
     return { success: false, error: 'Failed to mark notifications read' };
   }
+}
+
+const observedMarkAllNotificationsRead = withAdminObserved(
+  'markAllNotificationsRead',
+  { sport: 'golf', feature: 'notifications' },
+  markAllNotificationsReadImpl,
+);
+
+export async function markAllNotificationsRead(): Promise<ActionResult> {
+  return observedMarkAllNotificationsRead();
 }
 
 /**
@@ -4025,7 +4178,7 @@ export async function getPendingInvitations(): Promise<ActionResult<EventInvitat
 /**
  * Get the current player's RSVP status for an event
  */
-export async function getPlayerEventRSVP(
+async function getPlayerEventRSVPImpl(
   eventId: string
 ): Promise<ActionResult<{ status: RSVPStatus; respondedAt: string | null } | null>> {
   try {
@@ -4070,10 +4223,22 @@ export async function getPlayerEventRSVP(
   }
 }
 
+const observedGetPlayerEventRSVP = withAdminObserved(
+  'getPlayerEventRSVP',
+  { sport: 'golf', feature: 'calendar_events' },
+  getPlayerEventRSVPImpl,
+);
+
+export async function getPlayerEventRSVP(
+  eventId: string
+): Promise<ActionResult<{ status: RSVPStatus; respondedAt: string | null } | null>> {
+  return observedGetPlayerEventRSVP(eventId);
+}
+
 /**
  * Get RSVP summary for an event (coach view)
  */
-export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPStats>> {
+async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -4087,6 +4252,16 @@ export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPSt
   } catch {
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
+}
+
+const observedGetEventRSVP = withAdminObserved(
+  'getEventRSVP',
+  { sport: 'golf', feature: 'calendar_events' },
+  getEventRSVPImpl,
+);
+
+export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPStats>> {
+  return observedGetEventRSVP(eventId);
 }
 
 // ============================================================================
@@ -4107,7 +4282,7 @@ const blockedTimeSchema = z.object({
 /**
  * Add coach blocked time
  */
-export async function addCoachBlockedTime(
+async function addCoachBlockedTimeImpl(
   data: z.infer<typeof blockedTimeSchema>
 ): Promise<ActionResult<{ id: string }>> {
   try {
@@ -4166,10 +4341,22 @@ export async function addCoachBlockedTime(
   }
 }
 
+const observedAddCoachBlockedTime = withAdminObserved(
+  'addCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  addCoachBlockedTimeImpl,
+);
+
+export async function addCoachBlockedTime(
+  data: z.infer<typeof blockedTimeSchema>
+): Promise<ActionResult<{ id: string }>> {
+  return observedAddCoachBlockedTime(data);
+}
+
 /**
  * Delete coach blocked time
  */
-export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<void>> {
+async function deleteCoachBlockedTimeImpl(id: string): Promise<ActionResult<void>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -4222,10 +4409,20 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
   }
 }
 
+const observedDeleteCoachBlockedTime = withAdminObserved(
+  'deleteCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteCoachBlockedTimeImpl,
+);
+
+export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<void>> {
+  return observedDeleteCoachBlockedTime(id);
+}
+
 /**
  * Update coach blocked time
  */
-export async function updateCoachBlockedTime(
+async function updateCoachBlockedTimeImpl(
   id: string,
   data: Partial<z.infer<typeof blockedTimeSchema>>
 ): Promise<ActionResult<void>> {
@@ -4292,10 +4489,23 @@ export async function updateCoachBlockedTime(
   }
 }
 
+const observedUpdateCoachBlockedTime = withAdminObserved(
+  'updateCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  updateCoachBlockedTimeImpl,
+);
+
+export async function updateCoachBlockedTime(
+  id: string,
+  data: Partial<z.infer<typeof blockedTimeSchema>>
+): Promise<ActionResult<void>> {
+  return observedUpdateCoachBlockedTime(id, data);
+}
+
 /**
  * Get coach blocked time periods
  */
-export async function getCoachBlockedTime(
+async function getCoachBlockedTimeImpl(
   startDate: string,
   endDate: string
 ): Promise<ActionResult<BlockedTimePeriod[]>> {
@@ -4336,6 +4546,19 @@ export async function getCoachBlockedTime(
   } catch (error) {
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedGetCoachBlockedTime = withAdminObserved(
+  'getCoachBlockedTime',
+  { sport: 'golf', feature: 'calendar_events' },
+  getCoachBlockedTimeImpl,
+);
+
+export async function getCoachBlockedTime(
+  startDate: string,
+  endDate: string
+): Promise<ActionResult<BlockedTimePeriod[]>> {
+  return observedGetCoachBlockedTime(startDate, endDate);
 }
 
 // ============================================================================

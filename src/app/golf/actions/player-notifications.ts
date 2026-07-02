@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -43,7 +44,7 @@ export interface PlayerNotificationCounts {
  * Returns badge counts + unseen announcements for the login modal.
  * Runs parallel queries for performance.
  */
-export async function getPlayerNotificationCounts(
+async function getPlayerNotificationCountsImpl(
   playerId: string,
   userId: string,
   teamId: string,
@@ -228,6 +229,20 @@ export async function getPlayerNotificationCounts(
   }
 }
 
+const observedGetPlayerNotificationCounts = withAdminObserved(
+  'getPlayerNotificationCounts',
+  { sport: 'golf', feature: 'notifications' },
+  getPlayerNotificationCountsImpl,
+);
+
+export async function getPlayerNotificationCounts(
+  playerId: string,
+  userId: string,
+  teamId: string,
+): Promise<ActionResult<PlayerNotificationCounts>> {
+  return observedGetPlayerNotificationCounts(playerId, userId, teamId);
+}
+
 // ============================================================================
 // MARK ANNOUNCEMENTS SEEN
 // ============================================================================
@@ -236,7 +251,7 @@ export async function getPlayerNotificationCounts(
  * Updates last_announcements_seen_at to now, so the login modal won't show again
  * for announcements published before this timestamp.
  */
-export async function markAnnouncementsSeen(): Promise<ActionResult> {
+async function markAnnouncementsSeenImpl(): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
@@ -278,6 +293,16 @@ export async function markAnnouncementsSeen(): Promise<ActionResult> {
   }
 }
 
+const observedMarkAnnouncementsSeen = withAdminObserved(
+  'markAnnouncementsSeen',
+  { sport: 'golf', feature: 'notifications' },
+  markAnnouncementsSeenImpl,
+);
+
+export async function markAnnouncementsSeen(): Promise<ActionResult> {
+  return observedMarkAnnouncementsSeen();
+}
+
 // ============================================================================
 // MARK TRAVEL SEEN
 // ============================================================================
@@ -285,7 +310,7 @@ export async function markAnnouncementsSeen(): Promise<ActionResult> {
 /**
  * Updates last_travel_seen_at to now, clearing the travel badge for this player.
  */
-export async function markTravelSeen(): Promise<ActionResult> {
+async function markTravelSeenImpl(): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
@@ -326,6 +351,16 @@ export async function markTravelSeen(): Promise<ActionResult> {
   }
 }
 
+const observedMarkTravelSeen = withAdminObserved(
+  'markTravelSeen',
+  { sport: 'golf', feature: 'notifications' },
+  markTravelSeenImpl,
+);
+
+export async function markTravelSeen(): Promise<ActionResult> {
+  return observedMarkTravelSeen();
+}
+
 // ============================================================================
 // GET PLAYER HUB ANNOUNCEMENTS
 // ============================================================================
@@ -334,7 +369,7 @@ export async function markTravelSeen(): Promise<ActionResult> {
  * Returns last 5 player-visible announcements for the hub section.
  * Lightweight version of getAnnouncementsWithMeta.
  */
-export async function getPlayerHubAnnouncements(
+async function getPlayerHubAnnouncementsImpl(
   teamId: string,
   playerId: string,
 ): Promise<ActionResult<GolfAnnouncementMeta[]>> {
@@ -365,4 +400,17 @@ export async function getPlayerHubAnnouncements(
     );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch hub announcements' };
   }
+}
+
+const observedGetPlayerHubAnnouncements = withAdminObserved(
+  'getPlayerHubAnnouncements',
+  { sport: 'golf', feature: 'notifications' },
+  getPlayerHubAnnouncementsImpl,
+);
+
+export async function getPlayerHubAnnouncements(
+  teamId: string,
+  playerId: string,
+): Promise<ActionResult<GolfAnnouncementMeta[]>> {
+  return observedGetPlayerHubAnnouncements(teamId, playerId);
 }

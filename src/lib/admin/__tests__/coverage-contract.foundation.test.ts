@@ -7,12 +7,12 @@ describe('coverage-scanner', () => {
   it('parses golf.ts and finds savePartialRound wrapped with feature round_tracking', () => {
     const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/golf.ts'));
     expect(scanned.exports).toContain('savePartialRound');
-    expect(scanned.exports).toContain('createGolfEvent');
+    expect(scanned.exports).toContain('createAnnouncement');
     expect(scanned.wrapped.get('savePartialRound')).toEqual({ feature: 'round_tracking' });
-    // createGolfEvent belongs to a later batch (calendar_events, W15 Batch 2) —
-    // still bare post-Batch-1, proving the scanner distinguishes wrapped from
+    // createAnnouncement belongs to a later batch (announcements, W15 Batch 4) —
+    // still bare post-Batch-2, proving the scanner distinguishes wrapped from
     // unwrapped exports within the same partially-wrapped file.
-    expect(scanned.wrapped.has('createGolfEvent')).toBe(false);
+    expect(scanned.wrapped.has('createAnnouncement')).toBe(false);
   });
 
   it('exports list matches a fresh regex scan (sanity: scanner is not hard-coded)', () => {
@@ -47,37 +47,20 @@ describe('coverage-scanner', () => {
 });
 
 describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)', () => {
-  it('does NOT throw for golf.ts scoped to only the Batch 0+1 wrapped exports', () => {
+  it('does NOT throw for golf.ts scoped to only the Batch 0+1+2 wrapped exports', () => {
     expect(() =>
       assertAreaFullyWrapped(['src/app/golf/actions/golf.ts'], {
         exclude: {
           // Batch 1 (round_tracking/qualifiers/my_qualifiers, 13 exports incl.
-          // the pre-existing savePartialRound exemplar) is now wrapped; every
-          // other golf.ts export belongs to a later batch (B2/B4/B5/B6) and is
+          // the pre-existing savePartialRound exemplar) + Batch 2
+          // (calendar_events/notifications, 18 exports) are now wrapped; every
+          // other golf.ts export belongs to a later batch (B4/B5/B6) and is
           // still bare — scope this self-test accordingly.
           'src/app/golf/actions/golf.ts': [
-            'createGolfEvent',
-            'updateGolfEvent',
-            'deleteGolfEvent',
-            'deleteGolfEventPermanently',
             'createAnnouncement',
             'invitePlayerToTeam',
             'updatePlayerStatus',
-            'respondToEvent',
-            'sendEventReminderToPlayers',
-            'checkScheduleConflicts',
-            'getPlayerAvailability',
-            'getCurrentUserBusyPeriods',
-            'getNotifications',
-            'markNotificationRead',
-            'markAllNotificationsRead',
             'getPendingInvitations',
-            'getPlayerEventRSVP',
-            'getEventRSVP',
-            'addCoachBlockedTime',
-            'deleteCoachBlockedTime',
-            'updateCoachBlockedTime',
-            'getCoachBlockedTime',
             'getPlayerSavedCourses',
             'savePlayerCourse',
             'touchSavedCourse',

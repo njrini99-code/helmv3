@@ -33,6 +33,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { Database } from '@/lib/types/database';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -269,7 +270,7 @@ const VALID_MARKS: ReadonlySet<string> = new Set([
  * Record a player's attendance for an event WITHOUT touching their RSVP.
  * Coach-only. `clear` reverts the player to unmarked.
  */
-export async function markAttendance(
+async function markAttendanceImpl(
   eventId: string,
   playerId: string,
   mark: AttendanceMark | 'clear',
@@ -345,6 +346,20 @@ export async function markAttendance(
   }
 }
 
+const observedMarkAttendance = withAdminObserved(
+  'markAttendance',
+  { sport: 'golf', feature: 'calendar_events' },
+  markAttendanceImpl,
+);
+
+export async function markAttendance(
+  eventId: string,
+  playerId: string,
+  mark: AttendanceMark | 'clear',
+): Promise<ActionResult> {
+  return observedMarkAttendance(eventId, playerId, mark);
+}
+
 // ============================================================================
 // CHECK IN PLAYER (kept API — delegates to markAttendance)
 // ============================================================================
@@ -353,7 +368,7 @@ export async function markAttendance(
  * Check in a player for an event. Records check-in state only; the player's
  * RSVP response is preserved.
  */
-export async function checkInPlayer(
+async function checkInPlayerImpl(
   eventId: string,
   playerId: string,
   _method: CheckInMethod = 'manual',
@@ -361,22 +376,49 @@ export async function checkInPlayer(
   return markAttendance(eventId, playerId, 'present');
 }
 
+const observedCheckInPlayer = withAdminObserved(
+  'checkInPlayer',
+  { sport: 'golf', feature: 'calendar_events' },
+  checkInPlayerImpl,
+);
+
+export async function checkInPlayer(
+  eventId: string,
+  playerId: string,
+  _method: CheckInMethod = 'manual',
+): Promise<ActionResult> {
+  return observedCheckInPlayer(eventId, playerId, _method);
+}
+
 // ============================================================================
 // MARK NO-SHOW (kept API — delegates to markAttendance)
 // ============================================================================
 
-export async function markNoShow(
+async function markNoShowImpl(
   eventId: string,
   playerId: string,
 ): Promise<ActionResult> {
   return markAttendance(eventId, playerId, 'no_show');
 }
 
+const observedMarkNoShow = withAdminObserved(
+  'markNoShow',
+  { sport: 'golf', feature: 'calendar_events' },
+  markNoShowImpl,
+);
+
+export async function markNoShow(
+  eventId: string,
+  playerId: string,
+): Promise<ActionResult> {
+  return observedMarkNoShow(eventId, playerId);
+}
+
 // ============================================================================
 // BULK CHECK-IN (coach "mark all present")
 // ============================================================================
 
-export async function bulkCheckIn(
+async function bulkCheckInImpl(
   eventId: string,
   playerIds: string[],
 ): Promise<ActionResult<{ successCount: number; failureCount: number }>> {
@@ -460,6 +502,19 @@ export async function bulkCheckIn(
   }
 }
 
+const observedBulkCheckIn = withAdminObserved(
+  'bulkCheckIn',
+  { sport: 'golf', feature: 'calendar_events' },
+  bulkCheckInImpl,
+);
+
+export async function bulkCheckIn(
+  eventId: string,
+  playerIds: string[],
+): Promise<ActionResult<{ successCount: number; failureCount: number }>> {
+  return observedBulkCheckIn(eventId, playerIds);
+}
+
 // ============================================================================
 // GET ATTENDANCE REPORT
 // ============================================================================
@@ -469,7 +524,7 @@ export async function bulkCheckIn(
  * its active players. Player callers get other players' `notes` stripped
  * (finding #30 — notes are scoped to coaches + the player themself).
  */
-export async function getAttendanceReport(
+async function getAttendanceReportImpl(
   eventId: string,
 ): Promise<ActionResult<AttendanceReport>> {
   if (!eventId) {
@@ -616,6 +671,18 @@ export async function getAttendanceReport(
   }
 }
 
+const observedGetAttendanceReport = withAdminObserved(
+  'getAttendanceReport',
+  { sport: 'golf', feature: 'calendar_events' },
+  getAttendanceReportImpl,
+);
+
+export async function getAttendanceReport(
+  eventId: string,
+): Promise<ActionResult<AttendanceReport>> {
+  return observedGetAttendanceReport(eventId);
+}
+
 // ============================================================================
 // GET PLAYER ATTENDANCE STATS (weighted)
 // ============================================================================
@@ -656,7 +723,7 @@ function finalizePct(stats: PlayerAttendanceStats): PlayerAttendanceStats {
  * The overall percentage is weighted sum/sum across players, and the fetch
  * paginates past the PostgREST 1000-row cap.
  */
-export async function getPlayerAttendanceStats(
+async function getPlayerAttendanceStatsImpl(
   playerId?: string,
 ): Promise<ActionResult<AttendanceStatsSummary>> {
   try {
@@ -798,4 +865,16 @@ export async function getPlayerAttendanceStats(
       error: 'Failed to get attendance stats. Please try again.',
     };
   }
+}
+
+const observedGetPlayerAttendanceStats = withAdminObserved(
+  'getPlayerAttendanceStats',
+  { sport: 'golf', feature: 'calendar_events' },
+  getPlayerAttendanceStatsImpl,
+);
+
+export async function getPlayerAttendanceStats(
+  playerId?: string,
+): Promise<ActionResult<AttendanceStatsSummary>> {
+  return observedGetPlayerAttendanceStats(playerId);
 }

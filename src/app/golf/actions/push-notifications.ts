@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { z } from 'zod';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // Device-token payloads arrive from the iOS Capacitor bridge as raw
 // strings — validate before they reach the database.
@@ -38,7 +39,7 @@ type DeviceTokenResult =
  * race can be retried silently by the caller.
  */
 // SEMGREP-ALLOW: device-token registry is read directly by the push worker, not cached pages
-export async function registerDeviceToken(
+async function registerDeviceTokenImpl(
   token: string,
   platform: 'ios' | 'android' | 'web',
   deviceName?: string
@@ -95,8 +96,22 @@ export async function registerDeviceToken(
   return { success: true };
 }
 
+const observedRegisterDeviceToken = withAdminObserved(
+  'registerDeviceToken',
+  { sport: 'golf', feature: 'notifications' },
+  registerDeviceTokenImpl,
+);
+
+export async function registerDeviceToken(
+  token: string,
+  platform: 'ios' | 'android' | 'web',
+  deviceName?: string
+): Promise<DeviceTokenResult> {
+  return observedRegisterDeviceToken(token, platform, deviceName);
+}
+
 /** Soft-deactivate a device token for the current user (auth-first). */
-export async function unregisterDeviceToken(token: string): Promise<DeviceTokenResult> {
+async function unregisterDeviceTokenImpl(token: string): Promise<DeviceTokenResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -127,8 +142,18 @@ export async function unregisterDeviceToken(token: string): Promise<DeviceTokenR
   return { success: true };
 }
 
+const observedUnregisterDeviceToken = withAdminObserved(
+  'unregisterDeviceToken',
+  { sport: 'golf', feature: 'notifications' },
+  unregisterDeviceTokenImpl,
+);
+
+export async function unregisterDeviceToken(token: string): Promise<DeviceTokenResult> {
+  return observedUnregisterDeviceToken(token);
+}
+
 /** List the current user's active device tokens (auth-first). */
-export async function getDeviceTokens() {
+async function getDeviceTokensImpl() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -154,4 +179,14 @@ export async function getDeviceTokens() {
   }
 
   return { success: true as const, data: data ?? [] };
+}
+
+const observedGetDeviceTokens = withAdminObserved(
+  'getDeviceTokens',
+  { sport: 'golf', feature: 'notifications' },
+  getDeviceTokensImpl,
+);
+
+export async function getDeviceTokens() {
+  return observedGetDeviceTokens();
 }
