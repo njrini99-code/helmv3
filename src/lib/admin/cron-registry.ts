@@ -26,6 +26,7 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'v3-goal-suggestions-evaluate', path: '/api/cron/v3/goal-suggestions-evaluate', cadenceMinutes: DAILY },
   { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY },
   { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY },
+  { jobType: 'admin-digest', path: '/api/cron/admin-digest', cadenceMinutes: DAILY },
 ] as const;
 
 export type CronBoardStatus = 'ok' | 'overdue' | 'never-ran' | 'failed';
