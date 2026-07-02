@@ -51,6 +51,7 @@ import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import {
   resolveBaseballLiftingOrg,
   resolveBaseballAthleteIds,
+  resolveMyBaseballAthleteId,
 } from '@/lib/lifting/resolve-baseball-context';
 import type {
   BaseballStrengthGroupRules,
@@ -2784,29 +2785,41 @@ export const saveSorenessMap = withBaseballAction(
     if (!ctx.activePlayerId) throw new BaseballActionError('Only a player can report soreness.');
     const supabase = (await createClient()) as Db;
 
+    // W2-G: submitReadinessCheckin now writes helm_lifting_readiness_checkins, so
+    // input.checkinId is a helm checkin id. The legacy baseball_soreness_maps
+    // table FKs checkin_id -> baseball_readiness_checkins(id), which no longer
+    // has that row -> 23503 on every soreness >= 3 report. Write to the parallel
+    // helm_lifting_soreness_maps table instead (its FK targets
+    // helm_lifting_readiness_checkins, so the id resolves).
+    const liftCtx = await resolveBaseballLiftingOrg(ctx.activeTeamId);
+    if (!liftCtx) throw new BaseballActionError('Team has no lifting organization configured.');
+    const athleteId = await resolveMyBaseballAthleteId(liftCtx.organizationId);
+    if (!athleteId) throw new BaseballActionError('Player not found in the lifting system.');
+
     // Stage-and-swap: insert the new regions, then remove prior regions for this
     // check-in that the player no longer reports (scoped to this check-in only).
-    const { data: existing } = await supabase
-      .from('baseball_soreness_maps')
+    const { data: existing } = await fromUntyped(supabase, 'helm_lifting_soreness_maps')
       .select('id')
-      .eq('checkin_id', input.checkinId);
+      .eq('checkin_id', input.checkinId)
+      .eq('athlete_id', athleteId);
 
     if (input.regions.length) {
       const rows = input.regions.map((r) => ({
         checkin_id: input.checkinId,
-        team_id: ctx.activeTeamId,
-        player_id: ctx.activePlayerId,
+        organization_id: liftCtx.organizationId,
+        sport: 'baseball' as const,
+        athlete_id: athleteId,
         body_region: r.bodyRegion,
         side: r.side ?? 'both',
         severity: r.severity,
         note: r.note ?? null,
       }));
-      const { error } = await fromUntyped(supabase, 'baseball_soreness_maps').insert(rows);
+      const { error } = await fromUntyped(supabase, 'helm_lifting_soreness_maps').insert(rows);
       if (error) throw error;
     }
     const oldIds = (existing ?? []).map((r: { id: string }) => r.id);
     if (oldIds.length) {
-      const { error: delErr } = await fromUntyped(supabase, 'baseball_soreness_maps').delete().in('id', oldIds);
+      const { error: delErr } = await fromUntyped(supabase, 'helm_lifting_soreness_maps').delete().in('id', oldIds);
       if (delErr) throw delErr;
     }
 

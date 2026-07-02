@@ -27,8 +27,15 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeReadiness } from '@/lib/baseball/lifting/readiness-compute';
 import { getFullName } from '@/lib/utils';
+import {
+  resolveBaseballLiftingOrg,
+  resolveBaseballAthleteIds,
+} from '@/lib/lifting/resolve-baseball-context';
+import { extractArmStatusFromNotes, sleepQualityToHours } from '@/lib/lifting/adapters/baseball-view-adapter';
+import type { HelmLiftingReadinessCheckinRow, HelmLiftingSorenessMapRow } from '@/lib/types/helm-lifting-data';
 import type {
   BaseballLiveWeightRoomData,
   BaseballLiveAthleteRow,
@@ -221,34 +228,63 @@ export async function getLiveWeightRoomData(
     since.setDate(since.getDate() - 14);
     const sinceYmd = since.toISOString().slice(0, 10);
 
-    const { data: checkins } = await supabase
-      .from('baseball_readiness_checkins')
-      .select('*')
-      .eq('team_id', teamId)
-      .gte('check_date', sinceYmd)
-      .order('check_date', { ascending: false });
+    // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
+    // helm_lifting_readiness_checkins now — the legacy baseball_readiness_
+    // checkins table is write-dead. Resolve org + athlete-id map for the
+    // roster, then read helm and remap results back into the SAME
+    // Record<string, unknown> shape (keyed with legacy field names) the
+    // computeReadiness() call below already expects.
+    const liftCtx = await resolveBaseballLiftingOrg(teamId);
+    const rosterPlayerIds = roster.map((p) => p.id);
+    const athleteMap = liftCtx && rosterPlayerIds.length
+      ? await resolveBaseballAthleteIds(liftCtx.organizationId, rosterPlayerIds)
+      : {};
+    const athleteToPlayer = new Map<string, string>();
+    for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+    const teamAthleteIds = Object.values(athleteMap);
+
     const latestCheckin = new Map<string, Record<string, unknown>>();
     const checkinIds: string[] = [];
-    for (const c of checkins ?? []) {
-      const pid = (c as { player_id: string }).player_id;
-      if (!latestCheckin.has(pid)) {
-        latestCheckin.set(pid, c as Record<string, unknown>);
-        checkinIds.push((c as { id: string }).id);
-        if ((c as { check_date: string }).check_date === today) hasCheckinByPlayer.add(pid);
+    if (liftCtx && teamAthleteIds.length) {
+      const { data: checkins } = await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
+        .select(
+          'id, athlete_id, checkin_date, sleep_quality, energy_level, soreness_overall, stress_level, lower_body_status, illness_flag, notes',
+        )
+        .eq('organization_id', liftCtx.organizationId)
+        .in('athlete_id', teamAthleteIds)
+        .gte('checkin_date', sinceYmd)
+        .order('checkin_date', { ascending: false }) as { data: HelmLiftingReadinessCheckinRow[] | null };
+
+      for (const c of checkins ?? []) {
+        const pid = athleteToPlayer.get(c.athlete_id);
+        if (!pid || latestCheckin.has(pid)) continue;
+        latestCheckin.set(pid, {
+          id: c.id,
+          check_date: c.checkin_date,
+          sleep_hours: sleepQualityToHours(c.sleep_quality),
+          energy_level: c.energy_level,
+          stress_level: c.stress_level,
+          soreness_level: c.soreness_overall,
+          arm_status: extractArmStatusFromNotes(c.notes),
+          lower_body_status: c.lower_body_status,
+          illness_flag: c.illness_flag,
+        });
+        checkinIds.push(c.id);
+        if (c.checkin_date === today) hasCheckinByPlayer.add(pid);
       }
     }
 
+    // helm_lifting_soreness_maps FKs checkin_id -> helm_lifting_readiness_checkins(id),
+    // matching the ids selected above.
     const sorenessByCheckin = new Map<string, Array<{ region: string; severity: number }>>();
     if (checkinIds.length) {
-      const { data: sm } = await supabase
-        .from('baseball_soreness_maps')
+      const { data: sm } = await fromUntyped(supabase, 'helm_lifting_soreness_maps')
         .select('checkin_id, body_region, severity')
-        .in('checkin_id', checkinIds);
+        .in('checkin_id', checkinIds) as { data: Pick<HelmLiftingSorenessMapRow, 'checkin_id' | 'body_region' | 'severity'>[] | null };
       for (const s of sm ?? []) {
-        const r = s as { checkin_id: string; body_region: string; severity: number };
-        const arr = sorenessByCheckin.get(r.checkin_id) ?? [];
-        arr.push({ region: r.body_region, severity: r.severity });
-        sorenessByCheckin.set(r.checkin_id, arr);
+        const arr = sorenessByCheckin.get(s.checkin_id) ?? [];
+        arr.push({ region: s.body_region, severity: s.severity });
+        sorenessByCheckin.set(s.checkin_id, arr);
       }
     }
 

@@ -22,6 +22,12 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
+import {
+  resolveBaseballLiftingOrg,
+  resolveBaseballAthleteIds,
+} from '@/lib/lifting/resolve-baseball-context';
+import type { HelmLiftingReadinessCheckinRow, HelmLiftingSorenessMapRow } from '@/lib/types/helm-lifting-data';
 import {
   trainingAgeFromGradYear,
   type PlayerRuleAttributes,
@@ -194,24 +200,40 @@ export async function getStrengthGroupsBoard(
   // ---- Soreness: max severity on each player's latest check-in -------------
   const sorenessByPlayer = new Map<string, number>();
   {
-    const { data: checkins } = await supabase
-      .from('baseball_readiness_checkins')
-      .select('id, player_id, check_date')
-      .eq('team_id', teamId)
-      .gte('check_date', sinceYmd)
-      .order('check_date', { ascending: false });
+    // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
+    // helm_lifting_readiness_checkins now — the legacy baseball_readiness_
+    // checkins table is write-dead.
+    const liftCtx = await resolveBaseballLiftingOrg(teamId);
+    const athleteMap = liftCtx && playerIds.length
+      ? await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds)
+      : {};
+    const athleteToPlayer = new Map<string, string>();
+    for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+    const teamAthleteIds = Object.values(athleteMap);
+
     const latestCheckin = new Map<string, string>();
-    for (const c of (checkins ?? []) as Array<{ id: string; player_id: string }>) {
-      if (!latestCheckin.has(c.player_id)) latestCheckin.set(c.player_id, c.id);
+    if (liftCtx && teamAthleteIds.length) {
+      const { data: checkins } = await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
+        .select('id, athlete_id, checkin_date')
+        .eq('organization_id', liftCtx.organizationId)
+        .in('athlete_id', teamAthleteIds)
+        .gte('checkin_date', sinceYmd)
+        .order('checkin_date', { ascending: false }) as { data: Pick<HelmLiftingReadinessCheckinRow, 'id' | 'athlete_id' | 'checkin_date'>[] | null };
+      for (const c of checkins ?? []) {
+        const pid = athleteToPlayer.get(c.athlete_id);
+        if (pid && !latestCheckin.has(pid)) latestCheckin.set(pid, c.id);
+      }
     }
+
+    // helm_lifting_soreness_maps FKs checkin_id -> helm_lifting_readiness_checkins(id),
+    // matching the ids selected above.
     const checkinIds = Array.from(latestCheckin.values());
     if (checkinIds.length) {
-      const { data: sm } = await supabase
-        .from('baseball_soreness_maps')
+      const { data: sm } = await fromUntyped(supabase, 'helm_lifting_soreness_maps')
         .select('checkin_id, severity')
-        .in('checkin_id', checkinIds);
+        .in('checkin_id', checkinIds) as { data: Pick<HelmLiftingSorenessMapRow, 'checkin_id' | 'severity'>[] | null };
       const byCheckin = new Map<string, number>();
-      for (const s of (sm ?? []) as Array<{ checkin_id: string; severity: number }>) {
+      for (const s of sm ?? []) {
         byCheckin.set(s.checkin_id, Math.max(byCheckin.get(s.checkin_id) ?? 0, s.severity));
       }
       for (const [pid, cid] of latestCheckin) {
