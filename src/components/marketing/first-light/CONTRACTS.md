@@ -17,7 +17,8 @@ Scaffold for the "First Light" landing redesign
 | `scroll/PinnedScrub.tsx` | foundation (this lane) — shared, edit-with-care | LIVE |
 | `scroll/MaskedReveal.tsx` | foundation (this lane) — shared, edit-with-care | LIVE |
 | `lib/photoBg.ts` | foundation (this lane) — shared, edit-with-care | LIVE |
-| `moments/M1Hero.tsx` | `landing-hero+nav` | STUB — replace in place |
+| `moments/M1Hero.tsx` | `landing-hero+nav` | LIVE — dawn cinema hero + M1→M2 exit scrub (photo scale/darken + headline lift/dissolve) |
+| `nav/GlassNav.tsx` | `landing-hero+nav` | LIVE (NEW) — G1 glass pill, sport-chooser popover (desktop dropdown / mobile bottom sheet) |
 | `moments/M2Clarity.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M3ProductCinema.tsx` | `landing-cinema` | STUB — replace in place |
 | `moments/M4TwoFields.tsx` | `landing-portals+cta` | STUB — replace in place |
@@ -390,11 +391,20 @@ container, `object-cover`).
 ## CTA architecture (already wired in the stubs — keep these targets or
 update deliberately)
 
-- **"See it in action"** (sage-deep `--fl-sage-deep`, primary — repointed
-  2026-07-02, was kelly green) → `/golf/demo` (the real, live self-serve
-  product demo — not a dead button).
-- **"Join your team"** (ghost / `fl-glass-1`) → `/golf/join` (real
-  invite-code entry page).
+- **M1 hero CTAs** ("See it in action" — sage-deep `--fl-sage-deep`,
+  cream text / "Join your team" — ghost on glass) **and `GlassNav`'s
+  "See it in action"** target `#cta` (a same-page anchor,
+  smooth-scrolled via `LenisRoot`'s `anchors: true` Lenis option — falls
+  back to a plain instant jump when Lenis is disabled). **`landing-hero+nav`
+  does not own a real handler** — `#cta` only resolves to something once
+  the `landing-portals+cta` lane adds `id="cta"` to `M8FinalCTA` and wires
+  its own differentiated demo-request/invite-code handlers there (per the
+  design doc's M1/M8 choreography: the hero's job is to get you to the CTA
+  section, not to duplicate its handlers). Until that lands, `#cta` is an
+  inert same-page anchor with no matching `id` — expected, not a bug, for
+  this PR in isolation.
+- **`GlassNav`'s "Log in"** → sport-chooser popover → `/golf/login` /
+  `/baseball/login` (real handlers, wired in this lane).
 - M4 portal cards → `/products#golfhelm`, `/products#baseballhelm`.
 - M9 footer → real `/golf/login`, `/baseball/login`, `/golf/signup`,
   `/baseball/signup`, `/privacy`, `/terms` — no golf-only bias, no dead
