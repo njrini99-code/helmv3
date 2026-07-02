@@ -20,23 +20,38 @@
   background: var(--paper-canvas);
 }
 
-/* The glass panel — grade-3 glass grammar (blur 24, brass top edge-light,
-   faint grain via `.fl-glass-3`'s own `::before`) but warmed to ecru instead
-   of `.fl-glass-3`'s default deep-pine tint. The panel sits over a painterly
-   scene rather than a dark pine band, and the existing form components
-   (labels, inputs) assume dark-on-light text — a warm, mostly-opaque glass
-   keeps that legible without touching those components. The combined
-   `.fl-glass-3.baseball-auth-panel` selector (0,2,0) safely outranks
-   `.fl-glass-3`'s own (0,1,0) background rule regardless of import order. */
-.baseball-auth-panel {
-  background: rgba(var(--fl-ecru-rgb), 0.86);
+/* The glass panel — grade-3 glass grammar (blur 24, faint grain via
+   `.fl-glass-3`'s own `::before`) but warmed to cream instead of
+   `.fl-glass-3`'s default deep-sage-ink tint, and with its `brightness(0.92)`
+   darkening dropped entirely. The panel sits over a painterly scene rather
+   than a dark band, and the existing form components (labels, inputs)
+   assume dark-on-light text — a warm, mostly-opaque glass keeps that
+   legible without touching those components.
+   The selector below MUST be the combined `.fl-glass-3.baseball-auth-panel`
+   (0,2,0) — a bare `.baseball-auth-panel` (0,1,0) is a specificity TIE with
+   `.fl-glass-3`'s own (0,1,0) background/backdrop-filter rules, decided by
+   unpredictable CSS-chunk import order in the merged bundle. (Confirmed:
+   an earlier version of this file used the bare selector despite this exact
+   comment already claiming the combined one — in the integration build,
+   `.fl-glass-3`'s dark `rgba(--fl-pine-rgb, 0.55)` + `brightness(0.92)` won,
+   rendering the panel as a dark gray-green slab.) The combined selector
+   always outranks `.fl-glass-3` alone regardless of order. */
+.fl-glass-3.baseball-auth-panel {
+  background: rgba(var(--fl-cream-high-rgb), 0.88);
   backdrop-filter: blur(24px) saturate(1.15);
   -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  /* Replaces `.fl-glass-3`'s own brass top edge-light box-shadow with a
+     cream specular lip, plus a faint sage-ink hairline ring — the panel's
+     only "dark" note, at 8% opacity, so it still unmistakably reads as
+     glass rather than a flat cream card. */
+  box-shadow:
+    inset 0 1px 0 rgba(var(--fl-cream-high-rgb), 0.9),
+    0 0 0 1px rgba(var(--fl-sage-ink-rgb), 0.08);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .baseball-auth-panel {
-    background: rgba(var(--fl-ecru-rgb), 0.97);
+  .fl-glass-3.baseball-auth-panel {
+    background: rgba(var(--fl-cream-high-rgb), 0.97);
   }
 }
 
@@ -163,25 +178,32 @@
  * validation error (Input sets `aria-invalid` whenever its `error` prop is
  * set — see src/components/ui/input.tsx) keeps its red border/ring exactly
  * as before; only the "well" background + inset shadow apply universally
- * (every input reads as glass, error or not).
+ * (every input reads as glass, error or not). Focus already goes sage-deep
+ * via the `--focus-ring` custom-property redirect above (consumed by the
+ * shared Input's `focus-visible:ring-[color:var(--focus-ring)]`); the
+ * explicit `:focus`/`:focus-visible` block below additionally recolors the
+ * border and keeps the inset shadow so the well doesn't flatten out when
+ * the Tailwind ring utility takes over.
  * ---------------------------------------------------------------------- */
 .baseball-auth-panel input {
-  background-color: rgba(var(--fl-cream-high-rgb), 0.55);
-  box-shadow:
-    inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.12),
-    inset 0 1px 0 rgba(var(--fl-cream-high-rgb), 0.5);
+  background-color: rgba(var(--fl-cream-rgb), 0.55);
+  color: var(--fl-sage-ink);
+  box-shadow: inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.1);
+}
+.baseball-auth-panel input::placeholder {
+  color: rgba(var(--fl-sage-ink-rgb), 0.45);
 }
 .baseball-auth-panel input:not([aria-invalid='true']) {
-  border-color: rgba(var(--fl-brass-rgb), 0.28);
+  border-color: rgba(var(--fl-sage-ink-rgb), 0.1);
 }
 .baseball-auth-panel input:not([aria-invalid='true']):hover {
-  border-color: rgba(var(--fl-brass-rgb), 0.45);
+  border-color: rgba(var(--fl-sage-ink-rgb), 0.2);
 }
 .baseball-auth-panel input:not([aria-invalid='true']):focus,
 .baseball-auth-panel input:not([aria-invalid='true']):focus-visible {
   border-color: var(--fl-sage-deep);
   box-shadow:
-    inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.12),
+    inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.1),
     0 0 0 3px rgba(var(--fl-sage-deep-rgb), 0.3);
 }
 
@@ -190,6 +212,15 @@
    dark enough to read fine on cream, but this keeps the ink on-palette. */
 .baseball-auth-panel label {
   color: var(--fl-sage-ink);
+}
+
+/* Required-field asterisk — the shared Input/Textarea's default
+   `<span className="text-red-500">*</span>` (src/components/ui/input.tsx,
+   rendered next to every required field's label) is a stock red that
+   clashes with the sage-and-cream palette. CSS-only, scoped to the panel;
+   the shared component itself is untouched. */
+.baseball-auth-panel label span.text-red-500 {
+  color: var(--fl-brass);
 }
 
 /* ----------------------------------------------------------------------
