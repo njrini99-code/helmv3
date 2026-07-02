@@ -25,6 +25,7 @@ import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Json } from '@/lib/types/database';
@@ -4322,8 +4323,12 @@ export interface PartialRoundData {
  *
  * For existing rounds, uses an atomic RPC (save_partial_round_atomic) that wraps
  * delete+insert in a single DB transaction to prevent data loss on partial failures.
+ *
+ * Wrapped in withAdminObserved below (Helm Bridge W6 exemplar retrofit) —
+ * the mutation-heaviest golf path. Renamed to *Impl and re-exported under
+ * the original name so no caller changes.
  */
-export async function savePartialRound(
+async function savePartialRoundImpl(
   data: PartialRoundData,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
@@ -4932,6 +4937,26 @@ export async function savePartialRound(
       error: 'Failed to save round. Please try again.'
     };
   }
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedSavePartialRound = withAdminObserved(
+  'savePartialRound',
+  { sport: 'golf', featureArea: 'rounds' },
+  savePartialRoundImpl,
+);
+
+export async function savePartialRound(
+  data: PartialRoundData,
+  existingRoundId?: string
+): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
+  return observedSavePartialRound(data, existingRoundId);
 }
 
 /**
