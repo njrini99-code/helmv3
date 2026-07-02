@@ -24,8 +24,7 @@ import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 // docs/architecture/coachhelm-evidence-contract.md and Plan 04. The previous
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
-import { logCritical, logError } from '@/lib/error-monitoring';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Json } from '@/lib/types/database';
@@ -1584,7 +1583,7 @@ export async function submitGolfRoundComprehensive(
       );
 
       if (rpcError) {
-        logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc' });
+        await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc' });
         await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
           action: 'submitGolfRoundComprehensive',
           roundId: existingRoundId,
@@ -1721,7 +1720,7 @@ export async function submitGolfRoundComprehensive(
         // Do NOT delete the round — preserve it so the user can retry.
         // Deleting here caused permanent data loss when the RPC failed
         // (e.g., trigger errors, network timeouts, race conditions).
-        logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc.new' });
+        await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new' });
         await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
           action: 'submitGolfRoundComprehensive',
           roundId: newRound.id,
@@ -4590,7 +4589,7 @@ export async function savePartialRound(
       );
 
       if (rpcError) {
-        logError(new Error(rpcError.message), undefined, { action: 'savePartialRound.rpc' });
+        await logServerException(new Error(rpcError.message), { action: 'savePartialRound.rpc' });
         await logServerError(`Auto-save RPC failed: ${rpcError.message}`, {
           action: 'savePartialRound',
           roundId: existingRoundId,
@@ -4694,7 +4693,7 @@ export async function savePartialRound(
           .select()
           .maybeSingle();
         if (updateError) {
-          logError(new Error(updateError.message), undefined, { action: 'savePartialRound.updateExisting' });
+          await logServerException(new Error(updateError.message), { action: 'savePartialRound.updateExisting' });
           await logServerError(`Auto-save update failed: ${updateError.message}`, {
             action: 'savePartialRound.updateExisting',
             roundId: existingRound.id,
@@ -4723,7 +4722,7 @@ export async function savePartialRound(
           .single();
 
         if (roundError) {
-          logError(new Error(roundError.message), undefined, { action: 'savePartialRound.insertRound' });
+          await logServerException(new Error(roundError.message), { action: 'savePartialRound.insertRound' });
           await logServerError(`Auto-save insert round failed: ${roundError.message}`, {
             action: 'savePartialRound.insertRound',
             playerId: player.id,
@@ -4753,7 +4752,7 @@ export async function savePartialRound(
           .select('id, hole_number');
 
         if (holesError) {
-          logError(new Error(holesError.message), undefined, { action: 'savePartialRound.insertHoles' });
+          await logServerException(new Error(holesError.message), { action: 'savePartialRound.insertHoles' });
           await logServerError(`Auto-save insert holes failed: ${holesError.message}`, {
             action: 'savePartialRound.insertHoles',
             roundId,
@@ -4804,7 +4803,7 @@ export async function savePartialRound(
               .upsert(shotsData, { onConflict: 'round_id,hole_number,shot_number' })
               .select('id, hole_number, shot_number');
             if (shotsError) {
-              logError(new Error(shotsError.message), undefined, { action: 'savePartialRound.insertShots' });
+              await logServerException(new Error(shotsError.message), { action: 'savePartialRound.insertShots' });
               await logServerError(`Auto-save insert shots failed: ${shotsError.message}`, {
                 action: 'savePartialRound.insertShots',
                 roundId,
@@ -4923,7 +4922,7 @@ export async function savePartialRound(
     return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
 
   } catch (err) {
-    logCritical(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' });
+    await logServerException(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' }, 'critical');
     await logServerError(`Auto-save unexpected error: ${err instanceof Error ? err.message : String(err)}`, {
       action: 'savePartialRound.catch',
       extra: { stack: err instanceof Error ? err.stack : undefined },
@@ -6047,7 +6046,7 @@ export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
     return { success: true, data: undefined };
 
   } catch (error) {
-    logError(error instanceof Error ? error : new Error(String(error)), undefined, { action: 'deleteShot' });
+    await logServerException(error instanceof Error ? error : new Error(String(error)), { action: 'deleteShot' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -6259,7 +6258,7 @@ export async function updateShot(
     return { success: true, data: undefined };
 
   } catch (error) {
-    logError(error instanceof Error ? error : new Error(String(error)), undefined, { action: 'updateShot' });
+    await logServerException(error instanceof Error ? error : new Error(String(error)), { action: 'updateShot' });
     return formatSafeErrorResponse(error);
   }
 }
