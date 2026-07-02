@@ -8,7 +8,8 @@
  * exists to fix). Server component (no interactivity needed).
  */
 import Link from 'next/link';
-import Image from 'next/image';
+import { cn } from '@/lib/utils';
+import { HelmMark } from '../brand';
 
 export interface M9FooterProps {
   className?: string;
@@ -45,7 +46,7 @@ const LEGAL_LINKS = [
 export function M9Footer({ className }: M9FooterProps) {
   return (
     <footer
-      className={className}
+      className={cn('relative overflow-hidden', className)}
       style={{
         backgroundColor: 'var(--fl-sage-ink)',
         // Soft sage glow, not kelly — kelly is product-only and never
@@ -54,21 +55,35 @@ export function M9Footer({ className }: M9FooterProps) {
           'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(var(--fl-sage-rgb),0.1), transparent)',
       }}
     >
+      {/* Brass-on-dark audit (Amendment 3 §C.3) — this hairline sits on the
+          sage-ink band, so it runs +10% opacity (0.4 → 0.44) over the
+          otherwise-standard brass-hairline recipe so the gold still reads
+          against the depth of this dark band. */}
       <div
         className="h-px w-full"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(var(--fl-brass-rgb), 0.4), transparent)' }}
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(var(--fl-brass-rgb), 0.44), transparent)' }}
       />
-      <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+      {/* Amendment 3 §A.4 — the Helm wheel as a large quiet watermark: brass
+          at low opacity, right-anchored behind the link columns, kept out
+          of layout flow (absolute + aria-hidden) so it never competes with
+          the real links rendered on top of it (z-10 below). `overflow-hidden`
+          on the footer clips whatever bleeds past the edge at narrow
+          viewports. */}
+      <HelmMark
+        size={280}
+        className="pointer-events-none absolute -right-16 top-1/2 -translate-y-1/2 text-[rgba(var(--fl-brass-rgb),0.06)]"
+      />
+      <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 sm:py-16">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-3">
-              <Image
-                src="/Helm-Logo-New-Main.png"
-                alt="Helm Sports Labs"
-                width={40}
-                height={40}
-                className="h-8 w-8 object-contain"
-              />
+              {/* The kelly-raster PNG never renders on landing/auth chrome
+                  (Amendment 3 §A) — HelmMark is the line-art stand-in, cream
+                  on this sage-ink band per its brand-component contract.
+                  Decorative (no `title`): the adjacent wordmark text already
+                  carries the accessible name, and this lockup isn't itself
+                  an interactive element. */}
+              <HelmMark size={28} className="text-[var(--fl-cream)]" />
               <span className="text-base font-semibold tracking-tight text-[var(--fl-cream)]">
                 Helm Sports Labs
               </span>

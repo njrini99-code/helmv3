@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { flFraunces } from '../fonts';
 import { photoLayerStyle } from '../lib/photoBg';
 import { useScrollProgress } from '../scroll/useScrollProgress';
+import { HelmRosette, SportGlyph } from '../brand';
 
 export interface M4TwoFieldsProps {
   className?: string;
@@ -70,6 +71,51 @@ const FIELDS: Array<{
 ];
 
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+/**
+ * M4 sport line-motifs (Amendment 3 §B.1) — a faint cream line-art overlay
+ * over each half's photo grade, confined to a `h-2/3` wrapper anchored to
+ * the top of the card container so it never fights the glass card sitting
+ * in the lower third (the card's `items-end` Link already keeps it there).
+ * Golf traces the coastal-scene language (horizon + flag + two long
+ * contour arcs, wide composition); baseball traces the exact
+ * `EntryField` chalk geometry from
+ * `docs/baseball/ENTRY_SCENES_DESIGN.md`'s "Practice Field at First Light"
+ * amendment — two foul lines rising from the bottom corners to a far
+ * vanishing point + a shallow base-path arc — the same geometry the
+ * visitor meets next at login, for continuity into that scene. Inline SVG,
+ * aria-hidden, no new file (this lane's machine-safety brief).
+ */
+function FieldMotif({ sport }: { sport: FieldKey }) {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-2/3 overflow-hidden">
+      <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" className="h-full w-full">
+        <g fill="none" strokeWidth={1.2} strokeLinecap="round" style={{ stroke: 'rgba(var(--fl-cream-rgb), 0.08)' }}>
+          {sport === 'golf' ? (
+            <>
+              {/* horizon */}
+              <path d="M20,172 L380,172" />
+              {/* flagstick + pennant */}
+              <path d="M112,172 L112,92" />
+              <path d="M112,92 L152,106 L112,120 Z" />
+              {/* two long green-contour arcs */}
+              <path d="M0,202 Q200,180 400,208" />
+              <path d="M0,234 Q200,216 400,238" />
+            </>
+          ) : (
+            <>
+              {/* chalk foul-line V converging to a vanishing point */}
+              <path d="M0,260 L200,80" />
+              <path d="M400,260 L200,80" />
+              {/* base-path arc */}
+              <path d="M120,192 Q200,166 280,192" />
+            </>
+          )}
+        </g>
+      </svg>
+    </div>
+  );
+}
 
 /** `min-width: 640px` (Tailwind `sm`) — value-only (not structural) branch,
  * so a plain `useState`+effect (default `false` on server/first paint) is
@@ -174,6 +220,7 @@ export function M4TwoFields({ className }: M4TwoFieldsProps) {
                   )}
                   style={{ background: 'radial-gradient(circle, rgba(var(--fl-sage-rgb),0.18), transparent 70%)' }}
                 />
+                <FieldMotif sport={field.key} />
                 {/* Double-bezel: a brass hairline outer frame wrapping the
                     G2 glass card, matching the design system's bezel idiom
                     elsewhere (glass grammar #4, first-light.css). */}
@@ -183,6 +230,15 @@ export function M4TwoFields({ className }: M4TwoFieldsProps) {
                     style={{ boxShadow: 'inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35), var(--fl-specular), var(--fl-shadow-lg)' }}
                   >
                     <div className="relative z-10">
+                      {/* Wheel-plus-sport card mark (Amendment 3 §B.2,
+                          CONTRACTS.md "Composing wheel-plus-sport") — the
+                          brass HelmRosette and cream SportGlyph render as
+                          two adjacent icons, not a fused mark, before the
+                          title. */}
+                      <div className="mb-2.5 flex items-center gap-2">
+                        <HelmRosette size={12} className="text-[rgba(var(--fl-brass-rgb),0.85)]" />
+                        <SportGlyph sport={field.key} size={18} className="text-[var(--fl-cream)]" />
+                      </div>
                       <h3 className={cn(flFraunces.className, 'text-balance text-2xl font-medium text-[var(--fl-cream)] sm:text-3xl')}>
                         {field.title}
                       </h3>

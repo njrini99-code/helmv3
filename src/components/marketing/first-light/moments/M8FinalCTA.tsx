@@ -85,16 +85,19 @@ export function M8FinalCTA({ className }: M8FinalCTAProps) {
       {/* Double-bezel frame — outer brass mat, inner brass frame, the misty
           photo inset within (not full-bleed to the section edges — the
           section itself is the full-bleed sage-ink field the frame floats
-          on). */}
+          on). Brass-on-dark audit (Amendment 3 §C.3): this whole section
+          sits on sage-ink, so both hairlines here run +10% opacity
+          (0.32→0.35, 0.5→0.55) over the standard recipe so the gold still
+          reads against the depth. */}
       <div className="relative mx-auto max-w-5xl">
         <div
           className="rounded-3xl p-2 sm:p-3"
-          style={{ border: '1px solid rgba(var(--fl-brass-rgb), 0.32)', backgroundColor: 'rgba(0,0,0,0.14)' }}
+          style={{ border: '1px solid rgba(var(--fl-brass-rgb), 0.35)', backgroundColor: 'rgba(0,0,0,0.14)' }}
         >
           <div
             className="relative overflow-hidden rounded-2xl"
             style={{
-              border: '1px solid rgba(var(--fl-brass-rgb), 0.5)',
+              border: '1px solid rgba(var(--fl-brass-rgb), 0.55)',
               // Double-bezel inner edge gains the specular lip (Amendment 2
               // §B.6/§B.9's card-craft rule applied to this frame's own
               // elevated surface), layered over the frame's existing brass
@@ -169,10 +172,13 @@ export function M8FinalCTA({ className }: M8FinalCTAProps) {
                     M1's, per Amendment 2 §E). Specular adds the cream-high
                     lip on top of the shared `.fl-glass-1` brass edge-light,
                     which the inline box-shadow below must restate since it
-                    fully replaces (not appends to) the class's box-shadow. */}
+                    fully replaces (not appends to) the class's box-shadow —
+                    restated at +10% (0.35→0.385) per the §C.3 brass-on-dark
+                    audit, this button also sitting on the section's sage-ink
+                    field. */}
                 <Link
                   href="/join"
-                  style={{ boxShadow: 'inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35), var(--fl-specular)' }}
+                  style={{ boxShadow: 'inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.385), var(--fl-specular)' }}
                   className="fl-glass-1 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium text-[var(--fl-cream)] transition-transform duration-[240ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-0.5 active:scale-[0.98]"
                 >
                   <span className="relative z-10 inline-flex items-center gap-2">
