@@ -1,0 +1,181 @@
+/**
+ * first-light.css — "First Light" landing palette + the 3-grade glass
+ * grammar (docs/LANDING_ENTRY_WORLD_DESIGN.md #2, #4).
+ *
+ * Imported directly by `src/app/page.tsx` — NOT globals.css. Scoped to the
+ * marketing landing surface (and, later, the login/onboarding scene world
+ * per docs/baseball/ENTRY_SCENES_DESIGN.md — "same glass tokens across
+ * landing/login/onboarding"). See CONTRACTS.md for the full ownership map.
+ *
+ * NOTE on `.fl-glass-*`'s `position: relative` default: it's wrapped in
+ * `:where(...)` (zero specificity) instead of `@layer components`. Next.js
+ * runs each imported `.css` file through its own independent PostCSS
+ * pass — Tailwind's `@layer components` requires a matching
+ * `@tailwind components` directive IN THE SAME FILE (globals.css has one,
+ * this file doesn't), so `@layer` here throws a build error rather than
+ * reordering anything. `:where()` sidesteps the whole layering question:
+ * a zero-specificity selector always loses to a normal one, so any
+ * consumer that also applies a Tailwind position utility (`.absolute`,
+ * `.fixed`, `.sticky`) wins regardless of file/import order. Confirmed
+ * the hard way (2026-07-02): un-`:where()`'d `.fl-glass-2 { position:
+ * relative }` silently beat a consumer's `absolute` utility, collapsing
+ * `PhoneArc` (M3ProductCinema) back to static-in-flow.
+ */
+
+:root {
+  /* ── Palette (the bridge — spec #2) ───────────────────────────────── */
+  --fl-ecru: #f5f1e6;
+  --fl-ecru-rgb: 245, 241, 230;
+  --fl-pine: #143527;
+  --fl-pine-rgb: 20, 53, 39;
+  --fl-clay: #b0703c;
+  --fl-clay-rgb: 176, 112, 60;
+  /* Kelly green — the ONLY saturated accent (CTAs + live signals). Mirrors
+     Tailwind's primary-600 (#16A34A) so first-light CTAs and app chrome
+     read as the same green. */
+  --fl-green: #16a34a;
+  --fl-green-rgb: 22, 163, 74;
+  --fl-brass: #b08d57;
+  --fl-brass-rgb: 176, 141, 87;
+}
+
+/* ---------------------------------------------------------------------
+ * Grain — one perf-tuned static noise recipe (feTurbulence data-URI,
+ * numOctaves 1, static — no animation), reused as a fixed full-bleed
+ * overlay (.fl-grain) AND baked low-opacity into every glass grade below.
+ * `pointer-events: none` always; consumers add `aria-hidden="true"`.
+ * ------------------------------------------------------------------- */
+.fl-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='1' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Grain itself is static (no keyframes) — nothing to disable here, but
+     keep the hook so a future animated-grain variant can't slip past
+     reduced-motion review. */
+  .fl-grain {
+    opacity: 0.03;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Glass grammar — 3 grades (spec #4, "the cookbook"). Every grade shares:
+ *   1. backdrop-filter blur + saturate
+ *   2. a 1px top edge-light (inset highlight), brass-tinted
+ *   3. faint grain baked into the surface via a ::before layer
+ *   4. an @supports fallback (solid translucent) for engines without
+ *      backdrop-filter (older WKWebView, some Firefox builds)
+ *
+ * Budget: at most 2 blurring (fl-glass-*) layers visible in a single
+ * viewport — see docs/LANDING_ENTRY_WORLD_DESIGN.md #4 + CLAUDE.md motion
+ * rules. Content placed inside a glass surface needs `position: relative`
+ * (or `isolate`) and a z-index above 1 to sit above the grain ::before.
+ * `position: relative` below is only the DEFAULT (zero-specificity via
+ * `:where()`) — a consumer that needs `absolute`/`fixed`/`sticky` instead
+ * (e.g. `PhoneArc` in M3ProductCinema) just adds that Tailwind utility
+ * alongside `fl-glass-*` and it wins — see the file-header note.
+ * ------------------------------------------------------------------- */
+
+:where(.fl-glass-1, .fl-glass-2, .fl-glass-3) {
+  position: relative;
+}
+
+.fl-glass-1,
+.fl-glass-2,
+.fl-glass-3 {
+  isolation: isolate;
+  /* Top edge-light — 1px inset highlight, brass-tinted, on all grades. */
+  box-shadow: inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35);
+}
+
+.fl-glass-1::before,
+.fl-glass-2::before,
+.fl-glass-3::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='1' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* G1 — hairline glass nav pill (always visible, lightest touch). */
+.fl-glass-1 {
+  background: rgba(var(--fl-ecru-rgb), 0.55);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(var(--fl-brass-rgb), 0.22);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fl-glass-1 {
+    background: rgba(var(--fl-ecru-rgb), 0.94);
+  }
+}
+
+/* G2 — floating glass card over photography (product proof, sport portals). */
+.fl-glass-2 {
+  background: rgba(var(--fl-ecru-rgb), 0.14);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid rgba(var(--fl-brass-rgb), 0.28);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fl-glass-2 {
+    background: rgba(var(--fl-pine-rgb), 0.74);
+  }
+}
+
+/* G3 — deep glass panel (auth forms, dense product-cinema frame). */
+.fl-glass-3 {
+  background: rgba(var(--fl-pine-rgb), 0.55);
+  backdrop-filter: blur(24px) saturate(1.2) brightness(0.92);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2) brightness(0.92);
+  border: 1px solid rgba(var(--fl-brass-rgb), 0.3);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fl-glass-3 {
+    background: rgba(var(--fl-pine-rgb), 0.92);
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Small shared utilities used across moments.
+ * ------------------------------------------------------------------- */
+
+/* A brass hairline rule (ledger lines, glass edges, diptych seam flash). */
+.fl-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(var(--fl-brass-rgb), 0.55),
+    rgba(var(--fl-brass-rgb), 0.12)
+  );
+}
+
+/* Line-mask wrapper for MaskedReveal — overflow-hidden per visual line. */
+.fl-line-mask {
+  display: block;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-glass-1,
+  .fl-glass-2,
+  .fl-glass-3 {
+    transition: none !important;
+  }
+}
