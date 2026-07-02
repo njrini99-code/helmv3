@@ -18,7 +18,6 @@
  * ========================================================================== */
 
 import type { ComponentProps } from 'react';
-import { Button } from '@/components/fairway';
 import {
   SectionMasthead,
   EditorsLetter,
@@ -40,7 +39,6 @@ export interface AnnouncementsFairwayProps {
   isCoach: boolean;
   playerId: string;
   loading: boolean;
-  loadError: string | null;
   recentCount: number;
   onRefresh: () => void;
 }
@@ -67,7 +65,6 @@ export function AnnouncementsFairway({
   isCoach,
   playerId,
   loading,
-  loadError,
   recentCount,
   onRefresh,
 }: AnnouncementsFairwayProps) {
@@ -99,17 +96,6 @@ export function AnnouncementsFairway({
             ink="team"
             title="No team selected."
             body="Select a team from the sidebar to view announcements."
-          />
-        ) : loadError ? (
-          <EditorsLetter
-            ink="team"
-            title="Announcements unavailable."
-            body={loadError}
-            action={
-              <Button variant="ghost" size="sm" onClick={onRefresh}>
-                Try again
-              </Button>
-            }
           />
         ) : announcements.length === 0 ? (
           <EmptyIssue variant="announcements" ink="team" action={createFlow} />

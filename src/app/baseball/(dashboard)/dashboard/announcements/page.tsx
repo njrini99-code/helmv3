@@ -7,6 +7,7 @@ import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getAnnouncementsWithMeta } from '@/app/baseball/actions/announcements';
 import { AnnouncementsFairway } from '@/components/baseball/announcements/AnnouncementsFairway';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
 
@@ -89,6 +90,19 @@ export default function BaseballAnnouncementsPage() {
 
   if (authLoading) return <PageLoading />;
 
+  if (loadError) {
+    return (
+      <div className={fairwayScope('mx-auto max-w-5xl p-4 md:p-6')}>
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-warm-900">Announcements</h1>
+        <ReadModelStateNotice
+          state="error"
+          title="Announcements unavailable"
+          onRetry={() => void fetchAnnouncements()}
+        />
+      </div>
+    );
+  }
+
   const recentCount = announcements.filter(a => {
     if (!a.published_at) return false;
     return (Date.now() - new Date(a.published_at).getTime()) < 7 * 86400000;
@@ -103,7 +117,6 @@ export default function BaseballAnnouncementsPage() {
         isCoach={isCoach}
         playerId={player?.id || ''}
         loading={loading}
-        loadError={loadError}
         recentCount={recentCount}
         onRefresh={fetchAnnouncements}
       />
