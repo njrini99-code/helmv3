@@ -308,7 +308,19 @@ function EmptyState({
 
 interface VideoModalProps {
   open: boolean;
-  video: { url: string | null; thumbnail?: string | null; title: string; description?: string | null; created_at?: string | null; view_count?: number | null; video_type?: string | null; player?: VideoPlayerRef | null } | null;
+  video: {
+    url: string | null;
+    thumbnail?: string | null;
+    title: string;
+    description?: string | null;
+    created_at?: string | null;
+    view_count?: number | null;
+    video_type?: string | null;
+    player?: VideoPlayerRef | null;
+    is_clip?: boolean | null;
+    clip_start_time?: number | null;
+    clip_end_time?: number | null;
+  } | null;
   onClose: () => void;
   onShare?: () => void;
 }
@@ -324,6 +336,8 @@ function VideoModal({ open, video, onClose, onShare }: VideoModalProps) {
             thumbnail={video.thumbnail ?? null}
             title={video.title}
             autoPlay
+            clipStart={video.clip_start_time ?? undefined}
+            clipEnd={video.clip_end_time ?? undefined}
           />
         )}
         {video.player && (
@@ -573,6 +587,9 @@ function LibraryView({
           view_count: viewing.view_count,
           video_type: viewing.video_type,
           player: viewing.player,
+          is_clip: viewing.is_clip,
+          clip_start_time: viewing.clip_start_time,
+          clip_end_time: viewing.clip_end_time,
         } : null}
         onClose={() => setViewing(null)}
         onShare={viewing?.url ? () => handleShare(viewing.url!) : undefined}
@@ -778,6 +795,9 @@ function PlayerView({ data }: { data: PlayerReadModel }) {
           view_count: viewing.view_count,
           video_type: viewing.video_type,
           player: viewing.player,
+          is_clip: viewing.is_clip,
+          clip_start_time: viewing.clip_start_time,
+          clip_end_time: viewing.clip_end_time,
         } : null}
         onClose={() => setViewing(null)}
       />

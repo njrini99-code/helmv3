@@ -174,7 +174,10 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       }))
     : [];
 
-  // Transform videos to expected format
+  // Transform videos to expected format. is_clip/clip_start_time/clip_end_time
+  // are forwarded so the video modal can enforce clip bounds at playback
+  // (see VideoPlayer's clipStart/clipEnd props) instead of playing the full
+  // parent video for clip rows.
   const transformedVideos = (videos || []).map(video => ({
     id: video.id,
     title: video.title,
@@ -182,6 +185,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     video_url: video.url, // videos table uses 'url' not 'video_url'
     created_at: video.created_at || new Date().toISOString(),
     video_type: video.video_type || undefined,
+    is_clip: video.is_clip,
+    clip_start_time: video.clip_start_time,
+    clip_end_time: video.clip_end_time,
   }));
 
   return (
