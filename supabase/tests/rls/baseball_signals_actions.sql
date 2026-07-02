@@ -142,18 +142,26 @@ SELECT ok(tests.policy_using_contains('baseball_actions', 'baseball_actions_dele
   'actions DELETE is primary-coach only');
 
 -- ============================================================================
--- 7. The dedupe key has a partial-unique index on OPEN signals only (a re-run
---    UPSERTs an open detection instead of cloning; closed history is unblocked).
+-- 7. The dedupe key is enforced by an IMMEDIATE (non-deferrable) UNIQUE
+--    constraint on (team_id, dedupe_key) — 20260701010000 replaced the old
+--    open-only partial index (baseball_signals_dedupe_open_uidx, dropped by
+--    that migration) because a deferrable/partial arbiter can't back an
+--    ON CONFLICT upsert.
 -- ============================================================================
 
 SELECT ok(
   EXISTS (
-    SELECT 1 FROM pg_indexes
-    WHERE schemaname = 'public'
-      AND tablename = 'baseball_signals'
-      AND indexname = 'baseball_signals_dedupe_open_uidx'
+    SELECT 1
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE n.nspname = 'public'
+      AND t.relname = 'baseball_signals'
+      AND c.conname = 'uq_baseball_signal_dedupe'
+      AND c.contype = 'u'
+      AND NOT c.condeferrable
   ),
-  'baseball_signals has the open-disposition dedupe unique index'
+  'baseball_signals has the immediate dedupe UNIQUE constraint (upsert arbiter)'
 );
 
 SELECT * FROM finish();

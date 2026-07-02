@@ -237,6 +237,19 @@ async function main() {
   const coachUser = await ensureAuthUser(DEMO_COACH_EMAIL);
   const playerUser = await ensureAuthUser(DEMO_PLAYER_EMAIL);
 
+  // Lift any account lockout carried over from earlier failed CI runs —
+  // login_attempts is per-email and persists across runs (cap 10 → 30min
+  // lock), so one misconfigured-secret run can brick every later E2E run
+  // even after the secret is fixed (2026-07-02 forensics: both demo
+  // accounts at 10/10). Rows repopulate benignly on real failures.
+  if (!DRY) {
+    const { error: lockErr } = await supabase
+      .from('login_attempts')
+      .delete()
+      .in('email', [DEMO_COACH_EMAIL, DEMO_PLAYER_EMAIL]);
+    if (lockErr) console.warn(`login_attempts clear skipped: ${lockErr.message}`);
+  }
+
   // --- 1. Organization + team --------------------------------------------
   await upsert('organizations', [{
     id: ORG_ID,

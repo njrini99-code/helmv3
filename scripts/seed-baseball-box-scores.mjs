@@ -202,7 +202,6 @@ async function run() {
     const opp = game.opponent_score ?? 0;
     const innings = game.innings_played ?? 9;
     const won = our > opp;
-    const tied = our === opp;
     const rng = mulberry32(seedFromString(`${game.id}`));
 
     // ---------- BATTING ----------
