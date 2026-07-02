@@ -227,8 +227,89 @@ Build these first; every surface above composes from them. Names are prescriptiv
 | **`<LaneShell>`** | The masthead + lane-switcher + ink context. | Provides `--active-ink` via context; sets green/clay for all children; handles coach-type→lane mapping + JUCO toggle. |
 | **`<EditorsLetter>`** (empty/brief state) | Composed empty & error states. | Serif letter voice + green/clay rule + optional `STANDING BY` live dot. **No yellow warning boxes anywhere.** |
 | **`<CommitSeal>` / `<PacketSeal>`** | Ceremony moments. | Oxblood emboss, stamp-press ease, ink-bleed, optional haptic-style pulse. |
+| **`<Reveal>`** | Interaction layer — generic entrance wrapper (§7.1). | Wraps any child in the `inkSettles` fade/rise/unblur; `staggerIndex` cascades siblings. Mount-based, not `whileInView` — see §7.1. |
+| **`<HoverReveal>`** | Interaction layer — hover-reveal with touch fallback (§7.1). | Content always renders; `reveal` slot fades in on hover/focus, forced always-visible on `pointer: coarse`. |
+| **`pressableClass()`** | Interaction layer — press + hover physics as classes (§7.1). | `active:scale-[0.98]` + lane-ink hover tint + focus ring; CSS-only, server-safe. Not for `<Button>`. |
 
 **Empty-state doctrine (product-wide):** every zero/empty/error renders through `<EditorsLetter>` or a ghosted `<RuledStatLine>` — day-one always looks like "an unreleased first issue," never a broken CRM.
+
+---
+
+## 7.1 Interaction layer (Stage-0 addendum, 2026-07-02)
+
+> Nick's mandate: **micro-interactions everywhere, but systematized — never
+> re-invented per page.** Before a surface hand-rolls a hover/press treatment,
+> it reaches for one of these three primitives, or one of the three new
+> `motion.ts` tokens they're built on. Lives at
+> `src/components/baseball/living-annual/{Reveal.tsx,HoverReveal.tsx,pressable.ts}`,
+> exported from the kit barrel; full API + inline examples in the kit
+> [`README.md`](../../src/components/baseball/living-annual/README.md#interaction-layer-stage-0).
+
+**New tokens (`motion.ts`, additive — nothing renamed or removed):**
+- `EASE_PRESS` `[0.4, 0, 0.2, 1]` — a quick, no-overshoot curve for a hand
+  touching the page (press, hover-reveal). Distinct family from the two
+  *settle* curves (`EASE_GLIDE`, `EASE_SOFT`), which choreograph content
+  arriving, not a gesture responding.
+- `PACE` — a generic duration ladder (`fast` 120ms / `base` 200ms / `slow`
+  400ms / `cinematic` 600ms) for primitives that need a plain "how long"
+  rather than one of `DUR`'s named principles. `DUR` stays exactly as-is;
+  `PACE.base === DUR.rule` and `PACE.slow === DUR.ink` so the two scales never
+  diverge into competing sources of truth.
+- `STAGGER_STEP` (60ms) — the one sibling-cascade cadence in the kit, now a
+  named export instead of a number hardcoded inside `inkColumn`. `<Reveal>`'s
+  `staggerIndex` uses the same constant.
+
+**When to reach for which:**
+
+| Need | Use | Why not the alternative |
+|---|---|---|
+| A card/row/section should settle into place on load | `<Reveal staggerIndex={i}>` | Not `whileInView` — see the callout below. |
+| A row/card should reveal a trailing action or affordance on hover | `<HoverReveal reveal={...}>` | A bare `group-hover:opacity-100` strands touch users with an invisible-but-tappable (or worse, never-tappable) control. |
+| A bespoke tappable surface (not `<Button>`) needs press feedback | `pressableClass({ ink })` | `<Button>` already owns its own `active:scale` + haptic system — don't duplicate it there. |
+
+**Why `<Reveal>` is mount-based, not `whileInView`.** The original brief for
+this addendum asked for an `IntersectionObserver`/`whileInView` entrance. That
+was tried already, in `src/components/ui/reveal.tsx`, and reverted (see that
+file's inline note): the baseball dashboard shell scrolls an inner `<main>`
+container, so `IntersectionObserver` measured against the *document* viewport
+never fires for content below the fold inside that inner scroller — whole
+pages got stuck at `opacity: 0`. `<Reveal>` reuses `inkSettles` on mount with a
+`staggerIndex` cascade instead: the same "settling into place" read, without
+the trap. (`StatVisualFrame.tsx` still uses `whileInView` safely because it
+sits low in a short surface where the bug isn't exposed — that's an existing
+exception, not a pattern to copy into a general-purpose primitive.)
+
+```tsx
+// A wall of rows settles top-to-bottom on load (capped so a deep roster
+// doesn't stretch the cascade into a crawl):
+{rows.map((row, i) => (
+  <Reveal key={row.id} staggerIndex={Math.min(i, 10)}>
+    <PlayerRowPlate {...row} />
+  </Reveal>
+))}
+
+// A row reveals a trailing affordance on hover/focus — always-on for touch:
+<HoverReveal reveal={<IconChevronRight size={14} className="text-grade-plus" />}>
+  <PlayerRowPlate {...row} />
+</HoverReveal>
+
+// A bespoke tappable tile (not a <Button>) gets press-down + lane-ink hover:
+<div className={pressableClass({ ink: 'pursuit' })}>…</div>
+```
+
+**`StatRoll`?** The original brief also asked for a `StatRoll` wrapper
+standardizing mount-roll + update-roll `tabular-nums` stat numerals. Not
+built — `<StatReadout>` (§7 table, built in an earlier wave) already IS that
+component: it wraps `<AnimatedNumber>`/Number Flow, is locked to
+`font-annual tabular-nums`, rolls on mount AND on every value change, and adds
+`flashOnChange`/`pr` flashes on top. A second wrapper would just be a second
+name for the same behavior — reach for `<StatReadout>`.
+
+**Reference implementation:** `StatsCenterClient.tsx` (§6 P1 #5, the Radar-Gun
+Stat Wall) — each `PlayerRowPlate` row wraps in `<Reveal>` for the settle-in
+cascade; `PlayerRowPlate` itself was updated to use `pressableClass` for its
+row press/hover (replacing a hand-rolled neutral hover) and `<HoverReveal>`
+for a trailing chevron affordance, always-on for touch.
 
 ---
 

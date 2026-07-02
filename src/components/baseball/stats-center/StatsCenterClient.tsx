@@ -45,6 +45,7 @@ import {
   EditorsLetter,
   Eyebrow,
   HairlineRule,
+  Reveal,
   formatRate,
   formatRatio,
 } from '@/components/baseball/living-annual';
@@ -202,28 +203,35 @@ function StatSpread({
         <div className="overflow-x-auto">
           <div className="min-w-[680px]">
             <PlayerRowPlateHeader columns={columns} />
-            {realRows.map((row) => (
-              <PlayerRowPlate
-                key={row.playerId}
-                firstName={row.firstName ?? ''}
-                lastName={row.lastName ?? ''}
-                jerseyNumber={row.jerseyNumber ?? undefined}
-                position={row.primaryPosition ?? undefined}
-                stats={buildStats(row)}
-                href={playerHref(row)}
-              />
-            ))}
-            {/* noData players — quiet ghost rows, honest em-dashes, sorted last. */}
-            {ghostRows.map((row) => (
-              <div key={row.playerId} className="opacity-45">
+            {/* Interaction layer (Stage-0): the wall settles top-to-bottom on
+                load via `<Reveal>` — the same ink-settle curve `<Masthead>`
+                uses, just extended to a whole spread. Capped at row 10 so a
+                deep roster doesn't stretch the cascade into a slow crawl. */}
+            {realRows.map((row, i) => (
+              <Reveal key={row.playerId} staggerIndex={Math.min(i, 10)}>
                 <PlayerRowPlate
                   firstName={row.firstName ?? ''}
                   lastName={row.lastName ?? ''}
                   jerseyNumber={row.jerseyNumber ?? undefined}
                   position={row.primaryPosition ?? undefined}
-                  stats={ghostStats}
+                  stats={buildStats(row)}
                   href={playerHref(row)}
                 />
+              </Reveal>
+            ))}
+            {/* noData players — quiet ghost rows, honest em-dashes, sorted last. */}
+            {ghostRows.map((row, i) => (
+              <div key={row.playerId} className="opacity-45">
+                <Reveal staggerIndex={Math.min(realRows.length + i, 10)}>
+                  <PlayerRowPlate
+                    firstName={row.firstName ?? ''}
+                    lastName={row.lastName ?? ''}
+                    jerseyNumber={row.jerseyNumber ?? undefined}
+                    position={row.primaryPosition ?? undefined}
+                    stats={ghostStats}
+                    href={playerHref(row)}
+                  />
+                </Reveal>
               </div>
             ))}
           </div>

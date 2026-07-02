@@ -74,7 +74,73 @@ draws.** Numbers are sacred — always `<StatReadout>`, `tabular-nums`, odometer
 on change, never a spring. `prefers-reduced-motion` is first-class: rules render
 drawn, numbers set, stamps/pulses show without motion. Shared variants live in
 `motion.ts` (`rulesDraw`, `inkSettles`, `inkColumn`, `stampPress`, `inkBleed`,
-`traceDraw`, `useSettleStagger`).
+`traceDraw`, `useSettleStagger`), plus the interaction-layer tokens below
+(`EASE_PRESS`, `PACE`, `STAGGER_STEP`).
+
+## Interaction layer (Stage-0)
+
+The shared micro-interaction vocabulary every surface reaches for instead of
+hand-rolling `active:scale-*` / `group-hover:*` per page. Three primitives —
+`<Reveal>`, `<HoverReveal>`, `pressableClass` — plus three new tokens in
+`motion.ts`. This is the layer Nick's "micro-interactions everywhere, but
+systematized" mandate lives in: reach for one of these before inventing a new
+hover/press treatment on a page.
+
+**Tokens** (`motion.ts`): `EASE_PRESS` `[0.4, 0, 0.2, 1]` — the quick, no-overshoot
+curve for a hand touching the page (distinct from the two settle curves,
+`EASE_GLIDE`/`EASE_SOFT`, which choreograph content arriving). `PACE` — a
+generic duration ladder (`fast` 120ms / `base` 200ms / `slow` 400ms /
+`cinematic` 600ms) for primitives that need a plain "how long" rather than a
+named principle; `DUR` stays untouched and principle-named. `STAGGER_STEP`
+(60ms) — the one sibling-cascade cadence, now shared by `inkColumn` (extracted,
+not duplicated) and `<Reveal staggerIndex>`.
+
+**Why `<Reveal>` is mount-based, not `whileInView`:** `src/components/ui/reveal.tsx`
+already tried viewport-triggered entrances and reverted them — the baseball
+dashboard shell scrolls an inner `<main>`, so `IntersectionObserver` against the
+document viewport never fires for anything below the fold, and pages got stuck
+at `opacity: 0`. `<Reveal>` reuses `inkSettles` on mount + a `staggerIndex` cascade
+instead, so a wall of rows still "settles into place" without that trap.
+
+**`StatRoll`?** Not built — `<StatReadout>` already IS the mount-roll +
+update-roll `tabular-nums` stat wrapper (wraps `<AnimatedNumber>`/Number Flow).
+A second wrapper would just be a second name for the same component; use
+`<StatReadout>`.
+
+### `<Reveal>` — generic entrance wrapper
+Wraps any child in the exact `inkSettles` fade + rise + unblur, with a
+`staggerIndex` cascade at `STAGGER_STEP` apart. Mount-based (see above).
+
+```tsx
+{rows.map((row, i) => (
+  <Reveal key={row.id} staggerIndex={Math.min(i, 10)}>
+    <PlayerRowPlate {...row} />
+  </Reveal>
+))}
+```
+Props: `children, staggerIndex?=0, className?`
+
+### `<HoverReveal>` — row/card hover-reveal, with a touch fallback
+Content always renders; a `reveal` slot fades in on hover/focus. Touch devices
+(`pointer: coarse`) get the slot always-visible — never invisible-but-tappable.
+`position='inline'` (default) reserves layout space; `'overlay'` absolutely-positions.
+
+```tsx
+<HoverReveal reveal={<IconChevronRight className="text-grade-plus" size={14} />}>
+  <PlayerRowPlate {...row} />
+</HoverReveal>
+```
+Props: `children, reveal, position?='inline'|'overlay', className?, revealClassName?`
+
+### `pressableClass()` — press + hover physics, as classes
+A `cn()` helper (not a component — server-safe, no `'use client'`) for press-down
++ lane-ink hover tint on bespoke tappable surfaces. **Not for `<Button>`** —
+Button already owns its own `active:scale` system; use this on rows/cards/chips.
+
+```tsx
+<div className={pressableClass({ ink: 'pursuit' })}>…</div>
+```
+Props: `ink?='team'|'pursuit', tint?=true, lift?=false, className?`
 
 ---
 
@@ -287,3 +353,5 @@ Props: `label?, variant?='commit'|'packet', size?='md'|'sm'|'lg', rotate?, class
   static maps. Pure, tested in `grades.test.ts`.
 - **`motion.ts`** — the shared framer-motion variants + `useSettleStagger`. Every
   factory takes a `reduced` flag and returns the final state instantly when true.
+- **`pressable.ts`** — `pressableClass()`, the CSS-only half of the interaction
+  layer (see "Interaction layer" above). No hooks, safe in server components.

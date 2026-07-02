@@ -12,11 +12,17 @@
  *
  * `PlayerRowPlateHeader` renders the small-caps column labels on the SAME fixed
  * stat-column grid so a Stats Center wall lines up under one header.
+ *
+ * Interaction layer (Stage-0): clickable rows use `pressableClass` for the
+ * press-down + lane-ink hover tint (replacing a hand-rolled neutral hover),
+ * and a trailing `HoverReveal` chevron marks the row as tappable without a
+ * permanent affordance — visible on hover/focus, and always-on for touch.
  */
 import Link from 'next/link';
 import type { KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
-import { StatReadout, PositionChip, HairlineRule } from '..';
+import { IconChevronRight } from '@/components/icons';
+import { StatReadout, PositionChip, HairlineRule, HoverReveal, pressableClass } from '..';
 
 // Shared stat-column geometry so the header and every row align to one grid.
 const STAT_COL = 'w-20 shrink-0';
@@ -25,11 +31,6 @@ const STAT_GAP = 'gap-x-6';
 const INK_TEXT: Record<'team' | 'pursuit', string> = {
   team: 'text-grade-plus',
   pursuit: 'text-pursuit',
-};
-
-const FOCUS: Record<'team' | 'pursuit', string> = {
-  team: 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus',
-  pursuit: 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pursuit',
 };
 
 export interface PlayerRowStat {
@@ -106,53 +107,63 @@ export function PlayerRowPlate({
     }
   }
 
+  const nameAndStats = (
+    <>
+      {/* Name plate */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {jerseyNumber != null ? (
+          <span className="font-annual text-body-sm tabular-nums text-text-tertiary">{jerseyNumber}</span>
+        ) : null}
+        <span className="truncate font-annual leading-none text-text-primary">
+          <span className="font-normal text-text-secondary">{firstName} </span>
+          <span className="font-semibold uppercase" style={{ fontVariant: 'small-caps' }}>
+            {lastName}
+          </span>
+        </span>
+        {position ? (
+          <PositionChip label={position} ink={ink === 'pursuit' ? 'pursuit' : 'neutral'} size="sm" />
+        ) : null}
+      </div>
+
+      {/* Stat run */}
+      <div className={cn('flex', STAT_GAP)}>
+        {stats.map((s, i) => (
+          <div key={`${s.label ?? 'stat'}-${i}`} className={cn(STAT_COL, 'flex flex-col items-end gap-1')}>
+            {s.label ? (
+              <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">{s.label}</span>
+            ) : null}
+            <StatReadout
+              value={s.value}
+              decimals={s.decimals ?? 0}
+              ariaLabel={s.label}
+              className={cn('text-h2', s.leader ? INK_TEXT[ink] : undefined)}
+            />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   const inner = (
     <>
-      <div className="flex items-center gap-3 px-1 py-3">
-        {/* Name plate */}
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          {jerseyNumber != null ? (
-            <span className="font-annual text-body-sm tabular-nums text-text-tertiary">{jerseyNumber}</span>
-          ) : null}
-          <span className="truncate font-annual leading-none text-text-primary">
-            <span className="font-normal text-text-secondary">{firstName} </span>
-            <span className="font-semibold uppercase" style={{ fontVariant: 'small-caps' }}>
-              {lastName}
-            </span>
-          </span>
-          {position ? (
-            <PositionChip label={position} ink={ink === 'pursuit' ? 'pursuit' : 'neutral'} size="sm" />
-          ) : null}
-        </div>
-
-        {/* Stat run */}
-        <div className={cn('flex', STAT_GAP)}>
-          {stats.map((s, i) => (
-            <div key={`${s.label ?? 'stat'}-${i}`} className={cn(STAT_COL, 'flex flex-col items-end gap-1')}>
-              {s.label ? (
-                <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">{s.label}</span>
-              ) : null}
-              <StatReadout
-                value={s.value}
-                decimals={s.decimals ?? 0}
-                ariaLabel={s.label}
-                className={cn('text-h2', s.leader ? INK_TEXT[ink] : undefined)}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+      {clickable ? (
+        <HoverReveal
+          className="flex items-center gap-3 px-1 py-3"
+          revealClassName="flex w-4 shrink-0 justify-center"
+          reveal={<IconChevronRight size={14} className={INK_TEXT[ink]} aria-hidden />}
+        >
+          {nameAndStats}
+        </HoverReveal>
+      ) : (
+        <div className="flex items-center gap-3 px-1 py-3">{nameAndStats}</div>
+      )}
 
       {/* Green (team) / clay (pursuit) bottom rule the row rests on. */}
       <HairlineRule ink={ink} />
     </>
   );
 
-  const base = cn(
-    'block w-full text-left',
-    clickable && cn('cursor-pointer rounded-fw-md transition-colors hover:bg-[color:var(--paper-canvas)]', FOCUS[ink]),
-    className,
-  );
+  const base = cn('block w-full text-left', clickable && cn('rounded-fw-md', pressableClass({ ink })), className);
 
   if (href) {
     return (
