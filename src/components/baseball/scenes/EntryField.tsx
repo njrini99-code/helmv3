@@ -218,7 +218,9 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
                 r={i % 2 === 0 ? 1.6 : 1.1}
                 fill={P.dust}
                 style={{
-                  animation: `${dustKey} ${16 + i * 2}s ease-in-out infinite`,
+                  // House curve (CLAUDE.md motion rule — no linear/ease-in-out),
+                  // not the default ease-in-out, for both keyframe halves.
+                  animation: `${dustKey} ${16 + i * 2}s cubic-bezier(0.22,0.7,0,1) infinite`,
                   animationDelay: `${i * 1.6}s`,
                   willChange: 'transform, opacity',
                 }}

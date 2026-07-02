@@ -123,7 +123,14 @@ export function IronRoomField({ className, idSuffix = 'iron-room', stage = 'full
         {/* The living detail — a slow glint on the outermost loaded
             plate's brass rim. Chalk-dust motes are cut here. */}
         {platesLoaded > 0 && (
-          <g data-scene-animated style={{ animation: `${glintKey} 5s ease-in-out infinite`, willChange: 'opacity' }}>
+          <g
+            data-scene-animated
+            style={{
+              // House curve (CLAUDE.md motion rule — no linear/ease-in-out).
+              animation: `${glintKey} 5s cubic-bezier(0.22,0.7,0,1) infinite`,
+              willChange: 'opacity',
+            }}
+          >
             <circle cx={barLeft + 28} cy={barY - PLATE_RADII[0] * 0.7} r="3" fill={P.glint} opacity="0.4" />
             <circle cx={barRight - 28} cy={barY - PLATE_RADII[0] * 0.7} r="3" fill={P.glint} opacity="0.4" />
           </g>
