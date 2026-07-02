@@ -258,6 +258,8 @@ async function completedRoundIds(
       .eq('status', 'completed')
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_rounds', action: 'completedRoundIds', feature: 'stats_analytics', sport: 'golf' },
   );
   return (data ?? [])
     .map((r) => (r as { id: string }).id)
@@ -295,7 +297,7 @@ async function buildPuttBuckets(
         .not('putt_distance_feet', 'is', null)
         .order('id', { ascending: true })
         .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
-    });
+    }, undefined, { table: 'golf_shots', action: 'buildPuttBuckets', feature: 'stats_analytics', sport: 'golf' });
 
     for (const row of data ?? []) {
       const ft = row.putt_distance_feet;
@@ -359,7 +361,7 @@ async function buildApproachBuckets(
         .not('distance_to_hole_after', 'is', null)
         .order('id', { ascending: true })
         .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
-    });
+    }, undefined, { table: 'golf_shots', action: 'buildApproachBuckets', feature: 'stats_analytics', sport: 'golf' });
 
     for (const row of data ?? []) {
       const beforeYd = row.distance_to_hole_before;

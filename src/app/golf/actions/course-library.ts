@@ -306,6 +306,8 @@ async function getCourseTeeCountsImpl(courseIds: string[]): Promise<Record<strin
       .in('course_id', courseIds)
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_course_tees', action: 'getCourseTeeCounts', feature: 'course_library', sport: 'golf' },
   );
   const counts: Record<string, number> = {};
   for (const r of data ?? []) {
@@ -343,6 +345,8 @@ async function getCourseTeeCountsStrictImpl(courseIds: string[]): Promise<Record
       .in('course_id', courseIds)
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_course_tees', action: 'getCourseTeeCountsStrict', feature: 'course_library', sport: 'golf' },
   );
   if (error) {
     throw new Error(`getCourseTeeCounts failed: ${error.message}`);

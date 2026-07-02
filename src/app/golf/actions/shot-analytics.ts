@@ -295,7 +295,7 @@ async function getPlayerShotAnalyticsImpl(
       `)
       .in('round_id', roundIds)
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerShotAnalytics', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     const holes = (holesData || []) as HoleRow[];
 
@@ -310,7 +310,7 @@ async function getPlayerShotAnalyticsImpl(
       `)
       .in('round_id', roundIds)
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_shots', action: 'getPlayerShotAnalytics', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     const shots = (shotsData || []) as ShotRow[];
 

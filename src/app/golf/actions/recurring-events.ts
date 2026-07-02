@@ -172,7 +172,7 @@ async function fetchSeriesRows(
     }
     if (opts.fromStart) query = query.gte('start_time', opts.fromStart);
     return query.order('id', { ascending: true }).range(from, to);
-  });
+  }, undefined, { table: 'golf_events', action: 'recurringEventsSeriesLookup', feature: 'calendar_events', sport: 'golf' });
 }
 
 /**

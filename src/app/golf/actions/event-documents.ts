@@ -22,6 +22,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import type { GolfDocument } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -180,6 +181,13 @@ async function attachDocumentToEventImpl(
         featureArea: 'calendar',
         extra: { eventId, documentId, code: error.code },
       });
+      maybeCaptureRlsDenial(error, {
+        table: 'golf_event_documents',
+        verb: 'insert',
+        action: 'attachDocumentToEvent',
+        feature: 'calendar_events',
+        sport: 'golf',
+      });
       return {
         success: false,
         error: error.code === '42501'
@@ -238,6 +246,13 @@ async function detachDocumentFromEventImpl(
         action: 'event_documents.detachDocumentFromEvent',
         featureArea: 'calendar',
         extra: { eventId, documentId, code: error.code },
+      });
+      maybeCaptureRlsDenial(error, {
+        table: 'golf_event_documents',
+        verb: 'delete',
+        action: 'detachDocumentFromEvent',
+        feature: 'calendar_events',
+        sport: 'golf',
       });
       return {
         success: false,

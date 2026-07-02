@@ -620,6 +620,8 @@ async function getAttendanceReportImpl(
             data: AttendanceRecord[] | null;
             error: { message: string } | null;
           }>,
+      undefined,
+      { table: 'golf_event_attendance', action: 'getAttendanceReport', feature: 'calendar_events', sport: 'golf' },
     );
 
     if (fetchError) {
@@ -761,6 +763,8 @@ async function getPlayerAttendanceStatsImpl(
               .eq('status', 'active')
               .order('id', { ascending: true })
               .range(from, to),
+          undefined,
+          { table: 'golf_team_members', action: 'getPlayerAttendanceStats', feature: 'calendar_events', sport: 'golf' },
         );
         if (membersError) {
           return { success: false, error: 'Failed to get attendance stats. Please try again.' };
@@ -807,6 +811,8 @@ async function getPlayerAttendanceStatsImpl(
             data: StatsRow[] | null;
             error: { message: string } | null;
           }>,
+      undefined,
+      { table: 'golf_event_attendance', action: 'getPlayerAttendanceStats', feature: 'calendar_events', sport: 'golf' },
     );
 
     if (fetchError) {

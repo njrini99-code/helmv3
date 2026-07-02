@@ -516,7 +516,7 @@ async function getTeamOverviewImpl(
       .eq('status', 'completed')
       .gte('round_date', sinceDateStr)
       .order('id', { ascending: true })
-      .range(from, to));
+      .range(from, to), undefined, { table: 'golf_rounds', action: 'getTeamOverview', feature: 'intelligence_dashboard', sport: 'golf' });
 
     let yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }> = [];
     let deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }> = [];
@@ -542,7 +542,7 @@ async function getTeamOverviewImpl(
           // PostgREST's 1000-row default: a 100-round batch is ~7400 shots, so
           // we paginate to fetch every row instead of silently truncating.
           .order('id', { ascending: true })
-          .range(from, to)); // paginate past PostgREST 1000-row cap
+          .range(from, to), undefined, { table: 'golf_shots', action: 'getTeamOverview', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
         if (shotsData) {
           allShotsRaw.push(...(shotsData as unknown as Array<Record<string, unknown>>));
         }
@@ -765,7 +765,7 @@ async function getTeamCategoryInsightsImpl(
         .range(from, to) as unknown as PromiseLike<{
           data: Record<string, unknown>[] | null;
           error: { message: string } | null;
-        }>),
+        }>, undefined, { table: 'golf_rounds', action: 'getTeamCategoryInsights', feature: 'intelligence_dashboard', sport: 'golf' }),
     ]);
 
     if (statsResult.error) {

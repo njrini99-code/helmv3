@@ -413,6 +413,8 @@ async function getTopInsightForPlayerImpl(
     )
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_coach_insights', action: 'getTopInsightForPlayer', feature: 'coachhelm_ai_engine', sport: 'golf' },
   );
 
   if (error) {
@@ -531,7 +533,7 @@ async function getInsightsForPlayerImpl(
         query = query.in('category', opts.categories);
       }
       return query.range(from, to);
-    });
+    }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForPlayer', feature: 'coachhelm_ai_engine', sport: 'golf' });
 
   let data: unknown = null;
   let error: { message: string } | null = null;
@@ -738,7 +740,7 @@ async function getInsightsForCoachWithMetaImpl(
       }
 
       return query.range(from, to);
-    });
+    }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForCoachWithMeta', feature: 'coachhelm_ai_engine', sport: 'golf' });
     data = result.data;
     error = result.error;
   } else {
@@ -764,7 +766,7 @@ async function getInsightsForCoachWithMetaImpl(
       }
 
       return query.range(from, to);
-    });
+    }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForCoachWithMeta', feature: 'coachhelm_ai_engine', sport: 'golf' });
     data = result.data;
     error = result.error;
 
@@ -904,6 +906,8 @@ async function getTopInsightsForPlayersImpl(
       )
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_coach_insights', action: 'getTopInsightsForPlayers', feature: 'coachhelm_ai_engine', sport: 'golf' },
     );
 
   let data: unknown = null;

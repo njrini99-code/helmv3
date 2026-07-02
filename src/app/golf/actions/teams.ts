@@ -8,6 +8,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { revalidatePath } from 'next/cache';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 // ============================================================================
 // TYPES
@@ -223,6 +224,13 @@ async function joinGolfTeamImpl(playerId: string, teamId: string) {
     });
 
   if (error) {
+    maybeCaptureRlsDenial(error, {
+      table: 'golf_team_members',
+      verb: 'insert',
+      action: 'joinGolfTeam',
+      feature: 'join_team_flow',
+      sport: 'golf',
+    });
     return {
       success: false,
       error: 'Failed to join team. Please try again.',
@@ -701,6 +709,13 @@ async function createTeamJoinRequestImpl(
     .single();
 
   if (requestError) {
+    maybeCaptureRlsDenial(requestError, {
+      table: 'golf_team_join_requests',
+      verb: 'insert',
+      action: 'createTeamJoinRequest',
+      feature: 'join_team_flow',
+      sport: 'golf',
+    });
     return { success: false, error: 'Failed to submit request. Please try again.' };
   }
 

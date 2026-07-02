@@ -21,6 +21,7 @@ import type {
 } from '@/lib/types/golf';
 import type { Json } from '@/lib/types/database';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 // ============================================================================
 // INTERNAL TYPES
@@ -801,6 +802,13 @@ async function saveCoachFeedbackImpl(
         action: 'saveCoachFeedback',
         featureArea: 'round_reviews',
         extra: { reviewId, errorCode: updateError.code },
+      });
+      maybeCaptureRlsDenial(updateError, {
+        table: 'golf_round_reviews',
+        verb: 'update',
+        action: 'saveCoachFeedback',
+        feature: 'round_review_ai',
+        sport: 'golf',
       });
       return { success: false, error: 'Failed to save feedback' };
     }

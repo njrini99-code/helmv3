@@ -26,6 +26,7 @@ import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Json } from '@/lib/types/database';
@@ -5044,6 +5045,13 @@ async function savePartialRoundImpl(
             errorHint: updateError.hint,
             errorDetails: updateError.details,
           });
+          maybeCaptureRlsDenial(updateError, {
+            table: 'golf_rounds',
+            verb: 'update',
+            action: 'savePartialRound',
+            feature: 'round_tracking',
+            sport: 'golf',
+          });
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
         if (!updatedRound) {
@@ -5070,6 +5078,13 @@ async function savePartialRoundImpl(
             userEmail: user.email,
             errorCode: roundError.code,
             errorDetails: roundError.details,
+          });
+          maybeCaptureRlsDenial(roundError, {
+            table: 'golf_rounds',
+            verb: 'insert',
+            action: 'savePartialRound',
+            feature: 'round_tracking',
+            sport: 'golf',
           });
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
