@@ -5,38 +5,34 @@
 //
 // Packet: signal-inbox — the convert-to-ACTION surface (V9 Action Conversion
 // Map). Turns a source-backed signal into an assignable, reviewable action that
-// flows to the timeline + Decision Room. Cream/green GolfHelm look (Radix
-// Dialog + Card + Button + native selects). NO golf labels.
+// flows to the timeline + Decision Room. Built on the Fairway `<ModalShell>` +
+// form kit — no bespoke Radix Dialog wiring. THE WAR ROOM lane. NO golf labels.
 //
 // HONESTY: the dialog carries the signal's source + confidence forward and
 // shows them in the header so the coach converts WITH the evidence in view, not
-// blind. A sample-too-small signal shows its caveat here too.
+// blind. A sample-too-small signal shows its caveat here too (InlineNotice —
+// never a yellow box).
 // =============================================================================
 
 import * as React from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select } from '@/components/ui/select';
-import { Input, Textarea } from '@/components/ui/input';
-import { IconAlertCircle, IconBolt } from '@/components/icons';
-import { cn } from '@/lib/utils';
+  ModalShell,
+  Button,
+  InlineNotice,
+  Form,
+  FormField,
+  Input,
+  TextArea,
+  Select,
+} from '@/components/fairway';
+import { InkBadge, Eyebrow, PaperCard, StatReadout } from '@/components/baseball/living-annual';
+import { IconBolt } from '@/components/icons';
 import type { SignalInboxRow } from '@/lib/baseball/read-models/signal-inbox';
 import type {
   BaseballActionType,
   BaseballSignalVisibility,
 } from '@/lib/types/baseball-signals';
-import {
-  CONVERTIBLE_ACTION_TYPES,
-  getActionTypeLabel,
-} from './signal-presentation';
+import { CONVERTIBLE_ACTION_TYPES, getActionTypeLabel } from './signal-presentation';
 
 export interface ConvertOption {
   actionType: BaseballActionType;
@@ -67,6 +63,15 @@ export interface ConvertToActionDialogProps {
   pending?: boolean;
   onConvert: (signalId: string, options: ConvertOption[]) => void;
 }
+
+/** Sentinel for the "no selection" state — Base UI Select needs a real value. */
+const UNASSIGNED = '__unassigned__';
+
+const VISIBILITY_OPTIONS = [
+  { value: 'staff_only', label: 'Staff only' },
+  { value: 'player_only', label: 'Player + staff' },
+  { value: 'team', label: 'Whole team' },
+];
 
 export function ConvertToActionDialog({
   signal,
@@ -111,7 +116,8 @@ export function ConvertToActionDialog({
 
   const canSubmit = title.trim().length > 0 && !pending;
 
-  function handleSubmit() {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     if (!signal || !canSubmit) return;
     const option: ConvertOption = {
       actionType,
@@ -128,149 +134,133 @@ export function ConvertToActionDialog({
   if (!signal) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-warm-900">Convert to action</DialogTitle>
-          <DialogDescription className="text-warm-500">
-            Create an assignable, reviewable action from this signal. It will
-            appear in the action queue and on the player&apos;s timeline when
-            player-visible.
-          </DialogDescription>
-        </DialogHeader>
-
+    <ModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      title="Convert to action"
+      description="Create an assignable, reviewable action from this signal. It will appear in the action queue and on the player's timeline when player-visible."
+    >
+      <Form spacing="cozy" onSubmit={handleSubmit} className="px-6 pb-6 pt-2">
         {/* Signal context (evidence in view while converting) */}
-        <div className="rounded-xl bg-warm-50 border border-warm-200/70 px-3.5 py-3">
-          <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-500">
-            Converting
-          </p>
-          <p className="mt-1 text-sm font-semibold text-warm-900 leading-snug">
+        <PaperCard className="p-3.5" grain={false}>
+          <Eyebrow ink="pursuit">Converting</Eyebrow>
+          <p className="mt-1 font-annual text-body-sm font-semibold leading-snug text-text-primary">
             {signal.title}
           </p>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-warm-500">
-            <span>
-              Confidence{' '}
-              <span className="font-medium text-warm-700 tabular-nums">
-                {signal.confidence === null
-                  ? '—'
-                  : `${Math.round(signal.confidence * 100)}%`}
-              </span>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-annual text-body-sm text-text-tertiary">
+            <span className="inline-flex items-baseline gap-1">
+              Confidence
+              <StatReadout
+                value={signal.confidence === null ? '—' : Math.round(signal.confidence * 100)}
+                suffix={signal.confidence === null ? undefined : '%'}
+                className="text-body-sm text-text-secondary"
+                ariaLabel="Confidence"
+              />
             </span>
-            <span aria-hidden className="text-warm-300">
+            <span aria-hidden className="text-text-tertiary">
               ·
             </span>
             <span>
-              {signal.sourceRefs.length} source
-              {signal.sourceRefs.length === 1 ? '' : 's'}
+              {signal.sourceRefs.length} source{signal.sourceRefs.length === 1 ? '' : 's'}
             </span>
           </p>
           {signal.sampleTooSmall && (
-            <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-amber-50/70 border border-amber-200/60 px-2.5 py-2">
-              <IconAlertCircle size={13} className="text-amber-500 mt-0.5 flex-shrink-0" aria-hidden />
-              <p className="text-xs leading-relaxed text-amber-800">
-                Sample too small — convert as a watch item, not a firm directive.
-              </p>
-            </div>
+            <InlineNotice tone="warning" className="mt-2.5">
+              Sample too small — convert as a watch item, not a firm directive.
+            </InlineNotice>
           )}
-        </div>
+        </PaperCard>
 
-        {/* Form */}
-        <div className="space-y-3">
+        <FormField label="Action type">
           <Select
-            label="Action type"
             value={actionType}
-            onChange={(v) => setActionType(v as BaseballActionType)}
-            options={CONVERTIBLE_ACTION_TYPES.map((t) => ({
-              value: t.value,
-              label: t.label,
-            }))}
+            onValueChange={(v) => v && setActionType(v as BaseballActionType)}
+            options={CONVERTIBLE_ACTION_TYPES.map((t) => ({ value: t.value, label: t.label }))}
           />
+        </FormField>
 
+        <FormField label="Title" required>
           <Input
-            label="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={getActionTypeLabel(actionType)}
           />
+        </FormField>
 
-          <Textarea
-            label="Detail (optional)"
-            value={detail}
-            onChange={(e) => setDetail(e.target.value)}
-            rows={2}
-          />
+        <FormField label="Detail" showOptional>
+          <TextArea value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} />
+        </FormField>
 
-          <div className={cn('grid gap-3', playerScoped ? 'grid-cols-2' : 'grid-cols-1')}>
-            {playerScoped && (
+        <div className={playerScoped ? 'grid grid-cols-1 gap-5 sm:grid-cols-2' : ''}>
+          {playerScoped && (
+            <FormField label="Assign to player" showOptional>
               <Select
-                label="Assign to player"
-                value={assigneePlayerId}
-                onChange={(v) => setAssigneePlayerId(v)}
+                value={assigneePlayerId || UNASSIGNED}
+                onValueChange={(v) => setAssigneePlayerId(!v || v === UNASSIGNED ? '' : v)}
                 placeholder="— None —"
-                clearable
-                options={roster.map((p) => ({ value: p.id, label: p.name }))}
+                options={[
+                  { value: UNASSIGNED, label: '— None —' },
+                  ...roster.map((p) => ({ value: p.id, label: p.name })),
+                ]}
               />
-            )}
+            </FormField>
+          )}
+          <FormField label="Owner (staff)" showOptional>
             <Select
-              label="Owner (staff)"
-              value={assigneeCoachId}
-              onChange={(v) => setAssigneeCoachId(v)}
+              value={assigneeCoachId || UNASSIGNED}
+              onValueChange={(v) => setAssigneeCoachId(!v || v === UNASSIGNED ? '' : v)}
               placeholder="— Me —"
-              clearable
-              options={staff.map((s) => ({ value: s.id, label: s.name }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Due date (optional)"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-            <Select
-              label="Visibility"
-              value={visibility}
-              onChange={(v) => setVisibility(v as BaseballSignalVisibility)}
               options={[
-                { value: 'staff_only', label: 'Staff only' },
-                { value: 'player_only', label: 'Player + staff' },
-                { value: 'team', label: 'Whole team' },
+                { value: UNASSIGNED, label: '— Me —' },
+                ...staff.map((s) => ({ value: s.id, label: s.name })),
               ]}
             />
-          </div>
-
-          {visibility !== 'staff_only' && (
-            <div className="flex items-center gap-2 rounded-lg bg-primary-50/50 px-2.5 py-2">
-              <Badge tone="primary" appearance="soft" size="sm">
-                Player-visible
-              </Badge>
-              <p className="text-xs leading-relaxed text-warm-600">
-                This action will appear on the player&apos;s timeline.
-              </p>
-            </div>
-          )}
+          </FormField>
         </div>
 
-        <DialogFooter>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FormField label="Due date" showOptional>
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </FormField>
+          <FormField label="Visibility">
+            <Select
+              value={visibility}
+              onValueChange={(v) => v && setVisibility(v as BaseballSignalVisibility)}
+              options={VISIBILITY_OPTIONS}
+            />
+          </FormField>
+        </div>
+
+        {visibility !== 'staff_only' && (
+          <div className="flex items-center gap-2 rounded-fw-sm bg-[color:var(--grade-plus)]/[0.06] px-2.5 py-2">
+            <InkBadge label="Player-visible" tone="team" />
+            <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
+              This action will appear on the player&apos;s timeline.
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-3 pt-2">
           <Button
-            variant="ghost"
+            type="button"
+            variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={pending}
           >
             Cancel
           </Button>
           <Button
+            type="submit"
             variant="primary"
-            onClick={handleSubmit}
+            busy={pending}
             disabled={!canSubmit}
-            isLoading={pending}
-            className="gap-1.5"
+            leftIcon={<IconBolt size={14} />}
           >
-            <IconBolt size={14} /> Create action
+            Create action
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Form>
+    </ModalShell>
   );
 }
