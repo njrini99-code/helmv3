@@ -4,12 +4,23 @@
 // src/components/baseball/staff/StaffSettingsClient.tsx
 //
 // Wave 11 / packet: decision-room
+// MIGRATED to "The Living Annual" kit (design-system-living-annual.md,
+// ui-migration-execution-plan.md §3.1 "settings/staff"): the roster header
+// becomes a `SectionMasthead` + `KPIContentsStrip`, each staff row is a
+// `PaperCard`, status pills become `InkBadge` stamps, and every empty/notice
+// state renders through `EditorsLetter`/`EmptyIssue` — never a yellow box.
 //
-// The Staff Settings surface: roster of coaching staff, a per-staffer capability
-// matrix editor, pending invitations, and an invite form. Every WRITE is gated
-// client-side by `canManageStaff` (is_head_coach || can_invite_staff) AND server-
-// side by withBaseballAction(requiredCapability:'can_invite_staff'). The client
-// gate is purely an affordance — the server is the source of truth.
+// PRESENTATION ONLY. Same props, same read model, same writes:
+// `getStaffSettingsData()` + `inviteStaff`/`revokeStaffInvite`/
+// `resendStaffInvite`/`updateStaffCapabilities`/`removeStaff` are untouched.
+// `CAPABILITY_DEFS` + `ROLE_PRESETS` are byte-for-byte the same data; only the
+// container around the capability-matrix form is reskinned. The `role="switch"`
+// / `aria-checked` toggle contract and `<ConfirmDialog>` are preserved verbatim.
+//
+// Every WRITE is gated client-side by `canManageStaff` (is_head_coach ||
+// can_invite_staff) AND server-side by
+// withBaseballAction(requiredCapability:'can_invite_staff'). The client gate is
+// purely an affordance — the server is the source of truth.
 //
 // Read-only viewers (staff without can_invite_staff) see the roster + each
 // member's capabilities but cannot edit, invite, or remove.
@@ -17,11 +28,9 @@
 
 import { useState, useTransition, useCallback } from 'react';
 import Link from 'next/link';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'framer-motion';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/sonner';
@@ -41,6 +50,17 @@ import {
 } from '@/components/icons';
 
 import {
+  SectionMasthead,
+  KPIContentsStrip,
+  PaperCard,
+  EditorsLetter,
+  EmptyIssue,
+  InkBadge,
+  HairlineRule,
+  Reveal,
+} from '@/components/baseball/living-annual';
+
+import {
   inviteStaff,
   revokeStaffInvite,
   resendStaffInvite,
@@ -54,7 +74,8 @@ import type {
 } from '@/app/baseball/actions/decision-room';
 
 // -----------------------------------------------------------------------------
-// Capability descriptors (label + helptext for the matrix).
+// Capability descriptors (label + helptext for the matrix). UNTOUCHED — the
+// exact set of capability keys, labels, and helptext the server understands.
 // -----------------------------------------------------------------------------
 
 const CAPABILITY_DEFS: { key: string; label: string; help: string }[] = [
@@ -86,7 +107,7 @@ function emptyCaps(): Record<string, boolean> {
   }, {} as Record<string, boolean>);
 }
 
-// Quick-apply role presets for the invite form.
+// Quick-apply role presets for the invite form. UNTOUCHED.
 const ROLE_PRESETS: { label: string; role: string; caps: string[] }[] = [
   {
     label: 'Assistant Coach',
@@ -116,7 +137,6 @@ interface StaffSettingsClientProps {
 
 export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
   const { showToast } = useToast();
-  const reduceMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
 
   const [staff, setStaff] = useState<StaffMemberView[]>(initialData.staff);
@@ -155,7 +175,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
   );
 
   // ---------------------------------------------------------------------------
-  // Invite handlers
+  // Invite handlers — UNTOUCHED write paths.
   // ---------------------------------------------------------------------------
 
   const applyPreset = (preset: (typeof ROLE_PRESETS)[number]) => {
@@ -253,7 +273,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
   };
 
   // ---------------------------------------------------------------------------
-  // Staff edit handlers
+  // Staff edit handlers — UNTOUCHED write paths.
   // ---------------------------------------------------------------------------
 
   const beginEdit = (member: StaffMemberView) => {
@@ -312,80 +332,99 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
   };
 
   const pendingInvites = invitations.filter((i) => i.status === 'pending');
-  const fadeIn = reduceMotion
-    ? {}
-    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
+  const activeStaffCount = staff.filter((s) => s.status !== 'removed').length;
 
   return (
     <LazyMotion features={domAnimation}>
       <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
-        {/* Header */}
+        {/* Back affordance + masthead */}
         <div className="mb-6">
           <Link
             href="/baseball/dashboard/settings"
-            className="mb-3 inline-flex items-center gap-1.5 text-sm text-warm-500 transition-colors hover:text-warm-700"
+            className="mb-3 inline-flex items-center gap-1.5 font-annual text-body-sm text-text-tertiary transition-colors hover:text-text-secondary"
           >
             <IconArrowLeft size={16} />
             Settings
           </Link>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-semibold text-warm-900 sm:text-3xl">
-                Staff &amp; Permissions
-              </h1>
-              <p className="mt-1 text-sm text-warm-500">
-                Manage your coaching staff and what each coach can access.
-              </p>
-            </div>
-            {canManage && (
-              <Button
-                variant="primary"
-                leftIcon={<IconUserPlus size={18} />}
-                onClick={() => setInviteOpen((v) => !v)}
-              >
-                Invite staff
-              </Button>
-            )}
-          </div>
+          <SectionMasthead
+            eyebrow="THE PRESSBOX · SETTINGS"
+            title="Staff & Permissions"
+            ink="team"
+            actions={
+              canManage ? (
+                <Button
+                  variant="primary"
+                  leftIcon={<IconUserPlus size={18} />}
+                  onClick={() => setInviteOpen((v) => !v)}
+                >
+                  Invite staff
+                </Button>
+              ) : undefined
+            }
+          >
+            <p className="max-w-prose font-annual text-body-lg text-text-secondary">
+              Manage your coaching staff and what each coach can access.
+            </p>
+          </SectionMasthead>
+        </div>
+
+        {/* Contents strip — the real counts, on green rules. */}
+        <div className="mb-8">
+          <KPIContentsStrip
+            columns={2}
+            items={[
+              { label: 'Coaching Staff', value: activeStaffCount },
+              { label: 'Pending Invites', value: pendingInvites.length },
+            ]}
+          />
         </div>
 
         {!canManage && (
-          <div className="mb-6 flex items-start gap-2 rounded-xl border border-warm-200 bg-warm-50 p-4 text-sm text-warm-600">
-            <IconShield size={18} className="mt-0.5 shrink-0 text-warm-400" />
-            <span>
-              You can view the staff roster, but you don&apos;t have permission to
-              invite or edit staff. Ask your head coach for the &ldquo;Invite
-              staff&rdquo; capability.
-            </span>
+          <div className="mb-6">
+            <EditorsLetter
+              ink="team"
+              title="You have view-only access."
+              body={
+                <span className="inline-flex items-start gap-2">
+                  <IconShield size={16} className="mt-0.5 shrink-0 text-text-tertiary" />
+                  <span>
+                    You can view the staff roster, but you don&apos;t have permission to
+                    invite or edit staff. Ask your head coach for the &ldquo;Invite
+                    staff&rdquo; capability.
+                  </span>
+                </span>
+              }
+            />
           </div>
         )}
 
         {/* Invite form */}
         {canManage && inviteOpen && (
-          <m.div {...fadeIn} className="mb-6">
-            <Card variant="raised" padding="lg">
-              <CardHeader className="mb-4 flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <IconMail size={18} className="text-primary-600" />
-                  Invite a coach
-                </CardTitle>
+          <Reveal className="mb-6">
+            <PaperCard className="p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <IconMail size={18} className="text-grade-plus" />
+                  <h2 className="font-annual text-h3 text-text-primary">Invite a coach</h2>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setInviteOpen(false)}
                   haptic="none"
-                  className="min-h-0 rounded-lg p-1 text-warm-400 hover:text-warm-600"
+                  className="min-h-0 rounded-fw-sm p-1 text-text-tertiary hover:text-text-secondary"
                   aria-label="Close invite form"
                 >
                   <IconX size={18} />
                 </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              </div>
+
+              <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label
                       htmlFor="invite-email"
-                      className="mb-1.5 block text-sm font-medium text-warm-700"
+                      className="mb-1.5 block font-annual text-body-sm font-medium text-text-secondary"
                     >
                       Email
                     </label>
@@ -401,9 +440,9 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                   <div>
                     <label
                       htmlFor="invite-role"
-                      className="mb-1.5 block text-sm font-medium text-warm-700"
+                      className="mb-1.5 block font-annual text-body-sm font-medium text-text-secondary"
                     >
-                      Role / title <span className="text-warm-400">(optional)</span>
+                      Role / title <span className="text-text-tertiary">(optional)</span>
                     </label>
                     <Input
                       id="invite-role"
@@ -416,7 +455,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
 
                 {/* Presets */}
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-warm-400">
+                  <p className="mb-2 font-annual text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
                     Quick presets
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -427,7 +466,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                         variant="ghost"
                         onClick={() => applyPreset(p)}
                         haptic="none"
-                        className="min-h-0 rounded-full border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs font-medium text-warm-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
+                        className="min-h-0 rounded-full border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-1.5 font-annual text-body-sm font-medium text-text-secondary hover:border-grade-plus/40 hover:bg-grade-plus/5 hover:text-grade-plus"
                       >
                         {p.label}
                       </Button>
@@ -455,40 +494,37 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                     Create invite
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </m.div>
+              </div>
+            </PaperCard>
+          </Reveal>
         )}
 
         {/* Staff roster */}
         <section className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-warm-400">
+          <h2 className="mb-3 font-annual text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
             Coaching staff
           </h2>
           <div className="space-y-3">
-            {staff.length === 0 && (
-              <Card variant="flat" padding="lg" className="text-center">
-                <p className="text-sm text-warm-500">No staff yet.</p>
-              </Card>
-            )}
-            {staff.map((member) => (
-              <StaffRow
-                key={member.id}
-                member={member}
-                canManage={canManage}
-                isEditing={editingId === member.id}
-                editCaps={editCaps}
-                editRole={editRole}
-                onEditCaps={setEditCaps}
-                onEditRole={setEditRole}
-                onBeginEdit={() => beginEdit(member)}
-                onCancelEdit={() => setEditingId(null)}
-                onSave={() => saveEdit(member)}
-                onRemove={() =>
-                  setConfirm({ kind: 'removeStaff', id: member.id, name: member.name })
-                }
-                isPending={isPending}
-              />
+            {staff.length === 0 && <EmptyIssue variant="generic" />}
+            {staff.map((member, i) => (
+              <Reveal key={member.id} staggerIndex={Math.min(i, 10)}>
+                <StaffRow
+                  member={member}
+                  canManage={canManage}
+                  isEditing={editingId === member.id}
+                  editCaps={editCaps}
+                  editRole={editRole}
+                  onEditCaps={setEditCaps}
+                  onEditRole={setEditRole}
+                  onBeginEdit={() => beginEdit(member)}
+                  onCancelEdit={() => setEditingId(null)}
+                  onSave={() => saveEdit(member)}
+                  onRemove={() =>
+                    setConfirm({ kind: 'removeStaff', id: member.id, name: member.name })
+                  }
+                  isPending={isPending}
+                />
+              </Reveal>
             ))}
           </div>
         </section>
@@ -496,61 +532,58 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
         {/* Pending invitations */}
         {canManage && pendingInvites.length > 0 && (
           <section className="mb-8">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-warm-400">
+            <h2 className="mb-3 font-annual text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
               Pending invitations
             </h2>
             <div className="space-y-2">
               {pendingInvites.map((inv) => (
-                <Card
-                  key={inv.id}
-                  variant="flat"
-                  padding="md"
-                  className="flex flex-wrap items-center justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-warm-900">{inv.email}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-warm-500">
-                      <IconClock size={13} />
-                      {inv.isExpired ? (
-                        <span className="text-amber-600">Expired</span>
-                      ) : (
-                        <>Expires {new Date(inv.expiresAt).toLocaleDateString()}</>
-                      )}
-                      {inv.role && <span>· {inv.role}</span>}
-                    </p>
+                <PaperCard key={inv.id} className="p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-annual text-body font-medium text-text-primary">{inv.email}</p>
+                      <p className="mt-0.5 flex items-center gap-1.5 font-annual text-body-sm text-text-tertiary">
+                        <IconClock size={13} />
+                        {inv.isExpired ? (
+                          <InkBadge label="Expired" tone="neutral" />
+                        ) : (
+                          <>Expires {new Date(inv.expiresAt).toLocaleDateString()}</>
+                        )}
+                        {inv.role && <span>· {inv.role}</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<IconCopy size={15} />}
+                        onClick={() => copyInviteLink(inv.token)}
+                        disabled={!inv.token}
+                      >
+                        Copy link
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<IconRefresh size={15} />}
+                        onClick={() => doResend(inv)}
+                        disabled={isPending}
+                      >
+                        Refresh
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<IconX size={15} />}
+                        onClick={() =>
+                          setConfirm({ kind: 'revokeInvite', id: inv.id, email: inv.email })
+                        }
+                        disabled={isPending}
+                      >
+                        Revoke
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<IconCopy size={15} />}
-                      onClick={() => copyInviteLink(inv.token)}
-                      disabled={!inv.token}
-                    >
-                      Copy link
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<IconRefresh size={15} />}
-                      onClick={() => doResend(inv)}
-                      disabled={isPending}
-                    >
-                      Refresh
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<IconX size={15} />}
-                      onClick={() =>
-                        setConfirm({ kind: 'revokeInvite', id: inv.id, email: inv.email })
-                      }
-                      disabled={isPending}
-                    >
-                      Revoke
-                    </Button>
-                  </div>
-                </Card>
+                </PaperCard>
               ))}
             </div>
           </section>
@@ -622,26 +655,22 @@ function StaffRow({
   const grantedCount = CAP_KEYS.filter((k) => member.capabilities[k]).length;
 
   return (
-    <Card
-      variant="raised"
-      padding="md"
-      className={isRemoved ? 'opacity-60' : undefined}
-    >
+    <PaperCard className={`p-5 ${isRemoved ? 'opacity-60' : ''}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus">
             {isFullAuthority ? <IconStar size={18} /> : <IconShieldCheck size={18} />}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate font-semibold text-warm-900">{member.name}</p>
-              {member.isPrimary && <Badge variant="primary">Primary</Badge>}
+              <p className="truncate font-annual text-body font-semibold text-text-primary">{member.name}</p>
+              {member.isPrimary && <InkBadge label="Primary" tone="team" variant="solid" />}
               {member.isHeadCoach && !member.isPrimary && (
-                <Badge variant="primary">Head coach</Badge>
+                <InkBadge label="Head coach" tone="team" variant="solid" />
               )}
-              {isRemoved && <Badge variant="secondary">Removed</Badge>}
+              {isRemoved && <InkBadge label="Removed" tone="neutral" />}
             </div>
-            <p className="truncate text-xs text-warm-500">
+            <p className="truncate font-annual text-body-sm text-text-tertiary">
               {member.role ?? member.title ?? 'Coach'}
               {member.email && <span> · {member.email}</span>}
             </p>
@@ -692,15 +721,16 @@ function StaffRow({
 
       {/* Capabilities display / editor */}
       {isFullAuthority ? (
-        <p className="mt-3 text-xs text-warm-500">
+        <p className="mt-3 font-annual text-body-sm text-text-tertiary">
           Full access to every team feature.
         </p>
       ) : isEditing ? (
         <div className="mt-4">
+          <HairlineRule ink="hairline" className="mb-4" />
           <div className="mb-3">
             <label
               htmlFor={`role-${member.id}`}
-              className="mb-1.5 block text-xs font-medium text-warm-600"
+              className="mb-1.5 block font-annual text-body-sm font-medium text-text-secondary"
             >
               Role / title
             </label>
@@ -716,22 +746,21 @@ function StaffRow({
       ) : (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {grantedCount === 0 ? (
-            <span className="text-xs text-warm-400">No capabilities granted</span>
+            <span className="font-annual text-body-sm text-text-tertiary">No capabilities granted</span>
           ) : (
             CAPABILITY_DEFS.filter((c) => member.capabilities[c.key]).map((c) => (
-              <Badge key={c.key} variant="secondary">
-                {c.label}
-              </Badge>
+              <InkBadge key={c.key} label={c.label} tone="team" />
             ))
           )}
         </div>
       )}
-    </Card>
+    </PaperCard>
   );
 }
 
 // -----------------------------------------------------------------------------
-// CapabilityMatrix — toggle grid
+// CapabilityMatrix — toggle grid. Preserves the `role="switch"` / `aria-checked`
+// ARIA contract exactly; only the container styling is reskinned to kit tokens.
 // -----------------------------------------------------------------------------
 
 interface CapabilityMatrixProps {
@@ -759,22 +788,22 @@ function CapabilityMatrix({ value, onChange, disabled }: CapabilityMatrixProps) 
             disabled={disabled}
             onClick={() => toggle(cap.key)}
             haptic="none"
-            className={`min-h-0 h-auto items-start justify-start gap-3 rounded-xl border p-3 text-left font-normal ${
+            className={`min-h-0 h-auto items-start justify-start gap-3 rounded-fw-md border p-3 text-left font-normal ${
               on
-                ? 'border-primary-300 bg-primary-50 hover:bg-primary-50'
-                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+                ? 'border-grade-plus/40 bg-grade-plus/5 hover:bg-grade-plus/5'
+                : 'border-[color:var(--hairline)] bg-[var(--paper)] hover:border-text-tertiary/40'
             }`}
           >
             <span
-              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                on ? 'border-primary-600 bg-primary-600 text-white' : 'border-warm-300 bg-cream-50'
+              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-fw-sm border transition-colors ${
+                on ? 'border-grade-plus bg-grade-plus text-white' : 'border-[color:var(--hairline)] bg-[var(--paper)]'
               }`}
             >
               {on && <IconCheck size={13} />}
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-medium text-warm-800">{cap.label}</span>
-              <span className="block text-xs text-warm-500">{cap.help}</span>
+              <span className="block font-annual text-body-sm font-medium text-text-secondary">{cap.label}</span>
+              <span className="block font-annual text-body-sm text-text-tertiary">{cap.help}</span>
             </span>
           </Button>
         );
@@ -782,4 +811,3 @@ function CapabilityMatrix({ value, onChange, disabled }: CapabilityMatrixProps) 
     </div>
   );
 }
-
