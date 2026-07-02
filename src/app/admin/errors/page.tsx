@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { X } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { parseErrorsFilters, fetchErrorsTab } from '@/lib/admin/data/errors';
+import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
 import { StatusPill, type FwStatusTone } from '@/components/fairway';
 import { TriageQueue } from '../_components/TriageQueue';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
@@ -35,6 +37,17 @@ function chipHref(current: URLSearchParams, param: string, value: string): strin
   const qs = next.toString();
   return qs ? `/admin/errors?${qs}` : '/admin/errors';
 }
+
+function clearParamHref(current: URLSearchParams, param: string): string {
+  const next = new URLSearchParams(current);
+  next.delete(param);
+  const qs = next.toString();
+  return qs ? `/admin/errors?${qs}` : '/admin/errors';
+}
+
+const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
+  FEATURE_REGISTRY.map((f) => [f.key, f.label]),
+);
 
 export default async function ErrorsPage({
   searchParams,
@@ -118,6 +131,20 @@ export default async function ErrorsPage({
   return (
     <main className="space-y-4 p-6">
       <AutoRefresh />
+      {filters.feature ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-warm-900 px-3 py-1 text-xs text-white">
+            feature: {FEATURE_LABELS[filters.feature] ?? filters.feature}
+          </span>
+          <Link
+            href={clearParamHref(current, 'feature')}
+            aria-label="Clear feature filter"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:bg-warm-100"
+          >
+            <X size={12} aria-hidden />
+          </Link>
+        </div>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {CHIP_SETS.flatMap(({ param, values }) =>
           values.map((v) => (

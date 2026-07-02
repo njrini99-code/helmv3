@@ -13,4 +13,18 @@ describe('parseErrorsFilters', () => {
   it('drops invalid values instead of trusting the URL', () => {
     expect(parseErrorsFilters({ sport: 'chess', severity: 'meh', window: '-5' })).toEqual({ windowHours: 24 });
   });
+
+  // W16 Task 4 — drill-in from the Feature Health board.
+  it('parses a valid feature key from the URL', () => {
+    expect(parseErrorsFilters({ feature: 'round_tracking' })).toEqual({
+      windowHours: 24,
+      feature: 'round_tracking',
+    });
+  });
+  it('drops an unknown feature key instead of trusting the URL (no crash, no filter)', () => {
+    expect(parseErrorsFilters({ feature: 'not_a_real_feature' })).toEqual({ windowHours: 24 });
+  });
+  it('never accepts the excluded CRM key as a feature filter', () => {
+    expect(parseErrorsFilters({ feature: 'crm_recruiting_pipeline' })).toEqual({ windowHours: 24 });
+  });
 });

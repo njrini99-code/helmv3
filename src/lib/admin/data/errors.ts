@@ -14,11 +14,16 @@ import {
   type TriageSeverity,
   type AppTriageEventRow,
 } from '@/lib/admin/data/triage';
+import { FEATURE_REGISTRY, type FeatureKey } from '@/lib/admin/feature-registry';
 
 export interface ErrorsTabFilters {
   sport?: 'golf' | 'baseball' | 'shared';
   severity?: TriageSeverity;
   source?: string;
+  /** W16 Task 4 — drill-in from the Feature Health board:
+   *  /admin/errors?feature=<key> narrows the in-app incident feed to
+   *  admin_events.feature = <key>. */
+  feature?: FeatureKey;
   windowHours: number;
 }
 
@@ -28,6 +33,10 @@ const SOURCES = new Set([
   'server_action', 'route_handler', 'server_component', 'background_job', 'request_hook',
   'rls_denial', 'auth', 'cron', 'integrity', 'client', 'system',
 ]);
+// Valid drill-in targets: every non-excluded registry key. The CRM row is
+// deliberately never a valid filter value — CRM is never touched, never
+// tagged, so it would only ever return zero rows (owner directive).
+const FEATURE_KEYS = new Set(FEATURE_REGISTRY.filter((f) => !f.excluded).map((f) => f.key));
 
 function first(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
@@ -45,6 +54,8 @@ export function parseErrorsFilters(
   if (severity && SEVERITIES.has(severity)) filters.severity = severity as TriageSeverity;
   const source = first(searchParams.source);
   if (source && SOURCES.has(source)) filters.source = source;
+  const feature = first(searchParams.feature);
+  if (feature && FEATURE_KEYS.has(feature as FeatureKey)) filters.feature = feature as FeatureKey;
   const window = Number(first(searchParams.window));
   if (Number.isFinite(window) && window > 0 && window <= 720) filters.windowHours = window;
   return filters;
@@ -72,6 +83,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   if (filters.sport) query = query.eq('sport', filters.sport);
   if (filters.severity) query = query.eq('severity', filters.severity);
   if (filters.source) query = query.eq('source', filters.source);
+  if (filters.feature) query = query.eq('feature', filters.feature);
 
   const [sentry, hourly, deploys, appRes, rlsRes] = await Promise.all([
     fetchSentryIssues({ limit: 50 }),
