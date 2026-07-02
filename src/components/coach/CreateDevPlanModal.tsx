@@ -9,6 +9,8 @@ import { IconX, IconPlus, IconTrash } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { getFullName } from '@/lib/utils';
 import { useToast } from '@/components/ui/sonner';
+import type { DevPlanGoal } from '@/lib/baseball/dev-plan-types';
+import type { Json } from '@/lib/types/database';
 
 interface CreateDevPlanModalProps {
   open: boolean;
@@ -115,6 +117,12 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
     // Filter out empty goals
     const validGoals = goals.filter(g => g.title.trim());
 
+    // Persist the FULL goal shape (id/progress/status/created_at) — not just
+    // title/description/target_date. Dropping `id` here means every fetch
+    // mints a brand-new random id (see parseGoals in actions/dev-plans.ts),
+    // so any goalId captured by the UI is stale on the next request and
+    // completing a goal always fails with "Goal not found".
+    const nowIso = new Date().toISOString();
     const { error } = await supabase.from('baseball_developmental_plans').insert({
       coach_id: coach.id,
       player_id: selectedPlayerId,
@@ -123,14 +131,17 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
       description: formData.description || null,
       start_date: formData.start_date || null,
       end_date: formData.end_date || null,
-      goals: validGoals.map(g => ({
+      goals: validGoals.map((g): DevPlanGoal => ({
+        id: g.id,
         title: g.title,
-        description: g.description,
-        target_date: g.target_date,
-        completed: false,
-      })),
+        description: g.description || undefined,
+        target_date: g.target_date || undefined,
+        progress: 0,
+        status: 'not_started',
+        created_at: nowIso,
+      })) as unknown as Json,
       status: 'sent',
-      created_at: new Date().toISOString(),
+      created_at: nowIso,
     });
 
     setLoading(false);

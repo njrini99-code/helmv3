@@ -1,77 +1,83 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
 import { PlanDetail } from '@/components/baseball/dev-plans/PlanDetail';
-
-interface PlanWithPlayer {
-  id: string;
-  title: string;
-  description: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  status: string | null;
-  goals: unknown;
-  player: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-    primary_position: string | null;
-    grad_year: number | null;
-  } | null;
-}
+import { useToast } from '@/components/ui/sonner';
+import {
+  getDevPlanForCoach,
+  completeGoal,
+  uncompleteGoal,
+} from '@/app/baseball/actions/dev-plans';
+import type { DevPlanWithPlayer } from '@/lib/baseball/dev-plan-types';
 
 export default function DevPlanDetailPage() {
   const params = useParams<{ id: string }>();
-  const [plan, setPlan] = useState<PlanWithPlayer | null>(null);
+  const { showToast } = useToast();
+  const [plan, setPlan] = useState<DevPlanWithPlayer | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const supabase = createClient();
+  const [isPending, startTransition] = useTransition();
+  const [pendingGoalId, setPendingGoalId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchPlan() {
-      if (!params?.id) return;
-      setLoading(true);
+  const fetchPlan = useCallback(async () => {
+    if (!params?.id) return;
+    setLoading(true);
 
-      const { data, error } = await supabase
-        .from('baseball_developmental_plans')
-        .select(`
-          id,
-          title,
-          description,
-          start_date,
-          end_date,
-          status,
-          goals,
-          player:baseball_players (
-            id,
-            first_name,
-            last_name,
-            avatar_url,
-            primary_position,
-            grad_year
-          )
-        `)
-        .eq('id', params.id)
-        .single();
-
-      if (!error && data) {
-        setPlan(data as PlanWithPlayer);
-        setNotFound(false);
-      } else {
-        setPlan(null);
-        setNotFound(true);
-      }
-
+    try {
+      const data = await getDevPlanForCoach(params.id);
+      setPlan(data);
+      setNotFound(false);
+    } catch (error) {
+      console.error('Error fetching dev plan:', error);
+      setPlan(null);
+      setNotFound(true);
+    } finally {
       setLoading(false);
     }
+  }, [params?.id]);
 
+  useEffect(() => {
     fetchPlan();
-  }, [params?.id, supabase]);
+  }, [fetchPlan]);
+
+  const handleComplete = useCallback(
+    (goalId: string) => {
+      if (!plan) return;
+      setPendingGoalId(goalId);
+      startTransition(async () => {
+        try {
+          await completeGoal(plan.id, goalId);
+          await fetchPlan();
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Could not mark goal complete', 'error');
+        } finally {
+          setPendingGoalId(null);
+        }
+      });
+    },
+    [plan, fetchPlan, showToast]
+  );
+
+  const handleUncomplete = useCallback(
+    (goalId: string) => {
+      if (!plan) return;
+      setPendingGoalId(goalId);
+      startTransition(async () => {
+        try {
+          await uncompleteGoal(plan.id, goalId);
+          await fetchPlan();
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Could not update goal', 'error');
+        } finally {
+          setPendingGoalId(null);
+        }
+      });
+    },
+    [plan, fetchPlan, showToast]
+  );
 
   if (loading) {
     return (
@@ -101,7 +107,12 @@ export default function DevPlanDetailPage() {
     <>
       <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
       <div className="p-6 lg:p-8">
-        <PlanDetail plan={plan} />
+        <PlanDetail
+          plan={plan}
+          onComplete={handleComplete}
+          onUncomplete={handleUncomplete}
+          pendingGoalId={isPending ? pendingGoalId : null}
+        />
       </div>
     </>
   );
