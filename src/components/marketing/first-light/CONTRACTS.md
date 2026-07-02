@@ -397,16 +397,20 @@ the contract downstream lanes should hold to if they touch the file again.
   on the SAME transform as its dock-in scale/y (one element, one
   `style={{ scale, y, x }}` — not a second wrapper) — "the desk
   rebalances to make room."
-- **Cream veil, not a hard cut.** `CreamVeil` is a full-band
-  `var(--fl-cream)` overlay at opacity 1 at progress 0, lifting across
-  `[0, CREAM_VEIL_END]` (0.07) — M2's cream hands off into this section's
-  sage-ink depth as a camera move, not a section boundary. It deliberately
-  overshoots `PinnedScrub`'s `px-6` inner padding (`-inset-6`, not
-  `inset-0`) because an absolutely positioned child's containing block is
-  the padding *box*; the sticky container's `overflow-hidden` clips the
-  overshoot back to the exact viewport edge. If `PinnedScrub`'s
-  `innerClassName` padding value ever changes, this offset needs to change
-  with it.
+- **No cream veil — M3's predecessor is now M4, not M2.** An earlier
+  `CreamVeil` (a full-band `var(--fl-cream)` overlay at opacity 1 at
+  progress 0, lifting across the first sliver of scrub) existed so M2's
+  cream could hand off into this section's sage-ink depth as a camera
+  move rather than a hard cut. The foundation lane's page-order change
+  ("M4 two-fields moves ahead of M3", Nick A-override) put M4's
+  dark-grounded two-fields photography directly before M3 instead —
+  with a dark predecessor, that same veil would flash cream at the seam.
+  Removed entirely (2026-07-02): the sage-ink band now flows straight
+  from M4's own dark grounding with no handoff layer. Don't reintroduce
+  a cream veil here unless M3's predecessor moment changes back to a
+  cream/light one — check the current page order in `src/app/page.tsx`
+  first. The frame's existing dock-in (`HardwareFrame`'s `scale`/`y` over
+  `[0, DOCK_END]`) still supplies the section's only entrance motion.
 - **`noUncheckedIndexedAccess` traps, already worked around** — worth
   knowing if you touch this file again: `SCREENS` is typed as a literal
   3-tuple (not `CinemaScreen[]`) specifically so `Ledger`'s
@@ -461,29 +465,34 @@ under live verification even with the (now-fixed) sage/cream
 `public/marketing/first-light/screens/{command-center,stats-center,
 decision-room,lift-lab}.png` — LIVE, shipped by the `landing-cinema` lane.
 
-**Revised 2026-07-02** (superseding this lane's own earlier approach):
-these are now **dignified neutral placeholders**, not real product
-captures. The first pass used real screenshots pulled from the overnight
-BaseballHelm visual-verification fleet — but those frames were empty-state
-QA captures (all-zero counters, a near-black sidebar, a stray cursor, an
-awkward crop), which read as raw dev output, not staged product cinema.
-Nick's sage/cream redirect made the call explicit: build palette-true
-placeholders instead. Each PNG (`Pillow`, one-off, not committed as a
-script) is a cream-high→cream card at its frame's aspect ratio (`16/10`
-for the three desktop screens at 1280×800, `9/19.5` for Lift Lab's phone
-at 480×1039) with a soft corner bloom (the entry-scene "warm bloom"
-motif), a sage-mist badge holding a simple drawn line glyph per screen
-(grid / bar-chart / checklist / barbell), a Georgia-serif screen label in
-sage-ink, a short tagline, brass hairline dividers, and a cheap low-res
-upsampled grain — zero fake data, zero product chrome, palette-true
-throughout (no kelly). Palette-quantized (256-color, Floyd–Steinberg
-dither) to keep the set reasonably light (~770KB combined; the low-res
-grain-upsample trick keeps this well under what per-pixel noise would
-cost). `M3ProductCinema.tsx` renders them the `photoBg.ts` way: a solid
-cream-toned tint `<div>` behind (not the old dark pine gradient), an
-`<Image fill sizes=... className="object-cover">` on top, inside a fixed
-aspect-ratio container — a slow load or a future missing file never
-collapses the frame's layout, and never flashes dark.
+**Revised 2026-07-02, twice.** First pass (superseding this lane's
+original real-screenshot approach — those were empty-state QA captures
+pulled from the overnight BaseballHelm visual-verification fleet, and
+read as raw dev output, not staged product cinema) built **dignified
+neutral placeholders**: a Georgia-serif label, a sage-mist badge with a
+generic line glyph, a tagline, zero kelly. Nick's A-OVERRIDE ("doesn't
+give sports on landing," Amendment 3 §2, 2026-07-02 ~18:00) called that
+out as still not sport-obvious enough — a viewer scrolling past couldn't
+tell this was golf/baseball software. **Second pass (current):** each
+PNG (`Pillow`, one-off, not committed as a script, same paths/dimensions
+— `16/10` for the three desktop screens at 1280×800, `9/19.5` for Lift
+Lab's phone at 480×1039) is now a sport-obvious idiom instead of a label
+card — command-center is a golf leaderboard (POS/PLAYER/THRU/SG TOTAL,
+tabular-nums SG figures, one sage-deep leader row), stats-center is a
+baseball box score (1–9 innings grid, R/H/E, two team rows), decision-room
+is the CoachHelm signal list (three rows, confidence pills), lift-lab is
+a barbell glyph over a readiness score/meter/check-in ledger. Still cream
+paper + sage-ink + brass hairlines throughout, still zero real athlete
+data — but **kelly now appears as tiny accents** (a leader/live tick, the
+confidence pills, a meter tick, a sync dot): allowed because these ARE
+simulated product screenshots (content, not landing chrome) per the
+amendment's own kelly-demotion carve-out, and real captures at
+integration will show the same real kelly in the same spots. ~340KB
+combined. `M3ProductCinema.tsx` renders them the `photoBg.ts` way: a
+solid cream-toned tint `<div>` behind (not the old dark pine gradient),
+an `<Image fill sizes=... className="object-cover">` on top, inside a
+fixed aspect-ratio container — a slow load or a future missing file
+never collapses the frame's layout, and never flashes dark.
 
 **Real Living-Annual captures (pristine, on-brand — not raw QA frames)
 swap in at integration**: drop the file in place at the same path, same

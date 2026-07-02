@@ -24,9 +24,13 @@
  *   depth parallax — see `FilmSlab`.
  * - **Hardware bezel** (`HardwareShell`) — the frame is a piece of desk
  *   hardware, not a bare glass rectangle: an outer `fl-glass-2` shell, an
- *   inset screen well the film column lives inside, a webcam-style dot in
- *   the top bezel (monitor variant) or a notch (phone variant), and a
- *   soft cream reflection strip standing in for a shadow blob.
+ *   inset screen well the film column lives inside, and a webcam-style dot
+ *   in the top bezel (monitor variant) or a notch (phone variant). An
+ *   earlier "reflection" strip under the frame (a blurred cream gradient
+ *   standing in for a shadow blob) was removed 2026-07-02 (pixel review) —
+ *   it rendered as a one-sided gray smudge rather than a clean symmetric
+ *   reflection; the bezel + ledger band already carry the depth without
+ *   it, matching `StaticCinema`'s fallback path, which never had one.
  * - **Ledger captions** (`Ledger`/`LedgerEntry`) — no progress dots. A
  *   left-anchored numbered ledger (01/02/03, `font-annual`) below the
  *   frame: a brass rule draws in and the caption writes in through the
@@ -37,23 +41,44 @@
  *   rotation overshoot past level before settling at 0°), docking
  *   overlapping the frame's lower-right edge. The main frame eases -2% in
  *   `x` over the same window — "the desk rebalances to make room."
- * - **Cream veil** (`CreamVeil`) — M2 hands off in cream, not a hard
- *   section cut: a full-band cream veil sits at opacity 1 at progress 0
- *   and lifts across the first sliver of scrub, reading as a camera move
- *   into the sage-ink depth rather than a seam.
  *
- * Screens are dignified neutral placeholders (see "Screenshot asset
- * contract" in CONTRACTS.md) — `public/marketing/first-light/screens/*.png`,
- * generated this lane (Pillow, one-off, not committed as a script): a
- * cream paper card, a sage-mist badge with a simple line glyph, a Georgia
- * serif screen label in sage-ink, a short tagline, and brass hairline
- * dividers — palette-true, zero fake data, zero product chrome. Real
- * BaseballHelm Living-Annual captures (which correctly DO show the
- * product's kelly — kelly is product-only content, not landing chrome per
- * the amendment) swap in at integration; no code changes needed on either
- * side, it's a pure asset swap. Every panel keeps a solid cream-toned tint
- * layer underneath the `<Image fill>` so a slow load never flashes an
- * empty/dark frame (CONTRACTS.md's photoBg pattern, screenshot variant).
+ * PAGE-ORDER UPDATE 2026-07-02 (foundation commit "M4 two-fields moves ahead
+ * of M3", Nick A-override): M3's predecessor moment is now M4 (dark-grounded
+ * two-fields photography), not cream M2. The section used to open on a
+ * full-band `CreamVeil` (a cream overlay at opacity 1 lifting across the
+ * first sliver of scrub) so the cream→sage-ink handoff read as one camera
+ * move rather than a hard cut. With a dark predecessor that veil would
+ * flash cream at the seam instead — removed entirely; the sage-ink band now
+ * flows directly from M4's own dark grounding, no handoff layer needed. The
+ * frame's existing dock-in (`HardwareFrame`'s `scale`/`y` over `[0,
+ * DOCK_END]`) still supplies a subtle entrance without any color veil.
+ *
+ * SPORT-OBVIOUS REPLICAS (⚠ A-OVERRIDE, Amendment 3 §2, Nick 2026-07-02
+ * 18:00: "doesn't give sports on landing" — M3's screens were generic
+ * label cards with no sport signal). `public/marketing/first-light/
+ * screens/*.png`, regenerated this lane (Pillow, one-off, not committed
+ * as a script) at the same paths/dimensions — a pure asset swap, zero
+ * code changes needed. Each is a dignified, palette-true idiom that reads
+ * as real sports software at a glance, not a stock screenshot:
+ *  - **command-center.png** — a golf leaderboard: POS/PLAYER/THRU/SG
+ *    TOTAL columns, five rows, tabular-nums SG figures (+1.8/−0.4), one
+ *    sage-deep leader row.
+ *  - **stats-center.png** — a baseball box score: the 1–9 innings grid
+ *    with R/H/E, two team rows, the batting team's current inning called
+ *    out with a hairline kelly tick.
+ *  - **decision-room.png** — the CoachHelm signal-list idiom: three rows,
+ *    each with a confidence pill (92%/78%/64%).
+ *  - **lift-lab.png** (phone) — a barbell (bar + plates) glyph over a
+ *    readiness score, meter, and a short check-in ledger.
+ * Kelly appears only as tiny accents inside these mockups (leader tick,
+ * live-inning tick, confidence pills, meter tick, sync dot) — legitimate
+ * per the amendment, since these ARE simulated product screenshots
+ * (content), not landing chrome; real captures at integration will show
+ * the same real kelly. Cream paper background, sage-ink type, brass
+ * hairline dividers throughout — same idiom as the rest of the page.
+ * Every panel keeps a solid cream-toned tint layer underneath the
+ * `<Image fill>` so a slow load never flashes an empty/dark frame
+ * (CONTRACTS.md's photoBg pattern, screenshot variant).
  *
  * Motion: transform/opacity only (`y`/`x`/`scale`/`rotate` on the column,
  * frame, and phone; `opacity` reserved for the dock-in, the cream veil,
@@ -159,10 +184,6 @@ const PHONE_ARC_END = 0.78;
 const PHONE_ROTATE_OVERSHOOT_AT = 0.74;
 const PHONE_OPACITY_IN_END = 0.64;
 
-/** How far the cream veil (M2 handoff) lifts before the frame is doing
- * anything else — a sliver of the scrub, not a beat. */
-const CREAM_VEIL_END = 0.07;
-
 const DWELL_PROGRESS_STOPS = [DOCK_END, SCREEN0_HOLD_END, HANDOFF_01_END, SCREEN1_HOLD_END, HANDOFF_12_END, SCREEN2_HOLD_END];
 const DWELL_Y_KEYFRAMES = ['0%', '0%', '-33.333%', '-33.333%', '-66.667%', '-66.667%'];
 
@@ -230,7 +251,6 @@ function ProductFrame({ progress }: { progress: MotionValue<number> }) {
 
   return (
     <>
-      <CreamVeil progress={progress} />
       <div className="relative mx-auto w-full max-w-4xl">
         <Eyebrow />
         <HardwareFrame progress={progress} columnY={columnY} handoff01={handoff01} handoff12={handoff12} />
@@ -238,28 +258,6 @@ function ProductFrame({ progress }: { progress: MotionValue<number> }) {
         <PhoneArc progress={progress} />
       </div>
     </>
-  );
-}
-
-/**
- * A full-band cream veil over the whole pinned viewport — opacity 1 at
- * progress 0, lifting across `[0, CREAM_VEIL_END]`. Reads as a camera move
- * from M2's cream into this section's sage-ink depth rather than a hard
- * section boundary. `-inset-6` (not `inset-0`) deliberately overshoots
- * `PinnedScrub`'s `px-6` inner padding — an absolutely positioned child's
- * containing block is the padding *box*, not the border box, so `inset-0`
- * alone would leave two 24px sage-ink slivers at the left/right edges
- * during the veil's window; the sticky container's own `overflow-hidden`
- * clips the deliberate overshoot back to exactly the viewport edge.
- */
-function CreamVeil({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [0, CREAM_VEIL_END], [1, 0]);
-  return (
-    <m.div
-      style={{ opacity, backgroundColor: 'var(--fl-cream)' }}
-      className="pointer-events-none absolute -inset-6 z-40"
-      aria-hidden="true"
-    />
   );
 }
 
@@ -342,17 +340,6 @@ function HardwareFrame({
       >
         <FilmColumn columnY={columnY} handoff01={handoff01} handoff12={handoff12} />
       </HardwareShell>
-
-      {/* Base reflection — a soft cream gradient strip instead of a shadow
-          blob; `scaleY(-1)` reads it as a mirrored surface underneath. */}
-      <div
-        aria-hidden="true"
-        className="mx-auto mt-1 h-10 w-[92%] rounded-b-[1.25rem] blur-sm"
-        style={{
-          background: 'linear-gradient(to bottom, rgba(var(--fl-cream-high-rgb), 0.06), transparent)',
-          transform: 'scaleY(-1)',
-        }}
-      />
     </m.div>
   );
 }
