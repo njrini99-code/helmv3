@@ -64,3 +64,11 @@ Running record of what was actually applied per wave, plus any deviations from t
 ### Task 1 — get_active_sessions() + resolve_admin_event() RPCs
 - Migration `20260701130000_bridge_rpcs_sessions_resolve.sql` applied to prod via Supabase MCP. No deviations (new objects; plan SQL was correct).
 - Both SECURITY DEFINER, internally gated on `is_super_admin()`, REVOKE PUBLIC/anon + GRANT authenticated. Verified: anon denied, authenticated allowed, secdef=true. (Calling under service_role raises Forbidden 42501 by design = pass.)
+
+### Tasks 2+ — server data layer code (Sonnet) — DONE
+- Commits `1aadf06cd` (database.ts RPC types), `9f47e8a61` (sentry-api server-only fail-soft), `21d4a0c9d` (vercel-api), `a475313db` (triage merge + resolve action).
+- 11/11 new tests; typecheck exit 0; lint 0 errors; gate-coverage contract covers `actions/triage.ts`.
+- Plan fix: the wave doc's sentry pagination test reused one `Response` (body read-once) — agent switched to `mockImplementation` (fresh Response per call), impl contract unchanged.
+- Deferred per file-map: `fetchVercelWebInsights` → W12; `fetchActiveSessions` → W7.
+
+**FOUNDATION (W0–W3) COMPLETE.** 4 prod migrations live + verified; auth gate + /admin shell + server data layer built; all gates green.
