@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
 import { getPostgameReview } from '@/lib/baseball/read-models/postgame';
 import { PostgameReviewClient } from '@/components/baseball/postgame/PostgameReviewClient';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 interface PostgamePageProps {
   searchParams: Promise<{ game?: string }>;
@@ -53,15 +54,17 @@ export default async function PostgameReviewPage({ searchParams }: PostgamePageP
 
   if (!team) {
     return (
-      <PostgameReviewClient
-        teamName="Your Program"
-        review={null}
-        recentGames={[]}
-        authorized={false}
-        unauthorizedReason="setup"
-        error={null}
-        selectedGameId={null}
-      />
+      <div className={fairwayScope('min-h-full')}>
+        <PostgameReviewClient
+          teamName="Your Program"
+          review={null}
+          recentGames={[]}
+          authorized={false}
+          unauthorizedReason="setup"
+          error={null}
+          selectedGameId={null}
+        />
+      </div>
     );
   }
 
@@ -72,16 +75,18 @@ export default async function PostgameReviewPage({ searchParams }: PostgamePageP
   const result = await getPostgameReview(supabase as any, team.id, gameId);
 
   return (
-    <PostgameReviewClient
-      teamName={team.name}
-      review={result.review}
-      recentGames={result.recentGames}
-      authorized={result.authorized}
-      // The team exists here, so an unauthorized result is a capability denial
-      // (the staffer lacks can_manage_stats), NOT a missing-program setup state.
-      unauthorizedReason="forbidden"
-      error={result.error ?? null}
-      selectedGameId={gameId}
-    />
+    <div className={fairwayScope('min-h-full')}>
+      <PostgameReviewClient
+        teamName={team.name}
+        review={result.review}
+        recentGames={result.recentGames}
+        authorized={result.authorized}
+        // The team exists here, so an unauthorized result is a capability denial
+        // (the staffer lacks can_manage_stats), NOT a missing-program setup state.
+        unauthorizedReason="forbidden"
+        error={result.error ?? null}
+        selectedGameId={gameId}
+      />
+    </div>
   );
 }
