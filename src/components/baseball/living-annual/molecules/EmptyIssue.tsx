@@ -23,6 +23,10 @@ export type EmptyIssueVariant =
   | 'documents'
   | 'calendar'
   | 'tasks'
+  | 'announcements'
+  | 'travel'
+  | 'discover'
+  | 'dev-plan'
   | 'generic';
 
 export interface EmptyIssuePreset {
@@ -73,6 +77,26 @@ export const EMPTY_ISSUE_PRESETS: Record<EmptyIssueVariant, EmptyIssuePreset> = 
   tasks: {
     title: 'Nothing due — yet.',
     body: 'Assignments and to-dos stack up here as they come in.',
+  },
+  announcements: {
+    title: 'No announcements yet.',
+    body: 'Team-wide notes and updates post here — the whole roster sees them the moment they land.',
+  },
+  travel: {
+    title: 'No trips on the itinerary.',
+    body: 'Lodging, transportation, and expenses collect here once a trip is scheduled.',
+  },
+  // War Room (recruiting) surface — the default `laneInk` below only special-cases
+  // `pipeline`, so a `discover` caller should pass `ink="pursuit"` explicitly
+  // (kept additive/preset-only per this task's scope, not folded into the default).
+  discover: {
+    title: 'No recruits surfaced yet.',
+    body: 'Widen a filter or search a new region — prospects load into this view as the board returns results.',
+  },
+  'dev-plan': {
+    title: 'The plan is being drafted.',
+    body: 'Skill targets, coach notes, and PR milestones collect here once a development plan is set.',
+    live: true,
   },
   generic: {
     title: 'Standing by.',
