@@ -19,7 +19,7 @@ Scaffold for the "First Light" landing redesign
 | `lib/photoBg.ts` | foundation (this lane) — shared, edit-with-care | LIVE |
 | `moments/M1Hero.tsx` | `landing-hero+nav` | STUB — replace in place |
 | `moments/M2Clarity.tsx` | `landing-editorial` | STUB — replace in place |
-| `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — pinned scrub set piece + palette-true placeholder screens (`screens/` below) |
+| `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — rebuilt 2026-07-02 to a film-strip column + hardware bezel + ledger captions (see the dedicated M3 section below) + palette-true placeholder screens (`screens/` below) |
 | `moments/M4TwoFields.tsx` | `landing-portals+cta` | STUB — replace in place |
 | `moments/M5Intelligence.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M6ForThePlayer.tsx` | `landing-editorial` | STUB — replace in place |
@@ -64,10 +64,14 @@ relative }`, and NOT `@layer components` — Next.js processes this file
 through its own independent PostCSS pass, so `@layer` throws without a
 matching `@tailwind components` directive in the SAME file). This means a
 consumer that needs `absolute`/`fixed`/`sticky` instead just adds that
-Tailwind utility alongside the `fl-glass-*` class and it wins (`PhoneArc`
-in M3ProductCinema does this — `className="fl-glass-2 ... absolute ..."`).
-Don't reintroduce a plain (non-`:where()`) `position` rule on `.fl-glass-*`
-— confirmed 2026-07-02 that broke exactly this case.
+Tailwind utility alongside the `fl-glass-*` class and it wins. (M3's
+2026-07-02 film-strip rebuild moved its `fl-glass-2` consumer —
+`HardwareShell` — behind a plain, in-flow wrapper instead of combining
+`fl-glass-2` with `absolute` on one element directly, so there's currently
+no live same-element example in this scaffold; the mechanism is still
+load-bearing for whichever future moment needs it next.) Don't reintroduce
+a plain (non-`:where()`) `position` rule on `.fl-glass-*` — confirmed
+2026-07-02 that broke exactly this case.
 
 **Budget:** at most 2 `fl-glass-*` layers visible in a single viewport
 (CLAUDE.md motion rules). Content placed inside a glass surface needs
@@ -213,6 +217,83 @@ Light lane — this module loads its own font instance instead.
   paragraph — M3's own captions are scrub-linked inline rather than
   through `MaskedReveal` since they're mutually-exclusive per-screen
   lines, not an additive paragraph; see that file's comments).
+
+## M3 · Product Cinema — film-strip architecture (rebuild 2026-07-02)
+
+Nick called the original crossfade-panels + progress-dots version "vibe
+coded and basic as hell." The rebuild (Fable spec) replaces the
+composition — not the primitives underneath — with "film through a
+projector, hardware on a desk." Read `M3ProductCinema.tsx`'s own file-header
+doc comment for the full component-by-component breakdown; this section is
+the contract downstream lanes should hold to if they touch the file again.
+
+- **Film column, not a crossfade.** `FilmColumn`/`FilmSlab` — the three
+  desktop screens are ONE absolutely-positioned `height: 300%` column
+  inside the frame's screen well. Its `y` steps 0% → -33.333% → -66.667%
+  (of its OWN height — that's exactly two well-heights of travel) across
+  two handoff windows, holding still (dwell) between them. **Opacity never
+  crossfades between screens** — they physically push each other out.
+  Opacity is reserved for exactly two things: the dock-in and the ledger
+  captions (never the screens themselves) — don't reintroduce a
+  screen-to-screen fade here.
+- **One timing map drives four surfaces.** The named progress constants at
+  the top of the file (`DOCK_END`, `SCREEN0_HOLD_END`, `HANDOFF_01_END`,
+  `SCREEN1_HOLD_END`, `HANDOFF_12_END`, `SCREEN2_HOLD_END`, plus the phone's
+  `PHONE_ARC_START`/`PHONE_ARC_END`) are the single source of truth for:
+  the column's dwell/handoff steps, each slab's depth-parallax counter
+  motion, the ledger caption crossfade, and the phone arc + frame
+  "rebalance" window. If a future lane retimes the scrub, change these
+  constants only — don't hand-tune a duplicate window somewhere else in
+  the file.
+- **Hardware, not a bare rectangle.** `HardwareShell` is the shared
+  presentational primitive (outer `fl-glass-2` shell, inset screen well,
+  and either a webcam-style dot (`variant="monitor"`) or a notch
+  (`variant="phone"`)) — both the scrubbed `HardwareFrame` and
+  `StaticCinema`'s stacked fallback wrap around it, so the two paths can't
+  drift apart. The frame's base reflection (a soft cream gradient strip,
+  `scaleY(-1)`) replaces the old shadow-blob idiom — don't reintroduce a
+  drop-shadow here.
+- **Ledger captions replace the progress dots.** `ProgressDot` is gone —
+  don't resurrect it. `Ledger`/`LedgerEntry` render a left-anchored,
+  numbered (`01`/`02`/`03`, `font-annual`) caption block below the frame,
+  sharing the frame's `max-w-4xl`. A brass rule draws in (`scaleX`,
+  origin-left) and the caption writes in through the existing
+  `fl-line-mask` pattern — both driven by the same per-screen
+  "activeness" `MotionValue` (0→1) that comes from the handoff windows
+  above, not a separately-tuned clock.
+- **The phone is a co-star, not a sticker.** `PhoneArc` docks late
+  (`[PHONE_ARC_START, PHONE_ARC_END]` = `[0.60, 0.78]`) with a curved
+  trajectory: x/y/scale ease in while `rotate` overshoots past level
+  (10° → -1.5° → 0°) rather than settling linearly. It overlaps the
+  frame's lower-right edge, above it in stacking order (`z-20` vs. the
+  frame's `z-10`). The main frame eases `x` by -2% over the same window
+  on the SAME transform as its dock-in scale/y (one element, one
+  `style={{ scale, y, x }}` — not a second wrapper) — "the desk
+  rebalances to make room."
+- **Cream veil, not a hard cut.** `CreamVeil` is a full-band
+  `var(--fl-cream)` overlay at opacity 1 at progress 0, lifting across
+  `[0, CREAM_VEIL_END]` (0.07) — M2's cream hands off into this section's
+  sage-ink depth as a camera move, not a section boundary. It deliberately
+  overshoots `PinnedScrub`'s `px-6` inner padding (`-inset-6`, not
+  `inset-0`) because an absolutely positioned child's containing block is
+  the padding *box*; the sticky container's `overflow-hidden` clips the
+  overshoot back to the exact viewport edge. If `PinnedScrub`'s
+  `innerClassName` padding value ever changes, this offset needs to change
+  with it.
+- **`noUncheckedIndexedAccess` traps, already worked around** — worth
+  knowing if you touch this file again: `SCREENS` is typed as a literal
+  3-tuple (not `CinemaScreen[]`) specifically so `Ledger`'s
+  `SCREENS[0]`/`[1]`/`[2]` literal-index reads stay exact; the multi-input
+  `useTransform([mvA, mvB], (values) => ...)` calls need explicit
+  `useTransform<I, O>(...)` type arguments (the overload can't infer `I`
+  from its union input-array type) and `values[n] ?? 0` defaults (array
+  indexing is `T | undefined` under this flag even on a statically
+  two-element array).
+- **Static fallback holds the same design language.** `StaticCinema`
+  wraps all four screenshots (three desktop + Lift Lab) in the same
+  `HardwareShell` chrome and gives each its own numbered ledger caption
+  (`StaticLedgerEntry`) — no dots, no motion, reads as one coherent system
+  with the scrubbed version rather than a simplified stand-in.
 
 ## Photo asset contract
 
