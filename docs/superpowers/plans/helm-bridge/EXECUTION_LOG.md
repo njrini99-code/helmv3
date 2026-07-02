@@ -102,7 +102,8 @@ Running record of what was actually applied per wave, plus any deviations from t
 
 ## W15/W16 — Feature Health + Total Coverage (Fable-planned, golf+coachhelm) — QUEUED after W13
 - Coverage plan DONE (Fable, noise-disciplined + golf-scoped). Docs written (commit pending between-agent window): `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` (38 features, coverage matrix for 424 actions, Noise-Discipline Charter N1–N6, health state machine, board design, baseball/lifting deferred appendix), `waves/w15-total-coverage.md` (16 tasks), `waves/w16-feature-health-board.md` (6 tasks).
-- Migration (to review+apply at W15): `20260702090000_admin_events_feature_health.sql` — admin_events.feature col + 2 partial indexes + get_feature_health(jsonb) SECURITY DEFINER RPC (is_super_admin-gated; heartbeat via HARD-allowlisted dynamic SQL golf_% only; only error/critical → dots; re-asserts W2 ACL). Additive.
+- Migration `20260702090000_admin_events_feature_health.sql` REVIEWED + APPLIED to prod (verified: feature col + 2 indexes + get_feature_health RPC, anon-denied/authenticated-ok, W2 ACL re-asserted). Dynamic-SQL heartbeat is injection-safe (triple guard: golf_%/allowlist prefix + information_schema existence + format %I quoting; input ≤100 features/≤64-char keys). Noise discipline in SQL: only error/critical → fingerprints/dots; warnings + rls_denials separate counters. Commit held for between-agent window.
+- ★ ALL Helm Bridge prod migrations now applied (W0/W1/W2/W3/W7/W11/W15). Only W14 hardening (revoke anon on ~49 SECURITY DEFINER fns) remains — HELD.
 - Maps found real scale: golf 34 feat/487 actions (docs badly undercounted), none wrapped yet; fetchAllRowsResult drops .code (widen first); annotate known "looks-broken-but-isn't" gaps so dots don't false-red. Baseball 52/362 + lifting 15/137 = deferred.
 
 ## W8 — Golf Tab + Tracer + CoachHelm (no migration) — DONE
@@ -135,8 +136,15 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Phone-responsive: deployments table overflow-x-auto + min-w-[720px] + sticky left-0 first (Commit) col; panels stack. Used Surface/StatTile/StatusPill (no raw bg-white).
 - Owner env (fail-soft): VERCEL_API_TOKEN/PROJECT_ID/TEAM_ID (deployments+vitals); Sentry session tracking (release health).
 
-## W13 — Daily Digest (dedicated non-CRM transport; no migration)
-**Status:** in progress (Sonnet).
+## W13 — Daily Digest (dedicated non-CRM transport; no migration) — DONE
+- Commits `377f4a07` (pure digest builder), `d9879844` (dedicated ops transport, own secret), `adc440d5` (daily cron on dedicated transport). 14 relevant tests; typecheck exit 0; lint 0 errors; all contract + gate-coverage tests green.
+- CRM boundary CLEAN: transport imports only `resend` npm + local type; envs OPS_DIGEST_RESEND_API_KEY/OPS_DIGEST_TO/OPS_DIGEST_FROM only; zero crm/**, zero RESEND_*/GMAIL_SA_*/CRM_UNSUB_SECRET.
+- Noise: reds-first (failed/overdue crons, failing integrity, error/critical + top-5 fingerprint-grouped incidents), signups, 1-line activity; "All clear" on green nights (not silent — a missing email = dead cron). Fail-soft skip wrapped in recordJobRun. Mobile-friendly email (single-col inline CSS, cream/green/red).
+- Owner env (fail-soft): OPS_DIGEST_RESEND_API_KEY + OPS_DIGEST_TO (+ optional OPS_DIGEST_FROM). Cron 10:00 UTC.
+
+**★ TAB PHASE COMPLETE (W5–W13, minus W9 baseball-held).** Overview, Errors, Auth, Golf+Tracer+CoachHelm, Users+impersonation, Jobs+Integrity, Deploys, Digest — all built, all gates green. Remaining: W15 total coverage → W16 Feature Health board → mobile+ratchet polish sweep → draft-PR push. W14 retirement + W9 baseball HELD.
+
+## W15 — Total Error-Capture Coverage (golf+coachhelm; migration applied) — foundation starting
 
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
 - Task 1 migration `20260701140000_revoke_user_sessions_rpc.sql` applied to prod (SECURITY DEFINER, is_super_admin-gated, DELETEs auth.sessions + writes audit_log; anon denied, authenticated granted — asserted). Verified audit_log col types (record_id/user_id uuid, new_data jsonb) before apply.
