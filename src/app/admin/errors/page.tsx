@@ -100,7 +100,7 @@ export default async function ErrorsPage({
                       {issue.level}
                     </StatusPill>
                     <span className="w-20 shrink-0 font-fw-mono text-xs tabular-nums text-warm-500">{issue.shortId}</span>
-                    <span className="min-w-0 flex-1 basis-full truncate text-sm text-warm-900 sm:basis-auto">{issue.title}</span>
+                    <span className="min-w-0 flex-1 basis-full break-words text-sm text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">{issue.title}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                       {issue.userCount} users · {issue.count} events
                     </span>

@@ -77,7 +77,7 @@ async function AuthBody() {
                     <StatusPill tone={isLocked ? 'danger' : 'warning'} dot size="sm">
                       {isLocked ? 'locked' : 'failed'}
                     </StatusPill>
-                    <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{l.email}</span>
+                    <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">{l.email}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
                       {l.failed_attempts} failed
                     </span>
@@ -114,7 +114,7 @@ async function AuthBody() {
                   <span className="w-16 shrink-0 font-fw-mono text-eyebrow uppercase text-warm-500">
                     {row.event_type}
                   </span>
-                  <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">
+                  <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
                     {row.title}
                     {row.user_email ? ` — ${row.user_email}` : ''}
                   </span>

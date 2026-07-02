@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { SessionRow } from '@/lib/admin/data/auth';
 import { revokeSessionsForUser } from '@/app/admin/actions/sessions';
 import { Button, Inset } from '@/components/fairway';
+import { LocalTime } from './LocalTime';
 
 /**
  * Live auth.sessions listing with a two-step confirm-then-revoke flow.
@@ -24,8 +25,8 @@ export function SessionsPanel({ sessions }: { sessions: SessionRow[] }) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-warm-900">{s.email}</p>
               <p className="font-fw-mono text-xs tabular-nums text-warm-500">
-                started {new Date(s.created_at).toLocaleString()} · refreshed{' '}
-                {new Date(s.updated_at).toLocaleString()}
+                started <LocalTime iso={s.created_at} variant="datetime" /> · refreshed{' '}
+                <LocalTime iso={s.updated_at} variant="datetime" />
               </p>
             </div>
             {confirming === s.user_id ? (
