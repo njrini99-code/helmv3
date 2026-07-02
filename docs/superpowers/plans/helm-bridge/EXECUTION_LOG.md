@@ -36,3 +36,9 @@ Running record of what was actually applied per wave, plus any deviations from t
 
 ### Owner action needed at W1 merge
 - Set `SUPER_ADMIN_USER_IDS=b9673959-1c90-405b-93f7-b468a9f4daa3` in Vercel (Production + Preview), server-only. Gate fails CLOSED without it (nobody enters — correct failure mode).
+
+### Tasks 2–5 — code (Sonnet) — DONE
+- Commits: `ffe2dd300` (edge-safe helpers, 10 tests), `d92dfd40e` (requireSuperAdmin, 5 tests), `fe0052a22` (middleware /admin gate + proxy prefix), `51d853b64` (/admin shell: layout+page+motion provider + gate-coverage contract test).
+- No deviations: plan line numbers matched; `AdminNativeGuard` named export; `framer-motion` (not motion/react); warm tokens exist.
+- Gates: typecheck exit 0; lint 0 errors / 2275 warns (< 6000 ceiling); `test:run` only the 6 pre-existing failures; `nav-capability-gating` middleware contract 9/9.
+- Live browser smoke deferred to the foundation checkpoint.
