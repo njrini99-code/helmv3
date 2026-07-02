@@ -5,6 +5,7 @@ import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelNoData } from '../../_components/PanelStates';
+import { CopyReportButton } from '../../_components/CopyReportButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ export default async function FingerprintDetailPage({
   const fingerprint = decodeURIComponent(rawFingerprint);
 
   async function Body() {
-    const { events } = await fetchFingerprintDetail(rawFingerprint);
+    const { events, report } = await fetchFingerprintDetail(rawFingerprint);
 
     if (events.length === 0) {
       return (
@@ -43,7 +44,10 @@ export default async function FingerprintDetailPage({
 
     return (
       <>
-        <p className="text-sm text-warm-600">{events.length} events · affected users link to Users & Teams</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-warm-600">{events.length} events · affected users link to Users & Teams</p>
+          <CopyReportButton report={report} label="Copy full report" size="md" />
+        </div>
         <ul className="mt-3 space-y-3">
           {events.map((e) => (
             <Surface as="li" key={e.id} padding="sm">

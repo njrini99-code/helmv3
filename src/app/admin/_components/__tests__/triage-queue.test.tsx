@@ -23,12 +23,14 @@ const appItem: TriageItem = {
   sport: 'golf', occurrences: 3, affectedUsers: 2,
   firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T02:00:00Z',
   permalink: null, eventIds: ['e1', 'e2', 'e3'], substatus: null,
+  report: '# Incident report: savePartialRound failed',
 };
 const sentryItem: TriageItem = {
   key: 'sentry:s1', origin: 'sentry', title: 'TypeError in rounds', severity: 'error',
   sport: null, occurrences: 40, affectedUsers: 7,
   firstSeen: '2026-06-30T00:00:00Z', lastSeen: '2026-07-01T01:00:00Z',
   permalink: 'https://sentry.io/x', eventIds: [], substatus: 'regressed',
+  report: '# Incident report: TypeError in rounds',
 };
 
 describe('TriageQueue', () => {
