@@ -1,26 +1,32 @@
 'use client';
 
 /**
- * BaseballHelm front-door auth shell — "The Yard at Dusk" (docs/baseball/
- * ENTRY_SCENES_DESIGN.md Scene 1 + docs/LANDING_ENTRY_WORLD_DESIGN.md
- * "Continuity into the app").
+ * BaseballHelm front-door auth shell — "The Practice Field at First
+ * Light" (docs/baseball/ENTRY_SCENES_DESIGN.md ⚠ AMENDMENT + docs/
+ * LANDING_ENTRY_WORLD_DESIGN.md ⚠ SAGE & CREAM AMENDMENT — "Continuity
+ * into the app").
  *
  * Shared chrome for every src/app/baseball/(auth)/ page (login, signup,
  * complete-signup, forgot-password, reset-password, demo): a full-bleed
- * painterly scene (`<YardScene />` desktop / `<HomePlateScene />` <=md — one
- * mounts, never both), a warm `fl-glass-3` panel (right-floating on desktop,
- * bottom-sheet on mobile) carrying a Fraunces serif welcome line + a
- * time-aware greeting, and the footer link row. Baseball-only — golf keeps
- * its own separate `(auth)` chrome (`.bg-auth-golf` / `.auth-glass-card` in
- * globals.css), untouched.
+ * abstract scene (`<EntryField />` — ONE responsive component, both
+ * breakpoints), a warm CREAM `fl-glass-3` panel (right-floating on
+ * desktop, bottom-sheet on mobile) carrying a Fraunces serif welcome
+ * line in sage-ink + a time-aware greeting, and the footer link row.
+ * Baseball-only — golf keeps its own separate `(auth)` chrome
+ * (`.bg-auth-golf` / `.auth-glass-card` in globals.css), untouched.
  *
  * Composes the Living Annual kit (`@/components/baseball/living-annual`) —
  * Reveal for the mount stagger, Eyebrow/HairlineRule for the masthead accent
- * — plus the shared First Light glass grammar/serif module
- * (`@/components/marketing/first-light`) so the front door breathes on the
- * same glass + serif + green material system as the marketing landing and
- * the rest of the redesigned product (design doc: "a visitor never feels a
- * seam").
+ * (recolored to sage via explicit `className` overrides below — their
+ * `ink` prop still resolves to the shared kit's kelly/clay tokens
+ * internally, which the SAGE & CREAM amendment retires from all
+ * landing/auth chrome; a trailing `className` wins the twMerge dedupe,
+ * so no edit to the shared living-annual atoms was needed) — plus the
+ * shared First Light glass grammar/serif module
+ * (`@/components/marketing/first-light`) so the front door breathes on
+ * the same glass + serif + sage material system as the marketing
+ * landing and the rest of the redesigned product (design doc: "a
+ * visitor never feels a seam").
  */
 import type { ReactNode, CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
@@ -28,26 +34,29 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { Eyebrow, HairlineRule, Reveal } from '@/components/baseball/living-annual';
-import { YardScene } from '@/components/baseball/scenes/YardScene';
-import { HomePlateScene } from '@/components/baseball/scenes/HomePlateScene';
-import type { SceneVariant } from '@/components/baseball/scenes/YardScene';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { EntryField } from '@/components/baseball/scenes/EntryField';
 import { flFraunces } from '@/components/marketing/first-light/fonts';
-import { getGreeting, getRememberedFirstName, resolveSceneVariant } from '@/lib/entry/greeting';
+import {
+  getGreeting,
+  getRememberedFirstName,
+  resolveSceneVariant,
+  type SceneVariant,
+} from '@/lib/entry/greeting';
 import { cn } from '@/lib/utils';
 import '@/components/marketing/first-light/first-light.css';
+import '@/styles/baseball-auth.css';
 
 export type AuthInk = 'team' | 'pursuit';
 
-const INK_VAR: Record<AuthInk, string> = {
-  team: 'var(--grade-plus)',
-  pursuit: 'var(--pursuit-ink)',
-};
-
-const INK_GLOW: Record<AuthInk, string> = {
-  team: 'bg-grade-plus/15',
-  pursuit: 'bg-pursuit/15',
-};
+// Both lanes resolve to the same sage-deep accent on auth/landing chrome
+// — the SAGE & CREAM amendment demotes kelly (team) AND clay (pursuit)
+// to product-only; landing/auth chrome never uses either directly. The
+// `AuthInk` prop/type is kept (call sites like the demo page still pass
+// `ink="pursuit"`) purely so downstream call sites don't need to change,
+// but it no longer produces a visually distinct color.
+const AUTH_ACCENT_VAR = 'var(--fl-sage-deep)';
+const AUTH_ACCENT_CLASS = 'text-[color:var(--fl-sage-deep)]';
+const AUTH_ACCENT_BG_CLASS = 'bg-[color:var(--fl-sage-deep)]';
 
 // ---------------------------------------------------------------------------
 // BaseballAuthShell — full-bleed scene + the floating/bottom-sheet glass panel
@@ -90,8 +99,11 @@ export function BaseballAuthShell({
   children,
   footer,
 }: BaseballAuthShellProps) {
-  const inkStyle = { '--auth-accent': INK_VAR[ink] } as CSSProperties;
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  // `ink` no longer selects a distinct color (see AUTH_ACCENT_VAR above) —
+  // it's still passed through to Eyebrow/HairlineRule below for API
+  // compatibility, but their color always comes from an explicit trailing
+  // `className` override (twMerge dedupe), not from `ink` itself.
+  const inkStyle = { '--auth-accent': AUTH_ACCENT_VAR } as CSSProperties;
 
   // Time-aware personalization (docs/baseball/ENTRY_SCENES_DESIGN.md family
   // rule #6). Server + first client render agree on the neutral defaults
@@ -99,7 +111,7 @@ export function BaseballAuthShell({
   // swaps in the real values right after mount — a plain prop/text update,
   // not a structural DOM change, so it never surfaces as a hydration error
   // (see CONTRACTS.md's reduced-motion section for the same reasoning).
-  const [variant, setVariant] = useState<SceneVariant>('dusk');
+  const [variant, setVariant] = useState<SceneVariant>('dawn');
   const [greeting, setGreeting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -128,14 +140,12 @@ export function BaseballAuthShell({
         {/* Full-bleed scene — fixed so it never stretches under tall content
             (the signup panel can run taller than 100dvh on small screens)
             and reads as a held frame while the page scrolls, echoing the
-            landing's M3 "the frame holds" language. Exactly one scene
-            mounts per viewport. */}
+            landing's M3 "the frame holds" language. ONE responsive
+            EntryField handles both breakpoints — no desktop/mobile
+            component switch (the amendment: "portrait recomposition via
+            CSS/viewBox handling, not a second component"). */}
         <div aria-hidden className="fixed inset-0 z-0">
-          {isDesktop ? (
-            <YardScene idSuffix={`${sceneIdSuffix}-yard`} variant={variant} />
-          ) : (
-            <HomePlateScene idSuffix={`${sceneIdSuffix}-home-plate`} variant={variant} />
-          )}
+          <EntryField idSuffix={`${sceneIdSuffix}-field`} variant={variant} />
         </div>
 
         <div
@@ -160,7 +170,11 @@ export function BaseballAuthShell({
             >
               <Reveal staggerIndex={0} className="mb-6 flex flex-col items-center text-center">
                 <div className="relative mb-3">
-                  <div aria-hidden className={cn('absolute inset-0 rounded-full blur-2xl scale-150', INK_GLOW[ink])} />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 rounded-full blur-2xl scale-150"
+                    style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.15)' }}
+                  />
                   <div className="relative flex h-11 w-11 items-center justify-center">
                     <Image
                       src="/helm-baseball-logo.png"
@@ -175,7 +189,7 @@ export function BaseballAuthShell({
                 </div>
 
                 {eyebrow ? (
-                  <Eyebrow ink={ink} className="mb-2">
+                  <Eyebrow ink={ink} className={cn('mb-2', AUTH_ACCENT_CLASS)}>
                     {eyebrow}
                   </Eyebrow>
                 ) : null}
@@ -194,7 +208,11 @@ export function BaseballAuthShell({
                   {welcomeLine}
                 </h1>
 
-                <HairlineRule ink={ink} weight={2} className={cn('mt-3 rounded-full', hero ? 'w-16' : 'w-12')} />
+                <HairlineRule
+                  ink={ink}
+                  weight={2}
+                  className={cn('mt-3 rounded-full', AUTH_ACCENT_BG_CLASS, hero ? 'w-16' : 'w-12')}
+                />
 
                 {tagline ? (
                   <p className="mt-3 max-w-[360px] text-sm leading-relaxed text-warm-600">{tagline}</p>
@@ -287,7 +305,7 @@ export function AuthFooterLinks({
           {switchLabel}{' '}
           <Link
             href={switchHref}
-            className="rounded font-semibold text-grade-plus transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
+            className="rounded font-semibold entry-accent-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
           >
             {switchCta}
           </Link>
@@ -328,7 +346,11 @@ export function AuthFooterLinks({
 // ---------------------------------------------------------------------------
 
 export function AuthPendingDots({ label, ink = 'team' }: { label: string; ink?: AuthInk }) {
-  const dot = ink === 'pursuit' ? 'bg-pursuit' : 'bg-grade-plus';
+  // Both lanes render the same sage-deep dot on auth chrome — see the
+  // `AUTH_ACCENT_*` comment above `BaseballAuthShell`. `ink` is kept for
+  // call-site compatibility only.
+  void ink;
+  const dot = 'bg-[color:var(--fl-sage-deep)]';
   return (
     <span role="status" aria-label={label} className="flex items-center gap-1.5">
       <span className={cn('h-2 w-2 rounded-full skeleton-shimmer', dot)} style={{ animationDelay: '0ms' }} />
