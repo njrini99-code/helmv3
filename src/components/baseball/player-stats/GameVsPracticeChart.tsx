@@ -1,25 +1,20 @@
 'use client';
 
 /**
- * GameVsPracticeChart
- * 
- * Bar chart comparing practice vs game batting averages
- * using Recharts for visualization.
+ * GameVsPracticeChart — practice vs. game slash-line comparison.
+ *
+ * Living Annual migration (execution plan §3.1 my-stats: "GameVsPractice →
+ * paired StatReadout/SlashLine, NOT ClimbArc" — this is a side-by-side
+ * comparison, not a trend over time). Was a recharts weekly-bucketed bar
+ * chart of AVG only; this now derives a full practice-side and game-side
+ * `<SlashLine>` (AVG/OBP/SLG) from the SAME raw `BaseballPlayerStats[]` the
+ * caller already fetched — no new reads — plus the game-minus-practice AVG
+ * gap as a single `<StatReadout>` figure (positive reads green, the "shows up
+ * bigger for the games that count" tell).
  */
-
 import { useMemo } from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  Cell,
-} from 'recharts';
 import { cn } from '@/lib/utils';
+import { PaperCard, Eyebrow, SlashLine, StatReadout, HairlineRule, EmptyIssue, formatRate } from '@/components/baseball/living-annual';
 import type { BaseballPlayerStats } from '@/lib/types';
 
 interface GameVsPracticeChartProps {
@@ -27,198 +22,102 @@ interface GameVsPracticeChartProps {
   className?: string;
 }
 
-interface TooltipPayload {
-  name?: string;
-  value?: number;
-  color?: string;
-  payload?: {
-    date: string;
-    practiceAvg: number;
-    gameAvg: number;
-    practiceAB: number;
-    gameAB: number;
+interface SideTotals {
+  atBats: number;
+  hits: number;
+  walks: number;
+  hbp: number;
+  sacFlies: number;
+  doubles: number;
+  triples: number;
+  homeRuns: number;
+  sessions: number;
+}
+
+function emptyTotals(): SideTotals {
+  return { atBats: 0, hits: 0, walks: 0, hbp: 0, sacFlies: 0, doubles: 0, triples: 0, homeRuns: 0, sessions: 0 };
+}
+
+/** Same AVG/OBP/SLG formulas used across the my-stats surface, aggregated over a side's totals. */
+function deriveSlash(t: SideTotals): { avg: number; obp: number; slg: number } {
+  const pa = t.atBats + t.walks + t.hbp + t.sacFlies;
+  const totalBases = t.hits + t.doubles + t.triples * 2 + t.homeRuns * 3;
+  return {
+    avg: t.atBats > 0 ? t.hits / t.atBats : NaN,
+    obp: pa > 0 ? (t.hits + t.walks + t.hbp) / pa : NaN,
+    slg: t.atBats > 0 ? totalBases / t.atBats : NaN,
   };
 }
 
-function CustomTooltip({ active, payload, label }: {
-  active?: boolean;
-  payload?: TooltipPayload[];
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-
-  const data = payload[0]?.payload;
-  if (!data) return null;
-
+function SideColumn({ label, totals, className }: { label: string; totals: SideTotals; className?: string }) {
+  const slash = deriveSlash(totals);
   return (
-    <div className="bg-cream-50/92 backdrop-blur-xl border border-warm-200/45 rounded-xl shadow-lg px-4 py-3 min-w-[180px]">
-      <p className="text-sm font-medium text-warm-900 mb-2">{label}</p>
-      <div className="space-y-1.5">
-        {data.practiceAB > 0 && (
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#0e7490]" />
-              <span className="text-xs text-warm-600">Practice</span>
-            </div>
-            <span className="text-sm font-semibold text-warm-900">
-              {data.practiceAvg.toFixed(3)}
-            </span>
-          </div>
-        )}
-        {data.gameAB > 0 && (
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary-600" />
-              <span className="text-xs text-warm-600">Game</span>
-            </div>
-            <span className="text-sm font-semibold text-warm-900">
-              {data.gameAvg.toFixed(3)}
-            </span>
-          </div>
-        )}
+    <div className={cn('flex flex-col gap-3', className)}>
+      <Eyebrow ink="team">{label}</Eyebrow>
+      <SlashLine avg={slash.avg} obp={slash.obp} slg={slash.slg} leader="avg" size="md" />
+      <div className="flex items-baseline gap-2">
+        <StatReadout value={totals.atBats} decimals={0} ariaLabel={`${label} at-bats`} className="text-body-sm" />
+        <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+          AB · {totals.sessions} {totals.sessions === 1 ? 'session' : 'sessions'}
+        </span>
       </div>
     </div>
   );
 }
 
 export function GameVsPracticeChart({ stats, className }: GameVsPracticeChartProps) {
-  const chartData = useMemo(() => {
-    // Group stats by week
-    const weeklyData = new Map<string, {
-      practiceHits: number;
-      practiceAB: number;
-      gameHits: number;
-      gameAB: number;
-    }>();
-
-    stats.forEach(stat => {
-      const date = new Date(stat.session_date);
-      // Get the start of the week (Sunday)
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      const weekKey = weekStart.toISOString().split('T')[0] ?? '';
-
-      const existing = weeklyData.get(weekKey) || {
-        practiceHits: 0,
-        practiceAB: 0,
-        gameHits: 0,
-        gameAB: 0,
-      };
-
-      if (stat.stat_type === 'practice') {
-        existing.practiceHits += stat.hits;
-        existing.practiceAB += stat.at_bats;
-      } else if (stat.stat_type === 'game') {
-        existing.gameHits += stat.hits;
-        existing.gameAB += stat.at_bats;
-      }
-
-      weeklyData.set(weekKey, existing);
+  const { practice, game } = useMemo(() => {
+    const p = emptyTotals();
+    const g = emptyTotals();
+    stats.forEach((s) => {
+      const bucket = s.stat_type === 'game' ? g : s.stat_type === 'practice' ? p : null;
+      if (!bucket) return;
+      bucket.atBats += s.at_bats;
+      bucket.hits += s.hits;
+      bucket.walks += s.walks;
+      bucket.hbp += s.hit_by_pitch;
+      bucket.sacFlies += s.sacrifice_flies;
+      bucket.doubles += s.doubles;
+      bucket.triples += s.triples;
+      bucket.homeRuns += s.home_runs;
+      bucket.sessions += 1;
     });
-
-    // Convert to chart format, sorted by date
-    return Array.from(weeklyData.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-8) // Last 8 weeks
-      .map(([weekKey, data]) => {
-        const date = new Date(weekKey);
-        return {
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          practiceAvg: data.practiceAB > 0 ? data.practiceHits / data.practiceAB : 0,
-          gameAvg: data.gameAB > 0 ? data.gameHits / data.gameAB : 0,
-          practiceAB: data.practiceAB,
-          gameAB: data.gameAB,
-        };
-      });
+    return { practice: p, game: g };
   }, [stats]);
 
-  if (chartData.length === 0) {
-    return (
-      <div className={cn('glass-standard rounded-2xl p-8 text-center', className)}>
-        <p className="text-warm-500">No comparison data available yet.</p>
-        <p className="text-sm text-warm-400 mt-1">
-          Log both practice and game sessions to see the comparison.
-        </p>
-      </div>
-    );
+  if (stats.length === 0) {
+    return <EmptyIssue variant="stats" className={className} />;
   }
 
+  const practiceSlash = deriveSlash(practice);
+  const gameSlash = deriveSlash(game);
+  const gap =
+    Number.isFinite(practiceSlash.avg) && Number.isFinite(gameSlash.avg) ? gameSlash.avg - practiceSlash.avg : null;
+
   return (
-    <div className={cn('glass-standard rounded-2xl p-6', className)}>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-warm-900">Game vs Practice</h3>
-          <p className="text-sm text-warm-500">Weekly batting average comparison</p>
-        </div>
+    <PaperCard className={cn('p-6', className)}>
+      <Eyebrow ink="team">Game vs Practice</Eyebrow>
+
+      <div className="mt-4 grid grid-cols-1 gap-8 sm:grid-cols-2">
+        <SideColumn label="Practice" totals={practice} />
+        <SideColumn label="Game" totals={game} className="sm:border-l sm:border-[color:var(--hairline)] sm:pl-8" />
       </div>
 
-      <div className="h-64" role="img" aria-label="Game vs practice batting average chart">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 8, right: 8, bottom: 4, left: 0 }}
-            barCategoryGap="20%"
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#e7e5e4"
-              strokeOpacity={0.6}
-              vertical={false}
+      {gap !== null ? (
+        <>
+          <HairlineRule ink="hairline" className="mt-6" />
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+              Game vs. practice gap
+            </span>
+            <StatReadout
+              value={`${gap >= 0 ? '+' : ''}${formatRate(gap, 3)}`}
+              ariaLabel="Game versus practice average gap"
+              className={cn('text-body-lg', gap >= 0 && 'text-grade-plus')}
             />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 11, fill: '#78716c' }}
-              axisLine={{ stroke: '#d6d3d1' }}
-              tickLine={false}
-            />
-            <YAxis
-              domain={[0, 0.5]}
-              tick={{ fontSize: 11, fill: '#78716c' }}
-              axisLine={{ stroke: '#d6d3d1' }}
-              tickLine={false}
-              tickFormatter={(v) => v.toFixed(3)}
-              width={50}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              wrapperStyle={{ paddingTop: '16px' }}
-              iconType="circle"
-              iconSize={8}
-              formatter={(value: string) => (
-                <span className="text-xs text-warm-600">{value}</span>
-              )}
-            />
-            <Bar
-              dataKey="practiceAvg"
-              name="Practice"
-              fill="#0e7490"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={32}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`practice-${index}`}
-                  fillOpacity={entry.practiceAB > 0 ? 1 : 0.3}
-                />
-              ))}
-            </Bar>
-            <Bar
-              dataKey="gameAvg"
-              name="Game"
-              fill="#16A34A"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={32}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`game-${index}`}
-                  fillOpacity={entry.gameAB > 0 ? 1 : 0.3}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+          </div>
+        </>
+      ) : null}
+    </PaperCard>
   );
 }
