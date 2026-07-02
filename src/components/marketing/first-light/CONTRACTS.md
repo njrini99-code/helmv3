@@ -83,18 +83,58 @@ second one; it's a cheap layer but doesn't need duplicating).
 `background` inline for a specific ink (M2 does this for its green
 ledger rules).
 
-## Palette (CSS custom properties, `first-light.css` `:root`)
+## Palette v2 — SAGE & CREAM (CSS custom properties, `first-light.css` `:root`)
+
+**⚠ Respec 2026-07-02 (Nick):** the landing moved from dusk-pine drama to
+morning sage-and-cream calm — see the ⚠ AMENDMENT at the top of
+`docs/LANDING_ENTRY_WORLD_DESIGN.md` (THE contract; overrides the older
+"deep pine bands / kelly-as-only-accent" language anywhere else in that
+doc or in this file's history).
+
+**The mood is daylight.** The page lives in morning light now — if any
+frame reads dark, moody, or murky, it's off-spec; fix it before shipping.
 
 | Var | Hex | Use |
 |---|---|---|
-| `--fl-ecru` | `#F5F1E6` | Ecru/bone field |
-| `--fl-pine` | `#143527` | Deep pine bands |
-| `--fl-clay` | `#B0703C` | Warm clay accent (baseball-adjacent) |
-| `--fl-green` | `#16A34A` | The ONLY saturated accent — CTAs + live signals. Matches Tailwind `primary-600`. |
-| `--fl-brass` | `#B08D57` | Glass-edge hairlines |
+| `--fl-ecru` / `--fl-cream` | `#F5F1E6` | Cream field (unchanged) — `--fl-cream` is the first-class name, `--fl-ecru` an equal-value alias |
+| `--fl-cream-high` | `#FBF9F2` | Cream high — glass highlights, replaces white |
+| `--fl-sage-mist` | `#E4E9DD` | Sage mist — section tints, glass tint |
+| `--fl-sage` | `#94A38A` | Sage — rules, icons, decorative/large type ONLY (never body text) |
+| `--fl-sage-deep` | `#5C6E58` | Sage deep — CTAs + emphasis, cream text |
+| `--fl-sage-ink` | `#2E3A2C` | Sage ink — dark bands + ALL body/display ink |
+| `--fl-clay` | `#B0703C` | Warm clay accent — demoted to trace only (M4 baseball-diptych grade) |
+| `--fl-brass` | `#B08D57` | Glass-edge hairlines (kept) |
 
-Each also has a `-rgb` sibling (e.g. `--fl-pine-rgb: 20, 53, 39`) for
-`rgba(var(--fl-pine-rgb), 0.5)` compositing.
+**Legacy aliases (repointed, not removed):** `--fl-pine` and `--fl-green`
+keep their names so in-flight lane work referencing them recolors
+automatically — no find/replace needed in moment files that already
+shipped.
+
+| Legacy var | Old value | Repointed to (2026-07-02) |
+|---|---|---|
+| `--fl-pine` | `#143527` (deep pine) | `#2E3A2C` (`--fl-sage-ink`) |
+| `--fl-green` | `#16A34A` (kelly) | `#5C6E58` (`--fl-sage-deep`) |
+
+Each var also has a `-rgb` sibling (e.g. `--fl-sage-ink-rgb: 46, 58, 44`)
+for `rgba(var(--fl-sage-ink-rgb), 0.5)` compositing.
+
+**Read-mapping — wherever older spec text or code comments say:**
+- **deep pine `#143527`** → read **sage-ink `#2E3A2C`** (`--fl-pine` /
+  `--fl-sage-ink`, same value now).
+- **kelly `#16A34A` CTA / accent on landing or auth chrome** → read
+  **sage-deep `#5C6E58`** (`--fl-green` / `--fl-sage-deep`, same value
+  now), cream text. **Kelly is demoted to product-only** — it appears
+  exclusively *inside* real app screenshots and the M5 signal-card
+  replica (that's the product's own chrome, i.e. content — honest).
+  Landing/auth chrome never uses kelly directly.
+- **clay `#B0703C`** → trace only (the baseball half of the M4 diptych
+  grade); nothing structural.
+- **photo grade "pine→amber duotone"** → **sage→cream grade**: shadows
+  toward sage-ink, mids toward sage, highlights lifted to cream-high.
+  Airy morning, never murky.
+
+**Never hardcode** `#143527` or `#16A34A` (or any other retired hex) —
+always reach for the token.
 
 ## Fonts (`fonts.ts`)
 
@@ -225,8 +265,9 @@ container, `object-cover`).
 ## CTA architecture (already wired in the stubs — keep these targets or
 update deliberately)
 
-- **"See it in action"** (kelly green, primary) → `/golf/demo` (the real,
-  live self-serve product demo — not a dead button).
+- **"See it in action"** (sage-deep `--fl-sage-deep`, primary — repointed
+  2026-07-02, was kelly green) → `/golf/demo` (the real, live self-serve
+  product demo — not a dead button).
 - **"Join your team"** (ghost / `fl-glass-1`) → `/golf/join` (real
   invite-code entry page).
 - M4 portal cards → `/products#golfhelm`, `/products#baseballhelm`.
