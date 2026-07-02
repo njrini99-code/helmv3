@@ -19,7 +19,7 @@ Scaffold for the "First Light" landing redesign
 | `lib/photoBg.ts` | foundation (this lane) — shared, edit-with-care | LIVE |
 | `moments/M1Hero.tsx` | `landing-hero+nav` | STUB — replace in place |
 | `moments/M2Clarity.tsx` | `landing-editorial` | STUB — replace in place |
-| `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — pinned scrub set piece + real screenshots (`screens/` below) |
+| `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — pinned scrub set piece + palette-true placeholder screens (`screens/` below) |
 | `moments/M4TwoFields.tsx` | `landing-portals+cta` | STUB — replace in place |
 | `moments/M5Intelligence.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M6ForThePlayer.tsx` | `landing-editorial` | STUB — replace in place |
@@ -238,20 +238,47 @@ a pure asset swap.
 
 `public/marketing/first-light/screens/{command-center,stats-center,
 decision-room,lift-lab}.png` — LIVE, shipped by the `landing-cinema` lane.
-Real BaseballHelm Living-Annual captures pulled from the overnight
-visual-verification fleet's frames (Command Center / a real box score for
-Stats Center / Decision Room / player Lift Lab), each cropped to its
-frame's aspect ratio (`16/10` for the three desktop screens, `9/19.5` for
-Lift Lab's phone), any incidental browser-chrome/breadcrumb-UUID text
-painted out with the surrounding cream fill, then resized + palette-
-quantized (256-color PNG, `Pillow`, one-off — not committed as a script)
-to keep the set under ~650KB combined. `M3ProductCinema.tsx` renders them
-the `photoBg.ts` way: a solid tint `<div>` behind, an `<Image fill
-sizes=... className="object-cover">` on top, inside a fixed aspect-ratio
-container — a slow load or a future missing file never collapses the
-frame's layout. If a pristine on-brand capture (rather than an overnight
-QA-fleet frame) becomes available later, swap the file in place at the
-same path; no code changes needed on either side.
+
+**Revised 2026-07-02** (superseding this lane's own earlier approach):
+these are now **dignified neutral placeholders**, not real product
+captures. The first pass used real screenshots pulled from the overnight
+BaseballHelm visual-verification fleet — but those frames were empty-state
+QA captures (all-zero counters, a near-black sidebar, a stray cursor, an
+awkward crop), which read as raw dev output, not staged product cinema.
+Nick's sage/cream redirect made the call explicit: build palette-true
+placeholders instead. Each PNG (`Pillow`, one-off, not committed as a
+script) is a cream-high→cream card at its frame's aspect ratio (`16/10`
+for the three desktop screens at 1280×800, `9/19.5` for Lift Lab's phone
+at 480×1039) with a soft corner bloom (the entry-scene "warm bloom"
+motif), a sage-mist badge holding a simple drawn line glyph per screen
+(grid / bar-chart / checklist / barbell), a Georgia-serif screen label in
+sage-ink, a short tagline, brass hairline dividers, and a cheap low-res
+upsampled grain — zero fake data, zero product chrome, palette-true
+throughout (no kelly). Palette-quantized (256-color, Floyd–Steinberg
+dither) to keep the set reasonably light (~770KB combined; the low-res
+grain-upsample trick keeps this well under what per-pixel noise would
+cost). `M3ProductCinema.tsx` renders them the `photoBg.ts` way: a solid
+cream-toned tint `<div>` behind (not the old dark pine gradient), an
+`<Image fill sizes=... className="object-cover">` on top, inside a fixed
+aspect-ratio container — a slow load or a future missing file never
+collapses the frame's layout, and never flashes dark.
+
+**Real Living-Annual captures (pristine, on-brand — not raw QA frames)
+swap in at integration**: drop the file in place at the same path, same
+aspect ratio; no code changes needed on either side. Those real captures
+correctly DO show the product's kelly green — kelly is product-only
+content per the sage/cream amendment (it's the product's own chrome
+inside a screenshot, not landing chrome), so no need to grade it out when
+that swap happens.
+
+**Gitignore note:** the repo's global `*.png` ignore rule (`.gitignore`)
+didn't have an exemption for this path (only `public/email/*.png` was
+exempted) — added
+`!public/marketing/first-light/screens/*.png` alongside it so these
+placeholders actually ship in the PR/repo instead of silently staying
+untracked (confirmed via `git check-ignore -v`; the previous lane's real
+screenshots were never actually committed despite this doc's earlier
+"shipped"/"committed" language — same gap, now fixed).
 
 ## Motion discipline (recap — see CLAUDE.md + this repo's motion rules)
 

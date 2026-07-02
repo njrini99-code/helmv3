@@ -2,22 +2,29 @@
 
 /**
  * M3 · PRODUCT CINEMA — THE scroll set piece. docs/LANDING_ENTRY_WORLD_DESIGN.md
- * M3 ("the 'they put SO much effort in' moment"). Background register: deep
- * pine band. A `PinnedScrub` (~250vh) holds a G2 glass desktop frame center
- * stage while three REAL Living-Annual screens glide through it under 1:1
- * scroll control — Command Center → Stats Center → Decision Room — each
- * with a scrub-linked caption ledger line that writes itself in below. A
- * phone frame carrying Lift Lab arcs in from the right at ~55% of the scrub
- * and stays for the remainder.
+ * M3 ("the 'they put SO much effort in' moment"), read under the
+ * SAGE & CREAM amendment at the top of that doc. Background register:
+ * sage-ink band (`--fl-sage-ink`) — the one deep moment the daylight page
+ * is allowed, considered depth against cream, never murk. A `PinnedScrub`
+ * (~250vh) holds a G2 glass desktop frame center stage while three app
+ * screens glide through it under 1:1 scroll control — Command Center →
+ * Stats Center → Decision Room — each with a scrub-linked caption ledger
+ * line (cream type on the band) that writes itself in below. A phone frame
+ * carrying Lift Lab arcs in from the right at ~55% of the scrub and stays
+ * for the remainder.
  *
- * Screens are real product screenshots (see "Screenshot asset contract" in
- * CONTRACTS.md) — `public/marketing/first-light/screens/*.png`, sourced
- * this lane from the overnight BaseballHelm visual-verification fleet
- * (Command Center / Stats Center (a real box score) / Decision Room / Lift
- * Lab), cropped clean of browser/breadcrumb chrome, palette-quantized for
- * size. Every panel keeps a solid tint layer underneath the `<Image fill>`
- * so a slow load never flashes an empty frame (CONTRACTS.md's photoBg
- * pattern, screenshot variant).
+ * Screens are dignified neutral placeholders (see "Screenshot asset
+ * contract" in CONTRACTS.md) — `public/marketing/first-light/screens/*.png`,
+ * generated this lane (Pillow, one-off, not committed as a script): a
+ * cream paper card, a sage-mist badge with a simple line glyph, a Georgia
+ * serif screen label in sage-ink, a short tagline, and brass hairline
+ * dividers — palette-true, zero fake data, zero product chrome. Real
+ * BaseballHelm Living-Annual captures (which correctly DO show the
+ * product's kelly — kelly is product-only content, not landing chrome per
+ * the amendment) swap in at integration; no code changes needed on either
+ * side, it's a pure asset swap. Every panel keeps a solid cream-toned tint
+ * layer underneath the `<Image fill>` so a slow load never flashes an
+ * empty/dark frame (CONTRACTS.md's photoBg pattern, screenshot variant).
  *
  * Motion: transform/opacity only (`y`/`opacity`/`scale` on the screen
  * stack, `x`/`opacity`/`rotate` on the phone arc) — the screens travel as
@@ -66,21 +73,21 @@ const SCREENS: CinemaScreen[] = [
     label: 'Command Center',
     caption: 'Roster, calendar, and tasks — the whole program, one screen.',
     src: '/marketing/first-light/screens/command-center.png',
-    tint: 'linear-gradient(155deg, #1c4632 0%, #143527 100%)',
+    tint: 'linear-gradient(155deg, var(--fl-cream-high) 0%, var(--fl-cream) 100%)',
   },
   {
     key: 'stats-center',
     label: 'Stats Center',
     caption: 'Box scores and stat lines that write themselves in as the season goes.',
     src: '/marketing/first-light/screens/stats-center.png',
-    tint: 'linear-gradient(155deg, #1a3f2c 0%, #0f2a1e 100%)',
+    tint: 'linear-gradient(155deg, var(--fl-cream-high) 0%, var(--fl-cream) 100%)',
   },
   {
     key: 'decision-room',
     label: 'Decision Room',
     caption: 'CoachHelm surfaces the one thing worth a conversation this week.',
     src: '/marketing/first-light/screens/decision-room.png',
-    tint: 'linear-gradient(155deg, #173d2b 0%, #0d2318 100%)',
+    tint: 'linear-gradient(155deg, var(--fl-cream-high) 0%, var(--fl-cream) 100%)',
   },
 ];
 
@@ -100,7 +107,7 @@ export function M3ProductCinema({ className }: M3ProductCinemaProps) {
   const showStatic = reduced || !isDesktopViewport;
 
   return (
-    <section className={cn('relative', className)} style={{ backgroundColor: 'var(--fl-pine)' }}>
+    <section className={cn('relative', className)} style={{ backgroundColor: 'var(--fl-sage-ink)' }}>
       <div className="fl-grain" aria-hidden="true" />
       {showStatic ? (
         <StaticCinema />
@@ -116,7 +123,7 @@ export function M3ProductCinema({ className }: M3ProductCinemaProps) {
 function Eyebrow() {
   return (
     <div className="mb-8 text-center">
-      <span className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-ecru-rgb),0.5)]">
+      <span className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-cream-high-rgb),0.5)]">
         Inside Helm
       </span>
     </div>
@@ -219,7 +226,10 @@ function ProgressDot({
 
   return (
     <m.span
-      style={{ width, opacity, background: 'var(--fl-green)' }}
+      // Cream (not sage-deep) — sage-deep-on-sage-ink measures ~2.2:1
+      // (fails as a decorative accent on this one dark band), cream-high
+      // measures ~11:1. "Cream type on the band" per the M3 spec line.
+      style={{ width, opacity, background: 'var(--fl-cream-high)' }}
       className="h-1.5 rounded-full"
     />
   );
@@ -249,7 +259,7 @@ function CaptionLine({
 
   return (
     <span className="fl-line-mask absolute inset-x-0 top-0">
-      <m.span style={{ y, opacity }} className="block text-body-lg text-[rgba(var(--fl-ecru-rgb),0.75)]">
+      <m.span style={{ y, opacity }} className="block text-body-lg text-[rgba(var(--fl-cream-high-rgb),0.75)]">
         {caption}
       </m.span>
     </span>
@@ -270,11 +280,13 @@ function PhoneArc({ progress }: { progress: MotionValue<number> }) {
       aria-hidden="true"
     >
       <div className="relative z-10 h-full w-full overflow-hidden rounded-[1.4rem]">
-        <div className="absolute inset-0" style={{ background: '#241f1a' }} />
+        <div className="absolute inset-0" style={{ background: 'var(--fl-cream)' }} />
         <Image src={LIFT_LAB.src} alt="" fill sizes="100px" className="object-cover object-top" />
       </div>
+      {/* Notch — kept dark (sage-ink) regardless of palette: a phone
+          camera cutout reads as hardware, not chrome. */}
       <span className="absolute inset-x-0 top-2 z-20 flex justify-center">
-        <span className="h-1 w-6 rounded-full bg-[rgba(var(--fl-pine-rgb),0.4)]" />
+        <span className="h-1 w-6 rounded-full bg-[rgba(var(--fl-sage-ink-rgb),0.4)]" />
       </span>
     </m.div>
   );
@@ -307,7 +319,7 @@ function StaticCinema() {
                 />
               </div>
             </div>
-            <p className="mt-5 text-center text-body leading-relaxed text-[rgba(var(--fl-ecru-rgb),0.75)]">
+            <p className="mt-5 text-center text-body leading-relaxed text-[rgba(var(--fl-cream-high-rgb),0.75)]">
               {screen.caption}
             </p>
           </div>
@@ -315,7 +327,7 @@ function StaticCinema() {
 
         <div>
           <div className="fl-glass-2 relative mx-auto aspect-[9/19.5] w-[220px] overflow-hidden rounded-[2rem]">
-            <div className="absolute inset-0" style={{ background: '#241f1a' }} />
+            <div className="absolute inset-0" style={{ background: 'var(--fl-cream)' }} />
             <div className="relative z-10 h-full w-full">
               <Image
                 src={LIFT_LAB.src}
@@ -326,7 +338,7 @@ function StaticCinema() {
               />
             </div>
           </div>
-          <p className="mt-5 text-center text-body leading-relaxed text-[rgba(var(--fl-ecru-rgb),0.75)]">
+          <p className="mt-5 text-center text-body leading-relaxed text-[rgba(var(--fl-cream-high-rgb),0.75)]">
             {LIFT_LAB.caption}
           </p>
         </div>
