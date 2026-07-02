@@ -128,7 +128,14 @@ Running record of what was actually applied per wave, plus any deviations from t
 - W11 code DONE: commits `1940ca858` (recordJobRun + cron-registry + vercel contract), `d86b6b0a3` (wired all 14 crons), `0f3ee0240` (integrity-check + log-retention crons + 2 vercel schedules), `3e99981d` (/admin/jobs tab). 9 new tests; contract tests pass (registry↔vercel 16=16, cron→recordJobRun coverage, gate-coverage); typecheck exit 0; lint 0 errors. Noise discipline: successes→background_job_logs only; failures→admin_events source='cron'/'integrity' (pass=info+skipSentry, fail=error→banner); never-ran=neutral. Phone-responsive tables (overflow-x-auto + sticky first col) applied. Schema: error_logs.timestamp (not created_at). Ratchet +10 still pre-existing (W5/W6) → polish sweep.
 - Owner env (fail-soft): CRON_SECRET (existing — the 2 new crons reuse it).
 
-## W12 — Deploys & Infra (no migration)
+## W12 — Deploys & Infra (no migration) — DONE
+- Commits `54457cdb6` (deploy markers + instrumentation hook), `0898ce682` (deploys tab + current-build card + conditional release health + web vitals).
+- 7 new tests; typecheck exit 0; lint 0 errors; 0 ratchet delta; gate-coverage passes.
+- Fail-soft 3-state (ok/not-configured neutral/fetch-failed amber); current-build card works with ZERO new secrets (system env); release health neutral unless sessions confirmed. Per-row Sentry release deep-link added.
+- Phone-responsive: deployments table overflow-x-auto + min-w-[720px] + sticky left-0 first (Commit) col; panels stack. Used Surface/StatTile/StatusPill (no raw bg-white).
+- Owner env (fail-soft): VERCEL_API_TOKEN/PROJECT_ID/TEAM_ID (deployments+vitals); Sentry session tracking (release health).
+
+## W13 — Daily Digest (dedicated non-CRM transport; no migration)
 **Status:** in progress (Sonnet).
 
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
