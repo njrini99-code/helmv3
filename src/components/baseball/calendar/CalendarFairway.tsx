@@ -86,9 +86,16 @@ export function CalendarFairway({
 
   return (
     <div className={fairwayScope(SHELL, 'bg-canvas')}>
-      {events.length > 0 && (
+      {/* Gated on `upcomingEvents` (not `events.length`) — the strip reads
+          "N upcoming events", so a team with only past events has nothing
+          upcoming to summarize. `eventTypeCounts` is derived from the same
+          upcoming-only list (see the page component), so these two numbers
+          can never contradict each other again. Row wraps instead of
+          scrolling horizontally so nothing clips off the 390px viewport with
+          no visible way to reach it (visual-verify coach-ops__calendar). */}
+      {upcomingEvents > 0 && (
         <div className="flex-shrink-0 px-4 pb-2 pt-4 md:px-6 md:pt-6">
-          <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <span className="whitespace-nowrap text-sm font-medium text-text-secondary">
               {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
             </span>
