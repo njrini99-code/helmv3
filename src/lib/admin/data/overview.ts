@@ -1,0 +1,133 @@
+import 'server-only';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchSentryIssues } from '@/lib/admin/sentry-api';
+import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+
+export interface OverviewKpis {
+  sentryUnresolved: number | null;
+  eventErrors24h: number;
+  authFailures24h: number;
+  activeUsersToday: number;
+  activityToday: { golf: number; baseball: number; lifting: number };
+  lastDeploy: { state: string; ageMinutes: number } | null;
+}
+
+export interface WatcherSignal {
+  label: string;
+  lastSeenAt: string | null;
+  staleAfterHours: number;
+}
+
+export function computeBannerState(input: {
+  criticalCount: number;
+  attentionCount: number;
+  anyFeedStale: boolean;
+}): { state: 'nominal' | 'attention' | 'critical' | 'stale'; attentionCount: number } {
+  const total = input.criticalCount + input.attentionCount;
+  if (input.criticalCount > 0) return { state: 'critical', attentionCount: total };
+  if (total > 0) return { state: 'attention', attentionCount: total };
+  if (input.anyFeedStale) return { state: 'stale', attentionCount: 0 };
+  return { state: 'nominal', attentionCount: 0 };
+}
+
+export function isSignalStale(signal: WatcherSignal, now: Date): boolean {
+  if (!signal.lastSeenAt) return true;
+  const ageMs = now.getTime() - new Date(signal.lastSeenAt).getTime();
+  return ageMs > signal.staleAfterHours * 60 * 60 * 1000;
+}
+
+function isoHoursAgo(hours: number): string {
+  return new Date(Date.now() - hours * 3600_000).toISOString();
+}
+function isoStartOfToday(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+/** CALLER must have passed requireSuperAdmin() (service-role reads). */
+export async function fetchOverviewSnapshot() {
+  const admin = createAdminClient();
+  const ago24h = isoHoursAgo(24);
+  const today = isoStartOfToday();
+
+  const [
+    sentry,
+    deploys,
+    errors24h,
+    criticals24h,
+    security24h,
+    activeToday,
+    golfToday,
+    baseballToday,
+    liftsToday,
+    lastLogin,
+    lastError,
+    lastCron,
+  ] = await Promise.all([
+    fetchSentryIssues({ limit: 1 }),
+    fetchVercelDeployments(5),
+    admin.from('admin_events').select('id', { count: 'exact', head: true })
+      .eq('event_type', 'error').gte('created_at', ago24h),
+    admin.from('admin_events').select('id', { count: 'exact', head: true })
+      .eq('event_type', 'error').eq('severity', 'critical').eq('resolved', false),
+    admin.from('admin_events').select('id', { count: 'exact', head: true })
+      .eq('event_type', 'security').gte('created_at', ago24h),
+    admin.from('users').select('id', { count: 'exact', head: true })
+      .gte('last_seen', today),
+    admin.from('golf_rounds').select('id', { count: 'exact', head: true })
+      .gte('created_at', today),
+    admin.from('baseball_games').select('id', { count: 'exact', head: true })
+      .gte('created_at', today),
+    admin.from('helm_lifting_sessions').select('id', { count: 'exact', head: true })
+      .gte('created_at', today),
+    admin.from('admin_events').select('created_at')
+      .eq('event_type', 'login').order('created_at', { ascending: false }).limit(1),
+    admin.from('admin_events').select('created_at')
+      .eq('event_type', 'error').order('created_at', { ascending: false }).limit(1),
+    admin.from('background_job_logs').select('started_at')
+      .order('started_at', { ascending: false }).limit(1),
+  ]);
+
+  const lastDeployRow = deploys.data?.[0] ?? null;
+  const kpis: OverviewKpis = {
+    sentryUnresolved: sentry.status === 'ok' ? (sentry.data?.length ?? 0) : null,
+    eventErrors24h: errors24h.count ?? 0,
+    authFailures24h: security24h.count ?? 0,
+    activeUsersToday: activeToday.count ?? 0,
+    activityToday: {
+      golf: golfToday.count ?? 0,
+      baseball: baseballToday.count ?? 0,
+      lifting: liftsToday.count ?? 0,
+    },
+    lastDeploy: lastDeployRow
+      ? {
+          state: lastDeployRow.state,
+          ageMinutes: Math.round((Date.now() - lastDeployRow.createdAt) / 60000),
+        }
+      : null,
+  };
+
+  const now = new Date();
+  const watcherBase: WatcherSignal[] = [
+    // Sign-ins definitely happen daily — 24h of silence means LOGGING broke.
+    { label: 'Login events', lastSeenAt: lastLogin.data?.[0]?.created_at ?? null, staleAfterHours: 24 },
+    { label: 'Error pipeline', lastSeenAt: lastError.data?.[0]?.created_at ?? null, staleAfterHours: 48 },
+    // Crons run at least daily once W11 lands; until then this reads
+    // "stale" honestly — background_job_logs has zero writers today.
+    { label: 'Cron outcomes', lastSeenAt: lastCron.data?.[0]?.started_at ?? null, staleAfterHours: 26 },
+  ];
+  const watcher = watcherBase.map((s) => ({ ...s, stale: isSignalStale(s, now) }));
+
+  const attentionFromDeploy = kpis.lastDeploy?.state === 'ERROR' ? 1 : 0;
+  const banner = {
+    ...computeBannerState({
+      criticalCount: criticals24h.count ?? 0,
+      attentionCount: attentionFromDeploy,
+      anyFeedStale: sentry.status === 'error' || watcher.some((w) => w.stale),
+    }),
+    checkedAt: now.toISOString(),
+  };
+
+  return { kpis, banner, watcher };
+}
