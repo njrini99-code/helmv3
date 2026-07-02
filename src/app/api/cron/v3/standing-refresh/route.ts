@@ -32,6 +32,7 @@ import {
   SHOT_REFRESH_METRIC_IDS,
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -91,13 +92,13 @@ function coveredMetricsWithZeroRows(
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-standing-refresh', () => handle());
 }
 
 export async function POST(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-standing-refresh', () => handle());
 }
 
 async function handle(): Promise<NextResponse> {

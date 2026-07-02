@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { runSuggestionWriter } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -26,13 +27,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-goal-suggestions-write', () => handle());
 }
 
 export async function POST(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-goal-suggestions-write', () => handle());
 }
 
 async function handle(): Promise<NextResponse> {

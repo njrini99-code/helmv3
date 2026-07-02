@@ -25,6 +25,7 @@ import {
 import { sendCoachDigest } from '@/lib/email/resend-client';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -62,6 +63,10 @@ export async function GET(req: NextRequest): Promise<NextResponse | Response> {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
 
+  return recordJobRun('coach-morning-digest', () => handleDigest());
+}
+
+async function handleDigest(): Promise<NextResponse> {
   const supabase = createAdminClient();
   const summary: DigestSummary = {
     coaches_eligible: 0,

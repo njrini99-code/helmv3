@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { getAppUrl } from '@/lib/utils/env';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 type FeedType = 'team' | 'personal';
 type UserRole = 'coach' | 'player';
@@ -106,7 +107,7 @@ async function getUserContext(): Promise<ActionResult<UserContext>> {
   return { success: false, error: 'Profile not found' };
 }
 
-export async function getCalendarFeeds(): Promise<ActionResult<CalendarFeedRecord[]>> {
+async function getCalendarFeedsImpl(): Promise<ActionResult<CalendarFeedRecord[]>> {
   const contextResult = await getUserContext();
   if (!contextResult.success || !contextResult.data) {
     return { success: false, error: contextResult.error || 'Failed to load calendar feeds' };
@@ -141,7 +142,17 @@ export async function getCalendarFeeds(): Promise<ActionResult<CalendarFeedRecor
   return { success: true, data: result };
 }
 
-export async function createCalendarFeed(
+const observedGetCalendarFeeds = withAdminObserved(
+  'getCalendarFeeds',
+  { sport: 'golf', feature: 'calendar_events' },
+  getCalendarFeedsImpl,
+);
+
+export async function getCalendarFeeds(): Promise<ActionResult<CalendarFeedRecord[]>> {
+  return observedGetCalendarFeeds();
+}
+
+async function createCalendarFeedImpl(
   type: FeedType,
   name?: string
 ): Promise<ActionResult<CalendarFeedRecord>> {
@@ -198,7 +209,20 @@ export async function createCalendarFeed(
   };
 }
 
-export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResult<CalendarFeedRecord>> {
+const observedCreateCalendarFeed = withAdminObserved(
+  'createCalendarFeed',
+  { sport: 'golf', feature: 'calendar_events' },
+  createCalendarFeedImpl,
+);
+
+export async function createCalendarFeed(
+  type: FeedType,
+  name?: string
+): Promise<ActionResult<CalendarFeedRecord>> {
+  return observedCreateCalendarFeed(type, name);
+}
+
+async function regenerateCalendarFeedImpl(type: FeedType): Promise<ActionResult<CalendarFeedRecord>> {
   const contextResult = await getUserContext();
   if (!contextResult.success || !contextResult.data) {
     return { success: false, error: contextResult.error || 'Failed to regenerate feed' };
@@ -244,7 +268,17 @@ export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResu
   return createCalendarFeed(type, existingFeed.name ?? undefined);
 }
 
-export async function deleteCalendarFeed(type: FeedType): Promise<ActionResult<void>> {
+const observedRegenerateCalendarFeed = withAdminObserved(
+  'regenerateCalendarFeed',
+  { sport: 'golf', feature: 'calendar_events' },
+  regenerateCalendarFeedImpl,
+);
+
+export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResult<CalendarFeedRecord>> {
+  return observedRegenerateCalendarFeed(type);
+}
+
+async function deleteCalendarFeedImpl(type: FeedType): Promise<ActionResult<void>> {
   const contextResult = await getUserContext();
   if (!contextResult.success || !contextResult.data) {
     return { success: false, error: contextResult.error || 'Failed to delete feed' };
@@ -282,12 +316,22 @@ export async function deleteCalendarFeed(type: FeedType): Promise<ActionResult<v
   return { success: true, data: undefined };
 }
 
+const observedDeleteCalendarFeed = withAdminObserved(
+  'deleteCalendarFeed',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteCalendarFeedImpl,
+);
+
+export async function deleteCalendarFeed(type: FeedType): Promise<ActionResult<void>> {
+  return observedDeleteCalendarFeed(type);
+}
+
 /**
  * Get or create a calendar feed token for the current user.
  * This is the simplified version for the CalendarSyncButton component.
  * Returns an existing active feed or creates a new one.
  */
-export async function getOrCreateCalendarFeedToken(): Promise<ActionResult<{ url: string; token: string }>> {
+async function getOrCreateCalendarFeedTokenImpl(): Promise<ActionResult<{ url: string; token: string }>> {
   const contextResult = await getUserContext();
   if (!contextResult.success || !contextResult.data) {
     return { success: false, error: contextResult.error || 'Not authenticated' };
@@ -350,6 +394,16 @@ export async function getOrCreateCalendarFeedToken(): Promise<ActionResult<{ url
   };
 }
 
+const observedGetOrCreateCalendarFeedToken = withAdminObserved(
+  'getOrCreateCalendarFeedToken',
+  { sport: 'golf', feature: 'calendar_events' },
+  getOrCreateCalendarFeedTokenImpl,
+);
+
+export async function getOrCreateCalendarFeedToken(): Promise<ActionResult<{ url: string; token: string }>> {
+  return observedGetOrCreateCalendarFeedToken();
+}
+
 /**
  * Regenerate the calendar feed token for the current user.
  * Invalidates the old URL and creates a new one.
@@ -359,7 +413,7 @@ export async function getOrCreateCalendarFeedToken(): Promise<ActionResult<{ url
  * OTHER feeds (e.g. a coach's separate team feed) must keep working; the old
  * behavior of deactivating every active feed for the user broke them all.
  */
-export async function regenerateCalendarFeedToken(): Promise<ActionResult<{ url: string; token: string }>> {
+async function regenerateCalendarFeedTokenImpl(): Promise<ActionResult<{ url: string; token: string }>> {
   const contextResult = await getUserContext();
   if (!contextResult.success || !contextResult.data) {
     return { success: false, error: contextResult.error || 'Not authenticated' };
@@ -423,4 +477,14 @@ export async function regenerateCalendarFeedToken(): Promise<ActionResult<{ url:
       token: newFeed.feed_token,
     },
   };
+}
+
+const observedRegenerateCalendarFeedToken = withAdminObserved(
+  'regenerateCalendarFeedToken',
+  { sport: 'golf', feature: 'calendar_events' },
+  regenerateCalendarFeedTokenImpl,
+);
+
+export async function regenerateCalendarFeedToken(): Promise<ActionResult<{ url: string; token: string }>> {
+  return observedRegenerateCalendarFeedToken();
 }

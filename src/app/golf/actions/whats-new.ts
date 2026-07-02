@@ -24,6 +24,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -123,7 +124,7 @@ function humanizePatternType(patternType: string | null | undefined): string {
 // MAIN ACTION
 // ============================================================================
 
-export async function getWhatsNewForCoach(): Promise<{
+async function getWhatsNewForCoachImpl(): Promise<{
   success: boolean;
   items?: WhatsNewItem[];
   /**
@@ -423,4 +424,19 @@ export async function getWhatsNewForCoach(): Promise<{
     );
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGetWhatsNewForCoach = withAdminObserved(
+  'getWhatsNewForCoach',
+  { sport: 'golf', feature: 'whats_new' },
+  getWhatsNewForCoachImpl,
+);
+
+export async function getWhatsNewForCoach(): Promise<{
+  success: boolean;
+  items?: WhatsNewItem[];
+  truncated?: boolean;
+  error?: string;
+}> {
+  return observedGetWhatsNewForCoach();
 }

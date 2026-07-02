@@ -41,6 +41,7 @@ import {
   findMetric,
   type FocusWindowRound,
 } from '@/lib/coachhelm/focus-areas/catalog';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface FocusAreaProgressSummary {
   /** Active focus areas examined (windowable, with a target + start). */
@@ -186,7 +187,7 @@ async function evaluateAreas(
  * players in one efficient pass. Used by the nightly standing-refresh cron and
  * the coach development page (so the coach sees fresh progress, not stale).
  */
-export async function runFocusAreaProgressForPlayers(
+async function runFocusAreaProgressForPlayersImpl(
   playerIds: string[],
 ): Promise<BatchFocusAreaProgressSummary> {
   const empty: BatchFocusAreaProgressSummary = {
@@ -213,14 +214,34 @@ export async function runFocusAreaProgressForPlayers(
   return { evaluated, updated, players_with_areas: players.size };
 }
 
+const observedRunFocusAreaProgressForPlayers = withAdminObserved(
+  'runFocusAreaProgressForPlayers',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  runFocusAreaProgressForPlayersImpl,
+);
+
+export async function runFocusAreaProgressForPlayers(playerIds: string[]): Promise<BatchFocusAreaProgressSummary> {
+  return observedRunFocusAreaProgressForPlayers(playerIds);
+}
+
 /**
  * Single-player variant — evaluate + persist progress for one player's active
  * focus areas. Used on the player My Development page view.
  */
-export async function evaluateAndPersistFocusAreas(
+async function evaluateAndPersistFocusAreasImpl(
   playerId: string,
 ): Promise<FocusAreaProgressSummary> {
   if (!playerId) return { evaluated: 0, updated: 0 };
   const { evaluated, updated } = await runFocusAreaProgressForPlayers([playerId]);
   return { evaluated, updated };
+}
+
+const observedEvaluateAndPersistFocusAreas = withAdminObserved(
+  'evaluateAndPersistFocusAreas',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  evaluateAndPersistFocusAreasImpl,
+);
+
+export async function evaluateAndPersistFocusAreas(playerId: string): Promise<FocusAreaProgressSummary> {
+  return observedEvaluateAndPersistFocusAreas(playerId);
 }

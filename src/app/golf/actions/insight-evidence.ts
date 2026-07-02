@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { PatternCondition, InsightTone } from '@/lib/coachhelm/v2/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 interface EvidenceMetadata {
   patternId?: string;
@@ -40,7 +41,7 @@ interface GetEvidenceResult {
 /**
  * Fetches rounds that support the given insight/pattern
  */
-export async function getInsightEvidenceSources(
+async function getInsightEvidenceSourcesImpl(
   playerId: string,
   metadata: EvidenceMetadata
 ): Promise<GetEvidenceResult> {
@@ -167,10 +168,23 @@ export async function getInsightEvidenceSources(
   }
 }
 
+const observedGetInsightEvidenceSources = withAdminObserved(
+  'getInsightEvidenceSources',
+  { sport: 'golf', feature: 'insights_management' },
+  getInsightEvidenceSourcesImpl,
+);
+
+export async function getInsightEvidenceSources(
+  playerId: string,
+  metadata: EvidenceMetadata
+): Promise<GetEvidenceResult> {
+  return observedGetInsightEvidenceSources(playerId, metadata);
+}
+
 /**
  * Get rounds that match a specific pattern's conditions
  */
-export async function getPatternMatchingRounds(
+async function getPatternMatchingRoundsImpl(
   playerId: string,
   patternId: string,
   limit: number = 10
@@ -240,10 +254,24 @@ export async function getPatternMatchingRounds(
   }
 }
 
+const observedGetPatternMatchingRounds = withAdminObserved(
+  'getPatternMatchingRounds',
+  { sport: 'golf', feature: 'insights_management' },
+  getPatternMatchingRoundsImpl,
+);
+
+export async function getPatternMatchingRounds(
+  playerId: string,
+  patternId: string,
+  limit: number = 10
+): Promise<GetEvidenceResult> {
+  return observedGetPatternMatchingRounds(playerId, patternId, limit);
+}
+
 /**
  * Get rounds from a specific date range for trend analysis
  */
-export async function getTrendEvidenceRounds(
+async function getTrendEvidenceRoundsImpl(
   playerId: string,
   startDate: string,
   endDate: string
@@ -302,10 +330,24 @@ export async function getTrendEvidenceRounds(
   }
 }
 
+const observedGetTrendEvidenceRounds = withAdminObserved(
+  'getTrendEvidenceRounds',
+  { sport: 'golf', feature: 'insights_management' },
+  getTrendEvidenceRoundsImpl,
+);
+
+export async function getTrendEvidenceRounds(
+  playerId: string,
+  startDate: string,
+  endDate: string
+): Promise<GetEvidenceResult> {
+  return observedGetTrendEvidenceRounds(playerId, startDate, endDate);
+}
+
 /**
  * Get tournament vs practice round comparison data
  */
-export async function getComparisonRounds(
+async function getComparisonRoundsImpl(
   playerId: string,
   limit: number = 5
 ): Promise<{
@@ -389,4 +431,22 @@ export async function getComparisonRounds(
       error: 'An unexpected error occurred',
     };
   }
+}
+
+const observedGetComparisonRounds = withAdminObserved(
+  'getComparisonRounds',
+  { sport: 'golf', feature: 'insights_management' },
+  getComparisonRoundsImpl,
+);
+
+export async function getComparisonRounds(
+  playerId: string,
+  limit: number = 5
+): Promise<{
+  success: boolean;
+  tournamentRounds?: EvidenceRound[];
+  practiceRounds?: EvidenceRound[];
+  error?: string;
+}> {
+  return observedGetComparisonRounds(playerId, limit);
 }

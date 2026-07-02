@@ -19,6 +19,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1329,7 +1330,7 @@ async function verifyReviewAccess(
 // SERVER ACTIONS
 // ============================================================================
 
-export async function getRoundReview(roundId: string): Promise<{
+async function getRoundReviewImpl(roundId: string): Promise<{
   success: boolean;
   review?: RoundReviewWithRound;
   error?: string;
@@ -1397,6 +1398,20 @@ export async function getRoundReview(roundId: string): Promise<{
   }
 }
 
+const observedGetRoundReview = withAdminObserved(
+  'getRoundReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getRoundReviewImpl,
+);
+
+export async function getRoundReview(roundId: string): Promise<{
+  success: boolean;
+  review?: RoundReviewWithRound;
+  error?: string;
+}> {
+  return observedGetRoundReview(roundId);
+}
+
 type GenerateReviewResult = {
   success: boolean;
   review?: RoundReviewWithRound;
@@ -1423,7 +1438,7 @@ type GenerateReviewResult = {
  */
 const inFlightRoundReviews = new Map<string, Promise<GenerateReviewResult>>();
 
-export async function generateAndStoreRoundReview(
+async function generateAndStoreRoundReviewImpl(
   roundId: string,
   playerId: string
 ): Promise<GenerateReviewResult> {
@@ -1457,6 +1472,16 @@ export async function generateAndStoreRoundReview(
       inFlightRoundReviews.delete(roundId);
     }
   }
+}
+
+const observedGenerateAndStoreRoundReview = withAdminObserved(
+  'generateAndStoreRoundReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  generateAndStoreRoundReviewImpl,
+);
+
+export async function generateAndStoreRoundReview(roundId: string, playerId: string): Promise<GenerateReviewResult> {
+  return observedGenerateAndStoreRoundReview(roundId, playerId);
 }
 
 /**
@@ -1634,7 +1659,7 @@ async function computeAndStoreRoundReview(
   }
 }
 
-export async function shareRoundReviewWithCoach(reviewId: string): Promise<{
+async function shareRoundReviewWithCoachImpl(reviewId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -1674,7 +1699,20 @@ export async function shareRoundReviewWithCoach(reviewId: string): Promise<{
   }
 }
 
-export async function getStatAverages(
+const observedShareRoundReviewWithCoach = withAdminObserved(
+  'shareRoundReviewWithCoach',
+  { sport: 'golf', feature: 'round_review_ai' },
+  shareRoundReviewWithCoachImpl,
+);
+
+export async function shareRoundReviewWithCoach(reviewId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return observedShareRoundReviewWithCoach(reviewId);
+}
+
+async function getStatAveragesImpl(
   playerId: string,
   teamId?: string
 ): Promise<{
@@ -1760,6 +1798,21 @@ export async function getStatAverages(
   }
 }
 
+const observedGetStatAverages = withAdminObserved(
+  'getStatAverages',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getStatAveragesImpl,
+);
+
+export async function getStatAverages(playerId: string, teamId?: string): Promise<{
+  success: boolean;
+  playerAvg?: ComparisonAverages;
+  teamAvg?: ComparisonAverages;
+  error?: string;
+}> {
+  return observedGetStatAverages(playerId, teamId);
+}
+
 /**
  * Season-level standing snapshot for the round-review surface.
  *
@@ -1778,7 +1831,7 @@ export async function getStatAverages(
  * or cold-start (cron hasn't populated standing yet) so the surface degrades
  * gracefully to its existing RoundStatsComparison fallback.
  */
-export async function getPlayerStandingForReview(
+async function getPlayerStandingForReviewImpl(
   playerId: string,
 ): Promise<Record<string, PlayerStanding>> {
   if (!isValidUuid(playerId)) return {};
@@ -1796,4 +1849,14 @@ export async function getPlayerStandingForReview(
     );
     return {};
   }
+}
+
+const observedGetPlayerStandingForReview = withAdminObserved(
+  'getPlayerStandingForReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getPlayerStandingForReviewImpl,
+);
+
+export async function getPlayerStandingForReview(playerId: string): Promise<Record<string, PlayerStanding>> {
+  return observedGetPlayerStandingForReview(playerId);
 }

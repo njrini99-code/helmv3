@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 const WINDOW_DAYS = 90;
 
@@ -103,7 +104,7 @@ function extractStrokeImpact(metadata: Record<string, unknown> | null): number |
 // Public action
 // ---------------------------------------------------------------------------
 
-export async function getPlayerEffectiveness(
+async function getPlayerEffectivenessImpl(
   playerId: string,
 ): Promise<{ success: boolean; data?: PlayerEffectivenessSummary; error?: string }> {
   try {
@@ -183,4 +184,16 @@ export async function getPlayerEffectiveness(
     await logServerError(message, { action: 'getPlayerEffectiveness' }, 'error');
     return { success: false, error: message };
   }
+}
+
+const observedGetPlayerEffectiveness = withAdminObserved(
+  'getPlayerEffectiveness',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getPlayerEffectivenessImpl,
+);
+
+export async function getPlayerEffectiveness(
+  playerId: string,
+): Promise<{ success: boolean; data?: PlayerEffectivenessSummary; error?: string }> {
+  return observedGetPlayerEffectiveness(playerId);
 }

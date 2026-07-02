@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { revalidatePath } from 'next/cache';
 import type { Database } from '@/lib/types/database';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -110,7 +111,7 @@ function sameInstant(a: string | null, b: string | null): boolean {
  * occurrence no longer exists — never a blanket delete-then-reinsert (a
  * transient failure mid-resync must not destroy the schedule).
  */
-export async function syncClassToCalendar(
+async function syncClassToCalendarImpl(
   classData: ClassFormData,
   classId: string,
   playerId: string,
@@ -243,6 +244,8 @@ export async function syncClassToCalendar(
       .like('description', `%${classTag}%`)
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_events', action: 'syncClassToCalendar', feature: 'academics_classes', sport: 'golf' },
   );
 
   if (existingError) {
@@ -336,6 +339,21 @@ export async function syncClassToCalendar(
   };
 }
 
+const observedSyncClassToCalendar = withAdminObserved(
+  'syncClassToCalendar',
+  { sport: 'golf', feature: 'academics_classes' },
+  syncClassToCalendarImpl,
+);
+
+export async function syncClassToCalendar(
+  classData: ClassFormData,
+  classId: string,
+  playerId: string,
+  teamId: string
+): Promise<CalendarSyncResult> {
+  return observedSyncClassToCalendar(classData, classId, playerId, teamId);
+}
+
 /**
  * Remove calendar events for a deleted class.
  *
@@ -345,7 +363,7 @@ export async function syncClassToCalendar(
  * delete via the admin client (player RLS cannot delete golf_events) scoped
  * to the class tag AND the player's own team(s).
  */
-export async function removeClassFromCalendar(classId: string, teamId?: string): Promise<CalendarSyncResult> {
+async function removeClassFromCalendarImpl(classId: string, teamId?: string): Promise<CalendarSyncResult> {
   const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -419,6 +437,16 @@ export async function removeClassFromCalendar(classId: string, teamId?: string):
 
   revalidatePath('/golf/dashboard/calendar');
   return { success: true };
+}
+
+const observedRemoveClassFromCalendar = withAdminObserved(
+  'removeClassFromCalendar',
+  { sport: 'golf', feature: 'academics_classes' },
+  removeClassFromCalendarImpl,
+);
+
+export async function removeClassFromCalendar(classId: string, teamId?: string): Promise<CalendarSyncResult> {
+  return observedRemoveClassFromCalendar(classId, teamId);
 }
 
 /**

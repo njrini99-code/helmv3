@@ -24,6 +24,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { sendEmailNotification } from '@/lib/notifications/email';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -79,52 +80,54 @@ export async function GET(req: NextRequest) {
     return new NextResponse('unauthorized', { status: 401 });
   }
 
-  const supabase = createAdminClient();
-  const now = new Date();
-  const deadlineAt = Date.now() + SOFT_DEADLINE_MS;
+  return recordJobRun('event-reminders', async () => {
+    const supabase = createAdminClient();
+    const now = new Date();
+    const deadlineAt = Date.now() + SOFT_DEADLINE_MS;
 
-  // No initializers: the catch below returns, so these are definitely
-  // assigned wherever they are read (also silences CodeQL useless-assignment).
-  let result24h: KindResult;
-  let result1h: KindResult;
+    // No initializers: the catch below returns, so these are definitely
+    // assigned wherever they are read (also silences CodeQL useless-assignment).
+    let result24h: KindResult;
+    let result1h: KindResult;
 
-  try {
-    result24h = await dispatchReminders(supabase, now, REMINDER_24H_MS, 'event_reminder_24h', deadlineAt);
-    result1h = await dispatchReminders(supabase, now, REMINDER_1H_MS, 'event_reminder_1h', deadlineAt);
-  } catch (err) {
-    await logServerError(
-      `cron.eventReminders failed: ${err instanceof Error ? err.message : String(err)}`,
-      { action: 'cron.eventReminders', featureArea: 'calendar' },
-      'error',
-    );
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
-  }
+    try {
+      result24h = await dispatchReminders(supabase, now, REMINDER_24H_MS, 'event_reminder_24h', deadlineAt);
+      result1h = await dispatchReminders(supabase, now, REMINDER_1H_MS, 'event_reminder_1h', deadlineAt);
+    } catch (err) {
+      await logServerError(
+        `cron.eventReminders failed: ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'cron.eventReminders', featureArea: 'calendar' },
+        'error',
+      );
+      return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+    }
 
-  const anyActivity =
-    result24h.sent + result24h.failed + result24h.skipped +
-    result1h.sent + result1h.failed + result1h.skipped > 0;
+    const anyActivity =
+      result24h.sent + result24h.failed + result24h.skipped +
+      result1h.sent + result1h.failed + result1h.skipped > 0;
 
-  if (anyActivity) {
-    await logServerEvent(
-      `event_reminders cron 24h sent=${result24h.sent} failed=${result24h.failed} ` +
-      `1h sent=${result1h.sent} failed=${result1h.failed}`,
-      {
-        action: 'cron.eventReminders.summary',
-        featureArea: 'calendar',
-        extra: { result24h, result1h },
-      },
-      result24h.failed + result1h.failed > 0 ? 'warning' : 'info',
-    );
-  }
+    if (anyActivity) {
+      await logServerEvent(
+        `event_reminders cron 24h sent=${result24h.sent} failed=${result24h.failed} ` +
+        `1h sent=${result1h.sent} failed=${result1h.failed}`,
+        {
+          action: 'cron.eventReminders.summary',
+          featureArea: 'calendar',
+          extra: { result24h, result1h },
+        },
+        result24h.failed + result1h.failed > 0 ? 'warning' : 'info',
+      );
+    }
 
-  return NextResponse.json({
-    success: true,
-    inserted24h: result24h.sent,
-    inserted1h: result1h.sent,
-    failed24h: result24h.failed,
-    failed1h: result1h.failed,
-    skipped24h: result24h.skipped,
-    skipped1h: result1h.skipped,
+    return NextResponse.json({
+      success: true,
+      inserted24h: result24h.sent,
+      inserted1h: result1h.sent,
+      failed24h: result24h.failed,
+      failed1h: result1h.failed,
+      skipped24h: result24h.skipped,
+      skipped1h: result1h.skipped,
+    });
   });
 }
 
@@ -153,6 +156,8 @@ async function dispatchReminders(
       .neq('status', 'cancelled')
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_events', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
   );
 
   if (eventsErr) {
@@ -177,6 +182,8 @@ async function dispatchReminders(
         .in('event_id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_event_attendance', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (attendanceErr) {
       throw new Error(`fetch attendance: ${attendanceErr.message}`);
@@ -198,6 +205,8 @@ async function dispatchReminders(
         .in('id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_players', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (playersErr) {
       throw new Error(`fetch players: ${playersErr.message}`);
@@ -222,6 +231,8 @@ async function dispatchReminders(
         .in('event_id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_calendar_notifications', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (existingErr) {
       throw new Error(`fetch existing notifications: ${existingErr.message}`);
@@ -261,6 +272,8 @@ async function dispatchReminders(
         .in('id', ids)
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'users', action: 'dispatchReminders', feature: 'calendar_events', sport: 'golf' },
     );
     if (usersErr) {
       throw new Error(`fetch users: ${usersErr.message}`);

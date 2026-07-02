@@ -78,6 +78,14 @@ vi.mock('@/lib/coachhelm/v3/llm/compose', () => ({
   compose: (input: { prompt: string }, fallback: string) => composeMock(input, fallback),
 }));
 
+// generateRoundRecapImpl calls revalidatePath('/golf/dashboard/rounds/...')
+// after persisting the recap. Outside a real Next.js request, that throws
+// "Invariant: static generation store missing" — mock it out like the
+// other action test suites (program-onboarding, travel, etc.) do.
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
 import { generateRoundRecap } from '../round-recap';
 
 const baseRound: MockRoundRow = {

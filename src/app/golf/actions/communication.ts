@@ -13,6 +13,7 @@ import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -43,7 +44,7 @@ interface AcknowledgementRecord {
  * Acknowledge an announcement as a player
  * Creates a record in golf_announcement_acknowledgements
  */
-export async function acknowledgeAnnouncement(
+async function acknowledgeAnnouncementImpl(
   announcementId: string
 ): Promise<ActionResult> {
   try {
@@ -130,6 +131,18 @@ export async function acknowledgeAnnouncement(
   }
 }
 
+const observedAcknowledgeAnnouncement = withAdminObserved(
+  'acknowledgeAnnouncement',
+  { sport: 'golf', feature: 'announcements' },
+  acknowledgeAnnouncementImpl,
+);
+
+export async function acknowledgeAnnouncement(
+  announcementId: string
+): Promise<ActionResult> {
+  return observedAcknowledgeAnnouncement(announcementId);
+}
+
 // ============================================================================
 // GET ANNOUNCEMENT ACKNOWLEDGEMENTS
 // ============================================================================
@@ -138,7 +151,7 @@ export async function acknowledgeAnnouncement(
  * Get all acknowledgements for an announcement
  * For coaches to see who has acknowledged
  */
-export async function getAnnouncementAcknowledgements(
+async function getAnnouncementAcknowledgementsImpl(
   announcementId: string
 ): Promise<ActionResult<AcknowledgementRecord[]>> {
   try {
@@ -245,6 +258,18 @@ export async function getAnnouncementAcknowledgements(
   }
 }
 
+const observedGetAnnouncementAcknowledgements = withAdminObserved(
+  'getAnnouncementAcknowledgements',
+  { sport: 'golf', feature: 'announcements' },
+  getAnnouncementAcknowledgementsImpl,
+);
+
+export async function getAnnouncementAcknowledgements(
+  announcementId: string
+): Promise<ActionResult<AcknowledgementRecord[]>> {
+  return observedGetAnnouncementAcknowledgements(announcementId);
+}
+
 // ============================================================================
 // CHECK IF PLAYER HAS ACKNOWLEDGED
 // ============================================================================
@@ -252,7 +277,7 @@ export async function getAnnouncementAcknowledgements(
 /**
  * Check if the current player has acknowledged an announcement
  */
-export async function hasPlayerAcknowledged(
+async function hasPlayerAcknowledgedImpl(
   announcementId: string
 ): Promise<ActionResult<{ acknowledged: boolean; acknowledgedAt: string | null }>> {
   try {
@@ -303,4 +328,16 @@ export async function hasPlayerAcknowledged(
     });
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedHasPlayerAcknowledged = withAdminObserved(
+  'hasPlayerAcknowledged',
+  { sport: 'golf', feature: 'announcements' },
+  hasPlayerAcknowledgedImpl,
+);
+
+export async function hasPlayerAcknowledged(
+  announcementId: string
+): Promise<ActionResult<{ acknowledged: boolean; acknowledgedAt: string | null }>> {
+  return observedHasPlayerAcknowledged(announcementId);
 }

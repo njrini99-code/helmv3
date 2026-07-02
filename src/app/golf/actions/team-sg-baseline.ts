@@ -19,6 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   SG_BASELINE_OPTIONS,
   effectiveSgBaseline,
@@ -61,7 +62,7 @@ export interface TeamSgBaselineState {
 }
 
 /** Current effective SG baseline for the signed-in coach's team. */
-export async function getTeamSgBaseline(): Promise<
+async function getTeamSgBaselineImpl(): Promise<
   { success: true; data: TeamSgBaselineState } | { success: false; error: string }
 > {
   const resolved = await resolveCoachTeam();
@@ -85,11 +86,23 @@ export async function getTeamSgBaseline(): Promise<
   };
 }
 
+const observedGetTeamSgBaseline = withAdminObserved(
+  'getTeamSgBaseline',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getTeamSgBaselineImpl,
+);
+
+export async function getTeamSgBaseline(): Promise<
+  { success: true; data: TeamSgBaselineState } | { success: false; error: string }
+> {
+  return observedGetTeamSgBaseline();
+}
+
 /**
  * Set the team's SG baseline and recompute its stored SG. Pass null to clear the
  * override (revert to the gender default).
  */
-export async function setTeamSgBaseline(
+async function setTeamSgBaselineImpl(
   baseline: SgBaselineKey | null,
 ): Promise<{ success: boolean; error?: string }> {
   if (baseline !== null && !VALID_KEYS.has(baseline)) {
@@ -127,4 +140,16 @@ export async function setTeamSgBaseline(
   revalidatePath('/golf/dashboard/coachhelm');
   revalidatePath('/golf/dashboard/settings/coaching-intelligence');
   return { success: true };
+}
+
+const observedSetTeamSgBaseline = withAdminObserved(
+  'setTeamSgBaseline',
+  { sport: 'golf', feature: 'stats_analytics' },
+  setTeamSgBaselineImpl,
+);
+
+export async function setTeamSgBaseline(
+  baseline: SgBaselineKey | null,
+): Promise<{ success: boolean; error?: string }> {
+  return observedSetTeamSgBaseline(baseline);
 }

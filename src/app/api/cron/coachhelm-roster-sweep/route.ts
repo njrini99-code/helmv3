@@ -17,6 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -35,6 +36,10 @@ export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
 
+  return recordJobRun('coachhelm-roster-sweep', () => handleRosterSweep());
+}
+
+async function handleRosterSweep(): Promise<NextResponse> {
   const supabase = createAdminClient();
 
   const { data: memberships, error } = await supabase

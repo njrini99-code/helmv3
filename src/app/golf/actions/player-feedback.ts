@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/server';
 import { BehaviorLearner } from '@/lib/coachhelm/v2/learning/behavior-learner';
 import type { InteractionType } from '@/lib/coachhelm/v2/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 const ratingSchema = z.object({
   insightId: z.string().uuid(),
@@ -95,7 +96,7 @@ function buildDefaultRecorder(playerId: string, rating: RatingInput['rating']): 
  * @param supabaseOverride  Optional client (for tests / service-role callers)
  * @param recorderOverride  Optional behavior-learner recorder (for tests)
  */
-export async function rateInsightAsPlayer(
+async function rateInsightAsPlayerImpl(
   input: RatingInput,
   supabaseOverride?: SupabaseClient,
   recorderOverride?: InteractionRecorder
@@ -117,14 +118,8 @@ export async function rateInsightAsPlayer(
     .maybeSingle();
 
   if (playerErr) {
-    await logServerError(
-      `rateInsightAsPlayer.player lookup failed: ${playerErr.message ?? 'unknown'}`,
-      {
-        action: 'rateInsightAsPlayer.player',
-        featureArea: 'player_feedback',
-        extra: { userId: user.id },
-      }
-    );
+    // W15: inline logServerError removed here — withAdminObserved now
+    // captures this throw at the export boundary (no more double-log).
     throw new Error('Player lookup failed');
   }
   if (!player) throw new Error('Player not found');
@@ -139,14 +134,8 @@ export async function rateInsightAsPlayer(
     .maybeSingle();
 
   if (insightErr) {
-    await logServerError(
-      `rateInsightAsPlayer.insight lookup failed: ${insightErr.message ?? 'unknown'}`,
-      {
-        action: 'rateInsightAsPlayer.insight',
-        featureArea: 'player_feedback',
-        extra: { insightId: parsed.insightId },
-      }
-    );
+    // W15: inline logServerError removed here — withAdminObserved now
+    // captures this throw at the export boundary (no more double-log).
     throw new Error('Insight lookup failed');
   }
   if (!insight || insight.player_id !== (player as { id: string }).id) {
@@ -178,14 +167,8 @@ export async function rateInsightAsPlayer(
   });
 
   if (upsertErr) {
-    await logServerError(
-      `rateInsightAsPlayer.upsert failed: ${upsertErr.message ?? 'unknown'}`,
-      {
-        action: 'rateInsightAsPlayer.upsert',
-        featureArea: 'player_feedback',
-        extra: { insightId: parsed.insightId },
-      }
-    );
+    // W15: inline logServerError removed here — withAdminObserved now
+    // captures this throw at the export boundary (no more double-log).
     throw new Error('Failed to save feedback');
   }
 
@@ -221,4 +204,14 @@ export async function rateInsightAsPlayer(
   revalidatePath('/golf/dashboard/my-development');
 
   return { success: true };
+}
+
+const observedRateInsightAsPlayer = withAdminObserved(
+  'rateInsightAsPlayer',
+  { sport: 'golf', feature: 'player_coachhelm_dashboard' },
+  rateInsightAsPlayerImpl,
+);
+
+export async function rateInsightAsPlayer(input: RatingInput, supabaseOverride?: SupabaseClient, recorderOverride?: InteractionRecorder): Promise<{ success: true }> {
+  return observedRateInsightAsPlayer(input, supabaseOverride, recorderOverride);
 }

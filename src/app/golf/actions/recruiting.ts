@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export type RecruitStatus = 'recruiting' | 'watched' | 'offered' | 'committed';
 
@@ -121,7 +122,7 @@ async function resolveCoachAndTeam(): Promise<
   return { ok: true, coachId: coach.id, teamId, supabase };
 }
 
-export async function getRecruits(): Promise<ActionResult<Recruit[]>> {
+async function getRecruitsImpl(): Promise<ActionResult<Recruit[]>> {
   try {
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error };
@@ -151,7 +152,17 @@ export async function getRecruits(): Promise<ActionResult<Recruit[]>> {
   }
 }
 
-export async function createRecruit(input: RecruitInput): Promise<ActionResult<{ id: string }>> {
+const observedGetRecruits = withAdminObserved(
+  'getRecruits',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  getRecruitsImpl,
+);
+
+export async function getRecruits(): Promise<ActionResult<Recruit[]>> {
+  return observedGetRecruits();
+}
+
+async function createRecruitImpl(input: RecruitInput): Promise<ActionResult<{ id: string }>> {
   if (!input.first_name?.trim()) {
     return { success: false, error: 'First name is required' };
   }
@@ -202,7 +213,17 @@ export async function createRecruit(input: RecruitInput): Promise<ActionResult<{
   }
 }
 
-export async function updateRecruit(
+const observedCreateRecruit = withAdminObserved(
+  'createRecruit',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  createRecruitImpl,
+);
+
+export async function createRecruit(input: RecruitInput): Promise<ActionResult<{ id: string }>> {
+  return observedCreateRecruit(input);
+}
+
+async function updateRecruitImpl(
   id: string,
   updates: Partial<RecruitInput>,
 ): Promise<ActionResult> {
@@ -254,7 +275,20 @@ export async function updateRecruit(
   }
 }
 
-export async function deleteRecruit(id: string): Promise<ActionResult> {
+const observedUpdateRecruit = withAdminObserved(
+  'updateRecruit',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  updateRecruitImpl,
+);
+
+export async function updateRecruit(
+  id: string,
+  updates: Partial<RecruitInput>,
+): Promise<ActionResult> {
+  return observedUpdateRecruit(id, updates);
+}
+
+async function deleteRecruitImpl(id: string): Promise<ActionResult> {
   if (!id) return { success: false, error: 'Recruit id required' };
 
   try {
@@ -309,4 +343,14 @@ export async function deleteRecruit(id: string): Promise<ActionResult> {
     });
     return { success: false, error: 'Failed to remove recruit' };
   }
+}
+
+const observedDeleteRecruit = withAdminObserved(
+  'deleteRecruit',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  deleteRecruitImpl,
+);
+
+export async function deleteRecruit(id: string): Promise<ActionResult> {
+  return observedDeleteRecruit(id);
 }

@@ -32,6 +32,7 @@ import {
   verifyTeamAccess,
 } from '@/lib/auth/verify-player-access';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /** One de-duplicated causal relationship row for the browsing panels. */
 export interface CausalRelationshipRow {
@@ -170,7 +171,7 @@ async function fetchPlayerRowsDeduped(
  * list. Returns `[]` on any auth failure or DB error (honest-empty; the panel
  * renders a calm empty state — never a fabricated relationship).
  */
-export async function getPlayerCausalRelationships(
+async function getPlayerCausalRelationshipsImpl(
   playerId: string,
   opts?: { includeInactive?: boolean },
 ): Promise<CausalRelationshipRow[]> {
@@ -189,6 +190,19 @@ export async function getPlayerCausalRelationships(
   return fetchPlayerRowsDeduped(supabase, playerId, opts?.includeInactive ?? false);
 }
 
+const observedGetPlayerCausalRelationships = withAdminObserved(
+  'getPlayerCausalRelationships',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getPlayerCausalRelationshipsImpl,
+);
+
+export async function getPlayerCausalRelationships(
+  playerId: string,
+  opts?: { includeInactive?: boolean },
+): Promise<CausalRelationshipRow[]> {
+  return observedGetPlayerCausalRelationships(playerId, opts);
+}
+
 /**
  * Team-scoped read. Auth: the authenticated caller must staff `teamId`
  * (`verifyTeamAccess`). Resolves the team's ACTIVE player_ids via
@@ -196,7 +210,7 @@ export async function getPlayerCausalRelationships(
  * `Record<playerId, CausalRelationshipRow[]>` (players with no rows are simply
  * absent from the map). Returns `{}` on any auth failure or DB error.
  */
-export async function getTeamCausalRelationships(
+async function getTeamCausalRelationshipsImpl(
   teamId: string,
   opts?: { includeInactive?: boolean },
 ): Promise<Record<string, CausalRelationshipRow[]>> {
@@ -246,4 +260,17 @@ export async function getTeamCausalRelationships(
   );
 
   return byPlayer;
+}
+
+const observedGetTeamCausalRelationships = withAdminObserved(
+  'getTeamCausalRelationships',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getTeamCausalRelationshipsImpl,
+);
+
+export async function getTeamCausalRelationships(
+  teamId: string,
+  opts?: { includeInactive?: boolean },
+): Promise<Record<string, CausalRelationshipRow[]>> {
+  return observedGetTeamCausalRelationships(teamId, opts);
 }

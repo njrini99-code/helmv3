@@ -26,6 +26,7 @@ import { revalidatePath } from 'next/cache';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   normalizeName,
   isTeeComplete,
@@ -116,7 +117,7 @@ export interface ListCoursesOptions {
 }
 
 /** Active (non-deleted) cloud courses, optionally filtered by a search query. */
-export async function listCourses(opts: ListCoursesOptions = {}): Promise<GolfCourse[]> {
+async function listCoursesImpl(opts: ListCoursesOptions = {}): Promise<GolfCourse[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
@@ -150,6 +151,16 @@ export async function listCourses(opts: ListCoursesOptions = {}): Promise<GolfCo
   return data.map(mapCourseRow);
 }
 
+const observedListCourses = withAdminObserved(
+  'listCourses',
+  { sport: 'golf', feature: 'course_library' },
+  listCoursesImpl,
+);
+
+export async function listCourses(opts: ListCoursesOptions = {}): Promise<GolfCourse[]> {
+  return observedListCourses(opts);
+}
+
 /**
  * Strict variant of {@link listCourses} for the library PAGE load: it THROWS on
  * a hard DB error instead of masking it as an empty list. The lenient
@@ -158,7 +169,7 @@ export async function listCourses(opts: ListCoursesOptions = {}): Promise<GolfCo
  * error boundary engages with a real "couldn't load — retry" state rather than
  * the cheerful "No courses yet" empty state (premium-scrub B3). (P339)
  */
-export async function listCoursesStrict(opts: ListCoursesOptions = {}): Promise<GolfCourse[]> {
+async function listCoursesStrictImpl(opts: ListCoursesOptions = {}): Promise<GolfCourse[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
@@ -190,13 +201,23 @@ export async function listCoursesStrict(opts: ListCoursesOptions = {}): Promise<
   return (data ?? []).map(mapCourseRow);
 }
 
+const observedListCoursesStrict = withAdminObserved(
+  'listCoursesStrict',
+  { sport: 'golf', feature: 'course_library' },
+  listCoursesStrictImpl,
+);
+
+export async function listCoursesStrict(opts: ListCoursesOptions = {}): Promise<GolfCourse[]> {
+  return observedListCoursesStrict(opts);
+}
+
 /**
  * Cloud courses the current player has recently played, most-recent first.
  * Derived from golf_rounds.course_id (populated when a round starts from a
  * library tee or is grown from a save). Rounds without a cloud course_id
  * (legacy / per-player quick-pick) simply don't appear. Coaches / no player → [].
  */
-export async function getRecentlyPlayedCourses(limit = 12): Promise<GolfCourse[]> {
+async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
@@ -258,8 +279,18 @@ export async function getRecentlyPlayedCourses(limit = 12): Promise<GolfCourse[]
   return orderedIds.map((id) => byId.get(id)).filter((c): c is GolfCourse => !!c);
 }
 
+const observedGetRecentlyPlayedCourses = withAdminObserved(
+  'getRecentlyPlayedCourses',
+  { sport: 'golf', feature: 'course_library' },
+  getRecentlyPlayedCoursesImpl,
+);
+
+export async function getRecentlyPlayedCourses(limit = 12): Promise<GolfCourse[]> {
+  return observedGetRecentlyPlayedCourses(limit);
+}
+
 /** Active tee-set counts per course id (for card "N tees" labels). */
-export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<string, number>> {
+async function getCourseTeeCountsImpl(courseIds: string[]): Promise<Record<string, number>> {
   if (courseIds.length === 0) return {};
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -275,6 +306,8 @@ export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<st
       .in('course_id', courseIds)
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_course_tees', action: 'getCourseTeeCounts', feature: 'course_library', sport: 'golf' },
   );
   const counts: Record<string, number> = {};
   for (const r of data ?? []) {
@@ -284,12 +317,22 @@ export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<st
   return counts;
 }
 
+const observedGetCourseTeeCounts = withAdminObserved(
+  'getCourseTeeCounts',
+  { sport: 'golf', feature: 'course_library' },
+  getCourseTeeCountsImpl,
+);
+
+export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<string, number>> {
+  return observedGetCourseTeeCounts(courseIds);
+}
+
 /**
  * Strict variant of {@link getCourseTeeCounts} for the page load — THROWS on a
  * hard DB error instead of returning a silently-undercounted map, so a failed
  * read surfaces as a real error state rather than a misleadingly-empty page. (P339)
  */
-export async function getCourseTeeCountsStrict(courseIds: string[]): Promise<Record<string, number>> {
+async function getCourseTeeCountsStrictImpl(courseIds: string[]): Promise<Record<string, number>> {
   if (courseIds.length === 0) return {};
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -302,6 +345,8 @@ export async function getCourseTeeCountsStrict(courseIds: string[]): Promise<Rec
       .in('course_id', courseIds)
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_course_tees', action: 'getCourseTeeCountsStrict', feature: 'course_library', sport: 'golf' },
   );
   if (error) {
     throw new Error(`getCourseTeeCounts failed: ${error.message}`);
@@ -314,8 +359,18 @@ export async function getCourseTeeCountsStrict(courseIds: string[]): Promise<Rec
   return counts;
 }
 
+const observedGetCourseTeeCountsStrict = withAdminObserved(
+  'getCourseTeeCountsStrict',
+  { sport: 'golf', feature: 'course_library' },
+  getCourseTeeCountsStrictImpl,
+);
+
+export async function getCourseTeeCountsStrict(courseIds: string[]): Promise<Record<string, number>> {
+  return observedGetCourseTeeCountsStrict(courseIds);
+}
+
 /** A course with its ACTIVE tee sets (carousel/detail payload). */
-export async function getCourseDetail(
+async function getCourseDetailImpl(
   courseId: string,
 ): Promise<{ course: GolfCourse; tees: GolfCourseTee[] } | null> {
   const supabase = await createClient();
@@ -343,8 +398,20 @@ export async function getCourseDetail(
   };
 }
 
+const observedGetCourseDetail = withAdminObserved(
+  'getCourseDetail',
+  { sport: 'golf', feature: 'course_library' },
+  getCourseDetailImpl,
+);
+
+export async function getCourseDetail(
+  courseId: string,
+): Promise<{ course: GolfCourse; tees: GolfCourseTee[] } | null> {
+  return observedGetCourseDetail(courseId);
+}
+
 /** A single tee with its hole rows (ordered by hole_number). */
-export async function getTeeWithHoles(teeId: string): Promise<GolfCourseTeeWithHoles | null> {
+async function getTeeWithHolesImpl(teeId: string): Promise<GolfCourseTeeWithHoles | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -363,6 +430,16 @@ export async function getTeeWithHoles(teeId: string): Promise<GolfCourseTeeWithH
     .order('hole_number');
 
   return { ...mapTeeRow(teeRow), holes: (holeRows ?? []).map(mapTeeHoleRow) };
+}
+
+const observedGetTeeWithHoles = withAdminObserved(
+  'getTeeWithHoles',
+  { sport: 'golf', feature: 'course_library' },
+  getTeeWithHolesImpl,
+);
+
+export async function getTeeWithHoles(teeId: string): Promise<GolfCourseTeeWithHoles | null> {
+  return observedGetTeeWithHoles(teeId);
 }
 
 /** Hole-config defaults for the new-round flow, sourced from a tee set. The
@@ -384,7 +461,7 @@ export interface TeeRoundDefaults {
 }
 
 /** Load a tee set shaped as new-round defaults (Phase 4 tee picker calls this). */
-export async function getTeeRoundDefaults(teeId: string): Promise<TeeRoundDefaults | null> {
+async function getTeeRoundDefaultsImpl(teeId: string): Promise<TeeRoundDefaults | null> {
   const supabase = await createClient();
   const tee = await getTeeWithHoles(teeId);
   if (!tee || tee.deleted_at) return null;
@@ -419,8 +496,18 @@ export async function getTeeRoundDefaults(teeId: string): Promise<TeeRoundDefaul
   };
 }
 
+const observedGetTeeRoundDefaults = withAdminObserved(
+  'getTeeRoundDefaults',
+  { sport: 'golf', feature: 'course_library' },
+  getTeeRoundDefaultsImpl,
+);
+
+export async function getTeeRoundDefaults(teeId: string): Promise<TeeRoundDefaults | null> {
+  return observedGetTeeRoundDefaults(teeId);
+}
+
 /** Append-only course edit history, newest first. */
-export async function getCourseEditHistory(courseId: string, limit = 50) {
+async function getCourseEditHistoryImpl(courseId: string, limit = 50) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
@@ -433,8 +520,18 @@ export async function getCourseEditHistory(courseId: string, limit = 50) {
   return data ?? [];
 }
 
+const observedGetCourseEditHistory = withAdminObserved(
+  'getCourseEditHistory',
+  { sport: 'golf', feature: 'course_library' },
+  getCourseEditHistoryImpl,
+);
+
+export async function getCourseEditHistory(courseId: string, limit = 50) {
+  return observedGetCourseEditHistory(courseId, limit);
+}
+
 /** The active team's saved courses, joined to course + default tee. */
-export async function getTeamSavedCourses(): Promise<GolfTeamSavedCourseWithCourse[]> {
+async function getTeamSavedCoursesImpl(): Promise<GolfTeamSavedCourseWithCourse[]> {
   const supabase = await createClient();
   const ctx = await getCoachTeam(supabase);
   if ('error' in ctx) {
@@ -461,6 +558,16 @@ export async function getTeamSavedCourses(): Promise<GolfTeamSavedCourseWithCour
     return loadTeamSaved(supabase, membership.team_id as string);
   }
   return loadTeamSaved(supabase, ctx.teamId);
+}
+
+const observedGetTeamSavedCourses = withAdminObserved(
+  'getTeamSavedCourses',
+  { sport: 'golf', feature: 'course_library' },
+  getTeamSavedCoursesImpl,
+);
+
+export async function getTeamSavedCourses(): Promise<GolfTeamSavedCourseWithCourse[]> {
+  return observedGetTeamSavedCourses();
 }
 
 async function loadTeamSaved(
@@ -510,7 +617,7 @@ async function loadTeamSaved(
  * "this team has saved nothing yet". Resolution of the active team mirrors the
  * lenient reader exactly (coach team, else player membership). (P339)
  */
-export async function getTeamSavedCoursesStrict(): Promise<GolfTeamSavedCourseWithCourse[]> {
+async function getTeamSavedCoursesStrictImpl(): Promise<GolfTeamSavedCourseWithCourse[]> {
   const supabase = await createClient();
   const ctx = await getCoachTeam(supabase);
   if ('error' in ctx) {
@@ -532,6 +639,16 @@ export async function getTeamSavedCoursesStrict(): Promise<GolfTeamSavedCourseWi
     return loadTeamSavedStrict(supabase, membership.team_id as string);
   }
   return loadTeamSavedStrict(supabase, ctx.teamId);
+}
+
+const observedGetTeamSavedCoursesStrict = withAdminObserved(
+  'getTeamSavedCoursesStrict',
+  { sport: 'golf', feature: 'course_library' },
+  getTeamSavedCoursesStrictImpl,
+);
+
+export async function getTeamSavedCoursesStrict(): Promise<GolfTeamSavedCourseWithCourse[]> {
+  return observedGetTeamSavedCoursesStrict();
 }
 
 async function loadTeamSavedStrict(
@@ -596,7 +713,7 @@ export interface CreateCourseInput {
  * inserting a duplicate. (The hard unique guard lands in the gated dedup phase;
  * this is the app-level guard until then.)
  */
-export async function createCourse(
+async function createCourseImpl(
   input: CreateCourseInput,
 ): Promise<Result<{ course: GolfCourse; deduped: boolean }>> {
   const supabase = await createClient();
@@ -678,6 +795,18 @@ export async function createCourse(
   return { success: true, data: { course: mapCourseRow(created), deduped: false } };
 }
 
+const observedCreateCourse = withAdminObserved(
+  'createCourse',
+  { sport: 'golf', feature: 'course_library' },
+  createCourseImpl,
+);
+
+export async function createCourse(
+  input: CreateCourseInput,
+): Promise<Result<{ course: GolfCourse; deduped: boolean }>> {
+  return observedCreateCourse(input);
+}
+
 export interface UpdateCoursePatch {
   name?: string;
   city?: string | null;
@@ -689,7 +818,7 @@ export interface UpdateCoursePatch {
 }
 
 /** Edit a cloud course (open contribution). Stamps last-edited + edit-history. */
-export async function updateCourse(
+async function updateCourseImpl(
   courseId: string,
   patch: UpdateCoursePatch,
 ): Promise<Result<GolfCourse>> {
@@ -761,12 +890,43 @@ export async function updateCourse(
   return { success: true, data: mapCourseRow(after) };
 }
 
+const observedUpdateCourse = withAdminObserved(
+  'updateCourse',
+  { sport: 'golf', feature: 'course_library' },
+  updateCourseImpl,
+);
+
+export async function updateCourse(
+  courseId: string,
+  patch: UpdateCoursePatch,
+): Promise<Result<GolfCourse>> {
+  return observedUpdateCourse(courseId, patch);
+}
+
 /** Soft-delete a course (tombstone). Never hard-deletes — preserves any rounds/saves. */
-export async function softDeleteCourse(courseId: string): Promise<Result<void>> {
+async function softDeleteCourseImpl(courseId: string): Promise<Result<void>> {
   return setCourseDeleted(courseId, true);
 }
-export async function restoreCourse(courseId: string): Promise<Result<void>> {
+async function restoreCourseImpl(courseId: string): Promise<Result<void>> {
   return setCourseDeleted(courseId, false);
+}
+
+const observedSoftDeleteCourse = withAdminObserved(
+  'softDeleteCourse',
+  { sport: 'golf', feature: 'course_library' },
+  softDeleteCourseImpl,
+);
+export async function softDeleteCourse(courseId: string): Promise<Result<void>> {
+  return observedSoftDeleteCourse(courseId);
+}
+
+const observedRestoreCourse = withAdminObserved(
+  'restoreCourse',
+  { sport: 'golf', feature: 'course_library' },
+  restoreCourseImpl,
+);
+export async function restoreCourse(courseId: string): Promise<Result<void>> {
+  return observedRestoreCourse(courseId);
 }
 
 async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Result<void>> {
@@ -808,7 +968,7 @@ async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Res
  * external URL). Goes through the audited updateCourse path (attribution +
  * edit-history).
  */
-export async function setCourseImageUrl(
+async function setCourseImageUrlImpl(
   courseId: string,
   imageUrl: string,
 ): Promise<Result<{ imageUrl: string }>> {
@@ -826,14 +986,37 @@ export async function setCourseImageUrl(
   return { success: true, data: { imageUrl } };
 }
 
+const observedSetCourseImageUrl = withAdminObserved(
+  'setCourseImageUrl',
+  { sport: 'golf', feature: 'course_library' },
+  setCourseImageUrlImpl,
+);
+
+export async function setCourseImageUrl(
+  courseId: string,
+  imageUrl: string,
+): Promise<Result<{ imageUrl: string }>> {
+  return observedSetCourseImageUrl(courseId, imageUrl);
+}
+
 /** Clear a course's photo (keeps the storage object; only the uploader can purge it). */
-export async function removeCourseImage(courseId: string): Promise<Result<void>> {
+async function removeCourseImageImpl(courseId: string): Promise<Result<void>> {
   const supabase = await createClient();
   const actor = await getActor(supabase);
   if (!actor) return { success: false, error: 'You must be logged in' };
   const result = await updateCourse(courseId, { imageUrl: null });
   if (!result.success) return { success: false, error: result.error };
   return { success: true, data: undefined };
+}
+
+const observedRemoveCourseImage = withAdminObserved(
+  'removeCourseImage',
+  { sport: 'golf', feature: 'course_library' },
+  removeCourseImageImpl,
+);
+
+export async function removeCourseImage(courseId: string): Promise<Result<void>> {
+  return observedRemoveCourseImage(courseId);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -858,7 +1041,7 @@ export interface CreateTeeInput {
 }
 
 /** Add a tee set (+ its holes) to a course. Drafts when the hole set is incomplete. */
-export async function createTee(
+async function createTeeImpl(
   courseId: string,
   input: CreateTeeInput,
 ): Promise<Result<GolfCourseTeeWithHoles>> {
@@ -937,6 +1120,19 @@ export async function createTee(
   );
 }
 
+const observedCreateTee = withAdminObserved(
+  'createTee',
+  { sport: 'golf', feature: 'course_library' },
+  createTeeImpl,
+);
+
+export async function createTee(
+  courseId: string,
+  input: CreateTeeInput,
+): Promise<Result<GolfCourseTeeWithHoles>> {
+  return observedCreateTee(courseId, input);
+}
+
 export interface ContributeCourseInput {
   courseName: string;
   city?: string | null;
@@ -961,7 +1157,7 @@ export interface ContributeCourseInput {
  * round's own snapshot is unaffected. Best-effort by contract: the caller treats
  * failure as "round still submits, just unlinked".
  */
-export async function contributeCourseFromRound(
+async function contributeCourseFromRoundImpl(
   input: ContributeCourseInput,
 ): Promise<Result<{ courseId: string; teeId: string | null }>> {
   const supabase = await createClient();
@@ -1011,6 +1207,18 @@ export async function contributeCourseFromRound(
   return { success: true, data: { courseId, teeId: teeRes.success ? teeRes.data.id : null } };
 }
 
+const observedContributeCourseFromRound = withAdminObserved(
+  'contributeCourseFromRound',
+  { sport: 'golf', feature: 'course_library' },
+  contributeCourseFromRoundImpl,
+);
+
+export async function contributeCourseFromRound(
+  input: ContributeCourseInput,
+): Promise<Result<{ courseId: string; teeId: string | null }>> {
+  return observedContributeCourseFromRound(input);
+}
+
 export interface UpdateTeePatch {
   teeName?: string;
   teeColor?: string | null;
@@ -1027,7 +1235,7 @@ export interface UpdateTeePatch {
  * (tee_id, hole_number) FIRST, then delete only the surplus hole numbers. A
  * transient failure can never empty the hole set. Does NOT touch golf_rounds.
  */
-export async function updateTee(
+async function updateTeeImpl(
   teeId: string,
   patch: UpdateTeePatch,
 ): Promise<Result<GolfCourseTeeWithHoles>> {
@@ -1132,11 +1340,42 @@ export async function updateTee(
     : { success: false, error: 'Tee updated but could not be reloaded' };
 }
 
-export async function softDeleteTee(teeId: string): Promise<Result<void>> {
+const observedUpdateTee = withAdminObserved(
+  'updateTee',
+  { sport: 'golf', feature: 'course_library' },
+  updateTeeImpl,
+);
+
+export async function updateTee(
+  teeId: string,
+  patch: UpdateTeePatch,
+): Promise<Result<GolfCourseTeeWithHoles>> {
+  return observedUpdateTee(teeId, patch);
+}
+
+async function softDeleteTeeImpl(teeId: string): Promise<Result<void>> {
   return setTeeDeleted(teeId, true);
 }
-export async function restoreTee(teeId: string): Promise<Result<void>> {
+async function restoreTeeImpl(teeId: string): Promise<Result<void>> {
   return setTeeDeleted(teeId, false);
+}
+
+const observedSoftDeleteTee = withAdminObserved(
+  'softDeleteTee',
+  { sport: 'golf', feature: 'course_library' },
+  softDeleteTeeImpl,
+);
+export async function softDeleteTee(teeId: string): Promise<Result<void>> {
+  return observedSoftDeleteTee(teeId);
+}
+
+const observedRestoreTee = withAdminObserved(
+  'restoreTee',
+  { sport: 'golf', feature: 'course_library' },
+  restoreTeeImpl,
+);
+export async function restoreTee(teeId: string): Promise<Result<void>> {
+  return observedRestoreTee(teeId);
 }
 
 async function setTeeDeleted(teeId: string, deleted: boolean): Promise<Result<void>> {
@@ -1170,7 +1409,7 @@ export interface SaveTeamCourseOptions {
 }
 
 /** Save a course to the active team's library (idempotent upsert on team+course). */
-export async function saveTeamCourse(
+async function saveTeamCourseImpl(
   courseId: string,
   opts: SaveTeamCourseOptions = {},
 ): Promise<Result<GolfTeamSavedCourse>> {
@@ -1209,8 +1448,21 @@ export async function saveTeamCourse(
   return { success: true, data: mapSavedRow(data) };
 }
 
+const observedSaveTeamCourse = withAdminObserved(
+  'saveTeamCourse',
+  { sport: 'golf', feature: 'course_library' },
+  saveTeamCourseImpl,
+);
+
+export async function saveTeamCourse(
+  courseId: string,
+  opts: SaveTeamCourseOptions = {},
+): Promise<Result<GolfTeamSavedCourse>> {
+  return observedSaveTeamCourse(courseId, opts);
+}
+
 /** Remove a course from the team library (a bookmark row — no round/stat data lost). */
-export async function unsaveTeamCourse(courseId: string): Promise<Result<void>> {
+async function unsaveTeamCourseImpl(courseId: string): Promise<Result<void>> {
   const supabase = await createClient();
   const ctx = await getCoachTeam(supabase);
   if ('error' in ctx) return { success: false, error: ctx.error };
@@ -1225,8 +1477,18 @@ export async function unsaveTeamCourse(courseId: string): Promise<Result<void>> 
   return { success: true, data: undefined };
 }
 
+const observedUnsaveTeamCourse = withAdminObserved(
+  'unsaveTeamCourse',
+  { sport: 'golf', feature: 'course_library' },
+  unsaveTeamCourseImpl,
+);
+
+export async function unsaveTeamCourse(courseId: string): Promise<Result<void>> {
+  return observedUnsaveTeamCourse(courseId);
+}
+
 /** Set (or clear) the team's default tee for a saved course. */
-export async function setTeamCourseDefaultTee(
+async function setTeamCourseDefaultTeeImpl(
   courseId: string,
   teeId: string | null,
 ): Promise<Result<void>> {
@@ -1244,8 +1506,21 @@ export async function setTeamCourseDefaultTee(
   return { success: true, data: undefined };
 }
 
+const observedSetTeamCourseDefaultTee = withAdminObserved(
+  'setTeamCourseDefaultTee',
+  { sport: 'golf', feature: 'course_library' },
+  setTeamCourseDefaultTeeImpl,
+);
+
+export async function setTeamCourseDefaultTee(
+  courseId: string,
+  teeId: string | null,
+): Promise<Result<void>> {
+  return observedSetTeamCourseDefaultTee(courseId, teeId);
+}
+
 /** Pin/unpin a saved course for the team. */
-export async function setTeamCoursePinned(
+async function setTeamCoursePinnedImpl(
   courseId: string,
   pinned: boolean,
 ): Promise<Result<void>> {
@@ -1261,6 +1536,19 @@ export async function setTeamCoursePinned(
   if (error) return { success: false, error: 'Failed to update pin state' };
   revalidateLibrary();
   return { success: true, data: undefined };
+}
+
+const observedSetTeamCoursePinned = withAdminObserved(
+  'setTeamCoursePinned',
+  { sport: 'golf', feature: 'course_library' },
+  setTeamCoursePinnedImpl,
+);
+
+export async function setTeamCoursePinned(
+  courseId: string,
+  pinned: boolean,
+): Promise<Result<void>> {
+  return observedSetTeamCoursePinned(courseId, pinned);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

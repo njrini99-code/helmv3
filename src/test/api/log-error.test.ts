@@ -29,18 +29,41 @@ describe('POST /api/log-error', () => {
     createAdminMock.mockReset();
   });
 
-  it('rejects anonymous requests before parsing the body', async () => {
+  it('accepts anonymous requests, flags them, and caps severity below critical', async () => {
+    // W7: unauthenticated client errors (login/signup flow failures) were
+    // previously 401'd here — invisible to error_logs/admin_events even
+    // though Sentry saw them. Anonymous writes are now accepted, flagged
+    // `anonymous: true`, and severity-capped so a spoofed "critical" claim
+    // from a logged-out client can never page the on-call team.
     createClientMock.mockResolvedValueOnce({
       auth: {
         getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
       },
     } as never);
 
-    const res = await POST(request('not-json'));
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
 
-    expect(res.status).toBe(401);
-    await expect(res.json()).resolves.toEqual({ success: false });
-    expect(createAdminMock).not.toHaveBeenCalled();
+    const res = await POST(request(JSON.stringify({
+      message: 'anonymous client crash',
+      severity: 'critical',
+    })));
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    const adminEvent = inserts.find((i) => i.table === 'admin_events');
+    expect(errorLog?.payload.user_id).toBeNull();
+    expect(adminEvent?.payload.user_id).toBeNull();
+    expect(adminEvent?.payload.user_email).toBeNull();
+    expect(adminEvent?.payload.severity).toBe('error');
+    expect((errorLog?.payload.context as Record<string, unknown> | null)?.anonymous).toBe(true);
   });
 
   it('binds telemetry rows to the authenticated user rather than trusting the body', async () => {

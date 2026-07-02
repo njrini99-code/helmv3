@@ -15,6 +15,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getInsightEffectivenessSignals, type TrustSignal } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -141,7 +142,7 @@ export interface CoachHelmOverviewData {
 // GET INSIGHT EFFECTIVENESS
 // ============================================================================
 
-export async function getInsightEffectiveness(
+async function getInsightEffectivenessImpl(
   teamId: string,
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: InsightEffectivenessData; error?: string }> {
@@ -280,11 +281,24 @@ export async function getInsightEffectiveness(
   }
 }
 
+const observedGetInsightEffectiveness = withAdminObserved(
+  'getInsightEffectiveness',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getInsightEffectivenessImpl,
+);
+
+export async function getInsightEffectiveness(
+  teamId: string,
+  dateRange?: DateRange
+): Promise<{ success: boolean; data?: InsightEffectivenessData; error?: string }> {
+  return observedGetInsightEffectiveness(teamId, dateRange);
+}
+
 // ============================================================================
 // GET PREDICTION PERFORMANCE
 // ============================================================================
 
-export async function getPredictionPerformance(
+async function getPredictionPerformanceImpl(
   teamId: string,
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: PredictionPerformanceData; error?: string }> {
@@ -449,11 +463,24 @@ export async function getPredictionPerformance(
   }
 }
 
+const observedGetPredictionPerformance = withAdminObserved(
+  'getPredictionPerformance',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getPredictionPerformanceImpl,
+);
+
+export async function getPredictionPerformance(
+  teamId: string,
+  dateRange?: DateRange
+): Promise<{ success: boolean; data?: PredictionPerformanceData; error?: string }> {
+  return observedGetPredictionPerformance(teamId, dateRange);
+}
+
 // ============================================================================
 // GET PATTERN IMPACT
 // ============================================================================
 
-export async function getPatternImpact(
+async function getPatternImpactImpl(
   teamId: string,
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: PatternImpactData; error?: string }> {
@@ -626,11 +653,24 @@ export async function getPatternImpact(
   }
 }
 
+const observedGetPatternImpact = withAdminObserved(
+  'getPatternImpact',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getPatternImpactImpl,
+);
+
+export async function getPatternImpact(
+  teamId: string,
+  dateRange?: DateRange
+): Promise<{ success: boolean; data?: PatternImpactData; error?: string }> {
+  return observedGetPatternImpact(teamId, dateRange);
+}
+
 // ============================================================================
 // GET COACHHELM OVERVIEW
 // ============================================================================
 
-export async function getCoachHelmOverview(
+async function getCoachHelmOverviewImpl(
   teamId: string,
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: CoachHelmOverviewData; error?: string }> {
@@ -690,6 +730,8 @@ export async function getCoachHelmOverview(
         .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_coach_insights', action: 'getCoachHelmOverview', feature: 'coachhelm_analytics', sport: 'golf' },
     );
 
     // Headline counts use the SELECTED window; the week-over-week deltas stay
@@ -796,6 +838,19 @@ export async function getCoachHelmOverview(
   }
 }
 
+const observedGetCoachHelmOverview = withAdminObserved(
+  'getCoachHelmOverview',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getCoachHelmOverviewImpl,
+);
+
+export async function getCoachHelmOverview(
+  teamId: string,
+  dateRange?: DateRange
+): Promise<{ success: boolean; data?: CoachHelmOverviewData; error?: string }> {
+  return observedGetCoachHelmOverview(teamId, dateRange);
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -877,6 +932,8 @@ async function calculateInsightEffectivenessFromInsights(
         .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_coach_insights', action: 'getInsightEffectiveness', feature: 'coachhelm_analytics', sport: 'golf' },
     );
 
     if (error) {
@@ -1017,6 +1074,8 @@ async function calculatePredictionPerformanceFromPredictions(
         .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_predictions', action: 'getPredictionPerformance', feature: 'coachhelm_analytics', sport: 'golf' },
     );
 
     if (error) {
@@ -1214,7 +1273,7 @@ function generateMockPredictionPerformance(start: Date, end: Date): PredictionPe
  * On success returns a plain `Record<insightId, TrustSignal>` (server-action
  * boundaries serialize plain objects, not Maps).
  */
-export async function getInsightTrustSignals(
+async function getInsightTrustSignalsImpl(
   insightIds: string[],
 ): Promise<{ success: true; signals: Record<string, TrustSignal> } | { success: false; error: string }> {
   const supabase = await createClient();
@@ -1282,4 +1341,16 @@ export async function getInsightTrustSignals(
     );
     return { success: false, error: 'Failed to fetch insight trust signals' };
   }
+}
+
+const observedGetInsightTrustSignals = withAdminObserved(
+  'getInsightTrustSignals',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getInsightTrustSignalsImpl,
+);
+
+export async function getInsightTrustSignals(
+  insightIds: string[],
+): Promise<{ success: true; signals: Record<string, TrustSignal> } | { success: false; error: string }> {
+  return observedGetInsightTrustSignals(insightIds);
 }

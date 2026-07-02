@@ -23,6 +23,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -42,6 +43,10 @@ export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
 
+  return recordJobRun('coachhelm-safety-net', () => handleSafetyNet());
+}
+
+async function handleSafetyNet(): Promise<NextResponse> {
   const supabase = createAdminClient();
   const sinceIso = new Date(Date.now() - LOOKBACK_MS).toISOString();
 

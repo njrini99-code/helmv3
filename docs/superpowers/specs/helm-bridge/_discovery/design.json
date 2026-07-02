@@ -1,0 +1,394 @@
+{
+  "productName": "Helm Bridge \u2014 unified cross-sport command center at /admin",
+  "routeEntry": "/admin (new top-level route group src/app/admin/*; NOT /monitoring \u2014 that path is reserved by Sentry's tunnelRoute rewrite in next.config.mjs)",
+  "summary": "Helm Bridge is ONE server-rendered command center at /admin that replaces /golf/admin and /baseball/admin (the CRM subtree at /golf/admin/crm is carved out and untouched). It is a triage inbox plus health strip, not a BI wall: a pinned worst-severity banner and 6-tile KPI strip answer 'is anything on fire?' in under 5 seconds, a merged Sentry + admin_events triage queue (grouped by fingerprint, ranked by affected users, deploy-correlated) is the centerpiece, and 8 tabs give drill-down over errors, auth, golf (Fairway-inked), baseball + Lift Lab (Living Annual-inked), users/teams, cron/data-integrity, and Vercel deploys. It is built once from the existing Fairway component kit (AppShell, MetricCard, StatTile, DataTable, ChartFrame, InstrumentPanel) with sport accent inks as wayfinding \u2014 no third design language. Access is a Nick-only allowlist enforced at middleware (src/proxy.ts), a shared requireSuperAdmin() helper first-line in every server entry point, and deny-by-default RLS backed by a new is_super_admin() SQL function. Observability extends the MATURE existing pipeline (admin_events 90,796 rows + error_logs 88,764 rows + lib/admin-logger.ts + lib/server-error-logger.ts used by 237 files) with the four missing capture classes (RLS denials, failed-server-action wrapper, full auth event coverage, cron/integrity outcomes into the empty background_job_logs scaffold), and adds the two greenfield integrations: a server-only Sentry REST client (new SENTRY_READ_TOKEN) and the Vercel deployments API (token vars already consumed by admin-data.ts:1563, likely just need setting). Everything ships in small Sonnet PR waves after owner approval; migrations are additive-only against the shared prod DB with post-migration ACL verification.",
+  "authModel": {
+    "approach": "Single super-admin allowlist (Nick only, by auth user-id primary / email secondary), enforced at three independent layers. Mechanism: (1) a new admin_allowlist table (one row: Nick's auth.users id + email), RLS deny-all, service_role-managed, plus a mirrored server-only env var SUPER_ADMIN_USER_IDS for zero-DB-roundtrip checks; (2) a new SQL function public.is_super_admin() = EXISTS(SELECT 1 FROM admin_allowlist WHERE user_id = auth.uid()), SECURITY DEFINER with pinned search_path, EXECUTE revoked from anon (grant to authenticated only so RLS policies can call it), replacing users.role='admin' as the gate for everything under /admin. The legacy role column keeps gating the old /golf/admin (and the untouched CRM) until retirement. Layer order per request: middleware redirect (cheap filter, never trusted alone \u2014 Next middleware has had bypass CVEs) \u2192 requireSuperAdmin() helper called FIRST LINE in the /admin layout server component, every /admin page, every server action, and every /api/admin-center route handler (verifies supabase.auth.getUser() then compares user.id against the env allowlist; only after passing may code touch createAdminClient()) \u2192 Postgres RLS deny-by-default on all new tables (ENABLE + FORCE, zero anon/authenticated policies; service-role reads happen only behind the gated server layer) with the single writable mutation (resolve/acknowledge an event) exposed as a SECURITY DEFINER RPC that internally checks is_super_admin(), with EXECUTE revoked from anon and verified via pg_proc ACLs post-migration.",
+    "changes": [
+      "NEW: src/proxy.ts + src/lib/supabase/middleware.ts gain an /admin/* matcher: getUser() \u2192 compare user.id to SUPER_ADMIN_USER_IDS \u2192 redirect to /golf/login (today ZERO admin-path logic exists in middleware \u2014 confirmed in both files)",
+      "NEW: shared src/lib/admin/require-super-admin.ts helper (both throwing and non-throwing probe variants \u2014 preserve the checkAdminAccess non-throwing-probe pattern from admin-data.ts:95-125 that prevented the documented 500-flood incident), replacing the per-file copy-pasted requireAdmin() functions",
+      "NEW MIGRATION: admin_allowlist table + is_super_admin() function; seed with Nick's user id (needs owner to confirm WHICH auth account is his \u2014 see openQuestions)",
+      "SECURITY FIX (pre-req, its own PR): handle_new_user() trigger casts raw_user_meta_data->>'role' into users.role and 'admin' is a valid enum value \u2014 a direct Supabase signup call could self-mint admin; restrict the cast to player|coach before /admin ships",
+      "PROD DATA CHANGE (owner approval): downgrade the stale test admin row admin-ui-1779052548996@golfhelm.local (one of only 2 users.role='admin' rows)",
+      "iOS: add /admin to the AdminNativeGuard / proxy.ts native-UA exclusion so Apple reviewers never see it (App Store 4.2.2/3.1.1 \u2014 same guard the golf admin uses)",
+      "RLS hygiene: every new migration ends with REVOKE ALL FROM anon, authenticated on new objects + a pg_class.relacl / pg_proc ACL verification query (documented recurring failure mode: agents ship GRANT ALL TO anon; matview/table recreates auto-re-grant)",
+      "SECURITY DEFINER rollup RPC discipline: the 11 existing get_admin_*_rollup functions internally check auth.uid() role and 'Forbid' under service_role JWTs (documented 509-storm at admin-data.ts:35-44) \u2014 new /admin calls them with the admin's user-scoped client, exactly as rollup-a.ts does today; also REVOKE the 49 anon-executable SECURITY DEFINER functions flagged by the advisor (incl. is_admin, get_admin_platform_stat_averages) in a hardening wave"
+    ],
+    "enforcementLayers": [
+      "Middleware (src/proxy.ts \u2192 lib/supabase/middleware.ts): /admin/* matcher, getUser() + user.id \u2208 SUPER_ADMIN_USER_IDS, redirect on failure \u2014 first filter only, never the sole gate",
+      "Server (route handlers / server actions / server components): requireSuperAdmin() first-line in every entry point under src/app/admin and src/app/api/admin-center; all Sentry/Vercel API calls and all createAdminClient() service-role reads live strictly behind this gate so tokens and data never reach an unauthorized response",
+      "Postgres RLS: is_super_admin() SQL function + deny-by-default policies on admin_allowlist and all new objects; admin_events/error_logs keep their existing service_role-INSERT policies; the resolve mutation is a SECURITY DEFINER RPC gated on is_super_admin() with anon EXECUTE revoked and ACLs verified after every migration"
+    ]
+  },
+  "informationArchitecture": [
+    {
+      "tab": "Overview",
+      "purpose": "Level-1 'is anything on fire?' screen \u2014 pinned status banner, KPI strip, unified triage queue, deploy rail, watch-the-watcher. Hard-capped at ~10 tiles, no scrolling on desktop; every number deep-links to a filtered tab.",
+      "sport": "both",
+      "widgets": [
+        {
+          "name": "Global status banner",
+          "dataSource": "Server-side rollup: Sentry issues API (unresolved count) + admin_events (unresolved error/critical) + background_job_logs (overdue crons) + latest integrity results",
+          "description": "Single worst-severity line: green 'All systems nominal' / red 'N items need attention', with last-refreshed timestamp. Rendered as a dark Fairway InstrumentPanel strip \u2014 the sanctioned on-dark cockpit \u2014 visually marking 'admin mode'."
+        },
+        {
+          "name": "KPI strip (6 MetricCards)",
+          "dataSource": "Sentry org issues endpoint; admin_events (24h errors); login_attempts + admin_events security/login rows; users.last_seen + admin_analytics_events (active today); golf_rounds + baseball_games + helm_lifting_sessions counts (service-role head:true counts); Vercel v6 deployments (latest prod state)",
+          "description": "Unresolved Sentry issues, event-log errors 24h, auth failures/lockouts, active users today, activity today (rounds+games+lifts split by sport ink), last deploy status. Each: Fragment Mono numeral, delta vs prior window, sparkline, severity dot+icon (never color-only)."
+        },
+        {
+          "name": "Unified triage queue (largest bento tile, ~2/3 width)",
+          "dataSource": "Merged: Sentry issues (is:unresolved, new/regressed/escalating substatus, userCount) + admin_events grouped by lib/admin/incident-grouping.ts fingerprints (unresolved only, partial index)",
+          "description": "One worklist sorted by affected users then recency \u2014 never a flat event feed. Rows: severity icon, source badge (Sentry/App), sport badge (green golf / clay baseball), event count, distinct users, first/last seen, 'since deploy <sha>' badge, inline acknowledge/resolve (ports resolveDashboardIncident, admin-data.ts:1150) or Sentry permalink."
+        },
+        {
+          "name": "Regressed-issues callout",
+          "dataSource": "Sentry issues API filtered to substatus regressed",
+          "description": "Dedicated strip for resolved-then-returned issues \u2014 the highest-signal error category (a fix failed). Renders celebratory all-clear when empty."
+        },
+        {
+          "name": "Deploy rail",
+          "dataSource": "Vercel API GET /v6/deployments?projectId&teamId&limit=10 (state, git sha/branch/message, target=production) + Sentry issues filtered by release for new-issue counts",
+          "description": "Last 5 production deploys with commit link, age, state, and error-rate delta in the first hour post-deploy. Answers 'what changed?' \u2014 ~19% of incidents are deploy regressions."
+        },
+        {
+          "name": "Watch-the-watcher meta widget",
+          "dataSource": "In-app: timestamp of last successful Sentry API pull (cached fetch metadata); MAX(created_at) per admin_events event_type; background_job_logs expected-vs-actual",
+          "description": "Staleness detection: 'no login rows in 24h' means logging broke (sign-ins definitely happened). Sentry pull failure and event-type staleness render amber STALE \u2014 a silent dashboard is indistinguishable from a healthy system."
+        }
+      ]
+    },
+    {
+      "tab": "Errors",
+      "purpose": "Full error drill-down: every Sentry issue and every in-app incident, grouped, filterable, deploy-correlated, with per-issue affected users/teams.",
+      "sport": "both",
+      "widgets": [
+        {
+          "name": "Sentry unresolved issues table",
+          "dataSource": "GET /api/0/organizations/helm-xs/issues/?query=is:unresolved&statsPeriod=24h&sort=freq via server-only client (SENTRY_READ_TOKEN), Link-header cursor pagination capped at 3 pages, 60s revalidate cache, 429 Retry-After honored",
+          "description": "Fairway DataTable: title, level, 24h sparkline (stats key baked into the issue payload), event count, userCount, firstSeen/lastSeen, permalink deep link to sentry.io. Replaces the hardcoded fake 'Sentry: operational' row at SystemTab.tsx:396-400."
+        },
+        {
+          "name": "Errors-over-time chart with deploy markers",
+          "dataSource": "Sentry GET /organizations/helm-xs/stats_v2/?field=sum(quantity)&groupBy=outcome&interval=1h&statsPeriod=24h, overlaid with Vercel v6 deployment timestamps",
+          "description": "ChartFrame + TrendChart (dynamic import, ssr:false): hourly error volume including rate-limited/filtered outcomes, vertical deploy markers on the series \u2014 the single most valuable diagnostic correlation."
+        },
+        {
+          "name": "In-app incident feed (Incident Command)",
+          "dataSource": "admin_events + error_logs, grouped via ported lib/admin/incident-grouping.ts (stable signature: severity+errorCode+normalized-route+message-prefix), resolution via lib/admin/incident-resolver.ts",
+          "description": "The best code in the old admin, absorbed nearly as-is: grouped incidents with counts, one-click resolve writing resolved/resolved_by, filter chips (source, sport, severity, window) persisted in the URL. Row click opens a drawer with full metadata jsonb + stack trace."
+        },
+        {
+          "name": "RLS-denial & auth-error counter",
+          "dataSource": "admin_events rows with new source='rls_denial' (42501/PGRST codes captured at the shared Supabase result helpers) and event_type='security'",
+          "description": "Spikes here have historically meant missing grants or unapplied migrations (upsert UPDATE-grant, matview re-grant incidents). Net-new capture class \u2014 see errorTracking wiring."
+        },
+        {
+          "name": "Issue detail drawer",
+          "dataSource": "Sentry GET /organizations/helm-xs/issues/{id}/ + /events/; admin_events rows by fingerprint with user_id/team_id joins to users/golf_teams/baseball_teams",
+          "description": "Which specific users and teams hit this, event timeline, tags, and links to the per-user/per-team drill-downs in the Users & Teams tab."
+        }
+      ]
+    },
+    {
+      "tab": "Auth & Sign-ins",
+      "purpose": "Every sign-in/auth event: who signed in when, failures with anomaly flags, active sessions, signups and activation. Built app-level because auth.audit_log_entries is confirmed EMPTY (0 rows) on this project.",
+      "sport": "both",
+      "widgets": [
+        {
+          "name": "Sign-in feed",
+          "dataSource": "admin_events event_type='login'/'signup' (lib/admin-logger.ts logLogin/logSignup \u2014 coverage currently sparse at 12 logins/7d; extended to ALL auth paths incl. failures per errorTracking wiring)",
+          "description": "Searchable reverse-chron feed: who, when, success/fail, sport badge, team. Sparkline of logins by outcome over 24h/7d."
+        },
+        {
+          "name": "Failed-auth & lockout panel",
+          "dataSource": "login_attempts table (email, failed_attempts, locked_until \u2014 34 rows, already live) + admin_events severity='warning' security rows",
+          "description": "Aggregated anomaly lines ('14 failed logins on 3 accounts'), N-failures-in-15-min and signup-burst flags computed in SQL (rolling mean + stddev band \u2014 no ML), lockout list with unlock context."
+        },
+        {
+          "name": "Active sessions panel",
+          "dataSource": "auth.sessions (168 rows) via a NEW SECURITY DEFINER RPC get_active_sessions() \u2014 auth schema is not PostgREST-exposed; same pattern as get_admin_errors_rollup; revoke-session action via supabase.auth.admin.signOut(userId) (service-role, audit-logged to admin_events)",
+          "description": "Per-user session list with created/last-refreshed, revoke-one and sign-out-everywhere actions \u2014 the standard incident response for a compromised account."
+        },
+        {
+          "name": "Signup \u2192 activation funnel",
+          "dataSource": "users (created_at, role) + first activity from golf_rounds / baseball_games / helm_lifting_sessions; math ported verbatim from lib/admin/metrics.ts",
+          "description": "Signups this week \u2192 activated within 7d (first round/game/lift) \u2192 still-active-30d, split per sport. WAU headline, DAU secondary \u2014 no vanity all-time totals."
+        }
+      ]
+    },
+    {
+      "tab": "Golf",
+      "purpose": "Fairway-inked golf operations: activity pulse, team health, the ported Tracer data-quality suite (the only admin surface with remediation powers), CoachHelm engine health, and AI spend.",
+      "sport": "golf",
+      "widgets": [
+        {
+          "name": "Golf activity pulse",
+          "dataSource": "golf_rounds (285), golf_shots (20,974), golf_events (77) \u2014 daily counts via cached rollup RPCs get_admin_rounds_rollup / get_admin_dashboard_rollup called with the admin's user-scoped client",
+          "description": "Rounds/shots/events per day with 7d sparkline and WoW delta. Doubles as a canary: activity flatlining means something silently broke."
+        },
+        {
+          "name": "Golf teams health table",
+          "dataSource": "get_admin_teams_scoring_rollup RPC + golf_teams/golf_team_members/golf_player_stats_cache; error counts joined from admin_events by team_id (new column)",
+          "description": "12 teams: roster, coaches, last activity, 7/30d trend arrow, active/cooling/dormant status (7-14d amber, 14d+ red), per-team drill-down."
+        },
+        {
+          "name": "Tracer data-quality suite (ported)",
+          "dataSource": "admin-tracer-data.ts actions: getTracerData/getTracerEnrichedData/getTracerRoundDiagnostic (reads) + fixRoundData (admin-tracer-data.ts:1372) with recalculate_round_totals/gir, refresh_player_stats_cache, recalculate_round_strokes_gained, resolve_stuck_round RPCs; get_shot_data_quality",
+          "description": "Per-round diagnostics, player quality scores, completeness grid, and the ONLY admin mutations \u2014 preserved with its null-score refusal guard intact (service-role UPDATEs on live golf_rounds/golf_holes)."
+        },
+        {
+          "name": "CoachHelm engine health",
+          "dataSource": "golf_insight_generation_log (1,408), golf_coach_insights (530), golf_insight_effectiveness (3,648), golf_predictions (462) \u2014 via get_admin_coachhelm_rollup",
+          "description": "Insight generation success/failure rate, effectiveness ledger trend, prediction model performance \u2014 the engine's own canary panel."
+        },
+        {
+          "name": "AI/LLM spend panel",
+          "dataSource": "golf_coachhelm_llm_calls (216 rows, append-only cost log whose own comment says it was built for a deferred admin spend dashboard) + golf_coachhelm_llm_budget (23)",
+          "description": "Daily spend vs budget, calls by route, budget-exhaustion warning \u2014 a ready-made data source finally getting its UI."
+        },
+        {
+          "name": "Golf demo & leads strip",
+          "dataSource": "golf_demo_sessions + demo_requests (3) \u2014 ported /golf/admin/demo-sessions server page",
+          "description": "Demo-gate visits and inbound demo requests. Links OUT to the untouched CRM for outreach \u2014 no email capability in this console."
+        }
+      ]
+    },
+    {
+      "tab": "Baseball",
+      "purpose": "Living Annual-inked baseball + Lift Lab operations \u2014 the surface that has NEVER existed (the C5 rollup is computed on every golf-admin load and rendered nowhere; BaseballOps.tsx is dead code). Honest zero-states for the empty event-level tables.",
+      "sport": "baseball",
+      "widgets": [
+        {
+          "name": "Baseball activity pulse",
+          "dataSource": "baseball_games (24), baseball_player_stats (244), baseball_practices (2), baseball_readiness_checkins (22) \u2014 via get_admin_baseball_rollup (C5, finally consumed)",
+          "description": "Games/box-scores/practices/check-ins per week with sparkline. Pane wrapped in .living-annual scope so Fairway primitives self-skin deeper cream; RuledStatLine numerals, clay ink accents."
+        },
+        {
+          "name": "Baseball teams registry",
+          "dataSource": "baseball_teams (9), baseball_players (22), baseball_coaches (7), baseball_team_members via C5 rollup; error counts from admin_events by team_id",
+          "description": "Same health-status model as golf (active/cooling/dormant) with per-team drill-down in Living Annual language."
+        },
+        {
+          "name": "Lift Lab panel",
+          "dataSource": "helm_lifting_sessions (56), helm_lifting_set_results (182), helm_lifting_readiness_checkins (14), helm_lifting_athletes (14)",
+          "description": "Sessions and check-ins per week, PR flashes (sodium accent), program assignment coverage. Small but live \u2014 and currently invisible to any admin surface."
+        },
+        {
+          "name": "Event-level data readiness card",
+          "dataSource": "baseball_plate_appearances / baseball_pitch_events / baseball_batted_ball_events etc. (all 0 rows)",
+          "description": "Explicit neutral 'no data yet \u2014 what would appear here' state (never a bare blank tile), so empty is distinguishable from broken. Flips live automatically when ingestion starts."
+        },
+        {
+          "name": "Baseball demo sessions",
+          "dataSource": "baseball_demo_sessions via getBaseballDemoSessions (demo-tracking.ts) \u2014 the one existing baseball admin page, absorbed",
+          "description": "Demo-gate visitor table, now under the guarded /admin shell instead of an unguarded layout."
+        }
+      ]
+    },
+    {
+      "tab": "Users & Teams",
+      "purpose": "Cross-sport registry: every user and team, searchable, with per-entity drill-down \u2014 the People tab absorbed, extended to baseball, and decoupled from the CRM.",
+      "sport": "both",
+      "widgets": [
+        {
+          "name": "Users directory",
+          "dataSource": "users (107: 79 player/26 coach/2 admin) + get_admin_users_rollup + users.last_seen (update_user_last_seen RPC) + auth last_sign_in via the sessions RPC",
+          "description": "Search/filter by role, sport, team, last sign-in, status. Ports TeamUserDirectory. No email actions \u2014 at-risk re-engagement links OUT to the CRM (severs the PeopleTab.tsx:10 BulkEmailModal import)."
+        },
+        {
+          "name": "Per-user drill-down",
+          "dataSource": "golf_team_members/baseball_team_members + golf_rounds/baseball_player_stats/helm_lifting_sessions activity + admin_events by user_id (errors + auth history)",
+          "description": "Ports UserDetailPanel: profile, memberships, recent activity, recent auth events, error events, active sessions with revoke."
+        },
+        {
+          "name": "Cross-sport teams table",
+          "dataSource": "golf_teams \u222a baseball_teams with rollup RPC aggregates; last-activity = MAX across rounds/games/lifts/messages",
+          "description": "One registry, sport-inked rows, health status coloring, 7d error count column, drill-down to per-team timeline in that sport's design language."
+        },
+        {
+          "name": "At-risk accounts list",
+          "dataSource": "users/teams with >14d inactivity or never-seen (PeopleTab logic + lib/admin/metrics.ts ported verbatim)",
+          "description": "Churn-signal worklist. Action = 'Open in CRM' link only \u2014 email capability stays entirely on the CRM side of the boundary."
+        }
+      ]
+    },
+    {
+      "tab": "Jobs & Integrity",
+      "purpose": "Every scheduled job's outcome with dead-cron detection, plus a data-integrity check ledger \u2014 the class of silent failure (recorded-but-unran migrations, schema drift, grant drift) that has repeatedly bitten this codebase.",
+      "sport": "both",
+      "widgets": [
+        {
+          "name": "Cron board (expected vs actual)",
+          "dataSource": "background_job_logs (existing EMPTY scaffold, now wired: every one of the 14 vercel.json cron routes wrapped to write started/completed/failed + duration_ms) against a code-defined cadence registry",
+          "description": "Per-job: last run, duration, status, next expected, and OVERDUE highlighting (now - last_run > 1.5\u00d7 cadence) \u2014 a dead cron writes nothing, so absence must be detected explicitly. Successes logged too, not just failures."
+        },
+        {
+          "name": "Data-integrity checks grid",
+          "dataSource": "New nightly integrity cron running named SQL checks (orphaned rosters/rounds/members, stats-cache rows referencing deleted players, migration recorded-vs-applied via information_schema, anon-grant drift via pg_class.relacl/pg_proc ACLs, golf_tracer_health_snapshot refresh); results written to admin_events source='integrity' with counts + sample offending IDs",
+          "description": "Latest result per check: pass/fail, offending-row count, last-run, trend, manual re-run button, red escalation to the Overview banner on any failure."
+        },
+        {
+          "name": "Log-table health & retention",
+          "dataSource": "admin_events (90,796 rows) / error_logs (88,764) / admin_analytics_events (24,094) row counts + growth rate; retention cron outcome from background_job_logs",
+          "description": "The event log watching itself: table growth vs retention policy (info 90d / error+critical 13mo, deleted by a Vercel cron \u2014 no pg_cron exists in this DB), so the console can never bloat the shared prod instance."
+        },
+        {
+          "name": "Inngest & health endpoint",
+          "dataSource": "/api/health route + Inngest client state (INNGEST keys currently absent from every env file \u2014 inert)",
+          "description": "App health probe result and durable-workflow status; renders neutral 'not activated' for Inngest rather than fake-green."
+        }
+      ]
+    },
+    {
+      "tab": "Deploys & Infra",
+      "purpose": "What is deployed, what changed, and release health \u2014 closing the 'no deploy/infra visibility' gap (the old SystemTab hardcoded all services as operational).",
+      "sport": "both",
+      "widgets": [
+        {
+          "name": "Deployments table",
+          "dataSource": "Vercel GET /v6/deployments?projectId&teamId&limit=20 (VERCEL_API_TOKEN/VERCEL_PROJECT_ID/VERCEL_TEAM_ID \u2014 code already consumes these at admin-data.ts:1563 and fails soft to null; IDs available in .vercel/project.json), 60s revalidate",
+          "description": "State (BUILDING/READY/ERROR/CANCELED), branch, sha, commit message, duration, target; ERROR builds escalate to the Overview banner. Each row links to Sentry issues filtered by that release."
+        },
+        {
+          "name": "Currently-deployed build card",
+          "dataSource": "Vercel system env: VERCEL_GIT_COMMIT_SHA/REF/MESSAGE/AUTHOR, VERCEL_ENV (present in .env.production.local \u2014 zero new secrets)",
+          "description": "What THIS running build is: commit, branch, author, age. Works even before the Vercel API token is provisioned."
+        },
+        {
+          "name": "Release health strip (conditional)",
+          "dataSource": "Sentry GET /organizations/helm-xs/sessions/?field=crash_free_rate(session)&field=crash_free_rate(user) \u2014 ONLY if SDK session tracking is confirmed sending sessions (openQuestion)",
+          "description": "Crash-free session/user rate per release. Ship behind verification; render neutral 'not configured' rather than empty charts if sessions are absent."
+        },
+        {
+          "name": "Web vitals / traffic mini-panel",
+          "dataSource": "Existing fetchVercelAnalytics() (v1 web insights) in admin-data.ts, ported behind the new gate",
+          "description": "Traffic and latency proxies for the golden-signals strip; degrades to null exactly as the existing code does when the token is absent."
+        }
+      ]
+    }
+  ],
+  "dataModel": {
+    "newTables": [
+      {
+        "name": "admin_allowlist",
+        "purpose": "Single-super-admin allowlist backing is_super_admin(); one row (Nick). RLS ENABLE + FORCE with zero anon/authenticated policies \u2014 service_role writes only, reads only via the SECURITY DEFINER function. Deliberately a table (not hardcoded UUID in SQL) so rotation is a data change, not a migration.",
+        "keyColumns": [
+          "user_id uuid PRIMARY KEY REFERENCES auth.users(id)",
+          "email text NOT NULL",
+          "note text",
+          "created_at timestamptz NOT NULL DEFAULT now()"
+        ]
+      }
+    ],
+    "reusedTables": [
+      "admin_events \u2014 THE event log (90,796 rows, decision 3b is ~80% pre-built); ADDITIVE columns only: sport text CHECK (golf|baseball|shared), team_id uuid, fingerprint text, source text (server_action|route_handler|rls_denial|auth|cron|integrity|client|system) + indexes (fingerprint, created_at DESC) and partial WHERE NOT resolved \u2014 columns added BEFORE any new emitter ships (schema-drift gotcha: fields silently drop otherwise); writer API of lib/admin-logger.ts / lib/server-error-logger.ts stays backward-compatible because 237 files import it",
+      "error_logs (88,764 rows \u2014 near-1:1 double-write with admin_events; keep both writers stable, read via admin_events-first with error_logs as drill-down detail; consolidation deferred to openQuestion)",
+      "background_job_logs (EMPTY scaffold with RLS already in place \u2014 wired as the cron/job outcome sink: job_type, status, duration_ms, retry_count)",
+      "login_attempts (34 rows \u2014 failed-login/lockout source)",
+      "admin_analytics_events (24,094 rows \u2014 activity/engagement source for metrics.ts math)",
+      "audit_log + admin_api_perf_log + admin_client_errors (empty scaffolds \u2014 audit_log receives all admin.* actions performed IN the command center: resolves, session revocations, tracer fixes)",
+      "users (role, last_seen), auth.sessions + auth.users via new SECURITY DEFINER RPCs (auth schema is not PostgREST-exposed; auth.audit_log_entries confirmed 0 rows \u2014 not a usable source)",
+      "Golf: golf_rounds, golf_shots, golf_holes, golf_teams, golf_players, golf_team_members, golf_player_stats_cache, golf_round_stats_cache, golf_events, golf_insight_generation_log, golf_coach_insights, golf_insight_effectiveness, golf_predictions, golf_coachhelm_llm_calls, golf_coachhelm_llm_budget, golf_demo_sessions, demo_requests, golf_tracer_health_snapshot",
+      "Baseball: baseball_teams, baseball_players, baseball_coaches, baseball_team_members, baseball_games, baseball_player_stats, baseball_box_score_batting/pitching, baseball_practices, baseball_readiness_checkins, baseball_events, baseball_demo_sessions",
+      "Lift Lab: helm_lifting_athletes, helm_lifting_sessions, helm_lifting_set_results, helm_lifting_readiness_checkins, helm_lifting_programs",
+      "Existing RPCs reused (called with the admin's USER-SCOPED client, never service_role \u2014 auth.uid() is NULL under service_role and they Forbid): get_admin_dashboard_rollup, get_admin_baseball_rollup (C5), get_admin_errors_rollup (C6), get_admin_teams_scoring_rollup (C7), get_admin_users_rollup, get_admin_rounds_rollup, get_admin_coachhelm_rollup, get_admin_analytics_rollup, get_platform_health_stats, get_shot_data_quality, refresh_player_stats_cache, recalculate_round_strokes_gained, update_user_last_seen \u2014 with internal gates migrated from role='admin' to is_super_admin() OR role='admin' during transition",
+      "New RPCs (migrations, not secrets): get_active_sessions() over auth.sessions; resolve_admin_event(); is_super_admin() \u2014 all SECURITY DEFINER, pinned search_path, EXECUTE revoked from anon, ACLs verified post-migration"
+    ]
+  },
+  "errorTracking": {
+    "inAppEventLog": "EXTEND admin_events \u2014 do not build a parallel table. It already has event_type/severity/title/message/metadata jsonb/user_id/stack_trace/resolved workflow, service_role-only INSERT RLS, Realtime streaming, and three mature writers (lib/admin-logger.ts server, lib/server-error-logger.ts dual-writing Sentry+DB from 237 files, POST /api/admin/log-event client entrypoint with type-allowlist + severity clamping + rate limit). Net-new capture classes: (1) rls_denial \u2014 centralize 42501/PGRST error-code detection in the shared Supabase result helpers (fetchAllRowsResult et al.) logging {table, verb, code, userId}; (2) server_action_failed \u2014 a withAdminObserved wrapper generalizing the existing with-baseball-action/with-lifting-action patterns: Sentry.withServerActionInstrumentation + captureException once (skipping NEXT_REDIRECT/NEXT_NOT_FOUND control-flow via isRedirectError) + fire-and-forget admin_events insert (own try/catch or next/server after() \u2014 logging must NEVER fail a user request); retrofit mutation-heavy actions first (round submit, lineup save, lift check-in); (3) auth coverage \u2014 extend logLogin/logSignup to every auth path including failures and password resets (today only 12 login rows/7d), plus an edge-safe emitter for middleware updateSession failures (currently console.warn-swallowed; server-error-logger's createAdminClient is not edge-safe \u2014 use a fire-and-forget fetch to an internal route); (4) cron/integrity \u2014 wrap all 14 vercel.json cron routes to write background_job_logs + admin_events source='cron'/'integrity'. Fire-and-forget, append-only, retention cron from day one (info 90d, error/critical 13mo; no pg_cron in this DB \u2014 Vercel cron route).",
+    "sentry": "Greenfield server-side pull (SDK ingest is already complete: instrumentation.ts node+edge with onRequestError, instrumentation-client.ts with replay + per-sport tagging, withSentryConfig source maps + automaticVercelMonitors). Build src/lib/admin/sentry-api.ts with import 'server-only': Bearer SENTRY_READ_TOKEN \u2192 https://sentry.io/api/0/... Endpoints: org issues list (is:unresolved / regressed / escalating, sort=freq, stats sparkline included), issue detail + events, stats_v2 (hourly error series), sessions (release health \u2014 conditional on verified session tracking). Link-header cursor pagination (max 3 pages), 60s Next revalidate so N page loads = 1 Sentry call/min, honor 429 Retry-After. CRITICAL: do NOT reuse the existing SENTRY_AUTH_TOKEN (org token for CI sourcemaps; scopes immutable and typically lack event:read) \u2014 Nick creates a new internal-integration or user token with org:read + project:read + event:read, stored server-only as SENTRY_READ_TOKEN in Vercel (never NEXT_PUBLIC_).",
+    "wiringSteps": [
+      "P0 BUG FIX (own PR, ships first): src/lib/error-monitoring.ts silently drops all server-side calls in production (window-gated send); migrate the 10 logCritical/logError call sites in src/app/golf/actions/golf.ts to logServerException and delete the module \u2014 expect a first-week Sentry volume bump from previously-invisible errors",
+      "Migration 1 (additive): admin_allowlist + is_super_admin() + new columns on admin_events (sport/team_id/fingerprint/source) + indexes + get_active_sessions()/resolve_admin_event() RPCs; end with REVOKE from anon/authenticated + pg_class.relacl & pg_proc ACL verification queries; verify applied via information_schema (schema_migrations is unreliable in this project)",
+      "Nick provisions secrets: SENTRY_READ_TOKEN (new, scoped org:read/project:read/event:read) + confirm-or-create VERCEL_API_TOKEN/VERCEL_PROJECT_ID/VERCEL_TEAM_ID in Vercel dashboard (team-scoped vars are invisible to vercel env pull \u2014 verify in UI before duplicating); also verify SENTRY_AUTH_TOKEN (build token) exists in Vercel or sourcemaps are silently degrading under silent:true",
+      "Build src/lib/admin/sentry-api.ts + vercel-api.ts (both import 'server-only', cached, fail-soft to STALE state) behind requireSuperAdmin()",
+      "Narrow the blanket 'AuthApiError' entry in instrumentation.ts sharedIgnoreErrors to specific refresh-token-expiry messages (keep that suppression or idle tabs flood Sentry) and route real auth failures into admin_events at warning severity",
+      "Add middleware failure capture: updateSession catch \u2192 edge-safe fire-and-forget POST to an internal logging route \u2192 admin_events source='auth'",
+      "Ship the withAdminObserved server-action wrapper + 42501/PGRST capture in shared query helpers; retrofit incrementally starting with mutation-heavy actions",
+      "Wrap all 14 cron routes with job logging into background_job_logs + admin_events; add the nightly integrity-check cron and the retention cron (same PR wave as any new write volume)",
+      "Relax /api/log-error's 401 for unauthenticated users (keep existing rate limit + 10KB cap, add anonymous=true flag) so login/signup-flow client errors reach error_logs, not just Sentry",
+      "Deploy markers: on each prod deploy write an admin_events event_type='deploy' row (build-time hook or first-request detection via VERCEL_GIT_COMMIT_SHA change) so every chart can overlay releases even before the Vercel token exists"
+    ]
+  },
+  "uxDirection": {
+    "designSystem": "Build ONCE from the existing Fairway kit (src/components/fairway: AppShell warm-black rail + glass top bar, PageContainer/ViewHeader, MetricCard with NumberFlow odometers, StatTile with the InsufficientData honesty contract, DataTable with skeleton/empty/error states, ChartFrame + TrendChart/Sparkline over Recharts dynamic-imported ssr:false, StatusPill/InlineNotice/tone.tsx, \u2318K command-menu, InstrumentPanel dark cockpit). NO third design language and NO shadcn CLI (no components.json \u2014 hand-maintained kit). Severity uses the fw-status trio exclusively (fw-danger/fw-warning/fw-success) always paired with icon shape + text label, never color alone. Fragment Mono tabular numerals (font-fw-mono, text-stat-lg) on every metric. Obey the encoded hard rules: no white cards, Fairway radius ramp only, border-OR-shadow at rest, accent never blue/violet, every chart gets ChartFrame's table fallback.",
+    "layout": "Inverted pyramid on an asymmetric 12-column bento grid. Row 0: pinned dark InstrumentPanel status banner (the one sanctioned on-dark surface \u2014 instantly signals 'admin mode' against the shared prod DB). Row 1: 6-tile MetricCard KPI strip. Middle: triage queue at ~2/3 width left, regressed callout + deploy rail + watch-the-watcher stacked on the right rail. Level 2 = the 8 tabs (server components per-panel \u2014 retiring the 989-line 'use client' monolith and the single ~90-field AdminDashboardData blob in favor of the slice-RPC + degraded-flags pattern already proven in rollup-a/b/c). Level 3 = detail drawers/pages with deep links out to Sentry/Vercel. Every Level-1 number links to a pre-filtered Level-2 URL; filter chips (sport, window, severity) persist in the URL so drill-downs are deep-linkable. Overview hard-capped at ~10 tiles; fixed tile heights so polling never reflows the grid.",
+    "theming": "Fairway ops chrome, sport-inked lanes: warm-black nav rail (--fw-color-nav-bg) + bg-canvas-gradient cream page as the neutral shell; sport-scoped rows/cards/sections tagged with the sport's INK as wayfinding only \u2014 helm green rule/InkBadge for golf, infield-clay #C2703D (--pursuit-ink) for baseball, per Living Annual's two-ink law. Baseball drill-down panes wrap in .living-annual so the same Fairway primitives self-skin deeper cream + Space Grotesk automatically (the scope class literally re-points --fw-* vars). Never blend the two palettes on one surface; never apply .living-annual to shared panes. Oxblood for seals only, sodium as a single PR flash, --clay dark canvas only inside ClayCanvas viz frames.",
+    "keyInteractions": [
+      "30\u201360s SWR polling per panel (NOT websockets) with visibility-aware pause; per-panel 'updated Xs ago' ticking chips; one global manual-refresh; Supabase Realtime kept ONLY for the admin_events triage stream (existing useAdminRealtime pattern) after verifying admin_events SELECT RLS doesn't leak payloads to non-admin authenticated users",
+      "Explicit amber STALE overlay with last-known-good data when any upstream fetch fails (Sentry hiccup must never blank a panel) \u2014 panel-level Suspense + error boundaries with per-panel retry; the monitor must be more reliable than the monitored",
+      "Celebratory timestamped all-clear states for zero-error panels ('No errors in the last 24h \u2014 last checked 12s ago'); three visually distinct cases: all-clear (green), no-data-yet (neutral), fetch-failed (amber)",
+      "Inline triage actions on queue rows: acknowledge/resolve/ignore (writes resolved_by + audit_log row) or open-in-Sentry permalink; aggregate related events into one line, never 14 rows",
+      "\u2318K command menu for jump-to-user/team/issue; keyboard shortcuts 1\u20138 for tabs and R for refresh (preserving the old admin's muscle memory)",
+      "LazyMotion domAnimation provider at the /admin route root \u2014 documented gotcha: without it m.* components render static and animated numbers freeze at 0 (bit the Tracer KPI tiles before); ease-cinematic 450\u2013600ms entrances, prefers-reduced-motion respected",
+      "Skeletons that mirror exact final tile layout (numeral block, sparkline bar, list rows) \u2014 no spinner-only loading, no layout shift on hydrate"
+    ]
+  },
+  "crmBoundary": [
+    "ROUTES \u2014 never read, write, import, or re-route: /golf/admin/crm/** (1,906-line page.tsx, layout, coach/[id], ~90 components: pipeline kanban, sequences, automations, segments, replies inbox, suppressions, resend views, BulkEmailModal, TemplateManager, CalendarView, ImportModal, InboundLeadsView), /api/admin/crm/send-email, /api/crm/unsubscribe, /api/crm/google-calendar/{auth,callback,sync}, /api/webhooks/resend, /api/webhooks/resend-inbound, /api/cron/process-sequences (intentionally unscheduled), /api/cron/refresh-engagement",
+    "SERVER ACTIONS \u2014 excluded: all 14 crm-*.ts files in src/app/golf/actions/ (crm-assignee, crm-automations, crm-dedup, crm-engagement, crm-foundations, crm-gmail-send, crm-insights, crm-manual-send, crm-replies, crm-sequences, crm-templates, crm-timeline, crm-tasks-equivalents) plus resend-activity.ts",
+    "LIB \u2014 excluded: src/lib/crm/** in full (automations-engine, gmail-send + gmail-compose Google Workspace DWD from PR #322, domain-auth-check, email-verify, merge-tags, outreach-headers, personalize, spam-score, unsubscribe-token)",
+    "DATABASE \u2014 excluded: all 18 crm_* tables (crm_coaches 2,401 rows, crm_contact_log, crm_notes, crm_tasks, crm_events, crm_activity_log, crm_email_templates, crm_email_events, crm_coach_email_events, crm_email_suppressions, crm_sequences, crm_sequence_steps, crm_sequence_enrollments, crm_automations, crm_segments, crm_replies, crm_google_calendar_tokens, crm_click_destinations); shared Resend infra tables emails / email_events / email_clicks; matview crm_coach_engagement (its refresh cron included \u2014 and never recreate it: matview recreation auto-grants anon); views crm_coaches_by_school / v_crm_coaches_by_school / crm_email_events / crm_email_stats(_detailed) / crm_events_in_range / crm_template_performance / crm_time_to_open; enum crm_event_type; RPCs get_crm_* / refresh_crm_coach_engagement / sync_coach_last_email_event / sync_email_snapshot_from_event / extract_email_click_from_event; CRM migrations (relock_crm_admin_rpcs, fix_crm_email_stats_scope)",
+    "ENV \u2014 excluded from any new code: RESEND_*, GMAIL_SA_*, CRM_UNSUB_SECRET, GOOGLE_CLIENT_ID/SECRET (calendar OAuth)",
+    "TWO COUPLINGS TO SEVER (must NOT carry into /admin): (1) golf/admin/page.tsx:285-315 queries crm_coaches directly for sidebar KPI counts \u2014 the new console queries zero crm_* objects; (2) PeopleTab.tsx:10 imports crm/components/BulkEmailModal for at-risk re-engagement \u2014 replaced by a plain <a href='/golf/admin/crm'> link out; no email-send capability of any kind inside the command center",
+    "NO EVENT-LOG HOOKS into CRM code paths: withAdminObserved wrappers, RLS-denial capture, and cron logging are NOT added to crm-*.ts actions or CRM cron routes in this project",
+    "RETIREMENT CARVE-OUT: /golf/admin cannot be deleted wholesale because the CRM lives INSIDE it at /golf/admin/crm \u2014 the retirement wave deletes only the non-CRM admin surfaces (page.tsx, components/, tabs, dead code) while preserving the crm/ subtree, its layout gate (users.role='admin'), and AdminNativeGuard; the /admin nav keeps one plain 'Coach CRM \u2192' link out; relocating the CRM is a separate future effort",
+    "FLAG-ONLY (do not fix): refresh-engagement route comment claims a vercel.json schedule that doesn't exist, and v_crm_coaches_by_school is an advisor-ERROR SECURITY DEFINER view \u2014 both reported to owner, neither touched"
+  ],
+  "risks": [
+    {
+      "risk": "Privilege escalation pre-exists the build: handle_new_user() SECURITY DEFINER trigger casts raw_user_meta_data->>'role' into users.role and 'admin' is a valid enum \u2014 a raw signup API call may self-mint admin, and the command center makes admin more powerful",
+      "mitigation": "Ship the trigger fix (restrict cast to player|coach) as its own P0 PR BEFORE any /admin code; also verify users_update_own RLS cannot self-update role; downgrade the stale test-admin row"
+    },
+    {
+      "risk": "Shared prod DB: nearly every admin read uses createAdminClient() (service_role, bypasses RLS) \u2014 one missed requireSuperAdmin() in a new action is a full data leak to any authenticated user",
+      "mitigation": "Single shared requireSuperAdmin() helper (no more per-file copies), called first-line by convention enforced in review; lint/grep gate in CI that every export under src/app/admin and /api/admin-center calls it; RLS deny-by-default as the last line"
+    },
+    {
+      "risk": "Documented recurring failure mode: migrations/matview recreates auto-grant ALL to anon+authenticated, and agents keep shipping GRANT EXECUTE TO anon on RPCs (49 anon-executable SECURITY DEFINER functions already exist per the advisor)",
+      "mitigation": "Every migration ends with explicit REVOKEs + a verification SELECT against pg_class.relacl / pg_proc ACLs; additive-only DDL; verify applied state via information_schema (schema_migrations is unreliable in this project); add an automated integrity check for grant drift so regressions surface on the dashboard itself"
+    },
+    {
+      "risk": "SECURITY DEFINER rollup RPCs Forbid under service_role (auth.uid() NULL) \u2014 the documented 509-error storm recurs if new code calls them with createAdminClient()",
+      "mitigation": "Call all get_admin_*_rollup RPCs with the admin's user-scoped client (rollup-a.ts pattern); preserve the non-throwing checkAdminAccess probe and degraded-mode banner patterns whose forensic comments encode these incidents"
+    },
+    {
+      "risk": "Retiring /golf/admin wholesale deletes the CRM (it lives at /golf/admin/crm) or breaks 237 files importing logServerError if admin_events changes shape",
+      "mitigation": "Retirement wave explicitly preserves the crm/ subtree + its gates; admin_events changes are additive columns only with the writer API kept backward-compatible; readers change, writers do not"
+    },
+    {
+      "risk": "Dashboard load on shared prod: the old page polled a ~95-query blob every 5 min per open tab (prior polling-flood incident: 576 errors/day), and auth_rls_initplan lints on 90k-row admin_events/error_logs make RLS-evaluated admin queries expensive",
+      "mitigation": "Per-panel server components with 30\u201360s cached slice fetches (no monolithic blob), service-role reads behind the gate (bypassing per-row auth.uid() re-evaluation), visibility-aware polling, and fixed panel budget; fix the duplicate indexes flagged on admin_events while there"
+    },
+    {
+      "risk": "Sentry/Vercel API fragility: rate limits (429), Link-header pagination truncation, 1-day Vercel runtime-log retention, and a token accidentally shipped client-side",
+      "mitigation": "import 'server-only' on both API modules (client import = build error); 60s server cache so page loads never fan out to Sentry; cursor pagination capped; treat Sentry+admin_events as the durable error store and Vercel purely as 'what deployed when'; tokens never NEXT_PUBLIC_, minimally scoped"
+    },
+    {
+      "risk": "New capture classes create noise or break user flows: the golf.ts dead-logger fix will surface a backlog of hidden errors, and a throwing log helper could fail live golf/baseball requests",
+      "mitigation": "All emitters fire-and-forget with swallowed try/catch (or next/server after()); expect and pre-announce the first-week Sentry bump; keep the refresh-token-expiry suppression when narrowing 'AuthApiError'; retention cron ships in the same wave as any new write volume"
+    },
+    {
+      "risk": "Apple App Store exposure: a new top-level /admin visible in the native iOS wrapper risks 4.2.2/3.1.1 rejection",
+      "mitigation": "Add /admin to the AdminNativeGuard + proxy.ts native-UA exclusion in the first routing PR, mirroring the existing /golf/admin treatment"
+    },
+    {
+      "risk": "Realtime channel leak: useAdminRealtime subscribes via the anon-key client to admin_events INSERTs \u2014 if SELECT RLS is looser than expected, stack traces and user emails stream to any authenticated user",
+      "mitigation": "Verify admin_events SELECT policy against is_super_admin() before reusing the channel; if in doubt, drop Realtime for v1 and rely on 30s polling"
+    }
+  ],
+  "openQuestions": [
+    "Which auth account is Nick's canonical super-admin identity for the allowlist \u2014 admin@helmsportslabs.com (existing role='admin' row) or a personal njrini99 account? (Seed value for admin_allowlist; also approval needed to downgrade the stale admin-ui-1779052548996@golfhelm.local test admin)",
+    "Secrets confirmation in the Vercel dashboard (team-scoped vars are invisible to `vercel env pull`): does SENTRY_AUTH_TOKEN exist at build time (else sourcemaps are silently degraded), and do VERCEL_API_TOKEN/VERCEL_PROJECT_ID/VERCEL_TEAM_ID already exist team-scoped? Nick must create the new SENTRY_READ_TOKEN regardless \u2014 it is the one hard blocker for live Sentry pulls",
+    "Does the Sentry SDK actually send sessions (autoSessionTracking) for helm-xs? The release-health crash-free widget is conditional on this; if not, ship without it or enable session tracking first",
+    "error_logs vs admin_events double-write (near-1:1 row counts): keep both writers and read admin_events-first (recommended v1), or consolidate writers in a later wave? Consolidation touches server-error-logger used by 237 files",
+    "Why is auth.audit_log_entries empty (0 rows) on this project \u2014 plan/config limitation or ingestion issue? App-level auth capture is the plan regardless, but if Supabase auth logs can be enabled they'd backfill the feed for free",
+    "Empty-scaffold strategy confirmation: proposal wires background_job_logs (crons) + admin_events (everything else) and leaves api_call_logs/auth_metrics_hourly/error_rate_hourly/golf_platform_metrics_daily unwired for v1 \u2014 acceptable, or should hourly rollup tables be populated for cheaper trend charts?",
+    "Do the orphaned-but-existing DB RPCs (get_db_telemetry, get_api_performance_summary, get_enhanced_system_health, get_team_health_dashboard, get_coach_effectiveness_metrics, get_onboarding_funnel_analysis) get resurrected in the new console (their TS wrappers are dead code slated for deletion)? Their internal admin gates must be read/verified first",
+    "Scope check on deliberately-deferred features research recommends but locked decisions don't require: feature-flag registry with kill switches, read-only impersonation ('view as'), and a daily email digest \u2014 v2 candidates unless Nick wants any in v1",
+    "End-state for users.role='admin': after /golf/admin retirement the CRM still gates on it \u2014 keep role='admin' solely as the CRM gate (Nick holds both credentials), or migrate CRM gating to is_super_admin() in a later CRM-owned change (currently out of scope per the do-not-touch boundary)?",
+    "Baseball team_id attribution in admin_events: golf events can carry team_id from context, but many baseball/lifting actions lack an obvious team in scope \u2014 accept sport-only attribution for those emitters in v1?"
+  ]
+}

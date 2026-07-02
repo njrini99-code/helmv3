@@ -11,6 +11,7 @@ import type { CoachAlert } from '@/components/golf/coachhelm/alerts/AlertCard';
 import { logServerError } from '@/lib/server-error-logger';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
 
@@ -144,7 +145,7 @@ async function getCoachAlerts(
 // GET ALERT COUNTS
 // ============================================================================
 
-export async function getAlertCounts(
+async function getAlertCountsImpl(
   coachId: string
 ): Promise<{
   success: boolean;
@@ -222,6 +223,21 @@ export async function getAlertCounts(
   }
 }
 
+const observedGetAlertCounts = withAdminObserved(
+  'getAlertCounts',
+  { sport: 'golf', feature: 'alerts_system' },
+  getAlertCountsImpl,
+);
+export async function getAlertCounts(
+  coachId: string
+): Promise<{
+  success: boolean;
+  counts?: { critical: number; warning: number; info: number; total: number };
+  error?: string;
+}> {
+  return observedGetAlertCounts(coachId);
+}
+
 // ============================================================================
 // GENERATE ALERTS (Scan team and create new alerts)
 // ============================================================================
@@ -249,7 +265,7 @@ async function countVisibleCoachInsights(
   return count ?? 0;
 }
 
-export async function generateAlerts(
+async function generateAlertsImpl(
   coachId: string,
   teamId: string
 ): Promise<{
@@ -473,6 +489,23 @@ export async function generateAlerts(
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGenerateAlerts = withAdminObserved(
+  'generateAlerts',
+  { sport: 'golf', feature: 'alerts_system' },
+  generateAlertsImpl,
+);
+export async function generateAlerts(
+  coachId: string,
+  teamId: string
+): Promise<{
+  success: boolean;
+  alerts?: CoachAlert[];
+  generated?: number;
+  error?: string;
+}> {
+  return observedGenerateAlerts(coachId, teamId);
 }
 
 // ============================================================================

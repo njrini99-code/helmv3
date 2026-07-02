@@ -9,6 +9,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -104,7 +105,7 @@ function normalizeTimeframe(
  * Create a new focus area for a player
  * Only coaches who manage the player can create focus areas
  */
-export async function createFocusArea(
+async function createFocusAreaImpl(
   data: CreateFocusAreaData
 ): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
@@ -212,6 +213,16 @@ export async function createFocusArea(
   return { success: true };
 }
 
+const observedCreateFocusArea = withAdminObserved(
+  'createFocusArea',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  createFocusAreaImpl,
+);
+
+export async function createFocusArea(data: CreateFocusAreaData): Promise<DevelopmentActionResult> {
+  return observedCreateFocusArea(data);
+}
+
 /**
  * Player self-create: a player sets their OWN focus area (status='active',
  * no coach attribution). The improvement window starts immediately.
@@ -222,7 +233,7 @@ export async function createFocusArea(
  * admin client bypasses RLS, so this manual check is the ONLY thing gating the
  * write — keep it strict.
  */
-export async function createPlayerFocusArea(
+async function createPlayerFocusAreaImpl(
   data: Omit<CreateFocusAreaData, 'coach_id' | 'status'>,
 ): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
@@ -280,6 +291,16 @@ export async function createPlayerFocusArea(
   return { success: true };
 }
 
+const observedCreatePlayerFocusArea = withAdminObserved(
+  'createPlayerFocusArea',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  createPlayerFocusAreaImpl,
+);
+
+export async function createPlayerFocusArea(data: Omit<CreateFocusAreaData, 'coach_id' | 'status'>): Promise<DevelopmentActionResult> {
+  return observedCreatePlayerFocusArea(data);
+}
+
 /**
  * Player accepts a coach-prescribed focus area: 'proposed' → 'active', and the
  * improvement window starts now (started_at = now). Idempotent-safe: only a row
@@ -287,7 +308,7 @@ export async function createPlayerFocusArea(
  * (already active, not yours, missing) is a no-op failure via the select-back
  * guard. Uses the RLS client — the player UPDATE policy gates it to own rows.
  */
-export async function acceptFocusArea(
+async function acceptFocusAreaImpl(
   id: string,
 ): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
@@ -322,12 +343,22 @@ export async function acceptFocusArea(
   return { success: true };
 }
 
+const observedAcceptFocusArea = withAdminObserved(
+  'acceptFocusArea',
+  { sport: 'golf', feature: 'my_development' },
+  acceptFocusAreaImpl,
+);
+
+export async function acceptFocusArea(id: string): Promise<DevelopmentActionResult> {
+  return observedAcceptFocusArea(id);
+}
+
 /**
  * Player declines a coach-prescribed focus area: 'proposed' → 'declined'.
  * Mirror of {@link acceptFocusArea} — RLS-gated to the player's own rows, only
  * acts on a currently-'proposed' row, select-back guard surfaces a 0-row update.
  */
-export async function declineFocusArea(
+async function declineFocusAreaImpl(
   id: string,
 ): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
@@ -362,11 +393,21 @@ export async function declineFocusArea(
   return { success: true };
 }
 
+const observedDeclineFocusArea = withAdminObserved(
+  'declineFocusArea',
+  { sport: 'golf', feature: 'my_development' },
+  declineFocusAreaImpl,
+);
+
+export async function declineFocusArea(id: string): Promise<DevelopmentActionResult> {
+  return observedDeclineFocusArea(id);
+}
+
 /**
  * Update an existing focus area
  * Only the coach who created it can update focus areas
  */
-export async function updateFocusArea(
+async function updateFocusAreaImpl(
   id: string,
   data: UpdateFocusAreaData
 ): Promise<DevelopmentActionResult> {
@@ -430,11 +471,21 @@ export async function updateFocusArea(
   return { success: true };
 }
 
+const observedUpdateFocusArea = withAdminObserved(
+  'updateFocusArea',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  updateFocusAreaImpl,
+);
+
+export async function updateFocusArea(id: string, data: UpdateFocusAreaData): Promise<DevelopmentActionResult> {
+  return observedUpdateFocusArea(id, data);
+}
+
 /**
  * Delete a focus area
  * Only the coach who created it can delete focus areas
  */
-export async function deleteFocusArea(id: string): Promise<DevelopmentActionResult> {
+async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -471,6 +522,16 @@ export async function deleteFocusArea(id: string): Promise<DevelopmentActionResu
   return { success: true };
 }
 
+const observedDeleteFocusArea = withAdminObserved(
+  'deleteFocusArea',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  deleteFocusAreaImpl,
+);
+
+export async function deleteFocusArea(id: string): Promise<DevelopmentActionResult> {
+  return observedDeleteFocusArea(id);
+}
+
 /**
  * Shape of the per-row `progress_notes` jsonb column.
  * Locked schema: `{ entries: [{ at: ISO ts, value: number, note: string|null }] }`.
@@ -495,7 +556,7 @@ interface ProgressNotes {
  * the row's `progress_notes` jsonb column via read-modify-write:
  *   { at: <ISO now>, value: <newValue>, note: <trimmed note> }
  */
-export async function updateFocusAreaProgress(
+async function updateFocusAreaProgressImpl(
   id: string,
   currentValue: number,
   options?: { note?: string }
@@ -572,12 +633,22 @@ export async function updateFocusAreaProgress(
   return { success: true };
 }
 
+const observedUpdateFocusAreaProgress = withAdminObserved(
+  'updateFocusAreaProgress',
+  { sport: 'golf', feature: 'my_development' },
+  updateFocusAreaProgressImpl,
+);
+
+export async function updateFocusAreaProgress(id: string, currentValue: number, options?: { note?: string }): Promise<{ success: boolean; error?: string }> {
+  return observedUpdateFocusAreaProgress(id, currentValue, options);
+}
+
 /**
  * Mark a focus area as completed.
  * Caller must be the player whose focus area it is, or a coach staffing
  * any team that player is on.
  */
-export async function completeFocusArea(
+async function completeFocusAreaImpl(
   focusAreaId: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
@@ -633,6 +704,16 @@ export async function completeFocusArea(
   return { success: true };
 }
 
+const observedCompleteFocusArea = withAdminObserved(
+  'completeFocusArea',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  completeFocusAreaImpl,
+);
+
+export async function completeFocusArea(focusAreaId: string): Promise<{ success: boolean; error?: string }> {
+  return observedCompleteFocusArea(focusAreaId);
+}
+
 /**
  * Reactivate (re-open) a completed focus area.
  *
@@ -642,7 +723,7 @@ export async function completeFocusArea(
  * same auth + access checks and the select-back guard so a 0-row update (id
  * mismatch / not permitted) surfaces as a failure rather than a false success.
  */
-export async function reactivateFocusArea(
+async function reactivateFocusAreaImpl(
   focusAreaId: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
@@ -693,6 +774,16 @@ export async function reactivateFocusArea(
   revalidatePath('/golf/dashboard/analytics/coachhelm');
 
   return { success: true };
+}
+
+const observedReactivateFocusArea = withAdminObserved(
+  'reactivateFocusArea',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  reactivateFocusAreaImpl,
+);
+
+export async function reactivateFocusArea(focusAreaId: string): Promise<{ success: boolean; error?: string }> {
+  return observedReactivateFocusArea(focusAreaId);
 }
 
 /**
@@ -746,7 +837,7 @@ interface CreateFocusAreaFromReviewArgs {
  * `round-reviews.ts` with a different signature; both can coexist because
  * consumers import by module path.
  */
-export async function createFocusAreaFromReview(
+async function createFocusAreaFromReviewImpl(
   args: CreateFocusAreaFromReviewArgs
 ): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
   const supabase = await createClient();
@@ -798,6 +889,16 @@ export async function createFocusAreaFromReview(
   return { success: true, focusAreaId: row.id };
 }
 
+const observedCreateFocusAreaFromReview = withAdminObserved(
+  'createFocusAreaFromReview',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  createFocusAreaFromReviewImpl,
+);
+
+export async function createFocusAreaFromReview(args: CreateFocusAreaFromReviewArgs): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+  return observedCreateFocusAreaFromReview(args);
+}
+
 interface CreateFocusAreaFromInsightArgsV2 {
   playerId: string;
   insightId: string;
@@ -817,7 +918,7 @@ interface CreateFocusAreaFromInsightArgsV2 {
  * spec. The legacy `createFocusAreaFromInsight` (snake_case args) below is
  * preserved unchanged because many existing consumers depend on it.
  */
-export async function createFocusAreaFromInsightV2(
+async function createFocusAreaFromInsightV2Impl(
   args: CreateFocusAreaFromInsightArgsV2
 ): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
   const supabase = await createClient();
@@ -877,6 +978,16 @@ export async function createFocusAreaFromInsightV2(
   revalidatePath('/golf/dashboard/insights');
 
   return { success: true, focusAreaId: row.id };
+}
+
+const observedCreateFocusAreaFromInsightV2 = withAdminObserved(
+  'createFocusAreaFromInsightV2',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  createFocusAreaFromInsightV2Impl,
+);
+
+export async function createFocusAreaFromInsightV2(args: CreateFocusAreaFromInsightArgsV2): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+  return observedCreateFocusAreaFromInsightV2(args);
 }
 
 // ============================================================================
@@ -968,7 +1079,7 @@ interface CreateFocusAreaFromInsightData {
  * Creates a focus area directly from a CoachHelm insight
  * Pre-populates fields based on insight data and links them together
  */
-export async function createFocusAreaFromInsight(
+async function createFocusAreaFromInsightImpl(
   data: CreateFocusAreaFromInsightData
 ): Promise<DevelopmentActionResult<{ focusAreaId: string }>> {
   const supabase = await createClient();
@@ -1086,6 +1197,16 @@ export async function createFocusAreaFromInsight(
   return { success: true, data: { focusAreaId: focusArea.id } };
 }
 
+const observedCreateFocusAreaFromInsight = withAdminObserved(
+  'createFocusAreaFromInsight',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  createFocusAreaFromInsightImpl,
+);
+
+export async function createFocusAreaFromInsight(data: CreateFocusAreaFromInsightData): Promise<DevelopmentActionResult<{ focusAreaId: string }>> {
+  return observedCreateFocusAreaFromInsight(data);
+}
+
 // ============================================================================
 // RECORD FOCUS-AREA OUTCOME (closes the effectiveness write loop)
 // ============================================================================
@@ -1115,7 +1236,7 @@ export type FocusAreaOutcome = 'improved' | 'no_change' | 'worsened';
  * it is, or a coach staffing any team that player is on. Return shape matches
  * the other simple writers in this file: { success, error? } (+ optional notice).
  */
-export async function recordFocusAreaOutcome(
+async function recordFocusAreaOutcomeImpl(
   focusAreaId: string,
   outcome: FocusAreaOutcome
 ): Promise<{ success: boolean; error?: string; notice?: string }> {
@@ -1193,6 +1314,16 @@ export async function recordFocusAreaOutcome(
   revalidatePath('/golf/dashboard/analytics/coachhelm');
 
   return { success: true };
+}
+
+const observedRecordFocusAreaOutcome = withAdminObserved(
+  'recordFocusAreaOutcome',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  recordFocusAreaOutcomeImpl,
+);
+
+export async function recordFocusAreaOutcome(focusAreaId: string, outcome: FocusAreaOutcome): Promise<{ success: boolean; error?: string; notice?: string }> {
+  return observedRecordFocusAreaOutcome(focusAreaId, outcome);
 }
 
 // ============================================================================

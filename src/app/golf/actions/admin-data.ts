@@ -9,6 +9,7 @@ import { fetchAdminRollupC } from './admin/rollup-c';
 import { EMPTY_ROLLUP_C, type RollupC } from './admin/rollup-c.shared';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   computeActivation,
   computeMedianTTFV,
@@ -92,7 +93,7 @@ export interface AdminDashboardRollup {
  * logs at ~576 errors/day. The dashboard gates on this check first and
  * stops polling cleanly when access drops — no 500.
  */
-export async function checkAdminAccess(): Promise<{
+async function checkAdminAccessImpl(): Promise<{
   allowed: boolean;
   reason?: 'unauthenticated' | 'forbidden';
 }> {
@@ -119,11 +120,31 @@ export async function checkAdminAccess(): Promise<{
   return { allowed: true };
 }
 
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedCheckAdminAccess = withAdminObserved(
+  'checkAdminAccess',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  checkAdminAccessImpl,
+);
+
+export async function checkAdminAccess(): Promise<{
+  allowed: boolean;
+  reason?: 'unauthenticated' | 'forbidden';
+}> {
+  return observedCheckAdminAccess();
+}
+
 /** Server-side entrypoint: admin check, then one RPC round-trip via the
  *  user-scoped client so the SECURITY DEFINER `auth.uid()` gate inside
  *  `get_admin_dashboard_rollup` resolves to the invoking admin (and not
  *  NULL, as it would under the service_role JWT). */
-export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
+async function getAdminDashboardRollupImpl(): Promise<AdminDashboardRollup> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
@@ -145,6 +166,23 @@ export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
   if (error) throw error instanceof Error ? error : new Error(describeError(error));
   if (!data) throw new Error('Empty rollup response');
   return data;
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetAdminDashboardRollup = withAdminObserved(
+  'getAdminDashboardRollup',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getAdminDashboardRollupImpl,
+);
+
+export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
+  return observedGetAdminDashboardRollup();
 }
 
 // ============================================
@@ -1147,7 +1185,7 @@ function buildAdminEventIncidentKey(event: Pick<AdminEventIncidentRecord, 'title
   );
 }
 
-export async function resolveDashboardIncident(input: {
+async function resolveDashboardIncidentImpl(input: {
   incidentKey: string;
   title: string;
   message: string;
@@ -1263,6 +1301,39 @@ export async function resolveDashboardIncident(input: {
   };
 }
 
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedResolveDashboardIncident = withAdminObserved(
+  'resolveDashboardIncident',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  resolveDashboardIncidentImpl,
+);
+
+export async function resolveDashboardIncident(input: {
+  incidentKey: string;
+  title: string;
+  message: string;
+  severity: string;
+  route: string | null;
+  url: string | null;
+  action: string | null;
+  featureArea: string;
+  errorCode: string | null;
+  source: string | null;
+  eventIds?: string[];
+}): Promise<{
+  success: boolean;
+  resolvedCount: number;
+  message: string;
+}> {
+  return observedResolveDashboardIncident(input);
+}
+
 // ============================================
 // ADMIN INCIDENTS — cursor-paginated feed
 // ============================================
@@ -1350,7 +1421,7 @@ function normalizeIncidentSeverity(input: string): 'critical' | 'error' | 'warni
  *  (status='active') admin_events at error/warning/critical severity, ordered
  *  by created_at DESC. The cursor is the created_at of the last item on the
  *  previous page; pass it back in to walk further into the past. */
-export async function getAdminIncidents(
+async function getAdminIncidentsImpl(
   params: GetAdminIncidentsParams = {},
 ): Promise<GetAdminIncidentsResult> {
   const supabase = await createClient();
@@ -1385,10 +1456,8 @@ export async function getAdminIncidents(
 
   const { data, error } = await query;
   if (error) {
-    void logServerError(
-      `[admin-data] getAdminIncidents query failed: ${describeError(error)}`,
-      { action: 'admin_data.getAdminIncidents', featureArea: 'admin' },
-    );
+    // W15: inline logServerError removed here — withAdminObserved now
+    // captures this throw at the export boundary (no more double-log).
     throw error instanceof Error ? error : new Error(describeError(error));
   }
 
@@ -1416,6 +1485,25 @@ export async function getAdminIncidents(
   const nextCursor = items.length === limit && lastItem ? lastItem.createdAt : null;
 
   return { items, nextCursor };
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetAdminIncidents = withAdminObserved(
+  'getAdminIncidents',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getAdminIncidentsImpl,
+);
+
+export async function getAdminIncidents(
+  params: GetAdminIncidentsParams = {},
+): Promise<GetAdminIncidentsResult> {
+  return observedGetAdminIncidents(params);
 }
 
 // ============================================
@@ -1623,7 +1711,7 @@ function buildFunnelSteps(stages: { step: string; count: number }[]): BIFunnelSt
  * `get_platform_health_stats`. Replaces ~93 ad-hoc queries with ~10
  * Supabase round-trips.
  */
-export async function getAdminDashboardData(): Promise<AdminDashboardData> {
+async function getAdminDashboardDataImpl(): Promise<AdminDashboardData> {
   const startTime = performance.now();
 
   // 1. Auth gate — MUST live outside the cache (reads cookies).
@@ -1643,21 +1731,18 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   //    Rollup A is REQUIRED (auth + roundsMinimal fuels rollupC). Rollup B
   //    and C can degrade to safe empties without crashing the page —
   //    Postgres statement_timeout on one of their RPCs is recoverable.
-  let rollupA: RollupA;
-  let rollupB: RollupB;
-  try {
-    [rollupA, rollupB] = await Promise.all([
-      fetchAdminRollupA().catch((e) => {
-        void logServerError(`[admin-data] fetchAdminRollupA threw: ${describeError(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
-        throw new Error(`rollupA failed: ${describeError(e)}`);
-      }),
-      fetchAdminRollupB(),
-    ]);
-  } catch (e) {
-    // Only rollupA failures reach here; rollupB gracefully degrades internally.
-    void logServerError(`[admin-data] rollupA failed: ${describeError(e)}`, { action: 'admin_data.getAdminDashboardData' });
-    throw e;
-  }
+  // Only rollupA failures propagate out of this Promise.all; rollupB
+  // gracefully degrades internally.
+  // W15: this used to be wrapped in a try/catch that only re-logged +
+  // rethrew the same error (no-useless-catch) — withAdminObserved now
+  // captures the throw at the export boundary, so the wrapper was removed
+  // rather than left as a no-op passthrough.
+  const [rollupA, rollupB]: [RollupA, RollupB] = await Promise.all([
+    fetchAdminRollupA().catch((e) => {
+      throw new Error(`rollupA failed: ${describeError(e)}`);
+    }),
+    fetchAdminRollupB(),
+  ]);
 
   const rollupBDegraded =
     rollupB.degradation.baseballRollupDegraded ||
@@ -1669,11 +1754,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   //    any slice — we issue a single grouped query.
   let rollupCDegraded = false;
   const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
-    fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
-      void logServerError(
-        `[admin-data] fetchAdminRollupC threw: ${describeError(e)}`,
-        { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } },
-      );
+    fetchAdminRollupC(rollupA.allRoundsMinimal).catch((_e) => {
+      // Audit N4: fetchAdminRollupC is itself withAdminObserved-wrapped, so
+      // it already logs its own failure at the export boundary. Logging
+      // again here would double-write admin_events for a single failure.
       rollupCDegraded = true;
       return EMPTY_ROLLUP_C;
     }),
@@ -1775,10 +1859,27 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       rollupCDegraded,
     };
   } catch (e) {
-    const err = e as Error;
-    await logServerError(`[admin-data] assembleAdminDashboardData threw: ${describeError(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: err?.stack } });
+    // W15: inline logServerError removed here — withAdminObserved now
+    // captures this throw at the export boundary (no more double-log).
     throw new Error(`assembleAdminDashboardData failed: ${describeError(e)}`);
   }
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetAdminDashboardData = withAdminObserved(
+  'getAdminDashboardData',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getAdminDashboardDataImpl,
+);
+
+export async function getAdminDashboardData(): Promise<AdminDashboardData> {
+  return observedGetAdminDashboardData();
 }
 
 // ============================================

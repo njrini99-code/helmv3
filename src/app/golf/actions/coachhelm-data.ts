@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   verifyPlayerAccess as canonicalVerifyPlayerAccess,
   verifyTeamAccess as canonicalVerifyTeamAccess,
@@ -260,7 +261,7 @@ function mapStatsCacheToMetrics(
  * Returns Z-score composite, category ratings, percentiles, and baseline comparison
  * for a given player.
  */
-export async function getPlayerProfile(
+async function getPlayerProfileImpl(
   playerId: string,
 ): Promise<ActionResult<PlayerProfileData>> {
   const supabase = await createClient();
@@ -540,6 +541,18 @@ export async function getPlayerProfile(
   }
 }
 
+const observedGetPlayerProfile = withAdminObserved(
+  'getPlayerProfile',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getPlayerProfileImpl,
+);
+
+export async function getPlayerProfile(
+  playerId: string,
+): Promise<ActionResult<PlayerProfileData>> {
+  return observedGetPlayerProfile(playerId);
+}
+
 // ============================================================================
 // 2. getPlayerTrendAnalysis
 // ============================================================================
@@ -548,7 +561,7 @@ export async function getPlayerProfile(
  * Returns multi-window trends, streak info, regression predictions,
  * anomaly detection, and volatility analysis for a player.
  */
-export async function getPlayerTrendAnalysis(
+async function getPlayerTrendAnalysisImpl(
   playerId: string,
 ): Promise<ActionResult<TrendAnalysisData>> {
   const supabase = await createClient();
@@ -647,6 +660,18 @@ export async function getPlayerTrendAnalysis(
   }
 }
 
+const observedGetPlayerTrendAnalysis = withAdminObserved(
+  'getPlayerTrendAnalysis',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getPlayerTrendAnalysisImpl,
+);
+
+export async function getPlayerTrendAnalysis(
+  playerId: string,
+): Promise<ActionResult<TrendAnalysisData>> {
+  return observedGetPlayerTrendAnalysis(playerId);
+}
+
 // ============================================================================
 // 3. getPlayerShotContext
 // ============================================================================
@@ -655,7 +680,7 @@ export async function getPlayerTrendAnalysis(
  * Returns shot-level SG analysis, yardage curves, dead zones,
  * sequence/resilience analysis, and scramble rate for a player.
  */
-export async function getPlayerShotContext(
+async function getPlayerShotContextImpl(
   playerId: string,
   periodDays: number = 90,
 ): Promise<ActionResult<ShotContextData>> {
@@ -703,7 +728,7 @@ export async function getPlayerShotContext(
       .order('hole_number')
       .order('shot_number')
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_shots', action: 'getPlayerShotContext', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     if (shotsError) {
       return { success: false, error: 'Failed to fetch shot data' };
@@ -791,7 +816,7 @@ export async function getPlayerShotContext(
       .select('hole_number, par, score, gir, putts, round_id')
       .in('round_id', roundIds)
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerShotContext', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     const scrambleHoles = (holesData ?? [])
       .filter((h): h is typeof h & { par: number; score: number; gir: boolean } =>
@@ -822,6 +847,19 @@ export async function getPlayerShotContext(
   }
 }
 
+const observedGetPlayerShotContext = withAdminObserved(
+  'getPlayerShotContext',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getPlayerShotContextImpl,
+);
+
+export async function getPlayerShotContext(
+  playerId: string,
+  periodDays: number = 90,
+): Promise<ActionResult<ShotContextData>> {
+  return observedGetPlayerShotContext(playerId, periodDays);
+}
+
 // ============================================================================
 // 4. getTeamSimulation
 // ============================================================================
@@ -830,7 +868,7 @@ export async function getPlayerShotContext(
  * Returns Monte Carlo tournament simulation and lineup optimization
  * for a team. Coach-only access.
  */
-export async function getTeamSimulation(
+async function getTeamSimulationImpl(
   teamId: string,
   rounds: number = 4,
 ): Promise<ActionResult<TeamSimulationData>> {
@@ -925,6 +963,19 @@ export async function getTeamSimulation(
   }
 }
 
+const observedGetTeamSimulation = withAdminObserved(
+  'getTeamSimulation',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getTeamSimulationImpl,
+);
+
+export async function getTeamSimulation(
+  teamId: string,
+  rounds: number = 4,
+): Promise<ActionResult<TeamSimulationData>> {
+  return observedGetTeamSimulation(teamId, rounds);
+}
+
 // ============================================================================
 // 5. getPlayerWhatIf
 // ============================================================================
@@ -932,7 +983,7 @@ export async function getTeamSimulation(
 /**
  * Returns a what-if scenario projection for a player improving a specific metric.
  */
-export async function getPlayerWhatIf(
+async function getPlayerWhatIfImpl(
   playerId: string,
   improvement: { metric: string; amount: number },
 ): Promise<ActionResult<WhatIfData>> {
@@ -1081,4 +1132,17 @@ export async function getPlayerWhatIf(
     await logServerError(message, { action: 'getPlayerWhatIf', extra: { playerId } }, 'error');
     return { success: false, error: message };
   }
+}
+
+const observedGetPlayerWhatIf = withAdminObserved(
+  'getPlayerWhatIf',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getPlayerWhatIfImpl,
+);
+
+export async function getPlayerWhatIf(
+  playerId: string,
+  improvement: { metric: string; amount: number },
+): Promise<ActionResult<WhatIfData>> {
+  return observedGetPlayerWhatIf(playerId, improvement);
 }
