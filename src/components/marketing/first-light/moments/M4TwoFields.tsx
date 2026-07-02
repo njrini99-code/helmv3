@@ -20,13 +20,13 @@
  */
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { m, useMotionValue, useReducedMotion, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { flFraunces } from '../fonts';
 import { photoLayerStyle } from '../lib/photoBg';
 import { useScrollProgress } from '../scroll/useScrollProgress';
-import { HelmRosette, SportGlyph } from '../brand';
 
 export interface M4TwoFieldsProps {
   className?: string;
@@ -39,6 +39,7 @@ const FIELDS: Array<{
   title: string;
   line: string;
   href: string;
+  logo: string;
   fallbackGradient: string;
 }> = [
   {
@@ -46,6 +47,7 @@ const FIELDS: Array<{
     title: 'GolfHelm',
     line: 'College golf team management + the CoachHelm AI layer.',
     href: '/golf/login',
+    logo: '/helm-golf-logo-transparent.png',
     // Dawn grade: airy cream/sage lift at the top, capping at sage-ink 0.5
     // at the bottom — DAYLIGHT amendment: M4 is not a second deep band, M3
     // owns that. Legibility for the card's cream text instead comes from a
@@ -59,6 +61,7 @@ const FIELDS: Array<{
     title: 'BaseballHelm',
     line: 'College baseball recruiting + team management, coach to player.',
     href: '/baseball/login',
+    logo: '/helm-baseball-logo-cropped.png',
     // Dusk grade: same airy sage/cream language as golf's, with a TRACE of
     // clay warmth folded into the mid-tone and bloom — clay's only
     // remaining home per the amendment. Capped at sage-ink 0.5 at the
@@ -235,14 +238,23 @@ export function M4TwoFields({ className }: M4TwoFieldsProps) {
                     style={{ boxShadow: 'inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35), var(--fl-specular), var(--fl-shadow-lg)' }}
                   >
                     <div className="relative z-10">
-                      {/* Wheel-plus-sport card mark (Amendment 3 §B.2,
-                          CONTRACTS.md "Composing wheel-plus-sport") — the
-                          brass HelmRosette and cream SportGlyph render as
-                          two adjacent icons, not a fused mark, before the
-                          title. */}
-                      <div className="mb-2.5 flex items-center gap-2">
-                        <HelmRosette size={12} className="text-[rgba(var(--fl-brass-rgb),0.85)]" />
-                        <SportGlyph sport={field.key} size={18} className="text-[var(--fl-cream)]" />
+                      {/* REAL product mark (Nick, 2026-07-02 second pass:
+                          "Golfhelm and baseballhelm logos aren't on there")
+                          — the clean-alpha kelly wheel mark set in a small
+                          cream coin, echoing the M1 hero chips so the brand
+                          reads continuously M1→M4. Real logos keep kelly
+                          per the ⚠ A-OVERRIDE exemption; the cream (not
+                          cream-high, §D2) coin gives the mark presence on
+                          the dark card. Replaces the abstract rosette+glyph
+                          two-icon composition. */}
+                      <div
+                        className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full"
+                        style={{
+                          backgroundColor: 'rgba(var(--fl-cream-rgb), 0.92)',
+                          boxShadow: 'inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.3), 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.25)',
+                        }}
+                      >
+                        <Image src={field.logo} alt="" width={20} height={20} className="h-5 w-5 object-contain" />
                       </div>
                       <h3 className={cn(flFraunces.className, 'text-balance text-2xl font-medium text-[var(--fl-cream)] sm:text-3xl')}>
                         {field.title}
