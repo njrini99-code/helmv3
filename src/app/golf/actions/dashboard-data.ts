@@ -1075,7 +1075,7 @@ export async function getPlayerDashboardData(
 // The page is force-dynamic anyway, so caching provides minimal benefit.
 
 async function getCachedCoachDashboardDataImpl(...args: Parameters<typeof getCoachDashboardData>) {
-  return getCoachDashboardData(...args);
+  return getCoachDashboardDataImpl(...args);
 }
 const observedGetCachedCoachDashboardData = withAdminObserved(
   'getCachedCoachDashboardData',
@@ -1087,7 +1087,7 @@ export async function getCachedCoachDashboardData(...args: Parameters<typeof get
 }
 
 async function getCachedPlayerDashboardDataImpl(...args: Parameters<typeof getPlayerDashboardData>) {
-  return getPlayerDashboardData(...args);
+  return getPlayerDashboardDataImpl(...args);
 }
 const observedGetCachedPlayerDashboardData = withAdminObserved(
   'getCachedPlayerDashboardData',

@@ -7,7 +7,10 @@
  *      `withAdminObserved` under its own name (Impl+delegator pattern), or
  *   2. a wrap's `feature` is missing / not a valid `FeatureKey`, or
  *   3. a wrap's `feature` does not match the registry's manifest for that
- *      file+export (drift between the code and feature-registry.ts).
+ *      file+export (drift between the code and feature-registry.ts), or
+ *   4. (audit N4) a `withAdminObserved` registration exists for the export's
+ *      name but the export's own body never calls the resulting observed
+ *      const — a dead wrapper that would otherwise read as "covered".
  *
  * Used as a self-test today (proves the harness detects gaps — round-drafts.ts
  * is intentionally unwrapped in Foundation). Batches 1-9 (W15 Tasks 5-14, not
@@ -64,6 +67,12 @@ export function assertAreaFullyWrapped(
       if (expected && expected !== wrap.feature) {
         problems.push(
           `${relFile}: '${name}' is wrapped with feature '${wrap.feature}' but the registry manifest says '${expected}'`,
+        );
+      }
+
+      if (scanned.undelegatedWraps.has(name)) {
+        problems.push(
+          `${relFile}: '${name}' has a withAdminObserved registration but its export body never calls the observed const (dead wrapper)`,
         );
       }
     }

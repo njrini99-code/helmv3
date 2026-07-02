@@ -1251,7 +1251,7 @@ async function deleteGolfDocumentImpl(
    
   _filePath?: string
 ): Promise<{ success: boolean; error?: string }> {
-  const result = await deleteDocument(documentId);
+  const result = await deleteDocumentImpl(documentId);
   return { success: result.success, error: result.error || undefined };
 }
 
@@ -1280,7 +1280,7 @@ async function updateGolfDocumentImpl(data: {
   player_visible?: boolean;
   folder?: string | null;
 }): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
-  const result = await updateDocument(data.id, {
+  const result = await updateDocumentImpl(data.id, {
     title: data.title,
     description: data.description,
     category: data.category,
@@ -1318,7 +1318,7 @@ export async function updateGolfDocument(data: {
 async function getVersionHistoryImpl(
   documentId: string
 ): Promise<{ success: boolean; versions?: DocumentVersion[]; error?: string }> {
-  const result = await getDocumentVersions(documentId);
+  const result = await getDocumentVersionsImpl(documentId);
   if (result.error) {
     return { success: false, error: result.error };
   }

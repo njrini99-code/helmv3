@@ -1754,11 +1754,10 @@ async function getAdminDashboardDataImpl(): Promise<AdminDashboardData> {
   //    any slice — we issue a single grouped query.
   let rollupCDegraded = false;
   const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
-    fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
-      void logServerError(
-        `[admin-data] fetchAdminRollupC threw: ${describeError(e)}`,
-        { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } },
-      );
+    fetchAdminRollupC(rollupA.allRoundsMinimal).catch((_e) => {
+      // Audit N4: fetchAdminRollupC is itself withAdminObserved-wrapped, so
+      // it already logs its own failure at the export boundary. Logging
+      // again here would double-write admin_events for a single failure.
       rollupCDegraded = true;
       return EMPTY_ROLLUP_C;
     }),

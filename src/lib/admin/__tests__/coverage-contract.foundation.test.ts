@@ -33,6 +33,21 @@ describe('coverage-scanner', () => {
     );
     expect(scanned.wrapped.size).toBe(0);
   });
+
+  it('flags a wrap whose export never calls the observed const (audit N4 — dead wrapper)', () => {
+    // See fixtures/broken-delegation.fixture.ts: `withAdminObserved` textually
+    // co-occurs with the export name (the pre-hardening scanner's only
+    // check), but the export body calls the Impl directly instead of the
+    // observed const, so the registration is dead code that would silently
+    // never log. `wrapped` still records the (name, feature) pair — the new
+    // `undelegatedWraps` set is what surfaces the gap.
+    const scanned = scanActionFile(
+      join(process.cwd(), 'src/lib/admin/__tests__/fixtures/broken-delegation.fixture.ts'),
+    );
+    expect(scanned.exports).toEqual(['brokenDelegationFn']);
+    expect(scanned.wrapped.get('brokenDelegationFn')).toEqual({ feature: 'admin_dashboard' });
+    expect(scanned.undelegatedWraps.has('brokenDelegationFn')).toBe(true);
+  });
 });
 
 describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)', () => {
@@ -72,6 +87,15 @@ describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)
     expect(() =>
       assertAreaFullyWrapped(['src/lib/admin/__tests__/fixtures/unwrapped-actions.fixture.ts']),
     ).toThrow(/NOT wrapped with withAdminObserved/);
+  });
+
+  it('THROWS for a wrap whose export never calls the observed const (audit N4)', () => {
+    // See fixtures/broken-delegation.fixture.ts — proves the delegation
+    // check is wired into the actual gap-reporting path, not just exposed
+    // as an unused field on ScannedFile.
+    expect(() =>
+      assertAreaFullyWrapped(['src/lib/admin/__tests__/fixtures/broken-delegation.fixture.ts']),
+    ).toThrow(/dead wrapper/);
   });
 });
 
