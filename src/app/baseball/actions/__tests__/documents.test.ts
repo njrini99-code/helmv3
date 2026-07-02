@@ -81,6 +81,14 @@ beforeEach(() => {
     error: null,
   });
 
+  // Default: an authenticated coach session. Individual tests may override
+  // with getUserMock.mockResolvedValueOnce(...) to exercise the
+  // not-authenticated branch.
+  getUserMock.mockResolvedValue({
+    data: { user: { id: COACH_USER_ID } },
+    error: null,
+  });
+
   fromMock.mockImplementation((table: string) => {
     const chain =
       table === 'baseball_documents'

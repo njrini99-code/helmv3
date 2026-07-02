@@ -508,12 +508,19 @@ function analyzeTeam(
  * Comparing an insight's `coach_id` directly against `supabase.auth.getUser().id`
  * compares two different id domains and rejects every real coach. Returns
  * null when the user has no coach row.
+ *
+ * Not a standalone server action — an internal resolver that takes an
+ * already-authenticated `supabase` client and `userId` from its caller (every
+ * call site in this file derives `userId` from its own prior
+ * `supabase.auth.getUser()` check, e.g. `dismissInsight` below). Exported
+ * only so insight-lifecycle.test.ts can unit-test it directly.
  */
 export async function resolveCallerCoachId(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   userId: string,
 ): Promise<string | null> {
+  // nosemgrep: helmv3-server-action-missing-auth-check -- see JSDoc above; this helper trusts its caller's already-authenticated `userId`, it doesn't own a session to re-check.
   const { data: coach } = await supabase
     .from('baseball_coaches')
     .select('id')

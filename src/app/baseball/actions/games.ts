@@ -344,6 +344,13 @@ export async function getTeamGames(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper (same pattern as
+  // camps.ts's registerForCamp).
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) return { success: false, error: 'Not authenticated' };
+
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
@@ -415,6 +422,12 @@ export async function getTeamSeasonRecord(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) return { success: false, error: 'Not authenticated' };
+
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
@@ -461,6 +474,12 @@ export async function getGameBoxScore(gameId: string): Promise<GetGameBoxScoreRe
   const authResult = await requireCoachAuth();
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
+
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) return { success: false, error: 'Not authenticated' };
 
   const { data: game, error: gameError } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
@@ -927,6 +946,22 @@ export async function uploadBoxScoreCSV(
   }
   const { coach, supabase } = authResult;
 
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) {
+    return {
+      success: false,
+      matched: [],
+      unmatched: [],
+      battingRows: [],
+      pitchingRows: [],
+      allMatched: false,
+      error: 'Not authenticated',
+    };
+  }
+
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) {
     return {
@@ -1137,6 +1172,12 @@ export async function resolveBoxScoreUpload(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { supabase } = authResult;
 
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) return { success: false, error: 'Not authenticated' };
+
   // Get the original upload
   const { data: upload } = await (supabase as unknown as SupabaseClient)
     .from('baseball_box_score_uploads')
@@ -1206,6 +1247,12 @@ export async function getTeamSeasonStats(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) return { success: false, error: 'Not authenticated' };
+
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
@@ -1241,6 +1288,12 @@ export async function getPlayerSeasonStats(
   const authResult = await requireCoachAuth();
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
+
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) return { success: false, error: 'Not authenticated' };
 
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) return { success: false, error: 'Access denied' };
@@ -1409,6 +1462,12 @@ export async function recalculateAllSeasonStats(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) return { success: false, error: 'Not authenticated' };
+
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
@@ -1477,6 +1536,14 @@ export async function importSchedule(
     return { success: false, created: 0, skipped: 0, rowErrors: [], error: authResult.error };
   }
   const { coach, supabase } = authResult;
+
+  // requireCoachAuth() above already verified the session server-side; this
+  // call is redundant in practice but satisfies the server-action auth-check
+  // gate, which can't see through the shared helper.
+  const { data: { user: gateUser }, error: gateUserError } = await supabase.auth.getUser();
+  if (gateUserError || !gateUser) {
+    return { success: false, created: 0, skipped: 0, rowErrors: [], error: 'Not authenticated' };
+  }
 
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) {

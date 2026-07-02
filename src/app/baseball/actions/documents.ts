@@ -194,6 +194,14 @@ export async function getTeamDocuments(
   try {
     const supabase = await createClient();
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
+
     let query = supabase
       .from('baseball_documents' as any)
       .select('*')
@@ -229,6 +237,14 @@ export async function getDocument(
 ): Promise<{ data: BaseballDocument | null; error: string | null }> {
   try {
     const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
 
     const { data, error } = await (supabase as any)
       .from('baseball_documents')
@@ -628,6 +644,14 @@ export async function getVersionHistory(
   try {
     const supabase = await createClient();
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     const { data: rawData, error } = await (supabase as any)
       .from('baseball_document_versions')
       .select('*')
@@ -740,6 +764,14 @@ export async function getPreviewUrl(
   try {
     const supabase = await createClient();
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
+
     if (versionNumber) {
       // Get specific version
       const { data: versionData, error } = await (supabase as any)
@@ -793,6 +825,14 @@ export async function getTextFileContent(
 ): Promise<{ data: string | null; error: string | null }> {
   try {
     const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
 
     let storagePath: string;
 
