@@ -24,9 +24,13 @@
  *   depth parallax — see `FilmSlab`.
  * - **Hardware bezel** (`HardwareShell`) — the frame is a piece of desk
  *   hardware, not a bare glass rectangle: an outer `fl-glass-2` shell, an
- *   inset screen well the film column lives inside, a webcam-style dot in
- *   the top bezel (monitor variant) or a notch (phone variant), and a
- *   soft cream reflection strip standing in for a shadow blob.
+ *   inset screen well the film column lives inside, and a webcam-style dot
+ *   in the top bezel (monitor variant) or a notch (phone variant). An
+ *   earlier "reflection" strip under the frame (a blurred cream gradient
+ *   standing in for a shadow blob) was removed 2026-07-02 (pixel review) —
+ *   it rendered as a one-sided gray smudge rather than a clean symmetric
+ *   reflection; the bezel + ledger band already carry the depth without
+ *   it, matching `StaticCinema`'s fallback path, which never had one.
  * - **Ledger captions** (`Ledger`/`LedgerEntry`) — no progress dots. A
  *   left-anchored numbered ledger (01/02/03, `font-annual`) below the
  *   frame: a brass rule draws in and the caption writes in through the
@@ -342,17 +346,6 @@ function HardwareFrame({
       >
         <FilmColumn columnY={columnY} handoff01={handoff01} handoff12={handoff12} />
       </HardwareShell>
-
-      {/* Base reflection — a soft cream gradient strip instead of a shadow
-          blob; `scaleY(-1)` reads it as a mirrored surface underneath. */}
-      <div
-        aria-hidden="true"
-        className="mx-auto mt-1 h-10 w-[92%] rounded-b-[1.25rem] blur-sm"
-        style={{
-          background: 'linear-gradient(to bottom, rgba(var(--fl-cream-high-rgb), 0.06), transparent)',
-          transform: 'scaleY(-1)',
-        }}
-      />
     </m.div>
   );
 }
