@@ -22,6 +22,7 @@ import { CONCRETE_EVENT_ADAPTERS } from '@/lib/baseball/adapters';
 import { getSourceRegistryEntry } from '@/lib/baseball/stat-import-adapters';
 import { BASEBALL_IMPORT_SOURCES } from '@/lib/baseball/import-matching';
 import { isImportSourceEnabled } from '@/lib/baseball/import-source-enabled';
+import { fairwayScope } from '@/lib/redesign/flag';
 import type { BaseballImportRunRow } from '@/lib/types/baseball-imports';
 import type { BaseballImportSourceConfig } from '@/lib/types/baseball-settings';
 import type { BaseballSourceKey } from '@/lib/types/baseball-stat-events';
@@ -140,14 +141,16 @@ export default async function ImportCenterPage() {
   const registeredSources = mergeRegisteredSources(registered);
 
   return (
-    <ImportCenterShell
-      teamId={teamId}
-      teamName={team?.name ?? 'Your Team'}
-      players={players}
-      recentRuns={recentRuns}
-      eventSources={EVENT_SOURCES}
-      registeredSources={registeredSources}
-    />
+    <div className={fairwayScope('min-h-full')}>
+      <ImportCenterShell
+        teamId={teamId}
+        teamName={team?.name ?? 'Your Team'}
+        players={players}
+        recentRuns={recentRuns}
+        eventSources={EVENT_SOURCES}
+        registeredSources={registeredSources}
+      />
+    </div>
   );
 }
 

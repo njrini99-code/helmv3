@@ -6,8 +6,10 @@
 // =============================================================================
 
 export { PlayerPassportCard } from './PlayerPassportCard';
+export { PlayerPassportFairway } from './PlayerPassportFairway';
 export { PassportVisibilityControls } from './PassportVisibilityControls';
 export { ScoutPacketView } from './ScoutPacketView';
 export { ScoutPacketManager } from './ScoutPacketManager';
 export { ScoutPacketRosterList } from './ScoutPacketRosterList';
 export { ScoutPacketCsvButton } from './ScoutPacketCsvButton';
+export { ScoutPacketsFairway } from './ScoutPacketsFairway';

@@ -3,40 +3,21 @@
 // =============================================================================
 // src/components/baseball/signals/SignalDrillDown.tsx
 //
-// [W6c] Signal drill-down glass slide-over.
+// [W6c] Signal drill-down — the full source-backed narrative a signal card only
+// previews: why_it_matters · evidence (parsed list) · recommended action label ·
+// limitation · source refs with sample_n. Built on the Fairway `<Sheet>` right
+// panel (vaul-backed: focus trap, Escape, scrim-click, drag-to-dismiss all
+// handled by the primitive) so the main signal list stays visible on desktop —
+// no bespoke Radix Dialog wiring here.
 //
-// Opens from a signal card and shows the full source-backed narrative the card
-// only previews: why_it_matters · evidence (parsed table) · recommended action
-// label · limitation · source refs with sample_n. Radix Dialog rendered as a
-// right-panel slide-over (not a bottom drawer) so the main signal list stays
-// visible on desktop.
-//
-// Accessibility contract:
-//   - Radix Dialog supplies focus trap, role="dialog", aria-modal=true.
-//   - First focusable element (close button) receives focus on open.
-//   - Escape closes via Radix default behavior.
-//   - Close button has accessible label.
-//   - Overlay click closes (Radix default).
-//
-// Design bar: glass panel — bg-white/90 backdrop-blur-2xl with warm border +
-// shadow. Slow cinematic entrance (slide-in-from-right). Generous padding.
-// No neon. Source refs render as honest rows (label + detail + sample_n).
-// Limitation renders with an amber advisory strip — never missing when present.
+// THE WAR ROOM lane (`pursuit` ink). Limitation renders through an honest
+// InlineNotice advisory strip — never a yellow box, never missing when present.
 // =============================================================================
 
-import * as React from 'react';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { m, LazyMotion, domAnimation } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  IconX,
-  IconAlertCircle,
-  IconList,
-  IconChevronRight,
-} from '@/components/icons';
-import { cn } from '@/lib/utils';
-import { DURATION, EASE_CINEMATIC, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import type { ReactNode } from 'react';
+import { Sheet, InlineNotice } from '@/components/fairway';
+import { InkBadge, Eyebrow, StatReadout, Reveal } from '@/components/baseball/living-annual';
+import { IconList, IconChevronRight } from '@/components/icons';
 import type { SignalInboxRow } from '@/lib/baseball/read-models/signal-inbox';
 import {
   getSeverityPresentation,
@@ -45,11 +26,6 @@ import {
 } from './signal-presentation';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
-
-function confidenceLabel(c: number | null): string {
-  if (c === null) return '—';
-  return `${Math.round(c * 100)}%`;
-}
 
 /** Parse a multi-item evidence string (semicolons or newlines). */
 function parseEvidence(raw: string): string[] {
@@ -80,13 +56,11 @@ export function SignalDrillDown({
   open,
   onOpenChange,
 }: SignalDrillDownProps) {
-  const reduce = useReducedMotionGuard();
-
   // Derive the limitation text. Prefer the signal's stored limitation field
   // (baseball_signals.limitation — full column set). Fall back to the
   // sample-too-small sentinel so a starved signal always shows the caveat.
   const limitationText: string | null =
-    (signal as SignalInboxRow & { limitation?: string | null })?.limitation ??
+    (signal as (SignalInboxRow & { limitation?: string | null }) | null)?.limitation ??
     (signal?.sampleTooSmall
       ? `Sample too small${signal.sampleN != null ? ` (n=${signal.sampleN})` : ''}. Treat as a watch item, not a confident finding.`
       : null);
@@ -94,214 +68,123 @@ export function SignalDrillDown({
   const sev = signal ? getSeverityPresentation(signal.severity) : null;
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        {/* ── Overlay ─────────────────────────────────────────────────── */}
-        <DialogPrimitive.Overlay
-          className={cn(
-            'fixed inset-0 z-50 bg-warm-900/30 backdrop-blur-[3px]',
-            'data-[state=open]:animate-in data-[state=closed]:animate-out',
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            'duration-200',
+    <Sheet
+      open={open}
+      onOpenChange={onOpenChange}
+      side="right"
+      title="Signal detail"
+      hideTitle
+    >
+      {signal ? (
+        <Sheet.Body className="flex flex-col gap-5 pt-6">
+          {/* Signal title + meta chips */}
+          <Reveal>
+            <div>
+              <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                {sev && <InkBadge label={sev.label} tone={sev.tone} variant={sev.variant} />}
+                <InkBadge label={getCategoryLabel(signal.category)} tone="neutral" />
+                <span className="inline-flex items-baseline gap-1 font-annual text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
+                  Confidence
+                  <StatReadout
+                    value={signal.confidence === null ? '—' : Math.round(signal.confidence * 100)}
+                    suffix={signal.confidence === null ? undefined : '%'}
+                    className="text-body-sm normal-case tracking-normal text-text-secondary"
+                    ariaLabel="Confidence"
+                  />
+                </span>
+              </div>
+              <h2 className="font-annual text-h3 font-semibold leading-snug text-text-primary">
+                {signal.title}
+              </h2>
+              {(playerName ?? signal.playerId == null) && (
+                <p className="mt-0.5 font-annual text-body-sm text-text-tertiary">
+                  {playerName ?? 'Team-wide'}
+                </p>
+              )}
+            </div>
+          </Reveal>
+
+          {/* ── Sample-too-small banner (first-class, binding) ────── */}
+          {signal.sampleTooSmall && (
+            <InlineNotice tone="warning">
+              Sample too small
+              {signal.sampleN != null ? ` (n=${signal.sampleN})` : ''} — treat as a
+              watch item, not a confident finding.
+            </InlineNotice>
           )}
-        />
 
-        {/* ── Panel ───────────────────────────────────────────────────── */}
-        <DialogPrimitive.Content
-          className={cn(
-            // Positioning: fixed right panel — full height, capped width.
-            'fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col',
-            'sm:max-w-md',
-            // Glass surface.
-            'glass-standard border-l',
-            // Shadow — depth cue for the overlay pattern.
-            'shadow-[−24px_0_64px_rgba(28,25,23,0.14)]',
-            // Radix slide transitions.
-            'data-[state=open]:animate-in data-[state=closed]:animate-out',
-            'data-[state=open]:slide-in-from-right-full data-[state=closed]:slide-out-to-right-full',
-            'duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+          {/* ── Why it matters ──────────────────────────────────── */}
+          {signal.whyItMatters && (
+            <Section label="Why it matters">
+              <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
+                {signal.whyItMatters}
+              </p>
+            </Section>
           )}
-          // Prevent Radix from trying to auto-focus the overlay; the close
-          // button will receive focus via autoFocus below.
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          aria-describedby="signal-drilldown-desc"
-        >
-          <LazyMotion features={domAnimation} strict>
-            {signal && (
-              <>
-                {/* ── Header bar ────────────────────────────────────────── */}
-                <div className="flex items-center justify-between gap-3 border-b border-warm-200/60 px-5 py-4">
-                  <DialogPrimitive.Title asChild>
-                    <h2 className="flex-1 truncate text-sm font-semibold text-warm-900 leading-snug">
-                      Signal detail
-                    </h2>
-                  </DialogPrimitive.Title>
-                  <DialogPrimitive.Close asChild>
-                    <Button
-                      variant="ghost"
-                      aria-label="Close signal detail"
-                      // autoFocus so Radix focuses here on panel open.
-                      // eslint-disable-next-line jsx-a11y/no-autofocus
-                      autoFocus
-                      className="h-9 w-9 shrink-0 rounded-xl p-0 text-warm-500 hover:text-warm-900"
-                    >
-                      <IconX size={17} aria-hidden />
-                    </Button>
-                  </DialogPrimitive.Close>
-                </div>
 
-                {/* ── Scrollable body ───────────────────────────────────── */}
-                <div
-                  id="signal-drilldown-desc"
-                  className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-5"
-                >
-                  {/* Signal title + meta chips */}
-                  <m.div
-                    initial={reduce ? false : { opacity: 0, y: 6 }}
-                    animate={reduce ? false : { opacity: 1, y: 0 }}
-                    transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
-                  >
-                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                      {sev && (
-                        <Badge tone={sev.tone} appearance="soft" size="sm">
-                          {sev.label}
-                        </Badge>
-                      )}
-                      <Badge tone="warm" appearance="outline" size="sm">
-                        {getCategoryLabel(signal.category)}
-                      </Badge>
-                      <span className="text-xs text-warm-400 tabular-nums">
-                        Confidence {confidenceLabel(signal.confidence)}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-warm-900 leading-snug">
-                      {signal.title}
-                    </h3>
-                    {(playerName ?? signal.playerId == null) && (
-                      <p className="mt-0.5 text-sm text-warm-500">
-                        {playerName ?? 'Team-wide'}
-                      </p>
-                    )}
-                  </m.div>
+          {/* ── Evidence ────────────────────────────────────────── */}
+          {signal.evidence && (
+            <Section label="Evidence">
+              <EvidenceBlock evidence={signal.evidence} />
+            </Section>
+          )}
 
-                  {/* ── Sample-too-small banner (first-class, binding) ────── */}
-                  {signal.sampleTooSmall && (
-                    <m.div
-                      initial={reduce ? false : { opacity: 0, y: 4 }}
-                      animate={reduce ? false : { opacity: 1, y: 0 }}
-                      transition={{ duration: DURATION.short, ease: EASE_CINEMATIC, delay: 0.05 }}
-                      role="alert"
-                      className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200/80 px-3.5 py-3"
-                    >
-                      <IconAlertCircle
-                        size={15}
-                        className="mt-0.5 shrink-0 text-amber-500"
-                        aria-hidden
-                      />
-                      <p className="text-sm leading-relaxed text-amber-800">
-                        Sample too small
-                        {signal.sampleN != null ? ` (n=${signal.sampleN})` : ''} — treat as
-                        a watch item, not a confident finding.
-                      </p>
-                    </m.div>
-                  )}
+          {/* ── Recommended action label ─────────────────────────── */}
+          {signal.recommendedActionType && signal.recommendedActionType !== 'none' && (
+            <Section
+              label={signal.sampleTooSmall ? 'Possible next step (advisory)' : 'Recommended action'}
+            >
+              <div className="flex items-center gap-2">
+                <IconChevronRight size={13} className="shrink-0 text-pursuit" aria-hidden />
+                <p className="font-annual text-body-sm font-medium text-text-primary">
+                  {signal.recommendedActionLabel ?? getActionTypeLabel(signal.recommendedActionType)}
+                </p>
+              </div>
+            </Section>
+          )}
 
-                  {/* ── Why it matters ──────────────────────────────────── */}
-                  {signal.whyItMatters && (
-                    <Section label="Why it matters">
-                      <p className="text-sm leading-relaxed text-warm-700">
-                        {signal.whyItMatters}
-                      </p>
-                    </Section>
-                  )}
+          {/* ── Limitation ─────────────────────────────────────── */}
+          {limitationText && (
+            <Section label="Limitation">
+              <InlineNotice tone="warning">{limitationText}</InlineNotice>
+            </Section>
+          )}
 
-                  {/* ── Evidence ────────────────────────────────────────── */}
-                  {signal.evidence && (
-                    <Section label="Evidence">
-                      <EvidenceBlock evidence={signal.evidence} />
-                    </Section>
-                  )}
-
-                  {/* ── Recommended action label ─────────────────────────── */}
-                  {signal.recommendedActionType &&
-                    signal.recommendedActionType !== 'none' && (
-                      <Section
-                        label={
-                          signal.sampleTooSmall
-                            ? 'Possible next step (advisory)'
-                            : 'Recommended action'
-                        }
-                      >
-                        <div className="flex items-center gap-2">
-                          <IconChevronRight
-                            size={13}
-                            className="shrink-0 text-primary-500"
-                            aria-hidden
-                          />
-                          <p className="text-sm font-medium text-warm-800">
-                            {signal.recommendedActionLabel ??
-                              getActionTypeLabel(signal.recommendedActionType)}
-                          </p>
-                        </div>
-                      </Section>
-                    )}
-
-                  {/* ── Limitation ─────────────────────────────────────── */}
-                  {limitationText && (
-                    <Section label="Limitation">
-                      <div className="rounded-xl bg-warm-50 border border-warm-200/70 px-3.5 py-3">
-                        <p className="text-sm leading-relaxed text-warm-600">
-                          {limitationText}
-                        </p>
-                      </div>
-                    </Section>
-                  )}
-
-                  {/* ── Source refs ─────────────────────────────────────── */}
-                  <Section
-                    label={
-                      signal.sourceRefs.length > 0
-                        ? `Source refs · ${signal.sourceRefs.length}`
-                        : 'Source refs'
-                    }
-                  >
-                    {signal.sourceRefs.length === 0 ? (
-                      <p className="rounded-xl border border-amber-200/70 bg-amber-50 px-3.5 py-3 text-sm text-amber-800">
-                        Source not yet attached — this signal cannot be acted upon
-                        with confidence.
-                      </p>
-                    ) : (
-                      <ul className="space-y-2" aria-label="Source references">
-                        {signal.sourceRefs.map((ref, i) => (
-                          <SourceRefRow key={i} ref_={ref} />
-                        ))}
-                      </ul>
-                    )}
-                  </Section>
-                </div>
-              </>
+          {/* ── Source refs ─────────────────────────────────────── */}
+          <Section
+            label={
+              signal.sourceRefs.length > 0
+                ? `Source refs · ${signal.sourceRefs.length}`
+                : 'Source refs'
+            }
+          >
+            {signal.sourceRefs.length === 0 ? (
+              <InlineNotice tone="warning">
+                Source not yet attached — this signal cannot be acted upon with
+                confidence.
+              </InlineNotice>
+            ) : (
+              <ul className="space-y-2" aria-label="Source references">
+                {signal.sourceRefs.map((ref, i) => (
+                  <SourceRefRow key={i} ref_={ref} />
+                ))}
+              </ul>
             )}
-          </LazyMotion>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+          </Section>
+        </Sheet.Body>
+      ) : null}
+    </Sheet>
   );
 }
 
 // ─── sub-components ───────────────────────────────────────────────────────────
 
-function Section({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-warm-400">
+      <Eyebrow ink="muted" className="mb-1.5">
         {label}
-      </p>
+      </Eyebrow>
       {children}
     </div>
   );
@@ -311,20 +194,16 @@ function EvidenceBlock({ evidence }: { evidence: string }) {
   const parts = parseEvidence(evidence);
   if (parts.length === 0) return null;
   if (parts.length === 1) {
-    return <p className="text-sm leading-relaxed text-warm-700">{parts[0]}</p>;
+    return <p className="font-annual text-body-sm leading-relaxed text-text-secondary">{parts[0]}</p>;
   }
   return (
     <ul className="space-y-1.5" aria-label="Evidence items">
       {parts.map((item, i) => (
         <li
           key={i}
-          className="flex items-start gap-2.5 text-sm leading-relaxed text-warm-700"
+          className="flex items-start gap-2.5 font-annual text-body-sm leading-relaxed text-text-secondary"
         >
-          <IconList
-            size={12}
-            aria-hidden
-            className="mt-1 shrink-0 text-warm-400"
-          />
+          <IconList size={12} aria-hidden className="mt-1 shrink-0 text-text-tertiary" />
           <span>{item}</span>
         </li>
       ))}
@@ -332,19 +211,15 @@ function EvidenceBlock({ evidence }: { evidence: string }) {
   );
 }
 
-function SourceRefRow({
-  ref_,
-}: {
-  ref_: SignalInboxRow['sourceRefs'][number];
-}) {
+function SourceRefRow({ ref_ }: { ref_: SignalInboxRow['sourceRefs'][number] }) {
   return (
-    <li className="flex items-start justify-between gap-3 rounded-xl border border-warm-100 bg-cream-50 px-3.5 py-2.5">
+    <li className="flex items-start justify-between gap-3 rounded-fw-sm border border-[color:var(--hairline)] bg-[var(--paper)] px-3.5 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-warm-800">
+        <p className="truncate font-annual text-body-sm font-medium text-text-primary">
           {ref_.label ?? ref_.source_table}
         </p>
         {ref_.source_table && ref_.label && (
-          <p className="mt-0.5 font-mono text-xs text-warm-400 truncate">
+          <p className="mt-0.5 truncate font-fw-mono text-eyebrow text-text-tertiary">
             {ref_.source_table}
             {ref_.column ? `.${ref_.column}` : ''}
           </p>
@@ -352,14 +227,12 @@ function SourceRefRow({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {ref_.sample_n != null && (
-          <span className="text-xs tabular-nums text-warm-500">
+          <span className="font-annual text-eyebrow tabular-nums text-text-tertiary">
             n={ref_.sample_n}
           </span>
         )}
         {ref_.confidence != null && (
-          <Badge tone="warm" appearance="soft" size="sm">
-            {Math.round(ref_.confidence * 100)}%
-          </Badge>
+          <InkBadge label={`${Math.round(ref_.confidence * 100)}%`} tone="neutral" />
         )}
       </div>
     </li>

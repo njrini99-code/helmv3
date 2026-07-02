@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSessionProfile } from '@/lib/auth/session';
+import { fairwayScope } from '@/lib/redesign/flag';
 import AnalyticsClient from './AnalyticsClient';
 
 export default async function AnalyticsPage() {
@@ -7,5 +8,9 @@ export default async function AnalyticsPage() {
   if (!session) redirect('/baseball/login');
   if (session.role === 'coach') redirect('/baseball/dashboard/command-center');
 
-  return <AnalyticsClient />;
+  return (
+    <div className={fairwayScope('min-h-full')}>
+      <AnalyticsClient />
+    </div>
+  );
 }

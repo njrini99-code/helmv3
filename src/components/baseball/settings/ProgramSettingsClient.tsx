@@ -3,30 +3,37 @@
 // =============================================================================
 // src/components/baseball/settings/ProgramSettingsClient.tsx
 //
-// Wave 4 / packet: settings-os
+// Wave 4 / packet: settings-os. MIGRATED (P4.16) to "The Living Annual" kit
+// (design-system-living-annual.md §7 kit, §8 motion contract): the generic
+// `Header` + `Card`/`CardHeader`/`CardContent` chrome is now `SectionMasthead`
+// + `PaperCard` + `HairlineRule` + `Eyebrow`, and the read-only guard renders
+// through `EditorsLetter` instead of the old amber-adjacent `EmptyState`.
 //
-// The Program Settings OS surface. Variant-aware (college / high_school /
-// showcase / juco / academy / club): the SAME architecture, distinct DEFAULTS
-// and emphasis driven by the program-type variant engine — not shallow text
-// swaps. Every write goes through a server action wrapped in withBaseballAction,
-// which re-validates can_manage_settings SERVER-SIDE. Read-only viewers see the
-// values but the controls are disabled.
+// PRESENTATION-ONLY migration: BOTH save paths (updateProgramSettings via
+// handleSave, updateProgramIdentity via handleSaveIdentity), changeProgramType,
+// every patch()/patchIdentity() mutator, and every form primitive (Input,
+// Select, Checkbox, Button — all still `@/components/ui/*`, untouched) are
+// preserved verbatim. `SectionCard` is refactored exactly once: it now wraps
+// each section in the kit's `<Reveal>` (mount-based settle — see Reveal.tsx;
+// a `whileInView` gate would strand every card below the fold at opacity:0
+// because the dashboard's inner-scroll shell breaks IntersectionObserver
+// against the document viewport) instead of the old bespoke inline
+// framer-motion `m.div`. The `#anchor` deep-links (player-access,
+// guardian-access, showcase-profile, ai, notifications, data-retention) still
+// work — `id`/`scroll-mt-24` moved to SectionCard's outer wrapper because
+// `PaperCard` doesn't forward arbitrary props. `AiAuditLog.tsx` is untouched.
 //
-// Palette: cream/green GolfHelm look reused verbatim (Card glass, warm-* tokens,
-// primary-* green, gap-6, editorial type). No navy/amber/new palette.
+// Program-ops = the Pressbox (team) lane → green ink throughout.
 //
 // No golf vocabulary. Terminology comes from the variant terminology pack.
 // =============================================================================
 
 import { useState, useTransition } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
-import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { LazyMotion, domAnimation } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -53,6 +60,14 @@ import {
   listProgramVariants,
 } from '@/lib/baseball/program-type-variants';
 import { AiAuditLog } from '@/components/baseball/settings/AiAuditLog';
+import {
+  SectionMasthead,
+  PaperCard,
+  HairlineRule,
+  Eyebrow,
+  EditorsLetter,
+  Reveal,
+} from '@/components/baseball/living-annual';
 import type {
   BaseballProgramType,
   BaseballProgramSettings,
@@ -75,8 +90,8 @@ interface Props {
 }
 
 // -----------------------------------------------------------------------------
-// Small, palette-true toggle row (cream/green; reuses the existing checkbox look
-// from the account settings page so the system stays consistent).
+// Small, palette-true toggle row. Reuses the Checkbox form primitive verbatim
+// so every toggle stays consistent with the rest of the app.
 // -----------------------------------------------------------------------------
 
 function ToggleRow({
@@ -104,8 +119,9 @@ function ToggleRow({
 }
 
 // -----------------------------------------------------------------------------
-// Palette-true labelled text/select field (cream/green). Reused by the Program
-// Identity editor so every input matches the existing settings look.
+// Labelled text/select field. The label/hint chrome uses the kit's ink-primary
+// / ink-tertiary text tokens; the control passed as `children` (Input/Select)
+// is a form primitive and is never touched here.
 // -----------------------------------------------------------------------------
 
 function Field({
@@ -119,13 +135,20 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-sm font-medium text-warm-900">{label}</span>
-      {hint && <span className="block text-xs text-warm-500 mb-1.5">{hint}</span>}
+      <span className="block text-sm font-medium text-text-primary">{label}</span>
+      {hint && <span className="block text-xs text-text-tertiary mb-1.5">{hint}</span>}
       {!hint && <span className="block mb-1.5" />}
       {children}
     </label>
   );
 }
+
+// -----------------------------------------------------------------------------
+// SectionCard — refactored ONCE onto the Living Annual kit. Every one of the
+// page's ten sections composes from this: a PaperCard body, an icon badge in
+// team ink, an Eyebrow + serif title, a green HairlineRule, and a mount-based
+// Reveal settle (capped stagger — see below).
+// -----------------------------------------------------------------------------
 
 function SectionCard({
   icon,
@@ -135,7 +158,6 @@ function SectionCard({
   children,
   anchorId,
   index = 0,
-  reduceMotion,
 }: {
   icon: React.ReactNode;
   eyebrow?: string;
@@ -143,48 +165,43 @@ function SectionCard({
   subtitle?: string;
   children: React.ReactNode;
   /**
-   * Optional stable anchor so the dedicated spec routes that fold into this page
-   * (player-access, guardian-access, showcase-profile, ai, notifications,
-   * data-retention) can deep-link to their section via #anchor.
-   * scroll-mt keeps the section clear of the sticky header on jump.
+   * Optional stable anchor so the dedicated spec routes that fold into this
+   * page (player-access, guardian-access, showcase-profile, ai,
+   * notifications, data-retention) can deep-link via `#anchor`. Lives on the
+   * OUTER wrapper — not `PaperCard`, which doesn't forward `id` — so the
+   * browser's native fragment scroll still lands here; `scroll-mt-24` keeps
+   * the section clear of the sticky masthead on jump.
    */
   anchorId?: string;
   index?: number;
-  reduceMotion?: boolean | null;
 }) {
-  // Reveal on MOUNT, not on scroll. A settings form is a single tall document;
-  // gating each section behind `whileInView` left every card below the initial
-  // viewport stuck at opacity:0 (invisible but full-height) until the user
-  // scrolled to it — which read as ~6,900px of empty canvas below a short form
-  // in a full-page render. Animating on mount keeps all sections present.
+  // Reveal on MOUNT (the kit's <Reveal>, never `whileInView`): a settings form
+  // is one tall document, and gating each card behind viewport-intersection
+  // left every section below the fold stuck at opacity:0 until scrolled to —
+  // the dashboard's inner-scroll shell breaks IntersectionObserver against the
+  // document viewport (see Reveal.tsx). Stagger is capped at 3 steps (~180ms
+  // max) so a ten-section form still settles briskly rather than crawling.
   return (
-    <m.div
-      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.2) }}
-    >
-      <Card variant="glass" id={anchorId} className={anchorId ? 'scroll-mt-24' : undefined}>
-        <CardHeader>
+    <div id={anchorId} className={anchorId ? 'scroll-mt-24' : undefined}>
+      <Reveal staggerIndex={Math.min(index, 3)}>
+        <PaperCard className="p-6">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary-200 bg-primary-50 text-primary-600">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-fw-md border border-[color:var(--hairline)] bg-grade-plus/10 text-grade-plus">
               {icon}
             </span>
             <div className="min-w-0">
-              {eyebrow && (
-                <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-warm-400">
-                  {eyebrow}
-                </p>
-              )}
-              <h2 className="font-semibold text-warm-900">{title}</h2>
+              {eyebrow && <Eyebrow className="mb-1">{eyebrow}</Eyebrow>}
+              <h2 className="font-annual text-h3 font-semibold text-text-primary">{title}</h2>
               {subtitle && (
-                <p className="text-sm leading-relaxed text-warm-500">{subtitle}</p>
+                <p className="mt-1 text-sm leading-relaxed text-text-secondary">{subtitle}</p>
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">{children}</CardContent>
-      </Card>
-    </m.div>
+          <HairlineRule ink="team" className="my-4" />
+          <div className="space-y-3">{children}</div>
+        </PaperCard>
+      </Reveal>
+    </div>
   );
 }
 
@@ -194,7 +211,6 @@ function SectionCard({
 
 export function ProgramSettingsClient({ data }: Props) {
   const { showToast } = useToast();
-  const reduceMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
   const [settings, setSettings] = useState<BaseballProgramSettings>(data.settings);
   const [programType, setProgramType] = useState<BaseballProgramType>(
@@ -304,38 +320,44 @@ export function ProgramSettingsClient({ data }: Props) {
 
   if (!canEdit && !settings.id) {
     return (
-      <>
-        <Header title="Program Settings" subtitle="Coach access required" />
-        <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-          <EmptyState
-            variant="card"
-            glass
-            icon={<IconShield size={40} />}
-            title="Settings are staff-controlled"
-            description="Program settings are managed by your coaching staff. Ask a head coach if you need a change."
-          />
+      <LazyMotion features={domAnimation}>
+        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+          <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Program Settings" ink="team" />
+          <div className="mt-8">
+            <EditorsLetter
+              ink="team"
+              title="Settings are staff-controlled."
+              body="Program settings are managed by your coaching staff. Ask a head coach if you need a change."
+            />
+          </div>
         </div>
-      </>
+      </LazyMotion>
     );
   }
 
   return (
     <LazyMotion features={domAnimation}>
-      <Header
-        title="Program Settings"
-        subtitle={`${data.teamName} • ${data.variant.label} mode`}
-      >
-        {canEdit && (
-          <Button onClick={handleSave} isLoading={isPending} disabled={!hasUnsaved}>
-            {hasUnsaved ? 'Save Changes' : 'Saved'}
-          </Button>
-        )}
-      </Header>
+      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead
+          eyebrow="THE PRESSBOX · SETTINGS"
+          title="Program Settings"
+          ink="team"
+          actions={
+            canEdit ? (
+              <Button onClick={handleSave} isLoading={isPending} disabled={!hasUnsaved}>
+                {hasUnsaved ? 'Save Changes' : 'Saved'}
+              </Button>
+            ) : undefined
+          }
+        >
+          <p className="text-sm text-text-secondary">
+            {data.teamName} · {data.variant.label} mode
+          </p>
+        </SectionMasthead>
 
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         {!canEdit && (
-          <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600 flex items-center gap-2">
-            <IconLock size={16} className="text-warm-400 shrink-0" />
+          <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-4 text-sm text-text-secondary">
+            <IconLock size={16} className="shrink-0 text-text-tertiary" />
             You can view these settings but only staff with the manage-settings
             capability can change them.
           </div>
@@ -349,7 +371,6 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Program Identity"
           subtitle="The name, location, season, and access posture for your program. Used across reports, schedules, and (when enabled) the public profile."
           index={0}
-          reduceMotion={reduceMotion}
         >
           <Field label="Program name">
             <Input
@@ -488,7 +509,6 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Program Type"
           subtitle="Controls default navigation, terminology, feature defaults, and onboarding. Switching modes never overwrites settings you've already saved."
           index={1}
-          reduceMotion={reduceMotion}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {variants.map((v) => {
@@ -501,20 +521,20 @@ export function ProgramSettingsClient({ data }: Props) {
                   disabled={!canEdit || isPending}
                   onClick={() => handleProgramTypeChange(v.programType)}
                   className={cn(
-                    'h-auto text-left rounded-xl border p-4 transition-all flex-col items-start justify-start',
+                    'h-auto text-left rounded-fw-md border p-4 transition-all flex-col items-start justify-start',
                     active
-                      ? 'border-primary-500 bg-primary-50/70 ring-1 ring-primary-200'
-                      : 'border-warm-200 bg-cream-50 hover:border-primary-200',
+                      ? 'border-grade-plus bg-grade-plus/10 ring-1 ring-grade-plus/30'
+                      : 'border-[color:var(--hairline)] bg-[var(--paper)] hover:border-grade-plus/40',
                     (!canEdit || isPending) && 'cursor-not-allowed opacity-70',
                   )}
                 >
                   <div className="flex items-center justify-between mb-1 w-full">
-                    <span className="font-semibold text-warm-900">{v.label}</span>
+                    <span className="font-semibold text-text-primary">{v.label}</span>
                     {active && (
-                      <IconCheck size={16} className="text-primary-600 shrink-0" />
+                      <IconCheck size={16} className="text-grade-plus shrink-0" />
                     )}
                   </div>
-                  <p className="text-xs leading-relaxed text-warm-500">
+                  <p className="text-xs leading-relaxed text-text-secondary">
                     {v.description}
                   </p>
                 </Button>
@@ -531,7 +551,6 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Player Access"
           subtitle={`What ${term.rosterNoun.toLowerCase()} members can do in their account.`}
           index={2}
-          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Require invite to join"
@@ -585,7 +604,6 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Modules"
           subtitle="Turn the major surfaces on or off for this program."
           index={3}
-          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Academics & class conflicts"
@@ -612,8 +630,9 @@ export function ProgramSettingsClient({ data }: Props) {
             disabled={!canEdit}
             onChange={(v) => patch('public_profiles_enabled', v)}
           />
-          <div className="p-3 rounded-lg bg-warm-50">
-            <p className="font-medium text-warm-900 mb-2">Performance depth</p>
+          <div className="space-y-2 pt-2">
+            <Eyebrow className="text-text-tertiary">Performance depth</Eyebrow>
+            <HairlineRule animate={false} className="mb-1" />
             <div className="flex gap-2">
               {(['lite', 'standard', 'full'] as const).map((depth) => (
                 <Button
@@ -624,10 +643,10 @@ export function ProgramSettingsClient({ data }: Props) {
                   disabled={!canEdit}
                   onClick={() => patch('performance_module_depth', depth)}
                   className={cn(
-                    'flex-1 rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors',
+                    'flex-1 rounded-fw-md border px-3 py-2 text-sm font-medium capitalize transition-colors',
                     settings.performance_module_depth === depth
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-200',
+                      ? 'border-grade-plus bg-grade-plus/10 text-grade-plus'
+                      : 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary hover:border-grade-plus/40',
                     !canEdit && 'cursor-not-allowed opacity-70',
                   )}
                 >
@@ -646,7 +665,6 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Guardian Access"
           subtitle="Optional family communication. Guardians never see staff notes, staff AI, or other players' data."
           index={4}
-          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Enable guardian access"
@@ -682,7 +700,6 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Scout & Showcase Access"
           subtitle="Controls for scout packets, verified-metric display, and exports."
           index={5}
-          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Enable scout access"
@@ -703,8 +720,9 @@ export function ProgramSettingsClient({ data }: Props) {
             disabled={!canEdit || !settings.scout_access_enabled}
             onChange={(v) => patch('scout_can_export', v)}
           />
-          <div className="p-3 rounded-lg bg-warm-50">
-            <p className="font-medium text-warm-900 mb-2">Scout packet visibility</p>
+          <div className="space-y-2 pt-2">
+            <Eyebrow className="text-text-tertiary">Scout packet visibility</Eyebrow>
+            <HairlineRule animate={false} className="mb-1" />
             <div className="flex gap-2">
               {(['private', 'event_only', 'public'] as const).map((vis) => (
                 <Button
@@ -715,10 +733,10 @@ export function ProgramSettingsClient({ data }: Props) {
                   disabled={!canEdit || !settings.scout_access_enabled}
                   onClick={() => patch('scout_packet_visibility', vis)}
                   className={cn(
-                    'flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+                    'flex-1 rounded-fw-md border px-3 py-2 text-sm font-medium transition-colors',
                     settings.scout_packet_visibility === vis
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-200',
+                      ? 'border-grade-plus bg-grade-plus/10 text-grade-plus'
+                      : 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary hover:border-grade-plus/40',
                     (!canEdit || !settings.scout_access_enabled) &&
                       'cursor-not-allowed opacity-70',
                   )}
@@ -738,7 +756,6 @@ export function ProgramSettingsClient({ data }: Props) {
           title="AI Settings"
           subtitle="Every AI output cites its sources, stores a confidence, and respects visibility. Player-visible AI requires staff approval."
           index={6}
-          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="AI enabled"
@@ -802,11 +819,11 @@ export function ProgramSettingsClient({ data }: Props) {
                   value={settings.ai_confidence_threshold}
                   disabled={!canEdit || !settings.ai_enabled}
                   onChange={(e) => patch('ai_confidence_threshold', Number(e.target.value))}
-                  className="flex-1 cursor-pointer accent-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex-1 cursor-pointer accent-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-70"
                   aria-label="AI confidence threshold"
                   aria-valuetext={`${Math.round(settings.ai_confidence_threshold * 100)} percent`}
                 />
-                <span className="w-12 shrink-0 text-right text-sm font-semibold tabular-nums text-warm-900">
+                <span className="w-12 shrink-0 text-right text-sm font-semibold tabular-nums text-text-primary">
                   {Math.round(settings.ai_confidence_threshold * 100)}%
                 </span>
               </div>
@@ -830,14 +847,14 @@ export function ProgramSettingsClient({ data }: Props) {
                   className="w-24"
                   aria-label="AI stale-after days"
                 />
-                <span className="text-sm text-warm-500">days</span>
+                <span className="text-sm text-text-tertiary">days</span>
               </div>
             </Field>
           </div>
 
           {/* Enforcement note — these gates are NOT cosmetic; they govern the
               engine on every generation. */}
-          <p className="rounded-lg bg-primary-50/60 px-3 py-2 text-xs leading-relaxed text-warm-600">
+          <p className="rounded-fw-md border border-[color:var(--hairline)] bg-grade-plus/[0.06] px-3 py-2 text-xs leading-relaxed text-text-secondary">
             These controls are enforced by the CoachHelm engine on every run. With AI
             off, no signals or briefs generate. Player-visible AI is held to staff
             approval when required, low-confidence and source-less outputs are
@@ -845,7 +862,7 @@ export function ProgramSettingsClient({ data }: Props) {
             generation writes an audit entry below.
           </p>
 
-          {/* AI audit log — the v4 §AI Settings AI-audit row, surfaced. */}
+          {/* AI audit log — the v4 §AI Settings AI-audit row, surfaced. Untouched. */}
           <AiAuditLog teamId={data.teamId} canManage={canEdit} />
         </SectionCard>
 
@@ -857,14 +874,16 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Notifications"
           subtitle="Program-level notification defaults. Members can refine their own preferences. In-app channel is live; email and push arrive in a later wave."
           index={7}
-          reduceMotion={reduceMotion}
         >
           {/* Quiet hours */}
-          <div className="p-3 rounded-lg bg-warm-50 space-y-3">
-            <p className="font-medium text-warm-900 text-sm">Quiet hours</p>
-            <p className="text-xs text-warm-500">
-              No notifications are sent during this window (applied across the program).
-            </p>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Eyebrow className="text-text-tertiary">Quiet hours</Eyebrow>
+              <p className="mt-1 text-xs text-text-tertiary">
+                No notifications are sent during this window (applied across the program).
+              </p>
+            </div>
+            <HairlineRule animate={false} />
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Input
@@ -896,7 +915,7 @@ export function ProgramSettingsClient({ data }: Props) {
                   patch('quiet_hours_start', null);
                   patch('quiet_hours_end', null);
                 }}
-                className="text-xs text-warm-500 hover:text-warm-700 px-0 underline-offset-2 hover:underline"
+                className="text-xs text-text-tertiary hover:text-text-secondary px-0 underline-offset-2 hover:underline"
               >
                 Clear quiet hours
               </Button>
@@ -904,13 +923,14 @@ export function ProgramSettingsClient({ data }: Props) {
           </div>
 
           {/* Per-type in-app defaults */}
-          <div className="p-3 rounded-lg bg-warm-50">
-            <p className="font-medium text-warm-900 text-sm mb-2">
-              Default in-app notifications
-            </p>
-            <p className="text-xs text-warm-500 mb-3">
-              Members who have not overridden a type will follow the program default.
-            </p>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Eyebrow className="text-text-tertiary">Default in-app notifications</Eyebrow>
+              <p className="mt-1 text-xs text-text-tertiary">
+                Members who have not overridden a type will follow the program default.
+              </p>
+            </div>
+            <HairlineRule animate={false} />
             <div className="space-y-2">
               {BASEBALL_NOTIFICATION_TYPES.map((type) => {
                 const pref = (settings.notification_defaults as Record<BaseballNotificationType, { in_app: boolean; email: boolean } | undefined>)[type];
@@ -946,13 +966,12 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Appearance & Brand"
           subtitle="Your logo and brand colors, plus a single accent and theme. The product keeps its readable cream-and-green base — brand color is used sparingly and status colors never change."
           index={8}
-          reduceMotion={reduceMotion}
         >
           {/* Logo + brand colors live on the team record, so they save with the
               identity action. Brand accent + theme live on the settings doc. */}
           <Field label="Logo URL" hint="A square PNG/SVG reads best.">
             <div className="flex items-center gap-3">
-              <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-warm-200 bg-cream-50 text-warm-400">
+              <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] text-text-tertiary">
                 {/* Placeholder sits underneath; a broken URL reveals it because the
                     <img> hides itself on error rather than showing a broken glyph. */}
                 <IconImage size={20} aria-hidden />
@@ -961,7 +980,7 @@ export function ProgramSettingsClient({ data }: Props) {
                     key={identity.logo_url}
                     src={identity.logo_url}
                     alt="Program logo preview"
-                    className="absolute inset-0 h-full w-full bg-cream-50 object-contain"
+                    className="absolute inset-0 h-full w-full bg-[var(--paper)] object-contain"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
@@ -992,7 +1011,7 @@ export function ProgramSettingsClient({ data }: Props) {
                   value={isValidBrandHex(identity.primary_color) ? identity.primary_color : '#16a34a'}
                   onChange={(e) => patchIdentity('primary_color', e.target.value)}
                   className={cn(
-                    'h-10 w-14 shrink-0 rounded-lg border border-warm-200 bg-cream-50 p-1',
+                    'h-10 w-14 shrink-0 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
                     !canEdit && 'cursor-not-allowed opacity-70',
                   )}
                 />
@@ -1016,7 +1035,7 @@ export function ProgramSettingsClient({ data }: Props) {
                   value={isValidBrandHex(identity.secondary_color) ? identity.secondary_color : '#1c1917'}
                   onChange={(e) => patchIdentity('secondary_color', e.target.value)}
                   className={cn(
-                    'h-10 w-14 shrink-0 rounded-lg border border-warm-200 bg-cream-50 p-1',
+                    'h-10 w-14 shrink-0 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
                     !canEdit && 'cursor-not-allowed opacity-70',
                   )}
                 />
@@ -1044,8 +1063,9 @@ export function ProgramSettingsClient({ data }: Props) {
             </div>
           )}
 
-          <div className="p-3 rounded-lg bg-warm-50">
-            <p className="font-medium text-warm-900 mb-2">Brand accent</p>
+          <div className="space-y-2 pt-2">
+            <Eyebrow className="text-text-tertiary">Brand accent</Eyebrow>
+            <HairlineRule animate={false} className="mb-1" />
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line helm/no-raw-input -- color picker, no <Input type="color"> component */}
               <input
@@ -1055,11 +1075,11 @@ export function ProgramSettingsClient({ data }: Props) {
                 value={settings.brand_accent ?? '#16A34A'}
                 onChange={(e) => patch('brand_accent', e.target.value)}
                 className={cn(
-                  'h-10 w-14 rounded-lg border border-warm-200 bg-cream-50 p-1',
+                  'h-10 w-14 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
                   !canEdit && 'cursor-not-allowed opacity-70',
                 )}
               />
-              <span className="text-sm text-warm-500">
+              <span className="text-sm text-text-secondary">
                 {settings.brand_accent ?? 'Default (helm green)'}
               </span>
               {settings.brand_accent && canEdit && (
@@ -1068,15 +1088,16 @@ export function ProgramSettingsClient({ data }: Props) {
                   variant="ghost"
                   size="sm"
                   onClick={() => patch('brand_accent', null)}
-                  className="text-sm text-warm-500 hover:text-warm-700 px-0 underline-offset-2 hover:underline"
+                  className="text-sm text-text-tertiary hover:text-text-secondary px-0 underline-offset-2 hover:underline"
                 >
                   Reset
                 </Button>
               )}
             </div>
           </div>
-          <div className="p-3 rounded-lg bg-warm-50">
-            <p className="font-medium text-warm-900 mb-2">Theme</p>
+          <div className="space-y-2 pt-2">
+            <Eyebrow className="text-text-tertiary">Theme</Eyebrow>
+            <HairlineRule animate={false} className="mb-1" />
             <div className="flex gap-2">
               {(['light', 'dark', 'system'] as const).map((theme) => (
                 <Button
@@ -1087,10 +1108,10 @@ export function ProgramSettingsClient({ data }: Props) {
                   disabled={!canEdit}
                   onClick={() => patch('appearance_theme', theme)}
                   className={cn(
-                    'flex-1 rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors',
+                    'flex-1 rounded-fw-md border px-3 py-2 text-sm font-medium capitalize transition-colors',
                     settings.appearance_theme === theme
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-200',
+                      ? 'border-grade-plus bg-grade-plus/10 text-grade-plus'
+                      : 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary hover:border-grade-plus/40',
                     !canEdit && 'cursor-not-allowed opacity-70',
                   )}
                 >
@@ -1109,10 +1130,10 @@ export function ProgramSettingsClient({ data }: Props) {
           title="Data Retention"
           subtitle="How long imports and audit records are kept."
           index={9}
-          reduceMotion={reduceMotion}
         >
-          <div className="p-3 rounded-lg bg-warm-50">
-            <p className="font-medium text-warm-900 mb-2">Season archive policy</p>
+          <div className="space-y-2 pt-2">
+            <Eyebrow className="text-text-tertiary">Season archive policy</Eyebrow>
+            <HairlineRule animate={false} className="mb-1" />
             <div className="flex gap-2">
               {(['keep', 'archive_after_season'] as const).map((policy) => (
                 <Button
@@ -1123,10 +1144,10 @@ export function ProgramSettingsClient({ data }: Props) {
                   disabled={!canEdit}
                   onClick={() => patch('season_archive_policy', policy)}
                   className={cn(
-                    'flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+                    'flex-1 rounded-fw-md border px-3 py-2 text-sm font-medium transition-colors',
                     settings.season_archive_policy === policy
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-200',
+                      ? 'border-grade-plus bg-grade-plus/10 text-grade-plus'
+                      : 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary hover:border-grade-plus/40',
                     !canEdit && 'cursor-not-allowed opacity-70',
                   )}
                 >

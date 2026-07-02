@@ -14,13 +14,12 @@
 // =============================================================================
 
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { getScoutPacketRoster } from '@/app/baseball/actions/scout-packet';
-import { ScoutPacketRosterList } from '@/components/baseball/passport/ScoutPacketRosterList';
-import { IconAlertCircle } from '@/components/icons';
+import { ScoutPacketsFairway } from '@/components/baseball/passport/ScoutPacketsFairway';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
   title: 'Scout Packets · BaseballHelm',
@@ -39,37 +38,8 @@ export default async function ScoutPacketsHubPage() {
   const roster = await getScoutPacketRoster();
 
   return (
-    <div className="min-h-dvh bg-cream-100">
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
-        <header className="mb-6">
-          <p className="text-eyebrow font-semibold uppercase tracking-wide text-primary-600">
-            Recruiting
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">Scout Packets</h1>
-          <p className="mt-1 text-warm-500">
-            Share source-backed packets with college coaches. Each link shows only verified,
-            scout-exposed fields — never internal notes.
-          </p>
-        </header>
-
-        {!roster.exportEnabled && (
-          <div className="mb-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3">
-            <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-            <p className="text-sm text-amber-800">
-              Scout packet export is off for this program. Turn on scout access and export in{' '}
-              <Link
-                href="/baseball/dashboard/settings/program"
-                className="font-medium underline underline-offset-2"
-              >
-                Settings
-              </Link>{' '}
-              before sharing links.
-            </p>
-          </div>
-        )}
-
-        <ScoutPacketRosterList entries={roster.entries} />
-      </div>
+    <div className={fairwayScope('min-h-dvh bg-[var(--paper-canvas)]')}>
+      <ScoutPacketsFairway roster={roster} />
     </div>
   );
 }

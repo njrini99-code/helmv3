@@ -1,17 +1,20 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
 import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
+import { setRememberedFirstName } from '@/lib/entry/greeting';
+import {
+  AuthCard,
+  AuthFooterLinks,
+  AuthPendingDots,
+  BaseballAuthShell,
+} from '@/components/auth/baseball-auth-shell';
 
 function LoginContent() {
-  const prefersReducedMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const router = useRouter();
   // Use predefined message codes to prevent content injection via query params
@@ -48,6 +51,22 @@ function LoginContent() {
     checkAuth();
   }, [supabase]);
 
+  // Entry World personalization (docs/baseball/ENTRY_SCENES_DESIGN.md family
+  // rule #6): remember the first name on a fresh sign-in only — never on
+  // `INITIAL_SESSION` (an already-authed page load, not a login success) —
+  // so the next visit's greeting can read "Welcome back, {name}." Purely
+  // additive: doesn't touch loginAction, redirects, validation, or errors.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== 'SIGNED_IN') return;
+      const firstName = session?.user?.user_metadata?.first_name;
+      if (typeof firstName === 'string' && firstName.trim()) {
+        setRememberedFirstName(firstName);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
   async function handleSignOut() {
     setIsLoggingOut(true);
     await supabase.auth.signOut();
@@ -57,229 +76,65 @@ function LoginContent() {
   }
 
   return (
-    <div className="auth-shell min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-baseball">
-      {/* Skip to main content link for keyboard navigation */}
-      <a
-        href="#login-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-      >
-        Skip to login form
-      </a>
-
-      {/* Animated floating orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large primary orb - top right */}
-        <motion.div
-          className="auth-orb auth-orb-1 w-[500px] h-[500px] -top-32 -right-32 bg-gradient-to-br from-helm-amber-400/40 to-helm-amber-500/30 motion-reduce:animate-none"
-          animate={{
-            x: [0, 30, 0],
-            y: [0, -20, 0],
-            scale: [1, 1.05, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
+    <BaseballAuthShell
+      skipTargetId="login-form"
+      skipLabel="Skip to login form"
+      sceneIdSuffix="login"
+      eyebrow="COACHES · PLAYERS · PROGRAMS"
+      welcomeLine="Welcome back to the Yard."
+      tagline="Sign in to continue to your dashboard."
+      hero
+      footer={
+        <AuthFooterLinks
+          switchLabel={!isLoggedIn && !checkingAuth && !isNative ? "Don't have an account?" : undefined}
+          switchHref={signupHref}
+          switchCta="Sign up"
+          showBackToHelmLabs={!isNative}
         />
-        {/* Medium orb - bottom left */}
-        <motion.div
-          className="auth-orb auth-orb-2 w-[400px] h-[400px] -bottom-24 -left-24 bg-gradient-to-tr from-helm-amber-400/30 to-helm-amber-400/25 motion-reduce:animate-none"
-          animate={{
-            x: [0, -25, 0],
-            y: [0, 25, 0],
-            scale: [1, 0.95, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          })}
-        />
-        {/* Small accent orb - top left */}
-        <motion.div
-          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-amber-300/25 to-helm-amber-400/20 motion-reduce:animate-none"
-          animate={{
-            x: [0, 20, 0],
-            y: [0, -15, 0],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          })}
-        />
-        {/* Tiny floating dot */}
-        <motion.div
-          className="absolute w-3 h-3 rounded-full bg-helm-amber-500/40 top-[30%] right-[20%] motion-reduce:animate-none"
-          animate={{
-            y: [0, -10, 0],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
-        />
-      </div>
-
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(245, 158, 11, 0.5) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(245, 158, 11, 0.5) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }}
-      />
-
-      {/* Glass card */}
-      <div id="login-form" className="relative z-10 w-full max-w-[420px]">
-        <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
-          className="auth-glass-card rounded-3xl p-8 sm:p-10"
-        >
-          {/* Logo with glow effect */}
-          <motion.div
-            className="flex flex-col items-center mb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
+      }
+    >
+      <AuthCard ariaLabel="Sign in">
+        {successMessage && (
+          <div
+            className="mb-6 animate-fade-in rounded-xl border border-grade-plus/25 bg-grade-plus/10 px-4 py-3 text-sm text-primary-700"
+            role="status"
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-helm-amber-500/30 rounded-full blur-xl scale-150" />
-              <div className="relative w-14 h-14 flex items-center justify-center mb-4">
-                <Image
-                  src="/helm-baseball-logo.png"
-                  alt="BaseballHelm Logo"
-                  width={56}
-                  height={56}
-                  className="w-14 h-14 object-contain"
-                  priority
-                  unoptimized
-                />
-              </div>
-            </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
-              BaseballHelm
-            </h1>
-          </motion.div>
-
-          {/* Header */}
-          <motion.div
-            className="text-center mb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
-          >
-            <h2 className="text-h2 sm:text-h1 leading-tight font-bold tracking-[-0.02em] text-warm-900 mb-2">
-              Welcome back
-            </h2>
-            <p className="text-warm-500">Sign in to continue to your dashboard</p>
-          </motion.div>
-
-          {/* Success message */}
-          {successMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-600 px-4 py-3 rounded-xl text-sm mb-6"
-            >
-              {successMessage}
-            </motion.div>
-          )}
-
-          {/* Form or Already Logged In */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
-          >
-            {checkingAuth ? (
-              <div className="flex justify-center py-8">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                </span>
-              </div>
-            ) : isLoggedIn ? (
-              <div className="space-y-4">
-                <div className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-600 px-4 py-3 rounded-xl text-sm text-center">
-                  You&apos;re already signed in
-                </div>
-                <Button variant="primary"
-                  onClick={() => router.push(returnTo || '/baseball/dashboard/command-center')}
-                  className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
-                >
-                  {returnTo ? 'Continue' : 'Continue to Dashboard'}
-                </Button>
-                <Button variant="ghost"
-                  onClick={handleSignOut}
-                  disabled={isLoggingOut}
-                  className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-body tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
-                >
-                  {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
-                </Button>
-              </div>
-            ) : (
-              <BaseballSignInForm />
-            )}
-          </motion.div>
-        </motion.div>
-
-        {/* Footer links with stagger animation */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
-        >
-          {!isLoggedIn && !checkingAuth && !isNative && (
-            <p className="text-center mt-6 text-warm-600 text-sm">
-              Don&apos;t have an account?{' '}
-              <Link
-                href={signupHref}
-                className="text-helm-amber-600 font-semibold hover:text-helm-amber-500 transition-colors"
-              >
-                Sign up
-              </Link>
-            </p>
-          )}
-
-          {!isNative && (
-            <p className="text-center mt-4 text-warm-500 text-sm">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
-              >
-                ← Back to HelmLabs
-              </Link>
-            </p>
-          )}
-
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <Link
-              href="/privacy"
-              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
-            >
-              Privacy
-            </Link>
-            <span className="text-warm-300" aria-hidden="true">·</span>
-            <Link
-              href="/terms"
-              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
-            >
-              Terms
-            </Link>
+            {successMessage}
           </div>
-        </motion.div>
-      </div>
-    </div>
+        )}
+
+        {checkingAuth ? (
+          <div className="flex justify-center py-8">
+            <AuthPendingDots label="Checking sign-in status" />
+          </div>
+        ) : isLoggedIn ? (
+          <div className="animate-fade-in space-y-4">
+            <div className="rounded-xl border border-grade-plus/25 bg-grade-plus/10 px-4 py-3 text-center text-sm text-primary-700">
+              You&apos;re already signed in
+            </div>
+            <Button
+              variant="primary"
+              onClick={() => router.push(returnTo || '/baseball/dashboard/command-center')}
+              className="min-h-[50px] w-full py-3 text-body font-semibold tracking-[-0.01em]"
+            >
+              {returnTo ? 'Continue' : 'Continue to Dashboard'}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              isLoading={isLoggingOut}
+              className="min-h-[50px] w-full py-3 text-body font-semibold tracking-[-0.01em]"
+            >
+              {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
+            </Button>
+          </div>
+        ) : (
+          <div className="animate-fade-in">
+            <BaseballSignInForm />
+          </div>
+        )}
+      </AuthCard>
+    </BaseballAuthShell>
   );
 }
 
@@ -287,12 +142,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-dvh bg-warm-900 flex items-center justify-center">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-          </span>
+        <div className="baseball-auth-field flex min-h-[100dvh] items-center justify-center">
+          <AuthPendingDots label="Loading sign-in page" />
         </div>
       }
     >
