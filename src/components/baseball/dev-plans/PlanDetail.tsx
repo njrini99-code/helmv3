@@ -3,35 +3,20 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ProgressTracker } from '@/components/baseball/dev-plans/ProgressTracker';
-import { IconCalendar, IconCheck, IconClock, IconNote } from '@/components/icons';
+import { IconCalendar, IconCheck, IconClock, IconNote, IconRotateCcw } from '@/components/icons';
 import { getFullName } from '@/lib/utils';
-
-interface Goal {
-  title: string;
-  description?: string;
-  target_date?: string;
-  completed?: boolean;
-}
+import type { DevPlanGoal, DevPlanWithPlayer, GoalStatus } from '@/lib/baseball/dev-plan-types';
 
 interface PlanDetailProps {
-  plan: {
-    id: string;
-    title: string;
-    description: string | null;
-    start_date: string | null;
-    end_date: string | null;
-    status: string | null;
-    goals: unknown;
-    player: {
-      id: string;
-      first_name: string | null;
-      last_name: string | null;
-      avatar_url: string | null;
-      primary_position: string | null;
-      grad_year: number | null;
-    } | null;
-  };
+  plan: DevPlanWithPlayer;
+  /** Coach marks a goal complete. Omit to render the detail read-only. */
+  onComplete?: (goalId: string) => void;
+  /** Coach reverts a completed goal back to in-progress. */
+  onUncomplete?: (goalId: string) => void;
+  /** goalId currently mutating (disables its buttons + shows a pending state). */
+  pendingGoalId?: string | null;
 }
 
 const getStatusVariant = (status: string | null): 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' => {
@@ -46,10 +31,23 @@ const getStatusVariant = (status: string | null): 'default' | 'primary' | 'secon
   return variants[status] || 'secondary';
 };
 
-export function PlanDetail({ plan }: PlanDetailProps) {
-  const goals = Array.isArray(plan.goals) ? (plan.goals as Goal[]) : [];
-  const completedGoals = goals.filter((goal) => goal.completed).length;
+const GOAL_STATUS_LABEL: Record<GoalStatus, string> = {
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+};
+
+const GOAL_STATUS_VARIANT: Record<GoalStatus, 'secondary' | 'primary' | 'success'> = {
+  not_started: 'secondary',
+  in_progress: 'primary',
+  completed: 'success',
+};
+
+export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: PlanDetailProps) {
+  const goals: DevPlanGoal[] = Array.isArray(plan.goals) ? plan.goals : [];
+  const completedGoals = goals.filter((goal) => goal.status === 'completed').length;
   const playerName = getFullName(plan.player?.first_name, plan.player?.last_name);
+  const canManage = Boolean(onComplete && onUncomplete);
 
   return (
     <div className="space-y-6">
@@ -106,29 +104,60 @@ export function PlanDetail({ plan }: PlanDetailProps) {
             <p className="text-sm text-warm-500">No goals have been added to this plan yet.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              {goals.map((goal, index) => (
-                <div key={`${goal.title}-${index}`} className="rounded-xl border border-warm-200 p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-warm-900">{goal.title}</h3>
-                      {goal.description && (
-                        <p className="mt-1 text-sm leading-relaxed text-warm-600">{goal.description}</p>
+              {goals.map((goal) => {
+                const isPending = pendingGoalId === goal.id;
+                const isCompleted = goal.status === 'completed';
+                return (
+                  <div key={goal.id} className="rounded-xl border border-warm-200 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-warm-900">{goal.title}</h3>
+                        {goal.description && (
+                          <p className="mt-1 text-sm leading-relaxed text-warm-600">{goal.description}</p>
+                        )}
+                      </div>
+                      <Badge variant={GOAL_STATUS_VARIANT[goal.status]} className="flex shrink-0 items-center gap-1">
+                        {isCompleted && <IconCheck size={12} />}
+                        {GOAL_STATUS_LABEL[goal.status]}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      {goal.target_date ? (
+                        <p className="text-xs text-warm-500">
+                          Target: {new Date(goal.target_date).toLocaleDateString()}
+                        </p>
+                      ) : (
+                        <span />
+                      )}
+                      {canManage && (
+                        isCompleted ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={isPending}
+                            onClick={() => onUncomplete?.(goal.id)}
+                          >
+                            <IconRotateCcw size={14} className="mr-1" />
+                            {isPending ? 'Updating…' : 'Mark In Progress'}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={isPending}
+                            onClick={() => onComplete?.(goal.id)}
+                          >
+                            <IconCheck size={14} className="mr-1" />
+                            {isPending ? 'Updating…' : 'Mark Complete'}
+                          </Button>
+                        )
                       )}
                     </div>
-                    {goal.completed && (
-                      <Badge variant="success" className="flex items-center gap-1">
-                        <IconCheck size={12} />
-                        Done
-                      </Badge>
-                    )}
                   </div>
-                  {goal.target_date && (
-                    <p className="mt-3 text-xs text-warm-500">
-                      Target: {new Date(goal.target_date).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

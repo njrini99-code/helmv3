@@ -11,6 +11,17 @@ import {
   BaseballNoActiveTeamError,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import type {
+  GoalStatus,
+  DevPlanGoal,
+  DevelopmentalPlanWithGoals,
+  DevPlanWithPlayer,
+} from '@/lib/baseball/dev-plan-types';
+
+// Re-exported for backward compatibility — the canonical definitions now
+// live in the plain (non-'use server') `dev-plan-types` module so client
+// components can import them directly.
+export type { GoalStatus, DevPlanGoal, DevelopmentalPlanWithGoals, DevPlanWithPlayer };
 
 const DEV_PLAN_PATH = '/baseball/dashboard/dev-plan';
 
@@ -28,43 +39,6 @@ function mapDevPlanCoachError(error: unknown): never {
     throw new Error('Something went wrong. Please try again.');
   }
   throw error;
-}
-
-// Goal status types
-export type GoalStatus = 'not_started' | 'in_progress' | 'completed';
-
-// Goal structure within the JSON field
-export interface DevPlanGoal {
-  id: string;
-  title: string;
-  description?: string;
-  category?: string;
-  progress: number; // 0-100
-  status: GoalStatus;
-  target_date?: string;
-  coach_notes?: string;
-  completed_at?: string;
-  created_at: string;
-}
-
-// Full plan with typed goals
-export interface DevelopmentalPlanWithGoals {
-  id: string;
-  player_id: string;
-  team_id: string | null;
-  coach_id: string;
-  title: string;
-  description: string | null;
-  status: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  goals: DevPlanGoal[];
-  created_at: string | null;
-  updated_at: string | null;
-  coach?: {
-    id: string;
-    full_name: string | null;
-  } | null;
 }
 
 /**
@@ -124,6 +98,66 @@ export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalP
     goals: parseGoals(row.goals),
   };
 }
+
+/**
+ * Get a single developmental plan for the coach detail view
+ * (`/baseball/dashboard/dev-plans/[id]`). Coach-ownership-checked: only the
+ * coach who created the plan may view/mutate it here. Returns fully parsed,
+ * normalized goals (stable `id`/`status`/`progress`) so the detail page can
+ * key off `goal.id` and the coach-side complete/uncomplete actions round-trip
+ * correctly instead of hitting the "Goal not found" schema-schism bug.
+ */
+export async function getDevPlanForCoach(planId: string): Promise<DevPlanWithPlayer> {
+  try {
+    return await getDevPlanForCoachAction(planId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'dev_plans.getDevPlanForCoach', featureArea: 'baseball-dev-plans' },
+    );
+    mapDevPlanCoachError(error);
+  }
+}
+
+const getDevPlanForCoachAction = withBaseballAction(
+  'getDevPlanForCoach',
+  { featureArea: 'baseball-dev-plans', requiredCapability: 'can_manage_settings' },
+  async (ctx, planId: string): Promise<DevPlanWithPlayer> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) throw new Error('Coach profile not found');
+
+    const { data: plan, error: fetchError } = await supabase
+      .from('baseball_developmental_plans')
+      .select(`
+        *,
+        player:baseball_players (
+          id,
+          first_name,
+          last_name,
+          avatar_url,
+          primary_position,
+          grad_year
+        )
+      `)
+      .eq('id', planId)
+      .single();
+
+    if (fetchError) {
+      await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.getDevPlanForCoach' });
+      throw fetchError;
+    }
+
+    if (!plan || plan.coach_id !== coachId) {
+      throw new Error('You do not have permission to view this plan');
+    }
+
+    return {
+      ...plan,
+      goals: parseGoals(plan.goals),
+    };
+  },
+);
 
 /**
  * Verify the authenticated user is the player who owns the given plan.
