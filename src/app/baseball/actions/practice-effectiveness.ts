@@ -53,6 +53,7 @@ import { createTask } from '@/app/baseball/actions/tasks';
 import type {
   BaseballObjectiveCompletionStatus,
   BaseballEffectivenessDisposition,
+  BaseballEffectivenessVerdict,
 } from '@/lib/types/baseball-practice-effectiveness';
 
 const EFFECTIVENESS_PATH = '/baseball/dashboard/practice-effectiveness';
@@ -580,7 +581,7 @@ async function measureForTeam(
     // always refresh — only the coach-owned triage state is preserved.
     const dedupeKeys = [...new Set(reviews.map((r) => r.dedupeKey))];
     const { data: existingRows, error: existingErr } = await fromUntyped(supabase, 'baseball_practice_effectiveness_reviews')
-      .select('dedupe_key, disposition')
+      .select('dedupe_key, disposition, verdict')
       .eq('team_id', teamId)
       .in('dedupe_key', dedupeKeys);
     if (existingErr) {
@@ -591,9 +592,11 @@ async function measureForTeam(
       return { success: false, measured: 0, improved: 0, worse: 0, tooEarly: 0, insufficient: 0, error: 'Could not load existing review dispositions.' };
     }
     const existingDisposition = new Map<string, string>();
+    const existingVerdict = new Map<string, BaseballEffectivenessVerdict | null>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const row of (existingRows ?? []) as any[]) {
       existingDisposition.set(row.dedupe_key, row.disposition);
+      existingVerdict.set(row.dedupe_key, row.verdict ?? null);
     }
 
     const nowIso = now.toISOString();
@@ -623,6 +626,7 @@ async function measureForTeam(
       // Reviews are staff_only by default (they blend scopes + carry confounders).
       visibility: 'staff_only',
       disposition: existingDisposition.get(r.dedupeKey) ?? 'new',
+      verdict: existingVerdict.get(r.dedupeKey) ?? null,
       generated_by: r.generatedBy,
       generated_by_model: PRACTICE_EFFECTIVENESS_ENGINE_ID,
       generated_at: nowIso,
@@ -659,11 +663,22 @@ export const setReviewDisposition = withBaseballAction(
   FEATURE,
   async (
     ctx,
-    input: { reviewId: string; disposition: BaseballEffectivenessDisposition },
+    input: {
+      reviewId: string;
+      disposition: BaseballEffectivenessDisposition;
+      /**
+       * The coach's outcome call — only meaningful when disposition==='resolved'
+       * (the three "Worked" / "Needs More Time" / "Not Enough Data" verdict
+       * buttons). Forced to null for every other disposition so a stale verdict
+       * can never survive a dismiss/reopen/convert.
+       */
+      verdict?: BaseballEffectivenessVerdict | null;
+    },
   ): Promise<ActionResult> => {
     const supabase = await createClient();
+    const verdict = input.disposition === 'resolved' ? (input.verdict ?? null) : null;
     const { error } = await fromUntyped(supabase, 'baseball_practice_effectiveness_reviews')
-      .update({ disposition: input.disposition, updated_at: new Date().toISOString() })
+      .update({ disposition: input.disposition, verdict, updated_at: new Date().toISOString() })
       .eq('id', input.reviewId)
       .eq('team_id', ctx.targetTeamId);
     if (error) return { success: false, error: sanitizeDbError(error, 'practice') };

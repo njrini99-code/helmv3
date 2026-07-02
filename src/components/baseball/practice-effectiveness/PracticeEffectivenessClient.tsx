@@ -56,6 +56,7 @@ import type {
   BaseballEffectivenessDirection,
   BaseballEffectivenessConfidenceTier,
   BaseballEffectivenessAfterScope,
+  BaseballEffectivenessVerdict,
 } from '@/lib/types/baseball-practice-effectiveness';
 
 interface Props {
@@ -95,6 +96,12 @@ const SCOPE_LABEL: Record<BaseballEffectivenessAfterScope, string> = {
   practice: 'Practice',
   mixed: 'Mixed scopes',
   unknown: 'Later sessions',
+};
+
+const VERDICT_LABEL: Record<BaseballEffectivenessVerdict, string> = {
+  worked: 'Worked',
+  needs_more_time: 'Needs more time',
+  not_enough_data: 'Not enough data',
 };
 
 function relativeTime(iso: string | null): string {
@@ -387,9 +394,12 @@ function ReviewCard({
   const confPct = review.confidence != null ? Math.round(review.confidence * 100) : null;
   const resolved = review.disposition === 'resolved' || review.disposition === 'converted_to_task';
 
-  const dispose = (disposition: 'resolved' | 'dismissed') => {
+  const dispose = (
+    disposition: 'resolved' | 'dismissed',
+    verdict?: BaseballEffectivenessVerdict,
+  ) => {
     startTransition(async () => {
-      await setReviewDisposition({ reviewId: review.id, disposition });
+      await setReviewDisposition({ reviewId: review.id, disposition, verdict });
       // Refresh the parent server component data so the disposition change is
       // immediately visible without a manual page reload.
       onRefresh();
@@ -411,6 +421,11 @@ function ReviewCard({
           <Badge variant="secondary">{tierLabel}</Badge>
           {confPct != null && (
             <span className="text-xs text-warm-400">confidence {confPct}%</span>
+          )}
+          {resolved && review.verdict && (
+            <Badge variant={review.verdict === 'worked' ? 'success' : 'secondary'}>
+              {VERDICT_LABEL[review.verdict]}
+            </Badge>
           )}
         </div>
 
@@ -474,7 +489,7 @@ function ReviewCard({
                 variant="success"
                 size="sm"
                 disabled={disabled || isPending}
-                onClick={() => dispose('resolved')}
+                onClick={() => dispose('resolved', 'worked')}
               >
                 Worked
               </Button>
@@ -482,7 +497,7 @@ function ReviewCard({
                 variant="outline"
                 size="sm"
                 disabled={disabled || isPending}
-                onClick={() => dispose('resolved')}
+                onClick={() => dispose('resolved', 'needs_more_time')}
               >
                 Needs More Time
               </Button>
@@ -490,7 +505,7 @@ function ReviewCard({
                 variant="outline"
                 size="sm"
                 disabled={disabled || isPending}
-                onClick={() => dispose('resolved')}
+                onClick={() => dispose('resolved', 'not_enough_data')}
               >
                 Not Enough Data
               </Button>
