@@ -1056,7 +1056,14 @@ export const updateTeam = withBaseballAction(
  * Delete a team. Requires can_manage_settings on the target team AND that the
  * caller is the primary coach (matches the baseball_teams_delete RLS policy,
  * which is gated on is_baseball_primary_coach). Blocks the delete if the team
- * still has an active roster — coaches must offload/remove players first.
+ * still has an active roster — coaches must offload/remove players first —
+ * AND if the team has ANY recorded history (games, box scores, player/season
+ * stats, stat/box-score uploads, documents, tasks, lineups, travel
+ * itineraries). An empty *active* roster alone is not a safe gate: a team
+ * can have a full season of history with zero currently-active players
+ * (everyone graduated / marked inactive), and baseball_teams.id
+ * CASCADE-deletes into ~15 dependent tables, so this history check is what
+ * actually prevents a season's records from being silently wiped.
  */
 export const deleteTeam = withBaseballAction(
   'deleteTeam',
@@ -1118,6 +1125,73 @@ export const deleteTeam = withBaseballAction(
       };
     }
 
+    // An empty *active* roster is not sufficient to allow a delete: a team
+    // can have a full season of history (games, box scores, player/season
+    // stats, documents, tasks, lineups, travel itineraries...) with zero
+    // currently-active players (everyone graduated / was marked inactive or
+    // removed). baseball_teams.id CASCADE-deletes into ~15 dependent tables,
+    // so silently allowing that would permanently wipe a season's records in
+    // two clicks. Block the delete outright when ANY of that history exists.
+    const [
+      gamesCheck,
+      battingCheck,
+      pitchingCheck,
+      boxUploadsCheck,
+      playerStatsCheck,
+      seasonStatsCheck,
+      statUploadsCheck,
+      documentsCheck,
+      tasksCheck,
+      lineupsCheck,
+      travelCheck,
+    ] = await Promise.all([
+      supabase.from('baseball_games').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_box_score_batting').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_box_score_pitching').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_box_score_uploads').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_player_stats').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_player_season_stats').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_stat_uploads').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_documents').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_tasks').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_team_lineups').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+      supabase.from('baseball_travel_itineraries').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+    ]);
+
+    const historyChecks: Array<{ label: string; count: number | null; error: unknown }> = [
+      { label: 'games', count: gamesCheck.count, error: gamesCheck.error },
+      { label: 'batting box scores', count: battingCheck.count, error: battingCheck.error },
+      { label: 'pitching box scores', count: pitchingCheck.count, error: pitchingCheck.error },
+      { label: 'box score uploads', count: boxUploadsCheck.count, error: boxUploadsCheck.error },
+      { label: 'player stats', count: playerStatsCheck.count, error: playerStatsCheck.error },
+      { label: 'season stats', count: seasonStatsCheck.count, error: seasonStatsCheck.error },
+      { label: 'stat uploads', count: statUploadsCheck.count, error: statUploadsCheck.error },
+      { label: 'documents', count: documentsCheck.count, error: documentsCheck.error },
+      { label: 'tasks', count: tasksCheck.count, error: tasksCheck.error },
+      { label: 'lineups', count: lineupsCheck.count, error: lineupsCheck.error },
+      { label: 'travel itineraries', count: travelCheck.count, error: travelCheck.error },
+    ];
+
+    const historyCheckFailure = historyChecks.find((c) => c.error);
+    if (historyCheckFailure) {
+      await logServerError(
+        `Failed to check team history before delete: ${historyCheckFailure.error instanceof Error ? historyCheckFailure.error.message : String(historyCheckFailure.error)}`,
+        { action: 'teams.deleteTeam' },
+      );
+      return { success: false, error: 'Unable to verify team history right now. Please try again.' };
+    }
+
+    const blockingHistory = historyChecks
+      .filter((c) => (c.count ?? 0) > 0)
+      .map((c) => c.label);
+
+    if (blockingHistory.length > 0) {
+      return {
+        success: false,
+        error: `This team has recorded history that can't be deleted: ${blockingHistory.join(', ')}. Teams with games, stats, or other history are not eligible for deletion.`,
+      };
+    }
+
     const { error: deleteError } = await supabase
       .from('baseball_teams')
       .delete()
@@ -1144,13 +1218,16 @@ export const deleteTeam = withBaseballAction(
  * sufficient to leave it (a coach without can_manage_settings must still be
  * able to remove themselves).
  *
- * PRE-SHIP CHECK (per completion spec): the live baseball_team_coach_staff
+ * DB-GATED (db_gated, PR #673 follow-up): the live baseball_team_coach_staff
  * DELETE RLS policy only allows is_baseball_primary_coach(team_id) OR
  * has_baseball_staff_capability(team_id,'can_invite_staff') — there is no
  * "delete your own row" clause. A non-primary coach without can_invite_staff
  * will have this delete silently filtered to 0 rows by RLS (no error). We
  * detect that (via .select() on the delete) and surface a clear error rather
- * than a false "success" — see the proposed migration in the PR body.
+ * than a false "success". The DB-side fix — a self-delete clause on the
+ * policy — is written but NOT applied at
+ * supabase/migrations/20260701021000_baseball_team_coach_staff_self_leave.sql;
+ * apply it to make this action work for every non-primary coach.
  */
 export const leaveTeamAsCoach = withBaseballAction(
   'leaveTeamAsCoach',

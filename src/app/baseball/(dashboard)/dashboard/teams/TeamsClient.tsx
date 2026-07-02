@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/sonner';
 import { useAuth } from '@/hooks/use-auth';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import Image from 'next/image';
 import {
   IconPlus,
@@ -24,6 +25,7 @@ import {
   IconTrash,
   IconLogOut,
   IconX,
+  IconWarning,
 } from '@/components/icons';
 import { createTeam, updateTeam, deleteTeam, leaveTeamAsCoach, createTeamInvitation, revokeTeamInvitation } from '@/app/baseball/actions/teams';
 
@@ -176,6 +178,95 @@ function TeamFormModal({
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/** Delete-team confirmation. Deliberately NOT the generic ConfirmDialog:
+ * baseball_teams.id CASCADE-deletes into ~15 dependent tables (games, box
+ * scores, player/season stats, documents, tasks, lineups, travel
+ * itineraries, invites, staff), so this is a much higher-stakes destructive
+ * action than "delete this record." The server already blocks the delete
+ * outright when any of that history exists (see deleteTeam in
+ * actions/teams.ts) — this dialog's type-the-team-name requirement is
+ * defense in depth against a fat-fingered click, and its copy is explicit
+ * about the full blast radius rather than just "the roster." */
+function DeleteTeamDialog({
+  team,
+  isLoading,
+  onConfirm,
+  onCancel,
+}: {
+  team: Team;
+  isLoading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [confirmText, setConfirmText] = useState('');
+  const { modalRef } = useFocusTrap(true, onCancel);
+  const canConfirm = confirmText.trim().length > 0 && confirmText.trim() === team.name;
+
+  return (
+    <div
+      role="presentation"
+      className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
+    >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Delete ${team.name}`}
+        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-cream-50 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 border-b border-warm-100 px-6 py-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <IconWarning size={20} aria-hidden />
+          </div>
+          <h2 className="text-lg font-semibold tracking-tight text-warm-900">Delete {team.name}?</h2>
+        </div>
+
+        <div className="space-y-3 px-6 py-4">
+          <p className="text-sm leading-relaxed text-warm-600">
+            This permanently deletes <strong className="text-warm-900">{team.name}</strong> and
+            everything attached to it — games, box scores, player and season stats, documents,
+            tasks, lineups, travel itineraries, invite links, and coaching staff access. This
+            can&apos;t be undone.
+          </p>
+          <p className="text-sm leading-relaxed text-warm-600">
+            Deletion is blocked while the team has an active roster or any recorded history
+            (games, stats, uploads, etc.) — this dialog only appears once that history has been
+            cleared.
+          </p>
+          <Input
+            id="delete-team-confirm"
+            label={`Type "${team.name}" to confirm`}
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={team.name}
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-warm-100 px-6 py-4">
+          <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={onConfirm}
+            disabled={isLoading || !canConfirm}
+            isLoading={isLoading}
+            haptic="heavy"
+          >
+            Delete Team
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -709,21 +800,17 @@ export default function TeamsPage() {
         />
       )}
 
-      {/* Delete confirm */}
-      <ConfirmDialog
-        open={!!deletingTeam}
-        title="Delete team?"
-        message={
-          deletingTeam
-            ? `This permanently deletes ${deletingTeam.name}. This can't be undone, and is only allowed while the roster is empty.`
-            : ''
-        }
-        confirmLabel="Delete Team"
-        variant="danger"
-        isLoading={isPending}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeletingTeam(null)}
-      />
+      {/* Delete confirm — type-the-team-name gate + explicit cascade warning
+          (dedicated dialog, not the generic ConfirmDialog; see
+          DeleteTeamDialog above for why). */}
+      {deletingTeam && (
+        <DeleteTeamDialog
+          team={deletingTeam}
+          isLoading={isPending}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeletingTeam(null)}
+        />
+      )}
 
       {/* Leave confirm */}
       <ConfirmDialog
