@@ -2,20 +2,20 @@
 
 /**
  * MyStatsClient
- * 
- * Player's personal stats dashboard showing their own performance data.
- * Reuses existing player-stats components for consistent UI.
+ *
+ * Player's personal stats dashboard — Living Annual migration
+ * (design-system-living-annual.md §7; execution plan §3.1 my-stats).
+ *
+ * PRESENTATION ONLY: the `getMyStats()` / `getMyAggregates()` fetch, the
+ * loading/refreshing/error state machine, and every branch condition below
+ * are unchanged from the pre-migration client — only the JSX composing them
+ * is rebuilt from the kit. `player-stats/*` (4) + `season-stats/MySeasonStats`
+ * are migrated alongside this file; together they are the whole of my-stats
+ * (no overlap with the coach-facing Stats Center, which is its own surface).
  */
 
 import { useState, useEffect } from 'react';
-import { Header } from '@/components/layout/header';
-import { PageLoading } from '@/components/ui/loading';
-import {
-  IconChart,
-  IconTrendingUp,
-  IconUser,
-  IconRefresh,
-} from '@/components/icons';
+import { IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   StatsOverviewCards,
@@ -25,6 +25,15 @@ import {
 } from '@/components/baseball/player-stats';
 import { MySeasonStats } from '@/components/baseball/season-stats/MySeasonStats';
 import { getMyStats, getMyAggregates } from '@/app/baseball/actions/stats';
+import { fairwayScope } from '@/lib/redesign/flag';
+import {
+  SectionMasthead,
+  KPIContentsStrip,
+  InkBadge,
+  EditorsLetter,
+  EmptyIssue,
+  formatRate,
+} from '@/components/baseball/living-annual';
 import type { BaseballPlayerStats, BaseballPlayerAggregates } from '@/lib/types';
 
 interface PlayerInfo {
@@ -36,6 +45,24 @@ interface PlayerInfo {
   secondary_position: string | null;
   grad_year: number | null;
   jersey_number: string | null;
+}
+
+function MyStatsSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="h-4 w-40 overflow-hidden rounded-fw-sm">
+        <div className="h-full w-full skeleton-shimmer" />
+      </div>
+      <div className="h-10 w-64 overflow-hidden rounded-fw-sm">
+        <div className="h-full w-full skeleton-shimmer" />
+      </div>
+      {[0, 1].map((i) => (
+        <div key={i} className="relative h-40 overflow-hidden rounded-card border border-[color:var(--hairline)]">
+          <div className="absolute inset-0 skeleton-shimmer" style={{ animationDelay: `${i * 60}ms` }} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function MyStatsClient() {
@@ -89,158 +116,107 @@ export function MyStatsClient() {
   }, []);
 
   if (loading) {
-    return <PageLoading />;
-  }
-
-  if (error) {
     return (
-      <div className="min-h-dvh bg-cream-100 flex items-center justify-center p-4">
-        <div className="glass-standard rounded-2xl p-8 text-center max-w-md w-full">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <IconChart size={24} className="text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold text-warm-900 mb-2">Unable to Load Stats</h2>
-          <p className="text-warm-500 mb-6">{error}</p>
-          <Button onClick={() => fetchData()}>Try Again</Button>
+      <div className={fairwayScope('min-h-full')}>
+        <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6">
+          <MyStatsSkeleton />
         </div>
       </div>
     );
   }
 
-  const fullName = player
-    ? `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player'
-    : 'Player';
-  const positions = player
-    ? [player.primary_position, player.secondary_position].filter(Boolean).join(' / ')
-    : '';
+  if (error) {
+    return (
+      <div className={fairwayScope('min-h-full')}>
+        <div className="mx-auto w-full max-w-[1536px] px-4 py-12 sm:px-6">
+          <EditorsLetter
+            ink="team"
+            title="Unable to load your stats."
+            body={error}
+            action={
+              <Button variant="secondary" size="md" onClick={() => fetchData()}>
+                Try again
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const fullName = player ? `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player' : 'Player';
+  const positions = player ? [player.primary_position, player.secondary_position].filter(Boolean).join(' / ') : '';
+  const eyebrow = ['MY STATS', positions, player?.grad_year ? `Class of ${player.grad_year}` : null, teamName]
+    .filter(Boolean)
+    .join(' · ');
+
+  const mastheadActions = (
+    <div className="flex items-center gap-2">
+      {player?.jersey_number ? <InkBadge label={`# ${player.jersey_number}`} tone="team" variant="solid" /> : null}
+      <Button
+        variant="secondary"
+        size="sm"
+        leftIcon={<IconRefresh size={16} className={refreshing ? 'animate-spin' : ''} />}
+        onClick={() => fetchData(true)}
+        disabled={refreshing}
+      >
+        {refreshing ? 'Refreshing…' : 'Refresh'}
+      </Button>
+    </div>
+  );
+
+  const hasAnyData = stats.length > 0 || Boolean(aggregates);
 
   return (
-    <div className="min-h-dvh bg-cream-100">
-      <Header
-        title="My Stats"
-        subtitle="Track your performance and progress"
-      />
+    <div className={fairwayScope('min-h-full')}>
+      <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6">
+        <SectionMasthead eyebrow={eyebrow} title={fullName} actions={mastheadActions} />
 
-      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Player Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {/* Player Avatar */}
-            <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-              {player?.avatar_url ? (
-                <img
-                  src={player.avatar_url}
-                  alt={fullName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <IconUser size={24} className="text-warm-400" />
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-warm-900">
-                  {fullName}
-                </h1>
-                {player?.jersey_number && (
-                  <span className="text-lg text-warm-400">#{player.jersey_number}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-warm-500">
-                {positions && <span>{positions}</span>}
-                {positions && player?.grad_year && <span>•</span>}
-                {player?.grad_year && <span>Class of {player.grad_year}</span>}
-                {teamName && (
-                  <>
-                    <span>•</span>
-                    <span>{teamName}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchData(true)}
-            disabled={refreshing}
-            className="flex items-center gap-2"
-          >
-            <IconRefresh size={16} className={refreshing ? 'animate-spin' : ''} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        </div>
-
-        {/* Season Stats from Box Scores (new system) */}
-        <div className="mb-6">
+        {/* Season stats from box scores (new system) */}
+        <div className="mt-8">
           <MySeasonStats />
         </div>
 
-        {/* Quick Stats Summary */}
-        {aggregates && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="glass-standard rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                <IconChart size={18} className="text-primary-600" />
-              </div>
-              <div>
-                <p className="text-micro text-warm-500 uppercase">Sessions</p>
-                <p className="text-lg font-bold text-warm-900">{aggregates.total_sessions}</p>
-              </div>
-            </div>
-            <div className="glass-standard rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <IconTrendingUp size={18} className="text-blue-600" />
-              </div>
-              <div>
-                <p className="text-micro text-warm-500 uppercase">Trend</p>
-                <p className="text-lg font-bold text-warm-900 capitalize">
-                  {aggregates.recent_trend || 'N/A'}
-                </p>
-              </div>
-            </div>
-            <div className="glass-standard rounded-xl p-4">
-              <p className="text-micro text-warm-500 uppercase">Practice AVG</p>
-              <p className="text-lg font-bold text-warm-900">
-                {aggregates.practice_avg?.toFixed(3) || '---'}
-              </p>
-            </div>
-            <div className="glass-standard rounded-xl p-4">
-              <p className="text-micro text-warm-500 uppercase">Game AVG</p>
-              <p className="text-lg font-bold text-warm-900">
-                {aggregates.game_avg?.toFixed(3) || '---'}
-              </p>
-            </div>
+        {/* Quick glance — sessions logged, trend, last-5 form. Practice-vs-game
+            and full career slash line live in their own dedicated cards below,
+            so this strip stays a 3-figure glance, not a duplicate of them. */}
+        {aggregates ? (
+          <div className="mt-8">
+            <KPIContentsStrip
+              columns={3}
+              items={[
+                { label: 'Sessions', value: aggregates.total_sessions },
+                {
+                  label: 'Trend',
+                  value: aggregates.recent_trend
+                    ? aggregates.recent_trend.charAt(0).toUpperCase() + aggregates.recent_trend.slice(1)
+                    : '—',
+                  emphasis: aggregates.recent_trend === 'improving',
+                },
+                {
+                  label: 'Last 5 AVG',
+                  value: aggregates.last_5_avg != null ? formatRate(aggregates.last_5_avg, 3) : '—',
+                },
+              ]}
+            />
           </div>
-        )}
+        ) : null}
 
-        {/* Empty State */}
-        {stats.length === 0 && !aggregates && (
-          <div className="glass-standard rounded-2xl p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconChart size={28} className="text-warm-400" />
-            </div>
-            <h2 className="text-xl font-bold text-warm-900 mb-2">No Stats Yet</h2>
-            <p className="text-warm-500 max-w-md mx-auto">
-              Your stats will appear here once your coach uploads session data.
-              Check back after your next practice or game!
-            </p>
+        {!hasAnyData ? (
+          <div className="mt-8">
+            <EmptyIssue variant="stats" />
           </div>
-        )}
+        ) : null}
 
-        {/* Stats Overview Cards */}
-        {(stats.length > 0 || aggregates) && (
-          <section aria-label="Key Statistics" className="mb-8">
+        {hasAnyData ? (
+          <section aria-label="Key Statistics" className="mt-8">
             <h2 className="sr-only">Key Statistics</h2>
             <StatsOverviewCards aggregates={aggregates} />
           </section>
-        )}
+        ) : null}
 
-        {/* Charts Grid */}
-        {stats.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {stats.length > 0 ? (
+          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <section aria-label="Performance Trend">
               <TrendChart stats={stats} />
             </section>
@@ -248,14 +224,13 @@ export function MyStatsClient() {
               <GameVsPracticeChart stats={stats} />
             </section>
           </div>
-        )}
+        ) : null}
 
-        {/* Session History */}
-        {stats.length > 0 && (
-          <section aria-label="Session History">
+        {stats.length > 0 ? (
+          <section aria-label="Session History" className="mt-8">
             <SessionHistory stats={stats} />
           </section>
-        )}
+        ) : null}
       </div>
     </div>
   );

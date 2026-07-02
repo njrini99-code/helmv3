@@ -1,15 +1,46 @@
 'use client';
 
+/**
+ * MySeasonStats — the current season's box-score-derived line, on the record.
+ *
+ * Living Annual migration (design-system-living-annual.md §7). PRESENTATION
+ * ONLY — same `getMySeasonStats()` server action + `BaseballPlayerSeasonStats`
+ * shape, same loading/empty/batting/pitching branches. Batting AVG/OBP/SLG
+ * render through the real `<SlashLine>`, OPS through its own `<StatReadout>`,
+ * and every counting stat (G/AB/R/H/HR/RBI/BB/SB, W/L/SV/K/BB/H/HR) through
+ * `<KPIContentsStrip>` instead of the old hand-rolled mini tiles. ERA/WHIP/K9
+ * use the kit's `formatRatio` (keeps the leading zero, `0.98` not `.98` — the
+ * ERA convention, distinct from AVG/OBP/SLG) and IP uses `formatInnings`
+ * (`6.1` = six-and-a-third) instead of `.toFixed(1)`.
+ */
 import { useState, useEffect } from 'react';
 import { getMySeasonStats } from '@/app/baseball/actions/games';
 import type { BaseballPlayerSeasonStats } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import {
+  PaperCard,
+  Eyebrow,
+  SlashLine,
+  StatReadout,
+  KPIContentsStrip,
+  HairlineRule,
+  EmptyIssue,
+  formatRate,
+  formatRatio,
+  formatInnings,
+} from '@/components/baseball/living-annual';
 
-function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function SeasonSkeleton() {
   return (
-    <div className={`rounded-2xl p-4 text-center border transition-all duration-200 ${highlight ? 'bg-primary-50 border-primary-100' : 'bg-cream-100/75 backdrop-blur-xl border-warm-200/45 shadow-glass'}`}>
-      <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-black tabular-nums ${highlight ? 'text-primary-700' : 'text-warm-900'}`}>{value}</p>
-    </div>
+    <PaperCard className="p-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="relative h-20 overflow-hidden rounded-fw-md">
+            <div className="absolute inset-0 skeleton-shimmer pointer-events-none" style={{ animationDelay: `${i * 50}ms` }} />
+          </div>
+        ))}
+      </div>
+    </PaperCard>
   );
 }
 
@@ -25,52 +56,37 @@ export function MySeasonStats() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className="relative h-20 glass-standard rounded-2xl overflow-clip"
-            style={{ animationDelay: `${i * 50}ms` }}
-          >
-            <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-          </div>
-        ))}
-      </div>
-    );
+    return <SeasonSkeleton />;
   }
 
   if (!stats || (stats.ab === 0 && stats.ip === 0)) {
-    return (
-      <div className="glass-standard rounded-2xl p-8 text-center">
-        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
-          No season stats yet. Your coach will enter them from game box scores.
-        </p>
-      </div>
-    );
+    return <EmptyIssue variant="stats" />;
   }
 
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="space-y-4" data-testid="my-season-stats">
+    <PaperCard className="p-6" data-testid="my-season-stats">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-warm-800">{currentYear} Season Stats</h3>
-        <span className="text-xs text-warm-400">{stats.g} games played</span>
+        <Eyebrow ink="team">{currentYear} Season</Eyebrow>
+        <span className="font-annual text-body-sm text-text-tertiary">{stats.g} games played</span>
       </div>
 
-      {/* Batting stats */}
-      {stats.ab > 0 && (
-        <div className="space-y-3" data-testid="my-season-batting">
-          <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Batting</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="AVG" value={stats.avg != null ? stats.avg.toFixed(3).replace(/^0/, '') : '—'} highlight={stats.avg != null && stats.avg >= 0.3} />
-            <StatCard label="OBP" value={stats.obp != null ? stats.obp.toFixed(3).replace(/^0/, '') : '—'} />
-            <StatCard label="SLG" value={stats.slg != null ? stats.slg.toFixed(3).replace(/^0/, '') : '—'} />
-            <StatCard label="OPS" value={stats.ops != null ? stats.ops.toFixed(3) : '—'} highlight={stats.ops != null && stats.ops >= 0.9} />
+      {stats.ab > 0 ? (
+        <div className="mt-5 flex flex-col gap-4" data-testid="my-season-batting">
+          <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">Batting</span>
+
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <SlashLine avg={stats.avg ?? NaN} obp={stats.obp ?? NaN} slg={stats.slg ?? NaN} leader="avg" size="md" />
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">OPS</span>
+              <StatReadout value={stats.ops != null ? formatRate(stats.ops, 3) : '—'} ariaLabel="OPS" className="text-h2" />
+            </div>
           </div>
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-            {[
+
+          <KPIContentsStrip
+            columns={4}
+            items={[
               { label: 'G', value: stats.g },
               { label: 'AB', value: stats.ab },
               { label: 'R', value: stats.r },
@@ -79,28 +95,28 @@ export function MySeasonStats() {
               { label: 'RBI', value: stats.rbi },
               { label: 'BB', value: stats.bb },
               { label: 'SB', value: stats.sb },
-            ].map(({ label, value }) => (
-              <div key={label} className="bg-warm-50 rounded-xl p-2 text-center">
-                <p className="text-eyebrow font-semibold text-warm-400 uppercase">{label}</p>
-                <p className="text-base font-bold text-warm-800 tabular-nums">{value}</p>
-              </div>
-            ))}
-          </div>
+            ]}
+          />
         </div>
-      )}
+      ) : null}
 
-      {/* Pitching stats */}
-      {stats.ip > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Pitching</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="ERA" value={stats.era != null ? stats.era.toFixed(2) : '—'} highlight={stats.era != null && stats.era <= 3.0} />
-            <StatCard label="WHIP" value={stats.whip != null ? stats.whip.toFixed(3) : '—'} />
-            <StatCard label="K/9" value={stats.k9 != null ? stats.k9.toFixed(2) : '—'} />
-            <StatCard label="IP" value={stats.ip.toFixed(1)} />
-          </div>
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-            {[
+      {stats.ip > 0 ? (
+        <div className={cn('flex flex-col gap-4', stats.ab > 0 && 'mt-8')}>
+          {stats.ab > 0 ? <HairlineRule ink="hairline" /> : null}
+          <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">Pitching</span>
+
+          <KPIContentsStrip
+            columns={4}
+            items={[
+              { label: 'ERA', value: stats.era != null ? formatRatio(stats.era, 2) : '—' },
+              { label: 'WHIP', value: stats.whip != null ? formatRatio(stats.whip, 3) : '—' },
+              { label: 'K/9', value: stats.k9 != null ? formatRatio(stats.k9, 2) : '—' },
+              { label: 'IP', value: formatInnings(stats.ip) },
+            ]}
+          />
+          <KPIContentsStrip
+            columns={4}
+            items={[
               { label: 'W', value: stats.w },
               { label: 'L', value: stats.l },
               { label: 'SV', value: stats.sv },
@@ -108,15 +124,10 @@ export function MySeasonStats() {
               { label: 'BB', value: stats.bb_allowed },
               { label: 'H', value: stats.h_allowed },
               { label: 'HR', value: stats.hr_allowed },
-            ].map(({ label, value }) => (
-              <div key={label} className="bg-warm-50 rounded-xl p-2 text-center">
-                <p className="text-eyebrow font-semibold text-warm-400 uppercase">{label}</p>
-                <p className="text-base font-bold text-warm-800 tabular-nums">{value}</p>
-              </div>
-            ))}
-          </div>
+            ]}
+          />
         </div>
-      )}
-    </div>
+      ) : null}
+    </PaperCard>
   );
 }
