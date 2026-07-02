@@ -1,9 +1,42 @@
 'use client';
 
+// =============================================================================
+// ProfileEditor — the recruiting-file editor for high-school / JUCO / showcase
+// players (opt-in recruiting exposure — see CLAUDE.md "Recruiting Activation
+// Model"). College players get `CollegeProfileEditor` instead
+// (`src/components/baseball/profile/CollegeProfileEditor.tsx`); routing between
+// the two lives in `profile/page.tsx` and is UNCHANGED.
+//
+// WRITE surface — every field/handler PRESERVED VERBATIM: `handleInputChange`,
+// `handleSave`, every `formData` key, the Videos-page hand-off link. This pass is
+// PRESENTATION ONLY, rebuilt onto the Living-Annual kit
+// (`@/components/baseball/living-annual`) + Fairway form primitives
+// (`@/components/fairway`). The page already renders inside `.living-annual` /
+// `.fairway-ds` via BaseballFairwayShell, and `(dashboard)/dashboard/template.tsx`
+// already mounts `<LazyMotion features={domAnimation}>`, so this file does not
+// mount its own motion provider.
+//
+// ADDENDUM 2 (design-system-living-annual.md) drops Fraunces + Fragment Mono from
+// the baseball kit — Space Grotesk (`font-annual`) only. Fairway `FormSection`'s
+// heading and `NumberField`'s numeral both hardcode the banned faces, so this file
+// intentionally skips both: section headers are plain `font-annual` markup, and
+// numeric fields use `Input type="number"`.
+// =============================================================================
+
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { Button, FormField, Input, TextArea, Select, Checkbox, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/fairway';
+import { PaperCard, Reveal } from '@/components/baseball/living-annual';
+import {
+  IconUser,
+  IconActivity,
+  IconGraduationCap,
+  IconVideo,
+  IconMail,
+  IconCheck,
+  IconAlertCircle,
+} from '@/components/icons';
 
 interface ProfileEditorProps {
   player: Player;
@@ -16,21 +49,35 @@ type TabId = 'personal' | 'athletic' | 'academic' | 'videos' | 'social';
 interface Tab {
   id: TabId;
   label: string;
+  icon: React.ReactNode;
 }
 
 const TABS: Tab[] = [
-  { id: 'personal', label: 'Personal Info' },
-  { id: 'athletic', label: 'Athletic Info' },
-  { id: 'academic', label: 'Academic Info' },
-  { id: 'videos', label: 'Videos' },
-  { id: 'social', label: 'Social & Contact' },
+  { id: 'personal', label: 'Personal', icon: <IconUser size={16} /> },
+  { id: 'athletic', label: 'Athletic', icon: <IconActivity size={16} /> },
+  { id: 'academic', label: 'Academic', icon: <IconGraduationCap size={16} /> },
+  { id: 'videos', label: 'Videos', icon: <IconVideo size={16} /> },
+  { id: 'social', label: 'Social', icon: <IconMail size={16} /> },
 ];
 
 const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
+const STATE_OPTIONS = US_STATES.map((s) => ({ label: s, value: s }));
 
 const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i);
+const GRAD_YEAR_OPTIONS = GRAD_YEARS.map((y) => ({ label: String(y), value: String(y) }));
 
 const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'OF', 'IF', 'UTL'];
+const POSITION_OPTIONS = POSITIONS.map((p) => ({ label: p, value: p }));
+
+const BATS_OPTIONS = [
+  { label: 'Right', value: 'R' },
+  { label: 'Left', value: 'L' },
+  { label: 'Switch', value: 'S' },
+];
+const THROWS_OPTIONS = [
+  { label: 'Right', value: 'R' },
+  { label: 'Left', value: 'L' },
+];
 
 export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProps) {
   const [activeTab, setActiveTab] = useState<TabId>('personal');
@@ -57,451 +104,341 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
   };
 
   return (
-    <div className={cn('relative glass-standard rounded-2xl overflow-clip', className)}>
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-        }}
-      />
-      {/* Tab Navigation */}
-      <div className="relative border-b border-border">
-        <div className="flex gap-1 p-2">
-          {TABS.map(tab => (
-            <Button variant="ghost"
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
-                activeTab === tab.id
-                  ? 'bg-brand-600 text-white'
-                  : 'text-warm-600 hover:bg-cream-100 active:bg-cream-200'
-              )}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="relative p-6">
-        {activeTab === 'personal' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-warm-900 mb-4">Personal Information</h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-first-name" className="block text-sm font-medium text-warm-700 mb-1">First Name *</label>
-                <input
-                  id="pe-first-name"
-                  type="text"
-                  value={formData.first_name || ''}
-                  onChange={(e) => handleInputChange('first_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="pe-last-name" className="block text-sm font-medium text-warm-700 mb-1">Last Name *</label>
-                <input
-                  id="pe-last-name"
-                  type="text"
-                  value={formData.last_name || ''}
-                  onChange={(e) => handleInputChange('last_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-city" className="block text-sm font-medium text-warm-700 mb-1">City</label>
-                <input
-                  id="pe-city"
-                  type="text"
-                  value={formData.city || ''}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="pe-state" className="block text-sm font-medium text-warm-700 mb-1">State *</label>
-                <select
-                  id="pe-state"
-                  value={formData.state || ''}
-                  onChange={(e) => handleInputChange('state', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  required
-                >
-                  <option value="">Select State</option>
-                  {US_STATES.map(state => (
-                    <option key={state} value={state}>{state}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="pe-high-school" className="block text-sm font-medium text-warm-700 mb-1">High School *</label>
-              <input
-                id="pe-high-school"
-                type="text"
-                value={formData.high_school_name || ''}
-                onChange={(e) => handleInputChange('high_school_name', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="pe-about-me" className="block text-sm font-medium text-warm-700 mb-1">About Me</label>
-              <textarea
-                id="pe-about-me"
-                value={formData.about_me || ''}
-                onChange={(e) => handleInputChange('about_me', e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                placeholder="Tell coaches about yourself..."
-              />
-            </div>
+    <Reveal className={cn(className)}>
+      <PaperCard>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
+          <div className="px-5 pt-4 sm:px-6">
+            <TabsList aria-label="Profile sections">
+              {TABS.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id} className="gap-2">
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
           </div>
-        )}
 
-        {activeTab === 'athletic' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-warm-900 mb-4">Athletic Information</h3>
+          <div className="p-5 sm:p-6">
+            <TabsContent value="personal" className="space-y-5">
+              <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                <IconUser size={18} className="text-text-tertiary" />
+                Personal Information
+              </h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-position" className="block text-sm font-medium text-warm-700 mb-1">Position *</label>
-                <select
-                  id="pe-position"
-                  value={formData.primary_position || ''}
-                  onChange={(e) => handleInputChange('primary_position', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  required
-                >
-                  <option value="">Select Position</option>
-                  {POSITIONS.map(pos => (
-                    <option key={pos} value={pos}>{pos}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="pe-grad-year" className="block text-sm font-medium text-warm-700 mb-1">Graduation Year *</label>
-                <select
-                  id="pe-grad-year"
-                  value={formData.grad_year || ''}
-                  onChange={(e) => handleInputChange('grad_year', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  required
-                >
-                  <option value="">Select Year</option>
-                  {GRAD_YEARS.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-bats" className="block text-sm font-medium text-warm-700 mb-1">Bats</label>
-                <select
-                  id="pe-bats"
-                  value={formData.bats || ''}
-                  onChange={(e) => handleInputChange('bats', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                >
-                  <option value="">Select</option>
-                  <option value="R">Right</option>
-                  <option value="L">Left</option>
-                  <option value="S">Switch</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="pe-throws" className="block text-sm font-medium text-warm-700 mb-1">Throws</label>
-                <select
-                  id="pe-throws"
-                  value={formData.throws || ''}
-                  onChange={(e) => handleInputChange('throws', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                >
-                  <option value="">Select</option>
-                  <option value="R">Right</option>
-                  <option value="L">Left</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-height-feet" className="block text-sm font-medium text-warm-700 mb-1">Height</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    id="pe-height-feet"
-                    type="number"
-                    placeholder="Feet"
-                    min="4"
-                    max="7"
-                    value={formData.height_feet || ''}
-                    onChange={(e) => handleInputChange('height_feet', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="First name" required>
+                  <Input
+                    value={formData.first_name || ''}
+                    onChange={(e) => handleInputChange('first_name', e.target.value)}
+                    required
                   />
-                  <input
-                    aria-label="Height inches"
+                </FormField>
+
+                <FormField label="Last name" required>
+                  <Input
+                    value={formData.last_name || ''}
+                    onChange={(e) => handleInputChange('last_name', e.target.value)}
+                    required
+                  />
+                </FormField>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="City" showOptional>
+                  <Input value={formData.city || ''} onChange={(e) => handleInputChange('city', e.target.value)} />
+                </FormField>
+
+                <FormField label="State" required>
+                  <Select
+                    value={formData.state || undefined}
+                    onValueChange={(v) => handleInputChange('state', v ?? '')}
+                    options={STATE_OPTIONS}
+                    placeholder="Select state"
+                  />
+                </FormField>
+              </div>
+
+              <FormField label="High school" required>
+                <Input
+                  value={formData.high_school_name || ''}
+                  onChange={(e) => handleInputChange('high_school_name', e.target.value)}
+                  required
+                />
+              </FormField>
+
+              <FormField label="About me" showOptional>
+                <TextArea
+                  rows={4}
+                  value={formData.about_me || ''}
+                  onChange={(e) => handleInputChange('about_me', e.target.value)}
+                  placeholder="Tell coaches about yourself…"
+                />
+              </FormField>
+            </TabsContent>
+
+            <TabsContent value="athletic" className="space-y-5">
+              <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                <IconActivity size={18} className="text-text-tertiary" />
+                Athletic Information
+              </h3>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="Position" required>
+                  <Select
+                    value={formData.primary_position || undefined}
+                    onValueChange={(v) => handleInputChange('primary_position', v ?? '')}
+                    options={POSITION_OPTIONS}
+                    placeholder="Select position"
+                  />
+                </FormField>
+
+                <FormField label="Graduation year" required>
+                  <Select
+                    value={formData.grad_year ? String(formData.grad_year) : undefined}
+                    onValueChange={(v) => handleInputChange('grad_year', v ? parseInt(v) : null)}
+                    options={GRAD_YEAR_OPTIONS}
+                    placeholder="Select year"
+                  />
+                </FormField>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="Bats" showOptional>
+                  <Select
+                    value={formData.bats || undefined}
+                    onValueChange={(v) => handleInputChange('bats', v ?? '')}
+                    options={BATS_OPTIONS}
+                    placeholder="Select"
+                  />
+                </FormField>
+
+                <FormField label="Throws" showOptional>
+                  <Select
+                    value={formData.throws || undefined}
+                    onValueChange={(v) => handleInputChange('throws', v ?? '')}
+                    options={THROWS_OPTIONS}
+                    placeholder="Select"
+                  />
+                </FormField>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="Height" showOptional>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Feet"
+                      min="4"
+                      max="7"
+                      value={formData.height_feet || ''}
+                      onChange={(e) => handleInputChange('height_feet', e.target.value ? parseInt(e.target.value) : null)}
+                    />
+                    <Input
+                      aria-label="Height inches"
+                      type="number"
+                      placeholder="Inches"
+                      min="0"
+                      max="11"
+                      value={formData.height_inches || ''}
+                      onChange={(e) => handleInputChange('height_inches', e.target.value ? parseInt(e.target.value) : null)}
+                    />
+                  </div>
+                </FormField>
+
+                <FormField label="Weight" showOptional>
+                  <Input
                     type="number"
-                    placeholder="Inches"
+                    trailing="lbs"
+                    value={formData.weight_lbs || ''}
+                    onChange={(e) => handleInputChange('weight_lbs', e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="185"
+                  />
+                </FormField>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="Pitch velocity" showOptional>
+                  <Input
+                    type="number"
+                    trailing="mph"
+                    value={formData.pitch_velo || ''}
+                    onChange={(e) => handleInputChange('pitch_velo', e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="85"
+                  />
+                </FormField>
+
+                <FormField label="Exit velocity" showOptional>
+                  <Input
+                    type="number"
+                    trailing="mph"
+                    value={formData.exit_velo || ''}
+                    onChange={(e) => handleInputChange('exit_velo', e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="90"
+                  />
+                </FormField>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="60-yard time" showOptional>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    trailing="sec"
+                    value={formData.sixty_time || ''}
+                    onChange={(e) => handleInputChange('sixty_time', e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="7.2"
+                  />
+                </FormField>
+
+                <FormField label="Pop time" showOptional help="For catchers">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    trailing="sec"
+                    value={formData.pop_time || ''}
+                    onChange={(e) => handleInputChange('pop_time', e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="2.0"
+                  />
+                </FormField>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="academic" className="space-y-5">
+              <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                <IconGraduationCap size={18} className="text-text-tertiary" />
+                Academic Information
+              </h3>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField label="GPA" showOptional>
+                  <Input
+                    type="number"
+                    step="0.01"
                     min="0"
-                    max="11"
-                    value={formData.height_inches || ''}
-                    onChange={(e) => handleInputChange('height_inches', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    max="4.0"
+                    value={formData.gpa || ''}
+                    onChange={(e) => handleInputChange('gpa', e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="3.75"
                   />
-                </div>
+                </FormField>
+
+                <FormField label="SAT score" showOptional>
+                  <Input
+                    type="number"
+                    value={formData.sat_score || ''}
+                    onChange={(e) => handleInputChange('sat_score', e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="1200"
+                  />
+                </FormField>
               </div>
 
-              <div>
-                <label htmlFor="pe-weight" className="block text-sm font-medium text-warm-700 mb-1">Weight (lbs)</label>
-                <input
-                  id="pe-weight"
+              <FormField label="ACT score" showOptional>
+                <Input
                   type="number"
-                  value={formData.weight_lbs || ''}
-                  onChange={(e) => handleInputChange('weight_lbs', e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  placeholder="185"
+                  value={formData.act_score || ''}
+                  onChange={(e) => handleInputChange('act_score', e.target.value ? parseInt(e.target.value) : null)}
+                  placeholder="28"
                 />
-              </div>
-            </div>
+              </FormField>
+            </TabsContent>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-pitch-velo" className="block text-sm font-medium text-warm-700 mb-1">Pitch Velocity (mph)</label>
-                <input
-                  id="pe-pitch-velo"
-                  type="number"
-                  value={formData.pitch_velo || ''}
-                  onChange={(e) => handleInputChange('pitch_velo', e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  placeholder="85"
-                />
-              </div>
+            <TabsContent value="videos" className="space-y-5">
+              <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                <IconVideo size={18} className="text-text-tertiary" />
+                Video Settings
+              </h3>
 
-              <div>
-                <label htmlFor="pe-exit-velo" className="block text-sm font-medium text-warm-700 mb-1">Exit Velocity (mph)</label>
-                <input
-                  id="pe-exit-velo"
-                  type="number"
-                  value={formData.exit_velo || ''}
-                  onChange={(e) => handleInputChange('exit_velo', e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  placeholder="90"
-                />
-              </div>
-            </div>
+              <PaperCard grain={false} className="p-4">
+                <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
+                  Manage your highlight videos and game footage from the Videos page in your dashboard.
+                </p>
+                <Button asChild variant="secondary" size="sm" className="mt-3">
+                  <a href="/baseball/dashboard/videos">Go to Videos</a>
+                </Button>
+              </PaperCard>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-sixty-time" className="block text-sm font-medium text-warm-700 mb-1">60-Yard Time (sec)</label>
-                <input
-                  id="pe-sixty-time"
-                  type="number"
-                  step="0.01"
-                  value={formData.sixty_time || ''}
-                  onChange={(e) => handleInputChange('sixty_time', e.target.value ? parseFloat(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  placeholder="7.2"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="pe-pop-time" className="block text-sm font-medium text-warm-700 mb-1">Pop Time (sec)</label>
-                <input
-                  id="pe-pop-time"
-                  type="number"
-                  step="0.01"
-                  value={formData.pop_time || ''}
-                  onChange={(e) => handleInputChange('pop_time', e.target.value ? parseFloat(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  placeholder="2.0"
-                />
-                <p className="text-xs text-warm-500 mt-1">For catchers</p>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {activeTab === 'academic' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-warm-900 mb-4">Academic Information</h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="pe-gpa" className="block text-sm font-medium text-warm-700 mb-1">GPA</label>
-                <input
-                  id="pe-gpa"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="4.0"
-                  value={formData.gpa || ''}
-                  onChange={(e) => handleInputChange('gpa', e.target.value ? parseFloat(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  placeholder="3.75"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="pe-sat-score" className="block text-sm font-medium text-warm-700 mb-1">SAT Score</label>
-                <input
-                  id="pe-sat-score"
-                  type="number"
-                  value={formData.sat_score || ''}
-                  onChange={(e) => handleInputChange('sat_score', e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  placeholder="1200"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="pe-act-score" className="block text-sm font-medium text-warm-700 mb-1">ACT Score</label>
-              <input
-                id="pe-act-score"
-                type="number"
-                value={formData.act_score || ''}
-                onChange={(e) => handleInputChange('act_score', e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                placeholder="28"
-              />
-            </div>
-
-          </div>
-        )}
-
-        {activeTab === 'videos' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-warm-900 mb-4">Video Settings</h3>
-
-            <div className="bg-cream-50 rounded-lg p-4 border border-border">
-              <p className="text-sm leading-relaxed text-warm-600 mb-3">
-                Manage your highlight videos and game footage from the Videos page in your dashboard.
-              </p>
-              <a
-                href="/baseball/dashboard/videos"
-                className="inline-block px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
-              >
-                Go to Videos
-              </a>
-            </div>
-
-            <div className="pt-4 border-t border-border">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+              <div className="border-t border-[color:var(--hairline)] pt-4">
+                <Checkbox
+                  label="I have highlight videos uploaded"
                   checked={formData.has_video || false}
-                  onChange={(e) => handleInputChange('has_video', e.target.checked)}
-                  className="w-4 h-4 text-brand-600 border-border rounded focus:ring-brand-600"
+                  onCheckedChange={(checked) => handleInputChange('has_video', checked === true)}
                 />
-                <span className="text-sm font-medium text-warm-700">
-                  I have highlight videos uploaded
-                </span>
-              </label>
-            </div>
-          </div>
-        )}
+              </div>
+            </TabsContent>
 
-        {activeTab === 'social' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-warm-900 mb-4">Social & Contact Information</h3>
+            <TabsContent value="social" className="space-y-5">
+              <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                <IconMail size={18} className="text-text-tertiary" />
+                Social & Contact Information
+              </h3>
 
-            <div>
-              <label htmlFor="pe-email" className="block text-sm font-medium text-warm-700 mb-1">Email *</label>
-              <input
-                id="pe-email"
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                required
-              />
-            </div>
+              <FormField label="Email" required>
+                <Input
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  required
+                />
+              </FormField>
 
-            <div>
-              <label htmlFor="pe-phone" className="block text-sm font-medium text-warm-700 mb-1">Phone Number</label>
-              <input
-                id="pe-phone"
-                type="tel"
-                value={formData.phone || ''}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                placeholder="(555) 123-4567"
-              />
-            </div>
+              <FormField label="Phone number" showOptional>
+                <Input
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="(555) 123-4567"
+                />
+              </FormField>
 
-            <div>
-              <label htmlFor="pe-twitter" className="block text-sm font-medium text-warm-700 mb-1">Twitter Handle</label>
-              <div className="flex items-center">
-                <span className="px-3 py-2 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-600">@</span>
-                <input
-                  id="pe-twitter"
-                  type="text"
+              <FormField label="Twitter handle" showOptional>
+                <Input
+                  leading="@"
                   value={formData.twitter || ''}
                   onChange={(e) => handleInputChange('twitter', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                   placeholder="username"
                 />
-              </div>
-            </div>
+              </FormField>
 
-            <div>
-              <label htmlFor="pe-instagram" className="block text-sm font-medium text-warm-700 mb-1">Instagram Handle</label>
-              <div className="flex items-center">
-                <span className="px-3 py-2 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-600">@</span>
-                <input
-                  id="pe-instagram"
-                  type="text"
+              <FormField label="Instagram handle" showOptional>
+                <Input
+                  leading="@"
                   value={formData.instagram || ''}
                   onChange={(e) => handleInputChange('instagram', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                   placeholder="username"
                 />
+              </FormField>
+            </TabsContent>
+
+            {/* Save Button */}
+            <div className="mt-6 flex items-center justify-between gap-4 border-t border-[color:var(--hairline)] pt-6">
+              <div className="min-h-[20px]">
+                {saveMessage ? (
+                  <Reveal key={saveMessage}>
+                    <p
+                      role={saveMessage.includes('successfully') ? 'status' : 'alert'}
+                      aria-live="polite"
+                      className={cn(
+                        'flex items-center gap-1.5 font-annual text-body-sm font-medium',
+                        saveMessage.includes('successfully') ? 'text-grade-plus' : 'text-fw-danger',
+                      )}
+                    >
+                      {saveMessage.includes('successfully') ? (
+                        <IconCheck size={14} className="shrink-0" />
+                      ) : (
+                        <IconAlertCircle size={14} className="shrink-0" />
+                      )}
+                      {saveMessage}
+                    </p>
+                  </Reveal>
+                ) : null}
               </div>
+              <Button variant="primary" onClick={handleSave} busy={isSaving}>
+                {isSaving ? 'Saving…' : 'Save Changes'}
+              </Button>
             </div>
-
           </div>
-        )}
-
-        {/* Save Button */}
-        <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
-          <div>
-            {saveMessage && (
-              <p className={cn(
-                'text-sm font-medium',
-                saveMessage.includes('successfully') ? 'text-primary-600' : 'text-red-600'
-              )}>
-                {saveMessage}
-              </p>
-            )}
-          </div>
-          <Button variant="ghost"
-            onClick={handleSave}
-            disabled={isSaving}
-            className={cn(
-              'px-6 py-2 bg-brand-600 text-white font-medium rounded-lg transition-colors',
-              isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-brand-700'
-            )}
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
-      </div>
-    </div>
+        </Tabs>
+      </PaperCard>
+    </Reveal>
   );
 }
