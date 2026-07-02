@@ -88,7 +88,18 @@ export function M2Clarity({ className }: M2ClarityProps) {
                 >
                   {line.n}
                 </span>
-                <div className="fl-rule flex-1 origin-left" style={{ background: 'var(--fl-sage)' }} />
+                <m.div
+                  className="fl-rule flex-1 origin-left"
+                  style={{ background: 'var(--fl-sage)' }}
+                  initial={{ scaleX: 0 }}
+                  whileInView={{ scaleX: 1 }}
+                  viewport={{ once: true, margin: '-15%' }}
+                  transition={
+                    reduced
+                      ? { duration: 0 }
+                      : { duration: 0.7, delay: i * 0.08 + 0.1, ease: [0.16, 1, 0.3, 1] }
+                  }
+                />
               </div>
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:justify-between">
                 <span className={cn(flFraunces.className, 'text-xl font-medium text-[var(--fl-sage-ink)] sm:text-2xl')}>
