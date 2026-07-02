@@ -54,11 +54,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
     const db = supabase as any;
     const { data, error } = (await db
       .from('baseball_players')
-      .select(`
-        *,
-        high_school_org:organizations!players_high_school_org_id_fkey(id, name, location_city, location_state),
-        committed_to_org:organizations!players_committed_to_org_id_fkey(id, name, division, conference)
-      `)
+      .select('*')
       .eq('id', id)
       .single()) as { data: Player | null; error: { message: string } | null };
 
@@ -124,9 +120,6 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   };
 
   if (!playerId) return null;
-  const highSchoolOrgName = player
-    ? (player as { high_school_org?: { name?: string | null } }).high_school_org?.name
-    : null;
 
   return (
     <PeekPanelRoot isOpen={!!playerId} onClose={onClose} width="lg">
@@ -178,7 +171,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
                 {getFullName(player.first_name, player.last_name)}
               </h2>
               <p className="text-sm leading-relaxed text-warm-500 mt-1">
-                {highSchoolOrgName || player.high_school_name || 'Unknown School'} • {player.city}, {player.state}
+                {player.high_school_name || 'Unknown School'} • {player.city}, {player.state}
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="primary">{player.primary_position}</Badge>
