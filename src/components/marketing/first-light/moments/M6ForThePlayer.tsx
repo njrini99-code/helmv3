@@ -3,10 +3,14 @@
 /**
  * M6 · FOR THE PLAYER — the player as audience, not afterthought.
  * docs/LANDING_ENTRY_WORLD_DESIGN.md M6. Background register: warm (clay).
- * Three small glass vignettes: passport completeness, Lift Lab check-in,
- * readiness. Copy speaks to the athlete, not the buyer.
+ * Three small `fl-glass-2` vignettes: passport completeness, Lift Lab
+ * check-in, readiness. Copy speaks to the athlete, not the buyer. Each
+ * vignette carries one small real-product detail (a completeness bar, a
+ * logged-session line, a readiness band dot) rather than being pure copy —
+ * echoes M5's "show, don't just tell" without competing with it for
+ * attention (calm entry reveals only, no scroll-linked motion here).
  */
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { flFraunces } from '../fonts';
 
@@ -18,18 +22,23 @@ const VIGNETTES = [
   {
     title: 'Your passport',
     line: 'Stats, highlights, and your story — always current, always yours to share.',
+    detail: <PassportDetail />,
   },
   {
     title: 'Lift Lab check-in',
     line: 'Log the work. The bar tracks your progress so you don’t have to.',
+    detail: <LiftLabDetail />,
   },
   {
     title: 'Readiness',
     line: 'A daily read on how you’re showing up — for you and your coach.',
+    detail: <ReadinessDetail />,
   },
 ];
 
 export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
+  const reduced = useReducedMotion();
+
   return (
     <section
       className={cn('relative px-6 py-24 sm:py-32', className)}
@@ -39,7 +48,7 @@ export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
       }}
     >
       <div className="mx-auto max-w-2xl text-center">
-        <span className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-white/60">
+        <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-white/60">
           For the Player
         </span>
         <h2 className={cn(flFraunces.className, 'mt-4 text-[clamp(1.75rem,3.4vw,2.5rem)] font-normal leading-tight text-white')}>
@@ -54,16 +63,66 @@ export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-10%' }}
-            transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+            transition={
+              reduced ? { duration: 0 } : { duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }
+            }
             className="fl-glass-2 rounded-2xl p-6"
           >
             <div className="relative z-10">
               <h3 className={cn(flFraunces.className, 'text-lg font-medium text-white')}>{v.title}</h3>
               <p className="mt-2 text-body-sm leading-relaxed text-white/75">{v.line}</p>
+              <div className="mt-4 border-t border-white/15 pt-4">{v.detail}</div>
             </div>
           </m.div>
         ))}
       </div>
     </section>
+  );
+}
+
+function PassportDetail() {
+  const pct = 92;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="font-annual text-caption font-medium uppercase tracking-[0.1em] text-white/55">
+          Complete
+        </span>
+        <span className="font-annual text-body-sm font-medium tabular-nums text-white">{pct}%</span>
+      </div>
+      <div className="mt-2 h-1 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--fl-green)' }} />
+      </div>
+    </div>
+  );
+}
+
+function LiftLabDetail() {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: 'var(--fl-green)' }}
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 12 12" width={8} height={8} fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 6.5l2.5 2.5L10 3" />
+        </svg>
+      </span>
+      <span className="font-annual text-body-sm text-white/80">
+        Today logged <span className="tabular-nums text-white">· 4 sets</span>
+      </span>
+    </div>
+  );
+}
+
+function ReadinessDetail() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--fl-green)' }} aria-hidden="true" />
+      <span className="font-annual text-body-sm text-white/80">
+        <span className="tabular-nums text-white">4.6</span> of 5 &mdash; ready to go
+      </span>
+    </div>
   );
 }
