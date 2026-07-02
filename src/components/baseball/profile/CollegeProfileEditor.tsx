@@ -1,16 +1,40 @@
 'use client';
 
+// =============================================================================
+// CollegeProfileEditor — the college player's own passport-editing surface.
+//
+// WRITE surface — every field/handler PRESERVED VERBATIM from the prior
+// implementation: `handleInputChange`, `handleSave`, `calculateProfileCompletion`,
+// the `baseball_team_members` fetch, every `formData` key. This pass is
+// PRESENTATION ONLY, rebuilt onto the Living-Annual kit
+// (`@/components/baseball/living-annual`) + Fairway form primitives
+// (`@/components/fairway`) — the page already renders inside `.living-annual` /
+// `.fairway-ds` via BaseballFairwayShell, and `(dashboard)/dashboard/template.tsx`
+// already mounts `<LazyMotion features={domAnimation}>`, so this file does not
+// mount its own motion provider.
+//
+// ADDENDUM 2 (design-system-living-annual.md) drops Fraunces + Fragment Mono from
+// the baseball kit — Space Grotesk (`font-annual`) only. Fairway `FormSection`'s
+// heading and `NumberField`'s numeral both hardcode the banned faces, so this file
+// intentionally skips both: section headers are plain `font-annual` markup, and
+// numeric fields use `Input type="number"` (its body text stays on `font-fw-sans`
+// chrome, never a "stat figure" read — those stay on `RuledStatLine`/`StatReadout`).
+// =============================================================================
+
 import { useState, useEffect } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Player, Team } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { ProgressRing } from '@/components/ui/progress-ring';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { Input, Textarea } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/select';
+import { Button, FormField, Input, TextArea, Select, Tabs, TabsList, TabsTrigger, TabsContent, Inset } from '@/components/fairway';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  PaperCard,
+  Eyebrow,
+  RuledStatLine,
+  HairlineRule,
+  InkBadge,
+  Reveal,
+} from '@/components/baseball/living-annual';
 import {
   IconUser,
   IconActivity,
@@ -24,14 +48,6 @@ import {
   IconAlertCircle,
   IconUsers,
 } from '@/components/icons';
-
-// Shared field-input classes — keeps the focus ring on the brand-green token
-// (the previous `focus:ring-brand-600` resolved to no color and silently
-// dropped the focus-visible affordance) and uses the canonical glass field fill.
-const FIELD_CLS =
-  'w-full px-3 py-2.5 border border-border rounded-lg bg-cream-100/60 text-warm-900 ' +
-  'placeholder:text-warm-400 transition-shadow ' +
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/45 focus-visible:border-primary-400';
 
 interface CollegeProfileEditorProps {
   player: Player;
@@ -55,8 +71,20 @@ const TABS: Tab[] = [
 ];
 
 const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
+const STATE_OPTIONS = US_STATES.map((s) => ({ label: s, value: s }));
 
 const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'OF', 'IF', 'UTL'];
+const POSITION_OPTIONS = POSITIONS.map((p) => ({ label: p, value: p }));
+
+const BATS_OPTIONS = [
+  { label: 'Right', value: 'R' },
+  { label: 'Left', value: 'L' },
+  { label: 'Switch', value: 'S' },
+];
+const THROWS_OPTIONS = [
+  { label: 'Right', value: 'R' },
+  { label: 'Left', value: 'L' },
+];
 
 interface TeamMembership {
   team: Team;
@@ -64,7 +92,7 @@ interface TeamMembership {
   position: string | null;
 }
 
-// Profile completion calculation
+// Profile completion calculation — UNCHANGED.
 function calculateProfileCompletion(player: Player): { percentage: number; missingFields: string[] } {
   const fields = [
     { key: 'first_name', label: 'First Name', required: true },
@@ -101,7 +129,6 @@ function calculateProfileCompletion(player: Player): { percentage: number; missi
 }
 
 export function CollegeProfileEditor({ player, onUpdate, className }: CollegeProfileEditorProps) {
-  const prefersReducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<TabId>('personal');
   const [formData, setFormData] = useState<Partial<Player>>(player);
   const [isSaving, setIsSaving] = useState(false);
@@ -114,7 +141,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
     ...formData,
   } as Player);
 
-  // Fetch team memberships
+  // Fetch team memberships — UNCHANGED query.
   useEffect(() => {
     async function fetchTeamMemberships() {
       if (!player?.id) {
@@ -174,633 +201,458 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
   };
 
   return (
-    <LazyMotion features={domAnimation}>
     <div className={cn('space-y-6', className)}>
-      {/* Profile Completion & Team Affiliation Header */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Profile Completion Card */}
-        <div className="glass-standard rounded-2xl p-5 relative overflow-clip">
-          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-            }}
-          />
-          <div className="flex items-center gap-4">
-            <ProgressRing
-              value={profileCompletion}
-              size="lg"
-              color={profileCompletion >= 80 ? 'green' : profileCompletion >= 50 ? 'amber' : 'red'}
-              label="Complete"
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-warm-900">Profile Completion</h3>
+      {/* Profile Completion & Team Affiliation — the passport masthead spread */}
+      <div className="grid gap-5 md:grid-cols-2">
+        <Reveal staggerIndex={0}>
+          <PaperCard registrationTick className="h-full p-5 sm:p-6">
+            <Eyebrow ink="team">Profile File</Eyebrow>
+            <div className="mt-3">
+              <RuledStatLine
+                label="Complete"
+                value={profileCompletion}
+                unit="%"
+                size="hero"
+                ink="team"
+                emphasis={profileCompletion >= 80}
+              />
+            </div>
+            <div className="mt-4">
               {profileCompletion < 100 ? (
-                <div className="mt-1">
-                  <p className="text-sm text-warm-600">
-                    Add {missingFields.slice(0, 2).join(', ')}
-                    {missingFields.length > 2 && ` +${missingFields.length - 2} more`}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-primary-600 flex items-center gap-1.5 mt-1">
-                  <IconCheck size={14} />
-                  Profile complete!
+                <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
+                  Add {missingFields.slice(0, 2).join(', ')}
+                  {missingFields.length > 2 && ` +${missingFields.length - 2} more`}
                 </p>
+              ) : (
+                <InkBadge label="Complete" tone="team" variant="solid" />
               )}
             </div>
-          </div>
-          {profileCompletion < 100 && (
-            <div className="mt-4">
-              <Progress value={profileCompletion} size="sm" showPercentage={false} />
-            </div>
-          )}
-        </div>
+          </PaperCard>
+        </Reveal>
 
-        {/* Team Affiliation Card */}
-        <div className="glass-standard rounded-2xl p-5 relative overflow-clip">
-          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-            }}
-          />
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
-              <IconUsers size={20} className="text-primary-600" />
+        <Reveal staggerIndex={1}>
+          <PaperCard registrationTick className="h-full p-5 sm:p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <IconUsers size={16} className="text-text-tertiary" />
+              <Eyebrow ink="muted">Team Affiliation</Eyebrow>
             </div>
-            <h3 className="font-semibold text-warm-900">Team Affiliation</h3>
-          </div>
-          
-          {loadingTeams ? (
-            <div className="space-y-3" aria-hidden="true">
-              {[0, 1].map((i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton variant="block" className="w-8 h-8 rounded-lg shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <Skeleton variant="line" className="h-3.5 w-2/3" />
-                    <Skeleton variant="line" className="h-3 w-1/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : teamMemberships.length === 0 ? (
-            <p className="text-sm text-warm-500">No team affiliations yet</p>
-          ) : (
-            <div className="space-y-3">
-              {teamMemberships.map((membership, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {membership.team.logo_url ? (
-                      <img
-                        src={membership.team.logo_url}
-                        alt={membership.team.name}
-                        className="w-8 h-8 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: membership.team.primary_color || '#16A34A' }}
-                      >
-                        {membership.team.name.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-medium text-warm-900 text-sm">{membership.team.name}</p>
-                      <p className="text-xs text-warm-500 capitalize">
-                        {membership.team.team_type?.replace('_', ' ')}
-                      </p>
+
+            {loadingTeams ? (
+              <div className="space-y-3" aria-hidden="true">
+                {[0, 1].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton variant="block" className="h-8 w-8 shrink-0 rounded-lg" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton variant="line" className="h-3.5 w-2/3" />
+                      <Skeleton variant="line" className="h-3 w-1/3" />
                     </div>
                   </div>
-                  <div className="text-right">
-                    {membership.jersey_number && (
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-warm-100 text-warm-700 font-bold text-sm">
-                        #{membership.jersey_number}
-                      </span>
-                    )}
+                ))}
+              </div>
+            ) : teamMemberships.length === 0 ? (
+              <RuledStatLine label="Team" value="—" ghost />
+            ) : (
+              <div className="space-y-3">
+                {teamMemberships.map((membership, idx) => (
+                  <div key={idx}>
+                    <div className="flex items-center justify-between gap-3 py-1">
+                      <div className="flex min-w-0 items-center gap-3">
+                        {membership.team.logo_url ? (
+                          <img
+                            src={membership.team.logo_url}
+                            alt={membership.team.name}
+                            className="h-8 w-8 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
+                            style={{ backgroundColor: membership.team.primary_color || '#16A34A' }}
+                          >
+                            {membership.team.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate font-annual text-body text-text-primary">{membership.team.name}</p>
+                          {membership.team.team_type ? (
+                            <Eyebrow ink="muted" className="mt-0.5">
+                              {membership.team.team_type.replace('_', ' ')}
+                            </Eyebrow>
+                          ) : null}
+                        </div>
+                      </div>
+                      {membership.jersey_number ? (
+                        <InkBadge label={`#${membership.jersey_number}`} tone="team" variant="solid" />
+                      ) : null}
+                    </div>
+                    {idx < teamMemberships.length - 1 ? <HairlineRule ink="hairline" /> : null}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </PaperCard>
+        </Reveal>
       </div>
 
-      {/* Main Editor Card */}
-      <div className="glass-standard rounded-2xl overflow-clip relative">
-        <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-        />
-        
-        {/* Tab Navigation */}
-        <div className="border-b border-border">
-          <div className="flex gap-1 p-2 overflow-x-auto scrollbar-hide" role="tablist" aria-label="Profile sections">
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <Button variant="ghost"
-                  key={tab.id}
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-controls={`cpe-panel-${tab.id}`}
-                  id={`cpe-tab-${tab.id}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap',
-                    isActive
-                      ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600'
-                      : 'text-warm-600 hover:bg-cream-100 active:bg-cream-200'
-                  )}
-                >
-                  {tab.icon}
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+      {/* Main editor — the record-book form */}
+      <Reveal staggerIndex={2}>
+        <PaperCard>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
+            <div className="px-5 pt-4 sm:px-6">
+              <TabsList aria-label="Profile sections">
+                {TABS.map((tab) => (
+                  <TabsTrigger key={tab.id} value={tab.id} className="gap-2">
+                    {tab.icon}
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
-        {/* Tab Content */}
-        <div className="p-4 sm:p-6">
-          {activeTab === 'personal' && (
-            <m.div
-              key="personal"
-              role="tabpanel"
-              id="cpe-panel-personal"
-              aria-labelledby="cpe-tab-personal"
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
-                <IconUser size={20} className="text-warm-400" />
-                Personal Information
-              </h3>
+            <div className="p-5 sm:p-6">
+              <TabsContent value="personal" className="space-y-5">
+                <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                  <IconUser size={18} className="text-text-tertiary" />
+                  Personal Information
+                </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="cpe-first-name" className="block text-sm font-medium text-warm-700 mb-1.5">First Name *</label>
-                  <Input
-                    id="cpe-first-name"
-                    type="text"
-                    value={formData.first_name || ''}
-                    onChange={(e) => handleInputChange('first_name', e.target.value)}
-                    className={FIELD_CLS}
-                    required
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <FormField label="First name" required>
+                    <Input
+                      value={formData.first_name || ''}
+                      onChange={(e) => handleInputChange('first_name', e.target.value)}
+                      required
+                    />
+                  </FormField>
+
+                  <FormField label="Last name" required>
+                    <Input
+                      value={formData.last_name || ''}
+                      onChange={(e) => handleInputChange('last_name', e.target.value)}
+                      required
+                    />
+                  </FormField>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <FormField
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <IconMapPin size={14} className="text-text-tertiary" />
+                        City
+                      </span>
+                    }
+                    showOptional
+                  >
+                    <Input value={formData.city || ''} onChange={(e) => handleInputChange('city', e.target.value)} />
+                  </FormField>
+
+                  <FormField label="State" required>
+                    <Select
+                      value={formData.state || undefined}
+                      onValueChange={(v) => handleInputChange('state', v ?? '')}
+                      options={STATE_OPTIONS}
+                      placeholder="Select state"
+                    />
+                  </FormField>
+                </div>
+
+                <FormField label="About me" showOptional help="This appears on your public profile">
+                  <TextArea
+                    rows={4}
+                    value={formData.about_me || ''}
+                    onChange={(e) => handleInputChange('about_me', e.target.value)}
+                    placeholder="Share your story, goals, and what drives you as a player…"
                   />
+                </FormField>
+              </TabsContent>
+
+              <TabsContent value="athletic" className="space-y-5">
+                <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                  <IconActivity size={18} className="text-text-tertiary" />
+                  Athletic Information
+                </h3>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <FormField label="Primary position" required>
+                    <Select
+                      value={formData.primary_position || undefined}
+                      onValueChange={(v) => handleInputChange('primary_position', v ?? '')}
+                      options={POSITION_OPTIONS}
+                      placeholder="Select position"
+                    />
+                  </FormField>
+
+                  <FormField label="Secondary position" showOptional>
+                    <Select
+                      value={formData.secondary_position || undefined}
+                      onValueChange={(v) => handleInputChange('secondary_position', v ?? '')}
+                      options={POSITION_OPTIONS}
+                      placeholder="Select position"
+                    />
+                  </FormField>
                 </div>
 
-                <div>
-                  <label htmlFor="cpe-last-name" className="block text-sm font-medium text-warm-700 mb-1.5">Last Name *</label>
-                  <Input
-                    id="cpe-last-name"
-                    type="text"
-                    value={formData.last_name || ''}
-                    onChange={(e) => handleInputChange('last_name', e.target.value)}
-                    className={FIELD_CLS}
-                    required
-                  />
-                </div>
-              </div>
+                <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                  <FormField label="Bats" showOptional>
+                    <Select
+                      value={formData.bats || undefined}
+                      onValueChange={(v) => handleInputChange('bats', v ?? '')}
+                      options={BATS_OPTIONS}
+                      placeholder="—"
+                    />
+                  </FormField>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="cpe-city" className="block text-sm font-medium text-warm-700 mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <IconMapPin size={14} className="text-warm-400" />
-                      City
-                    </span>
-                  </label>
-                  <Input
-                    id="cpe-city"
-                    type="text"
-                    value={formData.city || ''}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    className={FIELD_CLS}
-                  />
-                </div>
+                  <FormField label="Throws" showOptional>
+                    <Select
+                      value={formData.throws || undefined}
+                      onValueChange={(v) => handleInputChange('throws', v ?? '')}
+                      options={THROWS_OPTIONS}
+                      placeholder="—"
+                    />
+                  </FormField>
 
-                <div>
-                  <label htmlFor="cpe-state" className="block text-sm font-medium text-warm-700 mb-1.5">State *</label>
-                  <NativeSelect
-                    id="cpe-state"
-                    value={formData.state || ''}
-                    onChange={(e) => handleInputChange('state', e.target.value)}
-                    className={FIELD_CLS}
-                    required
-                  >
-                    <option value="">Select State</option>
-                    {US_STATES.map((state) => (
-                      <option key={state} value={state}>{state}</option>
-                    ))}
-                  </NativeSelect>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="cpe-about-me" className="block text-sm font-medium text-warm-700 mb-1.5">About Me</label>
-                <Textarea
-                  id="cpe-about-me"
-                  value={formData.about_me || ''}
-                  onChange={(e) => handleInputChange('about_me', e.target.value)}
-                  rows={4}
-                  className={cn(FIELD_CLS, "resize-none")}
-                  placeholder="Share your story, goals, and what drives you as a player..."
-                />
-                <p className="text-xs text-warm-500 mt-1">This appears on your public profile</p>
-              </div>
-            </m.div>
-          )}
-
-          {activeTab === 'athletic' && (
-            <m.div
-              key="athletic"
-              role="tabpanel"
-              id="cpe-panel-athletic"
-              aria-labelledby="cpe-tab-athletic"
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
-                <IconActivity size={20} className="text-warm-400" />
-                Athletic Information
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="cpe-primary-pos" className="block text-sm font-medium text-warm-700 mb-1.5">Primary Position *</label>
-                  <NativeSelect
-                    id="cpe-primary-pos"
-                    value={formData.primary_position || ''}
-                    onChange={(e) => handleInputChange('primary_position', e.target.value)}
-                    className={FIELD_CLS}
-                    required
-                  >
-                    <option value="">Select Position</option>
-                    {POSITIONS.map((pos) => (
-                      <option key={pos} value={pos}>{pos}</option>
-                    ))}
-                  </NativeSelect>
-                </div>
-
-                <div>
-                  <label htmlFor="cpe-secondary-pos" className="block text-sm font-medium text-warm-700 mb-1.5">Secondary Position</label>
-                  <NativeSelect
-                    id="cpe-secondary-pos"
-                    value={formData.secondary_position || ''}
-                    onChange={(e) => handleInputChange('secondary_position', e.target.value)}
-                    className={FIELD_CLS}
-                  >
-                    <option value="">Select Position</option>
-                    {POSITIONS.map((pos) => (
-                      <option key={pos} value={pos}>{pos}</option>
-                    ))}
-                  </NativeSelect>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <label htmlFor="cpe-bats" className="block text-sm font-medium text-warm-700 mb-1.5">Bats</label>
-                  <NativeSelect
-                    id="cpe-bats"
-                    value={formData.bats || ''}
-                    onChange={(e) => handleInputChange('bats', e.target.value)}
-                    className={FIELD_CLS}
-                  >
-                    <option value="">-</option>
-                    <option value="R">Right</option>
-                    <option value="L">Left</option>
-                    <option value="S">Switch</option>
-                  </NativeSelect>
-                </div>
-
-                <div>
-                  <label htmlFor="cpe-throws" className="block text-sm font-medium text-warm-700 mb-1.5">Throws</label>
-                  <NativeSelect
-                    id="cpe-throws"
-                    value={formData.throws || ''}
-                    onChange={(e) => handleInputChange('throws', e.target.value)}
-                    className={FIELD_CLS}
-                  >
-                    <option value="">-</option>
-                    <option value="R">Right</option>
-                    <option value="L">Left</option>
-                  </NativeSelect>
-                </div>
-
-                <div>
-                  <label htmlFor="cpe-height-ft" className="block text-sm font-medium text-warm-700 mb-1.5">Height</label>
-                  <div className="flex gap-1.5">
-                    <div className="w-1/2">
+                  <FormField label="Height" showOptional>
+                    <div className="flex gap-1.5">
                       <Input
-                        id="cpe-height-ft"
                         type="number"
                         placeholder="Ft"
                         min="4"
                         max="7"
-                        value={formData.height_feet || ''}
+                        value={formData.height_feet ?? ''}
                         onChange={(e) => handleInputChange('height_feet', e.target.value ? parseInt(e.target.value) : null)}
-                        className={cn(FIELD_CLS, "px-2 text-center")}
+                        className="text-center"
                       />
-                    </div>
-                    <div className="w-1/2">
                       <Input
                         aria-label="Height inches"
                         type="number"
                         placeholder="In"
                         min="0"
                         max="11"
-                        value={formData.height_inches || ''}
+                        value={formData.height_inches ?? ''}
                         onChange={(e) => handleInputChange('height_inches', e.target.value ? parseInt(e.target.value) : null)}
-                        className={cn(FIELD_CLS, "px-2 text-center")}
+                        className="text-center"
                       />
                     </div>
-                  </div>
-                </div>
+                  </FormField>
 
-                <div>
-                  <label htmlFor="cpe-weight" className="block text-sm font-medium text-warm-700 mb-1.5">Weight</label>
-                  <div className="relative">
+                  <FormField label="Weight" showOptional>
                     <Input
-                      id="cpe-weight"
                       type="number"
-                      value={formData.weight_lbs || ''}
+                      trailing="lbs"
+                      value={formData.weight_lbs ?? ''}
                       onChange={(e) => handleInputChange('weight_lbs', e.target.value ? parseInt(e.target.value) : null)}
-                      className={cn(FIELD_CLS, "pr-10")}
                       placeholder="185"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">lbs</span>
-                  </div>
+                  </FormField>
                 </div>
-              </div>
 
-              <div className="border-t border-border pt-4 mt-4">
-                <h4 className="text-sm font-semibold text-warm-700 mb-3">Performance Metrics</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div>
-                    <label htmlFor="cpe-pitch-velo" className="block text-sm font-medium text-warm-700 mb-1.5">Pitch Velo</label>
-                    <div className="relative">
+                <div className="border-t border-[color:var(--hairline)] pt-5">
+                  <Eyebrow ink="muted" className="mb-3">Performance Metrics</Eyebrow>
+                  <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                    <FormField label="Pitch velo" showOptional>
                       <Input
-                        id="cpe-pitch-velo"
                         type="number"
-                        value={formData.pitch_velo || ''}
+                        trailing="mph"
+                        value={formData.pitch_velo ?? ''}
                         onChange={(e) => handleInputChange('pitch_velo', e.target.value ? parseInt(e.target.value) : null)}
-                        className={cn(FIELD_CLS, "pr-12")}
                         placeholder="85"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">mph</span>
-                    </div>
-                  </div>
+                    </FormField>
 
-                  <div>
-                    <label htmlFor="cpe-exit-velo" className="block text-sm font-medium text-warm-700 mb-1.5">Exit Velo</label>
-                    <div className="relative">
+                    <FormField label="Exit velo" showOptional>
                       <Input
-                        id="cpe-exit-velo"
                         type="number"
-                        value={formData.exit_velo || ''}
+                        trailing="mph"
+                        value={formData.exit_velo ?? ''}
                         onChange={(e) => handleInputChange('exit_velo', e.target.value ? parseInt(e.target.value) : null)}
-                        className={cn(FIELD_CLS, "pr-12")}
                         placeholder="90"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">mph</span>
-                    </div>
-                  </div>
+                    </FormField>
 
-                  <div>
-                    <label htmlFor="cpe-sixty-time" className="block text-sm font-medium text-warm-700 mb-1.5">60-Yard</label>
-                    <div className="relative">
+                    <FormField label="60-yard" showOptional>
                       <Input
-                        id="cpe-sixty-time"
                         type="number"
                         step="0.01"
-                        value={formData.sixty_time || ''}
+                        trailing="sec"
+                        value={formData.sixty_time ?? ''}
                         onChange={(e) => handleInputChange('sixty_time', e.target.value ? parseFloat(e.target.value) : null)}
-                        className={cn(FIELD_CLS, "pr-10")}
                         placeholder="7.2"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">sec</span>
-                    </div>
-                  </div>
+                    </FormField>
 
-                  <div>
-                    <label htmlFor="cpe-pop-time" className="block text-sm font-medium text-warm-700 mb-1.5">Pop Time</label>
-                    <div className="relative">
+                    <FormField label="Pop time" showOptional>
                       <Input
-                        id="cpe-pop-time"
                         type="number"
                         step="0.01"
-                        value={formData.pop_time || ''}
+                        trailing="sec"
+                        value={formData.pop_time ?? ''}
                         onChange={(e) => handleInputChange('pop_time', e.target.value ? parseFloat(e.target.value) : null)}
-                        className={cn(FIELD_CLS, "pr-10")}
                         placeholder="2.0"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">sec</span>
-                    </div>
+                    </FormField>
                   </div>
                 </div>
-              </div>
-            </m.div>
-          )}
+              </TabsContent>
 
-          {activeTab === 'academic' && (
-            <m.div
-              key="academic"
-              role="tabpanel"
-              id="cpe-panel-academic"
-              aria-labelledby="cpe-tab-academic"
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
-                <IconGraduationCap size={20} className="text-warm-400" />
-                Academic Information
-              </h3>
+              <TabsContent value="academic" className="space-y-5">
+                <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                  <IconGraduationCap size={18} className="text-text-tertiary" />
+                  Academic Information
+                </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="cpe-gpa" className="block text-sm font-medium text-warm-700 mb-1.5">GPA</label>
-                  <Input
-                    id="cpe-gpa"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="4.0"
-                    value={formData.gpa || ''}
-                    onChange={(e) => handleInputChange('gpa', e.target.value ? parseFloat(e.target.value) : null)}
-                    className={FIELD_CLS}
-                    placeholder="3.50"
-                  />
-                  <p className="text-xs text-warm-500 mt-1">Current cumulative GPA</p>
-                </div>
-
-                <div>
-                  <label htmlFor="cpe-grad-year" className="block text-sm font-medium text-warm-700 mb-1.5">Graduation Year</label>
-                  <Input
-                    id="cpe-grad-year"
-                    type="number"
-                    value={formData.grad_year || ''}
-                    onChange={(e) => handleInputChange('grad_year', e.target.value ? parseInt(e.target.value) : null)}
-                    className={FIELD_CLS}
-                    placeholder={String(new Date().getFullYear() + 1)}
-                    min={new Date().getFullYear()}
-                    max={new Date().getFullYear() + 6}
-                  />
-                  <p className="text-xs text-warm-500 mt-1">Expected graduation year</p>
-                </div>
-              </div>
-
-              {/* High School Info (read-only for college players) */}
-              {player.high_school_name && (
-                <div className="bg-warm-50 rounded-xl p-4 border border-warm-100 mt-4">
-                  <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">High School Background</p>
-                  <p className="text-sm text-warm-700">
-                    {player.high_school_name}
-                    {player.high_school_city && `, ${player.high_school_city}`}
-                    {player.high_school_state && `, ${player.high_school_state}`}
-                  </p>
-                </div>
-              )}
-            </m.div>
-          )}
-
-          {activeTab === 'social' && (
-            <m.div
-              key="social"
-              role="tabpanel"
-              id="cpe-panel-social"
-              aria-labelledby="cpe-tab-social"
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
-                <IconMail size={20} className="text-warm-400" />
-                Contact & Social
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="cpe-email" className="block text-sm font-medium text-warm-700 mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <IconMail size={14} className="text-warm-400" />
-                      Email *
-                    </span>
-                  </label>
-                  <Input
-                    id="cpe-email"
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={FIELD_CLS}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="cpe-phone" className="block text-sm font-medium text-warm-700 mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <IconPhone size={14} className="text-warm-400" />
-                      Phone
-                    </span>
-                  </label>
-                  <Input
-                    id="cpe-phone"
-                    type="tel"
-                    value={formData.phone || ''}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className={FIELD_CLS}
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="cpe-twitter" className="block text-sm font-medium text-warm-700 mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <IconTwitter size={14} className="text-warm-400" />
-                      Twitter
-                    </span>
-                  </label>
-                  <div className="flex items-center">
-                    <span className="px-3 py-2.5 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-500 text-sm">@</span>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <FormField label="GPA" showOptional help="Current cumulative GPA">
                     <Input
-                      id="cpe-twitter"
-                      type="text"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="4.0"
+                      value={formData.gpa ?? ''}
+                      onChange={(e) => handleInputChange('gpa', e.target.value ? parseFloat(e.target.value) : null)}
+                      placeholder="3.50"
+                    />
+                  </FormField>
+
+                  <FormField label="Graduation year" showOptional help="Expected graduation year">
+                    <Input
+                      type="number"
+                      value={formData.grad_year ?? ''}
+                      onChange={(e) => handleInputChange('grad_year', e.target.value ? parseInt(e.target.value) : null)}
+                      placeholder={String(new Date().getFullYear() + 1)}
+                      min={new Date().getFullYear()}
+                      max={new Date().getFullYear() + 6}
+                    />
+                  </FormField>
+                </div>
+
+                {/* High School Info (read-only for college players) */}
+                {player.high_school_name ? (
+                  <Inset padding="md" className="mt-2">
+                    <Eyebrow ink="muted" className="mb-2">High School Background</Eyebrow>
+                    <p className="font-annual text-body-sm text-text-secondary">
+                      {player.high_school_name}
+                      {player.high_school_city && `, ${player.high_school_city}`}
+                      {player.high_school_state && `, ${player.high_school_state}`}
+                    </p>
+                  </Inset>
+                ) : null}
+              </TabsContent>
+
+              <TabsContent value="social" className="space-y-5">
+                <h3 className="flex items-center gap-2 font-annual text-h3 text-text-primary">
+                  <IconMail size={18} className="text-text-tertiary" />
+                  Contact & Social
+                </h3>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <FormField
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <IconMail size={14} className="text-text-tertiary" />
+                        Email
+                      </span>
+                    }
+                    required
+                  >
+                    <Input
+                      type="email"
+                      value={formData.email || ''}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      required
+                    />
+                  </FormField>
+
+                  <FormField
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <IconPhone size={14} className="text-text-tertiary" />
+                        Phone
+                      </span>
+                    }
+                    showOptional
+                  >
+                    <Input
+                      type="tel"
+                      value={formData.phone || ''}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="(555) 123-4567"
+                    />
+                  </FormField>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <FormField
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <IconTwitter size={14} className="text-text-tertiary" />
+                        Twitter
+                      </span>
+                    }
+                    showOptional
+                  >
+                    <Input
+                      leading="@"
                       value={formData.twitter || ''}
                       onChange={(e) => handleInputChange('twitter', e.target.value)}
-                      className={cn(FIELD_CLS, "flex-1 rounded-l-none rounded-r-lg")}
                       placeholder="username"
                     />
-                  </div>
-                </div>
+                  </FormField>
 
-                <div>
-                  <label htmlFor="cpe-instagram" className="block text-sm font-medium text-warm-700 mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <IconInstagram size={14} className="text-warm-400" />
-                      Instagram
-                    </span>
-                  </label>
-                  <div className="flex items-center">
-                    <span className="px-3 py-2.5 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-500 text-sm">@</span>
+                  <FormField
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <IconInstagram size={14} className="text-text-tertiary" />
+                        Instagram
+                      </span>
+                    }
+                    showOptional
+                  >
                     <Input
-                      id="cpe-instagram"
-                      type="text"
+                      leading="@"
                       value={formData.instagram || ''}
                       onChange={(e) => handleInputChange('instagram', e.target.value)}
-                      className={cn(FIELD_CLS, "flex-1 rounded-l-none rounded-r-lg")}
                       placeholder="username"
                     />
-                  </div>
+                  </FormField>
                 </div>
-              </div>
-            </m.div>
-          )}
+              </TabsContent>
 
-          {/* Save Button */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-border">
-            <div className="order-2 sm:order-1 min-h-[20px]">
-              {saveMessage && (
-                <m.p
-                  key={saveMessage}
-                  role={saveMessage.includes('successfully') ? 'status' : 'alert'}
-                  aria-live="polite"
-                  initial={prefersReducedMotion ? false : { opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-                  className={cn(
-                    'text-sm font-medium flex items-center gap-1.5',
-                    saveMessage.includes('successfully') ? 'text-primary-600' : 'text-red-600'
-                  )}
+              {/* Save Button */}
+              <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-[color:var(--hairline)] pt-6 sm:flex-row">
+                <div className="order-2 min-h-[20px] sm:order-1">
+                  {saveMessage ? (
+                    <Reveal key={saveMessage}>
+                      <p
+                        role={saveMessage.includes('successfully') ? 'status' : 'alert'}
+                        aria-live="polite"
+                        className={cn(
+                          'flex items-center gap-1.5 font-annual text-body-sm font-medium',
+                          saveMessage.includes('successfully') ? 'text-grade-plus' : 'text-fw-danger',
+                        )}
+                      >
+                        {saveMessage.includes('successfully') ? (
+                          <IconCheck size={14} className="shrink-0" />
+                        ) : (
+                          <IconAlertCircle size={14} className="shrink-0" />
+                        )}
+                        {saveMessage}
+                      </p>
+                    </Reveal>
+                  ) : null}
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={handleSave}
+                  busy={isSaving}
+                  className="order-1 w-full sm:order-2 sm:w-auto"
                 >
-                  {saveMessage.includes('successfully')
-                    ? <IconCheck size={14} className="shrink-0" />
-                    : <IconAlertCircle size={14} className="shrink-0" />}
-                  {saveMessage}
-                </m.p>
-              )}
+                  {isSaving ? 'Saving…' : 'Save Changes'}
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              isLoading={isSaving}
-              className="w-full sm:w-auto order-1 sm:order-2"
-            >
-              {isSaving ? 'Saving…' : 'Save Changes'}
-            </Button>
-          </div>
-        </div>
-      </div>
+          </Tabs>
+        </PaperCard>
+      </Reveal>
     </div>
-    </LazyMotion>
   );
 }

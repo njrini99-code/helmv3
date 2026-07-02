@@ -1,114 +1,133 @@
 // Route-level skeleton for the coach/staff view of Player Passport.
 // The page awaits getPlayerPassport (full mode) + resolveBaseballCapabilities +
-// getPassportSettingsForEditor in parallel. This skeleton mirrors the coach
-// passport layout: back-link + header with action button + PlayerPassportCard +
-// optional VisibilityControls.
+// getPassportSettingsForEditor in parallel. This skeleton mirrors the
+// Living-Annual coach passport layout: back-link + masthead header with the
+// scout-packet action + a Paper spread (identity / measurables / performance /
+// development story / media / file readiness) + the optional Visibility
+// Controls card. Skeleton loaders, never a spinner, on the same deeper-cream
+// Paper stock the real page renders on.
 
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CoachPlayerPassportLoading() {
   return (
-    <div className="min-h-dvh bg-cream-100">
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
-        {/* Back link */}
-        <Skeleton className="mb-6 h-4 w-28" />
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
+      {/* Back link */}
+      <Skeleton className="mb-6 h-8 w-32 rounded-full" />
 
-        {/* Page header: title + "Scout packet" action button */}
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="mt-2 h-9 w-56" />
-            <Skeleton className="mt-2 h-4 w-96 max-w-full" />
-          </div>
-          <Skeleton className="h-10 w-36 rounded-xl" />
+      {/* Masthead header: eyebrow + title + lede + "Scout packet" action */}
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-3 w-48" />
+        <div className="flex items-start justify-between gap-4">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-10 w-36 rounded-full" />
+        </div>
+        <Skeleton className="h-[3px] w-16 rounded-full" />
+        <Skeleton className="mt-1 h-4 w-full max-w-md" />
+      </div>
+
+      {/* Passport spread — Paper card */}
+      <div className="mt-8 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] p-6 sm:p-8">
+        {/* Headline + exposure badge */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <Skeleton className="h-5 w-56" />
+          <Skeleton className="h-6 w-40 rounded-full" />
         </div>
 
-        {/* Passport card */}
-        <div className="rounded-2xl border border-warm-200 bg-cream-50 p-6 shadow-card sm:p-8">
-          {/* Card header */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-8 w-8 rounded-xl" />
-              <div className="space-y-1.5">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-40" />
-              </div>
+        {/* Identity grid */}
+        <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-1.5">
+              <Skeleton className="h-2.5 w-16" />
+              <Skeleton className="h-5 w-24" />
             </div>
-            <Skeleton className="h-7 w-32 rounded-full" />
-          </div>
+          ))}
+        </div>
 
-          {/* Identity grid */}
-          <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="space-y-1">
-                <Skeleton className="h-2.5 w-16" />
-                <Skeleton className="h-4 w-24" />
+        {/* Measurables — 5 ruled stat lines */}
+        <div className="mt-8">
+          <Skeleton className="mb-3 h-3 w-40" />
+          <Skeleton className="mb-5 h-px w-full" />
+          <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-2.5 w-20" />
+                <Skeleton className="h-9 w-16" />
+                <Skeleton className="h-[1.5px] w-full" />
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Measurables */}
-          <div className="mt-6">
-            <Skeleton className="mb-3 h-4 w-36" />
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 rounded-xl" />
-              ))}
-            </div>
-          </div>
-
-          {/* Performance section */}
-          <div className="mt-7">
-            <div className="mb-3 flex items-center gap-2">
-              <Skeleton className="h-7 w-7 rounded-lg" />
-              <Skeleton className="h-4 w-36" />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 rounded-lg" />
-              ))}
-            </div>
-          </div>
-
-          {/* Development story */}
-          <div className="mt-7">
-            <div className="mb-3 flex items-center gap-2">
-              <Skeleton className="h-7 w-7 rounded-lg" />
-              <Skeleton className="h-4 w-40" />
-            </div>
-            <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 rounded-xl" />
-              ))}
-            </div>
-          </div>
-
-          {/* Completeness meter */}
-          <div className="mt-6">
-            <Skeleton className="mb-3 h-4 w-36" />
-            <Skeleton className="h-2 w-full rounded-full" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 rounded-lg" />
-              ))}
-            </div>
+        {/* Baseball Performance */}
+        <div className="mt-8">
+          <Skeleton className="mb-3 h-3 w-52" />
+          <Skeleton className="mb-5 h-px w-full" />
+          <Skeleton className="h-10 w-56" />
+          <div className="mt-4 grid grid-cols-3 gap-x-6 gap-y-4 sm:grid-cols-4 lg:grid-cols-7">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-2.5 w-10" />
+                <Skeleton className="h-6 w-10" />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Visibility Controls card (coach can edit) */}
-        <div className="mt-8 rounded-2xl border border-warm-200 bg-cream-50 p-6 shadow-card sm:p-8">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-xl" />
-            <div className="space-y-1.5">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-6 w-52" />
-            </div>
+        {/* Development Story */}
+        <div className="mt-8">
+          <Skeleton className="mb-3 h-3 w-44" />
+          <Skeleton className="mb-5 h-px w-full" />
+          <div className="space-y-5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3.5 w-full max-w-sm" />
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
+        </div>
+
+        {/* Media */}
+        <div className="mt-8">
+          <Skeleton className="mb-3 h-3 w-32" />
+          <Skeleton className="mb-5 h-px w-full" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-video w-full rounded-fw-md" />
+            ))}
+          </div>
+        </div>
+
+        {/* Recent activity */}
+        <div className="mt-8">
+          <Skeleton className="h-16 w-full rounded-fw-md" />
+        </div>
+
+        {/* File Readiness */}
+        <div className="mt-8">
+          <Skeleton className="mb-3 h-3 w-32" />
+          <Skeleton className="mb-5 h-px w-full" />
+          <Skeleton className="h-9 w-24" />
+          <div className="mt-5 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-xl" />
+              <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Visibility Controls card (coach can edit) */}
+      <div className="mt-8 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] p-6 sm:p-8">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="mt-2 h-6 w-52" />
+        <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-fw-md" />
+          ))}
         </div>
       </div>
     </div>

@@ -2,55 +2,57 @@
 
 /**
  * ============================================================================
- * RosterFairway — Fairway (warm-premium) presentation of the coach Roster.
- * Phase B leaf migration, Wave 1 · roster frame (PR of 2). Flag-gated behind
- * `isRedesignEnabled()` — see `./RosterClient` for the fork.
+ * RosterFairway — the coach Roster, composed from "The Living Annual" kit
+ * (spec: docs/baseball/design-system-living-annual.md; plan:
+ * docs/baseball/ui-migration-execution-plan.md §3.1 "roster").
  * ----------------------------------------------------------------------------
  * PRESENTATION ONLY. Receives the SAME already-computed state, filtered/sorted
- * data, and handlers that `RosterClient` owns (search/filter/sort state, the
+ * data, and handlers `RosterClient` owns (search/filter/sort state, the
  * `filteredRoster`/`boardMembers`/`rosterStats` memos, and every callback). No
  * data path, action, read-model, or query is touched here.
  *
- * This PR migrates the CHROME (header, KPI scoreboard, search, filters, surface
- * tabs, sort/export toolbar, view toggle) to Fairway primitives and renders the
- * existing content components inside the new frame (cards → `PlayerCard`;
- * position/status/development → the three boards; lineup → `LineupBuilder`) per
- * the migration playbook §3.5 (unmigrated content renders correctly inside the
- * new frame). A follow-up PR migrates the cards table + boards to native
- * Fairway surfaces and re-introduces the compact/expanded density toggle.
+ * Chrome is a `SectionMasthead` + `KPIContentsStrip` "table of contents" +
+ * search/filter row. Search/filter/sort/tab CONTROLS stay Fairway primitives
+ * (`Segmented`/`Select`/`SearchField`) — the Living Annual kit ships editorial
+ * surfaces, not form controls. Every player row — the flat roster wall (the
+ * `cards` surface) and the three triage boards (position/status/development)
+ * — is a `<PlayerRowPlate>`, so the surface never re-implements a row or
+ * invents a bespoke card; columns group into `<PaperCard>`s, the kit's only
+ * card. Degraded stats and every empty state render an `<EditorsLetter>` /
+ * `<EmptyIssue>` — never a yellow/amber box, never a fabricated zero.
  * ========================================================================== */
 
-import * as React from 'react';
+import { useMemo, type ComponentProps } from 'react';
 import { ArrowDown, ArrowUp, Download, UserPlus } from 'lucide-react';
+import { Button as PlainButton } from '@/components/ui/button';
+import { Segmented, Select, SearchField, Button, SkeletonCard } from '@/components/fairway';
 import {
-  ViewHeader,
-  MetricCard,
-  Surface,
-  Segmented,
-  Select,
-  SearchField,
-  Button,
-  EmptyState,
-  InlineNotice,
-  SkeletonCard,
-} from '@/components/fairway';
-import {
-  PlayerCard,
-  PositionBoard,
-  StatusBoard,
-  DevelopmentBoard,
-  type RosterBoardMember,
-  type SortField,
-  type SortDirection,
-} from '@/components/baseball/roster';
+  SectionMasthead,
+  KPIContentsStrip,
+  PlayerRowPlate,
+  PlayerRowPlateHeader,
+  EditorsLetter,
+  EmptyIssue,
+  PaperCard,
+  HairlineRule,
+  Eyebrow,
+  InkBadge,
+  Reveal,
+  formatRate,
+  type PlayerRowStat,
+} from '@/components/baseball/living-annual';
+import { getFreshness, positionGroupOf } from '@/components/baseball/roster/roster-triage';
 import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { InviteModal } from '@/components/coach/InviteModal';
 import type { BaseballPlayerAggregates } from '@/lib/types';
-import type { TeamMember, RosterSurface } from './RosterClient';
+import type { RosterBoardMember } from '@/components/baseball/roster';
+import type { TeamMember, RosterSurface, SortField, SortDirection } from './RosterClient';
 
 // LineupBuilder / InviteModal own their prop types; borrow them so we never
 // depend on non-exported internals and stay in lockstep with those components.
-type LineupProps = React.ComponentProps<typeof LineupBuilder>;
+type LineupProps = ComponentProps<typeof LineupBuilder>;
+
+const EM_DASH = '—';
 
 const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'OF', 'LHP', 'RHP', 'UTL'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
@@ -64,7 +66,7 @@ const STATUS_OPTIONS = [
 ];
 
 const SURFACE_OPTIONS: { value: RosterSurface; label: string }[] = [
-  { value: 'cards', label: 'Cards' },
+  { value: 'cards', label: 'Roster' },
   { value: 'position', label: 'By position' },
   { value: 'status', label: 'By status' },
   { value: 'development', label: 'Development' },
@@ -87,6 +89,200 @@ const VIEW_OPTIONS: { value: 'roster' | 'lineup'; label: string }[] = [
 ];
 
 const ALL = 'all';
+
+// ── Record-book roster wall (the `cards` surface) ───────────────────────────
+
+const WALL_COLUMNS = ['AVG', 'OBP', 'SLG', 'OPS', 'EXIT V', 'SESS'];
+
+function buildWallStats(agg: BaseballPlayerAggregates | undefined, leader: boolean): PlayerRowStat[] {
+  if (!agg) {
+    return [
+      { value: EM_DASH },
+      { value: EM_DASH },
+      { value: EM_DASH },
+      { value: EM_DASH },
+      { value: EM_DASH },
+      { value: 0 },
+    ];
+  }
+  return [
+    { value: agg.career_avg == null ? EM_DASH : formatRate(agg.career_avg, 3) },
+    { value: agg.career_obp == null ? EM_DASH : formatRate(agg.career_obp, 3) },
+    { value: agg.career_slg == null ? EM_DASH : formatRate(agg.career_slg, 3) },
+    { value: agg.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3), leader },
+    { value: agg.avg_exit_velocity ?? EM_DASH, decimals: 1 },
+    { value: agg.total_sessions },
+  ];
+}
+
+function RosterWall({
+  members,
+  aggregates,
+  onSelect,
+}: {
+  members: TeamMember[];
+  aggregates: Record<string, BaseballPlayerAggregates>;
+  onSelect: (playerId: string) => void;
+}) {
+  // The team's OPS leader (min two qualifiers so a lone data point is never
+  // crowned) — renders in lane green, the same "leads the column" treatment
+  // the Stats Center record book uses.
+  const opsLeaderId = useMemo(() => {
+    const qualifiers = members
+      .map((m) => ({ id: m.player.id, ops: aggregates[m.player.id]?.career_ops }))
+      .filter((r): r is { id: string; ops: number } => r.ops != null);
+    if (qualifiers.length < 2) return null;
+    return qualifiers.reduce((best, r) => (r.ops > best.ops ? r : best)).id;
+  }, [members, aggregates]);
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[680px]">
+        <PlayerRowPlateHeader columns={WALL_COLUMNS} />
+        <div className="flex flex-col">
+          {members.map((member, i) => (
+            <Reveal key={member.id} staggerIndex={Math.min(i, 10)}>
+              <PlayerRowPlate
+                firstName={member.player.first_name ?? ''}
+                lastName={member.player.last_name ?? ''}
+                jerseyNumber={member.jersey_number ?? undefined}
+                position={member.player.primary_position ?? undefined}
+                stats={buildWallStats(aggregates[member.player.id], member.player.id === opsLeaderId)}
+                onClick={() => onSelect(member.player.id)}
+              />
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Triage boards (position / status / development) ─────────────────────────
+
+const POSITION_BOARD_COLUMNS: { key: string; label: string }[] = [
+  { key: 'pitchers', label: 'Pitchers' },
+  { key: 'catchers', label: 'Catchers' },
+  { key: 'infield', label: 'Infield' },
+  { key: 'outfield', label: 'Outfield' },
+  { key: 'unassigned', label: 'Unassigned' },
+];
+
+const STATUS_BOARD_COLUMNS: { key: string; label: string }[] = [
+  { key: 'active', label: 'Active' },
+  { key: 'injured', label: 'Injured / Limited' },
+  { key: 'pending', label: 'Awaiting Join' },
+  { key: 'inactive', label: 'Inactive' },
+  { key: 'alumni', label: 'Alumni' },
+];
+
+const DEV_BOARD_COLUMNS: { key: string; label: string }[] = [
+  { key: 'improving', label: 'Improving' },
+  { key: 'stable', label: 'Holding Steady' },
+  { key: 'declining', label: 'Needs Focus' },
+  { key: 'no-data', label: 'Needs Data' },
+];
+
+function groupByPosition(members: RosterBoardMember[]): Record<string, RosterBoardMember[]> {
+  const groups: Record<string, RosterBoardMember[]> = {};
+  for (const c of POSITION_BOARD_COLUMNS) groups[c.key] = [];
+  for (const m of members) {
+    const grp = positionGroupOf(m.primaryPosition);
+    groups[grp ?? 'unassigned']!.push(m);
+  }
+  return groups;
+}
+
+function groupByStatus(members: RosterBoardMember[]): Record<string, RosterBoardMember[]> {
+  const known = new Set(STATUS_BOARD_COLUMNS.map((c) => c.key));
+  const groups: Record<string, RosterBoardMember[]> = {};
+  for (const c of STATUS_BOARD_COLUMNS) groups[c.key] = [];
+  for (const m of members) {
+    const key = m.status && known.has(m.status) ? m.status : 'inactive';
+    groups[key]!.push(m);
+  }
+  return groups;
+}
+
+function groupByDevelopment(members: RosterBoardMember[]): Record<string, RosterBoardMember[]> {
+  const groups: Record<string, RosterBoardMember[]> = {};
+  for (const c of DEV_BOARD_COLUMNS) groups[c.key] = [];
+  for (const m of members) {
+    const hasData = (m.aggregates?.total_sessions ?? 0) > 0;
+    const trend = m.aggregates?.recent_trend ?? null;
+    const key = !hasData || trend == null ? 'no-data' : (groups[trend] ? trend : 'no-data');
+    groups[key]!.push(m);
+  }
+  return groups;
+}
+
+/** A triage row's two-figure read: production (OPS) + last-touch freshness. */
+function boardRowStats(member: RosterBoardMember): PlayerRowStat[] {
+  const agg = member.aggregates;
+  const fresh = getFreshness(agg);
+  return [
+    { value: agg?.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3) },
+    { value: fresh.label, leader: fresh.level === 'fresh' },
+  ];
+}
+
+function TriageColumn({
+  label,
+  members,
+  onSelect,
+}: {
+  label: string;
+  members: RosterBoardMember[];
+  onSelect: (playerId: string) => void;
+}) {
+  return (
+    <PaperCard className="flex flex-col p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <Eyebrow ink="team">{label}</Eyebrow>
+        <InkBadge label={String(members.length)} tone="neutral" />
+      </div>
+      <HairlineRule ink="hairline" className="mb-2" />
+      {members.length === 0 ? (
+        <p className="py-6 text-center font-annual text-body-sm text-text-tertiary">No players</p>
+      ) : (
+        <div className="flex flex-col">
+          {members.map((m, i) => (
+            <Reveal key={m.memberId} staggerIndex={Math.min(i, 10)}>
+              <PlayerRowPlate
+                firstName={m.firstName ?? ''}
+                lastName={m.lastName ?? ''}
+                jerseyNumber={m.jerseyNumber ?? undefined}
+                position={m.primaryPosition ?? undefined}
+                stats={boardRowStats(m)}
+                onClick={() => onSelect(m.playerId)}
+              />
+            </Reveal>
+          ))}
+        </div>
+      )}
+    </PaperCard>
+  );
+}
+
+function TriageBoard({
+  columns,
+  groups,
+  onSelect,
+}: {
+  columns: { key: string; label: string }[];
+  groups: Record<string, RosterBoardMember[]>;
+  onSelect: (playerId: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {columns.map((c) => (
+        <TriageColumn key={c.key} label={c.label} members={groups[c.key] ?? []} onSelect={onSelect} />
+      ))}
+    </div>
+  );
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────
 
 export interface RosterFairwayProps {
   teamName: string;
@@ -180,40 +376,40 @@ export function RosterFairway(props: RosterFairwayProps) {
   const isFiltered = activeFilterCount > 0 || searchQuery.trim().length > 0;
   const showClear = isFiltered;
 
+  const positionGroups = useMemo(() => groupByPosition(boardMembers), [boardMembers]);
+  const statusGroups = useMemo(() => groupByStatus(boardMembers), [boardMembers]);
+  const developmentGroups = useMemo(() => groupByDevelopment(boardMembers), [boardMembers]);
+
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
-      <ViewHeader
+      <SectionMasthead
         eyebrow={teamName}
         title="Roster"
-        description={`${stats.total} ${stats.total === 1 ? 'player' : 'players'}${
-          stats.active !== stats.total ? ` · ${stats.active} active` : ''
-        }`}
-        primaryAction={
+        ink="team"
+        actions={
           <Button variant="primary" size="sm" leftIcon={<UserPlus className="h-4 w-4" />} onClick={onInvite}>
             Invite players
           </Button>
         }
-      />
-
-      <div className="mt-6">
-        <Segmented<'roster' | 'lineup'>
-          size="sm"
-          aria-label="Roster or lineup"
-          value={activeView}
-          onValueChange={onActiveViewChange}
-          options={VIEW_OPTIONS}
-        />
-      </div>
+      >
+        <div className="mt-1">
+          <Segmented<'roster' | 'lineup'>
+            size="sm"
+            aria-label="Roster or lineup"
+            value={activeView}
+            onValueChange={onActiveViewChange}
+            options={VIEW_OPTIONS}
+          />
+        </div>
+      </SectionMasthead>
 
       {aggregatesWarning && (
-        <InlineNotice
-          tone="warning"
-          title="Stats temporarily unavailable"
+        <EditorsLetter
+          ink="team"
+          title="Signals are catching up."
+          body="Player bios loaded, but career stats couldn't be fetched — names, positions, and status still search and sort correctly."
           className="mt-4"
-        >
-          Player bios loaded, but career stats could not be fetched. Filters and
-          sorting on stat fields may be incomplete.
-        </InlineNotice>
+        />
       )}
 
       {activeView === 'lineup' ? (
@@ -223,22 +419,20 @@ export function RosterFairway(props: RosterFairwayProps) {
       ) : (
         <>
           {/* KPI scoreboard */}
-          <section
-            className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4"
-            aria-label="Roster summary"
-          >
-            <MetricCard label="Players" value={stats.total} footnote="on roster" />
-            <MetricCard label="Active" value={stats.active} footnote="available" />
-            <MetricCard label="Positions" value={stats.positions} footnote="represented" />
-            <MetricCard
-              label="With stats"
-              value={stats.withStats}
-              footnote={`of ${stats.total}`}
+          <section className="mt-6" aria-label="Roster summary">
+            <KPIContentsStrip
+              columns={4}
+              items={[
+                { label: 'Players', value: stats.total },
+                { label: 'Active', value: stats.active },
+                { label: 'Positions', value: stats.positions },
+                { label: 'With stats', value: stats.withStats },
+              ]}
             />
           </section>
 
           {/* Search + filters */}
-          <Surface elevation="border" padding="md" className="mt-6">
+          <PaperCard className="mt-6 p-5">
             <div className="flex flex-col gap-3">
               <div className="max-w-md">
                 <SearchField
@@ -291,7 +485,7 @@ export function RosterFairway(props: RosterFairwayProps) {
                 )}
               </div>
             </div>
-          </Surface>
+          </PaperCard>
 
           {/* Surface tabs + sort / export toolbar */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -341,7 +535,7 @@ export function RosterFairway(props: RosterFairwayProps) {
           </div>
 
           {/* Content */}
-          <div className="mt-4">
+          <div className="mt-6">
             {loading ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -349,48 +543,40 @@ export function RosterFairway(props: RosterFairwayProps) {
                 ))}
               </div>
             ) : isEmpty ? (
-              <EmptyState
-                title={isFiltered ? 'No players match your filters' : 'No players yet'}
-                description={
-                  isFiltered
-                    ? `No players on ${teamName} match the current search and filters.`
-                    : `Build your roster on ${teamName} by inviting players to join.`
-                }
-                action={
-                  isFiltered ? (
-                    <Button variant="secondary" size="sm" onClick={onClearFilters}>
+              isFiltered ? (
+                <EditorsLetter
+                  ink="team"
+                  title="No players match your filters."
+                  body={`No players on ${teamName} match the current search and filters.`}
+                  action={
+                    <PlainButton variant="secondary" size="md" onClick={onClearFilters}>
                       Clear filters
-                    </Button>
-                  ) : (
-                    <Button
+                    </PlainButton>
+                  }
+                />
+              ) : (
+                <EmptyIssue
+                  variant="roster"
+                  action={
+                    <PlainButton
                       variant="primary"
-                      size="sm"
+                      size="md"
                       leftIcon={<UserPlus className="h-4 w-4" />}
                       onClick={onInvite}
                     >
                       Invite players
-                    </Button>
-                  )
-                }
-              />
+                    </PlainButton>
+                  }
+                />
+              )
             ) : rosterSurface === 'cards' ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {members.map((member) => (
-                  <PlayerCard
-                    key={member.id}
-                    player={member.player}
-                    jerseyNumber={member.jersey_number}
-                    status={member.status}
-                    aggregates={aggregates[member.player.id]}
-                  />
-                ))}
-              </div>
+              <RosterWall members={members} aggregates={aggregates} onSelect={onSelectPlayer} />
             ) : rosterSurface === 'position' ? (
-              <PositionBoard members={boardMembers} onSelect={onSelectPlayer} />
+              <TriageBoard columns={POSITION_BOARD_COLUMNS} groups={positionGroups} onSelect={onSelectPlayer} />
             ) : rosterSurface === 'status' ? (
-              <StatusBoard members={boardMembers} onSelect={onSelectPlayer} />
+              <TriageBoard columns={STATUS_BOARD_COLUMNS} groups={statusGroups} onSelect={onSelectPlayer} />
             ) : (
-              <DevelopmentBoard members={boardMembers} onSelect={onSelectPlayer} />
+              <TriageBoard columns={DEV_BOARD_COLUMNS} groups={developmentGroups} onSelect={onSelectPlayer} />
             )}
           </div>
         </>

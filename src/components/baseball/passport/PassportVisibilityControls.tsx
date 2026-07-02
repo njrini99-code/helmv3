@@ -38,7 +38,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 
-import { Card } from '@/components/ui/card';
+import { PaperCard } from '@/components/baseball/living-annual';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/sonner';
@@ -317,7 +317,7 @@ export function PassportVisibilityControls({
   }, []);
 
   return (
-    <Card variant="raised" padding="lg">
+    <PaperCard className="p-8">
       {/* Header */}
       <div className="flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
@@ -461,6 +461,6 @@ export function PassportVisibilityControls({
           </Button>
         </div>
       )}
-    </Card>
+    </PaperCard>
   );
 }

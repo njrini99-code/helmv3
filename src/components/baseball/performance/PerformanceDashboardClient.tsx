@@ -3,11 +3,15 @@
 // =============================================================================
 // src/components/baseball/performance/PerformanceDashboardClient.tsx
 //
-// Wave 9 / performance-lifting packet (P9.2).
+// Wave 9 / performance-lifting packet (P9.2). Re-skinned onto "The Living
+// Annual" kit (spec: docs/baseball/design-system-living-annual.md; task
+// P4.14.b). PRESENTATION ONLY — the exact same props the page assembles
+// server-side, no data path, server action, or write path is touched here.
 //
 // Strength-coach Performance dashboard. Capability-gated TABS:
 //   * Readiness  — soreness / energy / sleep / arm board (canViewReadiness)
-//   * Assignments — prescribe + track lifts (canManageLifting)
+//   * Assignments — prescribe + track lifts, plus a `<ClimbArc>` load trend
+//     for the most-tracked lift (canManageLifting)
 //   * Library    — team + global exercise library (canManageLifting)
 //
 // Server actions (lifting.ts) enforce capability + RLS again on every write;
@@ -16,27 +20,16 @@
 // =============================================================================
 
 import { useMemo, useState, useTransition } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  IconDumbbell,
-  IconHeart,
-  IconActivity,
-  IconPlus,
-  IconClipboardList,
-  IconAlertCircle,
-  IconCheckCircle2,
-} from '@/components/icons';
-import { getFullName } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { IconPlus, IconAlertCircle, IconCheckCircle2 } from '@/components/icons';
+import { cn, getFullName } from '@/lib/utils';
 import {
   createLiftAssignment,
   updateAssignmentStatus,
@@ -54,7 +47,22 @@ import type {
   BaseballLiftBodyRegion,
   BaseballStrengthGroupRow,
 } from '@/lib/types/baseball-lifting-v11';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  PaperCard,
+  SectionMasthead,
+  Eyebrow,
+  HairlineRule,
+  EditorsLetter,
+  InkBadge,
+  KPIContentsStrip,
+  Reveal,
+  StatReadout,
+  ClimbArc,
+  pressableClass,
+  type KPIContentsItem,
+  type InkBadgeProps,
+  type ClimbPoint,
+} from '@/components/baseball/living-annual';
 
 interface RosterPlayer {
   id: string;
@@ -114,36 +122,82 @@ const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXERCISE_CATEGORIES.map((c) => [c.value, c.label]),
 );
 
-// Soreness/energy are 1..5. Higher soreness = more concern; higher energy = good.
-const sorenessTone = (level: number | null): string => {
-  if (level == null) return 'bg-warm-100 text-warm-600';
-  if (level >= 4) return 'bg-red-100 text-red-700';
-  if (level === 3) return 'bg-amber-100 text-amber-700';
-  return 'bg-primary-100 text-primary-700';
+// Ink follows the two-ink law (spec §4.2): urgency reads as CLAY, never a red
+// badge or a yellow/amber box. Soreness/energy are 1..5. Higher soreness = more
+// concern; higher energy = good.
+const sorenessInk = (level: number | null): NonNullable<InkBadgeProps['tone']> => {
+  if (level == null) return 'neutral';
+  if (level >= 4) return 'pursuit';
+  if (level === 3) return 'neutral';
+  return 'team';
 };
 
-const armTone = (status: string | null): string => {
+const armInk = (status: string | null): NonNullable<InkBadgeProps['tone']> => {
   switch (status) {
     case 'pain':
-      return 'bg-red-100 text-red-700';
+      return 'pursuit';
     case 'sore':
     case 'tight':
-      return 'bg-amber-100 text-amber-700';
+      return 'neutral';
     case 'fresh':
     case 'normal':
-      return 'bg-primary-100 text-primary-700';
+      return 'team';
     default:
-      return 'bg-warm-100 text-warm-600';
+      return 'neutral';
   }
 };
 
-const statusTone: Record<BaseballLiftAssignmentStatus, string> = {
-  assigned: 'bg-warm-100 text-warm-700',
-  in_progress: 'bg-warm-100 text-warm-700',
-  completed: 'bg-primary-100 text-primary-700',
-  skipped: 'bg-amber-100 text-amber-700',
-  archived: 'bg-warm-100 text-warm-500',
+const ASSIGNMENT_INK: Record<BaseballLiftAssignmentStatus, NonNullable<InkBadgeProps['tone']>> = {
+  assigned: 'neutral',
+  in_progress: 'neutral',
+  completed: 'team',
+  skipped: 'pursuit',
+  archived: 'neutral',
 };
+
+/**
+ * SectionCard — the one card chrome every panel below composes from: a
+ * `<PaperCard>` with an `<Eyebrow>` + Space Grotesk title + optional
+ * description, sitting on a lane-ink `<HairlineRule>`. Keeps every list/form
+ * panel on identical bones so the surface reads as one issue, not a stitched-
+ * together CRM.
+ */
+function SectionCard({
+  eyebrow,
+  title,
+  description,
+  trailing,
+  ink = 'team',
+  children,
+}: {
+  eyebrow?: string;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  trailing?: React.ReactNode;
+  ink?: 'team' | 'pursuit';
+  children: React.ReactNode;
+}) {
+  return (
+    <PaperCard className="p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          {eyebrow ? <Eyebrow ink={ink}>{eyebrow}</Eyebrow> : null}
+          <h2 className="mt-1 flex items-baseline font-annual text-h2 font-semibold text-text-primary">
+            {title}
+          </h2>
+          {description ? (
+            <p className="mt-1 max-w-prose font-annual text-body-sm text-text-secondary">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {trailing}
+      </div>
+      <HairlineRule ink={ink} className="my-4" />
+      {children}
+    </PaperCard>
+  );
+}
 
 export function PerformanceDashboardClient({
   teamId,
@@ -171,7 +225,6 @@ export function PerformanceDashboardClient({
 
   const defaultTab = showReadinessTab ? 'readiness' : 'assignments';
   const [tab, setTab] = useState(defaultTab);
-  const prefersReducedMotion = useReducedMotion();
 
   // --- Assignment form state ---
   /** 'player' or 'group' — controls which target field is shown. */
@@ -223,6 +276,48 @@ export function PerformanceDashboardClient({
     const today = new Date().toISOString().slice(0, 10);
     return readiness.filter((r) => r.latest_checkin?.check_date === today).length;
   }, [readiness]);
+
+  // The "Lift Trend" ClimbArc (PR/lift trends → ClimbArc + StatReadout). Reads
+  // the SAME `assignments` prop already on the surface — no new data path —
+  // and draws the weight-load climb for whichever completed, weighted lift has
+  // the deepest history. Fewer than 2 usable points → ClimbArc's own honest
+  // "not enough data yet" letter; never a fabricated curve.
+  const liftTrend = useMemo((): { label: string; points: ClimbPoint[] } | null => {
+    const withWeight = assignments.filter((a) => {
+      const p = (a.prescription ?? {}) as BaseballLiftPrescription;
+      return a.status === 'completed' && typeof p.weight === 'number';
+    });
+    if (withWeight.length < 2) return null;
+
+    const byKey = new Map<string, typeof withWeight>();
+    for (const a of withWeight) {
+      const key = a.exercise_id ?? a.title ?? 'lift';
+      const arr = byKey.get(key);
+      if (arr) arr.push(a);
+      else byKey.set(key, [a]);
+    }
+
+    let bestKey: string | null = null;
+    let bestArr: typeof withWeight = [];
+    for (const [key, arr] of byKey) {
+      if (arr.length > bestArr.length) {
+        bestKey = key;
+        bestArr = arr;
+      }
+    }
+    if (!bestKey || bestArr.length < 2) return null;
+
+    const sorted = [...bestArr].sort((a, b) =>
+      (a.due_date ?? a.created_at).localeCompare(b.due_date ?? b.created_at),
+    );
+    const label =
+      exerciseNameById.get(bestKey) ?? sorted[0]?.title ?? 'Lift';
+    const points: ClimbPoint[] = sorted.map((a) => ({
+      value: ((a.prescription ?? {}) as BaseballLiftPrescription).weight as number,
+      label: (a.due_date ?? a.created_at).slice(0, 10),
+    }));
+    return { label, points };
+  }, [assignments, exerciseNameById]);
 
   function flashNotice(msg: string) {
     setNotice(msg);
@@ -412,7 +507,7 @@ export function PerformanceDashboardClient({
 
   if (isLoading) {
     return (
-      <div className="p-4 lg:p-8 space-y-6" aria-busy="true" aria-label="Loading performance dashboard…">
+      <div className={embedded ? 'space-y-6' : 'p-4 lg:p-8 space-y-6'} aria-busy="true" aria-label="Loading performance dashboard…">
         {/* Header skeleton */}
         <div className="space-y-2">
           <Skeleton className="h-3 w-32" />
@@ -422,14 +517,12 @@ export function PerformanceDashboardClient({
         {/* KPI strip skeleton */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="glass-standard border border-white/20 rounded-2xl shadow-glass p-4 space-y-2"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-7 w-12" />
-            </div>
+            <PaperCard key={i} grain={false} className="p-4">
+              <div className="space-y-2" style={{ animationDelay: `${i * 60}ms` }}>
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-7 w-12" />
+              </div>
+            </PaperCard>
           ))}
         </div>
         {/* Tabs skeleton */}
@@ -439,7 +532,7 @@ export function PerformanceDashboardClient({
               <Skeleton key={i} className="h-9 w-24 rounded-full" />
             ))}
           </div>
-          <div className="glass-standard border border-white/20 rounded-2xl shadow-glass p-6 space-y-4">
+          <PaperCard grain={false} className="p-6 space-y-4">
             <Skeleton className="h-5 w-32" />
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3" style={{ animationDelay: `${i * 50}ms` }}>
@@ -451,632 +544,508 @@ export function PerformanceDashboardClient({
                 <Skeleton className="h-6 w-16 rounded-full" />
               </div>
             ))}
-          </div>
+          </PaperCard>
         </div>
       </div>
     );
   }
 
+  // Table-of-contents KPIs — the exact same counts the old summary grid showed,
+  // now on green-ruled `<RuledStatLine>`s instead of four white cards.
+  const kpis: KPIContentsItem[] = [
+    { label: 'Roster', value: roster.length },
+    { label: 'Active Assignments', value: assignments.filter((a) => a.status !== 'archived').length },
+  ];
+  if (canViewReadiness) {
+    kpis.push({ label: 'Checked In Today', value: reportedToday });
+    kpis.push({ label: 'Needs Attention', value: concernCount });
+  }
+
   return (
-    <motion.div
-      className={embedded ? 'space-y-6' : 'p-4 lg:p-8 space-y-6'}
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-    >
-        {/* Header */}
-        {embedded ? (
-          <div className="border-t border-warm-100 pt-8">
-            <p className="text-eyebrow uppercase text-primary-700">Prescribe &amp; library</p>
-            <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-warm-900">
-              Assignments &amp; exercise library
-            </h2>
-            <p className="mt-1 text-sm text-warm-500">
+    <div className={embedded ? 'space-y-6' : 'p-4 lg:p-8 space-y-6'}>
+      {/* Header */}
+      {embedded ? (
+        <div>
+          <HairlineRule ink="hairline" className="mb-8" />
+          <SectionMasthead
+            eyebrow="Prescribe & library"
+            title="Assignments &amp; exercise library"
+          >
+            <p className="font-annual text-body-sm text-text-secondary">
               Prescribe lifts and keep your team&apos;s exercise library in one place.
             </p>
-          </div>
-        ) : (
-          <div>
-            <p className="text-eyebrow uppercase text-primary-700">Strength &amp; conditioning</p>
-            <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Performance</h1>
-            <p className="mt-1 text-sm text-warm-500">
-              Track readiness, prescribe lifts, and keep your exercise library in one place.
-            </p>
-          </div>
-        )}
-
-        {/* Notices */}
-        {error && (
-          <div
-            role="alert"
-            className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            <IconAlertCircle size={16} className="shrink-0" />
-            <span className="flex-1">{error}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setError(null)}
-              className="font-medium text-red-700 hover:text-red-800"
-            >
-              Dismiss
-            </Button>
-          </div>
-        )}
-        {notice && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700"
-          >
-            <IconCheckCircle2 size={16} className="shrink-0" />
-            <span>{notice}</span>
-          </div>
-        )}
-
-        {/* Summary — hidden when embedded (Command Center owns the KPI strip). */}
-        {!embedded && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-          <SummaryCard
-            icon={<IconActivity size={20} className="text-primary-600" />}
-            tint="bg-primary-100"
-            label="Roster"
-            value={roster.length}
-          />
-          <SummaryCard
-            icon={<IconClipboardList size={20} className="text-warm-600" />}
-            tint="bg-warm-100"
-            label="Active Assignments"
-            value={assignments.filter((a) => a.status !== 'archived').length}
-          />
-          {canViewReadiness && (
-            <>
-              <SummaryCard
-                icon={<IconHeart size={20} className="text-warm-600" />}
-                tint="bg-warm-100"
-                label="Checked In Today"
-                value={reportedToday}
-              />
-              <SummaryCard
-                icon={<IconAlertCircle size={20} className="text-amber-600" />}
-                tint="bg-amber-100"
-                label="Needs Attention"
-                value={concernCount}
-              />
-            </>
-          )}
+          </SectionMasthead>
         </div>
-        )}
+      ) : (
+        <SectionMasthead eyebrow="Strength &amp; conditioning" title="Performance">
+          <p className="font-annual text-body-sm text-text-secondary">
+            Track readiness, prescribe lifts, and keep your exercise library in one place.
+          </p>
+        </SectionMasthead>
+      )}
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            {showReadinessTab && (
-              <TabsTrigger value="readiness">Readiness</TabsTrigger>
+      {/* Notices — an editor's-desk letter voice, never a red/amber toast box. */}
+      {error && (
+        <PaperCard grain={false} className="flex items-center gap-3 px-4 py-3">
+          <IconAlertCircle size={16} className="shrink-0 text-pursuit" aria-hidden />
+          <p role="alert" className="flex-1 font-annual text-body-sm text-text-primary">
+            {error}
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            haptic="none"
+            onClick={() => setError(null)}
+            className={cn(
+              'h-auto min-h-0 shrink-0 rounded-fw-sm px-2 py-1 text-eyebrow font-semibold uppercase tracking-[0.14em] text-pursuit hover:text-pursuit',
+              pressableClass({ ink: 'pursuit', tint: false }),
             )}
-            {canManageLifting && (
-              <TabsTrigger value="assignments">Assignments</TabsTrigger>
-            )}
-            {canManageLifting && (
-              <TabsTrigger value="library">Library</TabsTrigger>
-            )}
-          </TabsList>
+          >
+            Dismiss
+          </Button>
+        </PaperCard>
+      )}
+      {notice && (
+        <PaperCard grain={false} className="flex items-center gap-3 px-4 py-3">
+          <IconCheckCircle2 size={16} className="shrink-0 text-grade-plus" aria-hidden />
+          <p role="status" aria-live="polite" className="font-annual text-body-sm text-text-primary">
+            {notice}
+          </p>
+        </PaperCard>
+      )}
 
-          {/* ---------------------------------------------------------------- */}
-          {/* READINESS                                                         */}
-          {/* ---------------------------------------------------------------- */}
+      {/* Contents strip — hidden when embedded (Command Center owns the KPIs). */}
+      {!embedded && <KPIContentsStrip items={kpis} columns={kpis.length} />}
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
           {showReadinessTab && (
-            <TabsContent value="readiness">
-              <AnimatePresence mode="wait">
-                {tab === 'readiness' && (
-                  <motion.div
-                    key="readiness"
-                    initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                  >
-              <Card variant="glass">
-                <CardHeader>
-                  <h2 className="font-semibold text-warm-900">Daily Readiness</h2>
-                  <p className="text-sm text-warm-500">
-                    Player-reported wellness from the last 7 days. This is not a
-                    medical assessment.
-                  </p>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {readiness.length === 0 ? (
-                    <div className="p-6">
-                      <EmptyState
-                        icon={<IconHeart size={24} />}
-                        title="No check-ins yet"
-                        description="Players' daily readiness check-ins will show up here once they start reporting."
-                      />
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-warm-200">
-                      {readiness.map((r) => {
-                        const c = r.latest_checkin;
-                        return (
-                          <div
-                            key={r.player_id}
-                            className="flex items-center gap-3 px-4 py-3 lg:px-6"
-                          >
+            <TabsTrigger value="readiness">Readiness</TabsTrigger>
+          )}
+          {canManageLifting && (
+            <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          )}
+          {canManageLifting && (
+            <TabsTrigger value="library">Library</TabsTrigger>
+          )}
+        </TabsList>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* READINESS                                                         */}
+        {/* ---------------------------------------------------------------- */}
+        {showReadinessTab && (
+          <TabsContent value="readiness">
+            <Reveal>
+              <SectionCard
+                eyebrow="This week"
+                title="Daily Readiness"
+                description="Player-reported wellness from the last 7 days. This is not a medical assessment."
+              >
+                {readiness.length === 0 ? (
+                  <EditorsLetter
+                    live
+                    title="No check-ins yet."
+                    body="Players' daily readiness check-ins will show up here once they start reporting."
+                  />
+                ) : (
+                  <div>
+                    {readiness.map((r, i) => {
+                      const c = r.latest_checkin;
+                      const concern =
+                        (c?.soreness_level ?? 0) >= 4 || c?.arm_status === 'pain';
+                      const rowInk = concern ? 'pursuit' : 'team';
+                      return (
+                        <Reveal key={r.player_id} staggerIndex={Math.min(i, 10)}>
+                          <div className="flex flex-wrap items-center gap-3 py-3.5">
                             <Avatar
                               name={getFullName(r.first_name, r.last_name)}
                               src={r.avatar_url || undefined}
                               size="sm"
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="truncate font-medium text-warm-900">
+                              <p className="truncate font-annual text-body-lg text-text-primary">
                                 {getFullName(r.first_name, r.last_name)}
                               </p>
-                              <p className="text-sm text-warm-500">
-                                {c
-                                  ? `Reported ${c.check_date}`
-                                  : 'No recent check-in'}
+                              <p className="font-annual text-body-sm text-text-tertiary">
+                                {c ? `Reported ${c.check_date}` : 'No recent check-in'}
                               </p>
                             </div>
                             <div className="flex flex-wrap items-center justify-end gap-2">
                               {c ? (
                                 <>
-                                  <Badge className={sorenessTone(c.soreness_level)}>
-                                    Soreness {c.soreness_level ?? '—'}/5
-                                  </Badge>
-                                  <Badge className="bg-warm-100 text-warm-700">
-                                    Energy {c.energy_level ?? '—'}/5
-                                  </Badge>
+                                  <InkBadge
+                                    label={`Soreness ${c.soreness_level ?? '—'}/5`}
+                                    tone={sorenessInk(c.soreness_level)}
+                                  />
+                                  <InkBadge label={`Energy ${c.energy_level ?? '—'}/5`} tone="neutral" />
                                   {c.arm_status && (
-                                    <Badge className={armTone(c.arm_status)}>
-                                      Arm: {c.arm_status}
-                                    </Badge>
+                                    <InkBadge label={`Arm: ${c.arm_status}`} tone={armInk(c.arm_status)} />
                                   )}
                                   {c.sleep_hours != null && (
-                                    <Badge className="bg-warm-100 text-warm-700">
-                                      {c.sleep_hours}h sleep
-                                    </Badge>
+                                    <InkBadge label={`${c.sleep_hours}h sleep`} tone="neutral" />
                                   )}
                                 </>
                               ) : (
-                                <Badge className="bg-warm-100 text-warm-500">
-                                  Awaiting
-                                </Badge>
+                                <InkBadge label="Awaiting" tone="neutral" />
                               )}
                             </div>
                           </div>
-                        );
-                      })}
+                          <HairlineRule ink={rowInk} />
+                        </Reveal>
+                      );
+                    })}
+                  </div>
+                )}
+              </SectionCard>
+            </Reveal>
+          </TabsContent>
+        )}
+
+        {/* ---------------------------------------------------------------- */}
+        {/* ASSIGNMENTS                                                       */}
+        {/* ---------------------------------------------------------------- */}
+        {canManageLifting && (
+          <TabsContent value="assignments">
+            <Reveal className="space-y-6">
+              {/* Create */}
+              <SectionCard eyebrow="Prescribe" title="Assign a Lift">
+                <div className="space-y-3">
+                  {/* Target mode toggle — only show if groups are available */}
+                  {groups && groups.length > 0 && (
+                    <div
+                      className="inline-flex w-fit gap-1 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1"
+                      role="group"
+                      aria-label="Assign to"
+                    >
+                      {(['player', 'group'] as const).map((mode) => (
+                        <Button
+                          key={mode}
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          haptic="none"
+                          onClick={() => setAssignMode(mode)}
+                          aria-pressed={assignMode === mode}
+                          className={cn(
+                            'h-auto min-h-0 rounded-fw-sm px-3 py-1.5 font-annual text-body-sm font-medium capitalize',
+                            pressableClass({ ink: 'team', tint: assignMode !== mode }),
+                            assignMode === mode
+                              ? 'bg-grade-plus text-white hover:bg-grade-plus'
+                              : 'text-text-secondary',
+                          )}
+                        >
+                          {mode}
+                        </Button>
+                      ))}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </TabsContent>
-          )}
-
-          {/* ---------------------------------------------------------------- */}
-          {/* ASSIGNMENTS                                                       */}
-          {/* ---------------------------------------------------------------- */}
-          {canManageLifting && (
-            <TabsContent value="assignments">
-              <AnimatePresence mode="wait">
-                {tab === 'assignments' && (
-                  <motion.div
-                    key="assignments"
-                    initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                  >
-              <div className="space-y-6">
-                {/* Create */}
-                <Card variant="glass">
-                  <CardHeader>
-                    <h2 className="font-semibold text-warm-900">Assign a Lift</h2>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* Target mode toggle — only show if groups are available */}
-                    {groups && groups.length > 0 && (
-                      <div className="flex gap-1 rounded-xl bg-warm-50 p-1 w-fit" role="group" aria-label="Assign to">
-                        <Button
-                          variant="ghost"
-                          onClick={() => setAssignMode('player')}
-                          aria-pressed={assignMode === 'player'}
-                          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
-                            assignMode === 'player'
-                              ? 'bg-cream-50 text-warm-900 shadow-sm'
-                              : 'text-warm-500 hover:text-warm-700'
-                          }`}
-                        >
-                          Player
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setAssignMode('group')}
-                          aria-pressed={assignMode === 'group'}
-                          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
-                            assignMode === 'group'
-                              ? 'bg-cream-50 text-warm-900 shadow-sm'
-                              : 'text-warm-500 hover:text-warm-700'
-                          }`}
-                        >
-                          Group
-                        </Button>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                      {assignMode === 'player' ? (
-                        <Select
-                          value={assignPlayerId}
-                          onChange={setAssignPlayerId}
-                          options={[
-                            { value: '', label: 'Select player…' },
-                            ...roster.map((p) => ({
-                              value: p.id,
-                              label: getFullName(p.first_name, p.last_name),
-                            })),
-                          ]}
-                        />
-                      ) : (
-                        <fieldset className="rounded-xl border border-warm-200 glass-standard px-3 py-2 space-y-1.5">
-                          <legend className="px-1 text-xs font-medium text-warm-500">Groups</legend>
-                          {(groups ?? []).map((g) => (
-                            <label
-                              key={g.id}
-                              className="flex items-center gap-2.5 cursor-pointer group"
-                            >
-                              <Input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500/40"
-                                checked={assignGroupIds.includes(g.id)}
-                                onChange={(e) =>
-                                  setAssignGroupIds((prev) =>
-                                    e.target.checked
-                                      ? [...prev, g.id]
-                                      : prev.filter((id) => id !== g.id),
-                                  )
-                                }
-                              />
-                              <span className="text-sm text-warm-800 group-hover:text-warm-900">{g.name}</span>
-                            </label>
-                          ))}
-                          {(groups ?? []).length === 0 && (
-                            <p className="text-xs text-warm-400 py-1">No groups yet.</p>
-                          )}
-                        </fieldset>
-                      )}
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    {assignMode === 'player' ? (
                       <Select
-                        value={assignExerciseId}
-                        onChange={setAssignExerciseId}
+                        value={assignPlayerId}
+                        onChange={setAssignPlayerId}
                         options={[
-                          { value: '', label: 'Select exercise (optional)…' },
-                          ...exercises.map((e) => ({
-                            value: e.id,
-                            label: e.name,
+                          { value: '', label: 'Select player…' },
+                          ...roster.map((p) => ({
+                            value: p.id,
+                            label: getFullName(p.first_name, p.last_name),
                           })),
                         ]}
                       />
-                      <Input
-                        placeholder="Title (e.g. Lower body day)"
-                        value={assignTitle}
-                        onChange={(e) => setAssignTitle(e.target.value)}
-                      />
-                      <Input
-                        type="date"
-                        value={assignDueDate}
-                        onChange={(e) => setAssignDueDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Sets"
-                        value={assignSets}
-                        onChange={(e) => setAssignSets(e.target.value)}
-                      />
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Reps"
-                        value={assignReps}
-                        onChange={(e) => setAssignReps(e.target.value)}
-                      />
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Weight (lb)"
-                        value={assignWeight}
-                        onChange={(e) => setAssignWeight(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleCreateAssignment}
-                      isLoading={isPending}
-                      leftIcon={<IconPlus size={16} />}
-                    >
-                      Assign Lift
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* List */}
-                <Card variant="glass">
-                  <CardHeader>
-                    <h2 className="font-semibold text-warm-900">
-                      Recent Assignments
-                    </h2>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {assignments.length === 0 ? (
-                      <div className="p-6">
-                        <EmptyState
-                          icon={<IconClipboardList size={24} />}
-                          title="No assignments yet"
-                          description="Prescribe a lift above and it will show up here for your players."
-                        />
-                      </div>
                     ) : (
-                      <div className="divide-y divide-warm-200">
-                        {assignments.map((a) => {
+                      <fieldset className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-2 space-y-1.5">
+                        <legend className="px-1 font-annual text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                          Groups
+                        </legend>
+                        {(groups ?? []).map((g) => (
+                          <label key={g.id} className="flex items-center gap-2.5 cursor-pointer">
+                            <Input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-[color:var(--hairline)] text-grade-plus focus:ring-grade-plus/40"
+                              checked={assignGroupIds.includes(g.id)}
+                              onChange={(e) =>
+                                setAssignGroupIds((prev) =>
+                                  e.target.checked
+                                    ? [...prev, g.id]
+                                    : prev.filter((id) => id !== g.id),
+                                )
+                              }
+                            />
+                            <span className="font-annual text-body-sm text-text-primary">{g.name}</span>
+                          </label>
+                        ))}
+                        {(groups ?? []).length === 0 && (
+                          <p className="font-annual text-body-sm text-text-tertiary py-1">No groups yet.</p>
+                        )}
+                      </fieldset>
+                    )}
+                    <Select
+                      value={assignExerciseId}
+                      onChange={setAssignExerciseId}
+                      options={[
+                        { value: '', label: 'Select exercise (optional)…' },
+                        ...exercises.map((e) => ({
+                          value: e.id,
+                          label: e.name,
+                        })),
+                      ]}
+                    />
+                    <Input
+                      placeholder="Title (e.g. Lower body day)"
+                      value={assignTitle}
+                      onChange={(e) => setAssignTitle(e.target.value)}
+                    />
+                    <Input
+                      type="date"
+                      value={assignDueDate}
+                      onChange={(e) => setAssignDueDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Sets"
+                      value={assignSets}
+                      onChange={(e) => setAssignSets(e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Reps"
+                      value={assignReps}
+                      onChange={(e) => setAssignReps(e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Weight (lb)"
+                      value={assignWeight}
+                      onChange={(e) => setAssignWeight(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleCreateAssignment}
+                    isLoading={isPending}
+                    leftIcon={<IconPlus size={16} />}
+                  >
+                    Assign Lift
+                  </Button>
+                </div>
+              </SectionCard>
+
+              {/* List + trend */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <SectionCard eyebrow="Prescribed" title="Recent Assignments">
+                    {assignments.length === 0 ? (
+                      <EditorsLetter
+                        title="No assignments yet."
+                        body="Prescribe a lift above and it will show up here for your players."
+                      />
+                    ) : (
+                      <div>
+                        {assignments.map((a, i) => {
                           const presc = (a.prescription ??
                             {}) as BaseballLiftPrescription;
                           return (
-                            <div
-                              key={a.id}
-                              className="flex flex-wrap items-center gap-3 px-4 py-3 lg:px-6"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate font-medium text-warm-900">
-                                  {a.title ||
-                                    (a.exercise_id &&
-                                      exerciseNameById.get(a.exercise_id)) ||
-                                    'Lift'}
-                                </p>
-                                <p className="text-sm text-warm-500">
-                                  {a.player_id
-                                    ? playerNameById.get(a.player_id) ?? 'Player'
-                                    : 'Group'}
-                                  {presc.sets || presc.reps
-                                    ? ` · ${presc.sets ?? '—'}×${presc.reps ?? '—'}`
-                                    : ''}
-                                  {presc.weight ? ` @ ${presc.weight}lb` : ''}
-                                  {a.due_date ? ` · due ${a.due_date}` : ''}
-                                </p>
+                            <Reveal key={a.id} staggerIndex={Math.min(i, 10)}>
+                              <div className="flex flex-wrap items-center gap-3 py-3.5">
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate font-annual text-body-lg text-text-primary">
+                                    {a.title ||
+                                      (a.exercise_id &&
+                                        exerciseNameById.get(a.exercise_id)) ||
+                                      'Lift'}
+                                  </p>
+                                  <p className="font-annual text-body-sm text-text-tertiary">
+                                    {a.player_id
+                                      ? playerNameById.get(a.player_id) ?? 'Player'
+                                      : 'Group'}
+                                    {presc.sets || presc.reps
+                                      ? ` · ${presc.sets ?? '—'}×${presc.reps ?? '—'}`
+                                      : ''}
+                                    {presc.weight ? ` @ ${presc.weight}lb` : ''}
+                                    {a.due_date ? ` · due ${a.due_date}` : ''}
+                                  </p>
+                                </div>
+                                <InkBadge
+                                  label={a.status.replace('_', ' ')}
+                                  tone={ASSIGNMENT_INK[a.status]}
+                                />
+                                <Select
+                                  value={a.status}
+                                  onChange={(v) =>
+                                    handleStatusChange(
+                                      a.id,
+                                      v as BaseballLiftAssignmentStatus,
+                                    )
+                                  }
+                                  options={[
+                                    { value: 'assigned', label: 'Assigned' },
+                                    { value: 'in_progress', label: 'In progress' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'skipped', label: 'Skipped' },
+                                    { value: 'archived', label: 'Archived' },
+                                  ]}
+                                />
                               </div>
-                              <Badge className={statusTone[a.status]}>
-                                {a.status.replace('_', ' ')}
-                              </Badge>
-                              <Select
-                                value={a.status}
-                                onChange={(v) =>
-                                  handleStatusChange(
-                                    a.id,
-                                    v as BaseballLiftAssignmentStatus,
-                                  )
-                                }
-                                options={[
-                                  { value: 'assigned', label: 'Assigned' },
-                                  { value: 'in_progress', label: 'In progress' },
-                                  { value: 'completed', label: 'Completed' },
-                                  { value: 'skipped', label: 'Skipped' },
-                                  { value: 'archived', label: 'Archived' },
-                                ]}
-                              />
-                            </div>
+                              <HairlineRule ink="team" />
+                            </Reveal>
                           );
                         })}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </SectionCard>
+                </div>
+
+                {/* PR / lift trend — the deepest-history completed, weighted lift. */}
+                <ClimbArc
+                  title={liftTrend?.label ?? 'Lift Trend'}
+                  unit="lb"
+                  points={liftTrend?.points ?? []}
+                />
               </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </TabsContent>
-          )}
+            </Reveal>
+          </TabsContent>
+        )}
 
-          {/* ---------------------------------------------------------------- */}
-          {/* LIBRARY                                                           */}
-          {/* ---------------------------------------------------------------- */}
-          {canManageLifting && (
-            <TabsContent value="library">
-              <AnimatePresence mode="wait">
-                {tab === 'library' && (
-                  <motion.div
-                    key="library"
-                    initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                  >
-              <div className="space-y-6">
-                <Card variant="glass">
-                  <CardHeader>
-                    <h2 className="font-semibold text-warm-900">Add Exercise</h2>
-                    <p className="text-sm text-warm-500">
-                      Exercises you add here power your programs, quick-assign, and
-                      PR tracking — they share one library.
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                      <Input
-                        placeholder="Exercise name (e.g. Trap-bar deadlift)"
-                        value={exName}
-                        onChange={(e) => setExName(e.target.value)}
-                      />
-                      <Input
-                        placeholder="Equipment (e.g. trap bar, dumbbell) — optional"
-                        value={exEquipment}
-                        onChange={(e) => setExEquipment(e.target.value)}
-                      />
-                      <Select
-                        label="Category"
-                        value={exCategory}
-                        onChange={(v) => setExCategory(v as BaseballLiftExerciseCategory)}
-                        options={EXERCISE_CATEGORIES}
-                      />
-                      <Select
-                        label="Body region (optional)"
-                        value={exBodyRegion}
-                        onChange={(v) => setExBodyRegion(v as BaseballLiftBodyRegion | '')}
-                        options={[
-                          { value: '', label: 'Unspecified' },
-                          ...BODY_REGIONS,
-                        ]}
-                      />
-                    </div>
-                    <Textarea
-                      placeholder="Coaching cues / setup notes (optional)"
-                      value={exInstructions}
-                      onChange={(e) => setExInstructions(e.target.value)}
-                      rows={2}
+        {/* ---------------------------------------------------------------- */}
+        {/* LIBRARY                                                           */}
+        {/* ---------------------------------------------------------------- */}
+        {canManageLifting && (
+          <TabsContent value="library">
+            <Reveal className="space-y-6">
+              <SectionCard
+                eyebrow="Library"
+                title="Add Exercise"
+                description="Exercises you add here power your programs, quick-assign, and PR tracking — they share one library."
+              >
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    <Input
+                      placeholder="Exercise name (e.g. Trap-bar deadlift)"
+                      value={exName}
+                      onChange={(e) => setExName(e.target.value)}
                     />
-                    <Button
-                      onClick={handleCreateExercise}
-                      isLoading={isPending}
-                      leftIcon={<IconPlus size={16} />}
-                    >
-                      Add to Library
-                    </Button>
-                  </CardContent>
-                </Card>
+                    <Input
+                      placeholder="Equipment (e.g. trap bar, dumbbell) — optional"
+                      value={exEquipment}
+                      onChange={(e) => setExEquipment(e.target.value)}
+                    />
+                    <Select
+                      label="Category"
+                      value={exCategory}
+                      onChange={(v) => setExCategory(v as BaseballLiftExerciseCategory)}
+                      options={EXERCISE_CATEGORIES}
+                    />
+                    <Select
+                      label="Body region (optional)"
+                      value={exBodyRegion}
+                      onChange={(v) => setExBodyRegion(v as BaseballLiftBodyRegion | '')}
+                      options={[
+                        { value: '', label: 'Unspecified' },
+                        ...BODY_REGIONS,
+                      ]}
+                    />
+                  </div>
+                  <Textarea
+                    placeholder="Coaching cues / setup notes (optional)"
+                    value={exInstructions}
+                    onChange={(e) => setExInstructions(e.target.value)}
+                    rows={2}
+                  />
+                  <Button
+                    onClick={handleCreateExercise}
+                    isLoading={isPending}
+                    leftIcon={<IconPlus size={16} />}
+                  >
+                    Add to Library
+                  </Button>
+                </div>
+              </SectionCard>
 
-                <Card variant="glass">
-                  <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="font-semibold text-warm-900">
-                      Exercise Library
-                      <span className="ml-2 text-sm font-normal text-warm-500 tabular-nums">
-                        {exercises.length}
-                      </span>
-                    </h2>
-                    {exercises.length > 0 && (
-                      <Input
-                        placeholder="Search exercises…"
-                        value={exQuery}
-                        onChange={(e) => setExQuery(e.target.value)}
-                        className="sm:max-w-xs"
+              <SectionCard
+                eyebrow="The catalog"
+                title={
+                  <>
+                    Exercise Library
+                    <StatReadout
+                      value={exercises.length}
+                      className="ml-2 text-body-sm text-text-tertiary"
+                      ariaLabel="exercises in library"
+                    />
+                  </>
+                }
+                trailing={
+                  exercises.length > 0 ? (
+                    <Input
+                      placeholder="Search exercises…"
+                      value={exQuery}
+                      onChange={(e) => setExQuery(e.target.value)}
+                      className="sm:max-w-xs"
+                    />
+                  ) : undefined
+                }
+              >
+                {exercises.length === 0 ? (
+                  <EditorsLetter
+                    title="Library is empty."
+                    body="Add your team's core lifts so you can build programs and quick-assign them."
+                  />
+                ) : (() => {
+                  const q = exQuery.trim().toLowerCase();
+                  const filtered = q
+                    ? exercises.filter(
+                        (e) =>
+                          e.name.toLowerCase().includes(q) ||
+                          (e.equipment ?? '').toLowerCase().includes(q) ||
+                          CATEGORY_LABEL[e.category]?.toLowerCase().includes(q),
+                      )
+                    : exercises;
+                  if (filtered.length === 0) {
+                    return (
+                      <EditorsLetter
+                        title="No matches."
+                        body={`Nothing in the library matches “${exQuery.trim()}”.`}
                       />
-                    )}
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {exercises.length === 0 ? (
-                      <div className="p-6">
-                        <EmptyState
-                          icon={<IconDumbbell size={24} />}
-                          title="Library is empty"
-                          description="Add your team's core lifts so you can build programs and quick-assign them."
-                        />
-                      </div>
-                    ) : (() => {
-                      const q = exQuery.trim().toLowerCase();
-                      const filtered = q
-                        ? exercises.filter(
-                            (e) =>
-                              e.name.toLowerCase().includes(q) ||
-                              (e.equipment ?? '').toLowerCase().includes(q) ||
-                              CATEGORY_LABEL[e.category]?.toLowerCase().includes(q),
-                          )
-                        : exercises;
-                      if (filtered.length === 0) {
-                        return (
-                          <div className="p-6">
-                            <EmptyState
-                              icon={<IconDumbbell size={24} />}
-                              title="No matches"
-                              description={`Nothing in the library matches “${exQuery.trim()}”.`}
-                            />
-                          </div>
-                        );
-                      }
-                      return (
-                        <div className="divide-y divide-warm-200">
-                          {filtered.map((e) => (
-                            <div
-                              key={e.id}
-                              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-warm-50/60 lg:px-6"
-                            >
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100">
-                                <IconDumbbell size={18} className="text-primary-600" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate font-medium text-warm-900">
-                                  {e.name}
+                    );
+                  }
+                  return (
+                    <div>
+                      {filtered.map((e, i) => (
+                        <Reveal key={e.id} staggerIndex={Math.min(i, 10)}>
+                          <div className="flex flex-wrap items-center gap-3 py-3.5">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-annual text-body-lg text-text-primary">
+                                {e.name}
+                              </p>
+                              {(e.equipment || e.instructions) && (
+                                <p className="truncate font-annual text-body-sm text-text-tertiary">
+                                  {e.equipment ? e.equipment : ''}
+                                  {e.equipment && e.instructions ? ' · ' : ''}
+                                  {e.instructions ?? ''}
                                 </p>
-                                {(e.equipment || e.instructions) && (
-                                  <p className="truncate text-sm text-warm-500">
-                                    {e.equipment ? e.equipment : ''}
-                                    {e.equipment && e.instructions ? ' · ' : ''}
-                                    {e.instructions ?? ''}
-                                  </p>
-                                )}
-                              </div>
-                              <Badge className="bg-primary-100 text-primary-700">
-                                {CATEGORY_LABEL[e.category] ?? e.category}
-                              </Badge>
-                              {e.body_region && (
-                                <Badge className="bg-warm-100 text-warm-700">
-                                  {e.body_region.replace('_', ' ')}
-                                </Badge>
-                              )}
-                              {e.is_global && (
-                                <Badge className="bg-warm-100 text-warm-500">
-                                  Global
-                                </Badge>
                               )}
                             </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </TabsContent>
-          )}
-        </Tabs>
-    </motion.div>
-  );
-}
-
-function SummaryCard({
-  icon,
-  tint,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  tint: string;
-  label: string;
-  value: number;
-}) {
-  return (
-    <Card variant="glass" className="transition-shadow duration-200 hover:shadow-glass-hover">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tint}`}
-            aria-hidden
-          >
-            {icon}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm leading-relaxed text-warm-500">{label}</p>
-            <p
-              className="text-2xl font-semibold tracking-tight tabular-nums text-warm-900"
-              aria-label={`${value} ${label}`}
-            >
-              {value}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+                            <InkBadge label={CATEGORY_LABEL[e.category] ?? e.category} tone="team" />
+                            {e.body_region && (
+                              <InkBadge label={e.body_region.replace('_', ' ')} tone="neutral" />
+                            )}
+                            {e.is_global && <InkBadge label="Global" tone="neutral" />}
+                          </div>
+                          <HairlineRule ink="team" />
+                        </Reveal>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </SectionCard>
+            </Reveal>
+          </TabsContent>
+        )}
+      </Tabs>
+    </div>
   );
 }

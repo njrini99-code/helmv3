@@ -19,7 +19,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getPracticeEffectivenessData } from '@/lib/baseball/read-models/practice-effectiveness';
 import { PracticeEffectivenessClient } from '@/components/baseball/practice-effectiveness/PracticeEffectivenessClient';
-import { EmptyState } from '@/components/ui/empty-state';
+import { EditorsLetter } from '@/components/baseball/living-annual';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
   title: 'Practice Effectiveness | Helm Baseball',
@@ -40,23 +41,28 @@ export default async function PracticeEffectivenessPage() {
 
   if (!data.authorized) {
     // Honest, non-leaking gate: a non-staff viewer sees a clear message, not a
-    // crash and not someone else's coaching intelligence.
+    // crash and not someone else's coaching intelligence. Composed through
+    // <EditorsLetter> per the empty-state doctrine — never a bare "access
+    // denied" box.
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
-        <EmptyState
-          type="generic"
-          title="Coaches only"
-          description="Practice effectiveness is staff coaching intelligence. Ask a head coach for practice-management access to view it."
-        />
+      <div className={fairwayScope('min-h-full')}>
+        <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+          <EditorsLetter
+            title="Coaches only"
+            body="Practice effectiveness is staff coaching intelligence. Ask a head coach for practice-management access to view it."
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <PracticeEffectivenessClient
-      reviews={data.reviews}
-      focusRollup={data.focusRollup}
-      summary={data.summary}
-    />
+    <div className={fairwayScope('min-h-full')}>
+      <PracticeEffectivenessClient
+        reviews={data.reviews}
+        focusRollup={data.focusRollup}
+        summary={data.summary}
+      />
+    </div>
   );
 }

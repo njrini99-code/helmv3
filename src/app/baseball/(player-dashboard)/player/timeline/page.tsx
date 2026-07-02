@@ -19,9 +19,14 @@
 // page cannot widen access even if the context resolved wrong.
 //
 // HONESTY: the read model never throws — it returns an honest `error` string and
-// empty events on failure, which ProfileTimeline renders as an error banner.
-// A user who somehow reaches this route as staff-only (no player membership on
-// the active team) gets the honest empty state, not a fabricated timeline.
+// empty events on failure, which PlayerTimelineFairway renders as an error
+// letter (via PlayerTimelineClient). A user who somehow reaches this route as
+// staff-only (no player membership on the active team) gets the honest empty
+// state below, not a fabricated timeline.
+//
+// PRESENTATION: header + non-player state now compose the Living-Annual kit
+// (SectionMasthead / EditorsLetter) — no data path, action, or read-model call
+// below is changed by this.
 // =============================================================================
 
 import { redirect } from 'next/navigation';
@@ -34,8 +39,10 @@ import {
   type PlayerTimelineReadModel,
 } from '@/lib/baseball/read-models/timeline';
 import { PlayerTimelineClient } from '@/components/baseball/player-today/PlayerTimelineClient';
-import { EmptyState } from '@/components/ui/empty-state';
-import { IconArrowLeft, IconList } from '@/components/icons';
+import { IconArrowLeft } from '@/components/icons';
+import { fairwayScope } from '@/lib/redesign/flag';
+import { SectionMasthead, EditorsLetter, pressableClass } from '@/components/baseball/living-annual';
+import { cn } from '@/lib/utils';
 
 export const metadata = {
   title: 'My Timeline · BaseballHelm',
@@ -90,29 +97,26 @@ export default async function PlayerTimelinePage() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream-100">
+    <div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
         {/* Back to Today */}
         <Link
           href="/baseball/player/today"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-warm-500 transition-colors hover:text-warm-700"
+          className={cn(
+            pressableClass({ ink: 'team', tint: false }),
+            'mb-6 inline-flex items-center gap-1.5 rounded-fw-sm text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary hover:text-grade-plus',
+          )}
         >
-          <IconArrowLeft size={16} />
+          <IconArrowLeft size={14} />
           Back to Today
         </Link>
 
-        <header className="mb-8">
-          <p className="text-eyebrow font-semibold uppercase tracking-wide text-primary-600">
-            My Timeline
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">
-            Your development story
-          </h1>
-          <p className="mt-1 text-warm-500">
+        <SectionMasthead eyebrow="MY TIMELINE" title="Your development story" ink="team" className="mb-8">
+          <p className="max-w-prose text-body text-text-secondary">
             Every stat, practice, lift, note, and insight — in order, with where it came from.
             Acknowledge a coach note to let your staff know you&rsquo;ve seen it.
           </p>
-        </header>
+        </SectionMasthead>
 
         {ownPlayerId && model ? (
           <PlayerTimelineClient model={model} initialAcks={initialAcks} />
@@ -120,11 +124,10 @@ export default async function PlayerTimelinePage() {
           // Honest non-player state: the active context isn't a player membership
           // on this team (e.g. a staff-only account, or a stale-fell-back context).
           // We do NOT fabricate or fetch someone else's timeline.
-          <EmptyState
-            variant="card"
-            icon={<IconList size={28} />}
+          <EditorsLetter
+            ink="team"
             title="No player timeline here"
-            description="Your timeline appears when you're on a roster as a player. Join or switch to a team where you play to see your development story."
+            body="Your timeline appears when you're on a roster as a player. Join or switch to a team where you play to see your development story."
           />
         )}
       </div>
