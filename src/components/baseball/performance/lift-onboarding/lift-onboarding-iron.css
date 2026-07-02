@@ -1,0 +1,51 @@
+/* ============================================================================
+ * lift-onboarding-iron.css — scoped ink remap for the Lift Lab first-run
+ * tour's reskin onto `IronRoomField` (docs/baseball/ENTRY_SCENES_DESIGN.md
+ * ⚠ AMENDMENT — "Lift Lab 'Iron Room', respecced": abstract field, no
+ * painterly room; considered dark glass, never murky).
+ *
+ * The tour's step content (Eyebrow, HairlineRule, InkBadge, LiveDot,
+ * RuledStatLine — all from src/components/baseball/living-annual) is built
+ * for the light cream "paper" surface and reads its ink from shared,
+ * :root-scoped custom properties (--fw-color-text-primary/secondary/
+ * tertiary, --hairline, --paper, --grade-avg — see src/styles/
+ * design-tokens.css + src/styles/baseball-living-annual.css). Those tokens
+ * are consumed by dozens of OTHER surfaces across the app, so they can
+ * never be repointed globally — instead this file redefines them scoped to
+ * `.lift-onboarding-iron` (the glass panel wrapper below the abstract iron
+ * field), exactly the technique src/styles/baseball-auth.css already uses
+ * for the auth pages' `.baseball-auth-panel`. CSS custom properties
+ * inherit down the DOM tree, so every Living-Annual atom rendered inside
+ * this wrapper picks up cream-on-dark ink automatically — zero edits to
+ * those shared components.
+ *
+ * Kelly green (`--grade-plus`) is deliberately NOT remapped here: this is
+ * in-app product chrome (the Lift Lab), not the auth/landing front door —
+ * the SAGE & CREAM amendment only demotes kelly on landing/auth chrome;
+ * "product green is at home" inside the app, same reasoning IronRoomField's
+ * own collar already relies on.
+ * ========================================================================== */
+
+.lift-onboarding-iron {
+  --fw-color-text-primary: var(--fl-cream-high);
+  --fw-color-text-secondary: rgba(var(--fl-cream-high-rgb), 0.78);
+  --fw-color-text-tertiary: rgba(var(--fl-cream-high-rgb), 0.55);
+  --hairline: rgba(var(--fl-brass-rgb), 0.32);
+  --paper: rgba(var(--fl-cream-high-rgb), 0.06);
+  --grade-avg: var(--fl-sage);
+}
+
+/* The shared Button's `focus-visible:ring-primary-500/40 focus-visible:
+   ring-offset-white` is baked into its base styles regardless of variant —
+   a keyboard-focused Back/Skip button in this panel would otherwise flash a
+   white ring-offset halo against the dark glass. Full `box-shadow`
+   replacement (not a `--tw-ring-*` var poke) reliably overrides a Tailwind
+   ring utility from outside the component, same technique as
+   `.baseball-auth-panel button:focus-visible` in src/styles/
+   baseball-auth.css. */
+.lift-onboarding-iron button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--fl-cream-high),
+    0 0 0 4px rgba(var(--fl-brass-rgb), 0.55);
+}
