@@ -160,7 +160,12 @@ export function M4TwoFields({ className }: M4TwoFieldsProps) {
   const seamOpacity = scrubEnabled ? seamOpacityScrub : seamOpacityStatic;
 
   return (
-    <section ref={ref} className={cn('relative', className)} style={{ backgroundColor: 'var(--fl-sage-mist)' }}>
+    <section
+      id="fields"
+      ref={ref}
+      className={cn('relative', className)}
+      style={{ backgroundColor: 'var(--fl-sage-mist)' }}
+    >
       <div className="mx-auto max-w-6xl px-6 pb-6 pt-20 text-center sm:pt-24">
         <span className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-sage-ink-rgb),0.6)]">
           One Helm. Two fields.
