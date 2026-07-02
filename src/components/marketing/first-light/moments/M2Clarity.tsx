@@ -2,8 +2,11 @@
 
 /**
  * M2 · CLARITY — the what-is-it moment. docs/LANDING_ENTRY_WORLD_DESIGN.md
- * M2, SAGE & CREAM amendment. Background register: cream editorial (flat
- * `var(--fl-cream)`).
+ * M2, SAGE & CREAM amendment, ⚠ AMENDMENT 2 — IMMACULATE. Background
+ * register: `.fl-aurora` (low-chroma sage radial field over cream) — the
+ * pre-amendment flat `var(--fl-cream)` fill is retired per Amendment 2 §A.1
+ * ("the cream should never be a flat fill"). One `.fl-light-pool` sits
+ * behind the serif statement (§A.2).
  *
  * This is the landing moment of the M1 exit scrub (spec's scroll
  * choreography map: "M1 → M2 exit... M2's serif statement writes itself
@@ -48,11 +51,13 @@ export function M2Clarity({ className }: M2ClarityProps) {
   const reduced = useReducedMotion();
 
   return (
-    <section
-      className={cn('relative px-6 py-24 sm:py-32', className)}
-      style={{ backgroundColor: 'var(--fl-cream)' }}
-    >
-      <div className="mx-auto max-w-3xl">
+    <section className={cn('fl-aurora relative px-6 py-24 sm:py-32', className)}>
+      <div
+        aria-hidden="true"
+        className="fl-light-pool left-1/2 top-0 h-[28rem] w-[42rem] -translate-x-1/2"
+      />
+
+      <div className="relative mx-auto max-w-3xl">
         <MaskedReveal
           as="h2"
           lines={[
@@ -62,7 +67,7 @@ export function M2Clarity({ className }: M2ClarityProps) {
           ]}
           className={cn(
             flFraunces.className,
-            'text-[clamp(1.75rem,3.6vw,2.75rem)] font-normal leading-[1.15] tracking-tight text-[var(--fl-sage-ink)]',
+            'text-balance text-[clamp(1.75rem,3.6vw,2.75rem)] font-normal leading-[1.15] tracking-tight text-[var(--fl-sage-ink)]',
           )}
         />
 
@@ -105,7 +110,7 @@ export function M2Clarity({ className }: M2ClarityProps) {
                 <span className={cn(flFraunces.className, 'text-xl font-medium text-[var(--fl-sage-ink)] sm:text-2xl')}>
                   {line.label}
                 </span>
-                <span className="max-w-sm text-body text-[rgba(var(--fl-sage-ink-rgb),0.7)] sm:text-right">{line.detail}</span>
+                <span className="max-w-sm text-body leading-[1.65] text-[rgba(var(--fl-sage-ink-rgb),0.7)] sm:text-right">{line.detail}</span>
               </div>
             </m.div>
           ))}

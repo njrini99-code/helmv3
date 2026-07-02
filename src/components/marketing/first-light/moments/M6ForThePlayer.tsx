@@ -2,18 +2,33 @@
 
 /**
  * M6 · FOR THE PLAYER — the player as audience, not afterthought.
- * docs/LANDING_ENTRY_WORLD_DESIGN.md M6, SAGE & CREAM amendment.
- * Background register: warm cream → sage-mist (daylight — replaces the
- * pre-amendment dark clay/pine dusk gradient, which read moody/off-spec).
+ * docs/LANDING_ENTRY_WORLD_DESIGN.md M6, SAGE & CREAM amendment, ⚠
+ * AMENDMENT 2 — IMMACULATE. Background register: `.fl-aurora` (the
+ * pre-amendment flat cream→sage-mist gradient is retired per §A.1 — "the
+ * cream should never be a flat fill").
  *
- * Three small `fl-glass-2` vignettes: passport completeness, Lift Lab
- * check-in, readiness. Copy speaks to the athlete, not the buyer. Each
- * vignette carries one small real-product detail (a completeness bar, a
- * logged-session line, a readiness band dot) rather than being pure copy —
- * echoes M5's "show, don't just tell" without competing with it for
+ * Three small vignettes: passport completeness, Lift Lab check-in,
+ * readiness — converted from `fl-glass-2` to `.fl-card` + `.fl-card-lift`
+ * per Amendment 2 §B.6 (glass is chrome-only; these are content cards on
+ * cream, not floating chrome). Copy speaks to the athlete, not the buyer.
+ * Each vignette carries one small real-product detail (a completeness bar,
+ * a logged-session line, a readiness band dot) rather than being pure
+ * copy — echoes M5's "show, don't just tell" without competing with it for
  * attention (calm entry reveals only, no scroll-linked motion here).
  * Accents use sage-deep (landing/auth chrome) — kelly stays product-only
  * per the amendment, so nothing here reaches for it.
+ *
+ * The hover lift uses framer-motion's `whileHover={{ y: -4 }}` rather than
+ * `.fl-card-lift`'s own CSS `:hover { transform }` rule — this `m.div`
+ * already animates its entrance via the `y` motion value (`initial`/
+ * `whileInView`), and framer keeps that value bound to an inline
+ * `transform` style for the component's lifetime. An inline style always
+ * wins over an external stylesheet's `:hover` selector regardless of
+ * specificity, so a CSS-only lift would be silently dead here; driving the
+ * same -4px offset through `whileHover` lets framer resolve it correctly
+ * against its own already-inline-controlled transform. `.fl-card-lift`'s
+ * CSS `:hover` rule still does useful work for the box-shadow swell, which
+ * framer doesn't touch.
  */
 import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -45,18 +60,12 @@ export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
   const reduced = useReducedMotion();
 
   return (
-    <section
-      className={cn('relative px-6 py-24 sm:py-32', className)}
-      style={{
-        background:
-          'linear-gradient(160deg, var(--fl-cream) 0%, var(--fl-sage-mist) 62%, var(--fl-cream-high) 100%)',
-      }}
-    >
+    <section className={cn('fl-aurora relative px-6 py-24 sm:py-32', className)}>
       <div className="relative z-10 mx-auto max-w-2xl text-center">
         <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-[var(--fl-sage-deep)]">
           For the Player
         </span>
-        <h2 className={cn(flFraunces.className, 'mt-4 text-[clamp(1.75rem,3.4vw,2.5rem)] font-normal leading-tight text-[var(--fl-sage-ink)]')}>
+        <h2 className={cn(flFraunces.className, 'mt-4 text-balance text-[clamp(1.75rem,3.4vw,2.5rem)] font-normal leading-tight text-[var(--fl-sage-ink)]')}>
           You&rsquo;re not just on the roster.
         </h2>
       </div>
@@ -67,15 +76,18 @@ export function M6ForThePlayer({ className }: M6ForThePlayerProps) {
             key={v.title}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
+            whileHover={
+              reduced ? undefined : { y: -4, transition: { duration: 0.24, ease: [0.33, 1, 0.68, 1] } }
+            }
             viewport={{ once: true, margin: '-10%' }}
             transition={
               reduced ? { duration: 0 } : { duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }
             }
-            className="fl-glass-2 rounded-2xl p-6"
+            className="fl-card fl-card-lift p-6"
           >
             <div className="relative z-10">
               <h3 className={cn(flFraunces.className, 'text-lg font-medium text-[var(--fl-sage-ink)]')}>{v.title}</h3>
-              <p className="mt-2 text-body-sm leading-relaxed text-[rgba(var(--fl-sage-ink-rgb),0.72)]">{v.line}</p>
+              <p className="mt-2 text-body-sm leading-[1.65] text-[rgba(var(--fl-sage-ink-rgb),0.72)]">{v.line}</p>
               <div className="mt-4 border-t border-[rgba(var(--fl-sage-ink-rgb),0.12)] pt-4">{v.detail}</div>
             </div>
           </m.div>

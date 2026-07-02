@@ -2,8 +2,15 @@
 
 /**
  * M7 · HONESTY BAND — pre-revenue social proof, done honestly.
- * docs/LANDING_ENTRY_WORLD_DESIGN.md M7, SAGE & CREAM amendment.
- * Background register: sage-mist tint (was flat ecru pre-amendment).
+ * docs/LANDING_ENTRY_WORLD_DESIGN.md M7, SAGE & CREAM amendment, ⚠
+ * AMENDMENT 2 — IMMACULATE. Background register: `.fl-aurora`'s radial
+ * field composited OVER a sage-mist base (an inline `backgroundColor`
+ * override sits under the aurora class's own radial `background-image`
+ * layers — the two are separate CSS properties, so the tint survives)
+ * rather than plain cream, preserving this section's deeper "band" feel
+ * per Amendment 2 §A.1's explicit carve-out for M7 while still killing the
+ * flat single-color fill. One `.fl-light-pool` sits behind the stat row
+ * (§A.2).
  * No fake logos. The founder line, what Helm refuses to claim, two live-
  * product stats (`AnimatedNumber` — the kit's StatRoll) that roll in on
  * FIRST VIEWPORT ENTRY, not on page mount: `AnimatedNumber` itself only
@@ -36,10 +43,10 @@ export function M7Honesty({ className }: M7HonestyProps) {
 
   return (
     <section
-      className={cn('relative px-6 py-24 sm:py-32', className)}
+      className={cn('fl-aurora relative px-6 py-24 sm:py-32', className)}
       style={{ backgroundColor: 'var(--fl-sage-mist)' }}
     >
-      <div className="mx-auto max-w-2xl text-center">
+      <div className="relative mx-auto max-w-2xl text-center">
         <span className="font-annual text-eyebrow font-semibold uppercase tracking-[0.28em] text-[var(--fl-sage-deep)]">
           Built by players
         </span>
@@ -48,7 +55,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-15%' }}
           transition={reduced ? { duration: 0 } : { duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className={cn(flFraunces.className, 'mt-4 text-[clamp(1.5rem,3vw,2.1rem)] font-normal leading-snug text-[var(--fl-sage-ink)]')}
+          className={cn(flFraunces.className, 'mt-4 text-balance text-[clamp(1.5rem,3vw,2.1rem)] font-normal leading-snug text-[var(--fl-sage-ink)]')}
         >
           Built by two former collegiate athletes who got tired of running a program on spreadsheets and group texts.
         </m.p>
@@ -57,11 +64,16 @@ export function M7Honesty({ className }: M7HonestyProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-15%' }}
           transition={reduced ? { duration: 0 } : { duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-4 text-body text-[rgba(var(--fl-sage-ink-rgb),0.72)]"
+          className="mt-4 text-pretty text-body leading-[1.65] text-[rgba(var(--fl-sage-ink-rgb),0.72)]"
         >
           We won&rsquo;t claim a client roster we don&rsquo;t have, or a stat we can&rsquo;t source. If a signal can&rsquo;t point to where it came from, it doesn&rsquo;t ship.
         </m.p>
       </div>
+
+      <div
+        aria-hidden="true"
+        className="fl-light-pool bottom-10 left-1/2 h-72 w-[34rem] -translate-x-1/2"
+      />
 
       <m.div
         ref={statsRef}
@@ -69,7 +81,7 @@ export function M7Honesty({ className }: M7HonestyProps) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-15%' }}
         transition={reduced ? { duration: 0 } : { duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto mt-14 flex max-w-md flex-col items-center gap-6 text-center sm:flex-row sm:justify-center sm:gap-16"
+        className="relative mx-auto mt-14 flex max-w-md flex-col items-center gap-6 text-center sm:flex-row sm:justify-center sm:gap-16"
       >
         {STATS.map((stat) => (
           <div key={stat.label}>
