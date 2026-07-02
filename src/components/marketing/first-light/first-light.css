@@ -268,7 +268,10 @@
     ),
     radial-gradient(45% 55% at 85% 15%, rgba(var(--fl-sage-mist-rgb), 0.55), transparent 72%),
     radial-gradient(50% 60% at 75% 85%, rgba(var(--fl-sage-deep-rgb), 0.07), transparent 75%),
-    radial-gradient(40% 45% at 25% 90%, rgba(var(--fl-cream-high-rgb), 0.9), transparent 70%);
+    /* ⚠ AMENDMENT 2 §D2 (2026-07-02, Nick — "more cream, no white"): this
+       blob was cream-high; demoted to cream so no fill larger than a 1px
+       specular lip reads near-white. */
+    radial-gradient(40% 45% at 25% 90%, rgba(var(--fl-cream-rgb), 0.9), transparent 70%);
   background-attachment: fixed;
   /* Optional 32s drift — killed outright under reduced-motion below. */
   animation: fl-aurora-drift 32s ease-in-out infinite;
@@ -318,7 +321,9 @@
 .fl-light-pool {
   z-index: -10;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(var(--fl-cream-high-rgb), 0.9), transparent 60%);
+  /* ⚠ AMENDMENT 2 §D2 (2026-07-02, Nick — "more cream, no white"): cream-high
+     demoted to cream — this pool is a large fill, not a 1px specular lip. */
+  background: radial-gradient(ellipse at center, rgba(var(--fl-cream-rgb), 0.9), transparent 60%);
   filter: blur(40px);
 }
 
@@ -365,9 +370,15 @@
  * vignettes convert from .fl-glass-2 to this (Amendment 2 §B.6 — glass
  * is chrome-only; content sits on solid lit cream). Pair with
  * .fl-card-lift for the hover swell.
+ *
+ * ⚠ AMENDMENT 2 §D2 (2026-07-02, Nick — "more cream, no white"): a flat
+ * cream-high fill reads too pale across a whole card. Background is now a
+ * short top-to-18% gradient — only the top edge catches cream-high light,
+ * the card body resolves to true cream by 18%. --fl-specular (the 1px
+ * inset highlight) is unaffected — it's the hairline lip §D2 exempts.
  * ------------------------------------------------------------------- */
 .fl-card {
-  background: var(--fl-cream-high);
+  background: linear-gradient(180deg, rgba(var(--fl-cream-high-rgb), 0.55) 0%, var(--fl-cream) 18%);
   border-radius: 20px;
   border: 1px solid rgba(var(--fl-sage-mist-rgb), 0.6);
   box-shadow: var(--fl-specular), var(--fl-shadow-sm);
