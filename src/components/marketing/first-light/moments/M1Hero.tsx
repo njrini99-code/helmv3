@@ -32,6 +32,7 @@
  * motion"), matching `LenisRoot`'s own disablement heuristic.
  */
 import Link from 'next/link';
+import Image from 'next/image';
 import { m, useTransform, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -41,7 +42,6 @@ import { MaskedReveal } from '../scroll/MaskedReveal';
 import { flFraunces } from '../fonts';
 import { photoLayerStyle } from '../lib/photoBg';
 import { GlassNav } from '../nav/GlassNav';
-import { SportGlyph } from '../brand';
 
 export interface M1HeroProps {
   className?: string;
@@ -56,10 +56,16 @@ const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];
  * under the CTA pair, both pointing at `#fields` — the M4 "Two Fields"
  * section anchor (the `landing-portals+cta` lane adds `id="fields"` to
  * that section; this lane only needs the hash, not the target file).
+ *
+ * The marks are the REAL product logos (Nick, second pass: "Golfhelm
+ * and baseballhelm logos aren't on there") — kelly helm wheels with
+ * the golf ball / baseball hub, clean-alpha PNGs. Real logos keep
+ * their kelly per the ⚠ A-OVERRIDE logo exemption; the abstract
+ * `SportGlyph` line icons were the placeholder these replace.
  */
 const SPORT_CHIPS = [
-  { sport: 'golf', label: 'GolfHelm' },
-  { sport: 'baseball', label: 'BaseballHelm' },
+  { sport: 'golf', label: 'GolfHelm', logo: '/helm-golf-logo-transparent.png' },
+  { sport: 'baseball', label: 'BaseballHelm', logo: '/helm-baseball-logo-cropped.png' },
 ] as const;
 
 /**
@@ -250,7 +256,13 @@ export function M1Hero({ className }: M1HeroProps) {
               }}
               className="fl-glass-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[var(--fl-sage-ink)] transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0"
             >
-              <SportGlyph sport={chip.sport} size={13} className="relative z-10 shrink-0 text-[var(--fl-sage-deep)]" />
+              <Image
+                src={chip.logo}
+                alt=""
+                width={16}
+                height={16}
+                className="relative z-10 h-4 w-4 shrink-0 object-contain"
+              />
               <span className="relative z-10">{chip.label}</span>
             </Link>
           ))}
