@@ -23,20 +23,44 @@ const SHOWCASE_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'club',
 ]);
 
+function normalizeProgramType(raw: unknown): BaseballProgramType | null {
+  return typeof raw === 'string' &&
+    (BASEBALL_PROGRAM_TYPES as readonly string[]).includes(raw)
+    ? (raw as BaseballProgramType)
+    : null;
+}
+
+// `program_type` is nullable and is left unset on some teams (e.g. a team
+// created with `team_type: 'college'` but no `program_type` — see the
+// identical note in nav-context.ts, where this was already fixed once).
+// Reading ONLY `program_type` here meant a team in that state could fail
+// requireRecruitingCoachRoute's program-type check and hard-redirect
+// Discover/Pipeline/Watchlist/Compare back to Command Center even though the
+// coach's actual program is plainly recruiting-eligible. Fall back to
+// `team_type` — the SAME effective program type nav-context.ts and
+// middleware resolve — so this guard and the nav/middleware never disagree
+// about whether a team is recruiting-eligible.
 async function getActiveProgramType(): Promise<BaseballProgramType | null> {
   const ctx = await getActiveBaseballContext();
   if (!ctx?.activeTeamId) return null;
 
-  const supabase = await createClient();
-  const { data } = await fromUntyped(supabase, 'baseball_teams')
-    .select('program_type')
-    .eq('id', ctx.activeTeamId)
-    .maybeSingle();
+  try {
+    const supabase = await createClient();
+    const { data } = await fromUntyped(supabase, 'baseball_teams')
+      .select('program_type, team_type')
+      .eq('id', ctx.activeTeamId)
+      .maybeSingle();
 
-  const raw = (data as { program_type?: unknown } | null)?.program_type;
-  return typeof raw === 'string' && (BASEBALL_PROGRAM_TYPES as readonly string[]).includes(raw)
-    ? (raw as BaseballProgramType)
-    : null;
+    const row = data as { program_type?: unknown; team_type?: unknown } | null;
+    return (
+      normalizeProgramType(row?.program_type) ??
+      normalizeProgramType(row?.team_type)
+    );
+  } catch {
+    // Never let a transient read failure here take down the whole route
+    // render — fall through to the coach-type half of the guard's OR check.
+    return null;
+  }
 }
 
 export async function requireBaseballCoachRoute(options?: {
