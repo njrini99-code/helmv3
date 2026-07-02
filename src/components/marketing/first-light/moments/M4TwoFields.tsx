@@ -21,7 +21,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { m, useMotionValue, useReducedMotion, useTransform } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { flFraunces } from '../fonts';
 import { photoLayerStyle } from '../lib/photoBg';
@@ -45,11 +45,13 @@ const FIELDS: Array<{
     title: 'GolfHelm',
     line: 'College golf team management + the CoachHelm AI layer.',
     href: '/golf/login',
-    // Dawn grade: airy cream/sage lift at the top, grounding to sage-ink
-    // where the glass card sits (sage/cream respec — never the old murky
-    // pine duotone). No clay here — clay's only home is the baseball half.
+    // Dawn grade: airy cream/sage lift at the top, capping at sage-ink 0.5
+    // at the bottom — DAYLIGHT amendment: M4 is not a second deep band, M3
+    // owns that. Legibility for the card's cream text instead comes from a
+    // tight local pocket (see the third layer below) anchored behind the
+    // card only. No clay here — clay's only home is the baseball half.
     fallbackGradient:
-      'linear-gradient(165deg, rgba(var(--fl-cream-high-rgb),0.3) 0%, rgba(var(--fl-sage-rgb),0.35) 45%, rgba(var(--fl-sage-ink-rgb),0.86) 100%), radial-gradient(ellipse 80% 60% at 30% 18%, rgba(var(--fl-cream-high-rgb),0.4), transparent 60%)',
+      'linear-gradient(165deg, rgba(var(--fl-cream-high-rgb),0.3) 0%, rgba(var(--fl-sage-rgb),0.35) 45%, rgba(var(--fl-sage-ink-rgb),0.5) 100%), radial-gradient(ellipse 80% 60% at 30% 18%, rgba(var(--fl-cream-high-rgb),0.4), transparent 60%), radial-gradient(circle at 20% 82%, rgba(var(--fl-sage-ink-rgb),0.55), transparent 55%)',
   },
   {
     key: 'baseball',
@@ -58,9 +60,12 @@ const FIELDS: Array<{
     href: '/baseball/login',
     // Dusk grade: same airy sage/cream language as golf's, with a TRACE of
     // clay warmth folded into the mid-tone and bloom — clay's only
-    // remaining home per the amendment. Never structural, never dominant.
+    // remaining home per the amendment. Capped at sage-ink 0.5 at the
+    // bottom (DAYLIGHT amendment — see golf's comment above); the local
+    // pocket behind the card carries legibility instead. Never structural,
+    // never dominant.
     fallbackGradient:
-      'linear-gradient(165deg, rgba(var(--fl-cream-high-rgb),0.28) 0%, rgba(var(--fl-clay-rgb),0.16) 42%, rgba(var(--fl-sage-ink-rgb),0.88) 100%), radial-gradient(ellipse 80% 60% at 70% 22%, rgba(var(--fl-brass-rgb),0.22), transparent 60%)',
+      'linear-gradient(165deg, rgba(var(--fl-cream-high-rgb),0.28) 0%, rgba(var(--fl-clay-rgb),0.16) 42%, rgba(var(--fl-sage-ink-rgb),0.5) 100%), radial-gradient(ellipse 80% 60% at 70% 22%, rgba(var(--fl-brass-rgb),0.22), transparent 60%), radial-gradient(circle at 20% 82%, rgba(var(--fl-sage-ink-rgb),0.55), transparent 55%)',
   },
 ];
 
@@ -109,9 +114,9 @@ export function M4TwoFields({ className }: M4TwoFieldsProps) {
   const seamOpacity = scrubEnabled ? seamOpacityScrub : seamOpacityStatic;
 
   return (
-    <section ref={ref} className={cn('relative', className)} style={{ backgroundColor: 'var(--fl-sage-ink)' }}>
+    <section ref={ref} className={cn('relative', className)} style={{ backgroundColor: 'var(--fl-sage-mist)' }}>
       <div className="mx-auto max-w-6xl px-6 pb-6 pt-20 text-center sm:pt-24">
-        <span className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-cream-rgb),0.5)]">
+        <span className="text-eyebrow font-semibold uppercase tracking-[0.28em] text-[rgba(var(--fl-sage-ink-rgb),0.6)]">
           One Helm. Two fields.
         </span>
       </div>
@@ -153,21 +158,31 @@ export function M4TwoFields({ className }: M4TwoFieldsProps) {
                   className="absolute inset-0"
                   style={photoLayerStyle({ src: `/marketing/first-light/photos/${field.key}.jpg`, fallbackGradient: field.fallbackGradient })}
                 />
-                <div className="fl-glass-2 relative w-full max-w-sm rounded-2xl p-6">
-                  <div className="relative z-10">
-                    <h3 className={cn(flFraunces.className, 'text-2xl font-medium text-[var(--fl-cream)] sm:text-3xl')}>
-                      {field.title}
-                    </h3>
-                    <p className="mt-2 text-body text-[rgba(var(--fl-cream-rgb),0.7)]">{field.line}</p>
-                    {/* Sage (not sage-deep) for legibility — sage-deep reads
-                        as a CTA-fill color and is too low-contrast as text
-                        over this dark, photographic card; sage is the
-                        spec's "decorative/large" register and reads clean
-                        here (verified live at 1440 + 390). */}
-                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--fl-sage)]">
-                      Enter
-                      <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                    </span>
+                {/* Double-bezel: a brass hairline outer frame wrapping the
+                    G2 glass card, matching the design system's bezel idiom
+                    elsewhere (glass grammar #4, first-light.css). */}
+                <div className="relative w-full max-w-sm rounded-[1.1rem] border border-[rgba(var(--fl-brass-rgb),0.4)] p-[3px]">
+                  <div className="fl-glass-2 rounded-[0.9rem] p-6">
+                    <div className="relative z-10">
+                      <h3 className={cn(flFraunces.className, 'text-2xl font-medium text-[var(--fl-cream)] sm:text-3xl')}>
+                        {field.title}
+                      </h3>
+                      {/* Baseline row: brass rule segment + one-line
+                          description + enter arrow, all on one line. */}
+                      <div className="mt-3 flex items-center gap-3">
+                        <span aria-hidden="true" className="fl-rule w-8 shrink-0" />
+                        <p className="flex-1 text-body text-[rgba(var(--fl-cream-rgb),0.7)]">{field.line}</p>
+                        {/* Sage (not sage-deep) for legibility — sage-deep
+                            reads as a CTA-fill color and is too low-contrast
+                            as an icon over this card; sage is the spec's
+                            "decorative/large" register and reads clean here
+                            (verified live at 1440 + 390). */}
+                        <ArrowRight
+                          aria-hidden="true"
+                          className="h-4 w-4 shrink-0 text-[var(--fl-sage)] transition-transform duration-200 group-hover:translate-x-[2px]"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Link>
