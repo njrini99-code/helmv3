@@ -180,7 +180,24 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       throw new Error(result.error || 'Failed to save changes');
     }
 
-    setDocuments(prev => prev.map(d => (d.id === data.id ? (result.data as BaseballDocument) : d)));
+    // Patch only the edited metadata fields — never replace the whole
+    // document with the server row. `updateBaseballDocumentAction` returns
+    // the raw DB row, whose file_url is a signed URL persisted at
+    // upload/version time (no re-signing on update); a full-object replace
+    // would clobber the fresh signed URL already held in local state
+    // (from initial load's withFreshDocumentUrls / an upload / a version
+    // action) with a value that's likely already expired.
+    const updated = result.data;
+    setDocuments(prev => prev.map(d => (d.id === data.id
+      ? {
+          ...d,
+          title: updated.title,
+          description: updated.description,
+          category: updated.category,
+          is_player_visible: updated.is_player_visible,
+        }
+      : d
+    )));
     showToast('Document updated', 'success');
     setEditingDoc(null);
   }
@@ -214,7 +231,10 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       throw new Error(result.error || 'Failed to move document');
     }
 
-    setDocuments(prev => prev.map(d => (d.id === data.id ? (result.data as BaseballDocument) : d)));
+    // Patch only the moved field for the same reason as handleSaveEdit above:
+    // never replace the whole document with the server's un-re-signed row.
+    const moved = result.data;
+    setDocuments(prev => prev.map(d => (d.id === data.id ? { ...d, folder: moved.folder } : d)));
     showToast(data.folder ? `Moved to "${data.folder}"` : 'Removed from folder', 'success');
     setMovingDoc(null);
   }
