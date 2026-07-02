@@ -61,7 +61,9 @@ export default function ForgotPasswordPage() {
     <BaseballAuthShell
       skipTargetId="forgot-form"
       skipLabel="Skip to form"
+      sceneIdSuffix="forgot-password"
       eyebrow="ACCOUNT RECOVERY"
+      welcomeLine="We’ll light the way back."
       tagline={success ? undefined : 'Enter your email and we’ll send you a reset link.'}
       footer={
         <AuthFooterLinks

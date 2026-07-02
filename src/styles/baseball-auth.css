@@ -1,57 +1,62 @@
 /* ============================================================================
- * BaseballHelm — "Living Annual" FRONT DOOR (ADDITIVE / baseball-only)
+ * BaseballHelm — Entry World FRONT DOOR (ADDITIVE / baseball-only)
  * ----------------------------------------------------------------------------
- * Full-bleed editorial surface for the six src/app/baseball/(auth)/ pages
- * (login, signup, complete-signup, forgot-password, reset-password, demo).
- * Namespaced `.baseball-auth-*` so it can never collide with golf's
+ * Full-bleed painterly-scene surface for the six src/app/baseball/(auth)/
+ * pages (login, signup, complete-signup, forgot-password, reset-password,
+ * demo). Namespaced `.baseball-auth-*` so it can never collide with golf's
  * `.bg-auth-golf` / `.auth-glass-card` chrome (untouched, still golf-only) or
- * anything else in globals.css. Consumes the existing --paper / --paper-canvas
- * / --hairline / --grade-plus / --pursuit-ink tokens from
- * src/styles/baseball-living-annual.css — no new color values invented here.
+ * anything else in globals.css. Consumes tokens from both
+ * src/styles/baseball-living-annual.css (--hairline / --grade-plus /
+ * --pursuit-ink) and, for the glass panel, the shared First Light `--fl-*`
+ * vars (src/components/marketing/first-light/first-light.css, imported by
+ * baseball-auth-shell.tsx — see docs/baseball/ENTRY_SCENES_DESIGN.md's
+ * "same glass tokens across landing/login/onboarding").
  * ========================================================================== */
 
-/* Deep warm-cream field — same "less white" cream the rest of the Living
-   Annual redesign uses, one shade deeper than the card so the double-bezel
-   panel visibly lifts off the page. */
+/* Base fill behind the full-bleed scene — only visible for the instant
+   before the scene SVG paints (or with JS/CSS disabled). Same deep-cream
+   the rest of the Living Annual redesign uses. */
 .baseball-auth-field {
   background: var(--paper-canvas);
 }
 
-/* ~2.5% fractal-noise grain wash over the whole field (same noise recipe as
-   PaperCard's newsprint grain, at a lower opacity so it reads as atmosphere
-   behind the bezel rather than paper texture on a card). */
-.baseball-auth-grain {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 200px 200px;
+/* The glass panel — grade-3 glass grammar (blur 24, brass top edge-light,
+   faint grain via `.fl-glass-3`'s own `::before`) but warmed to ecru instead
+   of `.fl-glass-3`'s default deep-pine tint. The panel sits over a painterly
+   scene rather than a dark pine band, and the existing form components
+   (labels, inputs) assume dark-on-light text — a warm, mostly-opaque glass
+   keeps that legible without touching those components. The combined
+   `.fl-glass-3.baseball-auth-panel` selector (0,2,0) safely outranks
+   `.fl-glass-3`'s own (0,1,0) background rule regardless of import order. */
+.baseball-auth-panel {
+  background: rgba(var(--fl-ecru-rgb), 0.86);
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
 }
 
-/* Quiet lane-ink wash behind the wordmark — `--auth-accent` defaults to team
-   green; pages in the "pursuit" lane (demo) override it to clay via inline
-   style. Never more than a 7% tint — the vignette is atmosphere, not chrome,
-   and this is NOT the reserved --clay dark canvas (that rule only governs
-   the literal --clay custom property, untouched here). */
-.baseball-auth-vignette {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 70% 45% at 50% -8%, color-mix(in oklch, var(--auth-accent, var(--grade-plus)) 7%, transparent) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 45% at 100% 105%, color-mix(in oklch, var(--hairline) 45%, transparent) 0%, transparent 65%);
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .baseball-auth-panel {
+    background: rgba(var(--fl-ecru-rgb), 0.97);
+  }
 }
 
-/* Double-bezel outer ring — a deeper-cream frame around the PaperCard form
-   panel. Letterpress-style inset + a soft ambient drop (never a harsh
-   box-shadow) so the panel reads as lifted stock, not a floating modal. */
-.baseball-auth-bezel {
-  background: var(--paper-canvas);
-  border: 1px solid color-mix(in oklch, var(--hairline) 80%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 1px 2px rgba(23, 19, 15, 0.04),
-    0 24px 48px -24px rgba(23, 19, 15, 0.22);
+/* Quiet lane-ink wash inside the glass panel — `--auth-accent` defaults to
+   team green; pages in the "pursuit" lane (demo) override it to clay via
+   inline style. Sits at z-index 0, below `.fl-glass-3`'s own grain
+   `::before` (z-index 1) and the panel's `relative z-10` content wrapper.
+   Never more than a 16% tint — atmosphere, not chrome. This is NOT the
+   reserved --clay dark canvas (that rule only governs the literal --clay
+   custom property, untouched here). */
+.baseball-auth-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 55% at 50% -6%,
+    color-mix(in oklch, var(--auth-accent, var(--grade-plus)) 16%, transparent) 0%,
+    transparent 62%
+  );
 }

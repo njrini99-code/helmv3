@@ -6,6 +6,7 @@ import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
+import { setRememberedFirstName } from '@/lib/entry/greeting';
 import {
   AuthCard,
   AuthFooterLinks,
@@ -50,6 +51,22 @@ function LoginContent() {
     checkAuth();
   }, [supabase]);
 
+  // Entry World personalization (docs/baseball/ENTRY_SCENES_DESIGN.md family
+  // rule #6): remember the first name on a fresh sign-in only — never on
+  // `INITIAL_SESSION` (an already-authed page load, not a login success) —
+  // so the next visit's greeting can read "Welcome back, {name}." Purely
+  // additive: doesn't touch loginAction, redirects, validation, or errors.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== 'SIGNED_IN') return;
+      const firstName = session?.user?.user_metadata?.first_name;
+      if (typeof firstName === 'string' && firstName.trim()) {
+        setRememberedFirstName(firstName);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
   async function handleSignOut() {
     setIsLoggingOut(true);
     await supabase.auth.signOut();
@@ -62,7 +79,9 @@ function LoginContent() {
     <BaseballAuthShell
       skipTargetId="login-form"
       skipLabel="Skip to login form"
+      sceneIdSuffix="login"
       eyebrow="COACHES · PLAYERS · PROGRAMS"
+      welcomeLine="Welcome back to the Yard."
       tagline="Sign in to continue to your dashboard."
       hero
       footer={

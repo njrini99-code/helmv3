@@ -125,7 +125,9 @@ export default function CompleteSignupClient() {
     <BaseballAuthShell
       skipTargetId="complete-signup-form"
       skipLabel="Skip to setup form"
+      sceneIdSuffix="complete-signup"
       eyebrow="ONE STEP LEFT"
+      welcomeLine="One step from the lineup."
       tagline="Just one more step to complete your account."
     >
       <AuthCard ariaLabel="Complete your account setup">

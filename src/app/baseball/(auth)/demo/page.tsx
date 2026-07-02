@@ -162,8 +162,9 @@ function DemoGateContent() {
     <BaseballAuthShell
       skipTargetId="demo-form"
       skipLabel="Skip to demo form"
+      sceneIdSuffix="demo"
       ink="pursuit"
-      maxWidthClassName="max-w-[440px]"
+      welcomeLine="Step into the Yard."
       footer={
         <AuthFooterLinks
           switchLabel="Already have an account?"

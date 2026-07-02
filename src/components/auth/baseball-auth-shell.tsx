@@ -1,27 +1,41 @@
 'use client';
 
 /**
- * BaseballHelm front-door auth shell — "The Living Annual", adapted for a
- * full-bleed marketing-grade surface.
+ * BaseballHelm front-door auth shell — "The Yard at Dusk" (docs/baseball/
+ * ENTRY_SCENES_DESIGN.md Scene 1 + docs/LANDING_ENTRY_WORLD_DESIGN.md
+ * "Continuity into the app").
  *
  * Shared chrome for every src/app/baseball/(auth)/ page (login, signup,
- * complete-signup, forgot-password, reset-password, demo): the deep-cream
- * grain field, the wordmark moment, the double-bezel form panel, and the
- * footer link row. Baseball-only — golf keeps its own separate `(auth)`
- * chrome (`.bg-auth-golf` / `.auth-glass-card` in globals.css), untouched.
+ * complete-signup, forgot-password, reset-password, demo): a full-bleed
+ * painterly scene (`<YardScene />` desktop / `<HomePlateScene />` <=md — one
+ * mounts, never both), a warm `fl-glass-3` panel (right-floating on desktop,
+ * bottom-sheet on mobile) carrying a Fraunces serif welcome line + a
+ * time-aware greeting, and the footer link row. Baseball-only — golf keeps
+ * its own separate `(auth)` chrome (`.bg-auth-golf` / `.auth-glass-card` in
+ * globals.css), untouched.
  *
- * Composes straight from the Living Annual kit (`@/components/baseball/
- * living-annual`) — Reveal for the mount stagger, Eyebrow/HairlineRule for
- * the masthead accent, PaperCard for the panel stock — so the front door
- * breathes on the exact same curves as the rest of the redesigned product
- * instead of a bespoke one-off.
+ * Composes the Living Annual kit (`@/components/baseball/living-annual`) —
+ * Reveal for the mount stagger, Eyebrow/HairlineRule for the masthead accent
+ * — plus the shared First Light glass grammar/serif module
+ * (`@/components/marketing/first-light`) so the front door breathes on the
+ * same glass + serif + green material system as the marketing landing and
+ * the rest of the redesigned product (design doc: "a visitor never feels a
+ * seam").
  */
 import type { ReactNode, CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LazyMotion, domAnimation } from 'framer-motion';
-import { Eyebrow, HairlineRule, PaperCard, Reveal } from '@/components/baseball/living-annual';
+import { Eyebrow, HairlineRule, Reveal } from '@/components/baseball/living-annual';
+import { YardScene } from '@/components/baseball/scenes/YardScene';
+import { HomePlateScene } from '@/components/baseball/scenes/HomePlateScene';
+import type { SceneVariant } from '@/components/baseball/scenes/YardScene';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { flFraunces } from '@/components/marketing/first-light/fonts';
+import { getGreeting, getRememberedFirstName, resolveSceneVariant } from '@/lib/entry/greeting';
 import { cn } from '@/lib/utils';
+import '@/components/marketing/first-light/first-light.css';
 
 export type AuthInk = 'team' | 'pursuit';
 
@@ -36,7 +50,7 @@ const INK_GLOW: Record<AuthInk, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// BaseballAuthShell — the full-bleed field + wordmark + content column
+// BaseballAuthShell — full-bleed scene + the floating/bottom-sheet glass panel
 // ---------------------------------------------------------------------------
 
 export interface BaseballAuthShellProps {
@@ -44,15 +58,19 @@ export interface BaseballAuthShellProps {
   skipTargetId: string;
   /** Accessible label for the skip-link, e.g. "Skip to login form". */
   skipLabel: string;
-  /** Small-caps dateline above the wordmark, e.g. "COACHES · PLAYERS · PROGRAMS". */
+  /** Small-caps dateline above the welcome line, e.g. "COACHES · PLAYERS · PROGRAMS". */
   eyebrow?: string;
+  /** Serif Fraunces welcome line, in the spec's voice — e.g. "Welcome back to the Yard." */
+  welcomeLine: ReactNode;
   /** Supporting line under the hairline accent. */
   tagline?: ReactNode;
   /** Lane ink for the eyebrow + hairline + glow — team (green) or pursuit (clay). */
   ink?: AuthInk;
-  /** Full hero wordmark size (login/demo) vs. a compact one (other 4 pages). */
+  /** Larger welcome-line size for the hero pages (login/demo) vs. compact (other 4). */
   hero?: boolean;
-  /** Tailwind max-width class for the content column. Defaults to 420px. */
+  /** Unique per-page suffix for the scene's SVG ids. */
+  sceneIdSuffix?: string;
+  /** Tailwind max-width class for the panel on desktop. Defaults to 440px. */
   maxWidthClassName?: string;
   children: ReactNode;
   /** Rendered after the content column, staggered in last. */
@@ -63,14 +81,31 @@ export function BaseballAuthShell({
   skipTargetId,
   skipLabel,
   eyebrow,
+  welcomeLine,
   tagline,
   ink = 'team',
   hero = false,
-  maxWidthClassName = 'max-w-[420px]',
+  sceneIdSuffix = 'auth',
+  maxWidthClassName = 'md:max-w-[440px]',
   children,
   footer,
 }: BaseballAuthShellProps) {
-  const vignetteStyle = { '--auth-accent': INK_VAR[ink] } as CSSProperties;
+  const inkStyle = { '--auth-accent': INK_VAR[ink] } as CSSProperties;
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
+  // Time-aware personalization (docs/baseball/ENTRY_SCENES_DESIGN.md family
+  // rule #6). Server + first client render agree on the neutral defaults
+  // below (no localStorage/clock read possible during SSR); the effect
+  // swaps in the real values right after mount — a plain prop/text update,
+  // not a structural DOM change, so it never surfaces as a hydration error
+  // (see CONTRACTS.md's reduced-motion section for the same reasoning).
+  const [variant, setVariant] = useState<SceneVariant>('dusk');
+  const [greeting, setGreeting] = useState<string | null>(null);
+
+  useEffect(() => {
+    setVariant(resolveSceneVariant());
+    setGreeting(getGreeting(getRememberedFirstName()));
+  }, []);
 
   return (
     // LazyMotion loads the animation engine `m.*` primitives (Reveal,
@@ -81,7 +116,7 @@ export function BaseballAuthShell({
     // supplies its own, exactly like golf's (auth) pages and baseball's
     // onboarding pages already do.
     <LazyMotion features={domAnimation}>
-      <div className="auth-shell baseball-auth-field relative flex min-h-[100dvh] items-center justify-center overflow-hidden p-4 sm:p-6">
+      <div className="baseball-auth-field relative min-h-[100dvh] w-full overflow-x-hidden">
         {/* Skip to main content link for keyboard navigation */}
         <a
           href={`#${skipTargetId}`}
@@ -90,55 +125,91 @@ export function BaseballAuthShell({
           {skipLabel}
         </a>
 
-        <div aria-hidden className="baseball-auth-grain" />
-        <div aria-hidden className="baseball-auth-vignette" style={vignetteStyle} />
+        {/* Full-bleed scene — fixed so it never stretches under tall content
+            (the signup panel can run taller than 100dvh on small screens)
+            and reads as a held frame while the page scrolls, echoing the
+            landing's M3 "the frame holds" language. Exactly one scene
+            mounts per viewport. */}
+        <div aria-hidden className="fixed inset-0 z-0">
+          {isDesktop ? (
+            <YardScene idSuffix={`${sceneIdSuffix}-yard`} variant={variant} />
+          ) : (
+            <HomePlateScene idSuffix={`${sceneIdSuffix}-home-plate`} variant={variant} />
+          )}
+        </div>
 
-        <div className={cn('relative z-10 w-full', maxWidthClassName)}>
-          <Reveal staggerIndex={0} className="mb-7 sm:mb-8 flex flex-col items-center text-center">
-            <div className="relative mb-4">
-              <div aria-hidden className={cn('absolute inset-0 rounded-full blur-2xl scale-150', INK_GLOW[ink])} />
-              <div className="relative flex h-14 w-14 items-center justify-center">
-                <Image
-                  src="/helm-baseball-logo.png"
-                  alt="BaseballHelm"
-                  width={56}
-                  height={56}
-                  className="h-14 w-14 object-contain"
-                  priority
-                  unoptimized
-                />
-              </div>
-            </div>
-
-            {eyebrow ? (
-              <Eyebrow ink={ink} className="mb-2">
-                {eyebrow}
-              </Eyebrow>
-            ) : null}
-
-            <h1
-              className={cn(
-                'font-annual font-semibold tracking-tight text-text-primary',
-                hero ? 'text-h1 leading-[1.05] sm:text-5xl md:text-6xl' : 'text-2xl sm:text-3xl'
-              )}
+        <div
+          className={cn(
+            'relative z-10 flex min-h-[100dvh] w-full flex-col items-center justify-end',
+            'md:items-end md:justify-center md:pr-[6vw] md:py-10'
+          )}
+        >
+          <div
+            id={skipTargetId}
+            style={inkStyle}
+            className={cn(
+              'baseball-auth-panel fl-glass-3 relative w-full max-h-[88dvh] overflow-y-auto overscroll-contain',
+              'rounded-t-3xl px-6 pt-7',
+              'md:max-h-none md:overflow-visible md:rounded-3xl md:px-9 md:py-9',
+              maxWidthClassName
+            )}
+          >
+            <div
+              className="relative z-10"
+              style={{ paddingBottom: 'max(1.75rem, calc(env(safe-area-inset-bottom) + 1rem))' }}
             >
-              BaseballHelm
-            </h1>
+              <Reveal staggerIndex={0} className="mb-6 flex flex-col items-center text-center">
+                <div className="relative mb-3">
+                  <div aria-hidden className={cn('absolute inset-0 rounded-full blur-2xl scale-150', INK_GLOW[ink])} />
+                  <div className="relative flex h-11 w-11 items-center justify-center">
+                    <Image
+                      src="/helm-baseball-logo.png"
+                      alt=""
+                      width={44}
+                      height={44}
+                      className="h-11 w-11 object-contain"
+                      priority
+                      unoptimized
+                    />
+                  </div>
+                </div>
 
-            <HairlineRule ink={ink} weight={2} className={cn('mt-3 rounded-full', hero ? 'w-20' : 'w-14')} />
+                {eyebrow ? (
+                  <Eyebrow ink={ink} className="mb-2">
+                    {eyebrow}
+                  </Eyebrow>
+                ) : null}
 
-            {tagline ? (
-              <p className="mt-4 max-w-[360px] text-sm leading-relaxed text-warm-600 sm:text-base">{tagline}</p>
-            ) : null}
-          </Reveal>
+                {greeting ? (
+                  <p className="mb-1 text-xs font-medium tracking-[0.02em] text-warm-500">{greeting}</p>
+                ) : null}
 
-          <div id={skipTargetId}>{children}</div>
+                <h1
+                  className={cn(
+                    flFraunces.className,
+                    'font-medium tracking-tight text-text-primary',
+                    hero ? 'text-[2rem] leading-[1.1] sm:text-[2.5rem]' : 'text-2xl sm:text-[1.75rem]'
+                  )}
+                >
+                  {welcomeLine}
+                </h1>
 
-          {footer ? (
-            <Reveal staggerIndex={3} className="mt-6">
-              {footer}
-            </Reveal>
-          ) : null}
+                <HairlineRule ink={ink} weight={2} className={cn('mt-3 rounded-full', hero ? 'w-16' : 'w-12')} />
+
+                {tagline ? (
+                  <p className="mt-3 max-w-[360px] text-sm leading-relaxed text-warm-600">{tagline}</p>
+                ) : null}
+              </Reveal>
+
+              {children}
+
+              {footer ? (
+                <Reveal staggerIndex={3} className="mt-6">
+                  {footer}
+                </Reveal>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
     </LazyMotion>
@@ -146,7 +217,10 @@ export function BaseballAuthShell({
 }
 
 // ---------------------------------------------------------------------------
-// AuthBezel / AuthCard — the double-bezel form panel
+// AuthBezel / AuthCard — thin content wrapper (the panel itself is now the
+// one glass surface — CLAUDE.md's motion budget caps 2 blur layers per
+// viewport, so the form no longer nests a second bezel/paper-stock card
+// inside the shell's `fl-glass-3` panel).
 // ---------------------------------------------------------------------------
 
 export interface AuthBezelProps {
@@ -157,16 +231,10 @@ export interface AuthBezelProps {
   children: ReactNode;
 }
 
-/** The outer ring of the double-bezel: a deeper-cream frame the panel stock sits inside. */
 export function AuthBezel({ id, role, ariaLabel, className, children }: AuthBezelProps) {
   return (
     <Reveal staggerIndex={1}>
-      <div
-        id={id}
-        role={role}
-        aria-label={ariaLabel}
-        className={cn('baseball-auth-bezel rounded-3xl p-1.5 sm:p-2', className)}
-      >
+      <div id={id} role={role} aria-label={ariaLabel} className={className}>
         {children}
       </div>
     </Reveal>
@@ -179,13 +247,14 @@ export interface AuthCardProps extends Omit<AuthBezelProps, 'children'> {
   children: ReactNode;
 }
 
-/** The full double-bezel panel: outer AuthBezel ring + inner PaperCard stock. */
-export function AuthCard({ id, role, ariaLabel, className, registrationTick = true, contentClassName, children }: AuthCardProps) {
+/** The form panel content — a lean wrapper now that the shell's `fl-glass-3`
+ * panel already supplies the glass chrome. `registrationTick` is accepted
+ * for call-site compatibility but no longer renders anything (that was a
+ * `PaperCard`-only affordance, no longer applicable). */
+export function AuthCard({ id, role, ariaLabel, className, contentClassName, children }: AuthCardProps) {
   return (
     <AuthBezel id={id} role={role} ariaLabel={ariaLabel} className={className}>
-      <PaperCard registrationTick={registrationTick} className={cn('p-7 sm:p-9', contentClassName)}>
-        {children}
-      </PaperCard>
+      <div className={cn('pt-1', contentClassName)}>{children}</div>
     </AuthBezel>
   );
 }
