@@ -26,6 +26,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface InsightDrill {
   id: string;
@@ -60,7 +61,7 @@ interface AttachmentRow {
  * array for missing/inaccessible insights so the UI can safely render
  * nothing.
  */
-export async function getDrillsForInsight(
+async function getDrillsForInsightImpl(
   insightId: string,
 ): Promise<InsightDrill[]> {
   if (!insightId) return [];
@@ -140,6 +141,16 @@ export async function getDrillsForInsight(
     }));
 }
 
+const observedGetDrillsForInsight = withAdminObserved(
+  'getDrillsForInsight',
+  { sport: 'golf', feature: 'drills_practice_rx' },
+  getDrillsForInsightImpl,
+);
+
+export async function getDrillsForInsight(insightId: string): Promise<InsightDrill[]> {
+  return observedGetDrillsForInsight(insightId);
+}
+
 /**
  * Batched sibling of {@link getDrillsForInsight}: loads the top-3 drills for
  * MANY insights in a SINGLE round-trip and returns a `{ [insightId]: drills }`
@@ -155,7 +166,7 @@ export async function getDrillsForInsight(
  * client-side here because PostgREST can't window-per-group in one query; the
  * row volume (≤3 × #insights on a development page) is trivially small.
  */
-export async function getDrillsForInsights(
+async function getDrillsForInsightsImpl(
   insightIds: string[],
 ): Promise<Record<string, InsightDrill[]>> {
   const ids = Array.from(new Set(insightIds.filter((id): id is string => !!id)));
@@ -245,11 +256,21 @@ export async function getDrillsForInsights(
   return byInsight;
 }
 
+const observedGetDrillsForInsights = withAdminObserved(
+  'getDrillsForInsights',
+  { sport: 'golf', feature: 'drills_practice_rx' },
+  getDrillsForInsightsImpl,
+);
+
+export async function getDrillsForInsights(insightIds: string[]): Promise<Record<string, InsightDrill[]>> {
+  return observedGetDrillsForInsights(insightIds);
+}
+
 /**
  * Records that a player opened a drill. For now we just log at info level —
  * when we need real analytics we'll back this with `golf_drill_views`.
  */
-export async function recordDrillView(drillId: string): Promise<void> {
+async function recordDrillViewImpl(drillId: string): Promise<void> {
   if (!drillId) return;
 
   const supabase = await createClient();
@@ -269,6 +290,16 @@ export async function recordDrillView(drillId: string): Promise<void> {
   );
 }
 
+const observedRecordDrillView = withAdminObserved(
+  'recordDrillView',
+  { sport: 'golf', feature: 'drills_practice_rx' },
+  recordDrillViewImpl,
+);
+
+export async function recordDrillView(drillId: string): Promise<void> {
+  return observedRecordDrillView(drillId);
+}
+
 /**
  * Records that a player tapped "Add to my practice plan" on a drill.
  *
@@ -284,7 +315,7 @@ export async function recordDrillView(drillId: string): Promise<void> {
  * Idempotency: upsert on the composite PK so re-tapping the button doesn't
  * error out.
  */
-export async function recordDrillAddedToPlan(
+async function recordDrillAddedToPlanImpl(
   drillId: string,
   insightId: string | null = null,
 ): Promise<{ success: boolean; error?: string }> {
@@ -356,4 +387,14 @@ export async function recordDrillAddedToPlan(
   revalidatePath('/golf/dashboard/analytics/coachhelm');
 
   return { success: true };
+}
+
+const observedRecordDrillAddedToPlan = withAdminObserved(
+  'recordDrillAddedToPlan',
+  { sport: 'golf', feature: 'drills_practice_rx' },
+  recordDrillAddedToPlanImpl,
+);
+
+export async function recordDrillAddedToPlan(drillId: string, insightId: string | null = null): Promise<{ success: boolean; error?: string }> {
+  return observedRecordDrillAddedToPlan(drillId, insightId);
 }

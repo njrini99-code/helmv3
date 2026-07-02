@@ -30,6 +30,7 @@ import {
   getMetricRenderConfig,
   type MetricRenderConfig,
 } from '@/lib/coachhelm/v3/standing/metric-config';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface CreateGoalInput {
   metric_id: MetricId;
@@ -63,7 +64,7 @@ export interface ActionResult {
  *  - Player creating for themselves (player_id derived from auth)
  *  - Coach creating for a player (coach_id + player_id_if_coach_creating)
  */
-export async function createGoal(input: CreateGoalInput): Promise<ActionResult> {
+async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
   try {
     if (!isMetricId(input.metric_id)) {
       return { ok: false, error: 'Unknown metric_id' };
@@ -183,6 +184,16 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
   }
 }
 
+const observedCreateGoal = withAdminObserved(
+  'createGoal',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  createGoalImpl,
+);
+
+export async function createGoal(input: CreateGoalInput): Promise<ActionResult> {
+  return observedCreateGoal(input);
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Auto-fill engine — "choose a stat, the target fills in"
  * ----------------------------------------------------------------------------
@@ -217,7 +228,7 @@ export interface GoalTargetSuggestion {
   suggested_target: number | null;
 }
 
-export async function suggestGoalTarget(
+async function suggestGoalTargetImpl(
   metricId: MetricId,
   opts?: { playerId?: string },
 ): Promise<GoalTargetSuggestion> {
@@ -284,19 +295,59 @@ export async function suggestGoalTarget(
   }
 }
 
+const observedSuggestGoalTarget = withAdminObserved(
+  'suggestGoalTarget',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  suggestGoalTargetImpl,
+);
+
+export async function suggestGoalTarget(metricId: MetricId, opts?: { playerId?: string }): Promise<GoalTargetSuggestion> {
+  return observedSuggestGoalTarget(metricId, opts);
+}
+
 /** Pause an active goal. Only the player or assigning coach can call. */
-export async function pauseGoal(goalId: string): Promise<ActionResult> {
+async function pauseGoalImpl(goalId: string): Promise<ActionResult> {
   return transitionGoal(goalId, 'paused');
 }
 
+const observedPauseGoal = withAdminObserved(
+  'pauseGoal',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  pauseGoalImpl,
+);
+
+export async function pauseGoal(goalId: string): Promise<ActionResult> {
+  return observedPauseGoal(goalId);
+}
+
 /** Abandon a goal (player gave up). Records reason if provided. */
-export async function abandonGoal(goalId: string, reason?: string): Promise<ActionResult> {
+async function abandonGoalImpl(goalId: string, reason?: string): Promise<ActionResult> {
   return transitionGoal(goalId, 'abandoned', reason);
 }
 
+const observedAbandonGoal = withAdminObserved(
+  'abandonGoal',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  abandonGoalImpl,
+);
+
+export async function abandonGoal(goalId: string, reason?: string): Promise<ActionResult> {
+  return observedAbandonGoal(goalId, reason);
+}
+
 /** Resume a paused goal back to active. */
-export async function resumeGoal(goalId: string): Promise<ActionResult> {
+async function resumeGoalImpl(goalId: string): Promise<ActionResult> {
   return transitionGoal(goalId, 'active');
+}
+
+const observedResumeGoal = withAdminObserved(
+  'resumeGoal',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  resumeGoalImpl,
+);
+
+export async function resumeGoal(goalId: string): Promise<ActionResult> {
+  return observedResumeGoal(goalId);
 }
 
 async function transitionGoal(
@@ -342,7 +393,7 @@ async function transitionGoal(
  * Accept an engine-suggested goal — creates a real goal + marks the
  * suggestion accepted.
  */
-export async function acceptGoalSuggestion(
+async function acceptGoalSuggestionImpl(
   suggestionId: string,
 ): Promise<ActionResult> {
   try {
@@ -392,8 +443,18 @@ export async function acceptGoalSuggestion(
   }
 }
 
+const observedAcceptGoalSuggestion = withAdminObserved(
+  'acceptGoalSuggestion',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  acceptGoalSuggestionImpl,
+);
+
+export async function acceptGoalSuggestion(suggestionId: string): Promise<ActionResult> {
+  return observedAcceptGoalSuggestion(suggestionId);
+}
+
 /** Dismiss a suggestion (player not interested). */
-export async function dismissGoalSuggestion(
+async function dismissGoalSuggestionImpl(
   suggestionId: string,
 ): Promise<ActionResult> {
   try {
@@ -412,6 +473,16 @@ export async function dismissGoalSuggestion(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+const observedDismissGoalSuggestion = withAdminObserved(
+  'dismissGoalSuggestion',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  dismissGoalSuggestionImpl,
+);
+
+export async function dismissGoalSuggestion(suggestionId: string): Promise<ActionResult> {
+  return observedDismissGoalSuggestion(suggestionId);
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -449,7 +520,7 @@ export interface CreateTeamGoalResult {
   error?: string;
 }
 
-export async function createTeamGoal(input: CreateTeamGoalInput): Promise<CreateTeamGoalResult> {
+async function createTeamGoalImpl(input: CreateTeamGoalInput): Promise<CreateTeamGoalResult> {
   if (!isMetricId(input.metric_id)) {
     return { ok: false, created: 0, failed: [], error: 'Invalid metric' };
   }
@@ -517,4 +588,14 @@ export async function createTeamGoal(input: CreateTeamGoalInput): Promise<Create
     revalidatePath('/golf/dashboard/intelligence');
   }
   return { ok: created > 0, created, failed, warning };
+}
+
+const observedCreateTeamGoal = withAdminObserved(
+  'createTeamGoal',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  createTeamGoalImpl,
+);
+
+export async function createTeamGoal(input: CreateTeamGoalInput): Promise<CreateTeamGoalResult> {
+  return observedCreateTeamGoal(input);
 }

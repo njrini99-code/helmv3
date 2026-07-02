@@ -18,6 +18,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { composePracticeRx, type PracticePlan } from '@/lib/coachhelm/v3/practice-rx/composer';
 import { metricForArea } from '@/lib/coachhelm/v3/practice-rx/area-metric-map';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface TeamPracticeRxInput {
   team_id: string;
@@ -33,7 +34,7 @@ export interface TeamPracticeRxResult {
   error?: string;
 }
 
-export async function generateTeamPracticeRx(
+async function generateTeamPracticeRxImpl(
   input: TeamPracticeRxInput,
 ): Promise<TeamPracticeRxResult> {
   try {
@@ -121,4 +122,14 @@ export async function generateTeamPracticeRx(
     );
     return { ok: false, error: 'Internal error' };
   }
+}
+
+const observedGenerateTeamPracticeRx = withAdminObserved(
+  'generateTeamPracticeRx',
+  { sport: 'golf', feature: 'drills_practice_rx' },
+  generateTeamPracticeRxImpl,
+);
+
+export async function generateTeamPracticeRx(input: TeamPracticeRxInput): Promise<TeamPracticeRxResult> {
+  return observedGenerateTeamPracticeRx(input);
 }
