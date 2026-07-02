@@ -6,7 +6,12 @@
  * AMENDMENT 2 — IMMACULATE, ⚠ AMENDMENT 3 — BRAND & ARCHITECTURE §D.4.
  * Background register: cream → sage-mist → sage, deepening toward
  * sage-ink ONLY at the band's very far edge — the section must still
- * read light (daylight mood; never murky).
+ * read light (daylight mood; never murky). The body never deepens past
+ * sage; only the final 6% of section height hands off to a semi-
+ * transparent sage-ink (≤0.5 alpha), not an opaque one — a full-strength
+ * sage-ink stop here reads as a second dark band competing with M3 (the
+ * page's ONE deep moment) and lands hard against M6's light `.fl-aurora`
+ * cream field right below it (pixel-review 2026-07-02 fix).
  *
  * Amendment 3 §D.4 goes off-axis: the signal card moves into a
  * right-of-center column (`md:grid-cols-[0.9fr_1.1fr]`, the card's column
@@ -74,7 +79,7 @@ export function M5Intelligence({ className }: M5IntelligenceProps) {
       className={cn('relative px-6 py-24 sm:py-32', className)}
       style={{
         background:
-          'linear-gradient(180deg, var(--fl-cream) 0%, var(--fl-sage-mist) 42%, var(--fl-sage) 86%, var(--fl-sage-ink) 100%)',
+          'linear-gradient(180deg, var(--fl-cream) 0%, var(--fl-sage-mist) 42%, var(--fl-sage) 94%, rgba(var(--fl-sage-ink-rgb), 0.4) 100%)',
       }}
     >
       <div className="relative z-10 mx-auto grid max-w-6xl gap-12 md:grid-cols-[0.9fr_1.1fr] md:items-start md:gap-16">
