@@ -74,7 +74,6 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
       baseball_team_members (
         id,
         joined_at,
-        left_at,
         position,
         jersey_number,
         status,

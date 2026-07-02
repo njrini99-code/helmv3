@@ -57,6 +57,16 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
     setLoadingPlayers(true);
     const supabase = createClient();
 
+    // NOTE: `baseball_team_members` has no `left_at` column (see the
+    // generated schema in src/lib/types/database.ts) — membership end is
+    // not tracked by a timestamp. Filtering on `.is('left_at', null)`
+    // made every request to this table error out, so `data` was always
+    // null and the picker always rendered the "No players in roster"
+    // empty state regardless of actual roster size. Query the same way
+    // the canonical roster read model does (getRoster in
+    // src/lib/baseball/read-models/roster.ts): all current team_members
+    // rows for this team, no status filter, so the picker always matches
+    // what the Roster page shows.
     const { data } = await supabase
       .from('baseball_team_members')
       .select(`
@@ -70,7 +80,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
         )
       `)
       .eq('team_id', teamId)
-      .is('left_at', null);
+      .order('joined_at', { ascending: false });
 
     if (data) {
       const playerList = data
