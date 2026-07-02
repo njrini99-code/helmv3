@@ -24,6 +24,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { processReminders } from '@/app/golf/actions/task-reminders';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -33,33 +34,35 @@ export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
 
-  try {
-    const supabase = createAdminClient();
-    const result = await processReminders(supabase);
+  return recordJobRun('task-reminders', async () => {
+    try {
+      const supabase = createAdminClient();
+      const result = await processReminders(supabase);
 
-    if (result.sent + result.failed > 0) {
-      await logServerEvent(
-        `task_reminders cron sent=${result.sent} failed=${result.failed}`,
-        {
-          action: 'cron.taskReminders.summary',
-          featureArea: 'tasks',
-          extra: { sent: result.sent, failed: result.failed, errors: result.errors.slice(0, 10) },
-        },
-        result.failed > 0 ? 'warning' : 'info',
+      if (result.sent + result.failed > 0) {
+        await logServerEvent(
+          `task_reminders cron sent=${result.sent} failed=${result.failed}`,
+          {
+            action: 'cron.taskReminders.summary',
+            featureArea: 'tasks',
+            extra: { sent: result.sent, failed: result.failed, errors: result.errors.slice(0, 10) },
+          },
+          result.failed > 0 ? 'warning' : 'info',
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        sent: result.sent,
+        failed: result.failed,
+      });
+    } catch (err) {
+      await logServerError(
+        `cron.taskReminders failed: ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'cron.taskReminders', featureArea: 'tasks' },
+        'error',
       );
+      return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
     }
-
-    return NextResponse.json({
-      success: true,
-      sent: result.sent,
-      failed: result.failed,
-    });
-  } catch (err) {
-    await logServerError(
-      `cron.taskReminders failed: ${err instanceof Error ? err.message : String(err)}`,
-      { action: 'cron.taskReminders', featureArea: 'tasks' },
-      'error',
-    );
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
-  }
+  });
 }
