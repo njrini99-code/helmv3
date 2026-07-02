@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
+import { Card, CardContent } from '@/components/ui/card';
 import { PlanDetail } from '@/components/baseball/dev-plans/PlanDetail';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import {
   getDevPlanForCoach,
@@ -15,6 +17,7 @@ import type { DevPlanWithPlayer } from '@/lib/baseball/dev-plan-types';
 
 export default function DevPlanDetailPage() {
   const params = useParams<{ id: string }>();
+  const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const [plan, setPlan] = useState<DevPlanWithPlayer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,12 +82,27 @@ export default function DevPlanDetailPage() {
     [plan, fetchPlan, showToast]
   );
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <>
         <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
         <div className="p-6 lg:p-8">
           <PageLoading />
+        </div>
+      </>
+    );
+  }
+
+  if (user?.role !== 'coach') {
+    return (
+      <>
+        <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
+        <div className="p-6 lg:p-8">
+          <Card variant="glass">
+            <CardContent className="p-12 text-center">
+              <p className="text-warm-500">Only coaches can access development plans.</p>
+            </CardContent>
+          </Card>
         </div>
       </>
     );

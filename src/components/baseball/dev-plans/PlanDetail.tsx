@@ -121,6 +121,19 @@ export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: Pl
                         {GOAL_STATUS_LABEL[goal.status]}
                       </Badge>
                     </div>
+
+                    {!isCompleted && goal.progress > 0 && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs text-warm-500 mb-1">
+                          <span>Progress</span>
+                          <span className="font-medium">{goal.progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-primary-500" style={{ width: `${goal.progress}%` }} />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                       {goal.target_date ? (
                         <p className="text-xs text-warm-500">

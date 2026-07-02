@@ -428,6 +428,8 @@ const completeGoalAction = withBaseballAction(
     }
 
     revalidatePath(DEV_PLAN_PATH);
+    revalidatePath('/baseball/dashboard/dev-plans');
+    revalidatePath(`/baseball/dashboard/dev-plans/${planId}`);
   },
 );
 
@@ -507,6 +509,8 @@ const uncompleteGoalAction = withBaseballAction(
     }
 
     revalidatePath(DEV_PLAN_PATH);
+    revalidatePath('/baseball/dashboard/dev-plans');
+    revalidatePath(`/baseball/dashboard/dev-plans/${planId}`);
   },
 );
 
