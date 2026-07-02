@@ -1,224 +1,166 @@
 'use client';
 
-import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { PageLoading } from '@/components/ui/loading';
-import { IconEye, IconStar, IconVideo, IconMessage, IconTrendingUp, IconCalendar } from '@/components/icons';
+// =============================================================================
+// AnalyticsClient — the player's recruiting-interest view, migrated onto "The
+// Living Annual" kit (design-system-living-annual.md §6, execution-plan.md
+// §3.1 "analytics" row). PLAYER-ONLY (coaches redirect to the Command Center
+// before this ever mounts — see page.tsx).
+//
+// PRESENTATION ONLY. `useAnalytics()` — the SAME hook, same 30-day engagement
+// query, same anonymize-until-activated school naming — is preserved verbatim;
+// only the render is re-skinned:
+//   • 4 stat cards        → `KPIContentsStrip` (green-ruled, tabular-nums)
+//   • Views-over-time     → `ClimbArc` (paper season climb, replaces recharts)
+//   • Top schools list    → `RuledStatLine` rows (top interest reads green)
+//
+// Ink ruling: stays GREEN chrome throughout — this is the Passport (player)
+// lane, not the War Room. Recruiting heat (a coach viewing the profile) gets a
+// single `sodium` `InkBadge` accent on the masthead, never full clay chrome.
+// =============================================================================
+
 import { useAnalytics } from '@/hooks/use-analytics';
-import dynamic from 'next/dynamic';
+import {
+  SectionMasthead,
+  KPIContentsStrip,
+  RuledStatLine,
+  ClimbArc,
+  PaperCard,
+  Eyebrow,
+  InkBadge,
+  EmptyIssue,
+  EditorsLetter,
+  Reveal,
+} from '@/components/baseball/living-annual';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const LineChart = dynamic(() => import('recharts').then((mod) => mod.LineChart), { ssr: false });
-const Line = dynamic(() => import('recharts').then((mod) => mod.Line), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then((mod) => mod.XAxis), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then((mod) => mod.YAxis), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then((mod) => mod.Tooltip), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then((mod) => mod.ResponsiveContainer), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then((mod) => mod.CartesianGrid), { ssr: false });
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
-export default function AnalyticsPage() {
+/** `2026-06-15` → `Jun 15`, parsed as a local calendar date (not UTC-shifted). */
+function formatDateLabel(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ─── Loading (skeleton, not a spinner) ──────────────────────────────────────
+
+function AnalyticsSkeleton() {
+  return (
+    <div className={`${PAGE_SHELL} space-y-8`}>
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="text" width={180} height={11} />
+        <Skeleton variant="text" width={220} height={36} />
+        <Skeleton className="h-[3px] w-16 rounded-full" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-8 gap-y-7 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <Skeleton variant="text" width="70%" height={11} />
+            <Skeleton variant="text" width="50%" height={34} />
+          </div>
+        ))}
+      </div>
+
+      <PaperCard className="p-5">
+        <Skeleton variant="text" width="30%" height={14} className="mb-4" />
+        <Skeleton variant="rectangular" className="h-44 w-full" />
+      </PaperCard>
+
+      <PaperCard className="space-y-4 p-5">
+        <Skeleton variant="text" width="40%" height={14} />
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} variant="text" width="100%" height={22} />
+        ))}
+      </PaperCard>
+    </div>
+  );
+}
+
+export default function AnalyticsClient() {
   const { data, loading } = useAnalytics();
 
   if (loading) {
-    return (
-      <>
-        <Header title="Analytics" subtitle="Track your profile performance" />
-        <PageLoading />
-      </>
-    );
+    return <AnalyticsSkeleton />;
   }
 
+  // No player record resolved for this session (rare edge state — not the
+  // "recruiting not activated" case, which still returns real zeroed stats
+  // below). Honest standing-by letter, never a broken/blank page.
   if (!data) {
     return (
-      <>
-        <Header
-          title="Analytics"
-          subtitle="Track your profile performance"
-        />
-        <div className="p-8">
-          <Card variant="glass">
-            <CardContent className="p-12 text-center">
-              <IconEye size={48} className="mx-auto text-warm-300 mb-4" />
-              <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">No Analytics Data Yet</h3>
-              <p className="text-sm leading-relaxed text-warm-500">
-                Analytics will appear once coaches start viewing your profile.
-                Make sure recruiting is activated to get discovered.
-              </p>
-            </CardContent>
-          </Card>
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE PASSPORT · RECRUITING ANALYTICS" title="Analytics" ink="team" />
+        <div className="mt-6">
+          <EmptyIssue variant="generic" ink="team" />
         </div>
-      </>
+      </div>
     );
   }
 
   const { stats, viewsOverTime, topSchools } = data;
+  const hasInterest = stats.profileViews > 0;
 
   return (
-    <>
-      <Header
+    <div className={`${PAGE_SHELL} space-y-8`}>
+      <SectionMasthead
+        eyebrow="THE PASSPORT · LAST 30 DAYS"
         title="Analytics"
-        subtitle="Track your recruiting activity over the last 30 days"
+        ink="team"
+        actions={hasInterest ? <InkBadge tone="sodium" label="A school viewed you" /> : undefined}
+      >
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          Track your recruiting activity over the last 30 days.
+        </p>
+      </SectionMasthead>
+
+      <KPIContentsStrip
+        columns={4}
+        items={[
+          { label: 'Profile Views', value: stats.profileViews },
+          { label: 'Watchlist Adds', value: stats.watchlistAdds },
+          { label: 'Video Views', value: stats.videoViews },
+          { label: 'Messages', value: stats.messagesSent },
+        ]}
       />
-      <div className="p-6 lg:p-8 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card variant="glass">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-primary-50">
-                  <IconEye size={20} className="text-primary-600" />
-                </div>
-                <p className="text-sm font-medium text-warm-500">Profile Views</p>
-              </div>
-              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.profileViews.toLocaleString()}</p>
-              <p className="text-xs text-warm-400 mt-1">Last 30 days</p>
-            </CardContent>
-          </Card>
 
-          <Card variant="glass">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-blue-50">
-                  <IconStar size={20} className="text-blue-600" />
-                </div>
-                <p className="text-sm font-medium text-warm-500">Watchlist Adds</p>
-              </div>
-              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.watchlistAdds.toLocaleString()}</p>
-              <p className="text-xs text-warm-400 mt-1">Coaches interested</p>
-            </CardContent>
-          </Card>
+      <ClimbArc
+        title="Profile views"
+        unit="views"
+        points={viewsOverTime.map((v) => ({ label: formatDateLabel(v.date), value: v.views }))}
+      />
 
-          <Card variant="glass">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-purple-50">
-                  <IconVideo size={20} className="text-purple-600" />
-                </div>
-                <p className="text-sm font-medium text-warm-500">Video Views</p>
-              </div>
-              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.videoViews.toLocaleString()}</p>
-              <p className="text-xs text-warm-400 mt-1">Highlight reel views</p>
-            </CardContent>
-          </Card>
+      <PaperCard className="p-5">
+        <Eyebrow as="h2">Top schools viewing your profile</Eyebrow>
+        <p className="mt-1 font-annual text-body-sm text-text-secondary">
+          Schools that have shown the most interest.
+        </p>
 
-          <Card variant="glass">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-amber-50">
-                  <IconMessage size={20} className="text-amber-600" />
-                </div>
-                <p className="text-sm font-medium text-warm-500">Messages</p>
-              </div>
-              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.messagesSent.toLocaleString()}</p>
-              <p className="text-xs text-warm-400 mt-1">Coach messages</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Views Over Time Chart */}
-        <Card variant="glass">
-          <CardHeader className="border-b border-warm-200">
-            <div className="flex items-center gap-2">
-              <IconTrendingUp size={20} className="text-primary-600" />
-              <h3 className="text-lg font-semibold tracking-tight text-warm-900">Profile Views Over Time</h3>
+        <div className="mt-6">
+          {topSchools.length > 0 ? (
+            <div className="flex flex-col gap-6">
+              {topSchools.map((school, i) => (
+                <Reveal key={`${school.school_id}-${i}`} staggerIndex={Math.min(i, 10)}>
+                  <RuledStatLine
+                    label={`${i + 1}. ${school.school_name}${school.division ? ` · ${school.division}` : ''}`}
+                    value={school.view_count}
+                    unit={school.view_count === 1 ? 'view' : 'views'}
+                    ink="team"
+                    leader={i === 0 && school.view_count > 0}
+                  />
+                </Reveal>
+              ))}
             </div>
-            <p className="text-sm leading-relaxed text-warm-500 mt-1">Daily profile views for the last 30 days</p>
-          </CardHeader>
-          <CardContent className="p-6">
-            {viewsOverTime.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={viewsOverTime}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis
-                    dataKey="date"
-                    stroke="#94A3B8"
-                    fontSize={12}
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return `${date.getMonth() + 1}/${date.getDate()}`;
-                    }}
-                  />
-                  <YAxis stroke="#94A3B8" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #E2E8F0',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                    labelFormatter={(value) => {
-                      const date = new Date(value);
-                      return date.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      });
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="views"
-                    stroke="var(--color-primary-600)"
-                    strokeWidth={2}
-                    dot={{ fill: 'var(--color-primary-600)', r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center py-12">
-                <IconCalendar size={48} className="mx-auto text-warm-300 mb-3" />
-                <p className="text-sm leading-relaxed text-warm-500">No profile views yet</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Top Schools Viewing */}
-        <Card variant="glass">
-          <CardHeader className="border-b border-warm-200">
-            <h3 className="text-lg font-semibold tracking-tight text-warm-900">Top Schools Viewing Your Profile</h3>
-            <p className="text-sm leading-relaxed text-warm-500 mt-1">Schools that have shown the most interest</p>
-          </CardHeader>
-          <CardContent className="p-6">
-            {topSchools.length > 0 ? (
-              <div className="space-y-4">
-                {topSchools.map((school, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-4 p-4 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center text-warm-600 font-semibold">
-                        #{idx + 1}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-warm-900">{school.school_name}</p>
-                        {school.division && (
-                          <p className="text-xs text-warm-500 mt-0.5">{school.division}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold tracking-tight text-warm-900 tabular-nums">{school.view_count.toLocaleString()}</p>
-                      <p className="text-xs text-warm-500">
-                        {school.view_count === 1 ? 'view' : 'views'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <IconEye size={48} className="mx-auto text-warm-300 mb-3" />
-                <p className="text-sm leading-relaxed text-warm-500">No school views yet</p>
-                <p className="text-xs text-warm-400 mt-1">
-                  Make sure your profile is complete and recruiting is activated
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </>
+          ) : (
+            <EditorsLetter
+              ink="team"
+              live
+              title="No school views yet."
+              body="Keep your profile complete and recruiting activated — interest shows up here the moment a coach opens your page."
+            />
+          )}
+        </div>
+      </PaperCard>
+    </div>
   );
 }
