@@ -1,6 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
+import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
@@ -259,21 +260,6 @@ function isNextControlFlowError(message: string, error: Error | null): boolean {
     return true;
   }
   return message.includes('Dynamic server usage:');
-}
-
-/**
- * admin_events/error_logs are PROD incident feeds, but every runtime holding
- * prod Supabase creds wrote to them: CI dev servers (/home/runner/...), local
- * dev + `next start` (/Users/...), and Vercel preview/prod builds
- * (/vercel/path0/...). That noise buried real incidents in the Bridge. Only
- * the live production deployment gets to write; everything else keeps
- * console/Sentry visibility. ADMIN_EVENTS_FORCE_CAPTURE=1 is the escape
- * hatch for deliberately testing the pipeline from elsewhere.
- */
-export function shouldPersistAdminTables(): boolean {
-  if (process.env.ADMIN_EVENTS_FORCE_CAPTURE === '1') return true;
-  if (process.env.NEXT_PHASE === 'phase-production-build') return false;
-  return process.env.VERCEL_ENV === 'production';
 }
 
 async function captureServerTrace(

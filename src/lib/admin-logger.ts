@@ -6,7 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { shouldPersistAdminTables } from '@/lib/server-error-logger';
+import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 // ============================================

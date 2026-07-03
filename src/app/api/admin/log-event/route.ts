@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { headers } from 'next/headers';
-import { logServerError, shouldPersistAdminTables } from '@/lib/server-error-logger';
+import { logServerError } from '@/lib/server-error-logger';
+import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
 import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================

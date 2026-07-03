@@ -3,7 +3,7 @@ import { withRateLimit } from '@/lib/middleware/rate-limit';
 import { RATE_LIMITS } from '@/lib/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { shouldPersistAdminTables } from '@/lib/server-error-logger';
+import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
 import type { Json } from '@/lib/types/database';
 
 export async function POST(request: NextRequest) {
