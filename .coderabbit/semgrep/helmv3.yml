@@ -96,6 +96,15 @@ rules:
             $Y.auth.getUser(...)
             ...
           }
+      # The house auth helper: files define a local `requireAdmin()` that
+      # wraps getUser() + role check and returns the client. Calling it is
+      # the sanctioned equivalent of an inline getUser() check.
+      - pattern-not-inside: |
+          export async function $F(...) {
+            ...
+            requireAdmin(...)
+            ...
+          }
 
   # ---------------------------------------------------------------------------
   # DATA-LOSS — DELETE-then-INSERT in a save/sync/submit path

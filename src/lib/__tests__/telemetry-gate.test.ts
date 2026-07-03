@@ -1,8 +1,18 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 
+// These suites assert behavior for specific environments, but the test
+// process itself runs under GitHub Actions where CI/GITHUB_ACTIONS are set
+// globally and would leak into every non-CI scenario. Neutralize them per
+// test; CI-specific tests re-stub them explicitly.
+const clearAmbientCi = () => {
+  vi.stubEnv('CI', '');
+  vi.stubEnv('GITHUB_ACTIONS', '');
+};
+
 describe('shouldPersistAdminTables', () => {
+  beforeEach(clearAmbientCi);
   afterEach(() => { vi.unstubAllEnvs(); });
 
   it('persists when ADMIN_EVENTS_FORCE_CAPTURE=1 regardless of environment', () => {
@@ -63,6 +73,7 @@ describe('shouldPersistAdminTables', () => {
 });
 
 describe('getRuntimeEnv', () => {
+  beforeEach(clearAmbientCi);
   afterEach(() => { vi.unstubAllEnvs(); });
 
   it('tags CI/GITHUB_ACTIONS runs as ci, even with a production-looking VERCEL_ENV', () => {

@@ -12,6 +12,10 @@
 --
 -- Hardcoded table list = every table the admin UI reads with the browser
 -- client (crm/ CRM management surfaces + demo_requests + email_events).
+-- search_path IS pinned (public, pg_temp — the function must read public
+-- tables and pg_catalog views); the rule's regex only accepts '' or
+-- pg_catalog,public forms. Service-role-only EXECUTE, ACL-verified below.
+-- nosemgrep: helmv3-security-definer-without-search-path
 CREATE OR REPLACE FUNCTION public.run_integrity_checks() RETURNS jsonb
     LANGUAGE plpgsql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'pg_temp'
