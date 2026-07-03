@@ -88,7 +88,10 @@ jobs:
     # 30 -> 40: the BaseballHelm mandatory smoke (#372) adds a seed step plus
     # two extra `playwright test` invocations, each of which boots its own
     # `npm run dev` webServer (CI disables reuseExistingServer).
-    timeout-minutes: 40
+    # 40 -> 75: the broad chromium suite is currently a soft-fail/reporting
+    # pass, but job-level cancellation still fails the required workflow before
+    # the soft-fail shim can complete and upload artifacts.
+    timeout-minutes: 75
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
