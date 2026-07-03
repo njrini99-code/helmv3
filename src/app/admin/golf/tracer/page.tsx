@@ -62,13 +62,24 @@ async function TracerBody() {
       </section>
 
       <Surface padding="sm">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Player data quality</h2>
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Player data quality</h2>
         {sortedPlayers.length === 0 ? (
           <PanelNoData label="No player round activity yet" description="Player rows appear once a round is logged." />
         ) : (
           <ul className="mt-2 divide-y divide-warm-200/60">
-            {sortedPlayers.slice(0, 100).map((p) => (
-              <li key={p.player_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+            {sortedPlayers.slice(0, 100).map((p, i) => (
+              <li
+                key={p.player_id}
+                className={
+                  i === 0
+                    // Leader row — the single most-active player by rounds
+                    // logged, sorted just above: soft green wash + 2px green
+                    // left bar, the same "leader" treatment used everywhere
+                    // else in the console a list is genuinely rank-ordered.
+                    ? 'flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 border-l-accent-500 bg-accent-50/60 py-2 pl-2 text-sm'
+                    : 'flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm'
+                }
+              >
                 <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{playerName(p)}</span>
                 <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                   {p.completed_rounds}/{p.total_rounds} completed
@@ -89,7 +100,7 @@ async function TracerBody() {
       </Surface>
 
       <Surface padding="sm">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Recent data-quality incidents</h2>
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Recent data-quality incidents</h2>
         {data.recentErrors.length === 0 ? (
           <div className="mt-2">
             <PanelAllClear label="No recent data-quality incidents" checkedAt={new Date().toISOString()} />

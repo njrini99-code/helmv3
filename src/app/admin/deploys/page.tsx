@@ -23,7 +23,11 @@ const STATE_TONE: Record<VercelDeployState, FwStatusTone> = {
 };
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">{children}</h2>;
+  return (
+    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+      {children}
+    </h2>
+  );
 }
 
 /** Deep-links each row to its Sentry issue stream, filtered to that
@@ -164,6 +168,7 @@ async function ReleaseHealth() {
         label="Crash-free sessions"
         value={health.data.crashFreeSessions}
         format={{ style: 'percent', maximumFractionDigits: 2 }}
+        tone="neutral"
         mono
       />
       <StatTile
@@ -171,6 +176,7 @@ async function ReleaseHealth() {
         value={health.data.crashFreeUsers ?? undefined}
         starved={health.data.crashFreeUsers === null}
         format={{ style: 'percent', maximumFractionDigits: 2 }}
+        tone="neutral"
         mono
       />
     </div>
@@ -189,9 +195,9 @@ async function WebVitals() {
   }
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <StatTile label="Visitors 24h" value={insights.data.visitors24h} mono />
-      <StatTile label="Visitors 7d" value={insights.data.visitors7d} mono />
-      <StatTile label="Visitors 30d" value={insights.data.visitors30d} mono />
+      <StatTile label="Visitors 24h" value={insights.data.visitors24h} tone="neutral" mono />
+      <StatTile label="Visitors 7d" value={insights.data.visitors7d} tone="neutral" mono />
+      <StatTile label="Visitors 30d" value={insights.data.visitors30d} tone="neutral" mono />
     </div>
   );
 }

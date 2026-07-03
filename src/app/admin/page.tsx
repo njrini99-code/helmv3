@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { CheckCircle2 } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchOverviewSnapshot,
@@ -8,6 +10,7 @@ import {
 import { fetchTriageQueue } from '@/lib/admin/data/triage';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
+import { fetchBriefing } from '@/lib/admin/data/briefing';
 import { AdminStatusBanner } from './_components/AdminStatusBanner';
 import { KpiTile } from './_components/KpiTile';
 import { TriageQueue } from './_components/TriageQueue';
@@ -15,9 +18,66 @@ import { AutoRefresh } from './_components/AutoRefresh';
 import { PanelBoundary } from './_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from './_components/PanelStates';
 import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
-import { SkeletonStat, SkeletonList, Surface, Eyebrow } from '@/components/fairway';
+import { SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill } from '@/components/fairway';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * "Needs your eyes" — up to 6 severity-ordered signals from fetchBriefing()
+ * (src/lib/admin/data/briefing.ts). Sits below the status banner, above the
+ * KPI grid, in its OWN PanelBoundary so a briefing-query hiccup degrades to
+ * a scoped STALE card, never the whole Status panel. Signal discipline:
+ * attention is the ONLY red pill on this page outside genuine error counts;
+ * the all-clear case is one quiet green line, never an empty box.
+ */
+async function BriefingStrip() {
+  const items = await fetchBriefing();
+
+  if (items.length === 0) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-accent-700">
+        <CheckCircle2 size={14} className="shrink-0" aria-hidden />
+        All clear — nothing needs your attention right now.
+      </p>
+    );
+  }
+
+  return (
+    <Surface as="section" padding="sm">
+      <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+        Needs your eyes
+      </h2>
+      <ul className="mt-1 divide-y divide-warm-200/60">
+        {items.map((item) => {
+          const row = (
+            <>
+              <StatusPill tone={item.severity === 'attention' ? 'danger' : 'warning'} dot size="sm" className="shrink-0">
+                {item.severity}
+              </StatusPill>
+              <span className="min-w-0 flex-1 basis-full break-words text-sm text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
+                {item.headline}
+              </span>
+            </>
+          );
+          return (
+            <li key={`${item.severity}:${item.headline}`}>
+              {item.href ? (
+                <Link
+                  href={item.href}
+                  className="-mx-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-fw-sm px-1 py-2.5 transition-colors hover:bg-surface-sunken"
+                >
+                  {row}
+                </Link>
+              ) : (
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 py-2.5">{row}</div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Surface>
+  );
+}
 
 async function BannerAndKpis() {
   const { kpis, banner, watcher } = await fetchOverviewSnapshot();
@@ -28,6 +88,11 @@ async function BannerAndKpis() {
         attentionCount={banner.attentionCount}
         checkedAt={banner.checkedAt}
       />
+      <div className="mt-4">
+        <PanelBoundary title="Needs your eyes" skeleton={<SkeletonStat />}>
+          <BriefingStrip />
+        </PanelBoundary>
+      </div>
       <div className="mt-4 grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 xl:grid-cols-6">
         <KpiTile label="Sentry unresolved" value={kpis.sentryUnresolved} href="/admin/errors" tone={kpis.sentryUnresolved ? 'danger' : 'neutral'} goodDirection="down" />
         <KpiTile
@@ -82,7 +147,7 @@ async function TriagePanel() {
   return (
     <div className="grid gap-4 xl:grid-cols-3">
       <Surface as="section" padding="sm" className="min-w-0 xl:col-span-2">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Triage queue
         </h2>
         {sentry.status === 'error' ? (
@@ -96,7 +161,7 @@ async function TriagePanel() {
         <TriageQueue items={items.slice(0, 25)} />
       </Surface>
       <Surface as="section" padding="sm" className="min-w-0">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Regressed — a fix failed
         </h2>
         {regressed.length === 0 ? (
@@ -113,7 +178,10 @@ async function FeatureHealthPanel() {
   const raw = await fetchFeatureHealth();
   const summary = summarizeFeatureHealth(raw, new Date());
   return (
-    <Surface elevation="border" padding="sm">
+    // Key panel: the one place the whole platform's health rolls up to a
+    // single glance — a 2px green left edge marks it as a signal panel worth
+    // a second look, distinct from the plain-bordered cards around it.
+    <Surface elevation="border" padding="sm" className="border-l-2 border-l-accent-500">
       <Eyebrow as="h2" tone="tertiary" className="mb-2">
         Feature health
       </Eyebrow>
