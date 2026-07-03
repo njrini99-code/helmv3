@@ -95,7 +95,7 @@ function buildDefaultBlocks(): LiftSessionDraftBlock[] {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function draftId(): string {
-  return `d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  return `d-${crypto.randomUUID()}`;
 }
 
 /** Returns the blockId that owns the given draftId, or undefined. */
