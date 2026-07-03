@@ -82,11 +82,31 @@ function computeSorenessReadiness(
   sorenessOverall: number,
   hasUpperSoreness: boolean,
   hasLowerSoreness: boolean,
+  // Regions in the 'trunk' / 'hips' / 'whole_body' SORENESS_REGIONS groups
+  // (e.g. lower_back, groin — both tagged baseballRiskGroup:'spine_hip') are
+  // neither upper_body nor lower_body. Without this flag the fallback bands
+  // below defaulted every trunk/hip-only report to 'orange_lower' purely
+  // because it wasn't 'orange_upper' — mislabeling a back/spine issue as a
+  // leg-specific one on the coach-facing readiness board.
+  hasTrunkOrHipSoreness = false,
 ): { score: number; band: HelmLiftingReadinessBand } {
   // Remap 0-10 severity to the 1-5 internal scale (1=no soreness, 5=severe).
   const sore1to5 = Math.max(1, Math.min(5, 1 + Math.round((sorenessOverall / 10) * 4)));
   // Inverted: low soreness → high score (mirrors readiness.ts computeReadinessScore).
   const score = Math.round((6 - sore1to5) * 10) / 10;
+
+  // helm_lifting_readiness_checkins_readiness_band_check only allows
+  // {green,yellow,orange_lower,orange_upper,red,blue} — there is no
+  // dedicated trunk/hip band. Route ambiguous trunk/hip-only reports to
+  // 'orange_upper' ("At risk") rather than silently defaulting to
+  // 'orange_lower' ("Limited"/leg-specific).
+  const fallbackOrangeBand: HelmLiftingReadinessBand = hasUpperSoreness
+    ? 'orange_upper'
+    : hasLowerSoreness
+      ? 'orange_lower'
+      : hasTrunkOrHipSoreness
+        ? 'orange_upper'
+        : 'orange_lower';
 
   let band: HelmLiftingReadinessBand;
   if (sorenessOverall >= 8) {
@@ -104,9 +124,9 @@ function computeSorenessReadiness(
   } else if (score >= 3.5) {
     band = 'yellow';
   } else if (score >= 2.5) {
-    band = hasUpperSoreness ? 'orange_upper' : 'orange_lower';
+    band = fallbackOrangeBand;
   } else if (score >= 1.5) {
-    band = hasUpperSoreness ? 'orange_upper' : 'orange_lower';
+    band = fallbackOrangeBand;
   } else {
     band = 'red';
   }
@@ -613,10 +633,15 @@ export const submitSorenessMap = withLiftingAction(
     const hasLowerSoreness = input.regions.some(
       (r) => SORENESS_REGIONS[r.regionId as SorenessRegionId].group === 'lower_body',
     );
+    const hasTrunkOrHipSoreness = input.regions.some((r) => {
+      const group = SORENESS_REGIONS[r.regionId as SorenessRegionId].group;
+      return group === 'trunk' || group === 'hips' || group === 'whole_body';
+    });
     const { score: readinessScore, band: readinessBand } = computeSorenessReadiness(
       sorenessOverall,
       hasUpperSoreness,
       hasLowerSoreness,
+      hasTrunkOrHipSoreness,
     );
 
     const checkinPayload: HelmLiftingReadinessCheckinInsert & {
@@ -667,7 +692,10 @@ export const submitSorenessMap = withLiftingAction(
         sport: athlete.sport as 'baseball' | 'golf',
         athlete_id: input.athleteId,
         body_region: regionId,
-        side: 'center', // side resolved from SORENESS_REGIONS by the UI; stored here as fallback
+        // Real laterality from the region registry — every left_*/right_*
+        // region was previously hardcoded to 'center', silently discarding
+        // known left/right side data on every submission.
+        side: SORENESS_REGIONS[regionId].side,
         severity: item.severity,
         note: item.note ?? null,
       };

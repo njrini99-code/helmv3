@@ -8,9 +8,14 @@
 // Returns:
 //   isCoach   — the user has an active helm_lifting_coaches row for this org
 //   canEdit   — isCoach OR viewer with can_edit=true (no-coach mode)
-//   canView   — isCoach OR any viewer row for the org (any sport)
+//   canView   — isCoach OR any viewer row for the org (any sport) OR the user
+//               owns a helm_lifting_athletes row in this org (athlete-self —
+//               mirrors the DB-level RLS helper helm_lifting_is_my_athlete()).
+//               Athlete-self NEVER grants canEdit.
 //   coachRow  — the helm_lifting_coaches row (null if not a coach)
 //   assignments — the coach's active team assignments (empty if not a coach)
+//   athleteId — the caller's own helm_lifting_athletes.id for this org, when
+//               resolved via the athlete-self branch (null otherwise)
 //
 // This is a READ-ONLY resolver — it never modifies any row.
 // Actions that need to gate mutations call this first, then check canEdit.
@@ -75,7 +80,23 @@ export async function resolveLiftingAccess(orgId: string): Promise<HelmLiftingAc
   const hasViewerRow = (viewerRows?.length ?? 0) > 0;
   const viewerCanEdit = viewerRows?.some((r) => r.can_edit) ?? false;
 
-  const canView = isCoach || hasViewerRow;
+  // 4. Check athlete-self row — a plain player who owns a helm_lifting_athletes
+  //    row in this org. Mirrors the RLS helper helm_lifting_is_my_athlete(),
+  //    which matches on (helm_lifting_athletes.id = p_athlete AND
+  //    helm_lifting_athletes.user_id = auth.uid()) with no organization filter
+  //    baked into the SQL function itself — but every RLS policy that calls it
+  //    is already scoped to the row's own organization_id, so scoping this
+  //    lookup to orgId here reproduces the same effective grant.
+  //    Athlete-self grants canView ONLY — never canEdit.
+  const { data: athleteRow } = await fromUntyped(supabase, 'helm_lifting_athletes')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('user_id', user.id)
+    .maybeSingle() as { data: { id: string } | null };
+
+  const isAthleteSelf = athleteRow !== null;
+
+  const canView = isCoach || hasViewerRow || isAthleteSelf;
   const canEdit = isCoach || viewerCanEdit;
 
   return {
@@ -84,6 +105,7 @@ export async function resolveLiftingAccess(orgId: string): Promise<HelmLiftingAc
     canView,
     coachRow: coachRow ?? null,
     assignments,
+    athleteId: athleteRow?.id ?? null,
   };
 }
 

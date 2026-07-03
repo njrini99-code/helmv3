@@ -308,11 +308,20 @@ async function checkTopErrorCluster(admin: AdminClient): Promise<BriefingCandida
   };
 }
 
+// A `login_attempts` row only clears on a *successful* login (deleted) or
+// resets to 1 when a new failed attempt arrives >30min after the last one
+// (src/lib/auth/account-lockout.ts). An abandoned account that crossed the
+// threshold and never tried again would otherwise sit at the top of "Needs
+// your eyes" forever — bound the check to genuinely recent activity, the
+// same 24h window checkTopErrorCluster uses.
+const AUTH_FAILURE_RECENCY_HOURS = 24;
+
 async function checkAuthFailureConcentration(admin: AdminClient): Promise<BriefingCandidate | null> {
   const { data, error } = await admin
     .from('login_attempts')
     .select('email, failed_attempts, locked_until')
     .gte('failed_attempts', AUTH_FAILURE_THRESHOLD)
+    .gte('last_attempt', isoHoursAgo(AUTH_FAILURE_RECENCY_HOURS))
     .order('failed_attempts', { ascending: false })
     .limit(5);
   if (error) throw new Error(error.message);

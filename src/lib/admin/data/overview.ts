@@ -67,10 +67,18 @@ export const AUTH_FAILURES_24H_RED_AT = 5;
 function isoHoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 3600_000).toISOString();
 }
-function isoStartOfToday(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+/**
+ * UTC-midnight "today" boundary — mirrors `isoStartOfUtcDay` in
+ * src/app/admin/activity/_data.ts, which deliberately uses `Date.UTC(...)`
+ * instead of the server process's local timezone so "today" is deterministic
+ * regardless of runtime (Vercel prod defaults to UTC, but `npm run dev` on a
+ * non-UTC laptop does not). Overview's "Activity today" KPI and the Golf
+ * tab's "Rounds today" KPI must agree with the Activity tab's "today" stats
+ * for the same underlying data — a local-time boundary here would silently
+ * disagree with the Activity tab off of UTC.
+ */
+export function isoStartOfToday(now: Date = new Date()): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
 }
 
 /** CALLER must have passed requireSuperAdmin() (service-role reads). */

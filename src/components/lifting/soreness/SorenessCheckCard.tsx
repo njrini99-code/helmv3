@@ -46,6 +46,15 @@ interface Props {
   athleteId: string;
   alreadySubmitted?: boolean;
   sorenessStatus?: string | null;
+  /**
+   * The team-local calendar date (YYYY-MM-DD) to write this check-in against,
+   * resolved server-side (see resolveTeamTimezone/todayIsoInTz in
+   * player/today/page.tsx). Required by callers that know the team's
+   * timezone — falls back to the browser's UTC date only when omitted, which
+   * silently mismatches the coach board/heatmap for players in any timezone
+   * where local calendar day != UTC calendar day. Prefer always passing this.
+   */
+  checkinDate?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +79,7 @@ export function SorenessCheckCard({
   athleteId,
   alreadySubmitted = false,
   sorenessStatus,
+  checkinDate,
 }: Props) {
   const prefersReducedMotion = useReducedMotion();
   const [mode, setMode] = useState<'prompt' | 'map' | 'done'>(
@@ -84,7 +94,11 @@ export function SorenessCheckCard({
 
   // One-tap ready path
   const handleReadyToGo = useCallback(async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // Prefer the server-resolved team-local date; only fall back to the
+    // browser's UTC date when a caller hasn't threaded checkinDate through
+    // (see Props.checkinDate doc comment — that fallback is the historical
+    // bug: it writes to the wrong calendar day for players outside UTC).
+    const today = checkinDate ?? new Date().toISOString().slice(0, 10);
     const result = await submitReadyToGo({
       orgId,
       athleteId,
@@ -96,7 +110,7 @@ export function SorenessCheckCard({
       throw new Error(result.error);
     }
     startTransition(() => setMode('done'));
-  }, [orgId, athleteId, request]);
+  }, [orgId, athleteId, request, checkinDate]);
 
   // Open map mode
   const handleReportSoreness = useCallback(() => {
@@ -122,7 +136,8 @@ export function SorenessCheckCard({
           note: e!.note || null,
         }));
 
-      const today = new Date().toISOString().slice(0, 10);
+      // Prefer the server-resolved team-local date — see handleReadyToGo.
+      const today = checkinDate ?? new Date().toISOString().slice(0, 10);
       const result = await submitSorenessMap({
         orgId,
         athleteId,
@@ -142,7 +157,7 @@ export function SorenessCheckCard({
     } finally {
       setIsPending(false);
     }
-  }, [mapState, orgId, athleteId, request]);
+  }, [mapState, orgId, athleteId, request, checkinDate]);
 
   const mapCount = Object.keys(mapState).length;
 

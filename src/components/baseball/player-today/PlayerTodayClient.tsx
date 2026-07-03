@@ -403,7 +403,9 @@ function ReadinessGate({ readiness }: { readiness: PlayerTodayReadiness }) {
 }
 
 // -----------------------------------------------------------------------------
-// Assignments (lift sessions due) — real feed from baseball_lift_sessions
+// Assignments (lift sessions due) — real feed from helm_lifting_sessions (the
+// unified Helm Lifting Lab table; the legacy baseball_lift_sessions table is
+// write-dead — see src/lib/baseball/read-models/player-today.ts)
 // -----------------------------------------------------------------------------
 
 const LIFT_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
@@ -1122,6 +1124,7 @@ function PerformanceCheckinSection({ slot }: { slot: PerformanceCheckinSlot }) {
             request={slot.sorenessToday.request}
             orgId={slot.orgId}
             athleteId={slot.athleteId}
+            checkinDate={slot.todayIso}
             alreadySubmitted={slot.sorenessToday.checkin !== null}
             sorenessStatus={slot.sorenessToday.checkin?.soreness_status ?? null}
           />
@@ -1157,14 +1160,19 @@ function LiftTodaySlot() {
       <SectionHeader icon={<IconDumbbell size={16} />} title="Lift & Check-in" />
       {/*
         EXECUTION CARD — the interactive input surface for the daily loop.
-        PlayerLiftToday writes the SAME baseball_lift_sessions + readiness rows the
-        server read-model summarizes above (the "Lifts Due" feed + the Readiness
-        gate). It resolves playerId/teamId from useAuth()/useTeamStore() and
-        client-fetches the player's OWN sessions + today's check-in (RLS-scoped),
-        owning all logging interactivity (submit check-in, open a session to log
-        sets). Its internal empty/loading/error states cover the "no lift" case.
-        Source of truth = baseball_lift_sessions; this card is one of two views of
-        it, not a separate island.
+        The server read-model above (the "Lifts Due" feed + the Readiness gate)
+        reads the unified helm_lifting_sessions / helm_lifting_readiness_checkins
+        tables — the canonical source of truth (the legacy baseball_lift_sessions
+        / baseball_readiness_checkins tables are write-dead; real writes land in
+        helm_lifting_* only — see src/app/baseball/actions/lifting.ts,
+        lifting-v11.ts, signals.ts). PlayerLiftToday resolves playerId/teamId from
+        useAuth()/useTeamStore() and client-fetches the player's OWN sessions +
+        today's check-in (RLS-scoped), owning all logging interactivity (submit
+        check-in, open a session to log sets); it should read the SAME
+        helm_lifting_* tables so this card and the feed above never diverge — if
+        it still reads the legacy tables directly, that is a bug in that
+        component, not evidence the legacy tables are current. Its internal
+        empty/loading/error states cover the "no lift" case.
       */}
       <div data-slot="player-lift-today" data-slot-status="integrated">
         <PlayerLiftToday />
@@ -1695,9 +1703,11 @@ export function PlayerTodayClient({
                   Shows between schedule and lift assignments so the player can see
                   what's on for today before diving into their lifts. */}
               <PracticeGroupSection feed={model.practiceGroup} />
-              {/* Lifts due — real feed from baseball_lift_sessions (server
-                  read-model). Source -> signal: each row links to the Lift &
-                  Check-in card below where the player logs sets. */}
+              {/* Lifts due — real feed from helm_lifting_sessions (the unified
+                  Helm Lifting Lab table, via the server read-model; the legacy
+                  baseball_lift_sessions table is write-dead). Source -> signal:
+                  each row links to the Lift & Check-in card below where the
+                  player logs sets. */}
               <AssignmentsSection feed={model.assignments} />
               {/* Coach notes (spec line 85): player-visible notes only (scope =
                   'player_visible'). Staff-only scopes are never shown here. */}

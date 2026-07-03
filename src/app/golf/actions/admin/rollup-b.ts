@@ -461,6 +461,33 @@ type RpcInvoker = <T>(fn: string, args?: Record<string, unknown>) => Promise<{
 }>;
 
 /**
+ * Wire shape of one `top_errors[]` row exactly as `public.get_error_summary()`
+ * emits it (see `supabase/migrations/20260527000000_prod_public_baseline.sql`
+ * — `row_to_json(t)` over a subquery aliased `count(*) AS cnt`). The public
+ * `RollupBRawErrorSummary.top_errors[].occurrences` field name is this
+ * module's OWN contract, not the RPC's — `resolveRpc` below must translate
+ * `cnt` -> `occurrences` before handing the payload to callers, or every
+ * `.occurrences` read downstream (InfraHealthCard, errorLogs.topErrors) is
+ * silently `undefined`.
+ */
+interface RawTopErrorRow {
+  message: string;
+  severity: string;
+  cnt: number;
+  first_seen: string;
+  last_seen: string;
+  affected_users: number;
+}
+
+interface RawErrorSummaryPayload {
+  by_severity: { severity: string; count: number }[];
+  top_errors: RawTopErrorRow[];
+  daily_rate: { day: string; count: number }[];
+  total_count: number;
+  critical_count: number;
+}
+
+/**
  * Raw payload returned by `public.get_admin_errors_rollup()`.
  */
 interface RawErrorsPayload {
@@ -470,7 +497,7 @@ interface RawErrorsPayload {
     critical_7d: number;
     count_24h: number;
   };
-  error_summary: RollupBRawErrorSummary | null;
+  error_summary: RawErrorSummaryPayload | null;
   audit_log: {
     recent: RollupBRawAuditEntry[];
     total_7d: number;
@@ -721,12 +748,34 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
   const errorSummaryDegraded = errorsRaw.error_summary === null;
   const adminEventSummaryDegraded = errorsRaw.admin_events.summary === null;
 
+  // Translate the RPC's wire shape (`cnt`) into this module's public contract
+  // (`occurrences`) — see RawTopErrorRow above. Without this remap every
+  // consumer reading `top_errors[].occurrences` (InfraHealthCard's client-
+  // errors panel, errorLogs.topErrors) reads `undefined` on every healthy
+  // (non-degraded) RPC response.
+  const errorSummary: RollupBRawErrorSummary | null = errorsRaw.error_summary
+    ? {
+        by_severity: errorsRaw.error_summary.by_severity ?? [],
+        top_errors: (errorsRaw.error_summary.top_errors ?? []).map((t) => ({
+          message: t.message,
+          severity: t.severity,
+          occurrences: t.cnt,
+          first_seen: t.first_seen,
+          last_seen: t.last_seen,
+          affected_users: t.affected_users,
+        })),
+        daily_rate: errorsRaw.error_summary.daily_rate ?? [],
+        total_count: errorsRaw.error_summary.total_count,
+        critical_count: errorsRaw.error_summary.critical_count,
+      }
+    : null;
+
   const errors: RollupBErrors = {
     recentErrorLogs: errorsRaw.error_logs.recent ?? [],
     totalErrors7d: errorsRaw.error_logs.total_7d ?? 0,
     criticalErrors7d: errorsRaw.error_logs.critical_7d ?? 0,
     errors24hCount: errorsRaw.error_logs.count_24h ?? 0,
-    errorSummary: errorsRaw.error_summary,
+    errorSummary,
     errorSummaryDegraded,
   };
 

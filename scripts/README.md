@@ -1,16 +1,34 @@
 # Scripts Directory
 
+> This file only documents the database-type-regeneration workflow below.
+> `scripts/` holds 100+ files (baseball seeding/verification, CRM
+> outreach, demo-account provisioning, migration/RLS/schema checks, the
+> `regen-docs.mjs` inventory generator behind `npm run docs:regen`,
+> `knowledge/` context-pack tooling used by CLAUDE.md's routing section,
+> `ui-intelligence/` screenshot+atlas tooling, `wf_*`/`baseballhelm-*`
+> workflow-runner scripts, etc.) with no per-script index — read a
+> script's header comment or run it with no args for usage.
+
 ## Database Type Management
 
-### Automatic Type Regeneration
+### Type Regeneration — manual only, no automated hook or CI gate
 
-Database types are now automatically kept in sync with your schema:
+There is currently **no pre-commit hook and no CI job** that
+regenerates or checks `src/lib/types/database.ts` automatically —
+`.husky/` doesn't exist in this repo and no GitHub Actions workflow
+runs `db:types` or `db:types:check`. Keeping types in sync is a manual
+step:
 
-1. **Pre-commit Hook**: When you commit migration files (`.sql` files in `supabase/migrations/`), types are automatically regenerated before the commit.
+1. **Manual regeneration**: Run `npm run db:types` after applying a
+   migration.
 
-2. **CI Check**: GitHub Actions verifies that `database.ts` is up to date on every PR/push.
+2. **Manual Check**: Run `npm run db:types:check` to verify types are
+   current without regenerating (fails with a reminder message if
+   `database.ts` is stale).
 
-3. **Manual Check**: Run `npm run db:types:check` to verify types are current without regenerating.
+If you want this automated, wire `npm run db:types:check` into
+`.github/workflows/ci.yml` and/or add a Husky pre-commit hook — neither
+exists today.
 
 ### Manual Commands
 

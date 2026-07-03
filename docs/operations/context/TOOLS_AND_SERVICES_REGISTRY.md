@@ -85,10 +85,10 @@ Two AI reviewers run in parallel on every PR, plus a local gate that mirrors the
 
 | Tool | Purpose | Tier/plan | Where configured | Partner-visible? | Notes |
 |------|---------|-----------|------------------|------------------|-------|
-| **Resend** | Transactional + branded email; inbound webhooks | Paid | `resend ^6.7`; `RESEND_SETUP.md` (repo root); `src/app/api/webhooks/resend/route.ts` | Recipients see emails | Inbound/webhook signatures verified via **Svix** (`svix ^1.86`) |
+| **Resend** | Transactional + branded email; inbound webhooks | Paid | `resend ^6.7`; `docs/setup/RESEND_SETUP.md`; `src/app/api/webhooks/resend/route.ts` | Recipients see emails | Inbound/webhook signatures verified via **Svix** (`svix ^1.86`) |
 | **Gmail API (Workspace domain-wide delegation)** | Cold CRM sending from a Workspace mailbox | Paid (Workspace) | `src/lib/crm/gmail-send.ts`; `docs/setup/GMAIL_SEND_SETUP.md`; `.env.example` | No | **Gated on `GMAIL_SA_*` env — inert until configured** (needs all three of `GMAIL_SA_CLIENT_EMAIL` + `GMAIL_SA_PRIVATE_KEY` + `GMAIL_SEND_AS`) |
 | **Apollo.io** | Lead gen + contact/company enrichment | Paid | Used via the Apollo MCP connector | No | Plan **unverified (memory)**; not a package.json dep |
-| **NCAA coach CRM** | In-house prospect DB of college coaches | In-house | `crm_coaches` table (Supabase); CRM components + `RESEND_SETUP.md` | No | Table verified; the row count ("~1,889 D1–JUCO") is **unverified (memory)** — treat as approximate |
+| **NCAA coach CRM** | In-house prospect DB of college coaches | In-house | `crm_coaches` table (Supabase); CRM components + `docs/setup/RESEND_SETUP.md` | No | Table verified; the row count ("~1,889 D1–JUCO") is **unverified (memory)** — treat as approximate |
 | **calendar.app.google booking link** | Public demo/meeting booking | Google Calendar | External link (see CRM outreach memory) | Yes (prospects book) | Link slug omitted on purpose — pointer only |
 
 ---

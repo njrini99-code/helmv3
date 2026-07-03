@@ -1,9 +1,49 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Generic chainable Supabase query-builder mock: every fluent method (select,
+// eq, gte, lt, not, in, order, limit, ...) returns the same chain object, and
+// the chain itself is thenable so `await` resolves it at whatever point the
+// real code stops chaining. `gte()` additionally records its calls per-table
+// so tests can assert a recency bound was actually applied to the query,
+// since the mock can't emulate real Postgres row filtering.
+const mocks = vi.hoisted(() => ({
+  gteCalls: [] as Array<{ table: string; column: string; value: unknown }>,
+  tableResults: {} as Record<string, { data: unknown[] | null; error: unknown; count?: number }>,
+}));
+
+function makeChain(table: string) {
+  const result = () => mocks.tableResults[table] ?? { data: [], error: null, count: 0 };
+  const chain: Record<string, unknown> = {
+    select: () => chain,
+    eq: () => chain,
+    not: () => chain,
+    in: () => chain,
+    lt: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    maybeSingle: () => Promise.resolve(result()),
+    gte: (column: string, value: unknown) => {
+      mocks.gteCalls.push({ table, column, value });
+      return chain;
+    },
+    then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+      Promise.resolve(result()).then(resolve, reject),
+  };
+  return chain;
+}
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    from: (table: string) => makeChain(table),
+  }),
+}));
+
 import {
   rankBriefingItems,
   computeWoWDelta,
   findNewlyDormantTeams,
   topErrorCluster,
+  fetchBriefing,
 } from '@/lib/admin/data/briefing';
 
 describe('rankBriefingItems', () => {
@@ -110,5 +150,45 @@ describe('topErrorCluster', () => {
 
   it('returns null for no rows', () => {
     expect(topErrorCluster([])).toBeNull();
+  });
+});
+
+describe('fetchBriefing — checkAuthFailureConcentration recency bound', () => {
+  beforeEach(() => {
+    mocks.gteCalls.length = 0;
+    mocks.tableResults = {};
+  });
+
+  it('applies a `last_attempt` recency filter to the login_attempts query (not just failed_attempts)', async () => {
+    mocks.tableResults.login_attempts = { data: [], error: null };
+    await fetchBriefing();
+    const loginAttemptsGtes = mocks.gteCalls.filter((c) => c.table === 'login_attempts');
+    expect(loginAttemptsGtes.some((c) => c.column === 'failed_attempts')).toBe(true);
+    // The fix under test: a second, time-bound filter so a stale/abandoned
+    // lockout can't pin itself at the top of the briefing forever.
+    const recency = loginAttemptsGtes.find((c) => c.column === 'last_attempt');
+    expect(recency).toBeDefined();
+    expect(typeof recency!.value).toBe('string');
+    const cutoffMs = new Date(recency!.value as string).getTime();
+    expect(Date.now() - cutoffMs).toBeLessThanOrEqual(24 * 3600_000 + 1000);
+    expect(Date.now() - cutoffMs).toBeGreaterThan(23 * 3600_000);
+  });
+
+  it('surfaces a candidate when a matching row is returned within the (mocked) window', async () => {
+    mocks.tableResults.login_attempts = {
+      data: [{ email: 'attacked@example.com', failed_attempts: 9, locked_until: null }],
+      error: null,
+    };
+    mocks.tableResults.users = { data: { id: 'user-1' }, error: null } as unknown as { data: unknown[] | null; error: unknown };
+    const items = await fetchBriefing();
+    const hit = items.find((i) => i.headline.includes('attacked@example.com'));
+    expect(hit).toBeDefined();
+    expect(hit!.severity).toBe('attention');
+  });
+
+  it('surfaces nothing when login_attempts has no rows (e.g. old lockouts fell outside the recency window)', async () => {
+    mocks.tableResults.login_attempts = { data: [], error: null };
+    const items = await fetchBriefing();
+    expect(items.some((i) => i.headline.includes('failed sign-in'))).toBe(false);
   });
 });

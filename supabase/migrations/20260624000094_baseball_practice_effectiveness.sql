@@ -2,7 +2,7 @@
 -- Migration: 20260624000094_baseball_practice_effectiveness.sql
 -- Packet: practice-effectiveness (BaseballHelm CoachHelm Engine)
 -- Controlling spec:
---   docs/baseballhelm_revolution_plan_v2/22_deeper_workflows_research_v7/
+--   docs/archive/2026-06/baseballhelm_revolution_plan_v2/22_deeper_workflows_research_v7/
 --     v7_coachhelm_practice_effectiveness_engine.md
 -- Binding contracts:
 --   16_detail_expansion_v2/{v2_data_contracts_expanded, v2_ai_output_contracts}.md

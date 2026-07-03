@@ -29,6 +29,21 @@ Hard-drop is a deliberate later decision after a soak period.
 | golf_player_baselines | 0 | CoachHelm v3 scaffold, never wired |
 | golf_tracer_health_snapshot | 0 | Zero refs (TracerHealthOverview computes live) |
 
+> **PHASE 2 RESCOPED (2026-07-04, post-rewire):** the fix wave rewired all
+> READ paths + the signals bridge to `helm_lifting_*`, but the program-builder
+> CRUD (`createLiftProgram`/`addLiftWeek`/`Day`/`Section`/`Prescription` in
+> lifting-v11.ts) still writes ONLY `baseball_lift_programs/weeks/days/
+> sections/prescriptions`, `publishLiftDay` still dual-writes sessions (hard
+> FKs on `helm_lifting_program_assignments` require populated helm programs),
+> and strength-group/bodyweight/availability CRUD is still legacy-only.
+> Phase 2 graveyard is therefore ONLY the verified-dead subset:
+> `baseball_lift_results`, `baseball_lift_set_results`,
+> `baseball_readiness_checkins`, `baseball_lift_assignments` (last writer
+> removed by the signals rewire), `baseball_lift_import_rows`,
+> `baseball_lift_import_runs`, `baseball_lift_exercise_substitutions`.
+> The remaining legacy tables move only after the program-builder→helm
+> unification follow-up (a dedicated architecture change, not a surgical fix).
+
 ## Phase 2 — legacy Lift Lab tables (24) — move AFTER the rewire deploys
 
 `helm_lifting_*` (31 tables) is canonical — confirmed by migration history

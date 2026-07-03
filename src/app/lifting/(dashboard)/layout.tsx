@@ -11,7 +11,11 @@ import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
  *   1. No auth session → redirect to /lifting/login
  *   2. Active helm_lifting_coaches row → full Lab shell (isCoach=true)
  *   3. helm_lifting_org_viewers row → VIEW-ONLY shell (isViewOnly=true)
- *   4. Neither → redirect to /lifting/login (no lifting access)
+ *   4. helm_lifting_athletes row (athlete-self, mirrors RLS helper
+ *      helm_lifting_is_my_athlete()) → VIEW-ONLY shell, never full edit.
+ *      This is what lets a plain player reach athlete-facing routes like
+ *      dashboard/lift/[sessionId] instead of being redirected to login.
+ *   5. None of the above → redirect to /lifting/login (no lifting access)
  *
  * The layout itself passes a serialisable coachRow prop to the client LabShell
  * so it can render the user strip without an extra client fetch.
@@ -61,6 +65,24 @@ export default async function LiftingDashboardLayout({
     );
   }
 
-  // 3. No access → send to login
+  // 3. Check for an athlete-self row (plain player — mirrors RLS helper
+  //    helm_lifting_is_my_athlete()). Grants view-only access, never full
+  //    edit; the athlete-facing pages under this route tree (e.g.
+  //    dashboard/lift/[sessionId]) resolve + scope their own data to this
+  //    athlete independently, with RLS as the hard backstop.
+  const { data: athleteRows } = await fromUntyped(supabase, 'helm_lifting_athletes')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1) as { data: Array<{ id: string }> | null };
+
+  if (athleteRows && athleteRows.length > 0) {
+    return (
+      <LabShell coachRow={null} isViewOnly={true}>
+        {children}
+      </LabShell>
+    );
+  }
+
+  // 4. No access → send to login
   redirect('/lifting/login');
 }

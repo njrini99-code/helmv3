@@ -42,7 +42,7 @@
 > **Entire feature set gated until these run.** Apply all pending migrations then regen Supabase types.
 
 - [ ] **[W1] 59 pending migrations not applied to prod DB — all tables gated**  
-  *Current:* Last applied migration `20260623100504`; 59 files from `20260528*`, `20260624*`, `20260625*` pending per `docs/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:97`.  
+  *Current:* Last applied migration `20260623100504`; 59 files from `20260528*`, `20260624*`, `20260625*` pending per `docs/archive/2026-06/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:97`.  
   *Build:* Run `supabase db push` for all pending migrations in order. Verify with `\dt baseball_*` and `\dt helm_lifting_*` on prod. Gate: no feature ticket ships until this is confirmed.  
   *Files:* `supabase/migrations/` (all 20260624* + 20260625* files)  
   *Priority:* **P0** · Effort: **S**
@@ -78,13 +78,13 @@
   *Priority:* **P0** · Effort: **S**
 
 - [ ] **[W2] Share-token expiry not enforced server-side in get_baseball_public_player_stats RPC**  
-  *Current:* `baseball_passport_scout_packet_share_tokens.expires_at` is written but the RPC never gates on `expires_at > now()`. Expired tokens still return all player stats per `docs/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:170`.  
+  *Current:* `baseball_passport_scout_packet_share_tokens.expires_at` is written but the RPC never gates on `expires_at > now()`. Expired tokens still return all player stats per `docs/archive/2026-06/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:170`.  
   *Build:* Add `AND t.expires_at > now()` to the RPC's token validity check. Write a test that issues an expired token and asserts null result.  
   *Files:* `supabase/migrations/20260624001401_baseball_public_player_stats_rpc.sql`  
   *Priority:* **P1** · Effort: **S**
 
 - [ ] **[W2] baseball_ai_audit_log RLS policy is a TODO comment — no enforcement**  
-  *Current:* Coach-only view policy scaffolded as TODO in `20260624000450_baseball_ai_audit_log.sql`; migration unapplied per `docs/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:171`. Players and anon callers can read full AI audit log.  
+  *Current:* Coach-only view policy scaffolded as TODO in `20260624000450_baseball_ai_audit_log.sql`; migration unapplied per `docs/archive/2026-06/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:171`. Players and anon callers can read full AI audit log.  
   *Build:* Implement the policy: `USING (team_id IN (SELECT baseball_team_id FROM baseball_coaches WHERE user_id = (SELECT auth.uid())))`.  
   *Files:* `supabase/migrations/20260624000450_baseball_ai_audit_log.sql`, `src/app/baseball/actions/ai-governance.ts`  
   *Priority:* **P1** · Effort: **S**
@@ -558,13 +558,13 @@
   *Priority:* **P2** · Effort: **S**
 
 - [ ] **[W9] LiveWeightRoom offline indicator absent — stale data shows silently**  
-  *Current:* `src/app/lifting/(dashboard)/dashboard/sessions/` — no offline state banner per `docs/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:176`.  
+  *Current:* `src/app/lifting/(dashboard)/dashboard/sessions/` — no offline state banner per `docs/archive/2026-06/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:176`.  
   *Build:* Add `useOnlineStatus()` hook (or `navigator.onLine` listener) and show a sticky banner "You're offline — data may be stale" when connection is lost.  
   *Files:* `src/app/lifting/(dashboard)/dashboard/sessions/`  
   *Priority:* **P2** · Effort: **S**
 
 - [ ] **[W9] Zero-program empty state missing illustration in ProgramListClient**  
-  *Current:* `src/components/lifting/programs/ProgramListClient.tsx` — blank area with no empty-state illustration or "Create your first program" CTA per `docs/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:177`.  
+  *Current:* `src/components/lifting/programs/ProgramListClient.tsx` — blank area with no empty-state illustration or "Create your first program" CTA per `docs/archive/2026-06/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md:177`.  
   *Build:* Add `EmptyState` component with dumbbell/program icon and "Create your first program" primary action button.  
   *Files:* `src/components/lifting/programs/ProgramListClient.tsx`  
   *Priority:* **P2** · Effort: **S**

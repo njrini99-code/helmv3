@@ -59,6 +59,7 @@ import { getPlayerBodyweightHistory } from '@/app/lifting/actions/weight-checkin
 import { getPlayerNutritionPlans } from '@/app/lifting/actions/nutrition';
 import type { PlayerSoreness } from '@/app/lifting/actions/soreness';
 import type { PlayerNutritionPlanCard } from '@/app/lifting/actions/nutrition';
+import { logServerException } from '@/lib/server-error-logger';
 
 export const metadata = {
   title: 'Today · BaseballHelm',
@@ -72,6 +73,14 @@ export const metadata = {
 export interface PerformanceCheckinSlot {
   orgId: string;
   athleteId: string;
+  /**
+   * The team-local calendar date (YYYY-MM-DD, same value as this page's
+   * `todayIso`) that any check-in submitted from this slot should be written
+   * against. SorenessCheckCard accepts this as `checkinDate` — without it,
+   * the card falls back to the browser's UTC date, which silently mismatches
+   * the coach board/heatmap for players outside UTC.
+   */
+  todayIso: string;
   /** null when no soreness check is due today and no checkin submitted */
   sorenessToday: PlayerSoreness | null;
   /** null when no weight request pending today */
@@ -127,15 +136,50 @@ export default async function PlayerTodayPage() {
     const { organizationId: orgId } = liftingCtx;
 
     // Resolve the player's helm_lifting_athletes.id (null if not seeded).
-    const athleteId = await resolveMyBaseballAthleteId(orgId).catch(() => null);
+    const athleteId = await resolveMyBaseballAthleteId(orgId).catch(async (error) => {
+      await logServerException(
+        error,
+        {
+          action: 'resolveMyBaseballAthleteId',
+          featureArea: 'lifting-performance-checkin-slot',
+          source: 'server_component',
+          handled: true,
+        },
+        'warning',
+      );
+      return null;
+    });
 
     if (athleteId) {
       // Fan out: soreness, weight history (for today's pending request),
-      // and nutrition plans. Any individual failure yields null.
+      // and nutrition plans. Any individual failure yields null so a lifting
+      // outage never breaks the baseball Today page — but we log it (instead
+      // of swallowing silently) so a real regression (e.g. an access-gate
+      // bug denying a legitimate athlete) is visible, not invisible forever.
+      const logSlotFailure = (action: string) => async (error: unknown) => {
+        await logServerException(
+          error,
+          {
+            action,
+            featureArea: 'lifting-performance-checkin-slot',
+            source: 'server_component',
+            handled: true,
+          },
+          'warning',
+        );
+        return null;
+      };
+
       const [sorenessToday, weightHistory, nutritionPlans] = await Promise.all([
-        getPlayerSorenessToday({ orgId, athleteId, date: todayIso }).catch(() => null),
-        getPlayerBodyweightHistory({ orgId, athleteId, toDate: todayIso, days: 7 }).catch(() => null),
-        getPlayerNutritionPlans({ orgId, athleteId }).catch(() => null),
+        getPlayerSorenessToday({ orgId, athleteId, date: todayIso }).catch(
+          logSlotFailure('getPlayerSorenessToday'),
+        ),
+        getPlayerBodyweightHistory({ orgId, athleteId, toDate: todayIso, days: 7 }).catch(
+          logSlotFailure('getPlayerBodyweightHistory'),
+        ),
+        getPlayerNutritionPlans({ orgId, athleteId }).catch(
+          logSlotFailure('getPlayerNutritionPlans'),
+        ),
       ]);
 
       // Only include sorenessToday if there's a pending request or a submitted checkin.
@@ -156,6 +200,7 @@ export default async function PlayerTodayPage() {
         performanceSlot = {
           orgId,
           athleteId,
+          todayIso,
           sorenessToday: hasSoreness ? sorenessToday : null,
           weightToday: hasPendingWeight
             ? {

@@ -15,6 +15,24 @@ export interface DirectoryUser {
   sports: Array<'golf' | 'baseball'>;
 }
 
+/**
+ * Single source of truth for "which sport(s) does this user play/coach in",
+ * shared by both fetchUsersTab (directory list) and fetchUserDetail (detail
+ * page) so they can never disagree. Deliberately keyed on direct presence in
+ * golf_players/golf_coaches/baseball_players/baseball_coaches — NOT on
+ * current team membership. A player who has never joined a team (or was
+ * removed from every team) still has a real sport-scoped account and must
+ * show the same sport badge everywhere; deriving from team `memberships`
+ * instead silently drops that badge for any such user (confirmed live: 9 of
+ * 60 golf_players rows have zero golf_team_members rows).
+ */
+export function deriveUserSports(has: { golf: boolean; baseball: boolean }): Array<'golf' | 'baseball'> {
+  const sports: Array<'golf' | 'baseball'> = [];
+  if (has.golf) sports.push('golf');
+  if (has.baseball) sports.push('baseball');
+  return sports;
+}
+
 export function classifyAtRisk(
   user: { lastSeen: string | null; createdAt: string | null },
   now: Date,
@@ -154,9 +172,10 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
   const users: DirectoryUser[] = (usersRes.data ?? [])
     .map((u) => {
       const row = u as { id: string; email: string; role: string; created_at: string | null; last_seen: string | null };
-      const sports: Array<'golf' | 'baseball'> = [];
-      if (golfUserIds.has(row.id)) sports.push('golf');
-      if (baseballUserIds.has(row.id)) sports.push('baseball');
+      const sports = deriveUserSports({
+        golf: golfUserIds.has(row.id),
+        baseball: baseballUserIds.has(row.id),
+      });
       return {
         id: row.id, email: row.email, role: row.role,
         createdAt: row.created_at, lastSeen: row.last_seen, sports,
@@ -392,7 +411,10 @@ export async function fetchUserDetail(userId: string): Promise<{
   return {
     user: {
       id: u.id, email: u.email, role: u.role, createdAt: u.created_at, lastSeen: u.last_seen,
-      sports: Array.from(new Set(memberships.map((m) => m.sport))),
+      sports: deriveUserSports({
+        golf: Boolean(golfPlayerId || golfCoachId),
+        baseball: Boolean(baseballPlayerId || baseballCoachId),
+      }),
     },
     memberships,
     recentActivity,

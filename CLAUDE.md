@@ -36,10 +36,10 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 |------------------------|---------------------|
 | **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/context/golfhelm-features.md` — Find the feature by name, get data flow, files, tables, dependencies, gaps |
 | **Database queries** (writing SQL, adding columns, debugging data) | `memory/context/golfhelm-database.md` — Every column of every table |
-| **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — All 75 tables, all enums, all type locations |
+| **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — All tables, all enums, all type locations (AUTOGEN table count block — do not hand-copy the number elsewhere, it rots) |
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
-| **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all 41 action files, component directories |
-| **Baseball features** | No deep reference yet — use `src/app/baseball/` directly |
+| **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all action files, component directories |
+| **Baseball features** | `memory/context/baseballhelm-features.md` — feature-by-feature data flow, files, tables, gaps; `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` — canonical spec (source of truth for what baseball should be) |
 
 ### By Role Context
 
@@ -77,7 +77,7 @@ import type { Player, Coach, Organization } from '@/lib/types';
 ```typescript
 // WRONG: coaches, players, teams, rounds, events (no prefix = doesn't exist)
 // RIGHT: golf_coaches, golf_players, golf_teams, golf_rounds, golf_events
-// Full list of 75 golf tables: memory/glossary.md
+// Full table list (auto-regenerated, always current): memory/glossary.md
 // Full column definitions: memory/context/golfhelm-database.md
 ```
 
@@ -141,23 +141,59 @@ import type { Player, Coach, Organization } from '@/lib/types';
 
 ## Design System
 
+> Source of truth: `src/app/globals.css:600-712` (glass surface classes)
+> and `tailwind.config.ts` (color/type/radius tokens). This section is a
+> summary for speed — if it and the config ever disagree, the config wins.
+
 ### Colors
 ```
-Primary:    #16A34A (Kelly green) - buttons, accents, active states
-Background: #FFFEFA (cream)
-Glass:      rgba(255,255,255,0.7) backdrop-blur-xl
-Text:       #1c1917 (warm-900 primary), #78716c (warm-500 secondary)
-Status:     #16A34A success, #DC2626 error, #F59E0B warning
+Primary:    primary-600 #16A34A (brand green) - buttons, accents, active states
+Background: cream-100 #F7F5F2 (California linen) - primary page backdrop
+Glass:      .glass-standard / .glass-subtle / .glass-prominent (cream-derived — NOT white)
+Text:       warm-900 #1c1917 (primary), warm-500 #78716c (secondary)
+Status:     success #16A34A, destructive #FF3B30, warning #F59E0B, info #0EA5E9
 ```
+
+Only these color families are canonical: `primary-*` (brand green),
+`destructive` (#FF3B30), `warm-*` (neutrals), plus `cream-*` for surfaces.
+`helm-green-*`, `sf-green`, `emerald-*`, raw `green-*`, and `#DC2626` are
+deleted/banned — `helm/no-banned-color` (`eslint-rules/no-banned-color.mjs`)
+flags them at lint time.
+
+### Glass Surfaces
+
+Three cream-derived tiers (not white — a plain white glass over the linen
+background reads as a washed-out gray card):
+
+```
+.glass-subtle     — large surfaces, filter panels, secondary UI
+.glass-standard   — cards, panels, metrics (most common)
+.glass-prominent  — navigation, modals, overlays
+```
+
+**Never use `bg-white/N` outside `src/components/ui`** —
+`helm/no-arbitrary-bg-white` (`eslint-rules/no-arbitrary-bg-white.mjs`)
+flags it. Use `.glass-standard`, `bg-cream-50`, or a token-backed
+`bg-surface-*` utility instead.
 
 ### Key Patterns
 ```typescript
 // Glass card
-"bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass"
+"glass-standard border border-cream-400/40 rounded-2xl shadow-glass"
 // Hover
-"hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
-// Typography: h1=text-3xl, h2=text-2xl, h3=text-xl, body=text-base, small=text-sm
-// Spacing: card p-6/p-8, radius rounded-2xl, gap-6 between cards
+"hover:shadow-card-hover transition-all duration-200"
+
+// Typography — canonical 9-step scale. Never text-[Npx] outside
+// src/components/ui (helm/no-arbitrary-text-px flags it):
+// text-display, text-h1, text-h2, text-h3, text-body-lg, text-body,
+// text-body-sm, text-caption, text-eyebrow
+
+// Radius — canonical scale (rounded-2xl is THE card radius):
+// rounded-sm 6px (tags/chips) · rounded-md 10px (buttons/inputs)
+// rounded-lg 12px (small cards) · rounded-xl 16px (cards)
+// rounded-2xl 20px (modals) · rounded-3xl 24px (hero plinths only)
+
+// Spacing: card p-6/p-8, gap-6 between cards
 ```
 
 ### Quality Bar
@@ -209,7 +245,7 @@ import { useState, useEffect } from 'react';
 
 ```
 src/app/golf/
-├── actions/              # 41 server action files (see memory/projects/golfhelm.md)
+├── actions/              # Server action files (see memory/projects/golfhelm.md)
 ├── (dashboard)/dashboard/  # All dashboard routes
 ├── (auth)/               # Login, signup, forgot/reset password
 ├── (onboarding)/         # Coach (3-step) + Player (4-step)
@@ -231,8 +267,8 @@ src/lib/
 │   └── v2/               # V2: orchestrator, mining, prediction, learning, NLG
 └── utils.ts              # cn(), formatters
 
-src/hooks/golf/           # 12 hooks (realtime, data, offline)
-src/stores/               # Zustand (golf-auth-store.ts)
+src/hooks/golf/           # Realtime, data, offline hooks (see memory/projects/golfhelm.md)
+src/stores/               # Zustand (auth-store.ts — shared across golf + baseball, not golf-specific)
 ```
 
 ---
@@ -440,8 +476,8 @@ sync path. The same hard-rule set is documented in
 
 | File | What's inside | When to read it |
 |------|--------------|-----------------|
-| `memory/glossary.md` | 74 table names, enums, TypeScript type locations | Need a table name, enum value, or type import path |
-| `memory/projects/golfhelm.md` | All routes, 41 action files, component tree, hooks | Need to find where code lives |
+| `memory/glossary.md` | Table names, enums, TypeScript type locations (table/view/function counts are an AUTOGEN block — read the file, don't hardcode the number) | Need a table name, enum value, or type import path |
+| `memory/projects/golfhelm.md` | All routes, action files, component tree, hooks (AUTOGEN — counts live in the file, not here) | Need to find where code lives |
 | `memory/context/golfhelm-features.md` | 28 features: data flows, files, tables, deps, gaps | Working on any feature (the main reference) |
 | `memory/context/golfhelm-database.md` | Every column of every table (from production DB) | Writing SQL, adding columns, debugging data |
 | `memory/context/coachhelm-ai.md` | V2 engine: orchestrator, mining, predictions, NLG | Working on CoachHelm AI specifically |

@@ -381,9 +381,12 @@ export const logSetResult = withLiftingAction(
       coach_observed: ctx.access.isCoach,
     };
 
-    // Upsert on (session_exercise_id, set_number) — idempotent re-log.
+    // Upsert on (session_exercise_id, set_number) — the only unique
+    // constraint on helm_lifting_set_results (uq_helm_lifting_set; verified
+    // via pg_constraint). A 3-column onConflict including athlete_id matches
+    // no constraint and Postgres rejects it with 42P10 on every call.
     const { data, error } = await fromUntyped(supabase, 'helm_lifting_set_results')
-      .upsert(payload, { onConflict: 'session_exercise_id,athlete_id,set_number' })
+      .upsert(payload, { onConflict: 'session_exercise_id,set_number' })
       .select('id')
       .single();
 

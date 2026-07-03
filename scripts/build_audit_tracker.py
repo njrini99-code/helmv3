@@ -18,8 +18,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 ROOT = "/Users/ricknini/Downloads/helmv3"
-N1_CSV = f"{ROOT}/docs/audits/_e2e_tab_audit_2026-06-20/REMEDIATION_LEDGER.csv"
-N2_CSV = f"{ROOT}/docs/audits/_premium_scrub_2026-06-21/FINDINGS_CALIBRATED.csv"
+N1_CSV = f"{ROOT}/docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/REMEDIATION_LEDGER.csv"
+N2_CSV = f"{ROOT}/docs/archive/2026-06/audits/_premium_scrub_2026-06-21/FINDINGS_CALIBRATED.csv"
 CH_MD  = f"{ROOT}/docs/audits/COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21.md"
 PHASE2 = "/tmp/phase2_outcomes.json"
 

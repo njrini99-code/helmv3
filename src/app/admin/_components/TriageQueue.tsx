@@ -28,6 +28,7 @@ export function TriageQueue({
 }) {
   const router = useRouter();
   const [hiddenKeys, setHiddenKeys] = useState<ReadonlySet<string>>(new Set());
+  const [errors, setErrors] = useState<ReadonlyMap<string, string>>(new Map());
   const [, startTransition] = useTransition();
 
   const visible = items.filter((i) => !hiddenKeys.has(i.key));
@@ -43,10 +44,37 @@ export function TriageQueue({
 
   function resolve(item: TriageItem) {
     // Optimistic: hide now; refresh reconciles. Resolution is idempotent
-    // (resolve_admin_event only touches resolved=false rows).
+    // (resolve_admin_event only touches resolved=false rows). If the action
+    // rejects (e.g. requireSuperAdmin() throws on a dead session, or the RPC
+    // errors) the row is restored and the failure surfaced — an admin must
+    // never believe an incident was resolved when it wasn't.
+    setErrors((prev) => {
+      if (!prev.has(item.key)) return prev;
+      const next = new Map(prev);
+      next.delete(item.key);
+      return next;
+    });
     setHiddenKeys((prev) => new Set([...prev, item.key]));
     startTransition(() => {
-      void onResolve(item.eventIds).then(() => router.refresh());
+      void onResolve(item.eventIds)
+        .then(() => {
+          router.refresh();
+        })
+        .catch((err: unknown) => {
+          setHiddenKeys((prev) => {
+            const next = new Set(prev);
+            next.delete(item.key);
+            return next;
+          });
+          setErrors((prev) => {
+            const next = new Map(prev);
+            next.set(
+              item.key,
+              err instanceof Error ? err.message : 'Failed to resolve — try again',
+            );
+            return next;
+          });
+        });
     });
   }
 
@@ -73,6 +101,11 @@ export function TriageQueue({
               <LocalTime iso={item.lastSeen} />
               {item.substatus === 'regressed' ? ' · REGRESSED' : ''}
             </p>
+            {errors.has(item.key) ? (
+              <p className="text-xs text-fw-danger">
+                Resolve failed — {errors.get(item.key)}
+              </p>
+            ) : null}
           </div>
           <SportBadge sport={item.sport} />
           <span className="rounded bg-warm-100 px-1.5 py-0.5 text-eyebrow uppercase text-warm-600">
