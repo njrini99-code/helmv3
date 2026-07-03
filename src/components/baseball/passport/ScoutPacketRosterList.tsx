@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { IconSearch, IconShieldCheck, IconLock, IconChevronRight } from '@/components/icons';
 import type { ScoutPacketRosterEntry } from '@/app/baseball/actions/scout-packet';
 import { Button } from '@/components/fairway';
+import { Input } from '@/components/ui/input';
 import {
   PaperCard,
   HairlineRule,
@@ -94,7 +95,7 @@ export function ScoutPacketRosterList({ entries }: Props) {
         <label htmlFor="scout-packet-search" className="sr-only">
           Search players
         </label>
-        <input
+        <Input
           id="scout-packet-search"
           type="text"
           value={query}

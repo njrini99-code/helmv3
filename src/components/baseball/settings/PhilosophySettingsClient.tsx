@@ -403,7 +403,7 @@ export function PhilosophySettingsClient({
                         onClick={() => handlePriorityChange(priority.key, 'up')}
                         disabled={index === 0}
                         aria-label={`Move ${priority.label} up`}
-                        className="h-8 w-8 rounded-lg p-0 text-warm-400 hover:bg-white hover:text-warm-700 active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="h-8 w-8 rounded-lg p-0 text-warm-400 hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <IconChevronUp size={16} />
                       </Button>
@@ -413,7 +413,7 @@ export function PhilosophySettingsClient({
                         onClick={() => handlePriorityChange(priority.key, 'down')}
                         disabled={index === sortedPriorities.length - 1}
                         aria-label={`Move ${priority.label} down`}
-                        className="h-8 w-8 rounded-lg p-0 text-warm-400 hover:bg-white hover:text-warm-700 active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="h-8 w-8 rounded-lg p-0 text-warm-400 hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <IconChevronDown size={16} />
                       </Button>

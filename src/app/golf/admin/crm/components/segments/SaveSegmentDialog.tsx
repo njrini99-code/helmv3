@@ -10,6 +10,8 @@ import type {
 } from '@/app/golf/admin/crm/types/foundations';
 import type { Filters } from '../CoachFilters';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 // ============================================================================
 // SaveSegmentDialog — modal that turns the current Filters into a saved
@@ -116,7 +118,7 @@ export function SaveSegmentDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="save-segment-title"
-          className="w-full max-w-md bg-white rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
+          className="w-full max-w-md bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
         >
           <form onSubmit={handleSubmit}>
             {/* Header */}
@@ -146,7 +148,7 @@ export function SaveSegmentDialog({
                   Name <span className="text-red-500">*</span>
                 </label>
                 {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-                <input autoFocus
+                <Input autoFocus
                   id="segment-name"
                   type="text"
                   required
@@ -154,7 +156,7 @@ export function SaveSegmentDialog({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Re-engage cold D2"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                  className="text-sm min-h-0 py-2 rounded-lg"
                 />
               </div>
 
@@ -162,14 +164,14 @@ export function SaveSegmentDialog({
                 <label htmlFor="segment-description" className="block text-xs font-medium text-warm-700 mb-1">
                   Description <span className="text-warm-400 font-normal">(optional)</span>
                 </label>
-                <textarea
+                <Textarea
                   id="segment-description"
                   rows={2}
                   maxLength={500}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this segment represent?"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                  className="text-sm py-2 rounded-lg"
                 />
               </div>
 

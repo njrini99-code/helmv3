@@ -130,7 +130,7 @@ export function TaskCard({
           : undefined
       }
       className={cn(
-        'group rounded-xl border bg-white px-3 py-2.5 transition-colors',
+        'group rounded-xl border bg-cream-50 px-3 py-2.5 transition-colors',
         completed
           ? 'border-warm-200/60 opacity-70'
           : 'border-warm-200/60 hover:border-warm-300/80',

@@ -4,6 +4,7 @@ import { useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -186,7 +187,7 @@ export function AttachmentButton({
       )}
 
       {/* Hidden file inputs */}
-      <input
+      <Input
         ref={inputRef}
         type="file"
         multiple
@@ -195,7 +196,7 @@ export function AttachmentButton({
         className="hidden"
         aria-hidden="true"
       />
-      <input
+      <Input
         ref={cameraInputRef}
         type="file"
         accept="image/*"

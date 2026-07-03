@@ -5,6 +5,9 @@ import { cn } from '@/lib/utils';
 import { IconClipboardList, IconX } from '@/components/icons';
 import { createCrmTask } from '@/app/golf/actions/crm-foundations';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
 import type {
   CrmTask,
   TaskKind,
@@ -147,7 +150,7 @@ export function CreateTaskDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-task-title"
-          className="w-full max-w-md bg-white rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
+          className="w-full max-w-md bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
         >
           <form onSubmit={handleSubmit}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100">
@@ -175,7 +178,7 @@ export function CreateTaskDialog({
                   Title <span className="text-red-500">*</span>
                 </label>
                 {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-                <input autoFocus
+                <Input autoFocus
                   id="task-title"
                   type="text"
                   required
@@ -183,7 +186,6 @@ export function CreateTaskDialog({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Follow up on demo invite"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
                 />
               </div>
 
@@ -191,52 +193,33 @@ export function CreateTaskDialog({
                 <label htmlFor="task-description" className="block text-xs font-medium text-warm-700 mb-1">
                   Description <span className="text-warm-400 font-normal">(optional)</span>
                 </label>
-                <textarea
+                <Textarea
                   id="task-description"
                   rows={3}
                   maxLength={2000}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Context or next steps"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="task-priority" className="block text-xs font-medium text-warm-700 mb-1">
-                    Priority
-                  </label>
-                  <select
-                    id="task-priority"
+                  <Select
+                    label="Priority"
+                    options={PRIORITY_OPTIONS.map((p) => ({ value: p, label: PRIORITY_LABEL[p] }))}
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
-                  >
-                    {PRIORITY_OPTIONS.map((p) => (
-                      <option key={p} value={p}>
-                        {PRIORITY_LABEL[p]}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setPriority(v as TaskPriority)}
+                  />
                 </div>
 
                 <div>
-                  <label htmlFor="task-kind" className="block text-xs font-medium text-warm-700 mb-1">
-                    Kind
-                  </label>
-                  <select
-                    id="task-kind"
+                  <Select
+                    label="Kind"
+                    options={KIND_OPTIONS.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
                     value={kind}
-                    onChange={(e) => setKind(e.target.value as TaskKind)}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
-                  >
-                    {KIND_OPTIONS.map((k) => (
-                      <option key={k} value={k}>
-                        {KIND_LABEL[k]}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setKind(v as TaskKind)}
+                  />
                 </div>
               </div>
 
@@ -244,12 +227,11 @@ export function CreateTaskDialog({
                 <label htmlFor="task-due" className="block text-xs font-medium text-warm-700 mb-1">
                   Due <span className="text-warm-400 font-normal">(optional)</span>
                 </label>
-                <input
+                <Input
                   id="task-due"
                   type="datetime-local"
                   value={dueAt}
                   onChange={(e) => setDueAt(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
                 />
               </div>
 

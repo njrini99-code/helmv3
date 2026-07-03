@@ -83,6 +83,7 @@ import {
 import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // PERF: lazy-load the same heavy global the legacy BaseballDashboardShell
@@ -348,16 +349,17 @@ function ShellFooter({ role }: { role: Role }) {
           {!collapsed && <span className="min-w-0 flex-1 truncate">Settings</span>}
         </Link>
       )}
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={handleSignOut}
         aria-label={collapsed ? 'Sign out' : undefined}
         title={collapsed ? 'Sign out' : undefined}
-        className={cn(rowBase, 'text-nav-text-dim hover:bg-red-500/10 hover:text-red-400')}
+        className={cn(rowBase, 'min-h-0 p-0 justify-start rounded-none text-nav-text-dim hover:bg-red-500/10 hover:text-red-400')}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0 text-nav-text-dim" />
         {!collapsed && <span className="min-w-0 flex-1 truncate text-left">Sign out</span>}
-      </button>
+      </Button>
     </div>
   );
 }

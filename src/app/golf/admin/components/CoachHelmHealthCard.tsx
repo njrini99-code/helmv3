@@ -22,9 +22,9 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
   }));
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-100 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
-        <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+        <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
           <IconSparkles size={18} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">CoachHelm AI Health</h3>
@@ -32,19 +32,19 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
 
       {/* AI Platform stats */}
       <div className="grid grid-cols-3 gap-2.5 mb-5">
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {coachhelm.totalReviewsAllTime.toLocaleString()}
           </p>
           <p className="text-micro text-warm-500 mt-0.5">Reviews Total</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {coachhelm.totalPatternsDetected.toLocaleString()}
           </p>
           <p className="text-micro text-warm-500 mt-0.5">Patterns Found</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {coachhelm.totalPredictionsMade.toLocaleString()}
           </p>
@@ -54,11 +54,11 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
 
       {/* Adoption & generation quality */}
       <div className="grid grid-cols-2 gap-2.5 mb-5">
-        <div className="bg-white/50 rounded-xl p-3">
+        <div className="bg-cream-50 rounded-xl p-3">
           <p className="text-lg font-semibold text-warm-900 tabular-nums">{coachhelm.coachPhilosophyAdoption}%</p>
           <p className="text-micro text-warm-500 mt-0.5">Philosophy Adoption</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3">
+        <div className="bg-cream-50 rounded-xl p-3">
           <p className="text-lg font-semibold text-warm-900 tabular-nums">{coachhelm.avgInsightsPerGeneration}</p>
           <p className="text-micro text-warm-500 mt-0.5">Avg Insights/Gen</p>
         </div>

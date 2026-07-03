@@ -10,6 +10,8 @@ import type {
   BaseballPitchingResult,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { IconSave, IconUser, IconTrendingUp } from '@/components/icons';
 import { sumInningsPitched } from '@/lib/baseball/innings';
 
@@ -194,13 +196,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
           <div className="flex items-center gap-3">
             <div className="text-center">
               <p className="text-xs text-warm-400 mb-1 font-medium uppercase tracking-wide">Us</p>
-              <input
+              <Input
                 type="number"
                 min={0}
                 max={99}
                 value={ourScore}
                 onChange={(e) => setOurScore(Number(e.target.value))}
-                className="w-16 text-center text-2xl font-bold text-warm-900 border border-warm-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-cream-100/82"
+                className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
               />
             </div>
             <span className="text-2xl font-bold text-warm-300 mt-4">—</span>
@@ -208,13 +210,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               <p className="text-xs text-warm-400 mb-1 font-medium uppercase tracking-wide">
                 {game.opponent_name ?? 'Them'}
               </p>
-              <input
+              <Input
                 type="number"
                 min={0}
                 max={99}
                 value={oppScore}
                 onChange={(e) => setOppScore(Number(e.target.value))}
-                className="w-16 text-center text-2xl font-bold text-warm-900 border border-warm-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-cream-100/82"
+                className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
               />
             </div>
           </div>
@@ -226,7 +228,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
         <Button variant="ghost"
           onClick={() => setActiveTab('batting')}
           className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-            activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+            activeTab === 'batting' ? 'bg-cream-50 text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
           }`}
         >
           <IconUser size={14} />
@@ -235,7 +237,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
         <Button variant="ghost"
           onClick={() => setActiveTab('pitching')}
           className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-            activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+            activeTab === 'pitching' ? 'bg-cream-50 text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
           }`}
         >
           <IconTrendingUp size={14} />
@@ -277,13 +279,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                         ['ab','r','h','doubles','triples','hr','rbi','bb','k','sb','cs','hbp','sac','sf','lob'] as (keyof BoxScoreBattingInput)[]
                       ).map((field) => (
                         <td key={field} className="px-1 py-1.5 text-center">
-                          <input
+                          <Input
                             type="number"
                             min={0}
                             max={99}
                             value={row[field] as number}
                             onChange={(e) => updateBatting(row.player_id, field, Number(e.target.value))}
-                            className="w-10 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-300 bg-white hover:border-warm-200 transition-colors tabular-nums"
+                            className="w-10 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
                           />
                         </td>
                       ))}
@@ -328,21 +330,18 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
         <div className="space-y-4">
           {/* Add pitcher row */}
           <div className="flex items-center gap-3">
-            <select
+            <Select
               value={selectedPitcherId}
-              onChange={(e) => setSelectedPitcherId(e.target.value)}
-              className="flex-1 max-w-xs text-sm border border-warm-200 rounded-lg px-3 py-2 bg-cream-100/75 text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select pitcher to add...</option>
-              {teamPlayers
+              onChange={(value) => setSelectedPitcherId(value)}
+              placeholder="Select pitcher to add..."
+              className="flex-1 max-w-xs text-sm min-h-0 py-2 bg-cream-100/75"
+              options={teamPlayers
                 .filter((p) => !pitchingRows.some((r) => r.player_id === p.id))
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.first_name} {p.last_name}
-                    {p.primary_position ? ` (${p.primary_position})` : ''}
-                  </option>
-                ))}
-            </select>
+                .map((p) => ({
+                  value: p.id,
+                  label: `${p.first_name} ${p.last_name}${p.primary_position ? ` (${p.primary_position})` : ''}`,
+                }))}
+            />
             <Button
               onClick={addPitcher}
               disabled={!selectedPitcherId}
@@ -386,7 +385,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             ['ip','h','r','er','bb','k','hr'] as (keyof BoxScorePitchingInput)[]
                           ).map((field) => (
                             <td key={field} className="px-1 py-1.5 text-center">
-                              <input
+                              <Input
                                 type="number"
                                 min={0}
                                 max={field === 'ip' ? 9.2 : 99}
@@ -395,13 +394,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                                 onChange={(e) =>
                                   updatePitching(row.player_id, field, Number(e.target.value))
                                 }
-                                className="w-12 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-300 bg-white hover:border-warm-200 transition-colors tabular-nums"
+                                className="w-12 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
                               />
                             </td>
                           ))}
                           {/* Pitch count */}
                           <td className="px-1 py-1.5 text-center">
-                            <input
+                            <Input
                               type="number"
                               min={0}
                               max={200}
@@ -409,27 +408,24 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               onChange={(e) =>
                                 updatePitching(row.player_id, 'pitch_count', Number(e.target.value))
                               }
-                              className="w-14 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white transition-colors tabular-nums"
+                              className="w-14 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 tabular-nums"
                             />
                           </td>
                           {/* Result */}
                           <td className="px-1 py-1.5 text-center">
-                            <select
+                            <Select
                               value={row.result ?? ''}
-                              onChange={(e) =>
+                              onChange={(value) =>
                                 updatePitching(
                                   row.player_id,
                                   'result',
-                                  e.target.value as BaseballPitchingResult
+                                  value as BaseballPitchingResult
                                 )
                               }
-                              className="w-14 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
-                            >
-                              <option value="">—</option>
-                              {PITCHING_RESULTS.map((r) => (
-                                <option key={r} value={r}>{r}</option>
-                              ))}
-                            </select>
+                              placeholder="—"
+                              options={PITCHING_RESULTS.map((r) => ({ value: r, label: r }))}
+                              className="w-20 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50"
+                            />
                           </td>
                           <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
                             {calcERA(row.er, row.ip)}

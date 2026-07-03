@@ -102,7 +102,7 @@ export function SubscriptionInstructions({
                   'border-2 transition-all duration-200',
                   isSelected
                     ? 'bg-primary-600 text-white border-primary-600 shadow-md'
-                    : 'bg-white text-warm-700 border-warm-200 hover:border-warm-300'
+                    : 'bg-cream-50 text-warm-700 border-warm-200 hover:border-warm-300'
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -132,7 +132,7 @@ export function SubscriptionInstructions({
                 'shrink-0 px-3 py-2 rounded-lg font-medium text-sm transition-all',
                 copied
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-100'
+                  : 'bg-cream-50 text-primary-700 border border-primary-200 hover:bg-primary-100'
               )}
             >
               {copied ? (
@@ -152,7 +152,7 @@ export function SubscriptionInstructions({
       )}
 
       {/* Platform-specific instructions */}
-      <div className={cn('rounded-lg border border-warm-200', compact ? 'p-3' : 'p-4', 'bg-white')}>
+      <div className={cn('rounded-lg border border-warm-200', compact ? 'p-3' : 'p-4', 'bg-cream-50')}>
         {selectedPlatform === 'apple' && <AppleInstructions compact={compact} />}
         {selectedPlatform === 'google' && <GoogleInstructions compact={compact} />}
         {selectedPlatform === 'outlook' && <OutlookInstructions compact={compact} />}

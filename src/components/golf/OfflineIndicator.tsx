@@ -286,7 +286,7 @@ export function OfflineIndicator({
               {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
                 <Button variant="ghost"
                   onClick={onSyncNow}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-text-on-accent/20 hover:bg-text-on-accent/30 rounded-lg transition-colors"
                 >
                   Sync
                 </Button>

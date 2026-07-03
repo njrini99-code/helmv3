@@ -213,7 +213,7 @@ function FamilyEmptyState({ label, scope }: { label: string; scope: Scope }) {
         {scope === 'team' && (
           <Link
             href="/baseball/dashboard/import"
-            className="group mt-1 inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-white/70 px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            className="group mt-1 inline-flex items-center gap-1.5 rounded-full border border-warm-200 glass-standard px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
           >
             Import stats
             <IconArrowRight

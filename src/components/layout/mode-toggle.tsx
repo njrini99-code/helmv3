@@ -18,7 +18,7 @@ export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
         className={cn(
           'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all',
           currentMode === 'recruiting'
-            ? 'bg-white text-primary-700 shadow-sm'
+            ? 'bg-cream-50 text-primary-700 shadow-sm'
             : 'text-warm-600 hover:text-warm-900'
         )}
       >
@@ -29,7 +29,7 @@ export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
         className={cn(
           'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all',
           currentMode === 'team'
-            ? 'bg-white text-primary-700 shadow-sm'
+            ? 'bg-cream-50 text-primary-700 shadow-sm'
             : 'text-warm-600 hover:text-warm-900'
         )}
       >

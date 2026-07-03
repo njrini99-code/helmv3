@@ -801,7 +801,7 @@ export default function GolfClassesPage() {
                     <Button variant="ghost"
                       key={cls.id}
                       onClick={() => handleClassClick(cls)}
-                      className="w-full text-left p-4 min-h-[72px] rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm active:bg-warm-50 transition-all bg-white flex items-center gap-4"
+                      className="w-full text-left p-4 min-h-[72px] rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm active:bg-warm-50 transition-all bg-cream-50 flex items-center gap-4"
                     >
                       <div
                         className="w-2 h-12 rounded-full flex-shrink-0"

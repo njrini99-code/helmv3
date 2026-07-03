@@ -48,11 +48,11 @@ export function UserBreakdownCard({ users }: Props) {
   }));
 
   return (
-    <div className="glass-standard rounded-2xl p-4 sm:p-5 md:p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-4 sm:p-5 md:p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-100 hover:shadow-card-hover">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
             <IconUsers size={18} />
           </div>
           <h3 className="text-base sm:text-lg font-semibold text-warm-900">User Analytics</h3>
@@ -68,19 +68,19 @@ export function UserBreakdownCard({ users }: Props) {
 
       {/* Role breakdown — 3-col, responsive text size */}
       <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mb-5">
-        <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-2 sm:p-3 text-center">
           <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalCoaches}
           </p>
           <p className="text-eyebrow sm:text-xs text-warm-500 mt-0.5">Coaches</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-2 sm:p-3 text-center">
           <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalPlayers}
           </p>
           <p className="text-eyebrow sm:text-xs text-warm-500 mt-0.5">Players</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-2 sm:p-3 text-center">
           <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalAdmins}
           </p>
@@ -117,7 +117,7 @@ export function UserBreakdownCard({ users }: Props) {
       </div>
 
       {/* Active teams */}
-      <div className="bg-white/50 rounded-xl p-3 mb-5">
+      <div className="bg-cream-50 rounded-xl p-3 mb-5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs sm:text-sm text-warm-600">Active Teams</span>
           <span className="text-xl font-semibold text-warm-900 tabular-nums">

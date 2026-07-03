@@ -1030,21 +1030,24 @@ function OptionTile({
   hint?: string;
 }) {
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        'min-h-[48px] rounded-fw-sm border p-3 text-left transition-colors',
+        'h-auto min-h-[48px] items-start justify-start rounded-fw-sm border p-3 text-left font-normal',
         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
         active
-          ? 'border-accent-500 bg-accent-50'
+          ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
           : 'border-border-subtle hover:border-border-strong',
       )}
     >
-      <p className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</p>
-      {hint ? <p className="font-fw-sans text-caption text-text-tertiary">{hint}</p> : null}
-    </button>
+      <span className="flex flex-col">
+        <span className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</span>
+        {hint ? <span className="font-fw-sans text-caption text-text-tertiary">{hint}</span> : null}
+      </span>
+    </Button>
   );
 }
 
@@ -1093,16 +1096,17 @@ function AppearancePanel() {
               { val: 'DD/MM/YYYY' as const, ex: '28/01/2026' },
               { val: 'YYYY-MM-DD' as const, ex: '2026-01-28' },
             ]).map(({ val, ex }) => (
-              <button
+              <Button
+                variant="ghost"
                 key={val}
                 type="button"
                 aria-pressed={dateFormat === val}
                 onClick={() => update({ dateFormat: val })}
                 className={cn(
-                  'flex min-h-[48px] items-center justify-between rounded-fw-sm border px-3 py-2.5 text-left transition-colors',
+                  'flex h-auto min-h-[48px] items-center justify-between rounded-fw-sm border px-3 py-2.5 text-left font-normal',
                   'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                   dateFormat === val
-                    ? 'border-accent-500 bg-accent-50'
+                    ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
                     : 'border-border-subtle hover:border-border-strong',
                 )}
               >
@@ -1110,7 +1114,7 @@ function AppearancePanel() {
                   {val}
                 </span>
                 <span className="font-fw-sans text-caption text-text-tertiary">{ex}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -1533,21 +1537,22 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           <FieldLabel>Default tees</FieldLabel>
           <div className="grid grid-cols-4 gap-1.5">
             {['black', 'blue', 'white', 'gold'].map((tee) => (
-              <button
+              <Button
+                variant="ghost"
                 key={tee}
                 type="button"
                 aria-pressed={defaultTees === tee}
                 onClick={() => setDefaultTees(tee)}
                 className={cn(
-                  'rounded-fw-sm border px-2 py-2 text-center font-fw-sans text-body-sm font-medium capitalize transition-colors',
+                  'h-auto rounded-fw-sm border px-2 py-2 text-center font-fw-sans text-body-sm font-medium capitalize',
                   'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                   defaultTees === tee
-                    ? 'border-accent-500 bg-accent-50 text-accent-700'
+                    ? 'border-accent-500 bg-accent-50 text-accent-700 hover:bg-accent-50'
                     : 'border-border-subtle text-text-secondary hover:border-border-strong',
                 )}
               >
                 {tee}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -1573,30 +1578,31 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               const meta = BENCHMARK_METADATA[level];
               const active = sgBenchmark === level;
               return (
-                <button
+                <Button
+                  variant="ghost"
                   key={level}
                   type="button"
                   aria-pressed={active}
                   onClick={() => setSgBenchmark(level)}
                   className={cn(
-                    'rounded-fw-sm border p-2.5 text-left transition-colors',
+                    'h-auto flex-col items-stretch justify-start rounded-fw-sm border p-2.5 text-left font-normal',
                     'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                     active
-                      ? 'border-accent-500 bg-accent-50'
+                      ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
                       : 'border-border-subtle hover:border-border-strong',
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <p className="font-fw-sans text-body-sm font-medium text-text-primary">
+                  <span className="flex items-center justify-between">
+                    <span className="font-fw-sans text-body-sm font-medium text-text-primary">
                       {meta.shortLabel}
-                    </p>
+                    </span>
                     <span className="font-fw-sans text-caption text-text-tertiary">
                       ~{meta.approximateHandicap < 0 ? '+' : ''}
                       {Math.abs(meta.approximateHandicap)} hcp
                     </span>
-                  </div>
-                  <p className="font-fw-sans text-caption text-text-tertiary">{meta.description}</p>
-                </button>
+                  </span>
+                  <span className="font-fw-sans text-caption text-text-tertiary">{meta.description}</span>
+                </Button>
               );
             })}
           </div>

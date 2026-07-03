@@ -18,6 +18,7 @@ import {
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/input';
 
 interface QuickActionsToolbarProps {
   allCoaches: Coach[];
@@ -101,7 +102,7 @@ export function QuickActionsToolbar({
   if (!allNewLeads) return null;
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 space-y-4">
+    <div className="glass-standard rounded-2xl p-5 space-y-4">
       {/* Coaching header */}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -122,7 +123,7 @@ export function QuickActionsToolbar({
           disabled={processing === 'research'}
           className={cn(
             'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
-            'bg-white/60 border border-white/20 shadow-sm',
+            'bg-cream-50 border border-warm-200/60 shadow-sm',
             'hover:shadow-md hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
@@ -142,7 +143,7 @@ export function QuickActionsToolbar({
           disabled={processing === 'research'}
           className={cn(
             'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
-            'bg-white/60 border border-white/20 shadow-sm',
+            'bg-cream-50 border border-warm-200/60 shadow-sm',
             'hover:shadow-md hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
@@ -159,7 +160,7 @@ export function QuickActionsToolbar({
 
         <div className={cn(
           'flex items-center gap-3 p-4 rounded-xl text-left',
-          'bg-white/60 border border-white/20 shadow-sm'
+          'bg-cream-50 border border-warm-200/60 shadow-sm'
         )}>
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
             <IconTarget size={18} className="text-amber-600" />
@@ -172,7 +173,7 @@ export function QuickActionsToolbar({
       </div>
 
       {/* Tips */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-white/60 rounded-xl border border-white/20">
+      <div className="flex items-center gap-2 px-3 py-2 bg-cream-50 rounded-xl border border-warm-200/60">
         <IconAlertCircle size={14} className="text-blue-500 flex-shrink-0" />
         <p className="text-xs text-warm-600">
           <strong>Tip:</strong> Star your top prospects first, then use &quot;Move to Pipeline&quot; to prioritize starred coaches. Use the list view to bulk-select and categorize.
@@ -246,7 +247,7 @@ function SingleCoachQuickAction({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
-        className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-md mx-4 overflow-clip"
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-clip"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -256,7 +257,7 @@ function SingleCoachQuickAction({
               <h3 className="font-bold text-base">{coach.name}</h3>
               <p className="text-warm-300 text-sm">{coach.school} &middot; {coach.conference}</p>
             </div>
-            <IconButton variant="default" onClick={onClose} aria-label="Close" className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
+            <IconButton variant="default" onClick={onClose} aria-label="Close" className="p-1.5 rounded-xl hover:bg-cream-50/10 transition-colors">
               <IconX size={18} className="text-white/70" aria-hidden="true" />
             </IconButton>
           </div>
@@ -275,7 +276,7 @@ function SingleCoachQuickAction({
                   'px-3 py-1.5 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5',
                   logForm.type === type.value
                     ? 'bg-primary-500 text-white shadow-sm'
-                    : 'bg-white/60 border border-warm-200 text-warm-700 hover:bg-warm-50'
+                    : 'bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50'
                 )}
               >
                 {type.icon} {type.label}
@@ -283,10 +284,10 @@ function SingleCoachQuickAction({
             ))}
           </div>
 
-          <textarea
+          <Textarea
             value={logForm.notes}
             onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
-            className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm resize-none outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="w-full bg-cream-50 border border-warm-200 rounded-xl px-4 py-2.5 text-sm resize-none outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
             rows={3}
             placeholder="Notes about this contact..."
           />
@@ -294,7 +295,7 @@ function SingleCoachQuickAction({
           <div className="flex gap-3">
             <Button variant="ghost"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-white/60 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               Cancel
             </Button>

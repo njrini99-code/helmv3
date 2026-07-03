@@ -8,7 +8,7 @@ export default function CollegeInterestLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 lg:p-6"
+            className="glass-standard rounded-2xl shadow-glass p-4 lg:p-6"
           >
             <div className="flex items-center justify-between">
               <div className="space-y-2 flex-1">
@@ -22,7 +22,7 @@ export default function CollegeInterestLoading() {
       </div>
 
       {/* Interest list card */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl shadow-glass p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div className="space-y-2">
             <Skeleton className="h-5 w-48 rounded" />

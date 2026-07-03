@@ -25,6 +25,8 @@ import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
 import { toast } from '@/components/ui/sonner';
 import { EventDocumentsSection } from './EventDocumentsSection';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 import {
   Drawer,
   DrawerContent,
@@ -857,7 +859,7 @@ export function EventDetailModal({
           )}
 
           {/* Title - Hero input */}
-          <input
+          <Input
             type="text"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -867,55 +869,55 @@ export function EventDetailModal({
             autoCapitalize="sentences"
             autoCorrect="on"
             enterKeyHint="next"
-            className="w-full px-0 py-2 text-h3 font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
+            className="min-h-0 w-full px-0 py-2 text-h3 font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
             required
           />
 
           {/* Date & Time Section - Compact card */}
           <div className="bg-warm-50 rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-4">
-              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-cream-50 flex items-center justify-center shadow-sm">
                 <Calendar className="w-4.5 h-4.5 text-warm-500" />
               </div>
               <div className="flex-1 grid grid-cols-2 gap-3">
-                <input
+                <Input
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   disabled={isViewMode || isSaving}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
+                  className="min-h-0 w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors disabled:bg-cream-50 disabled:text-warm-500"
                   required
                 />
-                <input
+                <Input
                   type="date"
                   value={formData.endDate || ''}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
                   disabled={isViewMode || isSaving}
                   placeholder="End date"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
+                  className="min-h-0 w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors disabled:bg-cream-50 disabled:text-warm-500"
                 />
               </div>
             </div>
 
             {!formData.allDay && (
               <div className="flex items-center gap-4">
-                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-cream-50 flex items-center justify-center shadow-sm">
                   <Clock className="w-4.5 h-4.5 text-warm-500" />
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-3">
-                  <input
+                  <Input
                     type="time"
                     value={formData.startTime || ''}
                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
                     disabled={isViewMode || isSaving}
-                    className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
+                    className="min-h-0 w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors disabled:bg-cream-50 disabled:text-warm-500"
                   />
-                  <input
+                  <Input
                     type="time"
                     value={formData.endTime || ''}
                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
                     disabled={isViewMode || isSaving}
-                    className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
+                    className="min-h-0 w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors disabled:bg-cream-50 disabled:text-warm-500"
                   />
                 </div>
               </div>
@@ -940,7 +942,7 @@ export function EventDetailModal({
                   className="sr-only"
                 />
                 <div className={cn(
-                  'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
+                  'absolute top-0.5 left-0.5 w-5 h-5 bg-cream-50 rounded-full shadow-sm transition-transform duration-200',
                   formData.allDay && 'translate-x-4'
                 )} />
               </div>
@@ -951,7 +953,7 @@ export function EventDetailModal({
           {/* Location - Icon-prefixed input */}
           <div className="flex items-center gap-3 bg-warm-50 rounded-2xl px-4 py-3">
             <MapPin className="w-5 h-5 text-warm-400 flex-shrink-0" />
-            <input
+            <Input
               type="text"
               value={formData.location || ''}
               onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
@@ -961,13 +963,13 @@ export function EventDetailModal({
               autoCapitalize="words"
               autoCorrect="on"
               enterKeyHint="next"
-              className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-warm-900 placeholder:text-warm-400 disabled:text-warm-500"
+              className="min-h-0 flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-warm-900 placeholder:text-warm-400 disabled:text-warm-500"
             />
           </div>
 
           {/* Description - Expandable, cleaner */}
           <div className="bg-warm-50 rounded-2xl px-4 py-3">
-            <textarea
+            <Textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
               disabled={isViewMode || isSaving}
@@ -1064,7 +1066,7 @@ export function EventDetailModal({
                         ) : (
                           <div className={cn(
                             'w-5 h-5 rounded-full flex items-center justify-center text-eyebrow font-medium',
-                            isSelected ? 'bg-white/20 text-white' : 'bg-warm-300 text-warm-500'
+                            isSelected ? 'bg-cream-50/20 text-white' : 'bg-warm-300 text-warm-500'
                           )}>
                             {player.first_name[0]}{player.last_name[0]}
                           </div>
@@ -1130,7 +1132,7 @@ export function EventDetailModal({
                   <Repeat className="w-4 h-4 text-warm-500" aria-hidden="true" />
                   {isSeriesRoot ? 'Series pattern' : 'Repeats'}
                 </label>
-                <select
+                <NativeSelect
                   id="event-recurrence"
                   value={formData.recurrence}
                   onChange={(e) => setFormData({
@@ -1138,7 +1140,7 @@ export function EventDetailModal({
                     recurrence: e.target.value as RecurrenceFrequency,
                   })}
                   disabled={isSaving}
-                  className="px-3 py-1.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors"
+                  className="min-h-0 w-auto px-3 py-1.5 rounded-lg border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors"
                 >
                   {/* A series root can't be flipped back to a one-off here —
                       that's a delete-with-scope, not a pattern change. */}
@@ -1147,7 +1149,7 @@ export function EventDetailModal({
                   <option value="weekly">Weekly</option>
                   <option value="biweekly">Every 2 weeks</option>
                   <option value="monthly">Monthly</option>
-                </select>
+                </NativeSelect>
               </div>
 
               {(formData.recurrence === 'weekly' || formData.recurrence === 'biweekly') && (
@@ -1156,7 +1158,7 @@ export function EventDetailModal({
                     {WEEKDAY_OPTIONS.map((day) => {
                       const selected = (formData.recurrenceWeekdays ?? []).includes(day.value);
                       return (
-                        <button
+                        <Button variant="ghost"
                           key={day.value}
                           type="button"
                           onClick={() => toggleRecurrenceWeekday(day.value)}
@@ -1164,15 +1166,15 @@ export function EventDetailModal({
                           aria-pressed={selected}
                           aria-label={day.long}
                           className={cn(
-                            'w-8 h-8 rounded-full text-xs font-medium transition-colors',
+                            'min-h-0 w-8 h-8 p-0 rounded-full text-xs font-medium transition-colors',
                             selected
-                              ? 'bg-primary-600 text-white shadow-sm'
+                              ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600'
                               : 'bg-warm-100 text-warm-600 hover:bg-warm-200',
                             'disabled:opacity-50',
                           )}
                         >
                           {day.short}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -1188,7 +1190,7 @@ export function EventDetailModal({
                 <div className="flex items-center justify-between gap-3 pl-1 text-sm text-warm-600">
                   <div className="flex items-center gap-2">
                     <label htmlFor="event-recurrence-end" className="sr-only">Series ends</label>
-                    <select
+                    <NativeSelect
                       id="event-recurrence-end"
                       value={formData.recurrenceEndMode ?? 'count'}
                       onChange={(e) => setFormData({
@@ -1196,15 +1198,15 @@ export function EventDetailModal({
                         recurrenceEndMode: e.target.value as RecurrenceEndMode,
                       })}
                       disabled={isSaving}
-                      className="px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors"
+                      className="min-h-0 w-auto px-2 py-1 rounded-lg border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors"
                     >
                       <option value="count">Ends after</option>
                       <option value="until">Ends on date</option>
-                    </select>
+                    </NativeSelect>
                   </div>
                   {(formData.recurrenceEndMode ?? 'count') === 'count' ? (
                     <div className="flex items-center gap-2">
-                      <input
+                      <Input
                         type="number"
                         min={MIN_RECURRENCE_COUNT}
                         max={MAX_RECURRENCE_COUNT}
@@ -1218,19 +1220,19 @@ export function EventDetailModal({
                         })}
                         disabled={isSaving}
                         aria-label="Number of occurrences"
-                        className="w-20 px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white tabular-nums text-right"
+                        className="min-h-0 w-20 px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 tabular-nums text-right"
                       />
                       <span className="text-warm-500">events</span>
                     </div>
                   ) : (
-                    <input
+                    <Input
                       type="date"
                       min={formData.startDate}
                       value={formData.recurrenceUntil || ''}
                       onChange={(e) => setFormData({ ...formData, recurrenceUntil: e.target.value || null })}
                       disabled={isSaving}
                       aria-label="Series end date"
-                      className="px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors"
+                      className="min-h-0 px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors"
                     />
                   )}
                 </div>
@@ -1266,7 +1268,7 @@ export function EventDetailModal({
                     className="sr-only"
                   />
                   <div className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-cream-50 rounded-full shadow-sm transition-transform duration-200',
                     formData.requiresRsvp && 'translate-x-4'
                   )} />
                 </div>
@@ -1279,19 +1281,19 @@ export function EventDetailModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor={`${uid}-rsvp-deadline`} className="block text-xs font-medium text-warm-500 mb-1">RSVP Deadline</label>
-                <input
+                <Input
                   id={`${uid}-rsvp-deadline`}
                   type="datetime-local"
                   value={formData.rsvpDeadline || ''}
                   onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
                   disabled={isViewMode || isSaving}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-warm-50"
+                  className="min-h-0 w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-cream-50 transition-colors disabled:bg-warm-50"
                 />
                 <p className="text-label text-warm-400 mt-1">Your local time</p>
               </div>
               <div>
                 <label htmlFor={`${uid}-max-attendees`} className="block text-xs font-medium text-warm-500 mb-1">Max Attendees</label>
-                <input
+                <Input
                   id={`${uid}-max-attendees`}
                   type="number"
                   min="1"
@@ -1299,7 +1301,7 @@ export function EventDetailModal({
                   onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value) : null })}
                   disabled={isViewMode || isSaving}
                   placeholder="No limit"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 placeholder:text-warm-400 bg-white transition-colors disabled:bg-warm-50"
+                  className="min-h-0 w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 placeholder:text-warm-400 bg-cream-50 transition-colors disabled:bg-warm-50"
                 />
               </div>
             </div>

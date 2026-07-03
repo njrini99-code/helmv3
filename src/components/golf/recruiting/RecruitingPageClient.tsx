@@ -15,6 +15,8 @@ import { RecruitFormSheet } from './RecruitFormSheet';
 import { RECRUIT_STATUSES } from './RecruitStatusChip';
 import type { Recruit, RecruitStatus } from '@/app/golf/actions/recruiting';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 
 interface RecruitingPageClientProps {
   initialRecruits: Recruit[];
@@ -142,7 +144,7 @@ export function RecruitingPageClient({
               <span className="text-h1 md:text-display leading-none font-light text-warm-900 tabular-nums tracking-[-0.025em]">
                 <AnimatedNumber value={count} />
               </span>
-              <span className="text-[11.5px] text-warm-500">
+              <span className="text-caption text-warm-500">
                 {active ? 'Filtering' : s.description}
               </span>
             </Button>
@@ -154,7 +156,7 @@ export function RecruitingPageClient({
       <section className="mt-7 flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
-          <input
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -177,16 +179,16 @@ export function RecruitingPageClient({
           </Button>
           <div className="relative">
             <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-warm-400 pointer-events-none" />
-            <select
+            <NativeSelect
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="pl-8 pr-8 py-2 rounded-full text-[12.5px] font-medium text-warm-700 bg-cream-100/80 ring-1 ring-warm-200/55 hover:ring-warm-300/70 focus:outline-none focus:ring-2 focus:ring-primary-300/45 transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] appearance-none"
+              className="pl-8 pr-8 py-2 rounded-full text-body-sm font-medium text-warm-700 bg-cream-100/80 ring-1 ring-warm-200/55 hover:ring-warm-300/70 focus:outline-none focus:ring-2 focus:ring-primary-300/45 transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] appearance-none"
               aria-label="Sort prospects"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <Button variant="primary"
             type="button"
@@ -254,7 +256,7 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
       <h3 className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-warm-900 mb-2">
         {isFiltered ? 'No prospects match' : 'Start your prospect list'}
       </h3>
-      <p className="text-[13.5px] text-warm-500 max-w-md mx-auto mb-7 leading-relaxed">
+      <p className="text-body-sm text-warm-500 max-w-md mx-auto mb-7 leading-relaxed">
         {isFiltered
           ? 'Try a different status, sort, or search term.'
           : 'Add high-school golfers you’re tracking. Notes, contact info, and status all live here.'}

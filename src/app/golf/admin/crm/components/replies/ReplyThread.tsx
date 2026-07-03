@@ -100,7 +100,7 @@ export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
       {loading && sorted.length <= 1 && (
         <div className="space-y-2">
           {[0, 1].map((i) => (
-            <div key={i} className="h-24 rounded-xl bg-white/60 border border-warm-200/60 skeleton-shimmer" />
+            <div key={i} className="h-24 rounded-xl bg-cream-50 border border-warm-200/60 skeleton-shimmer" />
           ))}
         </div>
       )}
@@ -109,7 +109,7 @@ export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
         <article
           key={r.id}
           className={cn(
-            'rounded-xl border bg-white/70 backdrop-blur-xl px-4 py-3 transition-colors',
+            'rounded-xl border glass-standard px-4 py-3 transition-colors',
             idx === 0 ? 'border-primary-200 shadow-glass-sm' : 'border-warm-200/60',
           )}
         >

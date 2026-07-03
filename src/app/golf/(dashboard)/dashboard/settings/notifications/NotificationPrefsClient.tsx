@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import {
   setCategoryChannel,
@@ -163,24 +164,26 @@ function Toggle({
   ariaLabel: string;
 }) {
   return (
-    <button
+    <Button
+      variant="ghost"
+      haptic="light"
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       disabled={disabled}
-      className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
+      className={`relative inline-flex h-6 w-10 min-h-0 p-0 items-center rounded-full transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
         checked
           ? 'bg-primary-600 shadow-[0_0_0_3px_rgba(22,163,74,0.18)]'
           : 'bg-warm-300'
       } ${disabled ? 'opacity-50' : 'hover:opacity-90'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40`}
     >
       <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
+        className={`inline-block h-5 w-5 transform rounded-full bg-cream-50 shadow-sm transition-transform [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
           checked ? 'translate-x-4' : 'translate-x-0.5'
         }`}
       />
-    </button>
+    </Button>
   );
 }

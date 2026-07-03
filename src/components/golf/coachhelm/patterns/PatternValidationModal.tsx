@@ -13,6 +13,7 @@ import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/patter
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { Button, IconButton } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/input';
 import { toast } from '@/components/ui/sonner';
 
 // ============================================================================
@@ -165,7 +166,7 @@ export function PatternValidationModal({
               role="dialog"
               aria-modal="true"
               aria-labelledby="pattern-validation-modal-title"
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto overflow-clip"
+              className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto overflow-clip"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
@@ -240,7 +241,7 @@ export function PatternValidationModal({
                           'w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all',
                           selectedSeverity === option.value
                             ? cn(option.bg, 'border-current ring-2 ring-offset-2', option.color.replace('text-', 'ring-'))
-                            : 'border-warm-200 hover:border-warm-300 bg-white'
+                            : 'border-warm-200 hover:border-warm-300 bg-cream-50'
                         )}
                       >
                         <div className={cn(
@@ -250,7 +251,7 @@ export function PatternValidationModal({
                             : 'border-warm-300'
                         )}>
                           {selectedSeverity === option.value && (
-                            <div className="w-2 h-2 rounded-full bg-white" />
+                            <div className="w-2 h-2 rounded-full bg-cream-50" />
                           )}
                         </div>
                         <div>
@@ -274,17 +275,15 @@ export function PatternValidationModal({
                   <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-warm-700 mb-2">
                     Notes (Optional)
                   </label>
-                  <textarea
+                  <Textarea
                     id={`${uid}-notes`}
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
                     placeholder="Add any observations or context about this pattern..."
                     rows={3}
                     className={cn(
-                      'w-full px-4 py-3 rounded-xl border border-warm-200',
-                      'focus:border-primary-500 focus:ring-2 focus:ring-primary-100',
-                      'text-warm-800 placeholder:text-warm-400 resize-none',
-                      'transition-colors'
+                      'focus:ring-primary-100',
+                      'text-warm-800',
                     )}
                   />
                 </div>
@@ -319,7 +318,7 @@ export function PatternValidationModal({
                   >
                     <span
                       className={cn(
-                        'inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm',
+                        'inline-block h-4 w-4 transform rounded-full bg-cream-50 transition-transform shadow-sm',
                         createFocusArea ? 'translate-x-6' : 'translate-x-1'
                       )}
                     />
@@ -353,9 +352,9 @@ export function PatternValidationModal({
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                     </span>
                   ) : (
                     <IconCheck size={16} />

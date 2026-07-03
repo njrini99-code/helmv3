@@ -810,7 +810,7 @@ export function ProgramSettingsClient({ data }: Props) {
               hint="AI output below this confidence is withheld."
             >
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line helm/no-raw-input -- range type, no <Input type="range"> component exists */}
+                { }
                 <input
                   type="range"
                   min={0}
@@ -1003,7 +1003,7 @@ export function ProgramSettingsClient({ data }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Primary color" hint="Used for the brand accent.">
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line helm/no-raw-input -- color picker, no <Input type="color"> component */}
+                { }
                 <input
                   type="color"
                   aria-label="Primary brand color"
@@ -1027,7 +1027,7 @@ export function ProgramSettingsClient({ data }: Props) {
             </Field>
             <Field label="Secondary color" hint="Optional supporting color.">
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line helm/no-raw-input -- color picker, no <Input type="color"> component */}
+                { }
                 <input
                   type="color"
                   aria-label="Secondary brand color"
@@ -1067,7 +1067,7 @@ export function ProgramSettingsClient({ data }: Props) {
             <Eyebrow className="text-text-tertiary">Brand accent</Eyebrow>
             <HairlineRule animate={false} className="mb-1" />
             <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line helm/no-raw-input -- color picker, no <Input type="color"> component */}
+              { }
               <input
                 type="color"
                 aria-label="Brand accent color"

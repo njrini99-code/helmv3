@@ -137,7 +137,7 @@ function StatCard({
 function AssignmentCard({ assignment }: { assignment: HelmLiftingCoachAssignmentRow }) {
   const sportEmoji = assignment.sport === 'baseball' ? '⚾' : '⛳';
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white/50 rounded-xl border border-white/20 hover:bg-white/70 transition-all">
+    <div className="flex items-center gap-3 px-4 py-3 glass-standard rounded-xl hover:bg-cream-100 transition-all">
       <span className="text-lg" aria-hidden="true">{sportEmoji}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-warm-900 truncate">
@@ -333,7 +333,7 @@ export default async function LiftingDashboardPage({ searchParams }: PageProps) 
                   <Link
                     key={action.href}
                     href={action.href}
-                    className="flex items-center gap-3 px-4 py-4 bg-white/50 rounded-xl border border-white/20 hover:bg-white/80 hover:shadow-sm transition-all group"
+                    className="flex items-center gap-3 px-4 py-4 glass-standard rounded-xl hover:bg-cream-100 hover:shadow-sm transition-all group"
                   >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${action.colorClass}`}>
                       <Icon className="w-5 h-5" />

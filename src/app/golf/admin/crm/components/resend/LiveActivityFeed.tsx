@@ -206,7 +206,7 @@ function FeedRow({
       transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 2 })}
       className={cn(
         'group relative px-6 py-3 flex items-start gap-3',
-        onSelect && 'cursor-pointer hover:bg-white/70'
+        onSelect && 'cursor-pointer hover:bg-cream-100'
       )}
       onClick={() => onSelect?.(event.resend_message_id)}
     >

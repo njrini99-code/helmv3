@@ -160,20 +160,20 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="join-requests-modal-title"
-          className="bg-white rounded-2xl shadow-2xl overflow-hidden"
+          className="glass-prominent rounded-2xl shadow-2xl overflow-hidden"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-cream-50/20 rounded-xl flex items-center justify-center">
                   <IconUsers size={20} className="text-white" />
                 </div>
                 <div>
                   <h2 id="join-requests-modal-title" className="text-h3 font-medium text-white tracking-[-0.012em]">Join Requests</h2>
                   <p className="text-white/80 text-sm">
                     {loading ? (
-                      <span className="inline-block h-3 w-24 rounded bg-white/20 animate-pulse" aria-label="Loading" />
+                      <span className="inline-block h-3 w-24 rounded bg-cream-50/20 animate-pulse" aria-label="Loading" />
                     ) : (
                       `${requests.length} player${requests.length !== 1 ? 's' : ''} waiting`
                     )}
@@ -182,7 +182,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
               </div>
               <IconButton variant="default"
                 onClick={onClose}
-                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-cream-50/10 transition-colors"
                 aria-label="Close"
               >
                 <IconX size={20} />
@@ -255,7 +255,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                         </div>
 
                         {request.message && (
-                          <div className="p-3 bg-white rounded-lg border border-warm-200 mb-3">
+                          <div className="p-3 bg-cream-50 rounded-lg border border-warm-200 mb-3">
                             <p className="text-sm text-warm-600 italic">"{request.message}"</p>
                           </div>
                         )}
@@ -270,9 +270,9 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                           >
                             {processingId === request.id ? (
                               <span className="flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                               </span>
                             ) : (
                               <>

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/sonner';
 import { IconPlus, IconSend } from '@/components/icons';
 import { UrgencyPicker } from './UrgencyPicker';
@@ -121,13 +122,13 @@ export function CreateAnnouncementFlow({ players, teamId, onCreated }: CreateAnn
               <label htmlFor="caf-content" className="text-sm font-medium text-warm-700 block mb-1.5">
                 Message
               </label>
-              <textarea
+              <Textarea
                 id="caf-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={3}
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-y min-h-[72px] max-h-[200px] text-sm"
+                className="resize-y min-h-[72px] max-h-[200px] text-sm"
                 placeholder="Write your announcement..."
               />
             </div>
@@ -151,7 +152,7 @@ export function CreateAnnouncementFlow({ players, teamId, onCreated }: CreateAnn
               <div className="pt-0.5">
                 <div className={`w-9 h-5 rounded-full transition-colors relative ${isPinned ? 'bg-primary-500' : 'bg-warm-300'}`}>
                   <motion.div
-                    className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
+                    className="absolute top-0.5 w-4 h-4 bg-cream-50 rounded-full shadow-sm"
                     animate={{ left: isPinned ? 18 : 2 }}
                     transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
                   />

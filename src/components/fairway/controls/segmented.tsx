@@ -111,7 +111,7 @@ export function Segmented<T extends string = string>({
             aria-label={typeof opt.label === 'string' ? opt.label : undefined}
             data-slot="fw-segment"
             className={cn(
-              'relative isolate inline-flex min-w-0 items-center justify-center rounded-[7px]',
+              'relative isolate inline-flex min-w-0 items-center justify-center rounded-md',
               'font-fw-sans font-medium',
               fwTransition,
               fwFocusRing,
@@ -126,7 +126,7 @@ export function Segmented<T extends string = string>({
                 // The moving selection pill (matte warm surface + soft shadow).
                 layoutId={reduceMotion ? undefined : `fw-segment-pill-${pillId}`}
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 rounded-[7px] bg-surface shadow-soft border border-border-subtle"
+                className="absolute inset-0 -z-10 rounded-md bg-surface shadow-soft border border-border-subtle"
                 transition={
                   reduceMotion
                     ? { duration: 0 }

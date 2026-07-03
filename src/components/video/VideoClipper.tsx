@@ -228,7 +228,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
   const currentPercent = duration ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
+    <div className="bg-cream-50 rounded-2xl border border-warm-200 overflow-hidden">
       {/* Video Preview */}
       <div className="relative bg-black aspect-video">
         {/* eslint-disable-next-line jsx-a11y/media-has-caption -- user-uploaded video, no captions available */}
@@ -318,7 +318,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               setIsDragging('start');
             }}
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-cream-50 rounded-full" />
           </div>
 
           {/* End Handle */}
@@ -334,7 +334,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               setIsDragging('end');
             }}
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-cream-50 rounded-full" />
           </div>
 
           {/* Current Time Indicator */}

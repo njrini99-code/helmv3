@@ -28,6 +28,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
 import { IconX } from '@/components/icons';
+import { IconButton } from '@/components/fairway/controls/button';
 import { FairwaySidebar, type FairwaySidebarProps } from './FairwaySidebar';
 import { FairwayTopBar, type FairwayTopBarProps } from './FairwayTopBar';
 import { RouteTransition } from './RouteTransition';
@@ -311,18 +312,19 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
             >
               <FairwaySidebar {...sidebarProps} isMobile onNavigate={closeMobile} />
               {/* In-drawer close affordance */}
-              <button
+              <IconButton
                 type="button"
+                variant="ghost"
                 onClick={closeMobile}
                 aria-label="Close navigation"
                 className={cn(
-                  'on-dark absolute right-3 top-4 flex h-9 w-9 items-center justify-center rounded-fw-md',
+                  'on-dark absolute right-3 top-4 h-9 w-9 rounded-fw-md border-transparent',
                   'text-nav-text-dim transition-colors [transition-duration:var(--fw-dur-fast)]',
                   'hover:bg-nav-surface hover:text-nav-text active:translate-y-[0.5px]',
                 )}
               >
                 <IconX size={18} aria-hidden />
-              </button>
+              </IconButton>
             </motion.div>
           </div>
         )}

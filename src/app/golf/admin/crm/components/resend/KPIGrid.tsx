@@ -133,14 +133,14 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
             className={cn(
               'glass-standard rounded-2xl p-6 border-l-[4px]',
               cfg.border,
-              'hover:bg-white/80 hover:shadow-card-hover transition-all duration-200'
+              'hover:bg-cream-100 hover:shadow-card-hover transition-all duration-200'
             )}
           >
             <div className="flex items-start justify-between mb-3">
               <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">
                 {card.label}
               </p>
-              <div className={cn('p-1.5 rounded-lg bg-white/60', cfg.icon)}>
+              <div className={cn('p-1.5 rounded-lg bg-cream-50', cfg.icon)}>
                 {card.icon}
               </div>
             </div>

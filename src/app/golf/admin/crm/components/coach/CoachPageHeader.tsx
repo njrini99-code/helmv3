@@ -169,7 +169,7 @@ export function CoachPageHeader({
           {coach.phone ? (
             <a
               href={`tel:${coach.phone}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               <IconPhone size={14} /> Call
             </a>
@@ -187,7 +187,7 @@ export function CoachPageHeader({
             <Button variant="ghost"
               type="button"
               onClick={onSchedule}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               <IconCalendar size={14} /> Schedule
             </Button>
@@ -196,7 +196,7 @@ export function CoachPageHeader({
             <Button variant="ghost"
               type="button"
               onClick={onLogContact}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               <IconFileText size={14} /> Log Contact
             </Button>
@@ -206,7 +206,7 @@ export function CoachPageHeader({
               href={coach.athletics_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               <IconExternalLink size={14} /> Staff Page
             </a>

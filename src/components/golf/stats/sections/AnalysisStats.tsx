@@ -54,7 +54,7 @@ export function AnalysisStats({
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}
               >
                 <div className="text-xs text-amber-600 font-medium mb-1">Best Score</div>
-                <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-amber-700">{trendData.personalBests.bestScore.value}</div>
+                <div className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-amber-700">{trendData.personalBests.bestScore.value}</div>
                 <div className="text-xs text-warm-500 mt-1">
                   {formatDate(trendData.personalBests.bestScore.date)}
                 </div>
@@ -71,7 +71,7 @@ export function AnalysisStats({
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}
               >
                 <div className="text-xs text-primary-600 font-medium mb-1">Best vs Par</div>
-                <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-primary-700">
+                <div className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-primary-700">
                   {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
                 </div>
                 <div className="text-xs text-warm-500 mt-1">
@@ -90,7 +90,7 @@ export function AnalysisStats({
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
               >
                 <div className="text-xs text-blue-600 font-medium mb-1">Best GIR %</div>
-                <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-blue-700">{trendData.personalBests.bestGir.value}%</div>
+                <div className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-blue-700">{trendData.personalBests.bestGir.value}%</div>
                 <div className="text-xs text-warm-500 mt-1">
                   {formatDate(trendData.personalBests.bestGir.date)}
                 </div>
@@ -107,7 +107,7 @@ export function AnalysisStats({
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25 })}
               >
                 <div className="text-xs text-purple-600 font-medium mb-1">Fewest Putts</div>
-                <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-purple-700">{trendData.personalBests.lowestPutts.value}</div>
+                <div className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-purple-700">{trendData.personalBests.lowestPutts.value}</div>
                 <div className="text-xs text-warm-500 mt-1">
                   {formatDate(trendData.personalBests.lowestPutts.date)}
                 </div>
@@ -270,7 +270,7 @@ export function AnalysisStats({
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
-                      <span className="text-[13px] font-medium text-red-600">#{hole.holeNumber}</span>
+                      <span className="text-body-sm font-medium text-red-600">#{hole.holeNumber}</span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-warm-800">Par {hole.par}</p>
@@ -278,7 +278,7 @@ export function AnalysisStats({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[13px] font-medium text-red-600">
+                    <p className="text-body-sm font-medium text-red-600">
                       +{hole.averageToPar.toFixed(2)}
                     </p>
                     <p className="text-xs text-warm-400">avg {hole.averageScore.toFixed(1)}</p>
@@ -299,7 +299,7 @@ export function AnalysisStats({
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                      <span className="text-[13px] font-medium text-primary-600">#{hole.holeNumber}</span>
+                      <span className="text-body-sm font-medium text-primary-600">#{hole.holeNumber}</span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-warm-800">Par {hole.par}</p>
@@ -307,7 +307,7 @@ export function AnalysisStats({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[13px] font-medium text-primary-600">
+                    <p className="text-body-sm font-medium text-primary-600">
                       {hole.averageToPar > 0 ? '+' : ''}{hole.averageToPar.toFixed(2)}
                     </p>
                     <p className="text-xs text-warm-400">avg {hole.averageScore.toFixed(1)}</p>
@@ -333,7 +333,7 @@ export function AnalysisStats({
                   transition={prefersReducedMotion ? { duration: 0 } : ({ delay: idx * 0.02 })}
                 >
                   <div className="text-xs text-warm-500">Hole {hole.holeNumber}</div>
-                  <div className={`text-[13px] font-medium ${
+                  <div className={`text-body-sm font-medium ${
                     hole.averageToPar <= -0.1 ? 'text-primary-600' :
                     hole.averageToPar >= 0.3 ? 'text-red-600' :
                     'text-warm-700'
@@ -371,7 +371,7 @@ export function AnalysisStats({
                     course.courseName === courseBreakdown.worstCourse ? 'bg-red-100' :
                     'bg-warm-100'
                   }`}>
-                    <span className={`text-[11px] font-medium ${
+                    <span className={`text-eyebrow font-medium ${
                       course.courseName === courseBreakdown.bestCourse ? 'text-primary-600' :
                       course.courseName === courseBreakdown.worstCourse ? 'text-red-600' :
                       'text-warm-500'
@@ -398,7 +398,7 @@ export function AnalysisStats({
                     <p className="text-sm font-medium text-warm-700">{course.girPct !== null ? `${course.girPct}%` : '--'}</p>
                   </div>
                   <div className="text-center md:hidden">
-                    <p className="text-[13px] font-medium text-warm-800">{course.scoringAverage?.toFixed(1) || '--'}</p>
+                    <p className="text-body-sm font-medium text-warm-800">{course.scoringAverage?.toFixed(1) || '--'}</p>
                   </div>
                 </div>
               </motion.div>

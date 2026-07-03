@@ -3,6 +3,7 @@
 import { useState, type KeyboardEvent } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { liftHover, tapPress } from '@/lib/coachhelm/v3/motion';
+import { Textarea } from '@/components/ui/input';
 
 interface Props {
   onSend: (text: string) => Promise<void> | void;
@@ -51,8 +52,8 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
   const tapProps = prefersReducedMotion || !canSend ? {} : { whileTap: tapPress };
 
   return (
-    <div className="surface-hairline border-t bg-white/80 backdrop-blur-sm p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-end gap-2">
-      <textarea
+    <div className="surface-hairline border-t glass-standard p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-end gap-2">
+      <Textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKey}
@@ -60,7 +61,7 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
         placeholder={placeholder ?? 'Ask about your players, rounds, or qualifying…'}
         disabled={disabled}
         aria-label="Chat message"
-        className="flex-1 resize-none rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 disabled:bg-warm-100 disabled:text-warm-500 transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] placeholder:text-warm-400"
+        className="flex-1 resize-none rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 disabled:bg-warm-100 disabled:text-warm-500 transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] placeholder:text-warm-400"
       />
       <m.button
         type="button"

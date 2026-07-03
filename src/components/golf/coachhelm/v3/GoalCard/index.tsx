@@ -81,7 +81,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
         whileTap={tapPress}
         data-testid="goal-card-compact"
         data-goal-id={goal.id}
-        className="bg-white/70 backdrop-blur-md border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between gap-3 v3-lift"
+        className="glass-standard rounded-xl px-3 py-2 flex items-center justify-between gap-3 v3-lift"
       >
         <span className="text-sm font-medium text-warm-900 truncate">{goal.title}</span>
         <span className={`text-eyebrow font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}>
@@ -101,7 +101,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
       whileTap={tapPress}
       data-testid="goal-card"
       data-goal-id={goal.id}
-      className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 v3-lift"
+      className="glass-standard rounded-2xl shadow-glass p-5 v3-lift"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-2">

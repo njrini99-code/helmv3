@@ -1,7 +1,7 @@
 'use client';
 
 import { CoachPhilosophy, ALERT_GROUPS } from '@/lib/coachhelm/types';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface AlertTypeTogglesProps {
     values: CoachPhilosophy;
@@ -20,25 +20,16 @@ export function AlertTypeToggles({ values, onChange }: AlertTypeTogglesProps) {
                         {group.alerts.map((alert) => {
                             const isChecked = !!values[alert.key];
                             return (
-                                <label
+                                <div
                                     key={alert.key}
-                                    className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface hover:border-border-strong cursor-pointer transition-colors"
+                                    className="p-3 rounded-lg border border-border-subtle bg-surface hover:border-border-strong transition-colors"
                                 >
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={isChecked}
-                                            onChange={(e) => {
-                                                void triggerHaptic('light');
-                                                onChange(alert.key, e.target.checked);
-                                            }}
-                                            className="peer h-5 w-5 rounded border-border-strong text-accent-600 outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-                                        />
-                                    </div>
-                                    <span className="text-sm font-medium text-text-primary">
-                                        {alert.label}
-                                    </span>
-                                </label>
+                                    <Checkbox
+                                        checked={isChecked}
+                                        onChange={(e) => onChange(alert.key, e.target.checked)}
+                                        label={alert.label}
+                                    />
+                                </div>
                             );
                         })}
                     </div>

@@ -63,7 +63,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
     <div
       className={cn(
         'relative group rounded-lg overflow-hidden border',
-        status === 'error' ? 'border-red-300 bg-red-50' : 'border-warm-200 bg-white',
+        status === 'error' ? 'border-red-300 bg-red-50' : 'border-warm-200 bg-cream-50',
         isMediaPreviewable ? 'w-20 h-20' : 'w-48'
       )}
     >

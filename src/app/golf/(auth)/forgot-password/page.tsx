@@ -8,6 +8,7 @@ import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ForgotPasswordPage() {
   const prefersReducedMotion = useReducedMotion();
@@ -195,7 +196,7 @@ export default function ForgotPasswordPage() {
                   href="/golf/login"
                   className="
                     block w-full py-2.5 sm:py-3
-                    bg-white text-warm-700
+                    bg-cream-50 text-warm-700
                     font-semibold text-sm text-center
                     rounded-xl
                     border border-warm-200
@@ -221,7 +222,7 @@ export default function ForgotPasswordPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="golf-forgot-email" className="text-sm font-medium text-warm-700">Email</label>
-                  <input
+                  <Input
                     id="golf-forgot-email"
                     type="email"
                     inputMode="email"
@@ -236,16 +237,6 @@ export default function ForgotPasswordPage() {
                     autoCorrect="off"
                     spellCheck={false}
                     enterKeyHint="send"
-                    className="
-                      w-full px-4 py-2.5 sm:py-3
-                      bg-white
-                      border border-warm-200
-                      rounded-xl
-                      text-warm-900 text-base lg:text-sm
-                      placeholder:text-warm-400
-                      transition-all duration-200
-                      focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-                    "
                   />
                 </div>
 
@@ -267,9 +258,9 @@ export default function ForgotPasswordPage() {
                 >
                   {loading ? (
                     <div className="flex items-center gap-1" role="status" aria-label="Sending reset link">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       <span className="sr-only">Sending reset link...</span>
                     </div>
                   ) : (

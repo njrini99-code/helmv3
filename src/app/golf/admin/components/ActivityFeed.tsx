@@ -302,7 +302,7 @@ export function ActivityFeed({ activity }: Props) {
 
       {/* Stats mini-grid — 2-col on mobile, 3-col on sm, 5-col on xl */}
       <div className="mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-3 xl:grid-cols-5">
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+        <div className="rounded-2xl border border-warm-200/45 bg-cream-50 px-3 py-2.5 sm:py-3 sm:px-4">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Stream
           </p>
@@ -311,7 +311,7 @@ export function ActivityFeed({ activity }: Props) {
           </p>
           <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">last 20/source</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+        <div className="rounded-2xl border border-warm-200/45 bg-cream-50 px-3 py-2.5 sm:py-3 sm:px-4">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Live now
           </p>
@@ -320,7 +320,7 @@ export function ActivityFeed({ activity }: Props) {
           </p>
           <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">realtime</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+        <div className="rounded-2xl border border-warm-200/45 bg-cream-50 px-3 py-2.5 sm:py-3 sm:px-4">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Users
           </p>
@@ -329,7 +329,7 @@ export function ActivityFeed({ activity }: Props) {
           </p>
           <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">signups &amp; logins</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+        <div className="rounded-2xl border border-warm-200/45 bg-cream-50 px-3 py-2.5 sm:py-3 sm:px-4">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Golf
           </p>
@@ -338,7 +338,7 @@ export function ActivityFeed({ activity }: Props) {
           </p>
           <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">rounds &amp; AI</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4 col-span-2 sm:col-span-1">
+        <div className="rounded-2xl border border-warm-200/45 bg-cream-50 px-3 py-2.5 sm:py-3 sm:px-4 col-span-2 sm:col-span-1">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Ops / issues
           </p>
@@ -352,7 +352,7 @@ export function ActivityFeed({ activity }: Props) {
       {/* Focus + Timeline — stacked on mobile, side-by-side on xl */}
       <div className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
         {/* Focus / filter panel */}
-        <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+        <div className="glass-subtle rounded-2xl p-4">
           <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
             Focus
           </p>
@@ -371,8 +371,8 @@ export function ActivityFeed({ activity }: Props) {
                 className={cn(
                   'inline-flex items-center gap-2 rounded-full border px-3 py-2.5 text-xs transition-colors min-h-[44px]',
                   filter === option.value
-                    ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
-                    : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
+                    ? 'border-warm-300 bg-cream-50 text-warm-900 shadow-sm'
+                    : 'border-warm-200/50 bg-cream-50/70 text-warm-500 hover:bg-cream-100'
                 )}
               >
                 <span>{option.label}</span>
@@ -384,7 +384,7 @@ export function ActivityFeed({ activity }: Props) {
           </div>
 
           {leadItem ? (
-            <div className="mt-4 rounded-2xl border border-white/35 bg-white/70 p-4">
+            <div className="mt-4 rounded-2xl border border-warm-200/45 bg-cream-50 p-4">
               <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
                 Lead item
               </p>
@@ -428,7 +428,7 @@ export function ActivityFeed({ activity }: Props) {
         </div>
 
         {/* Timeline panel */}
-        <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+        <div className="glass-subtle rounded-2xl p-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
               Timeline
@@ -437,7 +437,7 @@ export function ActivityFeed({ activity }: Props) {
           </div>
 
           {visibleItems.length === 0 ? (
-            <div className="mt-4 rounded-2xl bg-white/70 px-4 py-8 text-center text-sm text-warm-500">
+            <div className="mt-4 rounded-2xl bg-cream-50 px-4 py-8 text-center text-sm text-warm-500">
               No activity in this filter.
             </div>
           ) : (
@@ -456,7 +456,7 @@ export function ActivityFeed({ activity }: Props) {
                     {showDateHeader && (
                       <div className={cn('flex items-center gap-3 pb-2', index === 0 ? 'pt-0' : 'pt-4')}>
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-warm-200 to-transparent" />
-                        <span className="text-eyebrow font-bold uppercase tracking-[0.2em] text-warm-500 bg-white/80 px-2.5 py-1 rounded-full border border-warm-100 shrink-0">
+                        <span className="text-eyebrow font-bold uppercase tracking-[0.2em] text-warm-500 bg-cream-100 px-2.5 py-1 rounded-full border border-warm-100 shrink-0">
                           {currentGroup}
                         </span>
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-warm-200 to-transparent" />
@@ -481,8 +481,8 @@ export function ActivityFeed({ activity }: Props) {
                         item.severity === 'error' || item.severity === 'critical'
                           ? 'border-red-100 bg-red-50/40'
                           : item.badge.toLowerCase() === 'login' || item.badge.toLowerCase() === 'page view'
-                            ? 'border-white/20 bg-white/50'
-                            : 'border-white/35 bg-white/72'
+                            ? 'border-warm-200/35 bg-cream-50/60'
+                            : 'border-warm-200/45 bg-cream-50'
                       )}>
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">

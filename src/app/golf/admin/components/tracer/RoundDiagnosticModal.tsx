@@ -165,12 +165,12 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
   return (
     <section>
       <SectionLabel label="Hole-by-Hole" />
-      <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+      <div className="glass-standard rounded-xl overflow-clip">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-warm-100/80">
-                <th className="px-3 py-2.5 text-left text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 bg-white/90 backdrop-blur-sm z-10 min-w-[60px]">
+                <th className="px-3 py-2.5 text-left text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 glass-standard z-10 min-w-[60px]">
                   Hole
                 </th>
                 {holeSlots.map((n) => (
@@ -183,7 +183,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
             <tbody>
               {/* Par row */}
               <tr className="border-b border-warm-50/80">
-                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 bg-white/90 backdrop-blur-sm z-10">
+                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 glass-standard z-10">
                   Par
                 </td>
                 {holeSlots.map((n) => {
@@ -198,7 +198,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
 
               {/* Score row */}
               <tr className="border-b border-warm-50/80">
-                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 bg-white/90 backdrop-blur-sm z-10">
+                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 glass-standard z-10">
                   Score
                 </td>
                 {holeSlots.map((n) => {
@@ -222,7 +222,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
 
               {/* Putts row */}
               <tr className="border-b border-warm-50/80">
-                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 bg-white/90 backdrop-blur-sm z-10">
+                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 glass-standard z-10">
                   Putts
                 </td>
                 {holeSlots.map((n) => {
@@ -237,7 +237,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
 
               {/* FW row */}
               <tr className="border-b border-warm-50/80">
-                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 bg-white/90 backdrop-blur-sm z-10">
+                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 glass-standard z-10">
                   FW
                 </td>
                 {holeSlots.map((n) => {
@@ -258,7 +258,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
 
               {/* GIR row */}
               <tr>
-                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 bg-white/90 backdrop-blur-sm z-10">
+                <td className="px-3 py-2 text-eyebrow font-semibold text-warm-400 uppercase tracking-wider sticky left-0 glass-standard z-10">
                   GIR
                 </td>
                 {holeSlots.map((n) => {
@@ -312,7 +312,7 @@ function ShotSummary({ shots }: { shots: TracerShotDiagnostic[] }) {
   return (
     <section>
       <SectionLabel label="Shot Summary" />
-      <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-4">
+      <div className="glass-standard rounded-xl p-4">
         <div className="flex items-center gap-3 mb-3">
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-warm-900 tabular-nums">{shots.length}</span>
@@ -377,7 +377,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
   if (!value) return null;
 
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 px-3 py-2">
+    <div className="rounded-xl glass-standard px-3 py-2">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className={cn('mt-1 break-words text-sm text-warm-800', mono && 'font-mono text-caption')}>
         {value}
@@ -388,7 +388,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 
 function NarrativePanel({ label, body }: { label: string; body: string }) {
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+    <div className="rounded-xl glass-standard p-3">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className="mt-1.5 text-sm leading-6 text-warm-700">{body}</p>
     </div>
@@ -525,7 +525,7 @@ function ErrorsList({
             <article
               key={incident.id}
               className={cn(
-                'bg-white/65 backdrop-blur-[16px] border rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-4',
+                'glass-standard rounded-xl p-4',
                 style.border
               )}
             >
@@ -543,7 +543,7 @@ function ErrorsList({
                     )}>
                       {incident.status === 'open' ? 'Open' : 'Resolved'}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
+                    <span className="inline-flex items-center gap-1 rounded-full glass-standard px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                       <IconShieldAlert size={11} />
                       {incident.occurrences}
                     </span>
@@ -567,7 +567,7 @@ function ErrorsList({
                         ? 'border-primary-200 bg-primary-50 text-primary-700'
                         : copyState?.target === incident.id && copyState.status === 'error'
                           ? 'border-red-200 bg-red-50 text-red-700'
-                          : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
+                          : 'glass-standard text-warm-700 hover:bg-cream-100'
                     )}
                   >
                     {copyState?.target === incident.id && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
@@ -597,7 +597,7 @@ function ErrorsList({
                   <Button variant="ghost"
                     type="button"
                     onClick={() => setExpandedId(isExpanded ? null : incident.id)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
+                    className="inline-flex items-center gap-2 rounded-xl glass-standard px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100"
                   >
                     {isExpanded ? 'Hide detail' : 'Show detail'}
                   </Button>
@@ -623,7 +623,7 @@ function ErrorsList({
                     <MetaItem label="Resolution" value={incident.resolvedAt ? `${formatTimestamp(incident.resolvedAt)}${incident.resolvedBy ? ` · ${incident.resolvedBy}` : ''}` : null} />
                   </div>
 
-                  <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                  <div className="rounded-xl glass-standard p-3">
                     <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
                     <p className="mt-1.5 break-words text-sm leading-6 text-warm-800">{incident.sampleMessage}</p>
                   </div>
@@ -645,14 +645,14 @@ function ErrorsList({
                   )}
 
                   <div className="grid gap-3 lg:grid-cols-2">
-                    <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                    <div className="rounded-xl glass-standard p-3">
                       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
                       <pre className="mt-2 max-h-[220px] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-warm-700">
                         {incident.copySummary}
                       </pre>
                     </div>
 
-                    <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                    <div className="rounded-xl glass-standard p-3">
                       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Context and stack</p>
                       <div className="mt-2 space-y-3">
                         {incident.sampleContext ? (
@@ -720,7 +720,7 @@ function CompletenessChecklist({
   return (
     <section>
       <SectionLabel label={`Data Completeness (${passCount}/${checks.length})`} />
-      <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-4">
+      <div className="glass-standard rounded-xl p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {checks.map((check) => (
             <div

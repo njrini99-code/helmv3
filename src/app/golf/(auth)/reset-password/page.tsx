@@ -10,6 +10,8 @@ import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 type RecoveryState = 'verifying' | 'ready' | 'invalid';
 
@@ -298,7 +300,7 @@ export default function ResetPasswordPage() {
 
               <div className="space-y-1.5">
                 <label htmlFor="golf-reset-password" className="text-sm font-medium text-warm-700">New Password</label>
-                <input
+                <Input
                   id="golf-reset-password"
                   type="password"
                   value={password}
@@ -312,23 +314,13 @@ export default function ResetPasswordPage() {
                   autoCorrect="off"
                   spellCheck={false}
                   enterKeyHint="next"
-                  className="
-                    w-full px-4 py-2.5 sm:py-3
-                    bg-white
-                    border border-warm-200
-                    rounded-xl
-                    text-warm-900 text-base lg:text-sm
-                    placeholder:text-warm-400
-                    transition-all duration-200
-                    focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-                  "
                 />
                 <PasswordStrengthIndicator password={password} />
               </div>
 
               <div className="space-y-1.5">
                 <label htmlFor="golf-reset-confirm" className="text-sm font-medium text-warm-700">Confirm Password</label>
-                <input
+                <Input
                   id="golf-reset-confirm"
                   type="password"
                   value={confirmPassword}
@@ -340,21 +332,13 @@ export default function ResetPasswordPage() {
                   autoCorrect="off"
                   spellCheck={false}
                   enterKeyHint="go"
-                  className={`
-                    w-full px-4 py-2.5 sm:py-3
-                    bg-white
-                    border rounded-xl
-                    text-warm-900 text-base lg:text-sm
-                    placeholder:text-warm-400
-                    transition-all duration-200
-                    focus:outline-none focus:ring-[3px]
-                    ${confirmPassword && confirmPassword !== password
+                  className={cn(
+                    confirmPassword && confirmPassword !== password
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                       : confirmPassword && confirmPassword === password
                       ? 'border-primary-300 focus:border-primary-500 focus:ring-primary-500/10'
-                      : 'border-warm-200 focus:border-primary-500 focus:ring-primary-500/10'
-                    }
-                  `}
+                      : ''
+                  )}
                 />
                 {confirmPassword && confirmPassword !== password && (
                   <p className="text-xs text-red-600 flex items-center gap-1">
@@ -388,9 +372,9 @@ export default function ResetPasswordPage() {
               >
                 {loading ? (
                   <div className="flex items-center gap-1" role="status" aria-label="Updating password">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     <span className="sr-only">Updating password...</span>
                   </div>
                 ) : (

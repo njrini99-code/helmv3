@@ -27,7 +27,7 @@ export default function AthletesLoading() {
         {Array.from({ length: 9 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-5 space-y-3"
+            className="rounded-2xl glass-standard p-5 space-y-3"
           >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-warm-200 shrink-0" />

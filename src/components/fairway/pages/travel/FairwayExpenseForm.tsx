@@ -427,7 +427,7 @@ export function FairwayExpenseForm({
               <span className="mt-1 font-fw-sans text-caption text-text-tertiary">
                 JPG, PNG, WebP or PDF (max 5MB)
               </span>
-              {/* eslint-disable-next-line helm/no-raw-input -- hidden native file picker behind a styled drop label; the Fairway Input is a text control and cannot host type="file" */}
+              { }
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,application/pdf"

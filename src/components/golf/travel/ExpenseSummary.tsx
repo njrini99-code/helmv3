@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { IconTrendingUp, IconTrendingDown, IconEdit } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 // Deep import of the chart theme (DOM-free, self-contained) rather than the
 // charts barrel — avoids pulling the heavy recharts/visx graph into this bundle.
 import { VIZ_SEQUENTIAL } from '@/components/fairway/charts/theme';
@@ -257,11 +258,11 @@ export function ExpenseSummary({
                       </span>
                       {editingBudget === category ? (
                         <div className="flex items-center gap-1">
-                          <input
+                          <Input
                             type="number"
                             value={budgetValue}
                             onChange={(e) => setBudgetValue(e.target.value)}
-                            className="w-20 px-2 py-1 text-sm rounded border border-border-subtle bg-surface text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                            className="w-20 min-h-0 px-2 py-1 text-sm rounded"
                             placeholder="Budget"
                             aria-label={`Budget for ${config.label}`}
                             // eslint-disable-next-line jsx-a11y/no-autofocus

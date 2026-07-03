@@ -13,7 +13,7 @@ function KPICardsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="bg-white/50 rounded-2xl border border-white/20 p-5 md:p-6 border-l-[3px] border-l-warm-200">
+        <div key={i} className="bg-cream-50 rounded-2xl border border-white/20 p-5 md:p-6 border-l-[3px] border-l-warm-200">
           <div className={`w-24 h-3 ${pulse} mb-3`} />
           <div className={`w-16 h-8 ${pulse} mb-2`} />
           <div className={`w-20 h-3 ${pulseLight}`} />
@@ -29,11 +29,11 @@ function HealthSkeleton() {
       <KPICardsSkeleton />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Health Ring placeholder */}
-        <div className="bg-white/50 rounded-2xl border border-white/20 p-8 flex items-center justify-center">
+        <div className="bg-cream-50 rounded-2xl border border-white/20 p-8 flex items-center justify-center">
           <div className="w-[200px] h-[200px] rounded-full bg-warm-200/40 animate-pulse" />
         </div>
         {/* Alerts placeholder */}
-        <div className="bg-white/50 rounded-2xl border border-white/20 p-6 lg:col-span-2">
+        <div className="bg-cream-50 rounded-2xl border border-white/20 p-6 lg:col-span-2">
           <div className={`w-24 h-3 ${pulse} mb-4`} />
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -49,7 +49,7 @@ function HealthSkeleton() {
         </div>
       </div>
       {/* Activity timeline */}
-      <div className="bg-white/50 rounded-2xl border border-white/20 overflow-hidden">
+      <div className="bg-cream-50 rounded-2xl border border-white/20 overflow-hidden">
         <div className={`w-32 h-3 ${pulse} m-5 mb-4`} />
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 px-5 py-3 border-b border-warm-50 last:border-0">
@@ -78,7 +78,7 @@ function RoundsSkeleton() {
       {/* Summary bar */}
       <div className={`w-72 h-4 ${pulseLight}`} />
       {/* Table */}
-      <div className="bg-white/50 rounded-2xl border border-white/20 overflow-hidden">
+      <div className="bg-cream-50 rounded-2xl border border-white/20 overflow-hidden">
         <div className="h-11 border-b border-warm-100 bg-warm-50/30" />
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-warm-50 last:border-0">
@@ -99,7 +99,7 @@ function QualitySkeleton() {
   return (
     <div className="space-y-6">
       {/* Stats accuracy table */}
-      <div className="bg-white/50 rounded-2xl border border-white/20 overflow-hidden">
+      <div className="bg-cream-50 rounded-2xl border border-white/20 overflow-hidden">
         <div className="h-11 border-b border-warm-100 bg-warm-50/30" />
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-warm-50 last:border-0">
@@ -112,7 +112,7 @@ function QualitySkeleton() {
         ))}
       </div>
       {/* Heatmap placeholder */}
-      <div className="bg-white/50 rounded-2xl border border-white/20 p-6">
+      <div className="bg-cream-50 rounded-2xl border border-white/20 p-6">
         <div className={`w-40 h-3 ${pulse} mb-4`} />
         <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: 42 }).map((_, i) => (
@@ -128,12 +128,12 @@ function ErrorsSkeleton() {
   return (
     <div className="space-y-6">
       {/* Chart area */}
-      <div className="bg-white/50 rounded-2xl border border-white/20 p-6">
+      <div className="bg-cream-50 rounded-2xl border border-white/20 p-6">
         <div className={`w-32 h-3 ${pulse} mb-4`} />
         <div className={`w-full h-[200px] ${pulseLight}`} />
       </div>
       {/* Error grouping */}
-      <div className="bg-white/50 rounded-2xl border border-white/20 overflow-hidden">
+      <div className="bg-cream-50 rounded-2xl border border-white/20 overflow-hidden">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 px-5 py-3.5 border-b border-warm-50 last:border-0">
             <div className={`w-16 h-5 ${pulseLight} rounded-full`} />

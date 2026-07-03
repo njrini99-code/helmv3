@@ -452,7 +452,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
                 return (
                   <div
                     key={round.id}
-                    className="bg-white/60 border border-warm-200/50 rounded-xl p-4"
+                    className="bg-cream-50 border border-warm-200/50 rounded-xl p-4"
                   >
                     <div className="flex items-center justify-between gap-3 mb-2">
                       <h3 className="font-medium text-warm-900 truncate min-w-0">

@@ -129,7 +129,7 @@ export function PositionPriorityRanker({
                 onDragEnd={handleDragEnd}
                 className={cn(
                   'flex items-center gap-3 p-3 rounded-xl border transition-all',
-                  'bg-white cursor-grab active:cursor-grabbing',
+                  'bg-cream-50 cursor-grab active:cursor-grabbing',
                   isBeingDragged && 'opacity-50 scale-95',
                   isDragTarget && 'border-primary-500 bg-primary-50',
                   !isBeingDragged && !isDragTarget && 'border-warm-200 hover:border-warm-300'
@@ -211,7 +211,7 @@ export function PositionPriorityRanker({
 
           {/* Dropdown menu */}
           {showAddMenu && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-warm-200 shadow-lg z-10 overflow-hidden">
+            <div className="absolute top-full left-0 right-0 mt-2 glass-prominent rounded-xl shadow-lg z-10 overflow-hidden">
               <div className="max-h-64 overflow-y-auto">
                 {availablePositions.map((position) => {
                   const info = POSITION_INFO[position];

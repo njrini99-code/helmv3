@@ -77,6 +77,10 @@ function emptyPeopleTabData(): PeopleTabData {
   };
 }
 
+// Rows from RPCs not present in the generated Supabase types — shape is
+// validated field-by-field below, not trusted from the client.
+type UntypedRow = Record<string, unknown>;
+
 // ============================================
 // MAIN FETCH
 // ============================================
@@ -104,10 +108,10 @@ async function getPeopleTabDataImpl(): Promise<PeopleTabData> {
   try {
     const [engagementRes, teamHealthRes, coachEffectivenessRes, onboardingRes] =
       await Promise.all([
-        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: any[] | null; error: unknown },
-        adminDb.rpc('get_team_health_dashboard' as never) as unknown as { data: any[] | null; error: unknown },
-        adminDb.rpc('get_coach_effectiveness_metrics' as never) as unknown as { data: any[] | null; error: unknown },
-        adminDb.rpc('get_onboarding_funnel_analysis' as never) as unknown as { data: any[] | null; error: unknown },
+        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: UntypedRow[] | null; error: unknown },
+        adminDb.rpc('get_team_health_dashboard' as never) as unknown as { data: UntypedRow[] | null; error: unknown },
+        adminDb.rpc('get_coach_effectiveness_metrics' as never) as unknown as { data: UntypedRow[] | null; error: unknown },
+        adminDb.rpc('get_onboarding_funnel_analysis' as never) as unknown as { data: UntypedRow[] | null; error: unknown },
       ]);
 
     // Parse engagement summary

@@ -2,7 +2,7 @@ import { Header } from '@/components/layout/header';
 
 function CampCardSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-5 animate-pulse">
+    <div className="glass-standard rounded-2xl p-5 animate-pulse">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Title */}

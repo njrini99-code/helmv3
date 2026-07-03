@@ -58,6 +58,11 @@ function emptyBIData(): EnhancedBIData {
   };
 }
 
+// Rows from tables/RPCs not present in the generated Supabase types
+// (golf_platform_metrics_daily, get_user_engagement_summary) — shape is
+// validated field-by-field below, not trusted from the client.
+type UntypedRow = Record<string, unknown>;
+
 function daysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -94,13 +99,19 @@ async function getEnhancedBIDataImpl(): Promise<EnhancedBIData> {
     const [platformMetricsRes, engagementRes, aiRoundsRes, insightLogRes, insightActionRes] =
       await Promise.all([
         // Last 30 daily snapshots
-        (adminDb.from('golf_platform_metrics_daily' as never) as any)
+        (adminDb.from('golf_platform_metrics_daily' as never) as unknown as {
+          select: (cols: string) => {
+            order: (col: string, opts: { ascending: boolean }) => {
+              limit: (n: number) => Promise<{ data: UntypedRow[] | null; error: unknown }>;
+            };
+          };
+        })
           .select('*')
           .order('snapshot_date', { ascending: false })
-          .limit(30) as unknown as { data: any[] | null; error: unknown },
+          .limit(30),
 
         // Engagement summary for tier computation
-        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: any[] | null; error: unknown },
+        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: UntypedRow[] | null; error: unknown },
 
         // AI vs non-AI retention: get rounds with join to insight log
         adminDb
@@ -126,8 +137,8 @@ async function getEnhancedBIDataImpl(): Promise<EnhancedBIData> {
 
     // Parse platform metrics
     const platformMetrics: PlatformMetricsEntry[] = (
-      (platformMetricsRes.data ?? []) as any[]
-    ).map((row: Record<string, unknown>) => ({
+      platformMetricsRes.data ?? []
+    ).map((row: UntypedRow) => ({
       snapshotDate: String(row.snapshot_date ?? ''),
       dau: Number(row.dau ?? 0),
       wau: Number(row.wau ?? 0),

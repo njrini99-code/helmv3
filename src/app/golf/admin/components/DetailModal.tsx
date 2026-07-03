@@ -62,7 +62,7 @@ function TimeRangeTabs({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200',
             selected === range.id
-              ? 'bg-white text-warm-900 shadow-sm'
+              ? 'bg-cream-50 text-warm-900 shadow-sm'
               : 'text-warm-500 hover:text-warm-700'
           )}
         >
@@ -119,7 +119,7 @@ export function DetailModal({
             transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 30, stiffness: 300 })}
             className={cn(
               'fixed inset-y-0 right-0 z-50 flex flex-col',
-              'bg-white/95 backdrop-blur-2xl border-l border-white/30 shadow-2xl',
+              'glass-prominent shadow-2xl',
               'w-full',
               widthClasses[width]
             )}

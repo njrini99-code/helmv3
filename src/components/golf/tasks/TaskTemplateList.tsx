@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconClipboardList } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -215,7 +217,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
             transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
             style={{ overflow: 'hidden' }}
             onSubmit={handleSubmit}
-            className="bg-white rounded-xl border border-warm-200 p-4 space-y-3"
+            className="bg-cream-50 rounded-xl border border-warm-200 p-4 space-y-3"
           >
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-warm-900">
@@ -231,7 +233,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               </IconButton>
             </div>
 
-            <input
+            <Input
               type="text"
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
@@ -240,11 +242,9 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               autoCapitalize="sentences"
               autoCorrect="on"
               enterKeyHint="next"
-              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-base lg:text-sm min-h-[44px]
-                       focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
             />
 
-            <textarea
+            <Textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Description (optional)"
@@ -252,8 +252,6 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               aria-label="Template description"
               autoCapitalize="sentences"
               autoCorrect="on"
-              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-base lg:text-sm resize-none
-                       focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
             />
 
             <div className="grid grid-cols-2 gap-3">
@@ -261,7 +259,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                 <label htmlFor={`${uid}-category`} className="text-xs font-medium text-warm-500 block mb-1">
                   Category
                 </label>
-                <input
+                <Input
                   id={`${uid}-category`}
                   type="text"
                   value={formCategory}
@@ -272,8 +270,6 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   autoCapitalize="words"
                   autoCorrect="off"
                   enterKeyHint="next"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-base lg:text-sm min-h-[44px]
-                           focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                 />
                 <datalist id="category-suggestions">
                   <option value="Equipment" />
@@ -289,7 +285,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                 <label htmlFor={`${uid}-due-days`} className="text-xs font-medium text-warm-500 block mb-1">
                   Default Due (days)
                 </label>
-                <input
+                <Input
                   id={`${uid}-due-days`}
                   type="number"
                   value={formDueDays}
@@ -299,8 +295,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   aria-label="Default due days"
                   inputMode="numeric"
                   enterKeyHint="done"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-base lg:text-sm min-h-[44px] tabular-nums
-                           focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
+                  className="tabular-nums"
                 />
               </div>
             </div>
@@ -310,36 +305,30 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                 <label htmlFor={`${uid}-priority`} className="text-xs font-medium text-warm-500 block mb-1">
                   Priority
                 </label>
-                <select
-                  id={`${uid}-priority`}
+                <Select
                   value={formPriority}
-                  onChange={(e) => setFormPriority(e.target.value)}
-                  aria-label="Priority"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-base lg:text-sm min-h-[44px] bg-white
-                           focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
-                >
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
+                  onChange={setFormPriority}
+                  options={[
+                    { value: 'low', label: 'Low' },
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'high', label: 'High' },
+                    { value: 'urgent', label: 'Urgent' },
+                  ]}
+                />
               </div>
 
               <div>
                 <label htmlFor={`${uid}-assignee-type`} className="text-xs font-medium text-warm-500 block mb-1">
                   Assign To
                 </label>
-                <select
-                  id={`${uid}-assignee-type`}
+                <Select
                   value={formAssigneeType}
-                  onChange={(e) => setFormAssigneeType(e.target.value)}
-                  aria-label="Assign to"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-base lg:text-sm min-h-[44px] bg-white
-                           focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
-                >
-                  <option value="all_players">All Players</option>
-                  <option value="individual">Individual</option>
-                </select>
+                  onChange={setFormAssigneeType}
+                  options={[
+                    { value: 'all_players', label: 'All Players' },
+                    { value: 'individual', label: 'Individual' },
+                  ]}
+                />
               </div>
             </div>
 
@@ -378,7 +367,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
-                    className="group relative bg-white rounded-lg border border-warm-200 p-3
+                    className="group relative bg-cream-50 rounded-lg border border-warm-200 p-3
                              hover:border-primary-200 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => onSelectTemplate(template)}
                   >

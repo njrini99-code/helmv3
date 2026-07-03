@@ -14,6 +14,7 @@ import { SequenceEnrollmentBadge } from './badges/SequenceEnrollmentBadge';
 import type { CoachEngagement } from '../types/foundations';
 import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { Button, IconButton } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/select';
 
 // Row-density modes. Comfortable keeps the original generous vertical rhythm;
 // Compact tightens cell padding + line height so ~2x as many rows fit a
@@ -162,7 +163,7 @@ function AssigneeSubmenu({
       </Button>
       {isOpen && (
         <div className={cn(
-          'absolute top-0 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl',
+          'absolute top-0 z-50 w-36 py-1 glass-prominent rounded-xl shadow-xl',
           flyoutSide === 'left' ? 'left-full ml-1' : 'right-full mr-1',
         )}>
           {CRM_ASSIGNEES.map(label => (
@@ -352,8 +353,8 @@ const CoachTableRow = React.memo(
         className={cn(
           'border-b border-warm-50 cursor-pointer group transition-colors duration-150',
           isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
-          !isSelected && isFocused && 'bg-white/60',
-          !isSelected && !isFocused && 'hover:bg-white/60',
+          !isSelected && isFocused && 'bg-cream-100',
+          !isSelected && !isFocused && 'hover:bg-cream-100',
         )}
         onClick={handleRowClick}
       >
@@ -424,7 +425,7 @@ const CoachTableRow = React.memo(
             </Button>
             {isStatusOpen && (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents row click from closing dropdown
-              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
                 {ALL_STATUSES.map(status => (
                   <Button variant="primary"
                     key={status}
@@ -513,7 +514,7 @@ const CoachTableRow = React.memo(
             </IconButton>
             {isActionOpen && (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents row click from closing action menu
-              <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
                 {/* Contact detail header — the email / phone / role / program that
                     used to over-stack the name cell now live here (still in the
                     detail panel too). */}
@@ -577,7 +578,7 @@ const CoachTableRow = React.memo(
                     <IconChevronRight size={12} className="text-warm-400" />
                   </Button>
                   {isPriorityOpen && (
-                    <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl">
+                    <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 glass-prominent rounded-xl shadow-xl">
                       <Button variant="ghost"
                         onClick={() => { onPriorityChange?.(coach.id, 0); onOpenAction(null); onOpenPriority(null); }}
                         className={cn(
@@ -705,13 +706,16 @@ const CoachTableCard = React.memo(
     const handleStar = () => onToggleStar(coach.id, coach.is_starred);
 
     return (
-      <button
+      <Button
+        variant="ghost"
         type="button"
+        haptic="none"
         className={cn(
+          'flex flex-col items-stretch justify-start rounded-none min-h-0',
           'cursor-pointer group transition-colors duration-150 px-4 py-3.5 w-full text-left',
           isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
-          !isSelected && isFocused && 'bg-white/60',
-          !isSelected && !isFocused && 'hover:bg-white/60',
+          !isSelected && isFocused && 'bg-cream-100',
+          !isSelected && !isFocused && 'hover:bg-cream-100',
         )}
         onClick={handleCardClick}
       >
@@ -768,7 +772,7 @@ const CoachTableCard = React.memo(
               </IconButton>
               {isActionOpen && (
                 // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click from closing action menu
-                <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
                   {/* Contact detail header — email / phone / role / program. */}
                   <RowContactHeader coach={coach} />
                   <Button variant="ghost"
@@ -830,7 +834,7 @@ const CoachTableCard = React.memo(
                       <IconChevronRight size={12} className="text-warm-400" />
                     </Button>
                     {isPriorityOpen && (
-                      <div className="absolute right-full top-0 mr-1 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl">
+                      <div className="absolute right-full top-0 mr-1 z-50 w-36 py-1 glass-prominent rounded-xl shadow-xl">
                         <Button variant="ghost"
                           onClick={() => { onPriorityChange?.(coach.id, 0); onOpenAction(null); onOpenPriority(null); }}
                           className={cn(
@@ -902,7 +906,7 @@ const CoachTableCard = React.memo(
             </Button>
             {isStatusOpen && (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click from closing status dropdown
-              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto glass-prominent rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
                 {ALL_STATUSES.map(status => (
                   <Button variant="primary"
                     key={status}
@@ -963,7 +967,7 @@ const CoachTableCard = React.memo(
             </div>
           )}
         </div>
-      </button>
+      </Button>
     );
   },
   (prev, next) => {
@@ -1162,7 +1166,7 @@ function SchoolGroupView({
         const panelId = `school-panel-${group.school.replace(/\s+/g, '-')}`;
 
         return (
-          <div key={group.school} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
+          <div key={group.school} className="glass-standard rounded-2xl shadow-glass overflow-clip">
             {/* School Header */}
             <div className="flex items-center gap-3 p-4">
               <input
@@ -1372,7 +1376,7 @@ export function CoachTable({
   // presentational state only — does not alter data, selection, or callbacks.
   const [density, setDensity] = useState<Density>('comfortable');
   // focusedIndex is only set by keyboard nav (j/k) — NOT on mouse hover.
-  // Hover state is now pure CSS (`hover:bg-white/60` on the row) which
+  // Hover state is now pure CSS (`hover:bg-cream-100` on the row) which
   // avoids re-rendering the table on every mouse traversal.
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -1563,7 +1567,7 @@ export function CoachTable({
           {onImport && (
             <Button variant="ghost"
               onClick={onImport}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-cream-50 border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm"
             >
               <IconUpload size={16} /> Import Coaches
             </Button>
@@ -1615,7 +1619,7 @@ export function CoachTable({
       <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-1">
         {/* Density toggle (Comfortable / Compact) — desktop table only; the
             mobile card layout is fixed. */}
-        <div className="hidden md:inline-flex items-center rounded-full border border-warm-200/60 bg-white/60 p-0.5" role="group" aria-label="Row density">
+        <div className="hidden md:inline-flex items-center rounded-full glass-subtle p-0.5" role="group" aria-label="Row density">
           <Button variant="ghost" type="button"
             onClick={() => setDensity('comfortable')}
             aria-pressed={density === 'comfortable'}
@@ -1639,7 +1643,7 @@ export function CoachTable({
         </div>
         <Button variant="ghost" type="button"
           onClick={() => setGroupBySchool(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium glass-subtle text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
         >
           <IconSchool size={13} aria-hidden="true" /> Group by School
         </Button>
@@ -1792,10 +1796,12 @@ export function CoachTable({
             )}
           </div>
           <div className="flex items-center gap-3">
-            <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
-              className="text-sm px-2.5 py-1.5 rounded-lg bg-white/50 border border-warm-200/60 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 transition-all duration-200">
-              {PAGE_SIZES.map(s => <option key={s} value={s}>{s}/page</option>)}
-            </select>
+            <NativeSelect
+              value={String(pageSize)}
+              onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+              options={PAGE_SIZES.map(s => ({ value: String(s), label: `${s}/page` }))}
+              className="min-h-0 text-sm px-2.5 py-1.5 rounded-lg bg-cream-50/85 border-warm-200/60 focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 transition-all duration-200"
+            />
             <div className="flex items-center gap-1">
               <PaginationButton onClick={() => setPage(1)} disabled={page === 1}>&laquo;</PaginationButton>
               <PaginationButton onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>&lsaquo;</PaginationButton>
@@ -1829,7 +1835,7 @@ function TH({ field, label, onSort, children, className, padding = 'px-4 py-3' }
 function PaginationButton({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
   return (
     <Button variant="ghost" onClick={onClick} disabled={disabled}
-      className="px-2 py-1 rounded-lg hover:bg-white/60 disabled:opacity-40 text-sm font-medium transition-colors">
+      className="px-2 py-1 rounded-lg hover:bg-cream-100 disabled:opacity-40 text-sm font-medium transition-colors">
       {children}
     </Button>
   );

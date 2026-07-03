@@ -210,7 +210,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                           }}
                           whileHover={prefersReducedMotion ? undefined : liftHover}
                           whileTap={prefersReducedMotion ? undefined : tapPress}
-                          className="text-left text-body-sm px-3 py-2 rounded-xl border border-warm-200 bg-white hover:border-primary-300 hover:bg-primary-50/40 text-warm-800 transition"
+                          className="text-left text-body-sm px-3 py-2 rounded-xl border border-warm-200 bg-cream-50 hover:border-primary-300 hover:bg-primary-50/40 text-warm-800 transition"
                         >
                           {q}
                         </m.button>

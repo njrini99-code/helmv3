@@ -67,7 +67,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
         </Button>
 
         {isOpen && (
-          <div className="absolute left-full ml-2 top-0 w-56 bg-white rounded-xl border border-warm-200 shadow-lg py-2 z-50">
+          <div className="absolute left-full ml-2 top-0 w-56 bg-cream-50 rounded-xl border border-warm-200 shadow-lg py-2 z-50">
             <div className="px-3 py-2 border-b border-warm-100">
               <p className="text-xs font-medium text-warm-400 uppercase tracking-wider">
                 Switch Team
@@ -122,8 +122,8 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
           'w-full px-3 py-2.5 rounded-xl border transition-all duration-200',
           'flex items-center gap-3 text-left',
           isOpen
-            ? 'border-primary-500 ring-2 ring-primary-100 bg-white'
-            : 'border-warm-200 bg-white hover:border-warm-300'
+            ? 'border-primary-500 ring-2 ring-primary-100 bg-cream-50'
+            : 'border-warm-200 bg-cream-50 hover:border-warm-300'
         )}
       >
         {selectedTeam?.logo_url ? (
@@ -158,7 +158,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
       </Button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white rounded-xl border border-warm-200 shadow-lg py-2 z-50">
+        <div className="absolute left-0 right-0 mt-2 bg-cream-50 rounded-xl border border-warm-200 shadow-lg py-2 z-50">
           <div className="px-3 py-2 border-b border-warm-100">
             <p className="text-xs font-medium text-warm-400 uppercase tracking-wider">
               Your Teams ({teams.length})

@@ -7,6 +7,8 @@ import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { ActivityDot } from './ActivityDot';
 import { timeAgo } from './admin-utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 type TeamMember = AdminDashboardData['userActivity']['teams'][0]['members'][0];
 type TeamData = AdminDashboardData['userActivity']['teams'][0];
@@ -282,22 +284,22 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
 
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl',
-      'border border-white/20 rounded-2xl',
+      'glass-standard',
+      'rounded-2xl',
       'shadow-glass overflow-hidden'
     )}>
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4 py-3 border-b border-warm-100 bg-warm-50/30">
         {/* Search */}
         <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-xs w-full sm:w-auto">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input
+          <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search users..."
+            leftIcon={<IconSearch size={16} />}
             className={cn(
-              'w-full pl-9 pr-3 py-2 rounded-md text-sm',
-              'bg-white/80 border border-warm-200/50',
+              'min-h-0 pl-9 pr-3 py-2 rounded-md text-sm',
+              'bg-cream-50 border border-warm-200/50',
               'text-warm-900 placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
               'transition-all duration-200'
@@ -315,7 +317,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 flex-shrink-0 whitespace-nowrap',
                 roleFilter === r.value
                   ? 'bg-warm-900 text-white'
-                  : 'bg-white/60 text-warm-600 hover:bg-warm-100 active:bg-warm-200 border border-warm-200/50'
+                  : 'bg-cream-50 text-warm-600 hover:bg-warm-100 active:bg-warm-200 border border-warm-200/50'
               )}
             >
               {r.label}
@@ -324,20 +326,21 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
         </div>
 
         {/* Activity filter */}
-        <select
+        <Select
           value={activityFilter}
-          onChange={(e) => setActivityFilter(e.target.value as ActivityFilter)}
+          onChange={(value) => setActivityFilter(value as ActivityFilter)}
+          options={[
+            { label: 'All Activity', value: 'all' },
+            { label: 'Active (7d)', value: 'active_7d' },
+            { label: 'Inactive (30d+)', value: 'inactive_30d' },
+            { label: 'Never Logged In', value: 'never' },
+          ]}
           className={cn(
             'px-3 py-2 rounded-md text-xs font-medium',
-            'bg-white/80 border border-warm-200/50 text-warm-600',
+            'bg-cream-50 border border-warm-200/50 text-warm-600',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/20'
           )}
-        >
-          <option value="all">All Activity</option>
-          <option value="active_7d">Active (7d)</option>
-          <option value="inactive_30d">Inactive (30d+)</option>
-          <option value="never">Never Logged In</option>
-        </select>
+        />
       </div>
 
       {/* Team sections */}

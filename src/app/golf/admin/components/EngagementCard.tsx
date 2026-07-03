@@ -21,9 +21,9 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
   }));
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-100 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
-        <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+        <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
           <IconTrendingUp size={18} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">Engagement & Retention</h3>
@@ -31,13 +31,13 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
 
       {/* Key metrics */}
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="bg-white/50 rounded-xl p-3">
+        <div className="bg-cream-50 rounded-xl p-3">
           <p className="text-2xl font-semibold text-warm-900 tabular-nums">
             {engagement.weeklyRetention}%
           </p>
           <p className="text-xs text-warm-500 mt-0.5">Weekly Active Rate</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3">
+        <div className="bg-cream-50 rounded-xl p-3">
           <p className="text-2xl font-semibold text-warm-900 tabular-nums">
             {engagement.avgRoundsPerPlayer}
           </p>
@@ -47,7 +47,7 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
 
       {/* Stickiness metric */}
       {stickiness && stickiness.mau > 0 && (
-        <div className="bg-white/50 rounded-xl p-3 mb-5">
+        <div className="bg-cream-50 rounded-xl p-3 mb-5">
           <div className="flex items-center justify-between">
             <span className="text-sm text-warm-600">DAU/MAU Stickiness</span>
             <span className={cn(

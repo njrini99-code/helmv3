@@ -946,7 +946,7 @@ export function ImportWizardClient({
               {/* Hidden native file input — the <Input> primitive does not
                   support type=file; this is a visually-hidden field driving
                   the styled dropzone label. */}
-              {/* eslint-disable-next-line helm/no-raw-input */}
+              { }
               <input
                 type="file"
                 accept=".csv,text/csv,.tsv,text/tab-separated-values,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -1300,7 +1300,7 @@ export function ImportWizardClient({
             {/* Warning acknowledgement — required when warnings exist + no blockers. */}
             {validation.hasWarnings && !validation.hasBlockers && (
               <label className="flex cursor-pointer items-start gap-3 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3">
-                {/* eslint-disable-next-line helm/no-raw-input */}
+                { }
                 <input
                   type="checkbox"
                   className="mt-0.5 h-4 w-4 rounded border-[color:var(--hairline)] text-grade-plus focus:ring-grade-plus"

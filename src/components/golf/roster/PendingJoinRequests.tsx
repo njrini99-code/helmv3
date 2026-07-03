@@ -198,7 +198,7 @@ export function PendingJoinRequests() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 10 }}
-                      className="bg-white rounded-xl border border-amber-200/50 p-4 shadow-sm"
+                      className="bg-cream-50 rounded-xl border border-amber-200/50 p-4 shadow-sm"
                     >
                       <div className="flex items-start gap-4">
                         {/* Player Avatar */}
@@ -270,9 +270,9 @@ export function PendingJoinRequests() {
                           >
                             {processingId === request.id ? (
                               <span className="flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                               </span>
                             ) : (
                               <>

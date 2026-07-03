@@ -53,6 +53,8 @@ import { cn } from '@/lib/utils';
 import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
 import type { HoleFormat } from '@/components/golf/stats/sections/shared-primitives';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 // ============================================================================
 // TYPES
@@ -969,40 +971,41 @@ export default function StatsClient({
           {/* Filters Bar */}
           <div className="bg-cream-100/60 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 ">
             <div className="flex flex-wrap items-center gap-4">
-              <div className="flex-1 min-w-[200px] relative">
-                <IconSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                <input
+              <div className="flex-1 min-w-[200px]">
+                <Input
                   type="search"
                   placeholder="Search players..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   enterKeyHint="search"
                   autoComplete="off"
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-warm-200/55 bg-cream-100/68 text-base md:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors"
+                  leftIcon={<IconSearch size={20} />}
+                  variant="glass"
+                  className="min-h-0 py-2 rounded-xl"
                 />
               </div>
 
-              <select
+              <Select
                 value={classFilter}
-                onChange={(e) => setClassFilter(e.target.value)}
-                className="px-4 py-2 rounded-xl border border-warm-200/55 bg-cream-100/68 text-base md:text-sm text-warm-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
-              >
-                <option value="all">All Classes</option>
-                {graduationYears.map(year => (
-                  <option key={year} value={year}>Class of {year}</option>
-                ))}
-              </select>
+                onChange={(value) => setClassFilter(value)}
+                className="min-w-[160px]"
+                options={[
+                  { value: 'all', label: 'All Classes' },
+                  ...graduationYears.map(year => ({ value: String(year), label: `Class of ${year}` })),
+                ]}
+              />
 
-              <select
+              <Select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="px-4 py-2 rounded-xl border border-warm-200/55 bg-cream-100/68 text-base md:text-sm text-warm-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
-              >
-                <option value="avg">Sort: Best Avg</option>
-                <option value="name">Sort: Name A-Z</option>
-                <option value="improved">Sort: Most Improved</option>
-                <option value="recent">Sort: Recent Activity</option>
-              </select>
+                onChange={(value) => setSortBy(value as typeof sortBy)}
+                className="min-w-[180px]"
+                options={[
+                  { value: 'avg', label: 'Sort: Best Avg' },
+                  { value: 'name', label: 'Sort: Name A-Z' },
+                  { value: 'improved', label: 'Sort: Most Improved' },
+                  { value: 'recent', label: 'Sort: Recent Activity' },
+                ]}
+              />
             </div>
           </div>
 
@@ -1083,7 +1086,7 @@ export default function StatsClient({
         <IconButton variant="default"
           onClick={handleBackClick}
           aria-label="Go back"
-          className="group fixed left-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-cream-50/92 backdrop-blur-sm shadow-lg transition-colors hover:bg-white hover:shadow-xl lg:flex"
+          className="group fixed left-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-cream-50/92 backdrop-blur-sm shadow-lg transition-colors hover:bg-cream-100 hover:shadow-xl lg:flex"
           style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         >
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />

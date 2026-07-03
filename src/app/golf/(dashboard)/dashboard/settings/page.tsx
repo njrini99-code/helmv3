@@ -13,6 +13,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
@@ -607,7 +608,7 @@ function SettingsExpandableRow({
             className="overflow-hidden"
           >
             <div className={cn('px-4 pb-4', !isLast && 'border-b border-warm-100')}>
-              <div className="bg-white rounded-xl border border-warm-200 p-4">
+              <div className="bg-cream-50 rounded-xl border border-warm-200 p-4">
                 {children}
               </div>
             </div>
@@ -694,7 +695,7 @@ function ToggleSwitch({
       >
         <div
           className={cn(
-            'absolute top-[2px] left-[2px] h-[27px] w-[27px] rounded-full bg-white',
+            'absolute top-[2px] left-[2px] h-[27px] w-[27px] rounded-full bg-cream-50',
             'shadow-[0_3px_8px_rgba(0,0,0,0.15),0_3px_1px_rgba(0,0,0,0.06)]',
             'transition-transform duration-200 ease-out',
             checked && 'translate-x-[20px]'
@@ -1224,17 +1225,16 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       <div>
-        <label htmlFor="settings-handicap-system" className="text-sm font-medium text-warm-700 block mb-2">Handicap System</label>
-        <select
-          id="settings-handicap-system"
+        <Select
+          label="Handicap System"
           value={handicapSystem}
-          onChange={(e) => setHandicapSystem(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500/40 transition-colors"
-        >
-          <option value="usga">USGA Handicap</option>
-          <option value="world">World Handicap System</option>
-          <option value="none">No Handicap</option>
-        </select>
+          onChange={(value) => setHandicapSystem(value)}
+          options={[
+            { value: 'usga', label: 'USGA Handicap' },
+            { value: 'world', label: 'World Handicap System' },
+            { value: 'none', label: 'No Handicap' },
+          ]}
+        />
       </div>
 
       <div>
@@ -1256,20 +1256,19 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       <div>
-        <label htmlFor="settings-timezone" className="text-sm font-medium text-warm-700 block mb-2">Timezone</label>
-        <select
-          id="settings-timezone"
+        <Select
+          label="Timezone"
           value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500/40 transition-colors"
-        >
-          <option value="America/New_York">Eastern (ET)</option>
-          <option value="America/Chicago">Central (CT)</option>
-          <option value="America/Denver">Mountain (MT)</option>
-          <option value="America/Los_Angeles">Pacific (PT)</option>
-          <option value="America/Anchorage">Alaska (AKT)</option>
-          <option value="Pacific/Honolulu">Hawaii (HT)</option>
-        </select>
+          onChange={(value) => setTimezone(value)}
+          options={[
+            { value: 'America/New_York', label: 'Eastern (ET)' },
+            { value: 'America/Chicago', label: 'Central (CT)' },
+            { value: 'America/Denver', label: 'Mountain (MT)' },
+            { value: 'America/Los_Angeles', label: 'Pacific (PT)' },
+            { value: 'America/Anchorage', label: 'Alaska (AKT)' },
+            { value: 'Pacific/Honolulu', label: 'Hawaii (HT)' },
+          ]}
+        />
       </div>
 
       {/* E-12: Strokes Gained Benchmark Level */}

@@ -125,7 +125,7 @@ function ActivityEventItem({
       onClick={onClick}
       className={cn(
         'flex items-start gap-3 p-3 rounded-xl border transition-all duration-200',
-        'bg-white/60 hover:bg-white/90',
+        'bg-cream-50 hover:bg-cream-100',
         config.borderColor,
         onClick && 'cursor-pointer hover:shadow-sm'
       )}

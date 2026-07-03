@@ -255,7 +255,7 @@ export function BaseballInviteButton({
                 <p className="text-xs font-medium text-warm-500 mb-2">
                   Invite Link
                 </p>
-                <div className="text-sm text-warm-700 break-all font-mono select-all bg-white p-2 rounded border border-warm-100">
+                <div className="text-sm text-warm-700 break-all font-mono select-all bg-cream-50 p-2 rounded border border-warm-100">
                   {inviteLink}
                 </div>
               </div>

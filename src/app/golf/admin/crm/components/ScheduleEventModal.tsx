@@ -8,6 +8,7 @@ import type { Coach } from '../crm-config';
 import type { CRMEvent, CRMEventType } from './CalendarView';
 import { IconX, IconCalendar, IconVideo, IconPhone, IconMail, IconUsers, IconMapPin, IconTrash } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
 
 // ============================================================================
 // TYPES
@@ -57,7 +58,7 @@ const QUICK_TIMES = [
   { label: 'Next week', getValue: () => ({ date: format(addDays(new Date(), 7), 'yyyy-MM-dd'), time: '10:00' }) },
 ];
 
-const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const inputClass = 'min-h-0 w-full glass-subtle border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 // ============================================================================
@@ -235,7 +236,7 @@ export function ScheduleEventModal({
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
-        className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -275,7 +276,7 @@ export function ScheduleEventModal({
                 Coach <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
               </label>
               <div className="relative">
-                <input
+                <Input
                   id={`${uid}-coach-search`}
                   type="text"
                   value={coachSearchQuery}
@@ -284,7 +285,7 @@ export function ScheduleEventModal({
                   className={inputClass}
                 />
                 {coachSearchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-warm-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-cream-50 border border-warm-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
                     {coachSearchResults.map((c) => (
                       <Button variant="ghost"
                         key={c.id}
@@ -369,7 +370,7 @@ export function ScheduleEventModal({
           {/* Title */}
           <div>
             <label htmlFor={`${uid}-title`} className={labelClass}>Title</label>
-            <input
+            <Input
               id={`${uid}-title`}
               type="text"
               value={form.title}
@@ -404,7 +405,7 @@ export function ScheduleEventModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor={`${uid}-date`} className={labelClass}>Date</label>
-              <input
+              <Input
                 id={`${uid}-date`}
                 type="date"
                 value={form.date}
@@ -414,7 +415,7 @@ export function ScheduleEventModal({
             </div>
             <div>
               <label htmlFor={`${uid}-time`} className={labelClass}>Time</label>
-              <input
+              <Input
                 id={`${uid}-time`}
                 type="time"
                 value={form.time}
@@ -450,7 +451,7 @@ export function ScheduleEventModal({
             <label htmlFor={`${uid}-location`} className={labelClass}>
               Location <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
-            <input
+            <Input
               id={`${uid}-location`}
               type="text"
               value={form.location}
@@ -465,7 +466,7 @@ export function ScheduleEventModal({
             <label htmlFor={`${uid}-meeting-url`} className={labelClass}>
               Meeting Link <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
-            <input
+            <Input
               id={`${uid}-meeting-url`}
               type="url"
               value={form.meetingUrl}
@@ -480,7 +481,7 @@ export function ScheduleEventModal({
             <label htmlFor={`${uid}-description`} className={labelClass}>
               Notes <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
-            <textarea
+            <Textarea
               id={`${uid}-description`}
               value={form.description}
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
@@ -509,7 +510,7 @@ export function ScheduleEventModal({
           <div className="flex items-center gap-3">
             <Button variant="ghost"
               onClick={onClose}
-              className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+              className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
             >
               Cancel
             </Button>

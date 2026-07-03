@@ -111,7 +111,7 @@ export function CalendarAvatarSidebar({
         <Tooltip content="Expand sidebar" side="right">
           <IconButton variant="default"
             onClick={() => setIsCollapsed(false)}
-            className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-warm-200/55 rounded-r-xl flex items-center justify-center hover:bg-white hover:scale-105 shadow-sm transition-all duration-200"
+            className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-warm-200/55 rounded-r-xl flex items-center justify-center hover:bg-cream-100 hover:scale-105 shadow-sm transition-all duration-200"
             aria-label="Expand player filter"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-warm-500 rotate-180" />

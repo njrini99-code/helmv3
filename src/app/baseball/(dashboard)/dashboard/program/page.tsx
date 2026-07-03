@@ -5,6 +5,8 @@ import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
@@ -283,7 +285,7 @@ export default function ProgramPage() {
                 <div>
                   <h4 className="font-medium text-warm-900 mb-1">Program Logo</h4>
                   <p className="text-sm leading-relaxed text-warm-500 mb-3">Upload a logo for your program page (max 2MB).</p>
-                  <input
+                  <Input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
@@ -321,18 +323,13 @@ export default function ProgramPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="program-division" className="block text-sm font-medium text-warm-700 mb-2">Division</label>
-                  <select
-                    id="program-division"
+                  <Select
+                    label="Division"
+                    placeholder="Select Division"
                     value={formData.division || ''}
-                    onChange={(e) => handleInputChange('division', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-warm-900 bg-white"
-                  >
-                    <option value="">Select Division</option>
-                    {DIVISIONS.map(div => (
-                      <option key={div} value={div}>{div}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => handleInputChange('division', value)}
+                    options={DIVISIONS.map(div => ({ value: div, label: div }))}
+                  />
                 </div>
 
                 <Input
@@ -360,13 +357,12 @@ export default function ProgramPage() {
               </div>
 
               <div>
-                <label htmlFor="program-description" className="block text-sm font-medium text-warm-700 mb-2">About Your Program</label>
-                <textarea
+                <Textarea
                   id="program-description"
+                  label="About Your Program"
                   value={formData.description || ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={5}
-                  className="w-full px-4 py-3 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-warm-900 placeholder:text-warm-400"
                   placeholder="Tell recruits about your program, culture, and what makes it special..."
                 />
               </div>
@@ -376,18 +372,18 @@ export default function ProgramPage() {
                 <div>
                   <label htmlFor="program-primary-color" className="block text-sm font-medium text-warm-700 mb-2">Primary Color</label>
                   <div className="flex items-center gap-3">
-                    <input
+                    <Input
                       id="program-primary-color"
                       type="color"
                       value={formData.primary_color || '#16A34A'}
                       onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
+                      className="w-10 h-10 min-h-0 p-1 rounded-lg cursor-pointer"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={formData.primary_color || '#16A34A'}
                       onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
+                      className="flex-1"
                       placeholder="#16A34A"
                     />
                   </div>
@@ -396,18 +392,18 @@ export default function ProgramPage() {
                 <div>
                   <label htmlFor="program-secondary-color" className="block text-sm font-medium text-warm-700 mb-2">Secondary Color</label>
                   <div className="flex items-center gap-3">
-                    <input
+                    <Input
                       id="program-secondary-color"
                       type="color"
                       value={formData.secondary_color || '#FFFFFF'}
                       onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
+                      className="w-10 h-10 min-h-0 p-1 rounded-lg cursor-pointer"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={formData.secondary_color || '#FFFFFF'}
                       onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
+                      className="flex-1"
                       placeholder="#FFFFFF"
                     />
                   </div>

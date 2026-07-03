@@ -408,7 +408,7 @@ export function PrescribedPracticePlanCard({
 
       {drills.length === 0 ? (
         <div className="rounded-xl bg-warm-50/80 border border-warm-100 px-4 py-5 text-center">
-          <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center mx-auto mb-3">
+          <div className="w-10 h-10 rounded-lg bg-cream-50 flex items-center justify-center mx-auto mb-3">
             <IconActivity size={20} className={cn('text-warm-400', isRefreshing && 'animate-pulse')} />
           </div>
           <p className="text-sm font-medium text-warm-700">

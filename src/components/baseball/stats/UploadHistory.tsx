@@ -199,7 +199,7 @@ export function UploadHistory({
               key={upload.id}
               className="flex items-center gap-4 p-3 bg-warm-50 hover:bg-warm-100 rounded-lg transition-colors cursor-default"
             >
-              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+              <div className="w-10 h-10 rounded-lg bg-cream-50 flex items-center justify-center shadow-sm">
                 <IconFile size={20} className="text-warm-400" />
               </div>
               <div className="flex-1 min-w-0">

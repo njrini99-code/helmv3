@@ -189,7 +189,7 @@ export function InboundLeadsView() {
           type="button"
           onClick={fetchRequests}
           aria-label="Refresh inbound leads"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/60 border border-warm-200/60 text-warm-600 hover:text-warm-900 hover:bg-white transition-colors self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-600 hover:text-warm-900 hover:bg-cream-100 transition-colors self-start sm:self-auto"
         >
           <IconRefresh size={13} aria-hidden="true" />
           Refresh
@@ -394,7 +394,7 @@ export function InboundLeadsView() {
                         onClick={() => markContacted(request.id)}
                         disabled={isProcessing}
                         aria-label={`Mark ${request.email} as contacted`}
-                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-white/60 border border-warm-200/60 text-warm-700 hover:bg-white hover:text-warm-900 transition-colors disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-cream-50 border border-warm-200/60 text-warm-700 hover:bg-cream-100 hover:text-warm-900 transition-colors disabled:opacity-50"
                       >
                         Mark Contacted
                       </Button>
@@ -423,7 +423,7 @@ export function InboundLeadsView() {
                     <a
                       href={`mailto:${request.email}`}
                       aria-label={`Compose email to ${request.email}`}
-                      className="p-1.5 rounded-lg hover:bg-white text-warm-400 hover:text-warm-700 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-cream-100 text-warm-400 hover:text-warm-700 transition-colors"
                     >
                       <IconExternalLink size={14} aria-hidden="true" />
                     </a>
@@ -453,8 +453,8 @@ function StatCard({
 }) {
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl border rounded-2xl shadow-glass p-4 lg:p-5 transition-all',
-      highlight ? 'border-amber-200/60 ring-1 ring-amber-200/40' : 'border-white/20',
+      'glass-standard rounded-2xl shadow-glass p-4 lg:p-5 transition-all',
+      highlight && 'border-amber-200/60 ring-1 ring-amber-200/40',
     )}>
       <div className="flex items-start justify-between gap-3">
         <div>

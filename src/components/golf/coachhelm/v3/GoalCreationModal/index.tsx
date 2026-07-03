@@ -39,6 +39,8 @@ import {
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import {
   drawerVariants,
   drawerTransition,
@@ -188,41 +190,41 @@ export function GoalCreationModal({
 
             <div className="space-y-4">
               {/* Metric picker */}
-              <label className="block">
+              <div>
                 <span className="text-xs font-medium text-warm-700">What stat?</span>
-                <select
-                  value={metricId}
-                  onChange={(e) => setMetricId(e.target.value as MetricId)}
-                  className="mt-1 block w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm focus:border-primary-600 focus:outline-none"
-                >
-                  {METRIC_IDS.map((id) => (
-                    <option key={id} value={id}>
-                      {METRIC_RENDER_CONFIG[id].display_label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <div className="mt-1">
+                  <Select
+                    value={metricId}
+                    onChange={(v) => setMetricId(v as MetricId)}
+                    options={METRIC_IDS.map((id) => ({
+                      value: id,
+                      label: METRIC_RENDER_CONFIG[id].display_label,
+                    }))}
+                  />
+                </div>
+              </div>
 
               {/* Window picker */}
-              <label className="block">
+              <div>
                 <span className="text-xs font-medium text-warm-700">How long?</span>
-                <select
-                  value={windowDays}
-                  onChange={(e) => setWindowDays(Number(e.target.value))}
-                  className="mt-1 block w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm focus:border-primary-600 focus:outline-none"
-                >
-                  {WINDOW_OPTIONS.map((opt) => (
-                    <option key={opt.days} value={opt.days}>{opt.label}</option>
-                  ))}
-                </select>
-              </label>
+                <div className="mt-1">
+                  <Select
+                    value={String(windowDays)}
+                    onChange={(v) => setWindowDays(Number(v))}
+                    options={WINDOW_OPTIONS.map((opt) => ({
+                      value: String(opt.days),
+                      label: opt.label,
+                    }))}
+                  />
+                </div>
+              </div>
 
               {/* Target value — auto-filled from the player's live standing */}
               <label className="block">
                 <span className="text-xs font-medium text-warm-700">
                   Target ({cfg.unit})
                 </span>
-                <input
+                <Input
                   type="number"
                   inputMode="decimal"
                   step="0.1"
@@ -232,7 +234,7 @@ export function GoalCreationModal({
                     setUserEdited(true);
                   }}
                   placeholder={loadingSuggestion ? 'Finding your baseline…' : 'Enter a target'}
-                  className="mt-1 block w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm focus:border-primary-600 focus:outline-none tabular-nums"
+                  className="mt-1 tabular-nums"
                 />
                 {loadingSuggestion ? (
                   <span className="mt-1 block text-xs text-warm-500">Finding your baseline…</span>

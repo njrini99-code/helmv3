@@ -79,7 +79,7 @@ export function ConversationList({
   };
 
   return (
-    <div className={cn('flex flex-col bg-white', className)}>
+    <div className={cn('flex flex-col bg-cream-50', className)}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200">
         <h2 className="text-lg font-semibold text-warm-900">Messages</h2>

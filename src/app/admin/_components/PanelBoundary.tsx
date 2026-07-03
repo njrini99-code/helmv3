@@ -3,6 +3,7 @@
 import { Component, Suspense, useCallback, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { SkeletonStat } from '@/components/fairway';
+import { Button } from '@/components/ui/button';
 import { PanelStale } from './PanelStates';
 
 /**
@@ -26,14 +27,16 @@ function PanelRetryButton({ onReset }: { onReset: () => void }) {
   }, [router, onReset]);
 
   return (
-    <button
+    <Button
+      variant="outline"
+      size="sm"
       type="button"
       onClick={retry}
       disabled={isPending}
-      className="mt-1 rounded-lg border border-fw-warning/40 px-3 py-1 text-xs font-medium text-warm-700 transition-colors hover:bg-fw-warning/10 disabled:opacity-50"
+      className="mt-1 rounded-lg border-fw-warning/40 px-3 py-1 text-xs font-medium text-warm-700 hover:bg-fw-warning/10"
     >
       {isPending ? 'Retrying…' : 'Try again'}
-    </button>
+    </Button>
   );
 }
 

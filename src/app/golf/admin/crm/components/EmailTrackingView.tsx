@@ -358,7 +358,7 @@ export function EmailTrackingView() {
         {/* KPI Skeleton */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+            <div key={i} className="glass-standard rounded-2xl shadow-glass p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-2">
                   <div className="h-3 w-20 bg-warm-100 rounded animate-pulse" />
@@ -372,7 +372,7 @@ export function EmailTrackingView() {
         {/* Campaign Skeleton */}
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+            <div key={i} className="glass-standard rounded-2xl shadow-glass p-5">
               <div className="flex items-center gap-4">
                 <div className="h-5 flex-1 bg-warm-50 rounded-xl animate-pulse" />
               </div>
@@ -387,7 +387,7 @@ export function EmailTrackingView() {
   if (stats.total_sent === 0 && emails.length === 0 && allOutreach.length === 0) {
     return (
       <div className="max-w-[1400px] mx-auto">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-16 text-center">
+        <div className="glass-standard rounded-2xl shadow-glass p-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-6">
             <IconMail size={28} className="text-blue-400" />
           </div>
@@ -500,7 +500,7 @@ export function EmailTrackingView() {
       </div>
 
       {/* ══════════════ Sub-Tab Navigation ══════════════ */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+      <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
         <div
           role="tablist"
           aria-label="Email outreach views"
@@ -701,7 +701,7 @@ export function EmailTrackingView() {
                     const bouncedCount = statuses.filter(s => s === 'bounced').length;
 
                     return (
-                      <div key={campaign.key} className="rounded-xl border border-warm-100/60 bg-white/50 overflow-hidden">
+                      <div key={campaign.key} className="rounded-xl border border-warm-100/60 bg-cream-50 overflow-hidden">
                         <Button variant="ghost"
                           onClick={() => toggleCampaign(campaign.key)}
                           className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-warm-50/50 transition-colors"
@@ -758,7 +758,7 @@ export function EmailTrackingView() {
                                 <div key={email.id}>
                                   <Button variant="ghost"
                                     onClick={() => toggleExpanded(email.id)}
-                                    className="w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-white/60 transition-colors"
+                                    className="w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-cream-100 transition-colors"
                                   >
                                     <div className={cn('flex-shrink-0', statusConfig?.color)} title={statusConfig?.label}>
                                       {statusConfig?.icon}
@@ -924,7 +924,7 @@ function StatCard({
 }) {
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5',
+      'glass-standard rounded-2xl p-5',
       'shadow-glass',
       'transition-[transform,box-shadow] duration-200 group',
       'hover:-translate-y-0.5 hover:shadow-lg',

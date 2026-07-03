@@ -9,6 +9,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
   createItinerary,
@@ -192,7 +193,7 @@ export function CreateItineraryModal({
 
         <div>
           <label htmlFor="cim-notes" className="text-sm font-medium text-warm-700 block mb-1">Notes</label>
-          <textarea
+          <Textarea
             id="cim-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

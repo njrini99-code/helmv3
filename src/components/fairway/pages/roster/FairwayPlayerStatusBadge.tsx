@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils';
 import { updatePlayerStatus } from '@/app/golf/actions/golf';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
+import { Button } from '@/components/fairway/controls/button';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import type { FwStatusTone } from '@/components/fairway/controls/_internal';
@@ -170,14 +171,15 @@ export function FairwayPlayerStatusBadge({
 
   /* ---- EDITABLE (coach) mode — StatusPill trigger + PopoverPanel menu ---- */
   const trigger = (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       disabled={loading}
       aria-label={`Player status: ${current.label}. Change status.`}
       aria-haspopup="dialog"
       aria-expanded={open}
       className={cn(
-        'inline-flex items-center rounded-full',
+        'h-auto min-h-0 items-center rounded-full border-0 p-0 font-normal hover:bg-transparent',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
         'focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'transition-opacity duration-fast motion-reduce:transition-none',
@@ -200,7 +202,7 @@ export function FairwayPlayerStatusBadge({
           )}
         />
       </StatusPill>
-    </button>
+    </Button>
   );
 
   return (

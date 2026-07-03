@@ -46,7 +46,7 @@ interface PageProps {
 function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-[#F0FDF4] p-4 sm:p-6">
-      <div className="w-full max-w-md rounded-2xl border border-white/30 bg-white/80 p-6 shadow-lg backdrop-blur-xl sm:p-8">
+      <div className="w-full max-w-md rounded-2xl glass-standard p-6 shadow-lg sm:p-8">
         {children}
       </div>
     </div>
@@ -203,7 +203,7 @@ export default async function LiftingJoinPage({ params }: PageProps) {
   return (
     <CenteredCard>
       {/* Icon badge */}
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-50">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-50">
         <IconShieldCheck size={32} className="text-primary-600" />
       </div>
 

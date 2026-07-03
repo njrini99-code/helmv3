@@ -25,6 +25,7 @@ import {
 import { RECRUIT_STATUSES } from './RecruitStatusChip';
 import { RecruitDocuments } from './RecruitDocuments';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
 import {
   Drawer,
   DrawerContent,
@@ -204,7 +205,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
           {/* Name row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FieldShell label="First name" required>
-              <input
+              <Input
                 type="text"
                 value={form.first_name ?? ''}
                 onChange={(e) => set('first_name', e.target.value)}
@@ -214,7 +215,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
               />
             </FieldShell>
             <FieldShell label="Last name">
-              <input
+              <Input
                 type="text"
                 value={form.last_name ?? ''}
                 onChange={(e) => set('last_name', e.target.value)}
@@ -228,7 +229,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
           {/* HS Class + Hometown row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <FieldShell label="HS Class" icon={GraduationCap}>
-              <input
+              <Input
                 type="number"
                 value={form.hs_class ?? ''}
                 onChange={(e) => set('hs_class', e.target.value ? Number(e.target.value) : null)}
@@ -240,7 +241,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
               />
             </FieldShell>
             <FieldShell label="Hometown" icon={MapPin} className="sm:col-span-1">
-              <input
+              <Input
                 type="text"
                 value={form.hometown ?? ''}
                 onChange={(e) => set('hometown', e.target.value)}
@@ -250,7 +251,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
               />
             </FieldShell>
             <FieldShell label="State">
-              <input
+              <Input
                 type="text"
                 value={form.state ?? ''}
                 onChange={(e) => set('state', e.target.value.toUpperCase().slice(0, 2))}
@@ -265,7 +266,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
           {/* Contact row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FieldShell label="Email" icon={Mail}>
-              <input
+              <Input
                 type="email"
                 value={form.email ?? ''}
                 onChange={(e) => set('email', e.target.value)}
@@ -275,7 +276,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
               />
             </FieldShell>
             <FieldShell label="Phone" icon={Phone}>
-              <input
+              <Input
                 type="tel"
                 value={form.phone ?? ''}
                 onChange={(e) => set('phone', e.target.value)}
@@ -288,7 +289,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
 
           {/* Notes */}
           <FieldShell label="Notes">
-            <textarea
+            <Textarea
               value={form.notes ?? ''}
               onChange={(e) => set('notes', e.target.value)}
               disabled={saving}
@@ -369,9 +370,9 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
 }
 
 const INPUT_CLASS = cn(
-  'w-full px-3 py-2 rounded-xl bg-warm-50 border-0 text-sm text-warm-900',
+  'w-full min-h-0 px-3 py-2 rounded-xl bg-warm-50 border-0 text-sm text-warm-900',
   'placeholder:text-warm-400 transition-colors',
-  'focus:bg-white focus:ring-2 focus:ring-primary-100 focus:outline-none',
+  'focus:bg-cream-50 focus:ring-2 focus:ring-primary-100 focus:outline-none',
   'disabled:opacity-60 disabled:cursor-not-allowed',
 );
 

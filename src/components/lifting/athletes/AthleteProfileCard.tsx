@@ -79,8 +79,8 @@ export function AthleteProfileCard({ athlete, latestCheckin, size = 'card' }: Pr
 
   const inner = (
     <div
-      className={`bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass transition-all duration-200 ${
-        size === 'card' ? 'p-4 hover:bg-white/80 hover:shadow-card-hover' : 'p-6'
+      className={`glass-standard rounded-2xl shadow-glass transition-all duration-200 ${
+        size === 'card' ? 'p-4 hover:bg-cream-100 hover:shadow-card-hover' : 'p-6'
       }`}
     >
       <div className={`flex ${size === 'large' ? 'items-start gap-5' : 'items-center gap-3'}`}>

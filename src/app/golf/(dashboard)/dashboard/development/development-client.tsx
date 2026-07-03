@@ -3,6 +3,8 @@
 import { useState, useMemo, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import {
   Drawer,
   DrawerContent,
@@ -228,19 +230,19 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
 
       {stats.rounds_played > 0 ? (
         <div className="grid grid-cols-4 gap-2">
-          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+          <div className="text-center p-2 rounded-lg bg-cream-50 border border-warm-100">
             <p className="text-xs text-warm-500">Avg Score</p>
             <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.avg_score}</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+          <div className="text-center p-2 rounded-lg bg-cream-50 border border-warm-100">
             <p className="text-xs text-warm-500">Avg Putts</p>
             <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.avg_putts ?? '--'}</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+          <div className="text-center p-2 rounded-lg bg-cream-50 border border-warm-100">
             <p className="text-xs text-warm-500">FW %</p>
             <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.fairway_pct != null ? `${stats.fairway_pct}%` : '--'}</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+          <div className="text-center p-2 rounded-lg bg-cream-50 border border-warm-100">
             <p className="text-xs text-warm-500">GIR %</p>
             <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.gir_pct != null ? `${stats.gir_pct}%` : '--'}</p>
           </div>
@@ -499,7 +501,7 @@ export function DevelopmentPlansClient({
         className={cn(
           'group relative rounded-2xl border transition-[background-color,border-color,box-shadow] duration-200',
           isCompleted
-            ? 'bg-white/40 border-warm-200/60'
+            ? 'bg-cream-50/40 border-warm-200/60'
             : 'bg-cream-100/75 backdrop-blur-xl border-white/20 shadow-sm hover:shadow-md',
         )}
         style={{
@@ -628,25 +630,16 @@ export function DevelopmentPlansClient({
       {/* Player selection (create only) */}
       {!isEdit && (
         <div>
-          <label htmlFor="dev-player-select" className="block text-sm font-medium text-warm-700 mb-1.5">Player</label>
-          <select
-            id="dev-player-select"
+          <Select
+            label="Player"
+            options={players.map(p => ({
+              value: p.id,
+              label: `${p.first_name} ${p.last_name}${p.handicap != null ? ` (${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP)` : ''}${p.graduation_year ? ` - '${String(p.graduation_year).slice(-2)}` : ''}`,
+            }))}
             value={formData.player_id}
-            onChange={e => {
-              const pid = e.target.value;
-              setFormData(prev => ({ ...prev, player_id: pid }));
-            }}
-            className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 bg-white transition-colors"
-          >
-            <option value="">Select a player...</option>
-            {players.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.first_name} {p.last_name}
-                {p.handicap != null ? ` (${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP)` : ''}
-                {p.graduation_year ? ` - '${String(p.graduation_year).slice(-2)}` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={pid => setFormData(prev => ({ ...prev, player_id: pid }))}
+            placeholder="Select a player..."
+          />
 
           {/* Player snapshot after selection */}
           {selectedCreatePlayer && selectedCreateStats && (
@@ -692,14 +685,13 @@ export function DevelopmentPlansClient({
 
       {/* Title */}
       <div>
-        <label htmlFor="dev-title-input" className="block text-sm font-medium text-warm-700 mb-1.5">Title</label>
-        <input
+        <Input
           id="dev-title-input"
+          label="Title"
           type="text"
           value={formData.title}
           onChange={e => setFormData({ ...formData, title: e.target.value })}
           placeholder={`e.g., Improve ${currentAreaType.label.toLowerCase()}...`}
-          className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors"
         />
       </div>
 
@@ -709,13 +701,12 @@ export function DevelopmentPlansClient({
           Notes for player
           <span className="text-warm-400 font-normal ml-1">(optional)</span>
         </label>
-        <textarea
+        <Textarea
           id="dev-notes-textarea"
           value={formData.description}
           onChange={e => setFormData({ ...formData, description: e.target.value })}
           rows={3}
           placeholder="Describe the focus area, drills to work on, or specific goals..."
-          className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 resize-none transition-colors"
         />
       </div>
 
@@ -745,37 +736,34 @@ export function DevelopmentPlansClient({
                 </Button>
               ))}
             </div>
-            <input
+            <Input
               type="text"
               value={formData.target_metric}
               onChange={e => setFormData({ ...formData, target_metric: e.target.value })}
               placeholder="Metric name"
-              className="w-full px-4 py-2 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 text-sm placeholder:text-warm-400 transition-colors"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="dev-current-value" className="block text-xs font-medium text-warm-500 mb-1">Current value</label>
-              <input
+              <Input
                 id="dev-current-value"
                 type="number"
                 step="0.1"
                 value={formData.current_value}
                 onChange={e => setFormData({ ...formData, current_value: e.target.value })}
                 placeholder="e.g., 32"
-                className="w-full px-4 py-2 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 text-sm placeholder:text-warm-400 transition-colors"
               />
             </div>
             <div>
               <label htmlFor="dev-target-value" className="block text-xs font-medium text-warm-500 mb-1">Target value</label>
-              <input
+              <Input
                 id="dev-target-value"
                 type="number"
                 step="0.1"
                 value={formData.target_value}
                 onChange={e => setFormData({ ...formData, target_value: e.target.value })}
                 placeholder="e.g., 28"
-                className="w-full px-4 py-2 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 text-sm placeholder:text-warm-400 transition-colors"
               />
             </div>
           </div>
@@ -821,7 +809,7 @@ export function DevelopmentPlansClient({
           'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
           selectedPlayerId === null
             ? 'bg-primary-600 text-white shadow-sm'
-            : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/35',
+            : 'bg-cream-100/75 text-warm-600 hover:bg-cream-100 border border-warm-200/35',
         )}
       >
         All Players
@@ -836,7 +824,7 @@ export function DevelopmentPlansClient({
               'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
               selectedPlayerId === player.id
                 ? 'bg-primary-600 text-white shadow-sm'
-                : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/35',
+                : 'bg-cream-100/75 text-warm-600 hover:bg-cream-100 border border-warm-200/35',
             )}
           >
             {player.first_name} {player.last_name?.[0]}.
@@ -844,7 +832,7 @@ export function DevelopmentPlansClient({
               <span className={cn(
                 'text-xs rounded-full w-5 h-5 flex items-center justify-center',
                 selectedPlayerId === player.id
-                  ? 'bg-white/20 text-white'
+                  ? 'bg-cream-50/20 text-white'
                   : 'bg-warm-100 text-warm-500',
               )}>
                 {playerAreaCount}

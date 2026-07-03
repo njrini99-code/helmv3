@@ -213,7 +213,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       {/* Remove confirmation modal */}
       {showRemoveConfirm && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="glass-prominent rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.012em] mb-2">
               Remove Player?
             </h2>
@@ -243,9 +243,9 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                 {removing ? (
                   <>
                     <span className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                     </span>
                     Removing...
                   </>
@@ -261,7 +261,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       {/* Change status modal */}
       {showStatusModal && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="glass-prominent rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.012em] mb-2">
               Change Player Status
             </h2>
@@ -282,7 +282,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                     selectedStatus === status.value
                       ? 'border-primary-500 bg-primary-50/50'
-                      : 'border-warm-200 bg-white'
+                      : 'border-warm-200 bg-cream-50'
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -334,9 +334,9 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                 {updatingStatus ? (
                   <>
                     <span className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                     </span>
                     Updating...
                   </>

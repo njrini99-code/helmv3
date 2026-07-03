@@ -30,7 +30,7 @@ vi.mock('./GameCard', () => ({
 // rendered in isolation without pulling in Next's client runtime.
 vi.mock('next/link', () => ({
   default: ({ href, children, ...rest }: AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a href={typeof href === 'string' ? href : '#'} {...rest}>
+    <a href={typeof href === 'string' ? href : undefined} {...rest}>
       {children}
     </a>
   ),

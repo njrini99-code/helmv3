@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { yardsToDisplay, displayToYards } from '@/lib/golf/distance-units';
 
@@ -100,11 +101,11 @@ export function HoleConfigurationForm({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
+        <div className="bg-cream-50 rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-h1 font-light text-primary-700 tracking-[-0.025em] tabular-nums">{totalPar}</div>
           <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wider">Total Par</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
+        <div className="bg-cream-50 rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
             {isMeters
               ? yardsToDisplay(totalYards, 'meters').toLocaleString()
@@ -114,7 +115,7 @@ export function HoleConfigurationForm({
             Total {isMeters ? 'Meters' : 'Yards'}
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
+        <div className="bg-cream-50 rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-h1 font-light text-warm-700 tracking-[-0.025em] tabular-nums">{holesPerRound}</div>
           <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wider">Holes</div>
         </div>
@@ -127,7 +128,7 @@ export function HoleConfigurationForm({
             onClick={() => setActiveTab('front')}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
               ${activeTab === 'front'
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
               }`}
           >
@@ -137,7 +138,7 @@ export function HoleConfigurationForm({
             onClick={() => setActiveTab('back')}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
               ${activeTab === 'back'
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
               }`}
           >
@@ -147,7 +148,7 @@ export function HoleConfigurationForm({
       )}
 
       {/* Hole Configuration Grid */}
-      <div className="bg-white rounded-lg border border-warm-200 overflow-hidden shadow-sm shadow-primary-950/5 ring-1 ring-warm-100">
+      <div className="bg-cream-50 rounded-lg border border-warm-200 overflow-hidden shadow-sm shadow-primary-950/5 ring-1 ring-warm-100">
         {/* Header */}
         <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-warm-50 border-b border-warm-200">
           <div className="px-3 py-2 text-eyebrow font-medium text-warm-500 uppercase tracking-wider">
@@ -166,7 +167,7 @@ export function HoleConfigurationForm({
           <div
             key={hole.holeNumber}
             className={`grid grid-cols-[60px_1fr_1fr] gap-0
-              ${idx % 2 === 0 ? 'bg-white' : 'bg-warm-50/50'}
+              ${idx % 2 === 0 ? 'bg-cream-50' : 'bg-warm-50/50'}
               ${idx < displayHoles.length - 1 ? 'border-b border-warm-100' : ''}`}
           >
             {/* Hole Number */}
@@ -206,13 +207,12 @@ export function HoleConfigurationForm({
 
             {/* Yardage Input */}
             <div className="px-2 py-2 border-l border-warm-100 flex items-center justify-center">
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 value={isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage}
                 onChange={(e) => updateHole(hole.holeNumber, 'yardage', parseInt(e.target.value) || 0)}
-                className="w-20 px-3 py-2 text-center text-sm font-medium border border-warm-200
-                           rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                className="w-20 min-h-0 px-3 py-2 text-center text-sm font-medium"
                 min={isMeters ? 46 : 50}
                 max={isMeters ? 640 : 700}
                 aria-label={`Hole ${hole.holeNumber} ${isMeters ? 'meters' : 'yardage'}`}

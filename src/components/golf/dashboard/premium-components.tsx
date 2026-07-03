@@ -218,7 +218,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                     'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', // Standardized: 12px
                     'transition-transform duration-200 group-hover:scale-105',
                     variant === 'primary'
-                        ? 'bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
+                        ? 'glass-subtle shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
                         : 'bg-warm-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]'
                 )}>
                     {icon}

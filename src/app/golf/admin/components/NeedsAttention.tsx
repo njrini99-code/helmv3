@@ -36,7 +36,7 @@ export function NeedsAttention({ items }: Props) {
     <div className="glass-standard rounded-2xl p-6">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+        <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
           <svg
             width={18}
             height={18}

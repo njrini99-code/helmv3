@@ -135,7 +135,7 @@ export function PlayerRSVPCard({
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden',
+        'bg-cream-50 rounded-2xl border border-warm-200 shadow-sm overflow-hidden',
         'hover:shadow-md transition-all duration-200',
         className
       )}

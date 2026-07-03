@@ -57,7 +57,7 @@ export function GolfHelmSection() {
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-warm-900 leading-[1.1] tracking-tight mb-4 sm:mb-5">
             Track every shot.
             <br />
-            <span className="text-emerald-600">Develop every player.</span>
+            <span className="text-primary-600">Develop every player.</span>
           </h2>
 
           <p className="text-base sm:text-lg text-warm-600 mb-6 sm:mb-8 leading-relaxed">
@@ -75,7 +75,7 @@ export function GolfHelmSection() {
             <LiveRoundMockup />
           </div>
           <div className="order-1 lg:order-2">
-            <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
+            <p className="text-sm font-medium text-primary-600 uppercase tracking-wide mb-3">
               Live Tracking
             </p>
             <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
@@ -88,7 +88,7 @@ export function GolfHelmSection() {
             <ul className="space-y-2">
               {['Shot-by-shot tracking', 'Club selection & distances', 'GIR, putts, penalties', 'Works offline'].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                   {item}
                 </li>
               ))}
@@ -174,8 +174,8 @@ export function GolfHelmSection() {
                   <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
                     <Image src="/anim/helm-coach-icon.png" alt="CoachHelm" fill className="object-contain" sizes="80px" />
                   </div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.06] text-white/80 text-base font-bold rounded-xl ring-1 ring-white/[0.08]">
-                    Coach<span className="text-emerald-400">Helm</span>&nbsp;AI
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-cream-50/[0.06] text-white/80 text-base font-bold rounded-xl ring-1 ring-white/[0.08]">
+                    Coach<span className="text-primary-400">Helm</span>&nbsp;AI
                   </div>
                 </div>
                 <h3 className="text-3xl sm:text-4xl font-bold text-white mb-3 tracking-tight">
@@ -189,10 +189,10 @@ export function GolfHelmSection() {
               {/* Feature cards grid */}
               <div className="grid md:grid-cols-3 gap-4 mb-8">
                 {/* Round Review Card */}
-                <div className="bg-white/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
+                <div className="bg-cream-50/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20">
-                      <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <div className="w-9 h-9 rounded-lg bg-primary-500/10 flex items-center justify-center ring-1 ring-primary-500/20">
+                      <svg className="w-4.5 h-4.5 text-primary-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
@@ -211,14 +211,14 @@ export function GolfHelmSection() {
                         const diff = s - pars[i]!;
                         return (
                           <div key={i} className={`flex-1 h-5 rounded text-eyebrow font-bold flex items-center justify-center ${
-                            diff < 0 ? 'bg-emerald-500/30 text-emerald-300' :
-                            diff === 0 ? 'bg-white/10 text-white/50' :
+                            diff < 0 ? 'bg-primary-500/30 text-primary-300' :
+                            diff === 0 ? 'bg-cream-50/10 text-white/50' :
                             'bg-amber-500/20 text-amber-300'
                           }`}>{s}</div>
                         );
                       })}
                     </div>
-                    <div className="bg-white/[0.04] rounded-md p-2 ring-1 ring-white/[0.06]">
+                    <div className="bg-cream-50/[0.04] rounded-md p-2 ring-1 ring-white/[0.06]">
                       <p className="text-eyebrow text-white/50 font-medium leading-relaxed">
                         Short game improved 18% this round. Approach shots within 120yds averaged 12ft from pin.
                       </p>
@@ -227,9 +227,9 @@ export function GolfHelmSection() {
                   {/* Stats row */}
                   <div className="flex gap-2">
                     {[
-                      { label: 'Short Game', value: '+18%', color: 'text-emerald-400' },
+                      { label: 'Short Game', value: '+18%', color: 'text-primary-400' },
                       { label: 'Proximity', value: '12 ft', color: 'text-white' },
-                      { label: 'FIR', value: '71%', color: 'text-emerald-400' },
+                      { label: 'FIR', value: '71%', color: 'text-primary-400' },
                     ].map((s) => (
                       <div key={s.label} className="flex-1 bg-black/20 rounded-md px-2 py-1.5 text-center">
                         <p className={`text-xs font-bold ${s.color}`}>{s.value}</p>
@@ -240,10 +240,10 @@ export function GolfHelmSection() {
                 </div>
 
                 {/* Team Trends Card */}
-                <div className="bg-white/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
+                <div className="bg-cream-50/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20">
-                      <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <div className="w-9 h-9 rounded-lg bg-primary-500/10 flex items-center justify-center ring-1 ring-primary-500/20">
+                      <svg className="w-4.5 h-4.5 text-primary-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <polyline points="23,6 13.5,15.5 8.5,10.5 1,18" />
                         <polyline points="17,6 23,6 23,12" />
                       </svg>
@@ -254,14 +254,14 @@ export function GolfHelmSection() {
                   <div className="bg-black/30 rounded-lg p-3.5 mb-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-eyebrow text-white/40 font-medium">Team Avg (Last 7 rounds)</span>
-                      <span className="text-xs font-bold text-emerald-400">+1.8 ↓</span>
+                      <span className="text-xs font-bold text-primary-400">+1.8 ↓</span>
                     </div>
                     {/* Sparkline bars */}
                     <div className="flex items-end gap-1 h-16">
                       {[78, 76, 77, 74, 75, 73, 72].map((v, i) => (
                         <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
                           <div
-                            className={`w-full rounded-sm ${i === 6 ? 'bg-emerald-500' : 'bg-emerald-500/30'}`}
+                            className={`w-full rounded-sm ${i === 6 ? 'bg-primary-500' : 'bg-primary-500/30'}`}
                             style={{ height: `${((80 - v) / 10) * 100}%`, minHeight: '12%' }}
                           />
                           <span className="text-eyebrow text-white/25">{v}</span>
@@ -272,9 +272,9 @@ export function GolfHelmSection() {
                   {/* Trend indicators */}
                   <div className="space-y-1.5">
                     {[
-                      { label: '5 members improving', icon: '↑', color: 'text-emerald-400 bg-emerald-500/10' },
+                      { label: '5 members improving', icon: '↑', color: 'text-primary-400 bg-primary-500/10' },
                       { label: '2 declining', icon: '↓', color: 'text-red-400 bg-red-500/10' },
-                      { label: '1 stable', icon: '—', color: 'text-white/40 bg-white/5' },
+                      { label: '1 stable', icon: '—', color: 'text-white/40 bg-cream-50/5' },
                     ].map((t) => (
                       <div key={t.label} className="flex items-center gap-2">
                         <span className={`w-5 h-5 rounded flex items-center justify-center text-eyebrow font-bold ${t.color}`}>{t.icon}</span>
@@ -285,10 +285,10 @@ export function GolfHelmSection() {
                 </div>
 
                 {/* Strengths & Weaknesses Card */}
-                <div className="bg-white/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
+                <div className="bg-cream-50/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20">
-                      <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <div className="w-9 h-9 rounded-lg bg-primary-500/10 flex items-center justify-center ring-1 ring-primary-500/20">
+                      <svg className="w-4.5 h-4.5 text-primary-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="10" />
                         <path d="M8 14s1.5 2 4 2 4-2 4-2" />
                         <line x1="9" y1="9" x2="9.01" y2="9" />
@@ -309,15 +309,15 @@ export function GolfHelmSection() {
                         <div key={s.label}>
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="text-eyebrow text-white/50">{s.label}</span>
-                            <span className="text-eyebrow font-bold text-emerald-400">{s.value}</span>
+                            <span className="text-eyebrow font-bold text-primary-400">{s.value}</span>
                           </div>
-                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${s.pct}%` }} />
+                          <div className="h-1.5 bg-cream-50/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary-500/60 rounded-full" style={{ width: `${s.pct}%` }} />
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-white/5 my-3" />
+                    <div className="h-px bg-cream-50/5 my-3" />
                     <p className="text-eyebrow text-red-400/60 font-semibold uppercase tracking-wider mb-2">Areas to Improve</p>
                     <div className="space-y-2">
                       {[
@@ -329,7 +329,7 @@ export function GolfHelmSection() {
                             <span className="text-eyebrow text-white/50">{s.label}</span>
                             <span className="text-eyebrow font-bold text-red-400">{s.value}</span>
                           </div>
-                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-cream-50/5 rounded-full overflow-hidden">
                             <div className="h-full bg-red-500/50 rounded-full" style={{ width: `${s.pct}%` }} />
                           </div>
                         </div>

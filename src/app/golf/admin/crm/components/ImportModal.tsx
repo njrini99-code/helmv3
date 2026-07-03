@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../crm-config';
 import { IconX, IconCheck, IconWarning, IconUpload, IconLayers } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { DuplicateReview } from './DuplicateReview';
 
 interface ImportModalProps {
@@ -24,7 +27,11 @@ interface ParsedCoach {
   isDuplicate?: boolean;
 }
 
-const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const inputClass = 'w-full bg-cream-50 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const DIVISION_OPTIONS = [
+  { value: 'D2', label: 'Division II' },
+  { value: 'D3', label: 'Division III' },
+];
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
@@ -258,7 +265,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -279,20 +286,17 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             <div className="space-y-6">
               <div>
                 <label htmlFor={`${uid}-division`} className={labelClass}>Division</label>
-                <select
-                  id={`${uid}-division`}
+                <Select
+                  options={DIVISION_OPTIONS}
                   value={division}
-                  onChange={(e) => setDivision(e.target.value as Division)}
-                  className={`${inputClass} bg-white/60`}
-                >
-                  <option value="D2">Division II</option>
-                  <option value="D3">Division III</option>
-                </select>
+                  onChange={(value) => setDivision(value as Division)}
+                  className={inputClass}
+                />
               </div>
 
               <div>
                 <label htmlFor={`${uid}-csv-file`} className={labelClass}>Upload CSV File</label>
-                <input
+                <Input
                   id={`${uid}-csv-file`}
                   type="file"
                   accept=".csv"
@@ -303,7 +307,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
               <div>
                 <label htmlFor={`${uid}-csv-text`} className={labelClass}>Or Paste CSV Data</label>
-                <textarea
+                <Textarea
                   id={`${uid}-csv-text`}
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
@@ -333,7 +337,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex items-center justify-between gap-3">
                 <Button variant="ghost"
                   onClick={() => setShowDuplicateReview(true)}
-                  className="inline-flex items-center gap-1.5 bg-white border border-warm-200 text-warm-700 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   <IconLayers size={16} />
                   Find duplicates
@@ -341,7 +345,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 <div className="flex justify-end gap-3">
                   <Button variant="ghost"
                     onClick={onClose}
-                    className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                    className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                   >
                     Cancel
                   </Button>
@@ -433,7 +437,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex justify-end gap-3">
                 <Button variant="ghost"
                   onClick={() => { setStep('upload'); setDuplicateCount(0); }}
-                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Back
                 </Button>

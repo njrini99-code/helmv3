@@ -35,6 +35,7 @@ import {
 import { getDocuments } from '@/app/golf/actions/documents';
 import type { GolfDocument } from '@/lib/types/golf';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Drawer,
   DrawerContent,
@@ -175,7 +176,7 @@ export function EventDocumentsSection({
             return (
               <li
                 key={row.document.id}
-                className="group flex items-center gap-3 px-3 py-2 rounded-xl bg-cream-100/75 ring-1 ring-warm-200/60 hover:bg-white transition-colors"
+                className="group flex items-center gap-3 px-3 py-2 rounded-xl bg-cream-100/75 ring-1 ring-warm-200/60 hover:bg-cream-50 transition-colors"
               >
                 <span className="w-8 h-8 rounded-lg bg-primary-50 ring-1 ring-primary-100 flex items-center justify-center flex-shrink-0">
                   <Icon className="w-4 h-4 text-primary-700" />
@@ -296,17 +297,15 @@ function DocumentPickerDialog({
         </DrawerHeader>
 
         <div className="px-4 py-3 border-b border-warm-200/60">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by title, category, description…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-warm-50 border-0 focus:bg-white focus:ring-2 focus:ring-primary-100 transition-colors text-warm-900 placeholder:text-warm-400"
-              aria-label="Search documents"
-            />
-          </div>
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by title, category, description…"
+            leftIcon={<Search className="w-4 h-4" />}
+            className="w-full text-sm rounded-xl bg-warm-50 border-0 focus:bg-cream-50 focus:ring-2 focus:ring-primary-100 transition-colors text-warm-900 placeholder:text-warm-400"
+            aria-label="Search documents"
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain p-2 max-h-[55vh]">

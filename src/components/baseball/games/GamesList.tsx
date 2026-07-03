@@ -8,6 +8,7 @@ import { getTeamGames, getTeamSeasonRecord, deleteGame, type TeamSeasonRecord } 
 import type { BaseballGame, BaseballGameType } from '@/lib/types';
 import { IconPlus, IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
 
 interface GamesListProps {
@@ -94,17 +95,12 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
 
         <div className="flex items-center gap-2">
           {/* Season selector */}
-          <select
-            value={seasonYear}
-            onChange={(e) => setSeasonYear(Number(e.target.value))}
-            className="text-sm border border-warm-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {SEASON_YEARS.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={SEASON_YEARS.map((y) => ({ value: String(y), label: String(y) }))}
+            value={String(seasonYear)}
+            onChange={(v) => setSeasonYear(Number(v))}
+            className="w-28 text-sm"
+          />
 
           <Button
             variant="ghost"
@@ -137,7 +133,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all capitalize ${
               activeTab === tab
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-500 hover:text-warm-700'
             }`}
           >

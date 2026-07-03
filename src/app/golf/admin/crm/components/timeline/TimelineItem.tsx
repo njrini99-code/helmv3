@@ -80,7 +80,7 @@ export function TimelineItem({ item }: TimelineItemProps) {
       {/* Dot */}
       <span
         className={cn(
-          'absolute left-[-13px] top-0.5 w-[22px] h-[22px] rounded-full flex items-center justify-center bg-white ring-2',
+          'absolute left-[-13px] top-0.5 w-[22px] h-[22px] rounded-full flex items-center justify-center bg-cream-50 ring-2',
           cfg.ringColor,
         )}
         aria-hidden="true"

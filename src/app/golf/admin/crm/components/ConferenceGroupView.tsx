@@ -396,7 +396,7 @@ export function ConferenceGroupView({
                               {openStatusDropdown === coach.id && (
                                 <div
                                   role="menu"
-                                  className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl"
+                                  className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto glass-standard rounded-xl shadow-xl"
                                 >
                                   {ALL_STATUSES.map(status => (
                                     <Button variant="primary"
@@ -438,7 +438,7 @@ export function ConferenceGroupView({
                               {openActionMenu === coach.id && (
                                 <div
                                   role="menu"
-                                  className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/80 shadow-xl"
+                                  className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-xl glass-standard shadow-xl"
                                 >
                                   <Button variant="ghost"
                                     type="button"

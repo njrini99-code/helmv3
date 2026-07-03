@@ -94,7 +94,7 @@ export const USStateMap = memo(function USStateMap({
           <div
             className="relative flex items-center gap-3 px-5 py-3 rounded-2xl overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #059669 0%, #16a34a 50%, #22c55e 100%)',
+              background: 'linear-gradient(135deg, #059669 0%, var(--color-primary-600) 50%, #22c55e 100%)',
               boxShadow: `
                 0 12px 32px -8px rgba(5, 150, 105, 0.4),
                 0 4px 12px -2px rgba(5, 150, 105, 0.3),
@@ -113,7 +113,7 @@ export const USStateMap = memo(function USStateMap({
             />
 
             {/* Location icon */}
-            <div className="relative w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+            <div className="relative w-8 h-8 rounded-lg glass-subtle flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -130,12 +130,12 @@ export const USStateMap = memo(function USStateMap({
             </div>
 
             {/* Divider */}
-            <div className="relative w-px h-8 bg-white/20" />
+            <div className="relative w-px h-8 bg-cream-50/20" />
 
             {/* Clear button */}
             <IconButton variant="default"
               onClick={onClearSelection}
-              className="relative p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition-all duration-150"
+              className="relative p-2 rounded-xl glass-subtle hover:bg-cream-50/20 active:scale-95 transition-all duration-150"
               aria-label="Clear selection"
             >
               <IconX size={16} className="text-white" />

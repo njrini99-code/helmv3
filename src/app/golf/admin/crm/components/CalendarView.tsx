@@ -257,12 +257,12 @@ export function CalendarView({
                 const isCurrentDay = isToday(date);
 
                 return (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
                     key={date.toISOString()}
                     onClick={() => onSlotClick?.(date)}
                     className={cn(
-                      'text-left border-r border-warm-100/30 last:border-r-0 p-1.5 cursor-pointer transition-colors',
+                      'block h-auto min-h-0 items-stretch justify-start text-left border-r border-warm-100/30 last:border-r-0 p-1.5 rounded-none cursor-pointer transition-colors',
                       !isCurrentMonth && 'bg-warm-50/20',
                       isCurrentMonth && 'hover:bg-warm-50/40',
                       isCurrentDay && 'bg-primary-50/30'
@@ -281,14 +281,14 @@ export function CalendarView({
                       {dayEvents.slice(0, 3).map((event) => {
                         const config = EVENT_TYPE_CONFIG[event.event_type];
                         return (
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); onEventClick?.(event); }}
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'flex items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-lg truncate cursor-pointer transition-all font-medium w-full text-left',
+                              'flex h-auto min-h-0 items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-lg truncate cursor-pointer transition-all font-medium w-full text-left justify-start',
                               config.pillBg,
                               config.pillText,
                               hoveredEvent === event.id && 'ring-1 ring-offset-1 ring-warm-300 shadow-sm'
@@ -296,7 +296,7 @@ export function CalendarView({
                           >
                             <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', config.dotColor)} />
                             <span className="truncate">{event.title}</span>
-                          </button>
+                          </Button>
                         );
                       })}
                       {dayEvents.length > 3 && (
@@ -305,7 +305,7 @@ export function CalendarView({
                         </div>
                       )}
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -331,7 +331,7 @@ export function CalendarView({
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Day Headers */}
-        <div className="flex border-b border-warm-100/40 sticky top-0 bg-white/80 backdrop-blur-sm z-10">
+        <div className="flex border-b border-warm-100/40 sticky top-0 glass-standard z-10">
           <div className="w-16 shrink-0" />
           {days.map((date) => (
             <div
@@ -376,12 +376,14 @@ export function CalendarView({
                   className="flex-1 border-l border-warm-100/30 relative"
                 >
                   {hours.map((hour) => (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
                       key={hour}
-                      className="h-16 w-full border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
+                      className="block h-16 min-h-0 w-full rounded-none border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
                       onClick={() => onSlotClick?.(setHours(setMinutes(date, 0), hour))}
-                    />
+                    >
+                      <span className="sr-only">Schedule at {format(setHours(new Date(), hour), 'h a')}</span>
+                    </Button>
                   ))}
                   
                   {/* Events */}
@@ -398,14 +400,14 @@ export function CalendarView({
                     const config = EVENT_TYPE_CONFIG[event.event_type];
                     
                     return (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
                         key={event.id}
                         onClick={(e) => { e.stopPropagation(); onEventClick?.(event); }}
                         onMouseEnter={() => setHoveredEvent(event.id)}
                         onMouseLeave={() => setHoveredEvent(null)}
                         className={cn(
-                          'absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden text-left',
+                          'block h-auto min-h-0 absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden text-left',
                           'border-l-[3px]',
                           config.softBg,
                           config.borderColor,
@@ -427,7 +429,7 @@ export function CalendarView({
                             {event.coach_name}
                           </div>
                         )}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -449,7 +451,7 @@ export function CalendarView({
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Day Header */}
-        <div className="p-5 border-b border-warm-100/40 bg-white/30">
+        <div className="p-5 border-b border-warm-100/40 glass-subtle">
           <div className={cn(
             'text-2xl font-bold',
             isToday(currentDate) ? 'text-primary-600' : 'text-warm-900'
@@ -478,12 +480,14 @@ export function CalendarView({
             {/* Event Column */}
             <div className="flex-1 border-l border-warm-100/30 relative">
               {hours.map((hour) => (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   key={hour}
-                  className="h-20 w-full border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
+                  className="block h-20 min-h-0 w-full rounded-none border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
                   onClick={() => onSlotClick?.(setHours(setMinutes(currentDate, 0), hour))}
-                />
+                >
+                  <span className="sr-only">Schedule at {format(setHours(new Date(), hour), 'h:mm a')}</span>
+                </Button>
               ))}
 
               {/* Events */}
@@ -500,14 +504,14 @@ export function CalendarView({
                 const config = EVENT_TYPE_CONFIG[event.event_type];
 
                 return (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
                     key={event.id}
                     onClick={(e) => { e.stopPropagation(); onEventClick?.(event); }}
                     onMouseEnter={() => setHoveredEvent(event.id)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     className={cn(
-                      'absolute left-2 right-4 rounded-xl px-4 py-2.5 cursor-pointer transition-all text-left',
+                      'block h-auto min-h-0 absolute left-2 right-4 rounded-xl px-4 py-2.5 cursor-pointer transition-all text-left',
                       'border-l-[3px]',
                       config.softBg,
                       config.borderColor,
@@ -535,7 +539,7 @@ export function CalendarView({
                         {event.location}
                       </div>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -551,8 +555,8 @@ export function CalendarView({
   return (
     <div className={cn(
       'flex flex-col h-[calc(100dvh-220px)] min-h-[500px]',
-      'bg-white/70 backdrop-blur-xl',
-      'border border-white/20 rounded-2xl p-5',
+      'glass-standard',
+      'rounded-2xl p-5',
       'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
     )}>
       {/* Header */}
@@ -601,7 +605,7 @@ export function CalendarView({
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize',
                   viewMode === view
-                    ? 'bg-white text-warm-900 shadow-sm'
+                    ? 'bg-cream-50 text-warm-900 shadow-sm'
                     : 'text-warm-500 hover:text-warm-700'
                 )}
               >
@@ -626,8 +630,8 @@ export function CalendarView({
               onClick={onConnectGoogle}
               className={cn(
                 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                'bg-white/60 border border-warm-200/50 text-warm-500',
-                'hover:bg-white/80 active:bg-white/90 hover:text-warm-700'
+                'glass-standard text-warm-500',
+                'hover:bg-cream-100 active:bg-cream-100 hover:text-warm-700'
               )}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">

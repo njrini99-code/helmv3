@@ -307,7 +307,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-4 bg-cream-50/55 rounded-2xl">
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Depart</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Depart</p>
               <p className="font-medium text-warm-900">{fmtDate(trip.departure_date)}</p>
               {trip.departure_time && (
                 <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.departure_time)}</p>
@@ -318,7 +318,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
             </div>
             {trip.return_date && (
               <div className="p-4 bg-cream-50/55 rounded-2xl">
-                <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Return</p>
+                <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Return</p>
                 <p className="font-medium text-warm-900">{fmtDate(trip.return_date)}</p>
                 {trip.return_time && (
                   <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.return_time)}</p>
@@ -343,7 +343,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Room Assignments */}
           {trip.room_assignments && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Room Assignment</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Room Assignment</p>
               <p className="text-sm text-warm-700">{trip.room_assignments}</p>
             </div>
           )}
@@ -351,13 +351,13 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Uniform & Gear */}
           {trip.uniform_requirements && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Uniform</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Uniform</p>
               <p className="text-sm text-warm-700">{trip.uniform_requirements}</p>
             </div>
           )}
           {trip.gear_list && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Gear List</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Gear List</p>
               <p className="text-sm text-warm-700">{trip.gear_list}</p>
             </div>
           )}
@@ -365,7 +365,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Flight */}
           {trip.flight_info && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Flight Info</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Flight Info</p>
               <p className="text-sm text-warm-700">{trip.flight_info}</p>
             </div>
           )}
@@ -373,7 +373,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Notes */}
           {trip.notes && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Notes</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Notes</p>
               <p className="text-sm text-warm-700">{trip.notes}</p>
             </div>
           )}

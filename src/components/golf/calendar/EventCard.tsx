@@ -71,7 +71,7 @@ const EventCardInner = forwardRef<
         {...dragAttributes}
         {...dragListeners}
       >
-        <p className="font-medium text-[11.5px] truncate leading-tight tracking-[-0.005em]">{title}</p>
+        <p className="font-medium text-caption truncate leading-tight tracking-[-0.005em]">{title}</p>
       </Button>
     );
   }

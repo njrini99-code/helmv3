@@ -170,7 +170,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
     return (
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-warm-200 p-4 animate-pulse">
+          <div key={i} className="bg-cream-50 rounded-xl border border-warm-200 p-4 animate-pulse">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-warm-200" />
               <div className="flex-1 space-y-2">
@@ -238,7 +238,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
               <Button variant="ghost"
                 key={player.id}
                 onClick={() => handleViewPlayer(player.id)}
-                className="w-full bg-white rounded-xl border border-warm-200 p-4 hover:border-primary-200 hover:shadow-md transition-all text-left group"
+                className="w-full bg-cream-50 rounded-xl border border-warm-200 p-4 hover:border-primary-200 hover:shadow-md transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
                   <Avatar

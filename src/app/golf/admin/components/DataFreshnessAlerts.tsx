@@ -79,7 +79,7 @@ function SectionHeader({
   return (
     <Button variant="ghost"
       onClick={onToggle}
-      className="flex w-full items-center justify-between rounded-xl px-4 py-3 transition-colors duration-200 hover:bg-white/40"
+      className="flex w-full items-center justify-between rounded-xl px-4 py-3 transition-colors duration-200 hover:bg-cream-100"
     >
       <div className="flex items-center gap-3">
         <span className="text-sm font-medium text-warm-900">{title}</span>
@@ -181,7 +181,7 @@ export default function DataFreshnessAlerts({
                   <div className="overflow-x-auto rounded-xl border border-white/20">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-warm-200/50 bg-white/30">
+                        <tr className="border-b border-warm-200/50 bg-cream-100/60">
                           <th className="px-4 py-2.5 text-left font-medium text-warm-500">
                             Player
                           </th>
@@ -275,7 +275,7 @@ export default function DataFreshnessAlerts({
                   <div className="overflow-x-auto rounded-xl border border-white/20">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-warm-200/50 bg-white/30">
+                        <tr className="border-b border-warm-200/50 bg-cream-100/60">
                           <th className="px-4 py-2.5 text-left font-medium text-warm-500">
                             Team
                           </th>
@@ -351,7 +351,7 @@ export default function DataFreshnessAlerts({
                   <div className="overflow-x-auto rounded-xl border border-white/20">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-warm-200/50 bg-white/30">
+                        <tr className="border-b border-warm-200/50 bg-cream-100/60">
                           <th className="px-4 py-2.5 text-left font-medium text-warm-500">
                             Coach
                           </th>

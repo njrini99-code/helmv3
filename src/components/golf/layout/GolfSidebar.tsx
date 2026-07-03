@@ -12,7 +12,7 @@ import { triggerHaptic } from '@/lib/utils/capacitor';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { CountBadge } from '@/components/ui/badge';
 import { TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconHome,
   IconUsers,
@@ -194,16 +194,17 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     >
       {/* Collapse Toggle Button (desktop only) */}
       {!isMobile && (
-        <button
+        <IconButton
           type="button"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          variant="ghost"
           className={cn(
             'absolute -right-3 top-7 z-50',
-            'w-6 h-6 rounded-full bg-[rgba(28,25,23,0.96)] ring-1 ring-white/15',
+            'w-6 h-6 min-h-0 min-w-0 p-0 rounded-full bg-[rgba(28,25,23,0.96)] ring-1 ring-white/15',
             'flex items-center justify-center flex-shrink-0',
-            'shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:bg-white/[0.08]',
+            'shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:bg-nav-surface',
             'transition-colors duration-300 ease-out',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-1 focus-visible:ring-offset-[rgba(28,25,23,0.96)]',
             'cursor-pointer'
@@ -214,7 +215,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           ) : (
             <IconChevronLeft size={14} className="text-white/65" aria-hidden="true" />
           )}
-        </button>
+        </IconButton>
       )}
 
       {/* Logo */}
@@ -271,7 +272,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
               {userName || 'User'}
             </p>
             {!teamSwitcherSlot && (
-              <p className="text-[11.5px] text-white/45 truncate flex items-center gap-1.5">
+              <p className="text-caption text-white/45 truncate flex items-center gap-1.5">
                 <span className="w-1 h-1 rounded-full bg-primary-400/80" aria-hidden />
                 {teamName || 'Golf Team'}
               </p>
@@ -294,7 +295,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         {/* Primary Navigation */}
         <div className="space-y-1">
           {!isCollapsed && (
-            <p className="px-4 pt-1 pb-3 text-[10.5px] font-medium text-white/35 uppercase tracking-[0.12em] whitespace-nowrap">
+            <p className="px-4 pt-1 pb-3 text-eyebrow font-medium text-white/35 tracking-[0.12em] whitespace-nowrap">
               {userRole === 'coach' ? 'Team Management' : 'My Golf'}
             </p>
           )}
@@ -310,11 +311,11 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+                  'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-body-sm font-medium touch-manipulation',
                   'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   active
-                    ? 'bg-white/[0.07] text-white'
-                    : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+                    ? 'bg-nav-surface text-white'
+                    : 'text-white/55 hover:bg-nav-surface/60 hover:text-white/85',
                   isCollapsed ? 'justify-center px-2' : 'px-3.5'
                 )}
               >
@@ -350,12 +351,12 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         </div>
 
         {/* Divider — minimal hairline, no gradient */}
-        <div className="my-5 mx-4 h-px bg-white/[0.05]" aria-hidden />
+        <div className="my-5 mx-4 h-px bg-nav-surface" aria-hidden />
 
         {/* Secondary Navigation */}
         <div className="space-y-1">
           {!isCollapsed && (
-            <p className="px-4 pt-1 pb-3 text-[10.5px] font-medium text-white/35 uppercase tracking-[0.12em] whitespace-nowrap">
+            <p className="px-4 pt-1 pb-3 text-eyebrow font-medium text-white/35 tracking-[0.12em] whitespace-nowrap">
               {userRole === 'coach' ? 'Operations' : 'Team'}
             </p>
           )}
@@ -371,11 +372,11 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+                  'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-body-sm font-medium touch-manipulation',
                   'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   active
-                    ? 'bg-white/[0.07] text-white'
-                    : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+                    ? 'bg-nav-surface text-white'
+                    : 'text-white/55 hover:bg-nav-surface/60 hover:text-white/85',
                   isCollapsed ? 'justify-center px-2' : 'px-3.5'
                 )}
               >
@@ -425,11 +426,11 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-label={isCollapsed ? 'Settings' : undefined}
           aria-current={pathname.startsWith('/golf/dashboard/settings') ? 'page' : undefined}
           className={cn(
-            'relative flex items-center gap-3 py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+            'relative flex items-center gap-3 py-2.5 rounded-2xl text-body-sm font-medium touch-manipulation',
             'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
             pathname.startsWith('/golf/dashboard/settings')
-              ? 'bg-white/[0.07] text-white'
-              : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+              ? 'bg-nav-surface text-white'
+              : 'text-white/55 hover:bg-nav-surface/60 hover:text-white/85',
             isCollapsed ? 'justify-center px-2' : 'px-3.5'
           )}
         >
@@ -449,7 +450,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           title={isCollapsed ? 'Sign out' : undefined}
           aria-label={isCollapsed ? (isSigningOut ? 'Signing out' : 'Sign out') : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+            'w-full flex items-center gap-3 py-2.5 rounded-2xl text-body-sm font-medium touch-manipulation',
             'text-white/55 hover:bg-red-500/8 hover:text-red-400',
             'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] disabled:opacity-50',
             isCollapsed ? 'justify-center px-2' : 'px-3.5'

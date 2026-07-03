@@ -122,7 +122,7 @@ function Bubble({ message, prefersReducedMotion }: { message: ChatMessage; prefe
         initial={prefersReducedMotion ? false : { opacity: 0.6 }}
         animate={{ opacity: 1 }}
         transition={{ duration: DURATION.short, ease: EASE_TAP }}
-        className="max-w-[85%] rounded-2xl bg-white surface-hairline border px-4 py-3 text-sm text-warm-900 whitespace-pre-wrap leading-relaxed"
+        className="max-w-[85%] rounded-2xl bg-cream-50 surface-hairline border px-4 py-3 text-sm text-warm-900 whitespace-pre-wrap leading-relaxed"
       >
         {message.content}
       </m.div>

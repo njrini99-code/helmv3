@@ -10,6 +10,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as React from 'react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { Button as UIButton } from '@/components/ui/button';
 
 vi.mock('@/components/fairway/overlays/ModalShell', () => {
   interface ShellProps {
@@ -41,9 +42,9 @@ vi.mock('@/components/fairway/controls/button', () => ({
     disabled?: boolean;
     type?: 'button' | 'submit' | 'reset';
   }) => (
-    <button type={type ?? 'button'} onClick={onClick} disabled={disabled}>
+    <UIButton type={type ?? 'button'} onClick={onClick} disabled={disabled}>
       {children}
-    </button>
+    </UIButton>
   ),
 }));
 

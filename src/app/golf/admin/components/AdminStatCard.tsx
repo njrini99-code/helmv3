@@ -72,7 +72,7 @@ export const AdminStatCard = memo(function AdminStatCard({
       className={cn(
         'relative overflow-hidden group',
         // Premium glass effect
-        'bg-white/65 backdrop-blur-[16px]',
+        'glass-standard',
         'border rounded-2xl',
         // Premium shadow
         'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',

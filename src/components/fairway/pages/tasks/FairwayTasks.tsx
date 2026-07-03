@@ -508,30 +508,33 @@ export function FairwayTasks({
               <aside className="lg:col-span-1">
                 <div className="sticky top-6 flex flex-col gap-4">
                   <Surface elevation="border" padding="none">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => setShowTemplates((s) => !s)}
                       aria-expanded={showTemplates}
                       className={cn(
-                        'flex w-full items-center justify-between gap-2 rounded-card px-5 py-4 text-left',
+                        'block h-auto min-h-0 w-full rounded-card border-0 px-5 py-4 text-left font-normal',
                         'transition-colors [transition-duration:180ms] hover:bg-surface-tint',
                         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                       )}
                     >
-                      <span className="flex items-center gap-2">
-                        <ClipboardList className="h-[18px] w-[18px] text-text-tertiary" aria-hidden />
-                        <span className="font-fw-sans text-body font-medium text-text-primary">
-                          Templates
+                      <span className="flex w-full items-center justify-between gap-2">
+                        <span className="flex items-center gap-2">
+                          <ClipboardList className="h-[18px] w-[18px] text-text-tertiary" aria-hidden />
+                          <span className="font-fw-sans text-body font-medium text-text-primary">
+                            Templates
+                          </span>
                         </span>
+                        <ChevronDown
+                          className={cn(
+                            'h-[18px] w-[18px] text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
+                            showTemplates && 'rotate-180',
+                          )}
+                          aria-hidden
+                        />
                       </span>
-                      <ChevronDown
-                        className={cn(
-                          'h-[18px] w-[18px] text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
-                          showTemplates && 'rotate-180',
-                        )}
-                        aria-hidden
-                      />
-                    </button>
+                    </Button>
                     {showTemplates && (
                       <div className="border-t border-border-subtle p-5">
                         <FairwayTaskTemplateList

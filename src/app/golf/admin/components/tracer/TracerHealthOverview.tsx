@@ -96,7 +96,7 @@ function ActivityRow({ event }: { event: TracerActivityEvent }) {
 
   return (
     <div className={cn(
-      'flex items-start gap-2.5 sm:gap-3 px-3 sm:px-5 py-3 hover:bg-white/40 transition-colors',
+      'flex items-start gap-2.5 sm:gap-3 px-3 sm:px-5 py-3 hover:bg-cream-50/40 transition-colors',
       isStuck && 'bg-red-50/30'
     )}>
       {/* Icon */}
@@ -132,7 +132,7 @@ function ActivityRow({ event }: { event: TracerActivityEvent }) {
                     event.score_to_par > 0
                       ? 'text-red-500'
                       : event.score_to_par < 0
-                        ? 'text-green-600'
+                        ? 'text-primary-600'
                         : 'text-warm-400'
                   )}
                 >
@@ -265,7 +265,7 @@ export default function TracerHealthOverview({
         animate={{ opacity: 1, y: 0 }}
         transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, delay: 0.15 })}
         className={cn(
-          'bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl',
+          'glass-standard rounded-2xl',
           'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
           'overflow-hidden'
         )}

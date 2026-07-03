@@ -25,6 +25,7 @@ import { Calendar, Users, Trophy, Globe, Sparkles } from 'lucide-react';
 import { type FeedType } from './CalendarFeedManager';
 import '@/styles/calendar-tokens.css';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface CreateFeedSectionProps {
   onCreate: (type: FeedType, name: string) => Promise<void>;
@@ -209,7 +210,7 @@ export function CreateFeedSection({
           <label htmlFor="feed-name" className="block text-sm font-medium text-warm-700 mb-2">
             Feed Name
           </label>
-          <input
+          <Input
             id="feed-name"
             type="text"
             value={feedName}
@@ -222,10 +223,6 @@ export function CreateFeedSection({
             autoCapitalize="words"
             autoCorrect="on"
             enterKeyHint="done"
-            className="w-full min-h-[48px] px-4 py-2.5 rounded-lg border border-warm-200 text-base lg:text-sm
-                     focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30
-                     text-warm-900 placeholder:text-warm-400 transition-colors
-                     disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <p className="text-xs text-warm-500 mt-1.5">
             This name will help you identify the feed in your calendar app
@@ -260,7 +257,7 @@ export function CreateFeedSection({
           onClick={onCancel}
           disabled={loading}
           className="px-4 py-2.5 rounded-lg font-medium text-sm
-                   bg-white text-warm-700 border border-warm-200
+                   bg-cream-50 text-warm-700 border border-warm-200
                    hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300
                    disabled:opacity-50 disabled:cursor-not-allowed
                    transition-colors"

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { REMINDER_PRESETS, ReminderType, ReminderPreset } from '@/lib/types/golf';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface ReminderPickerProps {
   dueDate?: string;
@@ -159,7 +160,7 @@ export function ReminderPicker({
         >
           <span
             className={cn(
-              'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform',
+              'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-cream-50 shadow-lg ring-0 transition-transform',
               isEnabled ? 'translate-x-4' : 'translate-x-0'
             )}
           />
@@ -191,7 +192,7 @@ export function ReminderPicker({
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedPreset === preset.value
                       ? 'bg-primary-50 text-primary-700 border-primary-200'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
+                      : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
                   )}
                 >
                   {preset.label}
@@ -207,26 +208,24 @@ export function ReminderPicker({
                 <label htmlFor={`${uid}-custom-date`} className="block text-xs font-medium text-warm-600 mb-1">
                   Date
                 </label>
-                <input
+                <Input
                   id={`${uid}-custom-date`}
                   type="date"
                   value={customDate}
                   onChange={(e) => handleCustomChange(e.target.value, customTime)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
               <div>
                 <label htmlFor={`${uid}-custom-time`} className="block text-xs font-medium text-warm-600 mb-1">
                   Time
                 </label>
-                <input
+                <Input
                   id={`${uid}-custom-time`}
                   type="time"
                   value={customTime}
                   onChange={(e) => handleCustomChange(customDate, e.target.value)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -255,7 +254,7 @@ export function ReminderPicker({
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedType === type.value
                       ? 'bg-primary-50 text-primary-700 border-primary-200'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
+                      : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
                   )}
                 >
                   {type.label}

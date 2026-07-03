@@ -217,7 +217,7 @@ function PlayerCardGridComponent({
 function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
   if (variant === 'compact') {
     return (
-      <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-warm-100 animate-pulse">
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-cream-50 border border-warm-100 animate-pulse">
         <div className="w-10 h-10 rounded-full bg-warm-200" />
         <div className="flex-1">
           <div className="h-4 bg-warm-200 rounded w-32 mb-1.5" />
@@ -229,7 +229,7 @@ function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
 
   if (variant === 'featured') {
     return (
-      <div className="rounded-2xl bg-white border border-warm-100 overflow-hidden animate-pulse">
+      <div className="rounded-2xl bg-cream-50 border border-warm-100 overflow-hidden animate-pulse">
         <div className="h-32 bg-warm-200" />
         <div className="p-5 pt-0">
           <div className="-mt-10 mb-3">
@@ -253,7 +253,7 @@ function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
 
   // Default skeleton
   return (
-    <div className="rounded-2xl bg-white border border-warm-100 p-5 animate-pulse">
+    <div className="rounded-2xl bg-cream-50 border border-warm-100 p-5 animate-pulse">
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 rounded-full bg-warm-200" />
         <div className="flex-1">

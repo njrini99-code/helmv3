@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { m, LazyMotion, domAnimation, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
@@ -53,24 +54,18 @@ function EmailCapture() {
   }
 
   return (
-    <div
-      className="rounded-2xl border border-white/[0.15] p-5 sm:p-6"
-      style={{
-        background: 'rgba(255,255,255,0.07)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-      }}
-    >
+    <div className="glass-panel p-5 sm:p-6">
       <p className="text-white/80 text-sm font-medium mb-3">Request a demo — see Helm in action</p>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-        <input
+        <Input
           type="email"
+          variant="glass"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="coach@university.edu"
           required
           disabled={loading}
-          className="px-5 py-3.5 rounded-xl bg-white/[0.1] border border-white/[0.18] text-white placeholder:text-white/40 focus:outline-none focus:border-primary-500/50 focus:bg-white/[0.14] focus:ring-1 focus:ring-primary-500/20 transition-[background-color,border-color,box-shadow] duration-150 disabled:opacity-50 text-sm w-full sm:w-72"
+          className="px-5 py-3.5 rounded-xl bg-[rgba(255,255,255,0.1)] border-white/[0.18] text-white placeholder:text-white/40 focus:border-primary-500/50 focus:bg-[rgba(255,255,255,0.14)] focus:ring-1 focus:ring-primary-500/20 transition-[background-color,border-color,box-shadow] duration-150 disabled:opacity-50 text-sm w-full sm:w-72"
         />
         <Button variant="primary"
           type="submit"
@@ -287,7 +282,7 @@ export function Hero() {
                       <span className="text-white/20 text-eyebrow ml-1">&#x2715;</span>
                     </div>
                     {/* New tab button */}
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center text-white/15 hover:bg-white/[0.04] text-xs">+</div>
+                    <div className="w-6 h-6 rounded-md flex items-center justify-center text-white/15 hover:bg-[rgba(255,255,255,0.04)] text-xs">+</div>
                   </div>
                 </div>
 

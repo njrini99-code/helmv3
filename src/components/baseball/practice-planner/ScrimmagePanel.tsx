@@ -23,6 +23,9 @@ import { Swords, Plus, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   getTeamScrimmages,
   saveScrimmage,
@@ -195,43 +198,27 @@ export function ScrimmagePanel({ practiceId, roster }: ScrimmagePanelProps) {
       {editing && (
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-warm-600">Scrimmage title</span>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-lg border border-warm-200 bg-cream-50 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-warm-600">Mode</span>
-              <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as BaseballScrimmageMode)}
-                className="w-full rounded-lg border border-warm-200 bg-cream-50 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-              >
-                {MODE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Input
+              type="text"
+              label="Scrimmage title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <Select
+              label="Mode"
+              value={mode}
+              onChange={(v) => setMode(v as BaseballScrimmageMode)}
+              options={MODE_OPTIONS}
+            />
           </div>
 
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-warm-600">
-              Coach notes (optional)
-            </span>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              placeholder="Goals for this scrimmage, matchups to watch, focus areas."
-              className="w-full resize-none rounded-lg border border-warm-200 bg-cream-50 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
-            />
-          </label>
+          <Textarea
+            label="Coach notes (optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Goals for this scrimmage, matchups to watch, focus areas."
+          />
 
           <ScrimmageLineupBuilder
             mode={mode}
@@ -279,7 +266,7 @@ export function ScrimmagePanel({ practiceId, roster }: ScrimmagePanelProps) {
                 return (
                   <li
                     key={s.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warm-200 bg-white/85 px-3 py-2"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warm-200 bg-cream-50 px-3 py-2"
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">

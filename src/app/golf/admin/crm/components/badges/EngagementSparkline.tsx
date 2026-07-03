@@ -66,7 +66,7 @@ export function EngagementSparkline({
         width={clicksW}
         height={barH}
         rx="1"
-        className="fill-emerald-500"
+        className="fill-primary-500"
       />
     </svg>
   );

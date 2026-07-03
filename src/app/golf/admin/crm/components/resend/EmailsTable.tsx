@@ -16,6 +16,8 @@ import type {
 } from '@/app/golf/actions/resend-activity';
 import { getEmailsList } from '@/app/golf/actions/resend-activity';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import {
   deriveStatus,
   STATUS_CONFIG,
@@ -107,12 +109,12 @@ export function EmailsTable({
               size={14}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none"
             />
-            <input
+            <Input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search subject, sender, or recipient..."
-              className="w-full pl-9 pr-9 py-2 text-sm bg-white/60 border border-warm-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 placeholder:text-warm-400"
+              className="w-full pl-9 pr-9 py-2 text-sm bg-cream-50 border border-warm-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 placeholder:text-warm-400 min-h-0"
             />
             {search && (
               <IconButton variant="default"
@@ -125,17 +127,12 @@ export function EmailsTable({
             )}
           </div>
 
-          <select
+          <Select
             value={source}
-            onChange={(e) => setSource(e.target.value as SourceFilter)}
-            className="text-sm bg-white/60 border border-warm-200/60 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
-          >
-            {SOURCE_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setSource(v as SourceFilter)}
+            options={SOURCE_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
+            className="text-sm"
+          />
 
           <span className="text-xs text-warm-500 tabular-nums ml-auto">
             {count.toLocaleString()} email{count === 1 ? '' : 's'}
@@ -164,7 +161,7 @@ export function EmailsTable({
       {/* Body */}
       <div className="relative">
         {isPending && rows.length > 0 && (
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-10 flex items-start justify-center pt-8 pointer-events-none">
+          <div className="absolute inset-0 glass-subtle z-10 flex items-start justify-center pt-8 pointer-events-none">
             <div className="h-1 w-16 bg-primary-500 rounded-full animate-pulse" />
           </div>
         )}
@@ -204,7 +201,7 @@ export function EmailsTable({
                         'group cursor-pointer transition-colors',
                         isSelected
                           ? 'bg-primary-50/60'
-                          : 'hover:bg-white/70'
+                          : 'hover:bg-cream-100'
                       )}
                       onClick={() => onSelectEmail?.(row.resend_message_id)}
                     >

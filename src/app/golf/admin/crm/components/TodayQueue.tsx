@@ -29,11 +29,11 @@ import {
   IconMaximize,
   IconMessageSquare,
   IconCheckCircle2,
-  IconChevronDown,
   IconCalendar,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/select';
 import {
   type Coach,
   type Division,
@@ -250,14 +250,15 @@ export function TodayQueue({
           return (
             <li
               key={coach.id}
-              className="rounded-2xl glass-standard p-3 transition-colors hover:bg-white/80"
+              className="rounded-2xl glass-standard p-3 transition-colors hover:bg-cream-100"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                 {/* Rank + identity */}
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => onCoachClick(coach)}
-                  className="group flex flex-1 items-start gap-3 text-left"
+                  className="group flex flex-1 items-start justify-start gap-3 rounded-none px-0 py-0 text-left min-h-0"
                 >
                   <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-warm-100 text-xs font-bold tabular-nums text-warm-600">
                     {idx + 1}
@@ -269,14 +270,14 @@ export function TodayQueue({
                       </span>
                       <span
                         className={cn(
-                          'inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1',
+                          'inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-caption font-semibold uppercase tracking-wide ring-1',
                           chip,
                         )}
                       >
                         {div || '—'}
                       </span>
                       {coach.assigned_to && (
-                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700 ring-1 ring-primary-200">
+                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-700 ring-1 ring-primary-200">
                           <IconUser size={11} />
                           {coach.assigned_to}
                         </span>
@@ -286,11 +287,11 @@ export function TodayQueue({
                       {coach.school}
                       {coach.title ? ` · ${coach.title}` : ''}
                     </span>
-                    <span className="mt-0.5 block truncate text-[11px] text-warm-400">
+                    <span className="mt-0.5 block truncate text-caption text-warm-400">
                       {fitReason(coach)}
                     </span>
                   </span>
-                </button>
+                </Button>
 
                 {/* Quick actions */}
                 <div className="flex flex-wrap items-center gap-1.5 sm:flex-shrink-0">
@@ -339,7 +340,7 @@ export function TodayQueue({
                         disabled
                         aria-label={`Open Gmail for ${coach.name}`}
                         title="Arm a Gmail template first"
-                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium bg-white/60 text-warm-400"
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium glass-subtle text-warm-400"
                       >
                         <IconMail size={14} /> Gmail
                       </Button>
@@ -351,7 +352,7 @@ export function TodayQueue({
                     onClick={() => onLogTouch(coach)}
                     aria-label={`Log a touch for ${coach.name}`}
                     title="Log touch"
-                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-white/60 px-3 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl glass-subtle px-3 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
                   >
                     <IconMessageSquare size={14} /> Log touch
                   </Button>
@@ -362,7 +363,7 @@ export function TodayQueue({
                         aria-hidden="true"
                         className="pointer-events-none absolute left-2.5 text-warm-400"
                       />
-                      <select
+                      <NativeSelect
                         aria-label={`Assign ${coach.name}`}
                         value={coach.assigned_to ?? ''}
                         onChange={(e) =>
@@ -371,7 +372,7 @@ export function TodayQueue({
                             e.target.value ? (e.target.value as CrmAssignee) : null,
                           )
                         }
-                        className="min-h-[44px] cursor-pointer appearance-none rounded-xl border border-warm-200/60 bg-white/60 pl-7 pr-7 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                        className="min-h-[44px] cursor-pointer rounded-xl border-warm-200/60 glass-subtle pl-7 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-cream-100 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                       >
                         <option value="">Unassigned</option>
                         {CRM_ASSIGNEES.map((a) => (
@@ -379,12 +380,7 @@ export function TodayQueue({
                             {a}
                           </option>
                         ))}
-                      </select>
-                      <IconChevronDown
-                        size={13}
-                        aria-hidden="true"
-                        className="pointer-events-none absolute right-2 text-warm-400"
-                      />
+                      </NativeSelect>
                     </div>
                   )}
                   <Button
@@ -393,7 +389,7 @@ export function TodayQueue({
                     onClick={() => onCoachClick(coach)}
                     aria-label={`Open ${coach.name} details`}
                     title="Open details"
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-white/60 px-2.5 py-1.5 text-warm-500 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl glass-subtle px-2.5 py-1.5 text-warm-500 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
                   >
                     <IconMaximize size={14} />
                   </Button>

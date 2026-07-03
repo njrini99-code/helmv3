@@ -20,10 +20,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { FeedCard, type CalendarFeed } from './FeedCard';
 import { CreateFeedSection } from './CreateFeedSection';
-import { Calendar, Plus, Search, Filter } from 'lucide-react';
+import { Calendar, Plus, Search } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import '@/styles/calendar-tokens.css';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, type SelectOption } from '@/components/ui/select';
 
 interface CalendarFeedManagerProps {
   feeds: CalendarFeed[];
@@ -92,8 +94,16 @@ export function CalendarFeedManager({
     }
   }
 
+  const filterOptions: SelectOption[] = [
+    { value: 'all', label: 'All Types' },
+    ...(allowedTypeList.includes('team') ? [{ value: 'team', label: 'Team Events' }] : []),
+    ...(allowedTypeList.includes('personal') ? [{ value: 'personal', label: 'Personal Events' }] : []),
+    ...(allowedTypeList.includes('tournament') ? [{ value: 'tournament', label: 'Tournaments' }] : []),
+    ...(allowedTypeList.includes('all_events') ? [{ value: 'all_events', label: 'All Events' }] : []),
+  ];
+
   return (
-    <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
+    <div className={cn('bg-cream-50 rounded-2xl border border-warm-200 shadow-sm', className)}>
       {/* Header */}
       <div className="p-6 border-b border-warm-200">
         <div className="flex items-start justify-between gap-4 mb-4">
@@ -124,44 +134,27 @@ export function CalendarFeedManager({
         {feeds.length > 0 && (
           <div className="flex items-center gap-3">
             {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
-              <input
+            <div className="flex-1">
+              <Input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search feeds..."
                 aria-label="Search feeds"
-                inputMode="search"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                enterKeyHint="search"
-                className="w-full min-h-[44px] pl-9 pr-4 py-2 rounded-lg border border-warm-200 text-base lg:text-sm
-                         focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30
-                         placeholder:text-warm-400 transition-colors"
+                leftIcon={<Search className="w-4 h-4" />}
+                className="min-h-[44px] py-2"
               />
             </div>
 
             {/* Filter dropdown */}
             {allowedTypeList.length > 1 && (
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 pointer-events-none" />
-                <select
+              <div className="w-48">
+                <Select
+                  options={filterOptions}
                   value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as FeedType | 'all')}
-                  aria-label="Filter by feed type"
-                  className="pl-9 pr-10 py-2 min-h-[44px] rounded-lg border border-warm-200 text-base lg:text-sm font-medium
-                           bg-white text-warm-700 cursor-pointer
-                           hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30
-                           focus:border-primary-500 appearance-none"
-                >
-                  <option value="all">All Types</option>
-                  {allowedTypeList.includes('team') && <option value="team">Team Events</option>}
-                  {allowedTypeList.includes('personal') && <option value="personal">Personal Events</option>}
-                  {allowedTypeList.includes('tournament') && <option value="tournament">Tournaments</option>}
-                  {allowedTypeList.includes('all_events') && <option value="all_events">All Events</option>}
-                </select>
+                  onChange={(value) => setFilterType(value as FeedType | 'all')}
+                  className="min-h-[44px] font-medium"
+                />
               </div>
             )}
           </div>

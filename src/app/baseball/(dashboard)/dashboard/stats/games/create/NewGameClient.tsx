@@ -61,7 +61,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
         <p className="text-warm-500 mt-1 text-sm">{teamName}</p>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm">
+      <div className="glass-standard rounded-2xl p-6 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Game type */}
           <div>
@@ -77,7 +77,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                       ? t === 'scrimmage'
                         ? 'bg-purple-600 text-white border-purple-600'
                         : 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
+                      : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300'
                   }`}
                 >
                   {t}
@@ -127,7 +127,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                   className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all capitalize ${
                     homeAway === ha
                       ? 'bg-warm-800 text-white border-warm-800'
-                      : 'bg-white text-warm-500 border-warm-200 hover:border-warm-300'
+                      : 'bg-cream-50 text-warm-500 border-warm-200 hover:border-warm-300'
                   }`}
                 >
                   {ha}

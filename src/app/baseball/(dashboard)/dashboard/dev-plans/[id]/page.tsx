@@ -113,7 +113,7 @@ export default function DevPlanDetailPage() {
       <>
         <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
         <div className="p-6 lg:p-8">
-          <div className="rounded-xl border border-warm-200 bg-white p-6 text-sm text-warm-600">
+          <div className="rounded-xl border border-warm-200 bg-cream-50 p-6 text-sm text-warm-600">
             This development plan could not be found.
           </div>
         </div>

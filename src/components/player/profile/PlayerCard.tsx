@@ -124,7 +124,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
 
       {/* Stats Grid */}
       {showPhysicals && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 border-b border-warm-200 bg-white">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 border-b border-warm-200 bg-cream-50">
           <div>
             <p className="text-label font-medium uppercase tracking-wider text-warm-400 mb-1">
               Height

@@ -10,8 +10,29 @@
  * Tailwind config file, and this lint-rule directory itself.
  */
 
-const ALLOWED_PATH = /(\/(components\/ui|mockups|eslint-rules)\/|tailwind\.config\.ts$|\.stories\.[jt]sx?$)/;
+const ALLOWED_PATH = /(\/(components\/ui|mockups|eslint-rules)\/|tailwind\.config\.ts$|\.stories\.[jt]sx?$|\.test\.[jt]sx?$)/;
 const BANNED = new Set(['input', 'select', 'textarea']);
+
+/**
+ * Input types the canonical <Input> wrapper cannot be: the wrapper's whole
+ * rationale (16px iOS zoom prevention, text focus ring, error-state shape)
+ * only applies to text-like inputs. Checkboxes/radios/ranges/files/colors
+ * have no ui wrapper — flagging them tells developers to do something
+ * impossible. If a Checkbox/RadioGroup/Slider/FilePicker wrapper lands in
+ * components/ui later, remove its type from this set to start enforcing it.
+ */
+const UNWRAPPABLE_INPUT_TYPES = new Set(['checkbox', 'radio', 'range', 'file', 'color', 'hidden']);
+
+function literalTypeAttr(node) {
+  for (const attr of node.attributes ?? []) {
+    if (attr.type !== 'JSXAttribute' || attr.name?.name !== 'type') continue;
+    if (attr.value?.type === 'Literal' && typeof attr.value.value === 'string') {
+      return attr.value.value;
+    }
+    return null; // dynamic type — can't prove it's unwrappable, keep flagging
+  }
+  return null;
+}
 
 export default {
   meta: {
@@ -34,7 +55,11 @@ export default {
         if (node.name?.type !== 'JSXIdentifier') return;
         const tag = node.name.name;
         if (!BANNED.has(tag)) return;
-        const wrapper = tag === 'input' ? 'Input' : tag === 'select' ? 'Select' : 'Textarea';
+        if (tag === 'input') {
+          const type = literalTypeAttr(node);
+          if (type && UNWRAPPABLE_INPUT_TYPES.has(type)) return;
+        }
+        const wrapper = tag === 'input' ? 'Input' : tag === 'select' ? 'Select (or NativeSelect)' : 'Textarea';
         context.report({ node, messageId: 'noRawInput', data: { tag, wrapper } });
       },
     };

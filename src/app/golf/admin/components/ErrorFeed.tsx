@@ -126,7 +126,7 @@ function CompactStat({ label, value, detail, tone = 'default' }: {
         ? 'border-red-100 bg-red-50/65'
         : tone === 'success'
           ? 'border-primary-100 bg-primary-50/65'
-          : 'border-white/35 bg-white/60'
+          : 'glass-standard'
     )}>
       <p className={cn(
         'text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] truncate',
@@ -168,7 +168,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
   if (!value) return null;
 
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 px-3 py-2 min-w-0 overflow-hidden">
+    <div className="glass-standard rounded-xl px-3 py-2 min-w-0 overflow-hidden">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className={cn(
         'mt-1 break-all text-xs leading-5 text-warm-800',
@@ -182,7 +182,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 
 function NarrativePanel({ label, body }: { label: string; body: string }) {
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
+    <div className="glass-standard rounded-xl p-3 min-w-0">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className="mt-1.5 text-sm leading-6 text-warm-700 break-words">{body}</p>
     </div>
@@ -441,7 +441,7 @@ export function ErrorFeed({ errorLogs }: Props) {
               ? 'border-primary-200 bg-primary-50 text-primary-700'
               : copyState?.target === 'feed' && copyState.status === 'error'
                 ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
+                : 'glass-standard text-warm-700 hover:bg-cream-100'
           )}
         >
           {copyState?.target === 'feed' && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
@@ -487,8 +487,8 @@ export function ErrorFeed({ errorLogs }: Props) {
               className={cn(
                 'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
                 queueTab === option.value
-                  ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
-                  : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
+                  ? 'border-warm-300 bg-cream-50 text-warm-900 shadow-sm'
+                  : 'glass-subtle text-warm-500 hover:bg-cream-100'
               )}
             >
               <span>{option.label}</span>
@@ -519,8 +519,8 @@ export function ErrorFeed({ errorLogs }: Props) {
               className={cn(
                 'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors',
                 feedMode === option.value
-                  ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
-                  : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
+                  ? 'border-warm-300 bg-cream-50 text-warm-900 shadow-sm'
+                  : 'glass-subtle text-warm-500 hover:bg-cream-100'
               )}
             >
               <span>{option.label}</span>
@@ -533,7 +533,7 @@ export function ErrorFeed({ errorLogs }: Props) {
       )}
 
       {visibleIncidents.length === 0 ? (
-        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-white/35 bg-white/55 px-6 py-8 text-center">
+        <div className="mt-4 flex flex-col items-center justify-center glass-subtle rounded-2xl px-6 py-8 text-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-50">
             <IconCheck size={20} className="text-primary-600" />
           </div>
@@ -556,7 +556,7 @@ export function ErrorFeed({ errorLogs }: Props) {
               <article
                 key={incident.id}
                 className={cn(
-                  'rounded-xl border bg-white/55 p-3 md:p-3.5',
+                  'rounded-xl border bg-cream-50 p-3 md:p-3.5',
                   severityStyle.border,
                   incident.status === 'open' && 'ring-1 ring-red-100'
                 )}
@@ -570,15 +570,15 @@ export function ErrorFeed({ errorLogs }: Props) {
                       <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', statusStyle.badge)}>
                         {statusStyle.label}
                       </span>
-                      <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
+                      <span className="glass-standard inline-flex items-center rounded-full px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
                         {incident.featureArea}
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
+                      <span className="glass-standard inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                         <IconLayers3 size={11} />
                         {incident.occurrences}
                       </span>
                       {incident.affectedUsers > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
+                        <span className="glass-standard inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                           <IconUser size={11} />
                           {incident.affectedUsers}
                         </span>
@@ -586,7 +586,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                     </div>
 
                     <div className="mt-2 flex items-start gap-3">
-                      <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/80', severityStyle.icon)}>
+                      <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-cream-50', severityStyle.icon)}>
                         <IconWarning size={16} />
                       </div>
                       <div className="min-w-0">
@@ -646,7 +646,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                           ? 'border-primary-200 bg-primary-50 text-primary-700'
                           : copyState?.target === incident.id && copyState.status === 'error'
                             ? 'border-red-200 bg-red-50 text-red-700'
-                            : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
+                            : 'glass-standard text-warm-700 hover:bg-cream-100'
                       )}
                     >
                       {copyState?.target === incident.id && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
@@ -659,7 +659,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                     <Button variant="ghost"
                       type="button"
                       onClick={() => setExpandedId(isExpanded ? null : incident.id)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
+                      className="glass-standard inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100"
                     >
                       {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
                       {isExpanded ? 'Hide' : 'Detail'}
@@ -681,7 +681,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                 {isExpanded && (
                   <div className="mt-3 space-y-3">
                     {incident.underlyingIncidents.length > 1 && (
-                      <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
+                      <div className="glass-standard rounded-xl p-3 min-w-0">
                         <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
                           Group occurrences ({incident.underlyingIncidents.length} variants · signature {incident.signature})
                         </p>
@@ -689,7 +689,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                           {incident.underlyingIncidents.slice(0, 5).map((underlying) => (
                             <li
                               key={underlying.id}
-                              className="flex items-start justify-between gap-2 rounded-lg border border-white/40 bg-white/55 px-2.5 py-1.5 text-xs"
+                              className="glass-subtle flex items-start justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs"
                             >
                               <div className="min-w-0">
                                 <p className="font-mono text-eyebrow text-warm-700 truncate">
@@ -748,7 +748,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                       <MetaItem label="Trace source" value={incident.source} mono />
                     </div>
 
-                    <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
+                    <div className="glass-standard rounded-xl p-3 min-w-0">
                       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
                       <p className="mt-1.5 break-all text-sm leading-6 text-warm-800">{incident.message}</p>
                     </div>
@@ -770,14 +770,14 @@ export function ErrorFeed({ errorLogs }: Props) {
                     )}
 
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                      <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
+                      <div className="glass-standard rounded-xl p-3 min-w-0">
                         <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
                         <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-eyebrow sm:text-xs leading-6 text-warm-700">
                           {incident.copySummary}
                         </pre>
                       </div>
 
-                      <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
+                      <div className="glass-standard rounded-xl p-3 min-w-0">
                         <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Stack trace</p>
                         {incident.stack ? (
                           <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-eyebrow sm:text-xs leading-6 text-warm-700">

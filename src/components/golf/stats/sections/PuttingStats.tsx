@@ -192,7 +192,7 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
               animate={{ opacity: 1, scale: 1 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 + idx * 0.04, duration: DURATION.short, ease: EASE_CINEMATIC })}
             >
-              <div className={`text-[17px] font-medium tracking-[-0.005em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
+              <div className={`text-body-lg font-medium tracking-[-0.005em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
               <div className="text-xs text-warm-500">{item.range}</div>
             </motion.div>
           ))}
@@ -242,7 +242,7 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
               animate={{ opacity: 1, scale: 1 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35 + idx * 0.04, duration: DURATION.short, ease: EASE_CINEMATIC })}
             >
-              <div className={`text-[20px] font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
+              <div className={`text-h3 font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
               <div className="text-xs text-warm-500">{item.label}</div>
             </motion.div>
           ))}
@@ -283,32 +283,32 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
                                       selectedBreak === 'straight' ? 'Straight' : 'Multiple Breaks'}
               </div>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-2">
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct0_3, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">{feetRangeLabel([0, 3], distancePref)}</div>
                 </div>
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct3_5, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">{feetRangeLabel([3, 5], distancePref)}</div>
                 </div>
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-yellow-600">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-yellow-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct5_10, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">{feetRangeLabel([5, 10], distancePref)}</div>
                 </div>
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-orange-600">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-orange-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct10_15, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">{feetRangeLabel([10, 15], distancePref)}</div>
                 </div>
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-red-600">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-red-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct15_20, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">{feetRangeLabel([15, 20], distancePref)}</div>
@@ -327,20 +327,20 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
             <div className="bg-warm-50 rounded-lg p-4">
               <div className="text-sm font-medium text-warm-700 mb-3">Miss Direction</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-700">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missShortPct, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">Short</div>
                 </div>
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-blue-700">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-blue-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missLowPct, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">Low</div>
                 </div>
-                <div className="text-center p-2 bg-white rounded">
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-purple-700">
+                <div className="text-center p-2 bg-cream-50 rounded">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-purple-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missHighPct, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">High</div>

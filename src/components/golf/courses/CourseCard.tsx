@@ -84,7 +84,7 @@ export function CourseCard({
           {/* Glass "go" affordance (top-right) — signals the whole card is tappable */}
           <span
             aria-hidden
-            className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md transition-[transform,background-color] [transition-duration:var(--fw-dur-fast)] group-hover:scale-110 group-hover:bg-white/30 motion-reduce:group-hover:scale-100"
+            className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full glass-prominent text-white ring-1 ring-white/25 transition-[transform,background-color] [transition-duration:var(--fw-dur-fast)] group-hover:scale-110 group-hover:bg-cream-50/40 motion-reduce:group-hover:scale-100"
           >
             <IconArrowRight size={16} aria-hidden />
           </span>
@@ -102,12 +102,12 @@ export function CourseCard({
             {(teeLabel || meta) && (
               <div className="mt-2.5 flex flex-wrap items-center gap-1.5 sm:mt-3">
                 {teeLabel && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-caption font-medium text-white ring-1 ring-white/15 backdrop-blur-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full glass-subtle px-2.5 py-1 text-caption font-medium text-white ring-1 ring-white/15">
                     <IconFlag size={11} aria-hidden /> {teeLabel}
                   </span>
                 )}
                 {meta && (
-                  <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-caption font-medium text-white/90 ring-1 ring-white/15 backdrop-blur-sm">
+                  <span className="inline-flex items-center rounded-full glass-subtle px-2.5 py-1 text-caption font-medium text-white/90 ring-1 ring-white/15">
                     {meta}
                   </span>
                 )}

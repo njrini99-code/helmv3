@@ -74,7 +74,7 @@ function EventsSkeleton() {
           <div className="h-4 w-40 bg-warm-200 rounded mb-3" />
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-warm-200 p-4">
+              <div key={i} className="bg-cream-50 rounded-xl border border-warm-200 p-4">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-xl bg-warm-200 flex-shrink-0" />
                   <div className="flex-1 space-y-2">
@@ -313,7 +313,7 @@ export default function EventsPage() {
       <>
         <Header title="Events" subtitle="Showcase coach access required" />
         <div className="p-6">
-          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
             <p className="text-warm-500">Please log in as a showcase coach to manage events.</p>
           </div>
         </div>
@@ -383,7 +383,7 @@ export default function EventsPage() {
           <EventsSkeleton />
         ) : filteredEvents.length === 0 ? (
           /* Honest empty state */
-          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
               <IconCalendar size={24} className="text-warm-400" />
             </div>
@@ -406,7 +406,7 @@ export default function EventsPage() {
                 <div className="space-y-3">
                   {dateEvents.map((event) => (
                     <div key={event.id}>
-                      <div className="bg-white rounded-xl border border-warm-200 p-4 hover:border-warm-300 hover:shadow-sm transition-all">
+                      <div className="bg-cream-50 rounded-xl border border-warm-200 p-4 hover:border-warm-300 hover:shadow-sm transition-all">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4">
                             <div
@@ -491,8 +491,8 @@ export default function EventsPage() {
           >
             {''}
           </Button>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-white">
+          <div className="relative glass-prominent rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-cream-50">
               <h2 className="text-lg font-semibold tracking-tight text-warm-900">
                 Create New Event
               </h2>

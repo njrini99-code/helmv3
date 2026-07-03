@@ -234,7 +234,7 @@ export function TodaysMissionCard({
                     'border',
                     isChecked
                       ? 'bg-primary-50/80 border-primary-200/60 text-warm-500'
-                      : 'bg-cream-100/75 border-warm-200/55 hover:bg-white hover:border-primary-100 text-warm-800',
+                      : 'bg-cream-100/75 border-warm-200/55 hover:bg-cream-100 hover:border-primary-100 text-warm-800',
                   )}
                 >
                   <span

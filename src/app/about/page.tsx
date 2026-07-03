@@ -330,7 +330,7 @@ export default function AboutPage() {
               <Link href="/golf/signup">
                 <Button variant="ghost"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5
-                           bg-white text-warm-900 font-semibold rounded-xl
+                           bg-cream-50 text-warm-900 font-semibold rounded-xl
                            hover:bg-warm-50 active:scale-[0.98] transition-all text-sm
                            shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                 >
@@ -344,7 +344,7 @@ export default function AboutPage() {
                 <Button variant="ghost"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5
                            text-white font-medium rounded-xl border border-white/20
-                           hover:bg-white/10 active:scale-[0.98] transition-all text-sm"
+                           hover:bg-cream-50/10 active:scale-[0.98] transition-all text-sm"
                 >
                   View Products
                 </Button>

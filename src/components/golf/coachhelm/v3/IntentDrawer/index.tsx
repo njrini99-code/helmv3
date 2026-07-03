@@ -17,6 +17,7 @@ import { useState, useTransition } from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { setIntent } from '@/app/golf/actions/v3/intent';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/input';
 import {
   NARRATIVE_GOAL_PRESENTATION,
   type NarrativeGoal,
@@ -122,7 +123,7 @@ export function IntentDrawer({
                     className={`text-xs px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1.5 ${
                       selected
                         ? cfg.pillClass + ' ring-2 ring-offset-1 ring-primary-300'
-                        : 'bg-white text-warm-700 border-warm-200 hover:bg-warm-50'
+                        : 'bg-cream-50 text-warm-700 border-warm-200 hover:bg-warm-50'
                     }`}
                     data-testid={`intent-goal-${g}`}
                     aria-pressed={selected}
@@ -144,7 +145,7 @@ export function IntentDrawer({
                   className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors ${
                     alertPosture === p.value
                       ? 'bg-primary-50 border-primary-300'
-                      : 'bg-white border-warm-200 hover:bg-warm-50'
+                      : 'bg-cream-50 border-warm-200 hover:bg-warm-50'
                   }`}
                 >
                   <span>
@@ -168,13 +169,13 @@ export function IntentDrawer({
             <label htmlFor="intent-notes" className="block text-xs font-medium text-warm-700 mb-2">
               Notes (optional)
             </label>
-            <textarea
+            <Textarea
               id="intent-notes"
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="What's the story this season — e.g. ‘rebuilding stroke after injury'."
-              className="w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm focus:border-primary-600 focus:outline-none resize-none"
+              className="w-full rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm focus:border-primary-600 focus:outline-none resize-none"
               data-testid="intent-notes"
             />
 

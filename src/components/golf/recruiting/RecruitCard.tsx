@@ -86,19 +86,19 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
           {(recruit.email || recruit.phone || recruit.notes) && (
             <div className="mt-4 pt-4 border-t border-warm-200/35 space-y-2">
               {recruit.email && (
-                <p className="flex items-center gap-2 text-[12.5px] text-warm-600 truncate">
+                <p className="flex items-center gap-2 text-caption text-warm-600 truncate">
                   <Mail className="w-3.5 h-3.5 text-warm-400 flex-shrink-0" />
                   <span className="truncate">{recruit.email}</span>
                 </p>
               )}
               {recruit.phone && (
-                <p className="flex items-center gap-2 text-[12.5px] text-warm-600 tabular-nums">
+                <p className="flex items-center gap-2 text-caption text-warm-600 tabular-nums">
                   <Phone className="w-3.5 h-3.5 text-warm-400 flex-shrink-0" />
                   {recruit.phone}
                 </p>
               )}
               {recruit.notes && (
-                <p className="text-[12.5px] text-warm-500 line-clamp-2 leading-relaxed">
+                <p className="text-caption text-warm-500 line-clamp-2 leading-relaxed">
                   {recruit.notes}
                 </p>
               )}

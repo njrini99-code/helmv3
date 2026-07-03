@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 
 /**
  * GolfHelm Feature Mockups - Varied visual treatments
@@ -15,7 +17,7 @@ export function LiveRoundMockup() {
   return (
     <div className="relative mx-auto w-[280px]">
       {/* Phone frame — 19.5:9 aspect ratio */}
-      <div className="relative bg-warm-900 rounded-[40px] p-[10px] shadow-2xl ring-1 ring-white/10">
+      <div className="relative bg-warm-900 rounded-3xl p-[10px] shadow-2xl ring-1 ring-white/10">
         {/* Side buttons */}
         <div className="absolute -right-[2px] top-24 w-[3px] h-7 bg-warm-700 rounded-r-sm" />
         <div className="absolute -left-[2px] top-20 w-[3px] h-5 bg-warm-700 rounded-l-sm" />
@@ -23,7 +25,7 @@ export function LiveRoundMockup() {
         <div className="absolute -left-[2px] top-46 w-[3px] h-10 bg-warm-700 rounded-l-sm" />
 
         {/* Screen — fixed height for realistic phone proportions */}
-        <div className="bg-warm-50 rounded-[32px] overflow-hidden h-[572px] flex flex-col">
+        <div className="bg-warm-50 rounded-3xl overflow-hidden h-[572px] flex flex-col">
           {/* Dynamic Island + Status bar */}
           <div className="flex items-center justify-between px-6 pt-2.5 pb-1 bg-warm-900 shrink-0">
             <span className="text-eyebrow text-white/70 font-medium">9:41</span>
@@ -40,21 +42,21 @@ export function LiveRoundMockup() {
             <div className="flex justify-between items-center px-3 py-1.5 border-b border-warm-700">
               <span className="text-eyebrow font-semibold text-white/50 uppercase tracking-wide">← Prev</span>
               <div className="flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-eyebrow font-bold text-emerald-400 uppercase tracking-wide">Hole 7 of 18</span>
+                <span className="w-1 h-1 rounded-full bg-primary-400 animate-pulse" />
+                <span className="text-eyebrow font-bold text-primary-400 uppercase tracking-wide">Hole 7 of 18</span>
               </div>
               <span className="text-eyebrow font-semibold text-white/50 uppercase tracking-wide">Next →</span>
             </div>
             <div className="flex">
               {[
-                { hole: 5, par: 3, score: 2, color: 'text-emerald-400' },
+                { hole: 5, par: 3, score: 2, color: 'text-primary-400' },
                 { hole: 6, par: 5, score: 5, color: 'text-white' },
                 { hole: 7, par: 4, score: null, color: '', current: true },
                 { hole: 8, par: 3, score: null, color: '' },
               ].map((h) => (
-                <div key={h.hole} className={`flex-1 py-1.5 px-1 text-center border-r border-warm-700 ${h.current ? 'bg-emerald-600' : ''}`}>
+                <div key={h.hole} className={`flex-1 py-1.5 px-1 text-center border-r border-warm-700 ${h.current ? 'bg-primary-600' : ''}`}>
                   <div className={`text-eyebrow font-semibold ${h.current ? 'text-white' : 'text-warm-400'}`}>{h.hole}</div>
-                  <div className={`text-eyebrow ${h.current ? 'text-emerald-100' : 'text-warm-500'}`}>P{h.par}</div>
+                  <div className={`text-eyebrow ${h.current ? 'text-primary-100' : 'text-warm-500'}`}>P{h.par}</div>
                   <div className={`text-xs font-bold ${h.current ? 'text-white' : h.score !== null ? h.color : 'text-warm-600'}`}>{h.score ?? '-'}</div>
                 </div>
               ))}
@@ -69,12 +71,12 @@ export function LiveRoundMockup() {
           {/* Scrollable content area */}
           <div className="flex-1 overflow-hidden">
             {/* Shot Pills */}
-            <div className="bg-white py-2 px-3 border-b border-warm-100 shadow-sm">
+            <div className="bg-cream-50 py-2 px-3 border-b border-warm-100 shadow-sm">
               <div className="flex items-center gap-1.5">
                 <span className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wider shrink-0">Shot</span>
                 <div className="flex gap-1">
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">1</div>
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-emerald-600 text-white shadow-sm">2</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-primary-50 text-primary-700 ring-1 ring-primary-200">1</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-primary-600 text-white shadow-sm">2</div>
                   <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">3</div>
                   <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">4</div>
                   <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">5</div>
@@ -85,29 +87,29 @@ export function LiveRoundMockup() {
 
             {/* Hole Header Card */}
             <div className="mx-2.5 mt-2.5">
-              <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl p-3.5 text-white shadow-md">
+              <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl p-3.5 text-white shadow-md">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-bold">Hole 7</h3>
-                      <span className="px-1.5 py-0.5 bg-white/15 rounded text-eyebrow font-semibold uppercase">Par 4</span>
+                      <span className="px-1.5 py-0.5 bg-cream-50/15 rounded text-eyebrow font-semibold uppercase">Par 4</span>
                     </div>
-                    <p className="text-emerald-100 text-eyebrow mt-0.5">Shot 2 · Approach · <span className="font-medium">Fairway</span></p>
+                    <p className="text-primary-100 text-eyebrow mt-0.5">Shot 2 · Approach · <span className="font-medium">Fairway</span></p>
                   </div>
                   <div className="text-right">
-                    <p className="text-emerald-200 text-eyebrow font-semibold uppercase tracking-wider">Distance</p>
-                    <p className="text-xl font-bold">156<span className="text-xs ml-0.5 text-emerald-100">YDS</span></p>
+                    <p className="text-primary-200 text-eyebrow font-semibold uppercase tracking-wider">Distance</p>
+                    <p className="text-xl font-bold">156<span className="text-xs ml-0.5 text-primary-100">YDS</span></p>
                   </div>
                 </div>
-                <div className="mt-2.5 bg-white/10 rounded-lg p-2.5">
+                <div className="mt-2.5 bg-cream-50/10 rounded-lg p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-eyebrow text-emerald-100 font-semibold uppercase">Progress</span>
-                    <span className="text-eyebrow text-emerald-100 font-bold">60%</span>
+                    <span className="text-eyebrow text-primary-100 font-semibold uppercase">Progress</span>
+                    <span className="text-eyebrow text-primary-100 font-bold">60%</span>
                   </div>
-                  <div className="h-1 bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-white rounded-full" style={{ width: '60%' }} />
+                  <div className="h-1 bg-cream-50/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-cream-50 rounded-full" style={{ width: '60%' }} />
                   </div>
-                  <div className="flex justify-between mt-1 text-eyebrow text-emerald-100">
+                  <div className="flex justify-between mt-1 text-eyebrow text-primary-100">
                     <span>Tee</span>
                     <span className="font-bold">156 yds left</span>
                     <span>Hole</span>
@@ -122,7 +124,7 @@ export function LiveRoundMockup() {
                 <p className="text-eyebrow font-bold text-warm-500 uppercase tracking-wider mb-2">Shot Result</p>
                 <div className="grid grid-cols-3 gap-1">
                   {['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'].map((r) => (
-                    <Button variant="primary" key={r} className={`py-1.5 rounded-lg text-eyebrow font-semibold ${r === 'Green' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-warm-100 text-warm-600'}`}>{r}</Button>
+                    <Button variant="primary" key={r} className={`py-1.5 rounded-lg text-eyebrow font-semibold ${r === 'Green' ? 'bg-primary-600 text-white shadow-sm' : 'bg-warm-100 text-warm-600'}`}>{r}</Button>
                   ))}
                 </div>
               </div>
@@ -130,7 +132,7 @@ export function LiveRoundMockup() {
 
             {/* Distance */}
             <div className="mx-2.5 mt-2">
-              <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-3 border-2 border-emerald-200">
+              <div className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-3 border-2 border-primary-200">
                 <p className="text-eyebrow font-bold text-warm-500 uppercase tracking-wider mb-1.5">Distance to Hole</p>
                 <div className="flex items-baseline justify-center gap-0.5">
                   <span className="text-2xl font-bold text-warm-900">12</span>
@@ -138,7 +140,7 @@ export function LiveRoundMockup() {
                 </div>
                 <div className="flex gap-1 mt-2">
                   {['5ft', '10ft', '15ft', '20ft', '30ft'].map((d) => (
-                    <Button variant="primary" key={d} className={`flex-1 py-1 rounded text-eyebrow font-semibold ${d === '10ft' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-warm-100 text-warm-500'}`}>{d}</Button>
+                    <Button variant="primary" key={d} className={`flex-1 py-1 rounded text-eyebrow font-semibold ${d === '10ft' ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300' : 'bg-warm-100 text-warm-500'}`}>{d}</Button>
                   ))}
                 </div>
               </div>
@@ -146,7 +148,7 @@ export function LiveRoundMockup() {
 
             {/* Next Shot Button */}
             <div className="mx-2.5 mt-2">
-              <Button variant="primary" className="w-full py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl shadow-sm">Next Shot →</Button>
+              <Button variant="primary" className="w-full py-2.5 bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-sm">Next Shot →</Button>
             </div>
           </div>
 
@@ -158,7 +160,7 @@ export function LiveRoundMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-16 bg-emerald-500/15 blur-3xl rounded-full" />
+      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-16 bg-primary-500/15 blur-3xl rounded-full" />
     </div>
   );
 }
@@ -179,18 +181,18 @@ export function QualifierMockup() {
   return (
     <div className="relative w-full max-w-sm mx-auto">
       {/* Header card — dark premium */}
-      <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-900 rounded-2xl p-6 mb-5 shadow-2xl ring-1 ring-emerald-700/50 overflow-hidden relative">
+      <div className="bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 rounded-2xl p-6 mb-5 shadow-2xl ring-1 ring-primary-700/50 overflow-hidden relative">
         {/* Subtle pattern overlay */}
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
 
         <div className="relative flex items-start justify-between">
           <div>
-            <p className="text-emerald-300/80 text-xs font-semibold uppercase tracking-widest">Spring Qualifier</p>
+            <p className="text-primary-300/80 text-xs font-semibold uppercase tracking-widest">Spring Qualifier</p>
             <h3 className="text-2xl font-bold text-white mt-1.5 tracking-tight">Round 2 of 3</h3>
-            <p className="text-emerald-200/60 text-sm mt-1">Augusta National GC</p>
+            <p className="text-primary-200/60 text-sm mt-1">Augusta National GC</p>
           </div>
-          <div className="w-12 h-12 bg-emerald-700/40 backdrop-blur-sm rounded-xl flex items-center justify-center ring-1 ring-emerald-500/20">
-            <svg className="w-6 h-6 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="w-12 h-12 bg-primary-700/40 backdrop-blur-sm rounded-xl flex items-center justify-center ring-1 ring-primary-500/20">
+            <svg className="w-6 h-6 text-primary-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
           </div>
@@ -203,8 +205,8 @@ export function QualifierMockup() {
             { label: 'Players', value: '12' },
             { label: 'Spots', value: '5' },
           ].map((s) => (
-            <div key={s.label} className="flex-1 bg-emerald-700/30 backdrop-blur-sm rounded-lg px-3 py-2 ring-1 ring-emerald-500/10">
-              <p className="text-emerald-300/60 text-eyebrow font-semibold uppercase tracking-wide">{s.label}</p>
+            <div key={s.label} className="flex-1 bg-primary-700/30 backdrop-blur-sm rounded-lg px-3 py-2 ring-1 ring-primary-500/10">
+              <p className="text-primary-300/60 text-eyebrow font-semibold uppercase tracking-wide">{s.label}</p>
               <p className="text-white text-sm font-bold mt-0.5">{s.value}</p>
             </div>
           ))}
@@ -216,8 +218,8 @@ export function QualifierMockup() {
         <div className="px-5 py-3.5 border-b border-warm-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-bold text-warm-900 tracking-tight">Leaderboard</span>
-            <span className="flex items-center gap-1 text-eyebrow font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ring-1 ring-emerald-200/50">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="flex items-center gap-1 text-eyebrow font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full ring-1 ring-primary-200/50">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
               Live
             </span>
           </div>
@@ -235,7 +237,7 @@ export function QualifierMockup() {
                 <div className={cn(
                   "flex items-center gap-3 px-5 py-3 transition-colors",
                   isFirst ? "bg-gradient-to-r from-amber-50/80 to-yellow-50/40" :
-                  isQualifying ? "bg-emerald-50/30" :
+                  isQualifying ? "bg-primary-50/30" :
                   "bg-warm-50/40"
                 )}>
                   {/* Rank */}
@@ -244,7 +246,7 @@ export function QualifierMockup() {
                     isFirst ? "bg-gradient-to-br from-amber-400 to-yellow-500 text-white shadow-sm shadow-amber-200" :
                     player.rank === 2 ? "bg-warm-200 text-warm-600" :
                     player.rank === 3 ? "bg-amber-100 text-amber-700" :
-                    isQualifying ? "bg-emerald-100 text-emerald-700" :
+                    isQualifying ? "bg-primary-100 text-primary-700" :
                     "bg-warm-100 text-warm-400"
                   )}>
                     {player.rank}
@@ -266,8 +268,8 @@ export function QualifierMockup() {
                   {/* Trend */}
                   <div className="shrink-0">
                     {player.trend === 'up' && (
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" /></svg>
+                      <span className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" /></svg>
                       </span>
                     )}
                     {player.trend === 'down' && (
@@ -286,7 +288,7 @@ export function QualifierMockup() {
                   <div className="text-right shrink-0 w-10">
                     <p className={cn(
                       "text-base font-bold tabular-nums",
-                      player.score < 0 ? "text-emerald-600" :
+                      player.score < 0 ? "text-primary-600" :
                       player.score === 0 ? "text-warm-600" :
                       "text-warm-400"
                     )}>
@@ -298,9 +300,9 @@ export function QualifierMockup() {
                 {/* Cutline */}
                 {isCutline && (
                   <div className="flex items-center gap-3 px-5 py-1.5">
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent" />
-                    <span className="text-eyebrow font-bold text-emerald-500 uppercase tracking-widest shrink-0">Cutline</span>
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent" />
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary-300 to-transparent" />
+                    <span className="text-eyebrow font-bold text-primary-500 uppercase tracking-widest shrink-0">Cutline</span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary-300 to-transparent" />
                   </div>
                 )}
               </div>
@@ -310,7 +312,7 @@ export function QualifierMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-primary-500/10 blur-2xl rounded-full" />
     </div>
   );
 }
@@ -319,18 +321,23 @@ export function QualifierMockup() {
 // 3. STATS DASHBOARD - Chart/Graph Style
 // ============================================
 export function StatsMockup() {
+  const [playerFilter, setPlayerFilter] = useState('all');
+
   return (
     <div className="relative w-full max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl border border-warm-200 overflow-hidden">
+      <div className="bg-cream-50 rounded-2xl shadow-xl border border-warm-200 overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-warm-100 flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-warm-900">Performance Trends</h3>
             <p className="text-xs text-warm-500">Last 30 days</p>
           </div>
-          <select className="text-xs bg-warm-100 border-0 rounded-lg px-3 py-1.5 text-warm-600">
-            <option>All Players</option>
-          </select>
+          <Select
+            options={[{ value: 'all', label: 'All Players' }]}
+            value={playerFilter}
+            onChange={setPlayerFilter}
+            className="text-xs w-36"
+          />
         </div>
 
         {/* Chart area */}
@@ -348,7 +355,7 @@ export function StatsMockup() {
               {[75, 78, 72, 74, 76, 71, 73, 72, 70, 74, 72, 71].map((val, i) => (
                 <div
                   key={i}
-                  className="flex-1 rounded-t-sm bg-gradient-to-t from-emerald-500 to-emerald-400"
+                  className="flex-1 rounded-t-sm bg-gradient-to-t from-primary-500 to-primary-400"
                   style={{ height: `${((80 - val) / 10) * 100}%`, minHeight: '20%' }}
                 />
               ))}
@@ -371,17 +378,17 @@ export function StatsMockup() {
             <div className="text-center p-3 bg-warm-50 rounded-xl">
               <p className="text-2xl font-bold text-warm-900">72.4</p>
               <p className="text-xs text-warm-500">Avg Score</p>
-              <p className="text-xs text-emerald-600 font-medium">-1.2 ↓</p>
+              <p className="text-xs text-primary-600 font-medium">-1.2 ↓</p>
             </div>
-            <div className="text-center p-3 bg-emerald-50 rounded-xl">
-              <p className="text-2xl font-bold text-emerald-600">68%</p>
+            <div className="text-center p-3 bg-primary-50 rounded-xl">
+              <p className="text-2xl font-bold text-primary-600">68%</p>
               <p className="text-xs text-warm-500">GIR</p>
-              <p className="text-xs text-emerald-600 font-medium">+4% ↑</p>
+              <p className="text-xs text-primary-600 font-medium">+4% ↑</p>
             </div>
             <div className="text-center p-3 bg-warm-50 rounded-xl">
               <p className="text-2xl font-bold text-warm-900">31.2</p>
               <p className="text-xs text-warm-500">Putts/Rd</p>
-              <p className="text-xs text-emerald-600 font-medium">-0.8 ↓</p>
+              <p className="text-xs text-primary-600 font-medium">-0.8 ↓</p>
             </div>
           </div>
         </div>
@@ -422,13 +429,13 @@ export function CoachAIMockup() {
     <div className="relative w-full max-w-sm mx-auto">
       {/* AI Badge */}
       <div className="flex items-center justify-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-teal-500 flex items-center justify-center">
           <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
         </div>
         <span className="font-semibold text-warm-900">CoachHelm AI</span>
-        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+        <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
           3 new
         </span>
       </div>
@@ -439,9 +446,9 @@ export function CoachAIMockup() {
           <div
             key={i}
             className={cn(
-              "relative bg-white rounded-xl p-4 shadow-lg border transition-transform hover:scale-[1.02]",
+              "relative bg-cream-50 rounded-xl p-4 shadow-lg border transition-transform hover:scale-[1.02]",
               insight.color === 'amber' && "border-amber-200",
-              insight.color === 'emerald' && "border-emerald-200",
+              insight.color === 'emerald' && "border-primary-200",
               insight.color === 'blue' && "border-blue-200"
             )}
             style={{
@@ -453,7 +460,7 @@ export function CoachAIMockup() {
               <div className={cn(
                 "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
                 insight.color === 'amber' && "bg-amber-100 text-amber-600",
-                insight.color === 'emerald' && "bg-emerald-100 text-emerald-600",
+                insight.color === 'emerald' && "bg-primary-100 text-primary-600",
                 insight.color === 'blue' && "bg-blue-100 text-blue-600"
               )}>
                 {insight.type === 'alert' && (
@@ -483,7 +490,7 @@ export function CoachAIMockup() {
                 <Button variant="ghost" className={cn(
                   "mt-2 text-xs font-medium",
                   insight.color === 'amber' && "text-amber-600",
-                  insight.color === 'emerald' && "text-emerald-600",
+                  insight.color === 'emerald' && "text-primary-600",
                   insight.color === 'blue' && "text-blue-600"
                 )}>
                   {insight.action} →
@@ -495,7 +502,7 @@ export function CoachAIMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-primary-500/10 blur-2xl rounded-full" />
     </div>
   );
 }

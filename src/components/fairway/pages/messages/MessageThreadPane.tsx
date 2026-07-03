@@ -40,10 +40,11 @@ import type {
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar } from '@/components/fairway/controls/avatar';
-import { IconButton } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
+import { Textarea } from '@/components/ui/textarea';
 
 /** One resolved (signed) attachment for an open thread message. */
 type ResolvedAttachment = NonNullable<
@@ -395,18 +396,15 @@ export function MessageThreadPane({
             title="Select a conversation"
             description="Choose a conversation from the list to start messaging."
             action={
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={onNewMessage}
-                className={cn(
-                  'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
-                  'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
-                  'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
-                  'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                )}
+                className="font-fw-sans"
               >
                 New message
-              </button>
+              </Button>
             }
           />
         </div>
@@ -483,18 +481,15 @@ export function MessageThreadPane({
             description="Something went wrong loading these messages. Check your connection and try again."
             action={
               onRetry ? (
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
                   onClick={onRetry}
-                  className={cn(
-                    'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
-                    'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
-                    'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
-                    'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                  )}
+                  className="font-fw-sans"
                 >
                   Try again
-                </button>
+                </Button>
               ) : undefined
             }
           />
@@ -618,36 +613,40 @@ export function MessageThreadPane({
                     {/* Bubble — edit mode */}
                     {editingMessageId === msg.id ? (
                       <div className="w-full rounded-fw-lg border border-accent-200 bg-accent-50 px-3 py-2">
-                        <textarea
+                        <Textarea
                           value={editContent}
                           onChange={(e) => onEditContentChange(e.target.value)}
-                          className="w-full min-w-[200px] resize-none bg-transparent font-fw-sans text-body-sm text-text-primary focus:outline-none"
+                          className="min-w-[200px] border-0 bg-transparent p-0 font-fw-sans text-body-sm text-text-primary focus:ring-0"
                           rows={Math.min(5, editContent.split('\n').length || 1)}
                           // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
                         />
                         <div className="mt-2 flex items-center justify-end gap-1 border-t border-accent-200 pt-2">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={onCancelEdit}
                             disabled={isEditSaving}
-                            className="rounded px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary transition-colors hover:text-text-secondary disabled:opacity-50"
+                            className="min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-transparent hover:text-text-secondary"
                           >
                             Cancel
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={onSaveEdit}
                             disabled={isEditSaving || !editContent.trim()}
                             className={cn(
-                              'rounded px-2 py-1 font-fw-sans text-eyebrow transition-colors',
+                              'min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow',
                               isEditSaving || !editContent.trim()
-                                ? 'cursor-not-allowed text-text-tertiary'
+                                ? 'cursor-not-allowed text-text-tertiary hover:bg-transparent'
                                 : 'text-accent-700 hover:bg-accent-100',
                             )}
                           >
                             {isEditSaving ? 'Saving…' : 'Save'}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     ) : (
@@ -679,13 +678,15 @@ export function MessageThreadPane({
                           resolvedAttachments.length ? (
                             <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
                           ) : hasAttachmentError ? (
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="sm"
                               onClick={retryAttachments}
                               aria-label="Couldn’t load attachment — tap to retry"
                               className={cn(
-                                'mt-1 inline-flex items-center gap-1 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow',
-                                'outline-none transition-colors focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
+                                'mt-1 min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow',
+                                'focus-visible:ring-offset-1',
                                 isOwn
                                   ? 'text-text-on-accent/90 hover:bg-text-on-accent/15 focus-visible:ring-offset-accent-500'
                                   : 'text-text-secondary hover:bg-surface focus-visible:ring-offset-surface-sunken',
@@ -693,7 +694,7 @@ export function MessageThreadPane({
                             >
                               <RotateCw size={12} aria-hidden="true" />
                               Couldn’t load attachment — tap to retry
-                            </button>
+                            </Button>
                           ) : (
                             <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}>
                               <Paperclip size={12} aria-hidden="true" />

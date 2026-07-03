@@ -14,7 +14,7 @@ export default function Loading() {
         </div>
 
         {/* Views Chart */}
-        <div className="bg-white rounded-2xl border border-warm-200 p-6">
+        <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6">
           <div className="mb-6">
             <Skeleton variant="text" width="30%" height={20} className="mb-2" />
             <Skeleton variant="text" width="50%" height={14} />
@@ -25,7 +25,7 @@ export default function Loading() {
         {/* Two column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Schools */}
-          <div className="bg-white rounded-2xl border border-warm-200 p-6">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6">
             <Skeleton variant="text" width="40%" height={20} className="mb-6" />
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -42,7 +42,7 @@ export default function Loading() {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-2xl border border-warm-200 p-6">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6">
             <Skeleton variant="text" width="40%" height={20} className="mb-6" />
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (

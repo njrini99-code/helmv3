@@ -94,7 +94,7 @@ function StatTile({ label, value, tone = 'default', icon, tooltip }: StatTilePro
             ? 'border-amber-100 bg-amber-50/60'
             : tone === 'ok'
               ? 'border-primary-100 bg-primary-50/60'
-              : 'border-white/30 bg-white/55'
+              : 'border-warm-200/40 bg-cream-50'
       )}
     >
       <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
@@ -142,7 +142,7 @@ function SystemOverviewBar({ data }: { data: AdminDashboardData }) {
   );
 
   return (
-    <div className="bg-white/65 backdrop-blur-[16px] border border-white/20 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-4 md:p-5">
+    <div className="glass-standard rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-4 md:p-5">
       <div className="flex flex-wrap items-center gap-3">
         {/* Overall health badge — anchors the row */}
         <div
@@ -233,7 +233,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
   ];
 
   return (
-    <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+    <div className="rounded-2xl border border-warm-200/40 bg-cream-50 p-4">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">Data Quality</p>
       <div className="mt-3 flex flex-wrap items-center gap-4">
         <div className="relative h-20 w-20 flex-shrink-0">
@@ -296,7 +296,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
   return (
     <div className="glass-standard rounded-2xl p-5 md:p-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+        <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
           <IconSparkles size={16} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">Feature Adoption</h3>
@@ -308,7 +308,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
           return (
             <div
               key={feature.feature}
-              className="rounded-xl border border-white/30 bg-white/50 p-4 transition-colors hover:bg-white/60"
+              className="rounded-xl border border-warm-200/40 bg-cream-50 p-4 transition-colors hover:bg-cream-100"
             >
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-warm-900">{feature.feature}</span>
@@ -412,7 +412,7 @@ export function SystemTab({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* ── Deployment Info ── */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] px-4 py-3 sm:px-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between glass-standard rounded-2xl px-4 py-3 sm:px-5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50">
             <IconRocket size={16} className="text-primary-600" />
@@ -442,7 +442,7 @@ export function SystemTab({ data }: Props) {
       {/* ── Section 3: Background Jobs ── */}
       <div>
         <SectionHeader title="Background Jobs" />
-        <div className="rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] p-5">
+        <div className="glass-standard rounded-2xl p-5">
           <div className="space-y-3">
             {SYSTEM_JOBS.map((job) => {
               const JobIcon = job.icon;
@@ -451,10 +451,10 @@ export function SystemTab({ data }: Props) {
               return (
                 <div
                   key={job.name}
-                  className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-white/30 bg-white/50 px-3 py-2.5 sm:px-4 sm:py-3"
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-warm-200/40 bg-cream-50 px-3 py-2.5 sm:px-4 sm:py-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cream-100">
                       <JobIcon size={14} className="text-warm-500" />
                     </div>
                     <div className="min-w-0">
@@ -501,7 +501,7 @@ export function SystemTab({ data }: Props) {
             <InfraSnapshotPanel health={data.health} infraHealth={data.infraHealth} />
 
             {/* Storage Quota */}
-            <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+            <div className="rounded-2xl border border-warm-200/40 bg-cream-50 p-4">
               <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
                 Storage Quota
               </p>
@@ -546,12 +546,12 @@ export function SystemTab({ data }: Props) {
       {/* ── Section 5: External Services ── */}
       <div>
         <SectionHeader title="External Services" />
-        <div className="rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] p-5">
+        <div className="glass-standard rounded-2xl p-5">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {SERVICES.map((service) => (
               <div
                 key={service.name}
-                className="flex items-center gap-3 rounded-xl border border-white/30 bg-white/50 px-3 py-2.5 sm:px-4 sm:py-3"
+                className="flex items-center gap-3 rounded-xl border border-warm-200/40 bg-cream-50 px-3 py-2.5 sm:px-4 sm:py-3"
               >
                 <IconGlobe size={14} className="text-warm-400 shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -615,11 +615,11 @@ function InfraSnapshotPanel({ health, infraHealth }: { health: AdminDashboardDat
   ];
 
   return (
-    <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+    <div className="rounded-2xl border border-warm-200/40 bg-cream-50 p-4">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">Infra Snapshot</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {tiles.map((tile) => (
-          <div key={tile.label} className="rounded-xl bg-white/70 p-3 text-center">
+          <div key={tile.label} className="rounded-xl bg-cream-100 p-3 text-center">
             <p className={cn(
               'text-base font-semibold tabular-nums',
               tile.warn ? 'text-amber-600' : 'text-warm-900'

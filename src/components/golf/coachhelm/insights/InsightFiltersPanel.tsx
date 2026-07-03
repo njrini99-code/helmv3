@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useId } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import {
   IconFilter,
   IconX,
@@ -119,7 +121,6 @@ export function InsightFiltersPanel({
   className,
   defaultExpanded = true,
 }: InsightFiltersPanelProps) {
-  const uid = useId();
   const prefersReducedMotion = useReducedMotion();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -236,54 +237,29 @@ export function InsightFiltersPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Player Filter */}
         <div>
-          <label htmlFor={`${uid}-player`} className="block text-xs font-medium text-warm-600 mb-1.5">
-            Player
-          </label>
-          <select
-            id={`${uid}-player`}
+          <Select
+            label="Player"
+            options={players.map((player) => ({ value: player.id, label: player.name }))}
             value={filters.playerId || ''}
-            onChange={(e) => updateFilter('playerId', e.target.value || undefined)}
-            className={cn(
-              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
-              'bg-white border border-warm-200 rounded-lg',
-              'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-              'transition-colors duration-200'
-            )}
-          >
-            <option value="">All players</option>
-            {players.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => updateFilter('playerId', value || undefined)}
+            placeholder="All players"
+            clearable
+          />
         </div>
 
         {/* Insight Type Filter */}
         <div>
-          <label htmlFor={`${uid}-insight-type`} className="block text-xs font-medium text-warm-600 mb-1.5">
-            Insight Type
-          </label>
-          <select
-            id={`${uid}-insight-type`}
+          <Select
+            label="Insight Type"
+            options={insightTypeOptions.map((option) => ({
+              value: option.value,
+              label: `${option.icon} ${option.label}`,
+            }))}
             value={filters.insightType || ''}
-            onChange={(e) => updateFilter('insightType', e.target.value as InsightType || undefined)}
-            className={cn(
-              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
-              'bg-white border border-warm-200 rounded-lg',
-              'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-              'transition-colors duration-200'
-            )}
-          >
-            <option value="">All types</option>
-            {insightTypeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.icon} {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => updateFilter('insightType', (value as InsightType) || undefined)}
+            placeholder="All types"
+            clearable
+          />
         </div>
       </div>
 
@@ -291,115 +267,61 @@ export function InsightFiltersPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Priority Filter */}
         <div>
-          <label htmlFor={`${uid}-priority`} className="block text-xs font-medium text-warm-600 mb-1.5">
-            Priority
-          </label>
-          <select
-            id={`${uid}-priority`}
+          <Select
+            label="Priority"
+            options={PRIORITY_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
             value={filters.priority || ''}
-            onChange={(e) => updateFilter('priority', e.target.value as InsightPriority || undefined)}
-            className={cn(
-              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
-              'bg-white border border-warm-200 rounded-lg',
-              'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-              'transition-colors duration-200'
-            )}
-          >
-            <option value="">All priorities</option>
-            {PRIORITY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => updateFilter('priority', (value as InsightPriority) || undefined)}
+            placeholder="All priorities"
+            clearable
+          />
         </div>
 
         {/* Status Filter */}
         <div>
-          <label htmlFor={`${uid}-status`} className="block text-xs font-medium text-warm-600 mb-1.5">
-            Status
-          </label>
-          <select
-            id={`${uid}-status`}
+          <Select
+            label="Status"
+            options={STATUS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
             value={filters.status || ''}
-            onChange={(e) => updateFilter('status', e.target.value as InsightStatus || undefined)}
-            className={cn(
-              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
-              'bg-white border border-warm-200 rounded-lg',
-              'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-              'transition-colors duration-200'
-            )}
-          >
-            <option value="">All statuses</option>
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => updateFilter('status', (value as InsightStatus) || undefined)}
+            placeholder="All statuses"
+            clearable
+          />
         </div>
       </div>
 
       {/* Row 3: Date Range */}
       <div>
-        <label htmlFor={`${uid}-date-range`} className="block text-xs font-medium text-warm-600 mb-1.5">
-          Date Range
-        </label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <select
-            id={`${uid}-date-range`}
+          <Select
+            label="Date Range"
+            options={DATE_RANGE_OPTIONS}
             value={filters.dateRange || ''}
-            onChange={(e) => {
-              const value = e.target.value as InsightFilters['dateRange'] || undefined;
-              updateFilter('dateRange', value);
-              if (value !== 'custom') {
+            onChange={(value) => {
+              const dateRange = (value as InsightFilters['dateRange']) || undefined;
+              updateFilter('dateRange', dateRange);
+              if (dateRange !== 'custom') {
                 updateFilter('startDate', undefined);
                 updateFilter('endDate', undefined);
               }
             }}
-            className={cn(
-              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
-              'bg-white border border-warm-200 rounded-lg',
-              'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-              'transition-colors duration-200'
-            )}
-          >
-            <option value="">All time</option>
-            {DATE_RANGE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            placeholder="All time"
+            clearable
+          />
 
           {filters.dateRange === 'custom' && (
             <>
-              <input
+              <Input
                 type="date"
+                label="Start date"
                 value={filters.startDate || ''}
                 onChange={(e) => updateFilter('startDate', e.target.value || undefined)}
-                className={cn(
-                  'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
-                  'bg-white border border-warm-200 rounded-lg',
-                  'text-warm-900',
-                  'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-                  'transition-colors duration-200'
-                )}
               />
-              <input
+              <Input
                 type="date"
+                label="End date"
                 value={filters.endDate || ''}
                 onChange={(e) => updateFilter('endDate', e.target.value || undefined)}
-                className={cn(
-                  'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
-                  'bg-white border border-warm-200 rounded-lg',
-                  'text-warm-900',
-                  'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-                  'transition-colors duration-200'
-                )}
               />
             </>
           )}
@@ -545,10 +467,10 @@ export function InsightFiltersPanel({
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 25, stiffness: 300 })}
-                className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl max-h-[85vh] overflow-auto"
+                className="fixed inset-x-0 bottom-0 z-50 bg-cream-50 rounded-t-3xl max-h-[85vh] overflow-auto"
               >
                 {/* Handle */}
-                <div className="sticky top-0 bg-white pt-3 pb-2 px-6">
+                <div className="sticky top-0 bg-cream-50 pt-3 pb-2 px-6">
                   <div className="w-10 h-1 bg-warm-300 rounded-full mx-auto mb-4" />
                   <div className="flex items-center justify-between">
                     <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Filters</h3>

@@ -32,6 +32,7 @@ import {
 } from 'date-fns';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { typeMeta } from './FairwayEventCard';
@@ -159,12 +160,14 @@ export function FairwayMonthGrid({
               )}
             >
               {/* Day number */}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                haptic="none"
                 onClick={onSelectDate ? () => onSelectDate(day) : undefined}
                 aria-label={format(day, 'EEEE, MMMM d')}
                 className={cn(
-                  'flex h-6 w-6 flex-shrink-0 items-center justify-center self-start rounded-full font-fw-mono text-caption font-medium tabular-nums transition-colors',
+                  'flex h-6 w-6 min-h-0 p-0 flex-shrink-0 items-center justify-center self-start rounded-full font-fw-mono text-caption font-medium tabular-nums transition-colors',
                   isToday
                     ? 'bg-accent-500 text-text-on-accent'
                     : inMonth
@@ -174,7 +177,7 @@ export function FairwayMonthGrid({
                 suppressHydrationWarning
               >
                 {format(day, 'd')}
-              </button>
+              </Button>
 
               {/* Chips */}
               <div className="flex flex-col gap-1">
@@ -185,7 +188,7 @@ export function FairwayMonthGrid({
                       <span
                         key={o.id}
                         title={`${o.playerName} · ${o.title}`}
-                        className="flex items-center gap-1 truncate rounded-[6px] px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
+                        className="flex items-center gap-1 truncate rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
                         style={{ backgroundColor: o.color.light }}
                       >
                         <span
@@ -205,13 +208,15 @@ export function FairwayMonthGrid({
                   const e = item.event;
                   const { tone } = typeMeta(e.event_type);
                   return (
-                    <button
+                    <Button
                       key={e.id}
                       type="button"
+                      variant="ghost"
+                      haptic="none"
                       onClick={onEventClick ? () => onEventClick(e) : undefined}
                       title={e.title}
                       className={cn(
-                        'truncate rounded-[6px] px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
+                        'block h-auto min-h-0 truncate rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
                         TONE_CHIP[tone],
                       )}
                     >
@@ -221,18 +226,20 @@ export function FairwayMonthGrid({
                         </span>
                       ) : null}
                       {e.title}
-                    </button>
+                    </Button>
                   );
                 })}
 
                 {overflow > 0 ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    haptic="none"
                     onClick={onSelectDate ? () => onSelectDate(day) : undefined}
-                    className="px-1.5 text-left font-fw-sans text-microlabel font-medium text-text-tertiary transition-colors hover:text-text-secondary"
+                    className="h-auto min-h-0 px-1.5 text-left font-fw-sans text-microlabel font-medium text-text-tertiary transition-colors hover:text-text-secondary"
                   >
                     +{overflow} more
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </div>

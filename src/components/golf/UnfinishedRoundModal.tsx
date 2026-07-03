@@ -179,7 +179,7 @@ export function UnfinishedRoundModal({
                   <Button variant="ghost"
                     onClick={handleCancelDelete}
                     disabled={deleting}
-                    className="flex-1 px-4 py-3 rounded-xl border border-warm-200 bg-white text-warm-700 font-medium text-sm hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 min-h-[44px]"
+                    className="flex-1 px-4 py-3 rounded-xl border border-warm-200 bg-cream-50 text-warm-700 font-medium text-sm hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 min-h-[44px]"
                   >
                     Cancel
                   </Button>

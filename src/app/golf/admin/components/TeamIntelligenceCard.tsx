@@ -56,7 +56,7 @@ export function TeamIntelligenceCard({ teams }: Props) {
     return (
       <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 glass-subtle rounded-lg text-warm-500">
             <IconUsers size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Team Intelligence</h3>
@@ -70,10 +70,10 @@ export function TeamIntelligenceCard({ teams }: Props) {
   const totalRoundsWeek = teams.reduce((s, t) => s + t.roundsThisWeek, 0);
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-200 hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 glass-subtle rounded-lg text-warm-500">
             <IconUsers size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Team Intelligence</h3>
@@ -91,7 +91,7 @@ export function TeamIntelligenceCard({ teams }: Props) {
         {teams.map((team) => (
           <div
             key={team.id}
-            className="bg-white/50 rounded-xl p-4 transition-all duration-200 hover:bg-white/70"
+            className="glass-subtle rounded-xl p-4 transition-all duration-200 hover:bg-cream-100"
           >
             <div className="flex items-start justify-between mb-2">
               <div>

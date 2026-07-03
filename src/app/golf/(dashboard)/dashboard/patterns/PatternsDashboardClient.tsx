@@ -77,7 +77,7 @@ export function PatternsDashboardClient({
           aria-label="Refresh patterns"
           className={cn(
             'flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-lg font-medium transition-colors',
-            'bg-white border border-warm-200 text-warm-700',
+            'bg-cream-50 border border-warm-200 text-warm-700',
             'hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
             isPending && 'opacity-50 cursor-not-allowed'

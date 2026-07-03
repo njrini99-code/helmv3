@@ -7,6 +7,7 @@ import { format, parseISO, differenceInMinutes } from 'date-fns';
 import type { CRMEvent, CRMEventType } from './CalendarView';
 import { IconX, IconVideo, IconPhone, IconUsers, IconMail, IconMapPin, IconCalendar, IconCheck, IconEdit, IconTrash, IconUser, IconLink, IconClock } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 // ============================================================================
 // TYPES
@@ -154,7 +155,7 @@ export function EventDetailModal({
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
-        className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -284,7 +285,7 @@ export function EventDetailModal({
                 Mark as Completed
               </h4>
               {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-              <textarea autoFocus
+              <Textarea autoFocus
                 value={outcome}
                 onChange={(e) => setOutcome(e.target.value)}
                 placeholder="How did it go? Any notes?"
@@ -297,7 +298,7 @@ export function EventDetailModal({
                     setShowOutcomeForm(false);
                     setStatus(event.status);
                   }}
-                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Cancel
                 </Button>

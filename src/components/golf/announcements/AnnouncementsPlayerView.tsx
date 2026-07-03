@@ -151,7 +151,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
     <div
       className={cn(
         'group relative rounded-2xl overflow-hidden transition-all duration-200',
-        'bg-white border shadow-sm',
+        'bg-cream-50 border shadow-sm',
         unread
           ? 'border-primary-200 bg-gradient-to-r from-primary-50/40 via-white to-white shadow-[0_0_0_1px_rgba(22,163,74,0.08),0_1px_3px_rgba(22,163,74,0.08)]'
           : 'border-warm-200/80 hover:shadow-md hover:border-warm-300/80'
@@ -314,7 +314,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                             }}
                             className="w-full text-left flex items-center gap-3 px-3.5 py-3 bg-warm-50/80 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 active:scale-[0.99] transition-all group/doc"
                           >
-                            <div className="w-9 h-9 rounded-lg bg-white border border-warm-200 flex items-center justify-center flex-shrink-0 group-hover/doc:border-warm-300 transition-colors">
+                            <div className="w-9 h-9 rounded-lg bg-cream-50 border border-warm-200 flex items-center justify-center flex-shrink-0 group-hover/doc:border-warm-300 transition-colors">
                               <IconFile size={15} className="text-warm-400" />
                             </div>
                             <div className="flex-1 min-w-0">

@@ -111,7 +111,7 @@ export function StatCardV2({
         'border-l-[4px]',
         config.border,
         'transition-all duration-300',
-        'hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover',
+        'hover:bg-cream-100 active:bg-cream-100 hover:shadow-card-hover',
         onClick && 'cursor-pointer'
       )}
     >
@@ -187,7 +187,7 @@ export function StatCardV2({
         </div>
 
         <div className="flex flex-col items-end gap-3 shrink-0">
-          <div className="p-3 bg-white/60 rounded-xl text-warm-600 shadow-sm">
+          <div className="p-3 glass-subtle rounded-xl text-warm-600 shadow-sm">
             {icon}
           </div>
           

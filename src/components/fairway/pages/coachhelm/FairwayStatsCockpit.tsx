@@ -1643,20 +1643,21 @@ function ToggleChip<T extends string>({
   onSelect: (value: T) => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={() => onSelect(value)}
       className={cn(
-        'inline-flex min-h-11 items-center rounded-full border px-3.5 py-1.5 font-fw-sans text-label font-medium outline-none transition-colors [transition-duration:180ms]',
+        'inline-flex h-auto min-h-11 items-center rounded-full border px-3.5 py-1.5 font-fw-sans text-label font-medium outline-none transition-colors [transition-duration:180ms]',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none',
         active
-          ? 'border-accent-500 bg-accent-50 text-accent-700'
+          ? 'border-accent-500 bg-accent-50 text-accent-700 hover:bg-accent-50'
           : 'border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint hover:text-text-primary',
       )}
       aria-pressed={active}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -1994,11 +1995,13 @@ function DetailedStandingsSection({
   if (detailedGroups.length === 0) return null;
   return (
     <section className="flex flex-col gap-3">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+  
         onClick={onToggle}
         aria-expanded={open}
-        className="group flex w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group h-auto min-h-0 w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left font-normal normal-case tracking-normal outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex flex-col gap-0.5">
           <span className="font-fw-display text-body font-medium text-text-primary">
@@ -2014,7 +2017,7 @@ function DetailedStandingsSection({
             open && 'rotate-180',
           )}
         />
-      </button>
+      </Button>
 
       {open ? (
         <div className="flex flex-col gap-6 pt-1">
@@ -2294,11 +2297,13 @@ function ComprehensiveDetail({
 
   return (
     <section className="flex flex-col gap-3">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+  
         onClick={onToggle}
         aria-expanded={open}
-        className="group flex w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group h-auto min-h-0 w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left font-normal normal-case tracking-normal outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex flex-col gap-0.5">
           <span className="font-fw-display text-body font-medium text-text-primary">
@@ -2315,7 +2320,7 @@ function ComprehensiveDetail({
             open && 'rotate-180',
           )}
         />
-      </button>
+      </Button>
 
       {open ? (
         <div className="flex flex-col gap-6 pt-1">

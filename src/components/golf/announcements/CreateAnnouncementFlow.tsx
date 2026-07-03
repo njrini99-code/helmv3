@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/sonner';
 import { IconPlus, IconSend, IconPaperclip, IconClipboardList, IconUsers, IconUser, IconCheck, IconX, IconSearch, IconFile, IconCalendar, IconChevronDown } from '@/components/icons';
 import { createEnrichedAnnouncement } from '@/app/golf/actions/announcements';
@@ -227,7 +229,7 @@ function AnnouncementDialog({
           {/* ── Scrollable body ─────────────────────────────────── */}
           <div ref={scrollBodyRef} className="flex-1 overflow-y-auto overscroll-contain min-h-0 px-5 py-4 space-y-4">
             {/* Title input */}
-            <input
+            <Input
               ref={titleRef}
               type="text"
               value={title}
@@ -237,18 +239,18 @@ function AnnouncementDialog({
               autoCapitalize="sentences"
               autoCorrect="on"
               enterKeyHint="next"
-              className="w-full text-body-lg font-medium text-warm-900 tracking-[-0.012em] placeholder:text-warm-300 bg-transparent outline-none border-none"
+              className="min-h-0 p-0 rounded-none text-body-lg font-medium text-warm-900 tracking-[-0.012em] placeholder:text-warm-300 bg-transparent outline-none border-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
 
             {/* Message textarea */}
-            <textarea
+            <Textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={3}
               aria-label="Announcement message"
               autoCapitalize="sentences"
               autoCorrect="on"
-              className="w-full text-sm text-warm-700 placeholder:text-warm-400 bg-warm-50/60 rounded-xl border border-warm-200 px-3.5 py-2.5 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors resize-none min-h-[80px]"
+              className="text-sm bg-warm-50/60 px-3.5 py-2.5 focus:ring-primary-100 min-h-[80px]"
               placeholder="Write your message to the team..."
             />
 
@@ -269,7 +271,7 @@ function AnnouncementDialog({
                           'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                           isActive
                             ? `${opt.activeBg} ${opt.activeBorder} ${opt.activeText}`
-                            : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
+                            : 'bg-cream-50 border-warm-200 text-warm-500 hover:bg-warm-100'
                         )}
                       >
                         <div className={cn('w-1.5 h-1.5 rounded-full', isActive ? opt.dot : 'bg-warm-300')} />
@@ -291,7 +293,7 @@ function AnnouncementDialog({
                       'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                       isAllTeam
                         ? 'bg-primary-50 border-primary-300 text-primary-700'
-                        : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
+                        : 'bg-cream-50 border-warm-200 text-warm-500 hover:bg-warm-100'
                     )}
                   >
                     <IconUsers size={11} />
@@ -307,7 +309,7 @@ function AnnouncementDialog({
                       'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                       !isAllTeam
                         ? 'bg-primary-50 border-primary-300 text-primary-700'
-                        : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
+                        : 'bg-cream-50 border-warm-200 text-warm-500 hover:bg-warm-100'
                     )}
                   >
                     <IconUser size={11} />
@@ -333,10 +335,10 @@ function AnnouncementDialog({
                   transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
                   className="overflow-hidden"
                 >
-                  <div className="border border-warm-200 rounded-xl overflow-hidden bg-white">
+                  <div className="border border-warm-200 rounded-xl overflow-hidden bg-cream-50">
                     <div className="px-3 py-2 border-b border-warm-100 flex items-center gap-2">
                       <IconSearch size={14} className="text-warm-400" />
-                      <input
+                      <Input
                         type="search"
                         value={playerSearch}
                         onChange={(e) => setPlayerSearch(e.target.value)}
@@ -347,7 +349,7 @@ function AnnouncementDialog({
                         autoCapitalize="none"
                         spellCheck={false}
                         enterKeyHint="search"
-                        className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
+                        className="min-h-0 p-0 rounded-none text-sm bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                       {(recipientPlayerIds?.length ?? 0) > 0 && (
                         <span className="text-xs text-warm-400 flex-shrink-0 tabular-nums">{recipientPlayerIds!.length} selected</span>
@@ -400,7 +402,7 @@ function AnnouncementDialog({
                   'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                   requiresAcknowledgement
                     ? 'bg-primary-50 border-primary-300 text-primary-700'
-                    : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
+                    : 'bg-cream-50 border-warm-200 text-warm-500 hover:bg-warm-100'
                 )}
               >
                 {requiresAcknowledgement ? <IconCheck size={11} /> : <span className="w-3 h-3 rounded border border-warm-300" />}
@@ -415,7 +417,7 @@ function AnnouncementDialog({
                     'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                     showDocPicker || selectedDocumentIds.length > 0
                       ? 'bg-primary-50 border-primary-300 text-primary-700'
-                      : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
+                      : 'bg-cream-50 border-warm-200 text-warm-500 hover:bg-warm-100'
                   )}
                 >
                   <IconPaperclip size={11} />
@@ -427,7 +429,7 @@ function AnnouncementDialog({
               <Button variant="ghost"
                 type="button"
                 onClick={() => setInlineTasks(prev => [...prev, { id: crypto.randomUUID(), title: '' }])}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-white border-warm-200 text-warm-500 hover:bg-warm-50 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-cream-50 border-warm-200 text-warm-500 hover:bg-warm-100 transition-colors"
               >
                 <IconClipboardList size={11} />
                 Add Task
@@ -452,7 +454,7 @@ function AnnouncementDialog({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         layout
-                        className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg border border-warm-200 bg-white text-xs"
+                        className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg border border-warm-200 bg-cream-50 text-xs"
                       >
                         <div className={cn('w-5 h-5 rounded flex items-center justify-center', colors.bg)}>
                           <span className={cn('text-eyebrow font-medium leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
@@ -482,11 +484,11 @@ function AnnouncementDialog({
                   transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
                   className="overflow-hidden"
                 >
-                  <div className="border border-warm-200 rounded-xl overflow-hidden bg-white">
+                  <div className="border border-warm-200 rounded-xl overflow-hidden bg-cream-50">
                     {availableDocs.length > 3 && (
                       <div className="px-3 py-2 border-b border-warm-100 flex items-center gap-2">
                         <IconSearch size={14} className="text-warm-400" />
-                        <input
+                        <Input
                           type="search"
                           value={docSearch}
                           onChange={(e) => setDocSearch(e.target.value)}
@@ -497,7 +499,7 @@ function AnnouncementDialog({
                           autoCapitalize="none"
                           spellCheck={false}
                           enterKeyHint="search"
-                          className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
+                          className="min-h-0 p-0 rounded-none text-sm bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
                       </div>
                     )}
@@ -561,7 +563,7 @@ function AnnouncementDialog({
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0 space-y-1">
-                      <input
+                      <Input
                         type="text"
                         value={task.title}
                         onChange={(e) => {
@@ -573,12 +575,12 @@ function AnnouncementDialog({
                         autoCapitalize="sentences"
                         autoCorrect="on"
                         enterKeyHint="next"
-                        className="w-full text-sm font-medium text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
+                        className="min-h-0 p-0 rounded-none text-sm font-medium bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
                         // eslint-disable-next-line jsx-a11y/no-autofocus
                         autoFocus={task.title === ''}
                       />
                       <div className="flex items-center gap-2">
-                        <input
+                        <Input
                           type="text"
                           value={task.description || ''}
                           onChange={(e) => {
@@ -590,18 +592,18 @@ function AnnouncementDialog({
                           autoCapitalize="sentences"
                           autoCorrect="on"
                           enterKeyHint="next"
-                          className="flex-1 text-xs text-warm-600 placeholder:text-warm-400 bg-transparent outline-none min-w-0"
+                          className="flex-1 min-h-0 p-0 rounded-none text-xs bg-transparent border-none min-w-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <IconCalendar size={10} className="text-warm-400" />
-                          <input
+                          <Input
                             type="date"
                             value={task.dueDate || ''}
                             onChange={(e) => {
                               const updated = inlineTasks.map((t, i) => i === index ? { ...t, dueDate: e.target.value || undefined } : t);
                               setInlineTasks(updated);
                             }}
-                            className="text-xs text-warm-600 bg-transparent outline-none border-none w-[105px]"
+                            className="min-h-0 p-0 rounded-none text-xs bg-transparent border-none w-[105px] focus-visible:ring-0 focus-visible:ring-offset-0"
                           />
                         </div>
                       </div>

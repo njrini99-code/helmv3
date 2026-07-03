@@ -80,7 +80,7 @@ export function PeekPanelRoot({
             exit={{ x: '100%' }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 25, stiffness: 300 })}
             className={cn(
-              'fixed top-0 right-0 h-full bg-white shadow-2xl z-50 flex flex-col',
+              'fixed top-0 right-0 h-full glass-prominent shadow-2xl z-50 flex flex-col',
               widthClasses[width],
               className
             )}

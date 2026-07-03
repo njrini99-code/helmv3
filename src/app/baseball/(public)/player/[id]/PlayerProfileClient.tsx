@@ -262,7 +262,7 @@ export function PlayerProfileClient({
           <div className="absolute top-4 left-4 z-10">
             <Link
               href="/baseball/dashboard/discover"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg glass-standard text-white hover:bg-cream-100/20 transition-colors"
             >
               <IconArrowLeft size={18} />
               <span className="text-sm font-medium">Back to Discover</span>
@@ -279,8 +279,8 @@ export function PlayerProfileClient({
                 className={cn(
                   "shadow-lg",
                   isInWatchlist
-                    ? "bg-white text-primary-700 hover:bg-primary-50 active:bg-primary-100"
-                    : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border-white/30"
+                    ? "bg-cream-50 text-primary-700 hover:bg-primary-50 active:bg-primary-100"
+                    : "glass-standard text-white hover:bg-cream-100/20"
                 )}
               >
                 {isPending ? (
@@ -294,7 +294,7 @@ export function PlayerProfileClient({
               </Button>
               <Button
                 variant="secondary"
-                className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors border-white/30"
+                className="glass-standard text-white hover:bg-cream-100/20 transition-colors"
               >
                 <IconMail size={16} className="mr-2" />
                 Message
@@ -305,7 +305,7 @@ export function PlayerProfileClient({
 
         {/* Profile card overlapping banner */}
         <div className="max-w-[1536px] mx-auto px-4 sm:px-6 -mt-28 md:-mt-32 relative z-10">
-          <div className="bg-white rounded-2xl shadow-xl border border-warm-200/50 overflow-hidden">
+          <div className="bg-cream-50 rounded-2xl shadow-xl border border-warm-200/50 overflow-hidden">
             <div className="p-6 md:p-8">
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Avatar */}
@@ -439,8 +439,8 @@ export function PlayerProfileClient({
                       className={cn(
                         "flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
                         isActive
-                          ? "border-primary-600 text-primary-600 bg-white"
-                          : "border-transparent text-warm-600 hover:text-warm-900 hover:bg-white/50 active:bg-warm-50"
+                          ? "border-primary-600 text-primary-600 bg-cream-50"
+                          : "border-transparent text-warm-600 hover:text-warm-900 hover:bg-cream-100 active:bg-warm-50"
                       )}
                     >
                       <Icon size={18} />
@@ -523,7 +523,7 @@ function OverviewTab({
       <div className="lg:col-span-2 space-y-6">
         {/* About */}
         {player.about_me && (
-          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-warm-900 mb-4">About</h2>
             <p className="text-warm-600 leading-relaxed whitespace-pre-wrap">
               {player.about_me}
@@ -532,7 +532,7 @@ function OverviewTab({
         )}
 
         {/* Physical & Metrics */}
-        <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+        <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
             <IconActivity size={20} className="text-primary-600" />
             Physical & Metrics
@@ -573,7 +573,7 @@ function OverviewTab({
 
         {/* Featured Videos Preview */}
         {player.videos && player.videos.length > 0 && (
-          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconVideo size={20} className="text-primary-600" />
@@ -596,7 +596,7 @@ function OverviewTab({
       <div className="space-y-6">
         {/* Contact Card */}
         {(showContactEmail || showPhone || showSocial) && (
-          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
               Contact
             </h3>
@@ -649,7 +649,7 @@ function OverviewTab({
 
         {/* Schools of Interest */}
         {showDreamSchools && recruitingInterests.length > 0 && (
-          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4 flex items-center gap-2">
               <IconTarget size={16} className="text-primary-600" />
               Schools of Interest
@@ -732,7 +732,7 @@ function OverviewTab({
 function VideosTab({ videos }: { videos: PlayerVideo[] }) {
   if (videos.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
         <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
           <IconVideo size={32} className="text-warm-400" />
         </div>
@@ -756,7 +756,7 @@ function StatsTab({ player }: { player: PlayerData }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Physical Stats */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconTrendingUp size={20} className="text-primary-600" />
           Physical Profile
@@ -770,7 +770,7 @@ function StatsTab({ player }: { player: PlayerData }) {
       </div>
 
       {/* Performance Metrics */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconActivity size={20} className="text-blue-600" />
           Performance Metrics
@@ -795,7 +795,7 @@ function StatsTab({ player }: { player: PlayerData }) {
       </div>
 
       {/* Academics */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconSchool size={20} className="text-purple-600" />
           Academics
@@ -808,7 +808,7 @@ function StatsTab({ player }: { player: PlayerData }) {
       </div>
 
       {/* Player Info */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconUser size={20} className="text-orange-600" />
           Player Info
@@ -828,7 +828,7 @@ function StatsTab({ player }: { player: PlayerData }) {
 function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
   if (teamHistory.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
         <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
           <IconUsers size={32} className="text-warm-400" />
         </div>
@@ -839,7 +839,7 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden shadow-sm">
+    <div className="bg-cream-50 rounded-2xl border border-warm-200 overflow-hidden shadow-sm">
       <div className="p-6 border-b border-warm-200 bg-warm-50/50">
         <h2 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
           <IconUsers size={20} className="text-primary-600" />
@@ -918,7 +918,7 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
 function AchievementsTab({ achievements }: { achievements: PlayerAchievement[] }) {
   if (achievements.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
         <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
           <IconTrophy size={32} className="text-warm-400" />
         </div>
@@ -1025,7 +1025,7 @@ function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
         type="button"
         onClick={() => setViewing(true)}
         aria-label={`Play ${video.title}`}
-        className="group relative bg-white rounded-xl border border-warm-200 overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-300 w-full text-left"
+        className="group relative bg-cream-50 rounded-xl border border-warm-200 overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-300 w-full text-left"
       >
         {video.thumbnail_url ? (
           <div className={cn("relative", large ? "aspect-video" : "aspect-[16/10]")}>
@@ -1038,7 +1038,7 @@ function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="w-14 h-14 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
+              <div className="w-14 h-14 rounded-full bg-cream-50 flex items-center justify-center shadow-xl">
                 <div className="w-0 h-0 border-l-[18px] border-l-primary-600 border-y-[11px] border-y-transparent ml-1" />
               </div>
             </div>

@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { createTemplate } from '@/app/golf/actions/crm-templates';
 import { MERGE_TOKENS } from '@/lib/crm/merge-tags';
 import {
@@ -91,7 +94,7 @@ function TemplateSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {[1, 2, 3, 4].map(i => (
-        <div key={i} className="bg-white/60 rounded-xl border border-white/20 p-4 animate-pulse">
+        <div key={i} className="glass-standard rounded-xl p-4 animate-pulse">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-20 h-5 bg-warm-100 rounded-full" />
             <div className="w-28 h-4 bg-warm-100 rounded" />
@@ -154,7 +157,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-primary-200 p-4 space-y-3">
+    <div className="glass-standard rounded-xl border border-primary-200 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-warm-800">Create Template</h4>
         <IconButton variant="default" onClick={onCancel} aria-label="Cancel" className="text-warm-400 hover:text-warm-600 transition-colors">
@@ -163,23 +166,20 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
       </div>
 
       <div className="space-y-2">
-        <input
+        <Input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Template name"
-          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
+          className="bg-cream-50/60"
         />
 
-        <select
+        <Select
           value={category}
-          onChange={e => setCategory(e.target.value as TemplateCategory)}
-          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
-        >
-          {CATEGORY_OPTIONS.filter(c => c.key !== 'all').map(c => (
-            <option key={c.key} value={c.key}>{c.label}</option>
-          ))}
-        </select>
+          onChange={value => setCategory(value as TemplateCategory)}
+          options={CATEGORY_OPTIONS.filter(c => c.key !== 'all').map(c => ({ value: c.key, label: c.label }))}
+          className="bg-cream-50/60"
+        />
 
         {/* Format selector — closes G1 (UI templates can be text/html/plain) */}
         <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Email format">
@@ -197,7 +197,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
                   'px-2 py-1.5 rounded-xl border text-xs font-semibold min-h-0 transition-all',
                   active
                     ? 'bg-primary-50 border-primary-300 text-primary-800 ring-1 ring-primary-200'
-                    : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-white/80',
+                    : 'bg-cream-50/60 border-warm-200 text-warm-600 hover:bg-cream-100',
                 )}
               >
                 {f.label}
@@ -209,20 +209,20 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
           {FORMAT_OPTIONS.find(f => f.key === format)?.help}
         </p>
 
-        <input
+        <Input
           type="text"
           value={subject}
           onChange={e => setSubject(e.target.value)}
           placeholder="Subject line"
-          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
+          className="bg-cream-50/60"
         />
 
-        <textarea
+        <Textarea
           value={body}
           onChange={e => setBody(e.target.value)}
           placeholder="Email body..."
           rows={4}
-          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none resize-none"
+          className="bg-cream-50/60 resize-none"
         />
       </div>
 
@@ -334,22 +334,16 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
           <span className="text-sm font-semibold">Templates</span>
         </div>
         <div className="relative flex-1 max-w-xs">
-          <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input
+          <Input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search templates..."
-            className="w-full pl-9 pr-8 py-1.5 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
+            leftIcon={<IconSearch size={14} />}
+            clearable
+            onClear={() => setSearch('')}
+            className="bg-cream-50/60 min-h-0 py-1.5"
           />
-          {search && (
-            <IconButton variant="default" aria-label="Close"
-              onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
-            >
-              <IconX size={14} />
-            </IconButton>
-          )}
         </div>
       </div>
 
@@ -395,7 +389,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                   key={template.id}
                   onClick={() => handleSelect(template)}
                   className={cn(
-                    'w-full text-left bg-white/60 rounded-xl border border-white/20 p-4 cursor-pointer transition-all duration-200 hover:bg-white/80 hover:shadow-sm',
+                    'w-full text-left glass-standard rounded-xl p-4 cursor-pointer transition-all duration-200 hover:bg-cream-100 hover:shadow-sm',
                     isSelected && 'ring-2 ring-primary-500 border-primary-300'
                   )}
                 >
@@ -457,7 +451,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
             {selectedMergeTags.map(tag => (
               <span
                 key={tag}
-                className="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-white/70 border border-primary-200 text-primary-700"
+                className="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-cream-50 border border-primary-200 text-primary-700"
               >
                 {`{${tag}}`}
               </span>

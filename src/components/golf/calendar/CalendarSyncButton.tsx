@@ -284,7 +284,7 @@ export function CalendarSyncButton({
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
-                        'bg-white hover:bg-blue-50 active:bg-blue-100',
+                        'bg-cream-50 hover:bg-blue-50 active:bg-blue-100',
                         'transition-colors duration-200 group'
                       )}
                     >
@@ -301,7 +301,7 @@ export function CalendarSyncButton({
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-warm-400',
-                        'bg-white hover:bg-warm-50 active:bg-warm-100',
+                        'bg-cream-50 hover:bg-warm-50 active:bg-warm-100',
                         'transition-colors duration-200 group'
                       )}
                     >
@@ -318,7 +318,7 @@ export function CalendarSyncButton({
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
-                        'bg-white hover:bg-blue-50 active:bg-blue-100',
+                        'bg-cream-50 hover:bg-blue-50 active:bg-blue-100',
                         'transition-colors duration-200 group'
                       )}
                     >

@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BaseballDiamond, POSITION_COORDS } from '@/components/baseball/position-planner/BaseballDiamond';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   validateScrimmageForPublish,
   type LineupSlotInput,
@@ -200,7 +201,7 @@ export function ScrimmageLineupBuilder({
                 haptic="none"
                 className={cn(
                   'min-h-0 rounded-md px-3 py-1 text-xs font-medium',
-                  activeSide === s ? 'bg-primary-500 text-white hover:bg-primary-500' : 'text-warm-600 hover:bg-white',
+                  activeSide === s ? 'bg-primary-500 text-white hover:bg-primary-500' : 'text-warm-600 hover:bg-cream-100',
                 )}
               >
                 Team {SIDE_LABEL[s]}
@@ -277,8 +278,8 @@ export function ScrimmageLineupBuilder({
                         conflict
                           ? 'border-red-400 bg-red-50'
                           : player
-                            ? 'border-primary-300 bg-white'
-                            : 'border-dashed border-warm-300 bg-white/70 hover:bg-white',
+                            ? 'border-primary-300 bg-cream-50'
+                            : 'border-dashed border-warm-300 bg-cream-50/70 hover:bg-cream-100',
                       )}
                     >
                       <span className="text-micro font-bold uppercase tracking-wide text-warm-500">
@@ -360,7 +361,7 @@ export function ScrimmageLineupBuilder({
         {/* ---- Roster + batting-order table ---- */}
         <div className="space-y-4">
           {/* Roster to drag/tap from */}
-          <div className="rounded-xl border border-warm-200 bg-white/85 p-3">
+          <div className="rounded-xl border border-warm-200 bg-cream-50 p-3">
             <div className="mb-2 text-xs font-semibold text-warm-700">
               Roster {selectedPlayerId ? '· tap a position to place' : '· drag or tap to select'}
             </div>
@@ -386,7 +387,7 @@ export function ScrimmageLineupBuilder({
                           ? 'border-primary-400 bg-primary-50 hover:bg-primary-50'
                           : placed
                             ? 'border-warm-200 bg-cream-100/70 text-warm-500 hover:bg-cream-100/70'
-                            : 'border-warm-200 bg-white hover:bg-cream-50',
+                            : 'border-warm-200 bg-cream-50 hover:bg-cream-100',
                       )}
                     >
                       <GripVertical className="h-3 w-3 shrink-0 text-warm-300" />
@@ -417,7 +418,7 @@ export function ScrimmageLineupBuilder({
           </div>
 
           {/* Batting-order table */}
-          <div className="rounded-xl border border-warm-200 bg-white/85 p-3">
+          <div className="rounded-xl border border-warm-200 bg-cream-50 p-3">
             <div className="mb-2 text-xs font-semibold text-warm-700">
               Batting order {isIntrasquad ? `· Team ${activeSide ? SIDE_LABEL[activeSide] : ''}` : ''}
             </div>
@@ -435,7 +436,7 @@ export function ScrimmageLineupBuilder({
                       key={s.playerId}
                       className="flex items-center gap-2 rounded-lg border border-warm-100 bg-cream-50/50 px-2 py-1"
                     >
-                      <select
+                      <NativeSelect
                         value={s.battingOrder ?? ''}
                         onChange={(e) =>
                           setBattingOrder(s.playerId, e.target.value ? Number(e.target.value) : null)
@@ -452,7 +453,7 @@ export function ScrimmageLineupBuilder({
                             {n}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                       <span className="min-w-0 flex-1 truncate text-xs font-medium text-warm-900">
                         {p?.name ?? 'Player'}
                       </span>

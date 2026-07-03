@@ -39,12 +39,14 @@ import {
   Trash2,
   Check,
   Ban,
-  ChevronDown,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button } from '@/components/fairway/controls/button';
+import { Button as UiButton } from '@/components/ui/button';
+import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
+import { Select as UiSelect } from '@/components/ui/select';
 import { Switch } from '@/components/fairway/forms/Switch';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type {
@@ -593,14 +595,14 @@ export function FairwayEventEditor({
                 bare editorial field with no border. */}
             <div className="flex items-center gap-3 rounded-fw-md transition-shadow focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-2 focus-within:ring-offset-canvas">
               <span aria-hidden className="h-7 w-1 flex-shrink-0 rounded-full bg-accent-500" />
-              <input
+              <UiInput
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 disabled={locked}
                 placeholder="Event name…"
                 aria-label="Event title"
-                className="w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary"
+                className="w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary focus-visible:ring-0 focus-visible:ring-offset-0"
                 required
               />
             </div>
@@ -610,14 +612,16 @@ export function FairwayEventEditor({
               {EVENT_TYPES.map(({ type, label, icon: Icon }) => {
                 const active = formData.eventType === type;
                 return (
-                  <button
+                  <UiButton
                     key={type}
+                    variant="ghost"
                     type="button"
                     onClick={() => setFormData({ ...formData, eventType: type })}
                     disabled={locked}
                     aria-pressed={active}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
+                      'focus-visible:ring-accent-500/40',
                       active
                         ? 'bg-accent-500 text-text-on-accent shadow-flat'
                         : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
@@ -625,7 +629,7 @@ export function FairwayEventEditor({
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {label}
-                  </button>
+                  </UiButton>
                 );
               })}
             </div>
@@ -637,7 +641,7 @@ export function FairwayEventEditor({
                 <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label htmlFor="ev-start-date" className={labelCls}>Start date</label>
-                    <input
+                    <UiInput
                       id="ev-start-date"
                       type="date"
                       value={formData.startDate}
@@ -649,7 +653,7 @@ export function FairwayEventEditor({
                   </div>
                   <div>
                     <label htmlFor="ev-end-date" className={labelCls}>End date</label>
-                    <input
+                    <UiInput
                       id="ev-end-date"
                       type="date"
                       value={formData.endDate || ''}
@@ -667,7 +671,7 @@ export function FairwayEventEditor({
                   <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label htmlFor="ev-start-time" className={labelCls}>Start time</label>
-                      <input
+                      <UiInput
                         id="ev-start-time"
                         type="time"
                         value={formData.startTime || ''}
@@ -678,7 +682,7 @@ export function FairwayEventEditor({
                     </div>
                     <div>
                       <label htmlFor="ev-end-time" className={labelCls}>End time</label>
-                      <input
+                      <UiInput
                         id="ev-end-time"
                         type="time"
                         value={formData.endTime || ''}
@@ -712,7 +716,7 @@ export function FairwayEventEditor({
                   <MapPin className="h-3.5 w-3.5 text-accent-700" /> Location
                 </span>
               </label>
-              <input
+              <UiInput
                 id="ev-location"
                 type="text"
                 value={formData.location || ''}
@@ -730,7 +734,7 @@ export function FairwayEventEditor({
                   <AlignLeft className="h-3.5 w-3.5 text-accent-700" /> Notes
                 </span>
               </label>
-              <textarea
+              <UiTextarea
                 id="ev-desc"
                 value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
@@ -754,7 +758,7 @@ export function FairwayEventEditor({
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label htmlFor="ev-rsvp-deadline" className={labelCls}>RSVP deadline</label>
-                    <input
+                    <UiInput
                       id="ev-rsvp-deadline"
                       type="datetime-local"
                       value={formData.rsvpDeadline || ''}
@@ -766,7 +770,7 @@ export function FairwayEventEditor({
                   </div>
                   <div>
                     <label htmlFor="ev-max" className={labelCls}>Max attendees</label>
-                    <input
+                    <UiInput
                       id="ev-max"
                       type="number"
                       min={1}
@@ -821,14 +825,16 @@ export function FairwayEventEditor({
                     const selected = formData.attendeeIds.includes(p.id);
                     const tint = tintFor(p.id);
                     return (
-                      <button
+                      <UiButton
                         key={p.id}
+                        variant="ghost"
                         type="button"
                         onClick={() => toggleAttendee(p.id)}
                         disabled={locked || attendeesLoading}
                         aria-pressed={selected}
                         className={cn(
                           'flex items-center gap-2.5 rounded-fw-md border p-2 text-left transition-colors',
+                          'focus-visible:ring-accent-500/40',
                           selected
                             ? 'border-accent-500 bg-accent-50'
                             : 'border-border-subtle bg-surface hover:bg-surface-tint',
@@ -852,7 +858,7 @@ export function FairwayEventEditor({
                         <span className="min-w-0 flex-1 truncate font-fw-sans text-caption font-medium text-text-primary">
                           {p.first_name} {p.last_name?.[0] ? `${p.last_name[0]}.` : ''}
                         </span>
-                      </button>
+                      </UiButton>
                     );
                   })}
                 </div>
@@ -891,14 +897,15 @@ export function FairwayEventEditor({
                     {conflicts.suggestions.length > 0 ? (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {conflicts.suggestions.slice(0, 3).map((s, i) => (
-                          <button
+                          <UiButton
                             key={i}
+                            variant="ghost"
                             type="button"
                             onClick={() => selectSuggestedTime(s)}
-                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint"
+                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint focus-visible:ring-accent-500/40"
                           >
                             {s.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                          </button>
+                          </UiButton>
                         ))}
                       </div>
                     ) : null}
@@ -920,24 +927,14 @@ export function FairwayEventEditor({
                   </span>
                 </span>
                 <div className="relative">
-                  <select
+                  {/* A series root can't be flipped back to a one-off here —
+                      that's a delete-with-scope, not a pattern change. */}
+                  <UiSelect
+                    options={RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => ({ value: o.value, label: o.label }))}
                     value={formData.recurrence}
-                    onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrenceFrequency })}
+                    onChange={(value) => setFormData({ ...formData, recurrence: value as RecurrenceFrequency })}
                     disabled={locked}
-                    aria-label="Recurrence"
                     className={cn(selectFieldCls, 'bg-surface')}
-                  >
-                    {/* A series root can't be flipped back to a one-off here —
-                        that's a delete-with-scope, not a pattern change. */}
-                    {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
-                    aria-hidden
                   />
                 </div>
 
@@ -947,8 +944,9 @@ export function FairwayEventEditor({
                       {WEEKDAY_OPTIONS.map((day) => {
                         const selected = (formData.recurrenceWeekdays ?? []).includes(day.value);
                         return (
-                          <button
+                          <UiButton
                             key={day.value}
+                            variant="ghost"
                             type="button"
                             onClick={() => toggleRecurrenceWeekday(day.value)}
                             disabled={locked}
@@ -956,13 +954,14 @@ export function FairwayEventEditor({
                             aria-label={day.long}
                             className={cn(
                               'grid h-8 w-8 place-items-center rounded-full font-fw-sans text-caption font-medium transition-colors disabled:opacity-50',
+                              'focus-visible:ring-accent-500/40',
                               selected
                                 ? 'bg-accent-500 text-text-on-accent shadow-flat'
                                 : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                             )}
                           >
                             {day.short}
-                          </button>
+                          </UiButton>
                         );
                       })}
                     </div>
@@ -979,28 +978,24 @@ export function FairwayEventEditor({
                     <div>
                       <label htmlFor="ev-recurrence-end" className={labelCls}>Series ends</label>
                       <div className="relative">
-                        <select
-                          id="ev-recurrence-end"
+                        <UiSelect
+                          options={[
+                            { value: 'count', label: 'After a number of events' },
+                            { value: 'until', label: 'On a date' },
+                          ]}
                           value={formData.recurrenceEndMode ?? 'count'}
-                          onChange={(e) =>
-                            setFormData({ ...formData, recurrenceEndMode: e.target.value as RecurrenceEndMode })
+                          onChange={(value) =>
+                            setFormData({ ...formData, recurrenceEndMode: value as RecurrenceEndMode })
                           }
                           disabled={locked}
                           className={cn(selectFieldCls, 'bg-surface')}
-                        >
-                          <option value="count">After a number of events</option>
-                          <option value="until">On a date</option>
-                        </select>
-                        <ChevronDown
-                          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
-                          aria-hidden
                         />
                       </div>
                     </div>
                     {(formData.recurrenceEndMode ?? 'count') === 'count' ? (
                       <div>
                         <label htmlFor="ev-recurrence-count" className={labelCls}>Occurrences</label>
-                        <input
+                        <UiInput
                           id="ev-recurrence-count"
                           type="number"
                           min={MIN_RECURRENCE_COUNT}
@@ -1024,7 +1019,7 @@ export function FairwayEventEditor({
                     ) : (
                       <div>
                         <label htmlFor="ev-recurrence-until" className={labelCls}>Repeat until</label>
-                        <input
+                        <UiInput
                           id="ev-recurrence-until"
                           type="date"
                           min={formData.startDate}

@@ -169,21 +169,21 @@ function AIROICard({ roi, coachhelm }: { roi: AdminDashboardData['coachhelmRoi']
       'glass-standard rounded-2xl p-5 md:p-6'
     )}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+        <div className="bg-cream-50 rounded-xl p-4 text-center border border-warm-200/40">
           <p className="text-2xl font-bold text-warm-900 tabular-nums">{roi.coachesUsingAI}</p>
           <p className="text-label text-warm-400 uppercase tracking-wider mt-1">AI Coaches</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+        <div className="bg-cream-50 rounded-xl p-4 text-center border border-warm-200/40">
           <p className="text-2xl font-bold text-warm-900 tabular-nums">{roi.coachesNotUsingAI}</p>
           <p className="text-label text-warm-400 uppercase tracking-wider mt-1">Non-AI Coaches</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+        <div className="bg-cream-50 rounded-xl p-4 text-center border border-warm-200/40">
           <p className="text-2xl font-bold text-warm-900 tabular-nums">
             {roi.avgScoreAICoachPlayers !== null ? roi.avgScoreAICoachPlayers.toFixed(1) : <span className="text-warm-400">—</span>}
           </p>
           <p className="text-label text-warm-400 uppercase tracking-wider mt-1">AI Avg Score</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+        <div className="bg-cream-50 rounded-xl p-4 text-center border border-warm-200/40">
           <p className={cn(
             'text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
             roi.scoreDifference !== null && roi.scoreDifference > 0 ? 'text-primary-600' : 'text-warm-900'
@@ -196,15 +196,15 @@ function AIROICard({ roi, coachhelm }: { roi: AdminDashboardData['coachhelmRoi']
 
       {/* AI Activity summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-white/30">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-cream-50 border border-warm-200/40">
           <span className="text-xs text-warm-600">Total Reviews</span>
           <span className="text-sm font-semibold text-warm-900 tabular-nums">{coachhelm.totalReviewsAllTime}</span>
         </div>
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-white/30">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-cream-50 border border-warm-200/40">
           <span className="text-xs text-warm-600">Philosophy Adoption</span>
           <span className="text-sm font-semibold text-warm-900 tabular-nums">{coachhelm.coachPhilosophyAdoption}%</span>
         </div>
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-white/30">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-cream-50 border border-warm-200/40">
           <span className="text-xs text-warm-600">Avg per Generation</span>
           <span className="text-sm font-semibold text-warm-900 tabular-nums">{coachhelm.avgInsightsPerGeneration}</span>
         </div>

@@ -175,7 +175,7 @@ export function PDFViewer({
           {/* Using iframe for PDF rendering - browser's native PDF viewer */}
           <iframe
             src={`${url}#page=${currentPage}&toolbar=0&navpanes=0`}
-            className="w-full h-[800px] border-0 rounded-md shadow-lg bg-white"
+            className="w-full h-[800px] border-0 rounded-md shadow-lg bg-cream-50"
             onLoad={() => setIsLoading(false)}
             onError={() => {
               setIsLoading(false);

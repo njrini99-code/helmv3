@@ -39,6 +39,9 @@ import { EventDocumentsSection } from './EventDocumentsSection';
 import { useSafeAreaInsets, useHapticFeedback } from '@/hooks/use-mobile-detection';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -298,12 +301,15 @@ export function MobileEventSheet({
   return (
     <>
       {/* Backdrop — no backdrop-blur to avoid Safari stacking context bugs with fixed children */}
-      <button
+      <Button variant="ghost"
         type="button"
-        className="fixed inset-0 bg-black/50 z-50 cursor-default border-none"
+        className="fixed inset-0 bg-black/50 z-50 cursor-default border-none rounded-none min-h-0 p-0 hover:bg-black/50 active:scale-100"
         aria-label="Close"
         onClick={handleClose}
-      />
+        haptic="none"
+      >
+        {null}
+      </Button>
 
       {/* Bottom Sheet — use 90vh (not dvh) for stable height on mobile Safari */}
       <div
@@ -313,7 +319,7 @@ export function MobileEventSheet({
         aria-label={isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event'}
         className={cn(
           'fixed inset-x-0 bottom-0 z-50',
-          'bg-white rounded-t-3xl shadow-2xl',
+          'bg-cream-50 rounded-t-3xl shadow-2xl',
           'max-h-[90vh] overflow-hidden',
           'transform transition-transform duration-300 ease-out',
           isOpen ? 'translate-y-0' : 'translate-y-full'
@@ -401,7 +407,7 @@ export function MobileEventSheet({
 
           {/* Hero Title Input */}
           <div className="px-5 pb-4">
-            <input
+            <Input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -413,7 +419,7 @@ export function MobileEventSheet({
               autoCorrect="on"
               enterKeyHint="next"
               className={cn(
-                'w-full text-h3 font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300',
+                'text-h3 font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300',
                 'bg-transparent border-0 outline-none p-0',
                 'disabled:text-warm-700',
                 'min-h-[40px]'
@@ -426,37 +432,31 @@ export function MobileEventSheet({
             <div className="bg-warm-50 rounded-2xl p-4 space-y-3">
               {/* Date Row — Start & End */}
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-cream-50 shadow-sm flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-4.5 h-4.5 text-warm-500" />
                 </div>
                 <div className="flex-1 flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    disabled={isViewMode || isSaving}
-                    aria-label="Start date"
-                    className={cn(
-                      'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
-                      'border border-warm-200 outline-none min-h-[40px]',
-                      'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
-                      'disabled:text-warm-600 disabled:bg-warm-50'
-                    )}
-                  />
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      disabled={isViewMode || isSaving}
+                      aria-label="Start date"
+                      className="px-3 py-2 min-h-[40px]"
+                    />
+                  </div>
                   <span className="text-warm-400 text-sm" aria-hidden="true">to</span>
-                  <input
-                    type="date"
-                    value={formData.endDate || ''}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
-                    disabled={isViewMode || isSaving}
-                    aria-label="End date"
-                    className={cn(
-                      'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
-                      'border border-warm-200 outline-none min-h-[40px]',
-                      'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
-                      'disabled:text-warm-600 disabled:bg-warm-50'
-                    )}
-                  />
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      value={formData.endDate || ''}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
+                      disabled={isViewMode || isSaving}
+                      aria-label="End date"
+                      className="px-3 py-2 min-h-[40px]"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -482,7 +482,7 @@ export function MobileEventSheet({
                   )}
                 >
                   <span aria-hidden="true" className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-cream-50 rounded-full shadow-sm transition-transform duration-200',
                     formData.allDay && 'translate-x-5'
                   )} />
                 </IconButton>
@@ -491,37 +491,31 @@ export function MobileEventSheet({
               {/* Time Row */}
               {!formData.allDay && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-cream-50 shadow-sm flex items-center justify-center flex-shrink-0">
                     <Clock className="w-4.5 h-4.5 text-warm-500" />
                   </div>
                   <div className="flex-1 flex items-center gap-2">
-                    <input
-                      type="time"
-                      value={formData.startTime || ''}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
-                      disabled={isViewMode || isSaving}
-                      aria-label="Start time"
-                      className={cn(
-                        'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
-                        'border border-warm-200 outline-none min-h-[40px]',
-                        'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
-                        'disabled:text-warm-600 disabled:bg-warm-50'
-                      )}
-                    />
+                    <div className="flex-1">
+                      <Input
+                        type="time"
+                        value={formData.startTime || ''}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
+                        disabled={isViewMode || isSaving}
+                        aria-label="Start time"
+                        className="px-3 py-2 min-h-[40px]"
+                      />
+                    </div>
                     <span className="text-warm-400 text-sm" aria-hidden="true">to</span>
-                    <input
-                      type="time"
-                      value={formData.endTime || ''}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
-                      disabled={isViewMode || isSaving}
-                      aria-label="End time"
-                      className={cn(
-                        'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
-                        'border border-warm-200 outline-none min-h-[40px]',
-                        'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
-                        'disabled:text-warm-600 disabled:bg-warm-50'
-                      )}
-                    />
+                    <div className="flex-1">
+                      <Input
+                        type="time"
+                        value={formData.endTime || ''}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
+                        disabled={isViewMode || isSaving}
+                        aria-label="End time"
+                        className="px-3 py-2 min-h-[40px]"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -532,28 +526,30 @@ export function MobileEventSheet({
           <div className="px-5 pb-4">
             <div className="flex items-center gap-3 bg-warm-50 rounded-2xl px-4 py-3">
               <MapPin className="w-5 h-5 text-warm-400 flex-shrink-0" aria-hidden="true" />
-              <input
-                type="text"
-                value={formData.location || ''}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
-                disabled={isViewMode || isSaving}
-                placeholder="Add location..."
-                aria-label="Location"
-                autoCapitalize="words"
-                autoCorrect="on"
-                enterKeyHint="next"
-                className={cn(
-                  'flex-1 bg-transparent text-base text-warm-900 placeholder:text-warm-400',
-                  'border-0 outline-none min-h-[40px]',
-                  'disabled:text-warm-600'
-                )}
-              />
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  value={formData.location || ''}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
+                  disabled={isViewMode || isSaving}
+                  placeholder="Add location..."
+                  aria-label="Location"
+                  autoCapitalize="words"
+                  autoCorrect="on"
+                  enterKeyHint="next"
+                  className={cn(
+                    'bg-transparent text-base text-warm-900 placeholder:text-warm-400',
+                    'border-0 outline-none min-h-[40px]',
+                    'disabled:text-warm-600'
+                  )}
+                />
+              </div>
             </div>
           </div>
 
           {/* Description */}
           <div className="px-5 pb-4">
-            <textarea
+            <Textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
               disabled={isViewMode || isSaving}
@@ -563,7 +559,7 @@ export function MobileEventSheet({
               autoCapitalize="sentences"
               autoCorrect="on"
               className={cn(
-                'w-full bg-warm-50 rounded-2xl px-4 py-3 text-base text-warm-900',
+                'bg-warm-50 rounded-2xl px-4 py-3 text-base text-warm-900',
                 'placeholder:text-warm-400 border-0 outline-none resize-none',
                 'disabled:text-warm-600'
               )}
@@ -584,32 +580,33 @@ export function MobileEventSheet({
             <div className="px-5 pb-4">
               <div className="bg-warm-50 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <label
-                    htmlFor="mobile-event-recurrence"
-                    className="text-sm font-medium text-warm-900"
-                  >
+                  {/* Select (ui) doesn't expose an `id` prop for htmlFor targeting,
+                      so this is a visible label without formal <label for> association —
+                      the wrapper button still has an accessible name via its own
+                      option text; this is the best fit without dropping the design. */}
+                  <span className="text-sm font-medium text-warm-900">
                     Repeats
-                  </label>
-                  <select
-                    id="mobile-event-recurrence"
+                  </span>
+                  <Select
+                    options={[
+                      { value: 'none', label: "Doesn't repeat" },
+                      { value: 'daily', label: 'Daily' },
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'monthly', label: 'Monthly' },
+                    ]}
                     value={formData.recurrence}
-                    onChange={(e) => setFormData({
+                    onChange={(value) => setFormData({
                       ...formData,
-                      recurrence: e.target.value as MobileRecurrenceFrequency,
+                      recurrence: value as MobileRecurrenceFrequency,
                     })}
                     disabled={isSaving}
-                    className="px-3 py-1.5 rounded-xl bg-white border-0 text-sm text-warm-900 font-medium shadow-sm"
-                  >
-                    <option value="none">Doesn&apos;t repeat</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
+                    className="w-auto min-h-0 px-3 py-1.5 rounded-xl bg-cream-50 border-0 text-sm text-warm-900 font-medium shadow-sm"
+                  />
                 </div>
                 {formData.recurrence !== 'none' && (
                   <div className="flex items-center justify-between gap-3 text-sm text-warm-600">
                     <span>Number of occurrences</span>
-                    <input
+                    <Input
                       type="number"
                       min={2}
                       max={52}
@@ -619,7 +616,8 @@ export function MobileEventSheet({
                         recurrenceCount: Math.max(2, Math.min(52, Number(e.target.value) || 10)),
                       })}
                       disabled={isSaving}
-                      className="w-20 px-2 py-1.5 rounded-xl bg-white border-0 text-sm text-warm-900 font-medium shadow-sm tabular-nums text-right"
+                      aria-label="Number of occurrences"
+                      className="w-20 px-2 py-1.5 min-h-0 rounded-xl bg-cream-50 border-0 text-sm text-warm-900 font-medium shadow-sm tabular-nums text-right"
                     />
                   </div>
                 )}
@@ -700,22 +698,22 @@ export function MobileEventSheet({
                   )}
                 </Button>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
+                  <div className="bg-cream-50 rounded-xl p-2.5 text-center shadow-sm">
                     <CheckCircle2 className="w-4 h-4 text-primary-600 mx-auto mb-0.5" />
                     <p className="text-body-lg font-medium tracking-[-0.005em] text-primary-700">{rsvpSummary.accepted}</p>
                     <p className="text-xs text-primary-600 font-medium">Going</p>
                   </div>
-                  <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
+                  <div className="bg-cream-50 rounded-xl p-2.5 text-center shadow-sm">
                     <HelpCircle className="w-4 h-4 text-amber-600 mx-auto mb-0.5" />
                     <p className="text-body-lg font-medium tracking-[-0.005em] text-amber-700">{rsvpSummary.tentative}</p>
                     <p className="text-xs text-amber-600 font-medium">Maybe</p>
                   </div>
-                  <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
+                  <div className="bg-cream-50 rounded-xl p-2.5 text-center shadow-sm">
                     <XCircle className="w-4 h-4 text-rose-600 mx-auto mb-0.5" />
                     <p className="text-body-lg font-medium tracking-[-0.005em] text-rose-700">{rsvpSummary.declined}</p>
                     <p className="text-xs text-rose-600 font-medium">No</p>
                   </div>
-                  <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
+                  <div className="bg-cream-50 rounded-xl p-2.5 text-center shadow-sm">
                     <Clock className="w-4 h-4 text-warm-500 mx-auto mb-0.5" />
                     <p className="text-body-lg font-medium tracking-[-0.005em] text-warm-700">{rsvpSummary.pending}</p>
                     <p className="text-xs text-warm-500 font-medium">Pending</p>
@@ -743,7 +741,7 @@ export function MobileEventSheet({
                       return (
                         <li
                           key={att.playerId}
-                          className="flex items-center gap-3 px-2 py-2 bg-white rounded-xl"
+                          className="flex items-center gap-3 px-2 py-2 bg-cream-50 rounded-xl"
                         >
                           {att.avatarUrl ? (
                             <img
@@ -820,7 +818,7 @@ export function MobileEventSheet({
                       onClick={() => setShowDeleteConfirm(false)}
                       disabled={isDeleting}
                       className={cn(
-                        'flex-1 px-4 py-2.5 rounded-xl bg-white',
+                        'flex-1 px-4 py-2.5 rounded-xl bg-cream-50',
                         'text-warm-700 font-medium',
                         'active:scale-[0.98] min-h-[44px] shadow-sm'
                       )}
@@ -849,7 +847,7 @@ export function MobileEventSheet({
 
         {/* Footer Actions */}
         <div
-          className="px-5 py-4 border-t border-warm-100 bg-white"
+          className="px-5 py-4 border-t border-warm-100 bg-cream-50"
           style={{ paddingBottom: Math.max(safeAreaBottom, 16) }}
         >
           {canEdit ? (

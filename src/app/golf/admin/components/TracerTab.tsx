@@ -226,7 +226,7 @@ export function TracerTab() {
         <p className="text-warm-500 text-sm mt-1 max-w-md mx-auto">{error}</p>
         <Button variant="ghost"
           onClick={() => loadData()}
-          className="mt-4 px-5 py-2.5 bg-white/90 border border-warm-200 rounded-xl text-sm font-medium hover:bg-white hover:shadow-sm transition-all"
+          className="mt-4 px-5 py-2.5 bg-cream-50 border border-warm-200 rounded-xl text-sm font-medium hover:bg-cream-100 hover:shadow-sm transition-all"
         >
           Try again
         </Button>
@@ -263,7 +263,7 @@ export function TracerTab() {
           disabled={refreshing}
           className={cn(
             'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-            'bg-white/60 border border-white/30 text-warm-500 hover:bg-white/80 hover:text-warm-700',
+            'glass-subtle text-warm-500 hover:bg-cream-100 hover:text-warm-700',
             refreshing && 'opacity-60 cursor-not-allowed'
           )}
         >

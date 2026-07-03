@@ -197,7 +197,7 @@ export function TeamShotOverview({
               {topWeaknesses.slice(0, 3).map((weakness, i) => (
                 <m.div
                   key={i}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-white/20"
+                  className="flex items-center justify-between p-3 rounded-xl glass-standard"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 + i * 0.1 })}

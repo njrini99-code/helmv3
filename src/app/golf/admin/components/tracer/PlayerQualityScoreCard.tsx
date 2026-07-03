@@ -10,13 +10,13 @@ interface PlayerQualityScoreCardProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 90) return 'text-green-600 bg-green-50 border-green-200';
+  if (score >= 90) return 'text-primary-600 bg-primary-50 border-primary-200';
   if (score >= 70) return 'text-amber-600 bg-amber-50 border-amber-200';
   return 'text-red-600 bg-red-50 border-red-200';
 }
 
 function getBarColor(score: number): string {
-  if (score >= 90) return 'bg-green-500';
+  if (score >= 90) return 'bg-primary-500';
   if (score >= 70) return 'bg-amber-500';
   return 'bg-red-500';
 }
@@ -28,7 +28,7 @@ export function PlayerQualityScoreCard({ score, onFilterPlayer }: PlayerQualityS
       onClick={() => onFilterPlayer?.(score.player_id)}
       className={cn(
         'flex items-center gap-4 w-full px-4 py-3 rounded-xl transition-all text-left',
-        'bg-white/40 hover:bg-white/60 border border-white/20'
+        'glass-subtle'
       )}
     >
       {/* Score circle */}
@@ -44,7 +44,7 @@ export function PlayerQualityScoreCard({ score, onFilterPlayer }: PlayerQualityS
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-warm-900 truncate">{score.player_name}</span>
           {score.total_issues === 0 && (
-            <span className="text-eyebrow font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Clean</span>
+            <span className="text-eyebrow font-semibold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full">Clean</span>
           )}
         </div>
 

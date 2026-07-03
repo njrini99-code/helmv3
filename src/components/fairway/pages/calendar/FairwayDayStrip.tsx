@@ -25,6 +25,7 @@
 import * as React from 'react';
 import { startOfWeek, addDays, isSameDay, isBefore, format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/fairway/controls/button';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 const WEEK_STARTS_ON = 0 as const;
@@ -113,10 +114,11 @@ export function FairwayDayStrip({
         }
 
         return (
-          // GOTCHA (a): native <button>, not Surface as="button".
-          <button
+          // GOTCHA (a): Fairway <Button variant="ghost">, not Surface as="button".
+          <Button
             key={key}
             type="button"
+            variant="ghost"
             onClick={() => {
               if (dayIsSelected) return;
               onSelectDate(day);
@@ -129,71 +131,73 @@ export function FairwayDayStrip({
                 : ' — no events'
             }`}
             className={cn(
-              'group relative flex min-h-[78px] flex-col items-center justify-between md:min-h-[88px]',
+              'group relative block h-auto min-h-[78px] w-full border-0 font-normal md:min-h-[88px]',
               'rounded-card px-1.5 py-2.5 md:px-2 md:py-3',
               'transition-[background-color,box-shadow,transform,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'motion-reduce:transition-none',
               // Selected — the green CTA fill (overrides everything else).
-              dayIsSelected && 'bg-accent-500 text-text-on-accent shadow-soft',
+              dayIsSelected && 'bg-accent-500 text-text-on-accent shadow-soft hover:bg-accent-500',
               // Today (not selected) — quiet accent ring on a toasted well.
               !dayIsSelected && dayIsToday && 'bg-inset ring-2 ring-accent-300',
               // Resting / past — toasted-cream well with a subtle hover.
               !dayIsSelected && !dayIsToday && [
-                'bg-inset hover:shadow-soft hover:-translate-y-px active:translate-y-0',
+                'bg-inset hover:bg-inset hover:shadow-soft hover:-translate-y-px active:translate-y-0',
                 'motion-reduce:hover:translate-y-0',
               ],
             )}
           >
-            {/* Day-of-week eyebrow. */}
-            <span
-              className={cn(
-                'font-fw-display text-eyebrow uppercase leading-none tracking-[0.12em]',
-                dayIsSelected
-                  ? 'text-text-on-accent/85'
-                  : dayIsToday
-                    ? 'text-accent-700'
+            <span className="flex h-full min-h-[78px] w-full flex-col items-center justify-between md:min-h-[88px]">
+              {/* Day-of-week eyebrow. */}
+              <span
+                className={cn(
+                  'font-fw-display text-eyebrow uppercase leading-none tracking-[0.12em]',
+                  dayIsSelected
+                    ? 'text-text-on-accent/85'
+                    : dayIsToday
+                      ? 'text-accent-700'
+                      : dayIsPast
+                        ? 'text-text-tertiary/60'
+                        : 'text-text-tertiary',
+                )}
+              >
+                {format(day, 'EEE')}
+              </span>
+
+              {/* Day number — Fragment-Mono tabular-nums. */}
+              <span
+                className={cn(
+                  'font-fw-mono text-h3 font-semibold leading-none tabular-nums',
+                  dayIsSelected
+                    ? 'text-text-on-accent'
                     : dayIsPast
-                      ? 'text-text-tertiary/60'
-                      : 'text-text-tertiary',
-              )}
-            >
-              {format(day, 'EEE')}
-            </span>
+                      ? 'text-text-tertiary/70'
+                      : 'text-text-primary',
+                )}
+                suppressHydrationWarning
+              >
+                {format(day, 'd')}
+              </span>
 
-            {/* Day number — Fragment-Mono tabular-nums. */}
-            <span
-              className={cn(
-                'font-fw-mono text-h3 font-semibold leading-none tabular-nums',
-                dayIsSelected
-                  ? 'text-text-on-accent'
-                  : dayIsPast
-                    ? 'text-text-tertiary/70'
-                    : 'text-text-primary',
-              )}
-              suppressHydrationWarning
-            >
-              {format(day, 'd')}
+              {/* Density dots — up to 3 type-toned (capped at 3). */}
+              <span aria-hidden className="flex h-1.5 items-center gap-[3px]">
+                {dotTypes.length === 0 ? (
+                  <span className="h-1 w-1 rounded-full bg-transparent" />
+                ) : (
+                  dotTypes.map((t, i) => (
+                    <span
+                      key={`${key}-${t}-${i}`}
+                      className={cn(
+                        'h-1 w-1 rounded-full',
+                        dayIsSelected ? 'bg-text-on-accent/80' : TYPE_DOT_CLASS[t] ?? DEFAULT_DOT_CLASS,
+                        dayIsPast && !dayIsSelected && 'opacity-50',
+                      )}
+                    />
+                  ))
+                )}
+              </span>
             </span>
-
-            {/* Density dots — up to 3 type-toned (capped at 3). */}
-            <span aria-hidden className="flex h-1.5 items-center gap-[3px]">
-              {dotTypes.length === 0 ? (
-                <span className="h-1 w-1 rounded-full bg-transparent" />
-              ) : (
-                dotTypes.map((t, i) => (
-                  <span
-                    key={`${key}-${t}-${i}`}
-                    className={cn(
-                      'h-1 w-1 rounded-full',
-                      dayIsSelected ? 'bg-text-on-accent/80' : TYPE_DOT_CLASS[t] ?? DEFAULT_DOT_CLASS,
-                      dayIsPast && !dayIsSelected && 'opacity-50',
-                    )}
-                  />
-                ))
-              )}
-            </span>
-          </button>
+          </Button>
         );
       })}
     </div>

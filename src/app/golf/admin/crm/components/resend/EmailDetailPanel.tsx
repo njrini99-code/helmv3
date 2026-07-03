@@ -120,10 +120,10 @@ export function EmailDetailPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 30, stiffness: 300 })}
-            className="fixed top-0 right-0 h-full w-full max-w-2xl z-50 bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto"
+            className="fixed top-0 right-0 h-full w-full max-w-2xl z-50 glass-prominent shadow-2xl overflow-y-auto"
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl px-6 py-4 border-b border-warm-100/60 flex items-center justify-between">
+            <div className="sticky top-0 z-10 glass-standard px-6 py-4 border-b border-warm-100/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
                   <IconMail size={16} />

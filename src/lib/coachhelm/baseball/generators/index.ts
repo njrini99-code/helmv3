@@ -517,7 +517,7 @@ export function runBaseballGenerators(inputs: BaseballEngineInputs): BaseballIns
 }
 
 /** All generator ids — useful for the action's stale-row reconciliation. */
-const BASEBALL_GENERATOR_IDS = [
+const _BASEBALL_GENERATOR_IDS = [
   'two_strike_chase',
   'game_vs_practice_gap',
   'velo_command_decay',
@@ -525,6 +525,6 @@ const BASEBALL_GENERATOR_IDS = [
   'schedule_conflict',
 ] as const;
 
-export type BaseballGeneratorId = (typeof BASEBALL_GENERATOR_IDS)[number];
+export type BaseballGeneratorId = (typeof _BASEBALL_GENERATOR_IDS)[number];
 
 

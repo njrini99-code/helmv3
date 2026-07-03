@@ -252,7 +252,7 @@ export function SmartEmptyState({
                 onClick={suggestion.action}
                 className={cn(
                   'flex items-center gap-3 p-4 rounded-xl text-left',
-                  'bg-white border border-warm-200',
+                  'bg-cream-50 border border-warm-200',
                   'hover:border-primary-300 hover:bg-primary-50/50',
                   'transition-all duration-200',
                   'group animate-scale-in'
@@ -294,7 +294,7 @@ export function SmartEmptyState({
                   router.push(`?${params.toString()}`);
                 }}
                 className={cn(
-                  'px-4 py-3 rounded-xl bg-white border border-warm-200',
+                  'px-4 py-3 rounded-xl bg-cream-50 border border-warm-200',
                   'hover:border-primary-300 hover:bg-primary-50/50',
                   'transition-all duration-200 animate-scale-in'
                 )}

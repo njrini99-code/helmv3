@@ -140,13 +140,13 @@ export function NotificationCenter({
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex gap-1 bg-cream-50 p-1 rounded-lg">
+            <div className="flex gap-1 bg-cream-200 p-1 rounded-lg">
               <Button variant="ghost"
                 onClick={() => setFilter('all')}
                 className={cn(
                   'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                   filter === 'all'
-                    ? 'bg-white text-warm-900 shadow-sm'
+                    ? 'bg-cream-50 text-warm-900 shadow-sm'
                     : 'text-warm-600 hover:text-warm-900'
                 )}
               >
@@ -157,7 +157,7 @@ export function NotificationCenter({
                 className={cn(
                   'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                   filter === 'unread'
-                    ? 'bg-white text-warm-900 shadow-sm'
+                    ? 'bg-cream-50 text-warm-900 shadow-sm'
                     : 'text-warm-600 hover:text-warm-900'
                 )}
               >
@@ -232,7 +232,7 @@ export function NotificationCenter({
                             {!notification.read && (
                               <IconButton variant="default" aria-label="Confirm"
                                 onClick={() => onMarkAsRead(notification.id)}
-                                className="p-1 hover:bg-white active:bg-cream-100/75 rounded transition-colors"
+                                className="p-1 hover:bg-cream-100 active:bg-cream-100/75 rounded transition-colors"
                                 title="Mark as read"
                               >
                                 <IconCheck size={14} className="text-warm-400 hover:text-warm-600" />
@@ -240,7 +240,7 @@ export function NotificationCenter({
                             )}
                             <IconButton variant="default" aria-label="Close"
                               onClick={() => onDelete(notification.id)}
-                              className="p-1 hover:bg-white active:bg-cream-100/75 rounded transition-colors"
+                              className="p-1 hover:bg-cream-100 active:bg-cream-100/75 rounded transition-colors"
                               title="Delete"
                             >
                               <IconX size={14} className="text-warm-400 hover:text-red-600" />

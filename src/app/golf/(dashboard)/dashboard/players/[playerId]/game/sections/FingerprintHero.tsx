@@ -155,7 +155,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
             href={`/golf/dashboard/messages?player=${player.id}`}
             className={cn(
               'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium',
-              'bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 hover:border-warm-300',
+              'bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 hover:border-warm-300',
               'active:scale-[0.98] transition-all',
             )}
             data-testid="fingerprint-discuss-link"
@@ -168,7 +168,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
             href={`/golf/dashboard/development?player=${player.id}`}
             className={cn(
               'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium',
-              'bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 hover:border-warm-300',
+              'bg-cream-50 border border-warm-200 text-warm-700 hover:bg-warm-50 hover:border-warm-300',
               'active:scale-[0.98] transition-all',
             )}
             data-testid="fingerprint-focus-area-link"

@@ -45,8 +45,8 @@ export function AdminOnlineIndicator({
           <Button variant="ghost"
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200',
-              'bg-white/50 hover:bg-white/70 border border-white/20',
-              'data-[state=open]:bg-white/70'
+              'glass-subtle hover:bg-cream-100',
+              'data-[state=open]:bg-cream-100'
             )}
           >
             {/* Status indicator */}

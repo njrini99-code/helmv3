@@ -105,7 +105,7 @@ export function NotesPanel({ coachId }: NotesPanelProps) {
 
       {!loading && !error && notes.length === 0 && (
         <div className="rounded-2xl border border-dashed border-warm-200 bg-warm-50/40 px-4 py-8 text-center">
-          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center mx-auto mb-2 border border-warm-200/60">
+          <div className="w-10 h-10 rounded-xl bg-cream-50 flex items-center justify-center mx-auto mb-2 border border-warm-200/60">
             <IconNote size={18} className="text-warm-400" />
           </div>
           <p className="text-sm font-medium text-warm-700">No notes yet</p>

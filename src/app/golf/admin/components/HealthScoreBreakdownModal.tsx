@@ -58,11 +58,11 @@ export function HealthScoreBreakdownModal({ score, breakdown, onClose }: Props) 
       >
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper keeps backdrop-close from firing inside the dialog */}
         <div
-          className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+          className="glass-prominent rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 bg-white/80 shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 bg-cream-50/80 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center">
                 <IconActivity size={18} className="text-primary-600" />
@@ -164,7 +164,7 @@ export function HealthScoreBreakdownModal({ score, breakdown, onClose }: Props) 
           </div>
 
           {/* Footer */}
-          <div className="shrink-0 border-t border-warm-100 bg-white/80 px-6 py-3 flex justify-end">
+          <div className="shrink-0 border-t border-warm-100 bg-cream-50/80 px-6 py-3 flex justify-end">
             <Button variant="ghost"
               type="button"
               onClick={onClose}

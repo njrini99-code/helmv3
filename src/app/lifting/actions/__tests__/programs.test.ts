@@ -21,10 +21,28 @@ interface FinalResult {
   error: unknown;
 }
 
+/** Shape shared by every mock Supabase query builder in this file. */
+interface MockQueryBuilder {
+  select: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  limit: ReturnType<typeof vi.fn>;
+  in: ReturnType<typeof vi.fn>;
+  is: ReturnType<typeof vi.fn>;
+  insert: ReturnType<typeof vi.fn>;
+  insertArgs: unknown;
+  update: ReturnType<typeof vi.fn>;
+  updateArgs: unknown;
+  upsert: ReturnType<typeof vi.fn>;
+  upsertArgs?: unknown;
+  single: ReturnType<typeof vi.fn>;
+  maybeSingle: ReturnType<typeof vi.fn>;
+  then: (resolve: (v: FinalResult) => void) => void;
+}
+
 /** Generic bare-await / terminal-resolver builder for simple read-only queries. */
-function makeQueryBuilder(finalResult: FinalResult) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const builder: any = {};
+function makeQueryBuilder(finalResult: FinalResult): MockQueryBuilder {
+  const builder = {} as Record<string, unknown>;
   const passthrough = ['select', 'eq', 'order', 'limit', 'in', 'is'];
   for (const m of passthrough) {
     builder[m] = vi.fn(() => builder);
@@ -47,7 +65,7 @@ function makeQueryBuilder(finalResult: FinalResult) {
   builder.single = vi.fn(async () => finalResult);
   builder.maybeSingle = vi.fn(async () => finalResult);
   builder.then = (resolve: (v: FinalResult) => void) => resolve(finalResult);
-  return builder;
+  return builder as unknown as MockQueryBuilder;
 }
 
 /**
@@ -56,9 +74,8 @@ function makeQueryBuilder(finalResult: FinalResult) {
  * read) results — a single fixed finalResult can't represent both a "no
  * existing row" lookup and a "here's the freshly inserted row" read at once.
  */
-function makeAssignmentsBuilder(existingRow: { id: string } | null, insertedRow: { id: string }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const builder: any = {};
+function makeAssignmentsBuilder(existingRow: { id: string } | null, insertedRow: { id: string }): MockQueryBuilder {
+  const builder = {} as Record<string, unknown>;
   const passthrough = ['select', 'eq', 'is', 'order', 'in', 'limit'];
   for (const m of passthrough) {
     builder[m] = vi.fn(() => builder);
@@ -82,7 +99,7 @@ function makeAssignmentsBuilder(existingRow: { id: string } | null, insertedRow:
   builder.maybeSingle = vi.fn(async () => ({ data: existingRow, error: null }));
   builder.single = vi.fn(async () => ({ data: insertedRow, error: null }));
   builder.then = (resolve: (v: FinalResult) => void) => resolve({ data: null, error: null });
-  return builder;
+  return builder as unknown as MockQueryBuilder;
 }
 
 const ORG_ID = '11111111-1111-4111-8111-111111111111';
@@ -93,7 +110,7 @@ const ATHLETE_ID = '55555555-5555-4555-8555-555555555555';
 const ASSIGNMENT_ID = '66666666-6666-4666-8666-666666666666';
 const SESSION_ID = '77777777-7777-4777-8777-777777777777';
 
-let tableBuilders: Record<string, ReturnType<typeof makeQueryBuilder>>;
+let tableBuilders: Record<string, MockQueryBuilder>;
 
 function resetTables(existingAssignment: { id: string } | null = null) {
   tableBuilders = {
@@ -119,10 +136,9 @@ function resetTables(existingAssignment: { id: string } | null = null) {
     }),
     helm_lifting_sections: makeQueryBuilder({ data: [], error: null }),
     helm_lifting_prescriptions: makeQueryBuilder({ data: [], error: null }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     helm_lifting_program_assignments: makeAssignmentsBuilder(existingAssignment, {
       id: ASSIGNMENT_ID,
-    }) as any,
+    }),
     helm_lifting_sessions: makeQueryBuilder({ data: { id: SESSION_ID }, error: null }),
     helm_lifting_session_exercises: makeQueryBuilder({ data: [], error: null }),
   };
@@ -177,7 +193,7 @@ describe('publishProgram program_assignments write target', () => {
     // target 42P10'd on every call and the error was swallowed.
     expect(res.count).toBe(1);
 
-    const assignmentsBuilder = tableBuilders.helm_lifting_program_assignments;
+    const assignmentsBuilder = tableBuilders.helm_lifting_program_assignments!;
     expect(assignmentsBuilder.upsert).not.toHaveBeenCalled();
     expect(assignmentsBuilder.insert).toHaveBeenCalledTimes(1);
     const inserted = assignmentsBuilder.insertArgs as { athlete_id: string | null; lift_day_id: string };
@@ -195,7 +211,7 @@ describe('publishProgram program_assignments write target', () => {
       targetAthleteId: null,
     });
 
-    const assignmentsBuilder = tableBuilders.helm_lifting_program_assignments;
+    const assignmentsBuilder = tableBuilders.helm_lifting_program_assignments!;
     expect(assignmentsBuilder.is).toHaveBeenCalledWith('athlete_id', null);
   });
 });
@@ -216,13 +232,13 @@ describe('publishProgram idempotent re-publish', () => {
     });
 
     expect(res.success).toBe(true);
-    const assignmentsBuilder = tableBuilders.helm_lifting_program_assignments;
+    const assignmentsBuilder = tableBuilders.helm_lifting_program_assignments!;
     expect(assignmentsBuilder.insert).not.toHaveBeenCalled();
     expect(assignmentsBuilder.update).toHaveBeenCalledTimes(1);
 
     // The reused assignment id must flow into the session's
     // program_assignment_id (the real dedup key for helm_lifting_sessions).
-    const sessionsBuilder = tableBuilders.helm_lifting_sessions;
+    const sessionsBuilder = tableBuilders.helm_lifting_sessions!;
     expect(sessionsBuilder.upsert).toHaveBeenCalledTimes(1);
     const [sessionPayload, sessionOpts] = sessionsBuilder.upsertArgs as [
       { program_assignment_id: string },

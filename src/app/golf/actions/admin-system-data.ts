@@ -134,6 +134,21 @@ function daysAgo(n: number): string {
   return d.toISOString();
 }
 
+// The tables/RPCs queried below (error_rate_hourly, auth_metrics_hourly,
+// background_job_logs, get_api_performance_summary, get_enhanced_system_health)
+// are telemetry objects that intentionally aren't part of the generated
+// `Database` types, so the Supabase client's `.from()`/`.rpc()` overloads
+// can't infer a row shape. These narrow helper types describe just the
+// chain shape we actually use, without falling back to `any`.
+type UntypedRow = Record<string, unknown>;
+type UntypedResult = { data: UntypedRow[] | null; error: unknown };
+interface UntypedQueryBuilder extends PromiseLike<UntypedResult> {
+  select: (columns: string) => UntypedQueryBuilder;
+  gte: (column: string, value: string) => UntypedQueryBuilder;
+  order: (column: string, opts: { ascending: boolean }) => UntypedQueryBuilder;
+  limit: (n: number) => UntypedQueryBuilder;
+}
+
 // ============================================
 // MAIN FETCH
 // ============================================
@@ -173,29 +188,29 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
       dbTelemetrySettled,
     ] = await Promise.allSettled([
       // RPC calls
-      (adminDb.rpc('get_api_performance_summary' as never, { period_days: 7 } as never) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
-      (adminDb.rpc('get_enhanced_system_health' as never) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+      (adminDb.rpc('get_api_performance_summary' as never, { period_days: 7 } as never) as unknown) as Promise<UntypedResult>,
+      (adminDb.rpc('get_enhanced_system_health' as never) as unknown) as Promise<UntypedResult>,
 
       // Direct table queries for hourly data
-      ((adminDb.from('error_rate_hourly' as never) as any)
+      (adminDb.from('error_rate_hourly' as never) as unknown as UntypedQueryBuilder)
         .select('*')
         .gte('hour', ago7d)
-        .order('hour', { ascending: true }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+        .order('hour', { ascending: true }),
 
-      ((adminDb.from('auth_metrics_hourly' as never) as any)
+      (adminDb.from('auth_metrics_hourly' as never) as unknown as UntypedQueryBuilder)
         .select('*')
         .gte('hour', ago7d)
-        .order('hour', { ascending: true }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+        .order('hour', { ascending: true }),
 
       // Bounded: last 7 days only + hard 500-row ceiling. Downstream
       // aggregator only counts last-7-days rows for `failures_7d`, so the
       // `.gte` is consistent with existing semantics. The 500 cap protects
       // against unbounded growth on jobs that fire frequently.
-      ((adminDb.from('background_job_logs' as never) as any)
+      (adminDb.from('background_job_logs' as never) as unknown as UntypedQueryBuilder)
         .select('*')
         .gte('started_at', ago7d)
         .order('started_at', { ascending: false })
-        .limit(500) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+        .limit(500),
 
       // get_db_telemetry returns a single jsonb payload (not a rowset).
       (adminDb.rpc('get_db_telemetry' as never) as unknown) as Promise<{ data: unknown; error: unknown }>,
@@ -203,8 +218,8 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
 
     function unwrapList(
       label: string,
-      settled: PromiseSettledResult<{ data: any[] | null; error: unknown }>,
-    ): any[] {
+      settled: PromiseSettledResult<UntypedResult>,
+    ): UntypedRow[] {
       if (settled.status === 'rejected') {
         void logServerError(
           `[admin-system-data] ${label} rejected: ${settled.reason instanceof Error ? settled.reason.message : String(settled.reason)}`,
@@ -264,7 +279,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
     );
 
     // Parse error trend (hourly)
-    const errorTrend: ErrorRateEntry[] = ((errorTrendRes.data ?? []) as any[]).map(
+    const errorTrend: ErrorRateEntry[] = (errorTrendRes.data ?? []).map(
       (row: Record<string, unknown>) => ({
         hour: String(row.hour ?? ''),
         totalErrors: Number(row.total_errors ?? 0),
@@ -275,7 +290,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
     );
 
     // Parse auth metrics (hourly)
-    const authMetrics: AuthMetricsEntry[] = ((authMetricsRes.data ?? []) as any[]).map(
+    const authMetrics: AuthMetricsEntry[] = (authMetricsRes.data ?? []).map(
       (row: Record<string, unknown>) => ({
         hour: String(row.hour ?? ''),
         successfulLogins: Number(row.successful_logins ?? 0),

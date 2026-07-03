@@ -14,8 +14,8 @@ interface DataCompletenessGridProps {
 const CATEGORIES: CompletenessCategory[] = ['Putts', 'FW', 'GIR', 'Details', 'SG', 'Cache'];
 
 function getCellColors(pct: number): string {
-  if (pct === 100) return 'bg-green-100 text-green-700';
-  if (pct >= 70) return 'bg-green-50 text-green-600';
+  if (pct === 100) return 'bg-primary-100 text-primary-700';
+  if (pct >= 70) return 'bg-primary-50 text-primary-600';
   if (pct >= 30) return 'bg-amber-50 text-amber-700';
   if (pct >= 1) return 'bg-red-50 text-red-600';
   return 'bg-warm-100 text-warm-400';
@@ -24,7 +24,7 @@ function getCellColors(pct: number): string {
 export function DataCompletenessGrid({ data }: DataCompletenessGridProps) {
   if (data.length === 0) {
     return (
-      <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-8">
+      <div className="glass-standard rounded-2xl p-8">
         <h3 className="text-sm font-semibold text-warm-900 mb-6">Data Completeness</h3>
         <div className="flex flex-col items-center justify-center py-6 text-center">
           <p className="text-sm text-warm-500">No player data available</p>
@@ -35,7 +35,7 @@ export function DataCompletenessGrid({ data }: DataCompletenessGridProps) {
   }
 
   return (
-    <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+    <div className="glass-standard rounded-2xl overflow-clip">
       {/* Header */}
       <div className="px-5 py-4 border-b border-warm-100/50">
         <h3 className="text-sm font-semibold text-warm-900">Data Completeness</h3>
@@ -63,7 +63,7 @@ export function DataCompletenessGrid({ data }: DataCompletenessGridProps) {
             {data.map((player) => (
               <tr
                 key={player.player_id}
-                className="border-b border-warm-50/80 hover:bg-white/40 transition-colors"
+                className="border-b border-warm-50/80 hover:bg-cream-100 transition-colors"
               >
                 <td className="px-4 py-2.5">
                   <span className="font-medium text-warm-900 text-sm truncate block max-w-[160px]">
@@ -95,11 +95,11 @@ export function DataCompletenessGrid({ data }: DataCompletenessGridProps) {
       <div className="px-5 py-3 border-t border-warm-100/50 flex items-center gap-3 text-eyebrow text-warm-400 flex-wrap">
         <span className="font-medium text-warm-500">Legend:</span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-green-100" />
+          <span className="w-3 h-3 rounded bg-primary-100" />
           100%
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-green-50 border border-green-100" />
+          <span className="w-3 h-3 rounded bg-primary-50 border border-primary-100" />
           70-99%
         </span>
         <span className="flex items-center gap-1">

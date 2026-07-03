@@ -422,7 +422,7 @@ function StatCard({
   color?: 'green' | 'amber' | 'red' | 'slate';
 }) {
   return (
-    <div className="p-4 rounded-xl bg-white border border-warm-100">
+    <div className="p-4 rounded-xl bg-cream-50 border border-warm-100">
       <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
         {label}
       </p>

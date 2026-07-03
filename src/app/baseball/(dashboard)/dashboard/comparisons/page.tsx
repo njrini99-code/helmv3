@@ -46,7 +46,7 @@ function ComparisonsLoadingSkeleton() {
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-xl border border-warm-200 p-6 animate-pulse"
+          className="bg-cream-50 rounded-xl border border-warm-200 p-6 animate-pulse"
         >
           <div className="h-4 bg-warm-200 rounded w-3/4 mb-3" />
           <div className="h-3 bg-warm-200 rounded w-1/2 mb-4" />

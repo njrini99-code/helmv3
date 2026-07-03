@@ -1,13 +1,1 @@
-{
-  "(null)": 2,
-  "@typescript-eslint/no-explicit-any": 38,
-  "@typescript-eslint/no-unused-vars": 1,
-  "helm/no-arbitrary-bg-white": 1242,
-  "helm/no-arbitrary-radius": 27,
-  "helm/no-arbitrary-text-px": 174,
-  "helm/no-banned-color": 131,
-  "helm/no-raw-button": 100,
-  "helm/no-raw-input": 418,
-  "jsx-a11y/anchor-is-valid": 2,
-  "jsx-a11y/aria-role": 23
-}
+{}

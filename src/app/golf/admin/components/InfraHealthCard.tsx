@@ -205,7 +205,7 @@ export default function InfraHealthCard({
             {clientErrors.map((error, idx) => (
               <div
                 key={idx}
-                className="border border-warm-100 rounded-xl p-3 hover:bg-white/80 active:bg-white/90 transition-all duration-200"
+                className="border border-warm-100 rounded-xl p-3 hover:bg-cream-100 active:bg-cream-100 transition-all duration-200"
               >
                 <div className="flex items-start justify-between gap-3 mb-1.5">
                   <p

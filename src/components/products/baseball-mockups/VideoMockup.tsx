@@ -18,7 +18,7 @@ export function VideoMockup() {
             <h3 className="font-semibold text-white text-sm tracking-tight">Video Library</h3>
             <p className="text-micro text-white/40 mt-0.5">234 clips • 12.4 GB</p>
           </div>
-          <Button variant="primary" className="px-3 py-1.5 bg-emerald-500 text-white text-micro font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
+          <Button variant="primary" className="px-3 py-1.5 bg-primary-600 text-white text-micro font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
             Upload
           </Button>
         </div>
@@ -42,7 +42,7 @@ export function VideoMockup() {
 
             {/* Motion blur streaks */}
             <div className="absolute top-1/4 left-1/5 w-32 h-px bg-gradient-to-r from-white/30 via-white/10 to-transparent rotate-12" />
-            <div className="absolute top-1/2 left-1/4 w-24 h-px bg-gradient-to-r from-emerald-400/40 to-transparent -rotate-6" />
+            <div className="absolute top-1/2 left-1/4 w-24 h-px bg-gradient-to-r from-primary-400/40 to-transparent -rotate-6" />
             <div className="absolute bottom-1/3 right-1/4 w-20 h-px bg-gradient-to-l from-white/20 to-transparent rotate-3" />
           </div>
 
@@ -56,7 +56,7 @@ export function VideoMockup() {
 
           {/* Play button - clean circle, no icon inside */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm ring-2 ring-white/30 flex items-center justify-center group-hover:bg-white/20 group-hover:scale-110 transition-all duration-300">
+            <div className="w-14 h-14 rounded-full bg-warm-50/10 backdrop-blur-sm ring-2 ring-white/30 flex items-center justify-center group-hover:bg-warm-50/20 group-hover:scale-110 transition-all duration-300">
               {/* Triangle play shape using CSS */}
               <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />
             </div>
@@ -66,7 +66,7 @@ export function VideoMockup() {
           <div className="absolute bottom-3 left-4 right-4">
             <div className="flex items-end justify-between">
               <div>
-                <span className="inline-block px-2 py-0.5 bg-emerald-500 text-eyebrow text-white font-bold uppercase tracking-wider rounded mb-1">
+                <span className="inline-block px-2 py-0.5 bg-primary-600 text-eyebrow text-white font-bold uppercase tracking-wider rounded mb-1">
                   Highlight
                 </span>
                 <h4 className="text-white font-semibold text-sm">State Championship At-Bat</h4>
@@ -77,8 +77,8 @@ export function VideoMockup() {
           </div>
 
           {/* Progress bar */}
-          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
-            <div className="h-full w-[35%] bg-emerald-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-warm-50/10">
+            <div className="h-full w-[35%] bg-primary-600" />
           </div>
         </div>
 
@@ -86,7 +86,7 @@ export function VideoMockup() {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-micro text-white/40 uppercase tracking-widest font-medium">Recent</span>
-            <span className="text-micro text-emerald-400 hover:text-emerald-300 cursor-pointer">View All</span>
+            <span className="text-micro text-primary-400 hover:text-primary-300 cursor-pointer">View All</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -111,10 +111,10 @@ export function VideoMockup() {
 
         {/* Bottom actions - text only, no icons */}
         <div className="px-4 pb-4 flex gap-2">
-          <Button variant="ghost" className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
+          <Button variant="ghost" className="flex-1 py-2.5 bg-warm-50/5 hover:bg-warm-50/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
             Create Clip
           </Button>
-          <Button variant="ghost" className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
+          <Button variant="ghost" className="flex-1 py-2.5 bg-warm-50/5 hover:bg-warm-50/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
             Share
           </Button>
         </div>
@@ -160,7 +160,7 @@ function VideoThumb({ color, label, duration, isNew }: {
 
         {/* New indicator */}
         {isNew && (
-          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-emerald-500 text-white text-eyebrow font-bold uppercase tracking-wider rounded">
+          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-primary-600 text-white text-eyebrow font-bold uppercase tracking-wider rounded">
             New
           </span>
         )}

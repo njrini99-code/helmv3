@@ -38,7 +38,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
     return (
       <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
             <IconUsers size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Team Rosters</h3>
@@ -49,10 +49,10 @@ export function TeamRosterCard({ teamRosters }: Props) {
   }
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-50 active:bg-cream-100 hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
             <IconUsers size={18} />
           </div>
           <div>
@@ -63,13 +63,13 @@ export function TeamRosterCard({ teamRosters }: Props) {
         <div className="flex gap-1.5">
           <Button variant="ghost"
             onClick={expandAll}
-            className="px-2.5 py-1 text-xs text-warm-500 hover:text-warm-700 bg-white/50 rounded-lg hover:bg-white/70 transition-all"
+            className="px-2.5 py-1 text-xs text-warm-500 hover:text-warm-700 bg-cream-50 rounded-lg hover:bg-cream-100 transition-all"
           >
             Expand All
           </Button>
           <Button variant="ghost"
             onClick={collapseAll}
-            className="px-2.5 py-1 text-xs text-warm-500 hover:text-warm-700 bg-white/50 rounded-lg hover:bg-white/70 transition-all"
+            className="px-2.5 py-1 text-xs text-warm-500 hover:text-warm-700 bg-cream-50 rounded-lg hover:bg-cream-100 transition-all"
           >
             Collapse
           </Button>
@@ -81,11 +81,11 @@ export function TeamRosterCard({ teamRosters }: Props) {
           const isExpanded = expandedTeams.has(team.id);
 
           return (
-            <div key={team.id} className="bg-white/50 rounded-xl overflow-hidden transition-all duration-200">
+            <div key={team.id} className="bg-cream-50 rounded-xl overflow-hidden transition-all duration-200">
               {/* Team header - clickable */}
               <Button variant="ghost"
                 onClick={() => toggleTeam(team.id)}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-white/70 transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-cream-100 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className="text-warm-400">
@@ -149,7 +149,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
                           </thead>
                           <tbody>
                             {team.players.map((p) => (
-                              <tr key={p.id} className="border-b border-warm-50/50 hover:bg-white/40 transition-colors">
+                              <tr key={p.id} className="border-b border-warm-50/50 hover:bg-cream-50 transition-colors">
                                 <td className="py-2 px-2">
                                   <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center shrink-0">

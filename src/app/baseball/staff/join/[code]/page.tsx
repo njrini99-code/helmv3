@@ -34,7 +34,7 @@ interface PageProps {
 function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-auth-baseball p-4 sm:p-6">
-      <div className="w-full max-w-md rounded-2xl border border-white/30 bg-white/80 p-6 backdrop-blur-xl sm:p-8">
+      <div className="w-full max-w-md glass-standard rounded-2xl p-6 sm:p-8">
         {children}
       </div>
     </div>

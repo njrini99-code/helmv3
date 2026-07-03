@@ -91,12 +91,12 @@ function ColorField({
         {label}
       </label>
       <div className="flex items-center gap-2">
-        <input
+        <Input
           id={id}
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
+          className="w-10 h-10 min-h-0 p-0 rounded-lg border border-warm-200 cursor-pointer"
         />
         <Input value={value} onChange={(e) => onChange(e.target.value)} className="flex-1" />
       </div>
@@ -567,7 +567,7 @@ export default function TeamsPage() {
       <>
         <Header title="Teams" subtitle="Showcase coach access required" />
         <div className="p-6">
-          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
             <p className="text-warm-500">Please log in as a showcase coach to manage teams.</p>
           </div>
         </div>
@@ -589,7 +589,7 @@ export default function TeamsPage() {
 
       <div className="p-6">
         {teams.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
               <IconUsers size={24} className="text-warm-400" />
             </div>
@@ -611,7 +611,7 @@ export default function TeamsPage() {
               return (
                 <div
                   key={team.id}
-                  className="bg-white rounded-2xl border border-warm-200 overflow-hidden hover:border-warm-300 hover:shadow-md transition-all"
+                  className="bg-cream-50 rounded-2xl border border-warm-200 overflow-hidden hover:border-warm-300 hover:shadow-md transition-all"
                 >
                   {/* Team Header */}
                   <div

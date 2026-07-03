@@ -45,7 +45,7 @@ export function DataExportButton({ data, filename, label = 'Export CSV' }: Props
     <Button variant="ghost"
       onClick={handleExport}
       disabled={data.length === 0}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/60 border border-white/30 text-warm-600 hover:bg-white/80 active:bg-white/90 hover:text-warm-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg glass-standard text-warm-600 hover:bg-cream-100 hover:text-warm-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

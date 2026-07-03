@@ -174,7 +174,7 @@ export function PipelineView({
               type="button"
               onClick={() => handleResearchNext(25)}
               disabled={processing}
-              className="px-4 py-2 bg-white/60 border border-warm-200/60 text-warm-700 rounded-xl font-medium hover:bg-white/80 transition-colors text-sm disabled:opacity-50"
+              className="px-4 py-2 glass-standard text-warm-700 rounded-xl font-medium hover:bg-cream-100 transition-colors text-sm disabled:opacity-50"
             >
               Research Top 25
             </Button>
@@ -346,7 +346,7 @@ function KanbanCard({
       onKeyDown={handleKeyDown}
       className={cn(
         'glass-standard rounded-2xl p-3',
-        'hover:-translate-y-0.5 hover:bg-white/80',
+        'hover:-translate-y-0.5 hover:bg-cream-100',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
         'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',

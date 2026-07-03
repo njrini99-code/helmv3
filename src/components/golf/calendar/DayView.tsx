@@ -39,7 +39,7 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
       className={cn(
         'h-16 relative transition-all duration-200',
         'border-l border-t border-warm-100/30',
-        'hover:bg-white/20',
+        'hover:bg-cream-100',
         isOver && 'bg-primary-100/50 border-primary-300/50'
       )}
     >
@@ -326,7 +326,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
                   <div className="
                     h-16 relative
                     border-l border-t border-warm-100/30
-                    hover:bg-white/30
+                    hover:bg-cream-100
                     transition-colors duration-150
                   " />
                 )}

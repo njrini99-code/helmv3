@@ -92,7 +92,7 @@ async function searchInsightsImpl({
     // flipped off. The text-search `.or(...)` chained below ANDs with the
     // helper's v3-engine `.or(...)` per PostgREST semantics.
     let queryBuilder = applyInsightVisibility(
-      (supabase as any)
+      supabase
         .from('golf_coach_insights')
         .select(
           `
@@ -209,7 +209,33 @@ async function searchInsightsImpl({
     // queryBuilder.order(... { foreignTable: 'player' }) above). The
     // legacy client-side re-sort is removed — it was only reordering each
     // individual page, producing wrong alphabetical order across pages.
-    const sortedInsights = insights || [];
+    //
+    // The legacy Insight interface predates the live schema: the table stores
+    // `content` (not `description`) and has no round_id/recommendation/
+    // expires_at columns. Map explicitly at this boundary so the legacy
+    // consumers keep their shape without an `any` cast hiding the drift.
+    const sortedInsights: InsightWithPlayer[] = (insights || []).map((row) => ({
+      ...row,
+      round_id: null,
+      description: row.content ?? '',
+      recommendation: null,
+      expires_at: null,
+      metadata: (row.metadata ?? {}) as Record<string, never>,
+      insight_type: row.insight_type as InsightType,
+      priority: row.priority as InsightPriority,
+      status: (row.status ?? 'new') as InsightStatus,
+      created_at: row.created_at ?? '',
+      updated_at: row.updated_at ?? '',
+      title: row.title ?? '',
+      coach_id: row.coach_id ?? '',
+      player: row.player
+        ? {
+            ...row.player,
+            first_name: row.player.first_name ?? '',
+            last_name: row.player.last_name ?? '',
+          }
+        : null,
+    }));
 
     const totalCount = count || 0;
     const totalPages = Math.ceil(totalCount / pageSize);

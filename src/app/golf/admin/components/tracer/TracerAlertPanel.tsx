@@ -48,7 +48,7 @@ const severityConfig: Record<AlertSeverityLevel, {
 
 export function TracerAlertPanel({ alerts, onNavigate }: TracerAlertPanelProps) {
   return (
-    <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+    <div className="glass-standard rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
       {/* Header */}
       <div className="px-5 py-4 border-b border-warm-100/50">
         <h3 className="text-sm font-semibold text-warm-900">Active Alerts</h3>
@@ -107,7 +107,7 @@ function AlertRow({
         'border-l-[3px]',
         config.borderColor,
         hasNavigation
-          ? 'cursor-pointer hover:bg-white/40'
+          ? 'cursor-pointer hover:bg-cream-100'
           : 'cursor-default'
       )}
     >

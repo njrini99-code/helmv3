@@ -41,7 +41,7 @@ function shortenPath(url: string): string {
 export function ClickHeatmap({ rows, loading, title }: ClickHeatmapProps) {
   if (loading) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+      <div className="glass-standard rounded-2xl shadow-glass p-5">
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-9 bg-warm-50 rounded-lg animate-pulse" />
@@ -53,7 +53,7 @@ export function ClickHeatmap({ rows, loading, title }: ClickHeatmapProps) {
 
   if (rows.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-12 text-center">
+      <div className="glass-standard rounded-2xl shadow-glass p-12 text-center">
         <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
           <MousePointerClick size={22} className="text-indigo-400" />
         </div>
@@ -69,7 +69,7 @@ export function ClickHeatmap({ rows, loading, title }: ClickHeatmapProps) {
   const max = rows.reduce((m, r) => Math.max(m, r.click_count), 0) || 1;
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+    <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
       <div className="px-5 py-4 border-b border-warm-100/60 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">

@@ -95,7 +95,7 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white/70 rounded-2xl p-6 animate-pulse">
+        <div key={i} className="bg-cream-50/70 rounded-2xl p-6 animate-pulse">
           <div className="h-6 w-48 bg-warm-200 rounded mb-4" />
           <div className="space-y-3">
             <div className="h-4 w-full bg-warm-100 rounded" />

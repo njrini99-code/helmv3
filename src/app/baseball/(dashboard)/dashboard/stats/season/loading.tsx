@@ -28,7 +28,7 @@ export default function SeasonStatsLoading() {
         </div>
 
         {/* Table skeleton */}
-        <div className="rounded-2xl bg-white/70 border border-warm-100 overflow-hidden">
+        <div className="rounded-2xl bg-cream-50 border border-warm-100 overflow-hidden">
           {/* Header row */}
           <div className="flex gap-2 px-4 py-3 border-b border-warm-100 bg-warm-50/80">
             <Skeleton className="h-4 w-32" />
@@ -52,7 +52,7 @@ export default function SeasonStatsLoading() {
       <div className="space-y-4">
         <Skeleton className="h-6 w-32" />
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-2xl bg-white/70 border border-warm-100 p-4 flex items-center justify-between gap-4">
+          <div key={i} className="rounded-2xl bg-cream-50 border border-warm-100 p-4 flex items-center justify-between gap-4">
             <div className="space-y-1.5">
               <Skeleton className="h-5 w-48" />
               <Skeleton className="h-3.5 w-28" />

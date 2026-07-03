@@ -60,7 +60,7 @@ export function BaseballHelmSection() {
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-warm-900 leading-[1.1] tracking-tight mb-4 sm:mb-5">
             Find talent.
             <br />
-            <span className="text-emerald-600">Build champions.</span>
+            <span className="text-primary-600">Build champions.</span>
           </h2>
 
           <p className="text-base sm:text-lg text-warm-600 mb-6 sm:mb-8 leading-relaxed">
@@ -70,15 +70,15 @@ export function BaseballHelmSection() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/baseball/signup">
               <Button variant="primary" className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-lg
-                               bg-emerald-600 text-white font-semibold
-                               hover:bg-emerald-700 active:scale-[0.98] transition-all">
+                               bg-primary-600 text-white font-semibold
+                               hover:bg-primary-700 active:scale-[0.98] transition-all">
                 Start Recruiting Smarter
                 <IconArrowRight size={16} />
               </Button>
             </Link>
             <Button variant="ghost" className="w-full sm:w-auto px-6 py-3 rounded-lg
                              text-warm-700 font-medium border border-warm-200
-                             hover:bg-white active:scale-[0.98] transition-all">
+                             hover:bg-cream-50 active:scale-[0.98] transition-all">
               Request Demo
             </Button>
           </div>
@@ -93,7 +93,7 @@ export function BaseballHelmSection() {
             <DiscoveryMockup />
           </div>
           <div className="order-1 lg:order-2">
-            <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
+            <p className="text-sm font-medium text-primary-600 uppercase tracking-wide mb-3">
               Discovery
             </p>
             <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
@@ -106,7 +106,7 @@ export function BaseballHelmSection() {
             <ul className="space-y-2">
               {['12,000+ verified prospects', 'Advanced metric filters', 'Geographic targeting', 'Academic requirements'].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                   {item}
                 </li>
               ))}
@@ -120,7 +120,7 @@ export function BaseballHelmSection() {
           className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-14 sm:mb-20 md:mb-28"
         >
           <div>
-            <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
+            <p className="text-sm font-medium text-primary-600 uppercase tracking-wide mb-3">
               Pipeline
             </p>
             <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
@@ -133,7 +133,7 @@ export function BaseballHelmSection() {
             <ul className="space-y-2">
               {['Kanban-style board', 'Custom pipeline stages', 'Activity timeline', 'Team collaboration'].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                   {item}
                 </li>
               ))}
@@ -153,7 +153,7 @@ export function BaseballHelmSection() {
             <CompareMockup />
           </div>
           <div className="order-1 lg:order-2">
-            <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
+            <p className="text-sm font-medium text-primary-600 uppercase tracking-wide mb-3">
               Compare
             </p>
             <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
@@ -166,7 +166,7 @@ export function BaseballHelmSection() {
             <ul className="space-y-2">
               {['Side-by-side comparison', 'Stat highlights', 'Video sync playback', 'Share with staff'].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                   {item}
                 </li>
               ))}
@@ -187,7 +187,7 @@ export function BaseballHelmSection() {
 
             <div className="relative grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/[0.06] text-white/80 text-sm font-semibold rounded-lg ring-1 ring-white/[0.08] mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[rgba(255,255,255,0.06)] text-white/80 text-sm font-semibold rounded-lg ring-1 ring-white/[0.08] mb-4">
                   <IconVideo size={14} />
                   Video Library
                 </div>
@@ -201,7 +201,7 @@ export function BaseballHelmSection() {
                 <ul className="space-y-2">
                   {['Unlimited storage', 'Smart tagging', 'Quick clips', 'Staff sharing'].map((item) => (
                     <li key={item} className="flex items-center gap-3 text-white/40 text-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-400" />
                       {item}
                     </li>
                   ))}

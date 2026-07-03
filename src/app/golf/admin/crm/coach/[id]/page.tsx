@@ -119,7 +119,7 @@ export default async function CoachDetailPage({ params }: PageProps) {
 
           {/* ── Right column: timeline ── */}
           <div className="lg:col-span-2">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+            <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
               <div className="px-5 py-4 border-b border-warm-100/60">
                 <h2 className="text-sm font-semibold text-warm-900">Timeline</h2>
                 <p className="text-xs text-warm-500 mt-0.5">

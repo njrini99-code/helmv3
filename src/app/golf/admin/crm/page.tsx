@@ -90,6 +90,7 @@ import { mergeTemplate, buildGmailComposeUrl } from '@/lib/crm/gmail-compose';
 import type { CoachEngagement } from './types/foundations';
 import { Button, IconButton } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+import { NativeSelect } from '@/components/ui/native-select';
 
 // ============================================================================
 // SIDEBAR TABS
@@ -1047,7 +1048,7 @@ export default function CRMPage() {
   if (error) {
     return (
       <div className="min-h-dvh bg-[#FFFEF8] flex items-center justify-center p-8">
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-8 text-center max-w-md">
+        <div className="glass-standard rounded-2xl shadow-glass p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <IconWarning size={28} className="text-red-500" />
           </div>
@@ -1085,13 +1086,13 @@ export default function CRMPage() {
           {/* Import / Export — surfaced on mobile (desktop has them in the sidebar) */}
           <IconButton variant="default" aria-label="Import coaches"
             onClick={() => setShowImportModal(true)}
-            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-warm-50/10 transition-all duration-200"
           >
             <IconUpload size={16} />
           </IconButton>
           <IconButton variant="default" aria-label="Export CSV"
             onClick={exportToCSV}
-            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-warm-50/10 transition-all duration-200"
           >
             <IconDownload size={16} />
           </IconButton>
@@ -1124,7 +1125,7 @@ export default function CRMPage() {
         <div className="px-3 mb-2">
           <a href="/golf/admin" className={cn(
             'flex items-center gap-3 px-3 py-2 rounded-md',
-            'text-warm-400 hover:bg-white/5 hover:text-white transition-all duration-200',
+            'text-warm-400 hover:bg-warm-50/5 hover:text-white transition-all duration-200',
             sidebarCollapsed && 'justify-center'
           )}>
             <ArrowLeft size={16} className="flex-shrink-0" />
@@ -1165,14 +1166,14 @@ export default function CRMPage() {
                         className={cn(
                           'group relative flex items-center gap-3 w-full rounded-md transition-all duration-200',
                           sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
-                          isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                          isActive ? 'bg-warm-50/10 text-white' : 'text-warm-400 hover:bg-warm-50/5 hover:text-white'
                         )}
                       >
                         {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />}
                         <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white')} />
                         {!sidebarCollapsed && <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>}
                         {!sidebarCollapsed && (
-                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', isActive ? 'bg-primary-500/20 text-primary-400' : 'bg-white/5 text-warm-500')}>
+                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', isActive ? 'bg-primary-500/20 text-primary-400' : 'bg-warm-50/5 text-warm-500')}>
                             {tab.shortcut}
                           </span>
                         )}
@@ -1213,10 +1214,10 @@ export default function CRMPage() {
           </Button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
+              <Button variant="ghost" onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-warm-50/5 hover:bg-warm-50/10 text-warm-400 transition-all duration-200">
                 <IconUpload size={14} /> Import
               </Button>
-              <Button variant="ghost" onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
+              <Button variant="ghost" onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-warm-50/5 hover:bg-warm-50/10 text-warm-400 transition-all duration-200">
                 <IconDownload size={14} /> Export
               </Button>
             </div>
@@ -1246,19 +1247,19 @@ export default function CRMPage() {
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
       )}>
         {/* Top Bar */}
-        <header className="sticky top-12 lg:top-0 z-30 bg-white/70 backdrop-blur-xl border-b border-white/20 px-4 sm:px-6 py-3">
+        <header className="sticky top-12 lg:top-0 z-30 glass-standard border-b-0 rounded-none px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-warm-900">{TABS.find(t => t.id === activeTab)?.label}</h2>
               <p className="text-sm text-warm-500 mt-0.5 hidden sm:block">{TABS.find(t => t.id === activeTab)?.description}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-white/30 shadow-glass-sm">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-standard shadow-glass-sm">
                 <IconUsers size={14} className="text-warm-500" />
                 <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.total}</span>
                 <span className="text-xs text-warm-500 hidden sm:inline">coaches</span>
               </div>
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-white/30 shadow-glass-sm">
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-standard shadow-glass-sm">
                 <IconTrendingUp size={14} className="text-primary-500" />
                 <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.inPipeline}</span>
                 <span className="text-xs text-warm-500">in pipeline</span>
@@ -1443,7 +1444,7 @@ export default function CRMPage() {
                         'flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
                         isActive
                           ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
-                          : 'text-warm-500 hover:text-warm-900 hover:bg-white/60'
+                          : 'text-warm-500 hover:text-warm-900 hover:bg-cream-100'
                       )}
                     >
                       <SubIcon size={16} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} aria-hidden />
@@ -1488,7 +1489,7 @@ export default function CRMPage() {
         aria-label="Primary"
         className={cn(
           'lg:hidden fixed bottom-0 left-0 right-0 z-40',
-          'bg-white/80 backdrop-blur-xl border-t border-white/30 shadow-glass',
+          'glass-standard border-t-0 rounded-t-2xl shadow-glass',
           'pb-[env(safe-area-inset-bottom)]',
         )}
       >
@@ -1510,7 +1511,7 @@ export default function CRMPage() {
                 )}
               >
                 <TabIcon size={22} className="flex-shrink-0" />
-                <span className="text-[10px] font-medium leading-none">{tab.label}</span>
+                <span className="text-caption font-medium leading-none">{tab.label}</span>
               </Button>
             );
           })}
@@ -1530,7 +1531,7 @@ export default function CRMPage() {
                 )}
               >
                 <IconMoreHorizontal size={22} className="flex-shrink-0" />
-                <span className="text-[10px] font-medium leading-none">More</span>
+                <span className="text-caption font-medium leading-none">More</span>
               </Button>
             );
           })()}
@@ -1550,7 +1551,7 @@ export default function CRMPage() {
           >
             <span className="sr-only">Close menu</span>
           </IconButton>
-          <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-white/30 rounded-t-2xl shadow-glass pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-4 duration-200">
+          <div className="absolute bottom-0 left-0 right-0 glass-prominent rounded-t-2xl shadow-glass pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-4 duration-200">
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
               <h2 className="text-sm font-semibold text-warm-900">More</h2>
               <IconButton
@@ -1767,7 +1768,7 @@ function ManualGmailTemplateBar({
         Gmail template:
       </span>
       <div className="relative inline-flex items-center">
-        <select
+        <NativeSelect
           aria-label="Armed Gmail template"
           value={active?.id ?? ''}
           onChange={(e) => handleSelect(e.target.value)}
@@ -1777,7 +1778,7 @@ function ManualGmailTemplateBar({
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed',
             active
               ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-white/80',
+              : 'bg-cream-50/60 border-warm-200/60 text-warm-600 hover:bg-cream-50/80',
           )}
         >
           <option value="">
@@ -1786,7 +1787,7 @@ function ManualGmailTemplateBar({
           {templates.map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
-        </select>
+        </NativeSelect>
         <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-warm-400" />
       </div>
       {active && (
@@ -1881,7 +1882,7 @@ function AssigneeScopeBar({
         Assignee:
       </span>
       <div className="relative inline-flex items-center">
-        <select
+        <NativeSelect
           aria-label="Filter coaches by assignee"
           value={scope}
           onChange={(e) => onChange(e.target.value as 'all' | 'unassigned' | CrmAssignee)}
@@ -1890,7 +1891,7 @@ function AssigneeScopeBar({
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
             active
               ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-white/80',
+              : 'bg-cream-50/60 border-warm-200/60 text-warm-600 hover:bg-cream-50/80',
           )}
         >
           <option value="all">All</option>
@@ -1898,7 +1899,7 @@ function AssigneeScopeBar({
             <option key={a} value={a}>{a}</option>
           ))}
           <option value="unassigned">Unassigned</option>
-        </select>
+        </NativeSelect>
         <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-warm-400" />
       </div>
     </div>

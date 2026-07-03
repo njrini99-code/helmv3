@@ -31,7 +31,7 @@ export function PipelineMiniMockup() {
         <div className="mt-4 pt-4 border-t border-warm-700">
           <p className="text-xs text-warm-400 mb-2">Recent Activity</p>
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
+            <div className="w-6 h-6 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center text-xs">
               ✓
             </div>
             <span className="text-warm-300">Jake M. committed</span>

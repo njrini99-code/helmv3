@@ -101,7 +101,7 @@ export default async function GameDetailPage({ params }: PageProps) {
             pitching={pitching}
           />
           {/* Option to re-enter stats */}
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+          <div className="glass-standard rounded-2xl p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-warm-700 mb-3">Update Box Score</h3>
             <BoxScoreUpload
               game={game as BaseballGame}

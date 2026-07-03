@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, ClipboardCheck, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
+import { Button } from '@/components/ui/button';
 import {
   bulkCheckIn,
   getAttendanceReport,
@@ -209,12 +210,13 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
           )}
         </h4>
         {canManage && !loading && !loadError && rows.length > 0 && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleMarkAllPresent}
             disabled={bulkPending}
             className={cn(
-              'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
+              'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium h-auto',
               'bg-fw-success-bg hover:bg-accent-100 text-accent-700 ring-1 ring-accent-100',
               'transition-colors disabled:opacity-50',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
@@ -226,7 +228,7 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
               <Check className="w-3 h-3" aria-hidden="true" />
             )}
             Mark all present
-          </button>
+          </Button>
         )}
       </div>
 
@@ -235,13 +237,14 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
       ) : loadError ? (
         <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-surface-sunken ring-1 ring-border-subtle">
           <p className="text-xs text-text-tertiary">Couldn’t load attendance.</p>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleRetry}
-            className="text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded"
+            className="text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded h-auto p-0"
           >
             Try again
-          </button>
+          </Button>
         </div>
       ) : rows.length === 0 ? (
         <p className="text-xs text-text-tertiary">— No players on the list for this event.</p>
@@ -306,15 +309,16 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
         {MARK_OPTIONS.map((option) => {
           const active = row.mark === option.value;
           return (
-            <button
+            <Button
               key={option.value}
               type="button"
+              variant="ghost"
               aria-pressed={active}
               aria-label={`Mark ${row.name} ${option.label.toLowerCase()}`}
               disabled={pending}
               onClick={() => onMark(row.playerId, option.value)}
               className={cn(
-                'px-2 py-1 rounded-full text-eyebrow ring-1 transition-colors',
+                'px-2 py-1 rounded-full text-eyebrow ring-1 transition-colors h-auto',
                 'disabled:cursor-not-allowed',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                 active
@@ -323,7 +327,7 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
               )}
             >
               {option.label}
-            </button>
+            </Button>
           );
         })}
       </div>

@@ -161,12 +161,15 @@ export function QuickAddEventFAB({
     <>
       {/* Backdrop when expanded — no backdrop-blur to avoid Safari stacking bugs */}
       {isExpanded && (
-        <button
+        <Button
           type="button"
-          className="fixed inset-0 bg-black/30 z-40 animate-in fade-in duration-200 cursor-default border-none"
+          variant="ghost"
+          className="fixed inset-0 bg-black/30 z-40 animate-in fade-in duration-200 cursor-default border-none rounded-none h-auto w-auto p-0"
           aria-label="Close"
           onClick={handleBackdropClick}
-        />
+        >
+          <span className="sr-only">Close</span>
+        </Button>
       )}
 
       {/* FAB Container */}
@@ -202,7 +205,7 @@ export function QuickAddEventFAB({
                 onClick={() => handleQuickAction(action.type)}
                 className={cn(
                   'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
-                  'bg-white shadow-lg',
+                  'bg-cream-50 shadow-lg',
                   'transition-[transform,box-shadow] duration-200',
                   'hover:shadow-xl active:scale-95',
                   'touch-manipulation',
@@ -232,7 +235,7 @@ export function QuickAddEventFAB({
             onClick={handleGenericAdd}
             className={cn(
               'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
-              'bg-white shadow-lg',
+              'bg-cream-50 shadow-lg',
               'transition-all duration-200',
               'hover:shadow-xl active:scale-95',
               'touch-manipulation',

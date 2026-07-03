@@ -38,8 +38,8 @@ export function TeamHealthCards({ teams, onSelectTeam }: Props) {
             onClick={() => onSelectTeam?.(team.teamId)}
             className={cn(
               'relative text-left p-4 rounded-2xl border transition-all duration-200',
-              'bg-white/70 backdrop-blur-xl shadow-glass',
-              'hover:shadow-card-hover hover:bg-white/80 active:bg-white/90',
+              'glass-standard shadow-glass',
+              'hover:shadow-card-hover hover:bg-cream-100 active:bg-cream-100',
               'group cursor-pointer'
             )}
           >

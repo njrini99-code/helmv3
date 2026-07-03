@@ -71,7 +71,7 @@ export function DataTableSkeleton({
             <td className={cn(m.cell, 'px-4 align-middle')}>
               <span
                 aria-hidden="true"
-                className="block size-[18px] rounded-[5px] bg-surface-sunken"
+                className="block size-[18px] rounded-sm bg-surface-sunken"
               />
             </td>
           )}

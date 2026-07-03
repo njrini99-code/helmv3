@@ -16,6 +16,7 @@ import { DataCompletenessGrid } from './DataCompletenessGrid';
 import { DataQualityIssueRow } from './DataQualityIssueRow';
 import { PlayerQualityScoreCard } from './PlayerQualityScoreCard';
 import { IconButton } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import type {
   TracerStatsAccuracy,
   PlayerCompleteness,
@@ -172,7 +173,7 @@ function StatsAccuracyRow({
     <tr
       className={cn(
         'border-b border-warm-50/80 transition-colors',
-        anyMismatch ? 'bg-red-50/10 hover:bg-red-50/20' : 'hover:bg-white/50'
+        anyMismatch ? 'bg-red-50/10 hover:bg-red-50/20' : 'hover:bg-cream-100'
       )}
     >
       <td className="px-4 py-3.5">
@@ -415,7 +416,7 @@ export function TracerDataQuality({
       {/* ================================================================ */}
       {issues && issues.length > 0 && (
         <section>
-          <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+          <div className="glass-standard rounded-2xl overflow-clip">
             {/* Summary header */}
             <div className="px-5 py-4 border-b border-warm-100/50 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
@@ -438,39 +439,42 @@ export function TracerDataQuality({
 
               {/* Filters */}
               <div className="flex items-center gap-2 flex-wrap">
-                <select
+                <Select
                   value={severityFilter}
-                  onChange={(e) => setSeverityFilter(e.target.value as IssueSeverity | 'all')}
-                  className="text-eyebrow px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
-                >
-                  <option value="all">All Severity</option>
-                  <option value="critical">Critical</option>
-                  <option value="warning">Warning</option>
-                  <option value="info">Info</option>
-                </select>
-                <select
+                  onChange={(value) => setSeverityFilter(value as IssueSeverity | 'all')}
+                  className="text-eyebrow min-h-0 px-2 py-1 rounded-lg glass-subtle text-warm-600 w-auto"
+                  options={[
+                    { value: 'all', label: 'All Severity' },
+                    { value: 'critical', label: 'Critical' },
+                    { value: 'warning', label: 'Warning' },
+                    { value: 'info', label: 'Info' },
+                  ]}
+                />
+                <Select
                   value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value as IssueCategory | 'all')}
-                  className="text-eyebrow px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
-                >
-                  <option value="all">All Categories</option>
-                  <option value="missing_data">Missing Data</option>
-                  <option value="outlier">Outlier</option>
-                  <option value="integrity">Integrity</option>
-                  <option value="cache_divergence">Cache</option>
-                  <option value="completeness">Completeness</option>
-                  <option value="stuck_round">Stuck</option>
-                </select>
-                <select
+                  onChange={(value) => setCategoryFilter(value as IssueCategory | 'all')}
+                  className="text-eyebrow min-h-0 px-2 py-1 rounded-lg glass-subtle text-warm-600 w-auto"
+                  options={[
+                    { value: 'all', label: 'All Categories' },
+                    { value: 'missing_data', label: 'Missing Data' },
+                    { value: 'outlier', label: 'Outlier' },
+                    { value: 'integrity', label: 'Integrity' },
+                    { value: 'cache_divergence', label: 'Cache' },
+                    { value: 'completeness', label: 'Completeness' },
+                    { value: 'stuck_round', label: 'Stuck' },
+                  ]}
+                />
+                <Select
                   value={groupBy}
-                  onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
-                  className="text-eyebrow px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
-                >
-                  <option value="category">Group: Category</option>
-                  <option value="player">Group: Player</option>
-                  <option value="severity">Group: Severity</option>
-                  <option value="none">No Grouping</option>
-                </select>
+                  onChange={(value) => setGroupBy(value as GroupByOption)}
+                  className="text-eyebrow min-h-0 px-2 py-1 rounded-lg glass-subtle text-warm-600 w-auto"
+                  options={[
+                    { value: 'category', label: 'Group: Category' },
+                    { value: 'player', label: 'Group: Player' },
+                    { value: 'severity', label: 'Group: Severity' },
+                    { value: 'none', label: 'No Grouping' },
+                  ]}
+                />
               </div>
             </div>
 
@@ -508,7 +512,7 @@ export function TracerDataQuality({
       {/* No issues celebration */}
       {issues && issues.length === 0 && (
         <section>
-          <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-8 text-center">
+          <div className="glass-standard rounded-2xl p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-3">
               <IconCheckCircle2 className="text-primary-500" size={24} />
             </div>
@@ -523,7 +527,7 @@ export function TracerDataQuality({
       {/* ================================================================ */}
       {playerScores && playerScores.length > 0 && (
         <section>
-          <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+          <div className="glass-standard rounded-2xl overflow-clip">
             <div className="px-5 py-4 border-b border-warm-100/50">
               <h3 className="text-sm font-semibold text-warm-900">Player Quality Scores</h3>
             </div>
@@ -545,7 +549,7 @@ export function TracerDataQuality({
       {/* ================================================================ */}
       {statsAccuracy.length > 0 && (
         <section>
-          <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+          <div className="glass-standard rounded-2xl overflow-clip">
             {/* Header */}
             <div className="px-5 py-4 border-b border-warm-100/50">
               <h3 className="text-sm font-semibold text-warm-900">Stats Accuracy Check</h3>
@@ -652,7 +656,7 @@ export function TracerDataQuality({
       {/* Section 3: Outlier Detection Panel                               */}
       {/* ================================================================ */}
       <section>
-        <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip">
           {/* Header */}
           <div className="px-5 py-4 border-b border-warm-100/50">
             <h3 className="text-sm font-semibold text-warm-900">Outlier Detection</h3>

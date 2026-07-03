@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import { IconX, IconUser } from '@/components/icons';
 import type { Division, ProgramType, CoachStatus } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 interface AddCoachModalProps {
   onClose: () => void;
@@ -12,9 +15,7 @@ interface AddCoachModalProps {
   statusConfig: Record<CoachStatus, { label: string; iconLabel: React.ReactNode }>;
 }
 
-const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
-const selectClass = `${inputClass} bg-white/60`;
 
 export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModalProps) {
   const uid = useId();
@@ -70,7 +71,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-warm-100 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -99,24 +100,22 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor={`${uid}-name`} className={labelClass}>Name *</label>
-              <input
+              <Input
                 id={`${uid}-name`}
                 type="text"
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className={inputClass}
                 placeholder="Coach name"
               />
             </div>
             <div>
               <label htmlFor={`${uid}-title`} className={labelClass}>Title</label>
-              <input
+              <Input
                 id={`${uid}-title`}
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className={inputClass}
                 placeholder="Head Coach"
               />
             </div>
@@ -126,23 +125,21 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor={`${uid}-email`} className={labelClass}>Email</label>
-              <input
+              <Input
                 id={`${uid}-email`}
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className={inputClass}
                 placeholder="coach@school.edu"
               />
             </div>
             <div>
               <label htmlFor={`${uid}-phone`} className={labelClass}>Phone</label>
-              <input
+              <Input
                 id={`${uid}-phone`}
                 type="tel"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className={inputClass}
                 placeholder="(555) 123-4567"
               />
             </div>
@@ -152,25 +149,23 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor={`${uid}-school`} className={labelClass}>School *</label>
-              <input
+              <Input
                 id={`${uid}-school`}
                 type="text"
                 required
                 value={form.school}
                 onChange={(e) => setForm({ ...form, school: e.target.value })}
-                className={inputClass}
                 placeholder="University name"
               />
             </div>
             <div>
               <label htmlFor={`${uid}-conference`} className={labelClass}>Conference *</label>
-              <input
+              <Input
                 id={`${uid}-conference`}
                 type="text"
                 required
                 value={form.conference}
                 onChange={(e) => setForm({ ...form, conference: e.target.value })}
-                className={inputClass}
                 placeholder="Conference name"
               />
             </div>
@@ -180,28 +175,26 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor={`${uid}-division`} className={labelClass}>Division</label>
-              <select
-                id={`${uid}-division`}
+              <Select
+                options={[
+                  { value: 'D2', label: 'Division II' },
+                  { value: 'D3', label: 'Division III' },
+                ]}
                 value={form.division}
-                onChange={(e) => setForm({ ...form, division: e.target.value as Division })}
-                className={selectClass}
-              >
-                <option value="D2">Division II</option>
-                <option value="D3">Division III</option>
-              </select>
+                onChange={(value) => setForm({ ...form, division: value as Division })}
+              />
             </div>
             <div>
               <label htmlFor={`${uid}-program`} className={labelClass}>Program</label>
-              <select
-                id={`${uid}-program`}
+              <Select
+                options={[
+                  { value: 'both', label: "Both (Men's & Women's)" },
+                  { value: 'mens', label: "Men's Only" },
+                  { value: 'womens', label: "Women's Only" },
+                ]}
                 value={form.program}
-                onChange={(e) => setForm({ ...form, program: e.target.value as ProgramType })}
-                className={selectClass}
-              >
-                <option value="both">Both (Men&apos;s & Women&apos;s)</option>
-                <option value="mens">Men&apos;s Only</option>
-                <option value="womens">Women&apos;s Only</option>
-              </select>
+                onChange={(value) => setForm({ ...form, program: value as ProgramType })}
+              />
             </div>
           </div>
 
@@ -209,40 +202,37 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor={`${uid}-status`} className={labelClass}>Status</label>
-              <select
-                id={`${uid}-status`}
+              <Select
+                options={Object.entries(statusConfig).map(([value, config]) => ({
+                  value,
+                  label: config.label,
+                }))}
                 value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value as CoachStatus })}
-                className={selectClass}
-              >
-                {Object.entries(statusConfig).map(([value, config]) => (
-                  <option key={value} value={value}>{config.label}</option>
-                ))}
-              </select>
+                onChange={(value) => setForm({ ...form, status: value as CoachStatus })}
+              />
             </div>
             <div>
               <label htmlFor={`${uid}-priority`} className={labelClass}>Priority</label>
-              <select
-                id={`${uid}-priority`}
-                value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: parseInt(e.target.value) })}
-                className={selectClass}
-              >
-                <option value={0}>Normal</option>
-                <option value={1}>High</option>
-                <option value={2}>Hot</option>
-              </select>
+              <Select
+                options={[
+                  { value: '0', label: 'Normal' },
+                  { value: '1', label: 'High' },
+                  { value: '2', label: 'Hot' },
+                ]}
+                value={String(form.priority)}
+                onChange={(value) => setForm({ ...form, priority: parseInt(value, 10) })}
+              />
             </div>
           </div>
 
           {/* Notes */}
           <div>
             <label htmlFor={`${uid}-notes`} className={labelClass}>Notes</label>
-            <textarea
+            <Textarea
               id={`${uid}-notes`}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className={`${inputClass} resize-none min-h-[100px]`}
+              className="min-h-[100px]"
               rows={3}
               placeholder="Any initial notes..."
             />
@@ -254,7 +244,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
           <Button variant="ghost"
             type="button"
             onClick={onClose}
-            className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+            className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
           >
             Cancel
           </Button>

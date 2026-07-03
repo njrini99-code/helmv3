@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   MessageCircle,
   Mail,
@@ -157,7 +158,7 @@ export default function HelpPage() {
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
-      <header className="bg-white border-b border-warm-200">
+      <header className="bg-cream-50 border-b border-warm-200">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <Link
             href="/baseball/dashboard"
@@ -180,12 +181,12 @@ export default function HelpPage() {
             size={20}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-400"
           />
-          <input
+          <Input
             type="text"
             placeholder="Search for help..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-warm-200 rounded-xl text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 bg-cream-50 border border-warm-200 rounded-xl text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
 
@@ -194,7 +195,7 @@ export default function HelpPage() {
           {filteredFaqs.map((category) => (
             <div
               key={category.category}
-              className="bg-white rounded-2xl border border-warm-200 overflow-hidden"
+              className="bg-cream-50 rounded-2xl border border-warm-200 overflow-hidden"
             >
               <div className="px-6 py-4 bg-warm-50 border-b border-warm-200 flex items-center gap-3">
                 <category.icon size={20} className="text-primary-600" />
@@ -228,18 +229,18 @@ export default function HelpPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="mailto:admin@helmsportslabs.com"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-warm-900 font-medium rounded-lg hover:bg-warm-100 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-cream-50 text-warm-900 font-medium rounded-lg hover:bg-warm-100 transition-colors"
             >
               <Mail size={20} />
               Email Support
             </a>
-            <button
+            <Button variant="ghost"
               type="button"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-500 transition-colors"
             >
               <MessageCircle size={20} />
               Live Chat
-            </button>
+            </Button>
           </div>
         </div>
       </main>

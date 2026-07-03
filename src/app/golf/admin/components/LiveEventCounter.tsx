@@ -45,7 +45,7 @@ export function LiveEventCounter({
       onClick={onClick}
       className={cn(
         'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200',
-        'bg-white/50 hover:bg-white/70 border border-white/20',
+        'glass-standard hover:bg-cream-100',
         hasIssues && 'border-amber-200/50',
         critical > 0 && 'border-red-200/50 bg-red-50/50',
         className

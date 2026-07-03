@@ -67,7 +67,7 @@ vi.mock('@/app/golf/actions/drills', () => ({
 vi.mock('next/link', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Link = ({ href, children, ...rest }: any) =>
-    <a href={typeof href === 'string' ? href : '#'} {...rest}>{children}</a>;
+    <a href={typeof href === 'string' && href ? href : '/'} {...rest}>{children}</a>;
   return { default: Link };
 });
 

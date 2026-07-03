@@ -9,6 +9,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button, IconButton } from '@/components/ui/button';
 import {
   IconUpload,
@@ -383,7 +384,7 @@ export function ExpenseForm({
                 <IconUpload size={24} className="text-warm-400 mb-2" />
                 <span className="text-sm font-medium text-warm-600">Click to upload receipt</span>
                 <span className="text-xs text-warm-400 mt-1">JPG, PNG, WebP or PDF (max 5MB)</span>
-                <input
+                <Input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,application/pdf"
                   onChange={handleFileChange}
@@ -397,7 +398,7 @@ export function ExpenseForm({
         {/* Notes */}
         <div>
           <label htmlFor={`${uid}-notes`} className="text-sm font-medium text-warm-700 block mb-1">Notes (Optional)</label>
-          <textarea
+          <Textarea
             id={`${uid}-notes`}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

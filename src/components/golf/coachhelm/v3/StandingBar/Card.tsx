@@ -63,7 +63,7 @@ export function Card(props: CardProps) {
       role="img"
       aria-label={ariaLabel}
       data-state={state}
-      className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 md:p-5"
+      className="glass-standard rounded-2xl shadow-glass p-4 md:p-5"
     >
       {/* Header: label + vs-team arrow */}
       <div className="flex items-baseline justify-between gap-2 mb-3">
@@ -128,7 +128,7 @@ function CardSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 animate-pulse"
+      className="glass-standard rounded-2xl shadow-glass p-5 animate-pulse"
     >
       <div className="h-3 w-32 bg-warm-100 rounded mb-3" />
       <div className="h-3 w-full bg-warm-100 rounded mb-2" />
@@ -142,7 +142,7 @@ function CardError({ message }: { message?: string }) {
     <div
       role="alert"
       data-state="error"
-      className="bg-white/70 backdrop-blur-xl border border-red-200 rounded-2xl p-5"
+      className="glass-standard border-red-200 rounded-2xl p-5"
     >
       <p className="text-sm text-red-700">
         Couldn’t load standing.
@@ -160,7 +160,7 @@ function CardEmpty({ label }: { label: string }) {
   return (
     <div
       data-state="empty"
-      className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5"
+      className="glass-standard rounded-2xl shadow-glass p-5"
     >
       <h3 className="text-sm font-medium text-warm-900 tracking-[-0.01em]">{label}</h3>
       <p className="text-xs text-warm-500 mt-2">

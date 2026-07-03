@@ -109,7 +109,7 @@ export function DuplicateReview({ onClose, onMerged }: DuplicateReviewProps) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -275,7 +275,7 @@ export function DuplicateReview({ onClose, onMerged }: DuplicateReviewProps) {
           <Button
             variant="ghost"
             onClick={handleClose}
-            className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+            className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
           >
             Done
           </Button>

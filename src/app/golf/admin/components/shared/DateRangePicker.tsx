@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface DateRange {
   from: Date;
@@ -85,7 +86,7 @@ export function DateRangePicker({
             'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150',
             activePreset === label
               ? 'bg-primary-600 text-white border-primary-600'
-              : 'bg-white/60 text-warm-600 border-warm-200 hover:bg-white/80 hover:border-warm-300'
+              : 'bg-cream-50 text-warm-600 border-warm-200 hover:bg-cream-100 hover:border-warm-300'
           )}
         >
           {label}
@@ -99,7 +100,7 @@ export function DateRangePicker({
           'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150',
           activePreset === 'custom'
             ? 'bg-primary-600 text-white border-primary-600'
-            : 'bg-white/60 text-warm-600 border-warm-200 hover:bg-white/80 hover:border-warm-300'
+            : 'bg-cream-50 text-warm-600 border-warm-200 hover:bg-cream-100 hover:border-warm-300'
         )}
       >
         Custom
@@ -115,9 +116,9 @@ export function DateRangePicker({
       {/* Custom date inputs */}
       {showCustom && (
         <div className="flex items-center gap-2 mt-2 w-full sm:w-auto sm:mt-0">
-          <input
+          <Input
             type="date"
-            className="rounded-lg border border-warm-200 bg-white/60 px-2.5 py-1.5 text-sm text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="min-h-0 rounded-lg border border-warm-200 bg-cream-50 px-2.5 py-1.5 text-sm text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
             value={
               value?.from
                 ? value.from.toISOString().split('T')[0]
@@ -126,9 +127,9 @@ export function DateRangePicker({
             onChange={handleCustomFromChange}
           />
           <span className="text-xs text-warm-400">to</span>
-          <input
+          <Input
             type="date"
-            className="rounded-lg border border-warm-200 bg-white/60 px-2.5 py-1.5 text-sm text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="min-h-0 rounded-lg border border-warm-200 bg-cream-50 px-2.5 py-1.5 text-sm text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
             value={
               value?.to
                 ? value.to.toISOString().split('T')[0]

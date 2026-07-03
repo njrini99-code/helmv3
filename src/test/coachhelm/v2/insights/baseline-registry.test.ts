@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { baselineRegistry } from '@/lib/coachhelm/v2/insights/baseline-registry';
 import { COMPARISON_SOURCES } from '@/lib/coachhelm/v2/insights/types';
+import type { BaselineKey } from '@/lib/coachhelm/v2/insights/types';
 
 describe('baselineRegistry', () => {
   it('returns D2 putting baseline with correct label and source', () => {
@@ -34,11 +35,11 @@ describe('baselineRegistry', () => {
   });
 
   it('throws on unknown key', () => {
-    expect(() => baselineRegistry.get('d2_avg.does_not_exist' as any)).toThrow(/unknown baseline/i);
+    expect(() => baselineRegistry.get('d2_avg.does_not_exist' as BaselineKey)).toThrow(/unknown baseline/i);
   });
 
   it('tryGet returns null for unknown key', () => {
-    expect(baselineRegistry.tryGet('d2_avg.does_not_exist' as any)).toBeNull();
+    expect(baselineRegistry.tryGet('d2_avg.does_not_exist' as BaselineKey)).toBeNull();
   });
 
   it('exposes all registered keys via allKeys()', () => {

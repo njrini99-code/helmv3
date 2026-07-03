@@ -15,7 +15,7 @@ interface CoachAttachmentsBlockProps {
 
 export function CoachAttachmentsBlock({ coachId: _coachId }: CoachAttachmentsBlockProps) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+    <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
       <div className="px-5 py-4 border-b border-warm-100/60 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-md bg-warm-100 text-warm-500 flex items-center justify-center">

@@ -16,7 +16,7 @@
     "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 6000",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "typecheck": "tsc --noEmit",
     "db:types": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/types/database.ts",

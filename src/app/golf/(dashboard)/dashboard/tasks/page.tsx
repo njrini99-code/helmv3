@@ -308,7 +308,7 @@ export default function GolfTasksPage() {
               'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
               filter === 'all'
                 ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-white text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
+                : 'bg-cream-50 text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
             )}
           >
             All ({tasks.length})
@@ -321,7 +321,7 @@ export default function GolfTasksPage() {
               'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap relative',
               filter === 'active'
                 ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-white text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
+                : 'bg-cream-50 text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
             )}
           >
             Active ({activeCount})
@@ -339,7 +339,7 @@ export default function GolfTasksPage() {
               'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
               filter === 'completed'
                 ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-white text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
+                : 'bg-cream-50 text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
             )}
           >
             Completed ({completedCount})

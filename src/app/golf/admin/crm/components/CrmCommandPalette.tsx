@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
 import { IconSearch, IconPlus, IconMail, IconUpload, IconUser } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface Destination {
   id: string;
@@ -101,14 +102,15 @@ export function CrmCommandPalette({
       aria-label="CRM command palette"
     >
       {/* Backdrop — click closes (cmdk.Dialog isn't used; we own the frame) */}
-      <button
+      <Button
+        variant="ghost"
         type="button"
         aria-label="Close command palette"
         onClick={close}
-        className="absolute inset-0 bg-warm-900/40 backdrop-blur-md cursor-default"
+        className="absolute inset-0 h-auto w-full min-h-0 rounded-none bg-warm-900/40 backdrop-blur-md cursor-default hover:bg-warm-900/40"
       >
         <span className="sr-only">Close command palette</span>
-      </button>
+      </Button>
 
       {/* Palette frame */}
       <div className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
@@ -135,7 +137,7 @@ export function CrmCommandPalette({
                 if (e.key === 'Escape') close();
               }}
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
               ESC
             </kbd>
           </div>
@@ -149,7 +151,7 @@ export function CrmCommandPalette({
             {/* Go to — navigable destinations */}
             <Command.Group
               heading="Go to"
-              className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+              className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
             >
               {destinations.map((d) => (
                 <Command.Item
@@ -171,7 +173,7 @@ export function CrmCommandPalette({
             {/* Actions */}
             <Command.Group
               heading="Actions"
-              className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+              className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
             >
               <Command.Item
                 value="New Coach add create coach"
@@ -224,7 +226,7 @@ export function CrmCommandPalette({
             {matchedCoaches.length > 0 && (
               <Command.Group
                 heading="Coaches"
-                className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                className="text-warm-500 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
               >
                 {matchedCoaches.map((c) => (
                   <Command.Item
@@ -255,7 +257,7 @@ export function CrmCommandPalette({
           </Command.List>
 
           {/* Footer hints */}
-          <div className="px-4 py-2 border-t border-warm-200/40 flex items-center justify-between text-[11px] text-warm-500">
+          <div className="px-4 py-2 border-t border-warm-200/40 flex items-center justify-between text-eyebrow text-warm-500">
             <div className="flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↑</kbd>
               <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↓</kbd>

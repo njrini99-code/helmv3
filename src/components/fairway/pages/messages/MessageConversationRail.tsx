@@ -139,12 +139,13 @@ function ConversationRow({
   const time = formatTime(conv.last_message?.created_at);
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block w-full rounded-fw-md px-3 py-2.5 text-left outline-none transition-colors [transition-duration:200ms]',
+        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         isSelected
@@ -209,7 +210,7 @@ function ConversationRow({
           </div>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -224,12 +225,13 @@ function SearchResultRow({
   onSelect: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block w-full rounded-fw-md px-3 py-2.5 text-left outline-none transition-colors [transition-duration:200ms]',
+        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         isSelected ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60' : 'hover:bg-surface-sunken/60',
@@ -251,7 +253,7 @@ function SearchResultRow({
           </p>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -400,18 +402,15 @@ export function MessageConversationRail({
           title="No conversations yet"
           description="Reach out to a teammate or coach to get a thread started."
           action={
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={onNewMessage}
-              className={cn(
-                'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
-                'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
-                'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
-                'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-              )}
+              className="min-h-[36px] px-4 py-1.5"
             >
               New message
-            </button>
+            </Button>
           }
         />
       </InstrumentPanel>

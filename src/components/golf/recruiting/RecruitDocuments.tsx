@@ -184,7 +184,7 @@ export function RecruitDocuments({ recruitId }: { recruitId: string }) {
           </Button>
         ) : null}
         {/* Native file input — the UI Input primitive has no file variant. */}
-        {/* eslint-disable-next-line helm/no-raw-input */}
+        { }
         <input
           ref={fileInputRef}
           type="file"

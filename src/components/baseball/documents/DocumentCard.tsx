@@ -184,16 +184,20 @@ export function DocumentCard({
 
                 {activeDropdown === document.id && (
                   <>
-                    <button
+                    <Button
+                      variant="ghost"
                       type="button"
                       aria-label="Close menu"
-                      className="fixed inset-0 z-30 cursor-default bg-transparent border-0 p-0"
+                      className="fixed inset-0 z-30 cursor-default bg-transparent border-0 p-0 rounded-none"
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveDropdown(null);
                       }}
-                    />
-                    <div role="menu" className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                      haptic="none"
+                    >
+                      {null}
+                    </Button>
+                    <div role="menu" className="absolute right-0 top-8 z-40 w-48 glass-prominent rounded-xl shadow-xl py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                       <Button
                         variant="ghost"
                         role="menuitem"

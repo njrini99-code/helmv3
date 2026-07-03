@@ -2,7 +2,8 @@
 
 import { useState, useId, useEffect, useMemo, useRef } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, Textarea } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { generateClassColor, detectSemester } from '@/lib/utils/schedule-parser';
@@ -510,22 +511,12 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Semester & Color */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor={`${uid}-semester`} className="block text-sm font-medium text-text-secondary mb-1.5">
-                Semester
-              </label>
-              <select
-                id={`${uid}-semester`}
+              <Select
+                label="Semester"
+                options={semesterOptions.map((option) => ({ value: option, label: option }))}
                 value={formData.semester}
-                onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
-                aria-label="Semester"
-                className="w-full px-3 py-2 border border-border-subtle rounded-lg text-base lg:text-sm min-h-[44px] bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30"
-              >
-                {semesterOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setFormData(prev => ({ ...prev, semester: value }))}
+              />
             </div>
             <div>
               <label htmlFor={`${uid}-color`} className="block text-sm font-medium text-text-secondary mb-1.5">
@@ -549,7 +540,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-text-secondary mb-1.5">
               Notes
             </label>
-            <textarea
+            <Textarea
               id={`${uid}-notes`}
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}

@@ -513,13 +513,14 @@ function CoachingIntelligenceBody({
                 {(['brief', 'detailed'] as const).map((option) => {
                   const active = philosophy.insightVerbosity === option;
                   return (
-                    <button
+                    <Button
                       key={option}
                       type="button"
+                      variant="ghost"
                       aria-pressed={active}
                       onClick={() => handleDisplayChange('insightVerbosity', option)}
                       className={[
-                        'flex-1 rounded-fw-sm px-4 py-2.5 font-fw-sans text-body-sm font-medium capitalize',
+                        'h-auto min-h-0 flex-1 rounded-fw-sm border-0 px-4 py-2.5 font-fw-sans text-body-sm font-medium font-normal capitalize',
                         'transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
                         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                         active
@@ -528,7 +529,7 @@ function CoachingIntelligenceBody({
                       ].join(' ')}
                     >
                       {option}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>

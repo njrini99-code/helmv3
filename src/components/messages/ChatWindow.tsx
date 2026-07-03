@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { IconSend, IconArrowLeft, IconCheck } from '@/components/icons';
 import type { Message } from '@/lib/types';
 import type { ParticipantDetails } from '@/lib/types/messages';
@@ -175,12 +176,12 @@ export function ChatWindow({
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <div className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Message"
-            className="flex-1 px-4 py-2.5 bg-warm-100/80 border border-warm-200/60 rounded-full text-body text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:bg-white transition-colors"
+            className="flex-1 min-h-0 px-4 py-2.5 bg-warm-100/80 border border-warm-200/60 rounded-full text-body text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:bg-cream-50 transition-colors"
             disabled={sending}
           />
           <Button

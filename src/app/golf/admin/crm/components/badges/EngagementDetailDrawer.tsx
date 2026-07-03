@@ -183,7 +183,7 @@ export function EngagementDetailDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby="engagement-drawer-title"
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-white shadow-2xl border-l border-warm-200/60 flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] glass-prominent shadow-2xl border-l border-warm-200/60 flex flex-col"
       >
         {/* Header */}
         <header className="flex items-center justify-between gap-3 px-5 py-4 border-b border-warm-100">
@@ -227,7 +227,7 @@ export function EngagementDetailDrawer({
 
           {!loading && !error && !engagement && (
             <div className="rounded-2xl border border-dashed border-warm-200 bg-warm-50/40 px-4 py-10 text-center">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center mx-auto mb-2 border border-warm-200/60">
+              <div className="w-10 h-10 rounded-xl bg-cream-50 flex items-center justify-center mx-auto mb-2 border border-warm-200/60">
                 <IconActivity size={18} className="text-warm-400" />
               </div>
               <p className="text-sm font-medium text-warm-700">No engagement data yet</p>
@@ -241,7 +241,7 @@ export function EngagementDetailDrawer({
           {engagement && tone && (
             <>
               {/* Score card */}
-              <section className="rounded-2xl border border-warm-200/60 bg-white p-4">
+              <section className="rounded-2xl border border-warm-200/60 bg-cream-50 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span
@@ -319,7 +319,7 @@ export function EngagementDetailDrawer({
                     No email events in the last 90 days.
                   </p>
                 ) : (
-                  <ul className="rounded-2xl border border-warm-200/60 bg-white divide-y divide-warm-100">
+                  <ul className="rounded-2xl border border-warm-200/60 bg-cream-50 divide-y divide-warm-100">
                     {events.map((evt) => (
                       <EventRow key={evt.id} event={evt} />
                     ))}

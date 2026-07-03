@@ -22,6 +22,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { IconCheckCircle2, IconAlertCircle, IconArrowLeft } from '@/components/icons';
 import type {
   HelmLiftingSessionWithExercises,
@@ -372,7 +373,7 @@ function ExerciseBlock({
               <span className="w-10 shrink-0 text-xs font-medium text-warm-400">
                 Set {setNum}
               </span>
-              <input
+              <Input
                 inputMode="numeric"
                 placeholder="reps"
                 aria-label={`${name} set ${setNum} reps`}
@@ -380,9 +381,9 @@ function ExerciseBlock({
                 onChange={(e) =>
                   setDrafts((p) => ({ ...p, [setNum]: { ...d, reps: e.target.value } }))
                 }
-                className="w-16 rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
+                className="w-16 min-h-0 rounded-lg bg-cream-50 px-2 py-1.5 text-sm focus:ring-1 focus-visible:ring-1"
               />
-              <input
+              <Input
                 inputMode="decimal"
                 placeholder={prescribedLoadUnit ?? 'lb'}
                 aria-label={`${name} set ${setNum} load`}
@@ -390,9 +391,9 @@ function ExerciseBlock({
                 onChange={(e) =>
                   setDrafts((p) => ({ ...p, [setNum]: { ...d, load: e.target.value } }))
                 }
-                className="w-16 rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
+                className="w-16 min-h-0 rounded-lg bg-cream-50 px-2 py-1.5 text-sm focus:ring-1 focus-visible:ring-1"
               />
-              <input
+              <Input
                 inputMode="decimal"
                 placeholder="RPE"
                 aria-label={`${name} set ${setNum} RPE`}
@@ -400,7 +401,7 @@ function ExerciseBlock({
                 onChange={(e) =>
                   setDrafts((p) => ({ ...p, [setNum]: { ...d, rpe: e.target.value } }))
                 }
-                className="w-16 rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
+                className="w-16 min-h-0 rounded-lg bg-cream-50 px-2 py-1.5 text-sm focus:ring-1 focus-visible:ring-1"
               />
               <Button
                 size="sm"

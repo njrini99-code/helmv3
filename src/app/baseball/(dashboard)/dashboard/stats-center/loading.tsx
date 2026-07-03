@@ -27,7 +27,7 @@ export default function StatsCenterLoading() {
         {/* Summary strip — 5 tiles */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="rounded-2xl bg-white/70 border border-warm-100 p-4">
+            <div key={i} className="rounded-2xl glass-standard p-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <Skeleton className="h-3 w-16" />
@@ -40,7 +40,7 @@ export default function StatsCenterLoading() {
         </div>
 
         {/* Filter bar */}
-        <div className="mb-6 rounded-2xl bg-white/70 border border-warm-100 px-4 py-3">
+        <div className="mb-6 rounded-2xl glass-standard px-4 py-3">
           <div className="flex flex-wrap items-center gap-4">
             <Skeleton className="h-5 w-16" />
             <Skeleton className="h-9 w-36 rounded-xl" />
@@ -56,7 +56,7 @@ export default function StatsCenterLoading() {
         {/* Player stat card grid — 3 columns × 2 rows */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl bg-white/70 border border-warm-100 p-4 space-y-4">
+            <div key={i} className="rounded-2xl glass-standard p-4 space-y-4">
               {/* Card header — player identity */}
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-2">

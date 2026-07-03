@@ -9,6 +9,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
   addExpense,
@@ -219,7 +220,7 @@ export function ExpenseForm({
         {/* Notes */}
         <div>
           <label htmlFor="ef-notes" className="text-sm font-medium text-warm-700 block mb-1">Notes (Optional)</label>
-          <textarea
+          <Textarea
             id="ef-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

@@ -209,7 +209,7 @@ export function DrillSheet({
               className={cn(
                 'inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl',
                 'bg-cream-100/82 border border-warm-200 text-sm font-medium text-warm-800',
-                'hover:bg-white hover:border-primary-200 active:scale-[0.99] transition-all',
+                'hover:bg-cream-100 hover:border-primary-200 active:scale-[0.99] transition-all',
                 logPending && 'opacity-60 pointer-events-none',
               )}
             >

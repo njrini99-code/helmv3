@@ -270,7 +270,7 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
         // Native hidden value carrier for form participation — not a visible
         // control, so the app's styled <Input> does not apply (and this group
         // imports no external components).
-        // eslint-disable-next-line helm/no-raw-input
+         
         <input type="hidden" name={name} value={toFormValue(mode, value)} />
       ) : null}
 

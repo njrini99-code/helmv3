@@ -372,7 +372,7 @@ export function EventImportWizard({ teamId, teamName, players, eventSources }: P
               options={eventSources.map((s) => ({ value: s.key, label: s.label }))}
             />
             <label className="flex cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed border-[color:var(--hairline)] bg-[var(--paper)] px-6 py-10 text-center transition-colors hover:border-grade-plus/50 hover:bg-grade-plus/[0.04]">
-              {/* eslint-disable-next-line helm/no-raw-input */}
+              { }
               <input
                 type="file"
                 accept={activeSource?.accept ?? '.csv,.xml'}

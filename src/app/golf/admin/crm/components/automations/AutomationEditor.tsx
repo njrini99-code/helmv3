@@ -16,6 +16,10 @@ import type {
 } from '@/lib/crm/automations-engine';
 import { TRIGGER_EVENTS, ACTION_KINDS } from './AutomationsSeed';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // ============================================================================
 // AutomationEditor — modal form for creating or editing a crm_automations row.
@@ -197,7 +201,7 @@ export function AutomationEditor({
           role="dialog"
           aria-modal="true"
           aria-labelledby="automation-editor-title"
-          className="w-full max-w-2xl max-h-[90vh] overflow-hidden bg-white rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto flex flex-col"
+          className="w-full max-w-2xl max-h-[90vh] overflow-hidden bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto flex flex-col"
         >
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
             {/* Header */}
@@ -229,7 +233,7 @@ export function AutomationEditor({
                     Name <span className="text-red-500">*</span>
                   </label>
                   {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-                  <input autoFocus
+                  <Input autoFocus
                     id="automation-name"
                     type="text"
                     required
@@ -237,18 +241,16 @@ export function AutomationEditor({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Follow up after open"
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                    className="min-h-0 py-2 rounded-lg"
                   />
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer pb-2">
-                  <input
-                    type="checkbox"
+                <div className="pb-2">
+                  <Checkbox
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500/20"
+                    label="Active"
                   />
-                  <span className="text-sm text-warm-700">Active</span>
-                </label>
+                </div>
               </div>
 
               {/* Description */}
@@ -256,34 +258,28 @@ export function AutomationEditor({
                 <label htmlFor="automation-description" className="block text-xs font-medium text-warm-700 mb-1">
                   Description <span className="text-warm-400 font-normal">(optional)</span>
                 </label>
-                <textarea
+                <Textarea
                   id="automation-description"
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this automation do?"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                  className="py-2 rounded-lg"
                 />
               </div>
 
               {/* Trigger + Priority */}
               <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-3">
                 <div>
-                  <label htmlFor="automation-trigger" className="block text-xs font-medium text-warm-700 mb-1">
+                  <span className="block text-xs font-medium text-warm-700 mb-1">
                     Trigger event <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="automation-trigger"
+                  </span>
+                  <Select
+                    options={TRIGGER_EVENTS.map((t) => ({ value: t.value, label: t.label }))}
                     value={triggerEvent}
-                    onChange={(e) => setTriggerEvent(e.target.value as CrmAutomationTrigger)}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
-                  >
-                    {TRIGGER_EVENTS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setTriggerEvent(value as CrmAutomationTrigger)}
+                    className="rounded-lg"
+                  />
                   <p className="mt-1 text-eyebrow text-warm-500">
                     {TRIGGER_EVENTS.find((t) => t.value === triggerEvent)?.description}
                   </p>
@@ -292,14 +288,14 @@ export function AutomationEditor({
                   <label htmlFor="automation-priority" className="block text-xs font-medium text-warm-700 mb-1">
                     Priority
                   </label>
-                  <input
+                  <Input
                     id="automation-priority"
                     type="number"
                     min={0}
                     max={1000}
                     value={priority}
                     onChange={(e) => setPriority(parseInt(e.target.value, 10) || 0)}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                    className="min-h-0 py-2 rounded-lg"
                   />
                   <p className="mt-1 text-eyebrow text-warm-500">Lower runs first.</p>
                 </div>
@@ -330,35 +326,30 @@ export function AutomationEditor({
                         key={idx}
                         className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto] gap-2 items-center"
                       >
-                        <input
+                        <Input
                           type="text"
                           value={cond.field}
                           onChange={(e) => updateCondition(idx, { field: e.target.value })}
                           placeholder="coach.status"
-                          className="px-3 py-1.5 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          className="min-h-0 px-3 py-1.5 rounded-lg"
                         />
-                        <select
+                        <Select
+                          options={CONDITION_OPS.map((op) => ({ value: op.value, label: op.label }))}
                           value={cond.op}
-                          onChange={(e) =>
-                            updateCondition(idx, { op: e.target.value as CrmAutomationConditionOp })
+                          onChange={(value) =>
+                            updateCondition(idx, { op: value as CrmAutomationConditionOp })
                           }
-                          className="px-3 py-1.5 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                        >
-                          {CONDITION_OPS.map((op) => (
-                            <option key={op.value} value={op.value}>
-                              {op.label}
-                            </option>
-                          ))}
-                        </select>
+                          className="min-h-0 px-3 py-1.5 rounded-lg"
+                        />
                         {cond.op === 'is_null' || cond.op === 'is_not_null' ? (
                           <span className="text-xs text-warm-400 italic px-3">—</span>
                         ) : (
-                          <input
+                          <Input
                             type="text"
                             value={typeof cond.value === 'string' ? cond.value : String(cond.value ?? '')}
                             onChange={(e) => updateCondition(idx, { value: e.target.value })}
                             placeholder="value"
-                            className="px-3 py-1.5 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                            className="min-h-0 px-3 py-1.5 rounded-lg"
                           />
                         )}
                         <IconButton variant="default"
@@ -399,30 +390,25 @@ export function AutomationEditor({
                         key={idx}
                         className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center"
                       >
-                        <select
+                        <Select
+                          options={ACTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
                           value={action.kind}
-                          onChange={(e) => {
-                            const nextKind = e.target.value as CrmAutomationAction['kind'];
+                          onChange={(value) => {
+                            const nextKind = value as CrmAutomationAction['kind'];
                             const nextMeta = ACTION_KINDS.find((k) => k.value === nextKind);
                             updateAction(idx, {
                               kind: nextKind,
                               params: nextMeta ? { [nextMeta.paramKey]: '' } : {},
                             });
                           }}
-                          className="px-3 py-1.5 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                        >
-                          {ACTION_KINDS.map((k) => (
-                            <option key={k.value} value={k.value}>
-                              {k.label}
-                            </option>
-                          ))}
-                        </select>
-                        <input
+                          className="min-h-0 px-3 py-1.5 rounded-lg"
+                        />
+                        <Input
                           type="text"
                           value={typeof paramVal === 'string' ? paramVal : String(paramVal ?? '')}
                           onChange={(e) => updateActionParam(idx, paramKey, e.target.value)}
                           placeholder={meta?.paramPlaceholder ?? ''}
-                          className="px-3 py-1.5 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          className="min-h-0 px-3 py-1.5 rounded-lg"
                         />
                         <IconButton variant="default"
                           type="button"

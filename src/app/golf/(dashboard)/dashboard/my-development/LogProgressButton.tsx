@@ -250,7 +250,7 @@ export function MarkCompleteButton({
       className={
         confirming
           ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors disabled:opacity-60'
-          : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-warm-700 bg-cream-100/75 hover:bg-white border border-warm-200 rounded-lg transition-colors disabled:opacity-60'
+          : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-warm-700 bg-cream-100/75 hover:bg-cream-100 border border-warm-200 rounded-lg transition-colors disabled:opacity-60'
       }
     >
       {pending ? 'Saving…' : confirming ? 'Confirm complete' : 'Mark complete'}

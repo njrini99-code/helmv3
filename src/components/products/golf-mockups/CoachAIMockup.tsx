@@ -32,13 +32,13 @@ export function CoachAIMockup() {
     <div className="relative w-full max-w-sm mx-auto">
       {/* AI Badge */}
       <div className="flex items-center justify-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
           <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
         </div>
         <span className="font-semibold text-warm-900">CoachHelm AI</span>
-        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+        <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
           3 new
         </span>
       </div>
@@ -49,9 +49,9 @@ export function CoachAIMockup() {
           <div
             key={i}
             className={cn(
-              "relative bg-white rounded-xl p-4 shadow-lg border transition-transform hover:scale-[1.02]",
+              "relative bg-cream-50 rounded-xl p-4 shadow-lg border transition-transform hover:scale-[1.02]",
               insight.color === 'amber' && "border-amber-200",
-              insight.color === 'emerald' && "border-emerald-200",
+              insight.color === 'emerald' && "border-primary-200",
               insight.color === 'blue' && "border-blue-200"
             )}
             style={{
@@ -63,7 +63,7 @@ export function CoachAIMockup() {
               <div className={cn(
                 "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
                 insight.color === 'amber' && "bg-amber-100 text-amber-600",
-                insight.color === 'emerald' && "bg-emerald-100 text-emerald-600",
+                insight.color === 'emerald' && "bg-primary-100 text-primary-600",
                 insight.color === 'blue' && "bg-blue-100 text-blue-600"
               )}>
                 {insight.type === 'alert' && (
@@ -93,7 +93,7 @@ export function CoachAIMockup() {
                 <Button variant="ghost" className={cn(
                   "mt-2 text-xs font-medium",
                   insight.color === 'amber' && "text-amber-600",
-                  insight.color === 'emerald' && "text-emerald-600",
+                  insight.color === 'emerald' && "text-primary-600",
                   insight.color === 'blue' && "text-blue-600"
                 )}>
                   {insight.action} →
@@ -105,7 +105,7 @@ export function CoachAIMockup() {
       </div>
 
       {/* Glow backdrop */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-400/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-primary-400/10 blur-2xl rounded-full" />
     </div>
   );
 }

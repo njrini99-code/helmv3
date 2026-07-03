@@ -5,7 +5,7 @@ export default function Loading() {
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
-      <div className="bg-white border-b border-warm-200">
+      <div className="glass-prominent border-b border-warm-200">
         <div className="max-w-[720px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Skeleton className="w-8 h-8 rounded-lg" />
@@ -35,7 +35,7 @@ export default function Loading() {
                   </div>
                 </div>
               </div>
-              <div className="p-6 bg-white space-y-2">
+              <div className="p-6 bg-cream-50 space-y-2">
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-full" />
@@ -53,7 +53,7 @@ export default function Loading() {
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className="bg-white rounded-lg border border-warm-200 p-4"
+                      className="bg-cream-50 rounded-lg border border-warm-200 p-4"
                     >
                       <div className="flex items-start gap-4">
                         <Skeleton className="w-16 h-16 rounded-full" />

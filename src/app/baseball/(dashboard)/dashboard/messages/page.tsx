@@ -218,7 +218,7 @@ function MessagesContent() {
     return (
       <div className="h-[calc(100dvh-64px)] flex bg-[#FAF6F1]">
         {/* Conversation list skeleton */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200 bg-white">
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200 bg-cream-50">
           <div className="p-4 border-b border-warm-200">
             <div className="h-10 bg-warm-100 rounded-lg animate-pulse" />
           </div>

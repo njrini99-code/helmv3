@@ -100,7 +100,7 @@ export function FairwayRoundSummarySheet({
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
               className="relative"
             >
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-text-on-accent/20 backdrop-blur-sm">
                 <Flag className="h-6 w-6 text-text-on-accent" aria-hidden />
               </div>
               <h2 className="mb-1 font-fw-display text-body-lg font-medium text-text-on-accent/90">Round Complete</h2>

@@ -111,7 +111,7 @@ export function RecruitingPreferencesClient({
               'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
               activeSection === section.id
                 ? 'bg-primary-500 text-white'
-                : 'bg-white/70 text-warm-600 hover:bg-white active:bg-white/70'
+                : 'bg-cream-100 text-warm-600 hover:bg-cream-50 active:bg-cream-100'
             )}
           >
             <span>{section.icon}</span>
@@ -258,7 +258,7 @@ export function RecruitingPreferencesClient({
 
       {/* Save button - sticky on mobile */}
       <div className="sticky bottom-4 z-10">
-        <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-warm-200 p-4 shadow-lg">
+        <div className="glass-standard rounded-2xl border-warm-200 p-4 shadow-lg">
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm text-warm-600">
               {saved ? (

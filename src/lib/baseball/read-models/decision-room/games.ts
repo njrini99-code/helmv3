@@ -23,13 +23,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { DecisionRoomGameResult } from '@/app/baseball/actions/decision-room';
+import type { Database } from '@/lib/types/database';
 
 /**
- * Generic Supabase client alias. The Decision Room callers pass the
- * authenticated server client; we accept an untyped Database generic so this
- * module does not need the generated Database types to compile.
+ * Supabase client typed against the generated Database schema. The Decision
+ * Room callers pass the authenticated server client.
  */
-type Client = SupabaseClient<any, 'public', any>;
+type Client = SupabaseClient<Database>;
 
 /**
  * Cap rows well under PostgREST's hard 1000-row server max so reads never

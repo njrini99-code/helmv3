@@ -387,7 +387,7 @@ export function PlayerComparison({
                     key={stat.label}
                     className={cn(
                       'border-b border-border-light hover:bg-cream-50 active:bg-cream-100 transition-colors',
-                      index % 2 === 0 && 'bg-white'
+                      index % 2 === 0 && 'bg-cream-50'
                     )}
                   >
                     <td className="sticky left-0 bg-inherit z-10 px-4 py-3 text-sm font-medium text-warm-700">
@@ -425,7 +425,7 @@ export function PlayerComparison({
 
         {/* Radar Chart Visualization */}
         {showRadarChart && (
-          <div className="p-6 border-t border-border-light bg-white">
+          <div className="p-6 border-t border-border-light bg-cream-50">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <IconChartRadar size={20} className="text-primary-600" />

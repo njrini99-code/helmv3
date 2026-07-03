@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { IconFile, IconUpload, IconSearch } from '@/components/icons';
@@ -266,7 +267,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           onMoveToFolder={isCoach ? openMoveModal : undefined}
           fileInputSlot={
             isCoach ? (
-              // eslint-disable-next-line helm/no-raw-input -- hidden native file picker (no design-system equivalent)
+               
               <input
                 ref={fileInputRef}
                 type="file"
@@ -337,7 +338,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     <div className="p-6 lg:p-8">
       {/* Hidden file input driving both the header and empty-state upload triggers */}
       {isCoach && (
-        // eslint-disable-next-line helm/no-raw-input -- hidden native file picker (no design-system equivalent)
+         
         <input
           ref={fileInputRef}
           type="file"
@@ -350,13 +351,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents..."
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
+            leftIcon={<IconSearch size={16} />}
+            className="text-sm bg-cream-50 border-warm-200 rounded-lg"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -368,7 +369,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap',
                 category === cat.value
                   ? 'bg-primary-100 text-primary-700 border-primary-200'
-                  : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
+                  : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300'
               )}
             >
               {cat.label}
