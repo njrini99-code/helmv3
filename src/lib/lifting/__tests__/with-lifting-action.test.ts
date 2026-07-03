@@ -45,6 +45,7 @@ vi.mock('@/lib/supabase/untyped', () => ({
 }));
 
 vi.mock('@/lib/server-error-logger', () => ({
+  logServerEvent: vi.fn(async () => undefined),
   logServerException: vi.fn(async () => undefined),
 }));
 

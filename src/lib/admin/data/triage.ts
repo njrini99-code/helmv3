@@ -19,6 +19,7 @@ export interface AppTriageEventRow {
   sport: string | null;
   fingerprint: string | null;
   user_id: string | null;
+  user_email?: string | null;
   url: string | null;
   created_at: string;
   // Optional — Copy-for-Claude incident reports (feed buildIncidentReport).
@@ -44,6 +45,10 @@ export interface TriageItem {
   permalink: string | null;
   eventIds: string[];
   substatus: string | null;
+  source: string | null;
+  feature: string | null;
+  actionName: string | null;
+  route: string | null;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
   report: string;
 }
@@ -127,6 +132,10 @@ export function mergeTriage(input: {
     permalink: issue.permalink,
     eventIds: [],
     substatus: issue.substatus,
+    source: 'sentry',
+    feature: null,
+    actionName: null,
+    route: issue.culprit,
     report: buildIncidentReport({
       title: issue.title,
       message: issue.culprit ?? issue.title,
@@ -147,7 +156,8 @@ export function mergeTriage(input: {
     const fp = row.fingerprint ?? `row:${row.id}`;
     const bucket = buckets.get(fp) ?? { rows: [], users: new Set<string>() };
     bucket.rows.push(row);
-    if (row.user_id) bucket.users.add(row.user_id);
+    const userKey = row.user_id ?? row.user_email ?? null;
+    if (userKey) bucket.users.add(userKey);
     buckets.set(fp, bucket);
   }
 
@@ -164,6 +174,8 @@ export function mergeTriage(input: {
     const mostRecentFirst = [...sorted].reverse();
     const actionName =
       mostRecentFirst.map((r) => extractActionName(r.metadata)).find((a) => a !== null) ?? null;
+    const route =
+      mostRecentFirst.map((r) => r.url ?? extractRoute(r.metadata)).find((r) => r !== null) ?? null;
     const stackTrace = mostRecentFirst.map((r) => r.stack_trace).find((s) => !!s) ?? null;
     const collapsedCount = bucket.rows.reduce((sum, r) => sum + extractCollapsedCount(r.metadata), 0);
 
@@ -180,6 +192,10 @@ export function mergeTriage(input: {
       permalink: null,
       eventIds: sorted.map((r) => r.id),
       substatus: null,
+      source: last.source ?? null,
+      feature: last.feature ?? null,
+      actionName,
+      route,
       report: buildIncidentReport({
         title: last.title,
         message: last.message,
@@ -226,7 +242,7 @@ export async function fetchTriageQueue(): Promise<{
     admin
       .from('admin_events')
       .select(
-        'id, title, message, severity, sport, fingerprint, user_id, url, created_at, source, feature, stack_trace, metadata',
+        'id, title, message, severity, sport, fingerprint, user_id, user_email, url, created_at, source, feature, stack_trace, metadata',
       )
       .eq('event_type', 'error')
       .eq('resolved', false)

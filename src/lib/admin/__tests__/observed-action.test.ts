@@ -8,6 +8,15 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/server-error-logger', () => ({
   logServerException: mocks.logServerException,
 }));
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(async () => ({
+    auth: {
+      getUser: vi.fn(async () => ({
+        data: { user: { id: 'user-1', email: 'admin@example.com' } },
+      })),
+    },
+  })),
+}));
 
 import { withAdminObserved, isNextControlFlowError } from '@/lib/admin/observed-action';
 import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
@@ -39,7 +48,13 @@ describe('withAdminObserved', () => {
     expect(mocks.logServerException).toHaveBeenCalledTimes(1);
     const [err, ctx] = mocks.logServerException.mock.calls[0]!;
     expect(err).toBe(boom);
-    expect(ctx).toMatchObject({ action: 'demo', source: 'server_action', sport: 'golf' });
+    expect(ctx).toMatchObject({
+      action: 'demo',
+      source: 'server_action',
+      sport: 'golf',
+      userId: 'user-1',
+      userEmail: 'admin@example.com',
+    });
   });
 
   it('passes feature through to the logger context', async () => {

@@ -6,7 +6,7 @@ import {
   type SentryIssue,
   type SentryStatsPoint,
 } from '@/lib/admin/sentry-api';
-import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+import { fetchVercelDeployments, type VercelDeployment } from '@/lib/admin/vercel-api';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import {
   mergeTriage,
@@ -96,6 +96,7 @@ export function buildFilteredIncidentsReport(incidents: readonly TriageItem[], f
 export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   sentry: AdminFetchResult<SentryIssue[]>;
   hourly: AdminFetchResult<SentryStatsPoint[]>;
+  deployments: AdminFetchResult<VercelDeployment[]>;
   deployMarkers: number[];
   incidents: TriageItem[];
   rlsDenials24h: number;
@@ -107,7 +108,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   let query = admin
     .from('admin_events')
     .select(
-      'id, title, message, severity, sport, fingerprint, user_id, url, created_at, source, feature, stack_trace, metadata',
+      'id, title, message, severity, sport, fingerprint, user_id, user_email, url, created_at, source, feature, stack_trace, metadata',
     )
     .eq('event_type', 'error')
     .eq('resolved', false)
@@ -146,6 +147,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   return {
     sentry,
     hourly,
+    deployments: deploys,
     deployMarkers,
     incidents: mergeTriage({ sentryIssues: [], appEvents }),
     rlsDenials24h: rlsRes.count ?? 0,

@@ -31,7 +31,7 @@ import * as Sentry from '@sentry/nextjs';
 import type { User } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
-import { logServerException } from '@/lib/server-error-logger';
+import { logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import type { HelmLiftingAccessResult } from '@/lib/types/helm-lifting';
@@ -186,8 +186,8 @@ export function withLiftingAction<TArgs extends unknown[], TResult>(
           error instanceof LiftingNoOrgError ||
           error instanceof LiftingForbiddenError
         ) {
-          await logServerException(
-            error,
+          await logServerEvent(
+            error.message,
             {
               action: name,
               featureArea,
@@ -196,7 +196,7 @@ export function withLiftingAction<TArgs extends unknown[], TResult>(
               skipSentry: true,
               tags: { sport: 'lifting', feature: featureArea },
             },
-            'warning',
+            'info',
           );
           throw error;
         }

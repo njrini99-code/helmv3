@@ -78,6 +78,16 @@ export function TriageQueue({
     });
   }
 
+  function detailLine(item: TriageItem): string | null {
+    const parts = [
+      item.source ? `source ${item.source}` : null,
+      item.feature ? `feature ${item.feature}` : null,
+      item.actionName ? `action ${item.actionName}` : null,
+      item.route ? `route ${item.route}` : null,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(' · ') : null;
+  }
+
   return (
     <ul className="divide-y divide-warm-200/60">
       {visible.map((item) => (
@@ -101,6 +111,11 @@ export function TriageQueue({
               <LocalTime iso={item.lastSeen} />
               {item.substatus === 'regressed' ? ' · REGRESSED' : ''}
             </p>
+            {detailLine(item) ? (
+              <p className="break-words font-fw-mono text-caption leading-4 text-warm-500 [overflow-wrap:anywhere]">
+                {detailLine(item)}
+              </p>
+            ) : null}
             {errors.has(item.key) ? (
               <p className="text-xs text-fw-danger">
                 Resolve failed — {errors.get(item.key)}
