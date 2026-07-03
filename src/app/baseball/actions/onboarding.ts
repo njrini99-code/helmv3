@@ -381,37 +381,42 @@ export async function signupAndCompleteCoachOnboarding(data: {
     // Also handles users who started onboarding but abandoned before their coach record was created.
     if (authError.message.includes('already registered') || authError.message.includes('already exists')
       || authError.status === 422 || (authError as { code?: string }).code === 'user_already_exists') {
-      const admin = createAdminClient();
+      // signUp erroring "already exists" says nothing about WHO is calling —
+      // the previous service-role lookup here resumed onboarding for any
+      // caller who merely knew the email. Require proof of ownership:
+      //  (a) the caller is already signed in as that email (the client-side
+      //      checkAuth() race this fallback was built for), or
+      //  (b) the submitted password actually signs in as that account (the
+      //      abandoned-onboarding retry — this also sets their session).
+      const { data: { user: authedUser } } = await supabase.auth.getUser();
+      let ownerUser: User | null =
+        authedUser?.email?.toLowerCase() === normalizedEmail ? authedUser : null;
 
-      // Look up the existing user in our public.users table (fast, indexed on email)
-      const { data: dbUser } = await admin
-        .from('users')
-        .select('id')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
-
-      if (dbUser?.id) {
-        const { data: { user: existingUser } } = await admin.auth.admin.getUserById(dbUser.id);
-        if (existingUser) {
-          console.info('[Onboarding] Email already registered — completing onboarding for existing user:', existingUser.id);
-          return completeCoachOnboarding(
-            {
-              coachType,
-              schoolName,
-              division: data.division,
-              city: data.city,
-              state: data.state,
-              fullName,
-              title: data.title,
-            },
-            existingUser
-          );
-        }
+      if (!ownerUser) {
+        const { data: signInData } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password: data.password,
+        });
+        ownerUser = signInData?.user ?? null;
       }
 
-      // User exists in Supabase Auth but not in our public.users table yet.
-      // This can happen if they abandoned onboarding before the first DB write.
-      // Guide them to sign in so their session cookie is set, then they can complete onboarding.
+      if (ownerUser) {
+        console.info('[Onboarding] Email already registered — completing onboarding for verified owner:', ownerUser.id);
+        return completeCoachOnboarding(
+          {
+            coachType,
+            schoolName,
+            division: data.division,
+            city: data.city,
+            state: data.state,
+            fullName,
+            title: data.title,
+          },
+          ownerUser
+        );
+      }
+
+      // Caller could not prove ownership of the existing account.
       return {
         success: false,
         error: 'An account with this email already exists. Please sign in to continue your setup.',
