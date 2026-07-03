@@ -16,7 +16,11 @@
  * - Dashboard pages: Network-first with cache fallback
  */
 
-const CACHE_VERSION = 'golfhelm-v48d739cec';
+// Stable source placeholder — scripts/stamp-sw.mjs rewrites this to
+// 'golfhelm-v<commit-sha>' ONLY during a real Vercel build (never on a
+// local `npm run build` or CI's build gate). See
+// docs/operations/GENERATED_FILE_POLICY.md. Do not hand-edit to a hash.
+const CACHE_VERSION = 'golfhelm-vsource';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const API_CACHE = `${CACHE_VERSION}-api`;
