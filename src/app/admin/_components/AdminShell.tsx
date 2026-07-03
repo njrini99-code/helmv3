@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, AlertTriangle, KeyRound, Flag, CircleDot,
+  LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink,
 } from 'lucide-react';
 import {
@@ -49,15 +49,17 @@ function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
   return crumbs;
 }
 
+// Index-aligned with ADMIN_NAV (admin-nav.ts) — Overview, Activity, Errors,
+// Auth, Golf, Baseball, Users, Jobs, Deploys, Health.
 const NAV_ICONS = [
-  LayoutDashboard, AlertTriangle, KeyRound, Flag, CircleDot, Users, Timer, Rocket, HeartPulse,
+  LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot, Users, Timer, Rocket, HeartPulse,
 ] as const;
 
 /**
  * Helm Bridge chrome: Fairway AppShell (warm-black rail + cream canvas) as
  * the neutral ops shell. Sport inks appear ONLY inside sport-scoped panes.
- * Keyboard: 1-9 jump tabs, R refreshes, ⌘K opens the command menu —
- * preserving the old admin's muscle memory.
+ * Keyboard: 1-9 then 0 jump the 10 tabs (see admin-nav.ts), R refreshes,
+ * ⌘K opens the command menu — preserving the old admin's muscle memory.
  */
 export function AdminShell({
   email,
