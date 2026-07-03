@@ -34,6 +34,7 @@ import {
   Clock,
   MapPin,
   AlignLeft,
+  ChevronDown,
   Repeat,
   AlertTriangle,
   Trash2,
@@ -46,7 +47,7 @@ import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button } from '@/components/fairway/controls/button';
 import { Button as UiButton } from '@/components/ui/button';
 import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
-import { Select as UiSelect } from '@/components/ui/select';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Switch } from '@/components/fairway/forms/Switch';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type {
@@ -928,13 +929,25 @@ export function FairwayEventEditor({
                 </span>
                 <div className="relative">
                   {/* A series root can't be flipped back to a one-off here —
-                      that's a delete-with-scope, not a pattern change. */}
-                  <UiSelect
-                    options={RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => ({ value: o.value, label: o.label }))}
+                      that's a delete-with-scope, not a pattern change.
+                      Native select on purpose: keeps mobile OS pickers and the
+                      aria-label/selectOptions contract the tests pin. */}
+                  <NativeSelect
                     value={formData.recurrence}
-                    onChange={(value) => setFormData({ ...formData, recurrence: value as RecurrenceFrequency })}
+                    onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrenceFrequency })}
                     disabled={locked}
+                    aria-label="Recurrence"
                     className={cn(selectFieldCls, 'bg-surface')}
+                  >
+                    {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+                    aria-hidden
                   />
                 </div>
 
@@ -978,17 +991,21 @@ export function FairwayEventEditor({
                     <div>
                       <label htmlFor="ev-recurrence-end" className={labelCls}>Series ends</label>
                       <div className="relative">
-                        <UiSelect
-                          options={[
-                            { value: 'count', label: 'After a number of events' },
-                            { value: 'until', label: 'On a date' },
-                          ]}
+                        <NativeSelect
+                          id="ev-recurrence-end"
                           value={formData.recurrenceEndMode ?? 'count'}
-                          onChange={(value) =>
-                            setFormData({ ...formData, recurrenceEndMode: value as RecurrenceEndMode })
+                          onChange={(e) =>
+                            setFormData({ ...formData, recurrenceEndMode: e.target.value as RecurrenceEndMode })
                           }
                           disabled={locked}
                           className={cn(selectFieldCls, 'bg-surface')}
+                        >
+                          <option value="count">After a number of events</option>
+                          <option value="until">On a date</option>
+                        </NativeSelect>
+                        <ChevronDown
+                          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+                          aria-hidden
                         />
                       </div>
                     </div>

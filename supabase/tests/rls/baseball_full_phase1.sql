@@ -26,6 +26,14 @@
 -- Schema-light: asserts over pg_class / pg_policies / has_table_privilege /
 -- pg_proc — no seeded integration data (matches the deferral note in
 -- _helpers.sql). Read-only; wrapped in BEGIN/ROLLBACK; applies nothing.
+--
+-- 2026-07-04 graveyard update: baseball_lift_assignments, baseball_lift_results,
+-- and baseball_readiness_checkins moved out of public into the graveyard schema
+-- (20260704070000_graveyard_dead_liftlab_tables_phase2.sql — orphaned demo-seed
+-- rows, zero readers post signals-bridge rewire; helm_lifting_* is the live
+-- canonical successor, not yet covered by a dedicated RLS suite). Removed from
+-- the Phase-1 table set and from the player-isolation-gate sentinel list below.
+-- See docs/audits/DB_TABLE_AUDIT_2026-07-04.md.
 -- ============================================================================
 
 BEGIN;
@@ -37,14 +45,11 @@ INSERT INTO _bb_phase1_tables(t) VALUES
   ('baseball_event_acknowledgements'),
   ('baseball_exercises'),
   ('baseball_import_runs'),
-  ('baseball_lift_assignments'),
-  ('baseball_lift_results'),
   ('baseball_player_external_ids'),
   ('baseball_player_timeline_events'),
   ('baseball_practice_attendance'),
   ('baseball_practice_blocks'),
   ('baseball_practices'),
-  ('baseball_readiness_checkins'),
   ('baseball_staff_invitations'),
   ('baseball_stat_uploads'),
   ('baseball_coach_insights');
@@ -60,12 +65,12 @@ INSERT INTO _bb_phase1_funcs(f) VALUES
   ('is_baseball_team_member'),
   ('can_manage_baseball_lift_group');
 
--- 14 tables × 6 assertions (RLS on, 4× anon-privilege, no-anon-policy) = 84
--- + 14 (>=1 SELECT policy) = 98
--- + 1 (every table referenced exists) = 99
--- + 6 funcs × 2 (exists + anon cannot execute) = 12 → 111
+-- 11 tables × 6 assertions (RLS on, 4× anon-privilege, no-anon-policy) = 66
+-- + 11 (>=1 SELECT policy) = 77
+-- + 1 (every table referenced exists) = 78
+-- + 6 funcs × 2 (exists + anon cannot execute) = 12 → 90
 -- + 1 union player-identity gate present across the table set
-SELECT plan(112);
+SELECT plan(91);
 
 -- ---------------------------------------------------------------------------
 -- 0. Sanity: every Phase-1 table actually exists (catches a renamed/missing
@@ -87,12 +92,12 @@ SELECT is(
 --    ok() executed inside a DO block would advance the internal counter without
 --    emitting a TAP line, desyncing the plan.
 -- ---------------------------------------------------------------------------
--- RLS enabled (14)
+-- RLS enabled (11)
 SELECT ok((SELECT relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=bt.t), 'RLS ENABLED on '||bt.t)
 FROM _bb_phase1_tables bt ORDER BY bt.t;
 
 -- ---------------------------------------------------------------------------
--- 2. anon has NO table privilege on any Phase-1 table (4 × 14 = 56).
+-- 2. anon has NO table privilege on any Phase-1 table (4 × 11 = 44).
 -- ---------------------------------------------------------------------------
 SELECT isnt(has_table_privilege('anon', ('public.'||bt.t)::regclass, 'SELECT'), true, 'anon cannot SELECT '||bt.t)
 FROM _bb_phase1_tables bt ORDER BY bt.t;
@@ -104,7 +109,7 @@ SELECT isnt(has_table_privilege('anon', ('public.'||bt.t)::regclass, 'DELETE'), 
 FROM _bb_phase1_tables bt ORDER BY bt.t;
 
 -- ---------------------------------------------------------------------------
--- 3. NO policy on any Phase-1 table targets the anon role (14).
+-- 3. NO policy on any Phase-1 table targets the anon role (11).
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::int FROM pg_policies p
@@ -115,7 +120,7 @@ SELECT is(
 FROM _bb_phase1_tables bt ORDER BY bt.t;
 
 -- ---------------------------------------------------------------------------
--- 4a. Every Phase-1 table has at least one SELECT policy (14).
+-- 4a. Every Phase-1 table has at least one SELECT policy (11).
 -- ---------------------------------------------------------------------------
 SELECT cmp_ok(
   (SELECT COUNT(*)::int FROM pg_policies p
@@ -127,16 +132,15 @@ FROM _bb_phase1_tables bt ORDER BY bt.t;
 
 -- ---------------------------------------------------------------------------
 -- 4b. Player-isolation gate present: at least one player-private table binds a
---     readable branch to the per-user identity helper. (Sentinel: lift_results,
---     readiness, attendance, external_ids, coach_insights, timeline, acks.)
+--     readable branch to the per-user identity helper. (Sentinel: attendance,
+--     external_ids, acks — lift_results/readiness dropped 2026-07-04, see
+--     header; their helm_lifting_* successors are not yet a sentinel here.)
 --     We assert the union: across the player-private tables, every one binds
 --     reads to get_my_baseball_player_id / auth.uid (no global player read).
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::int
      FROM (VALUES
-       ('baseball_lift_results'),
-       ('baseball_readiness_checkins'),
        ('baseball_practice_attendance'),
        ('baseball_player_external_ids'),
        ('baseball_event_acknowledgements')

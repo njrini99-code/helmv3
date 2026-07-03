@@ -20,29 +20,29 @@ updates:
     rebase-strategy: "disabled"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "America/New_York"
+      interval: "monthly"
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 4
     labels:
       - "dependencies"
     groups:
-      # All non-major dev-dependency bumps → one PR.
+      # ALL dev-dependency bumps (majors included) → one PR.
       dev-dependencies:
         dependency-type: "development"
         update-types:
           - "minor"
           - "patch"
-      # All non-major production bumps → one PR. Majors stay separate so they
-      # get individual review.
+          - "major"
+      # ALL production bumps (majors included) → one PR. 2026-07-03 a Monday
+      # run opened ~13 individual major PRs, each triggering a billed Vercel
+      # preview build; one reviewable PR per dependency-type instead.
       production-dependencies:
         dependency-type: "production"
         update-types:
           - "minor"
           - "patch"
+          - "major"
 
   # ── GitHub Actions ────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
@@ -51,8 +51,7 @@ updates:
     rebase-strategy: "disabled"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
     cooldown:
       default-days: 7
     labels:
@@ -70,11 +69,10 @@ updates:
     rebase-strategy: "disabled"
     directory: "/helm-website-ui"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     labels:
       - "dependencies"
     groups:
@@ -84,6 +82,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
+          - "major"
 
   - package-ecosystem: "npm"
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
@@ -91,11 +90,10 @@ updates:
     rebase-strategy: "disabled"
     directory: "/helm-intelligence/typescript"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     labels:
       - "dependencies"
     groups:
@@ -105,6 +103,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
+          - "major"
 
   - package-ecosystem: "npm"
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
@@ -112,11 +111,10 @@ updates:
     rebase-strategy: "disabled"
     directory: "/tools/ultra-agent-audit"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     labels:
       - "dependencies"
     groups:
@@ -126,6 +124,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
+          - "major"
 
   - package-ecosystem: "npm"
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
@@ -133,11 +132,10 @@ updates:
     rebase-strategy: "disabled"
     directory: "/tools/ux-flow-auditor"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     labels:
       - "dependencies"
     groups:
@@ -147,6 +145,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
+          - "major"
 
   # ── iOS native (Swift Package Manager under the Capacitor app) ────────────
   - package-ecosystem: "swift"
@@ -155,11 +154,10 @@ updates:
     rebase-strategy: "disabled"
     directory: "/ios/App/CapApp-SPM"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     labels:
       - "dependencies"
       - "mobile"
