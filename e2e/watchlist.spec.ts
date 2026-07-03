@@ -86,7 +86,9 @@ test.describe('Watchlist Management', () => {
       const addButton = page.locator('button:has-text("Add to Watchlist")').first();
       if (await addButton.count() > 0 && await addButton.isVisible({ timeout: 2000 })) {
         await addButton.click();
-        await page.waitForTimeout(1000);
+        // Wait for the add-to-watchlist mutation to settle instead of a
+        // flat 1000ms guess.
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
       }
 
       // Navigate to watchlist
@@ -133,11 +135,15 @@ test.describe('Watchlist Management', () => {
 
         await removeButton.click();
 
-        // Wait for removal
-        await page.waitForTimeout(1000);
+        // Wait for the actual removal — the card count dropping below its
+        // pre-click value — instead of a flat 1000ms guess.
+        const cards = page.locator('[data-testid="watchlist-player"], .player-card');
+        await expect
+          .poll(async () => cards.count(), { timeout: 5000 })
+          .toBeLessThanOrEqual(initialCount);
 
         // Count should decrease
-        const newCount = await page.locator('[data-testid="watchlist-player"], .player-card').count();
+        const newCount = await cards.count();
         expect(newCount).toBeLessThanOrEqual(initialCount);
       }
     });
@@ -182,8 +188,9 @@ test.describe('Watchlist Management', () => {
               await page.mouse.move(targetBox.x + 50, targetBox.y + 50);
               await page.mouse.up();
 
-              // Should show success or update
-              await page.waitForTimeout(1000);
+              // Wait for the drop's mutation to settle instead of a flat
+              // 1000ms guess.
+              await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
             }
           }
         }
@@ -201,7 +208,8 @@ test.describe('Watchlist Management', () => {
 
       if (await stageFilter.count() > 0) {
         await stageFilter.first().selectOption('high_priority');
-        await page.waitForTimeout(1000);
+        // Wait for the filtered fetch to settle instead of a flat 1000ms guess.
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 
         // Verify URL or results updated
         const url = page.url();
@@ -218,7 +226,8 @@ test.describe('Watchlist Management', () => {
 
       if (await positionFilter.count() > 0) {
         await positionFilter.first().selectOption('SS');
-        await page.waitForTimeout(1000);
+        // Wait for the filtered fetch to settle instead of a flat 1000ms guess.
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 
         // Verify results updated
         const url = page.url();

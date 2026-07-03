@@ -27,6 +27,16 @@ export const TEST_USERS = {
 };
 
 /**
+ * Post-login success URL contract for BaseballHelm. Mirrors
+ * playwright/baseball-auth.setup.ts's SUCCESS_URL_RE exactly: coaches land
+ * on /baseball/dashboard/*, players land on /baseball/player/* — NEITHER
+ * is a bare '/dashboard/' substring, which is why the old
+ * `waitForURL('**\/dashboard/**')` here silently hung for the player login
+ * (a player never visits a URL containing "/dashboard/").
+ */
+const SUCCESS_URL_RE = /\/baseball\/(dashboard|player)/;
+
+/**
  * Helper to log in as a coach
  */
 export async function loginAsCoach(page: Page) {
@@ -50,8 +60,9 @@ export async function loginAsPlayer(page: Page) {
   await page.fill('input[name="password"]', TEST_USERS.player.password);
   await page.click('button[type="submit"]');
 
-  // Wait for navigation to dashboard
-  await page.waitForURL('**/dashboard/**');
+  // Players land on /baseball/player/*, not /baseball/dashboard/* — use the
+  // real post-login URL contract instead of the coach-only '/dashboard/' glob.
+  await page.waitForURL(SUCCESS_URL_RE);
 }
 
 /**

@@ -24,6 +24,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { archiveKnownResolvedIncidents } from '@/lib/admin/incident-resolver';
 import type { Database } from '@/lib/types/database';
 
 export const runtime = 'nodejs';
@@ -126,6 +127,8 @@ export async function GET(req: NextRequest) {
     const ago90d = new Date(Date.now() - 90 * 86400_000).toISOString();
     const ago13mo = new Date(Date.now() - 396 * 86400_000).toISOString();
 
+    const hygiene = await archiveKnownResolvedIncidents();
+
     let deleted = 0;
     deleted += await purgeAdminEvents(admin, ['info', 'warning'], ago90d);
     deleted += await purgeAdminEvents(admin, ['error', 'critical'], ago13mo);
@@ -133,6 +136,6 @@ export async function GET(req: NextRequest) {
     deleted += await purgeErrorLogsBefore(admin, ago13mo);
     deleted += await purgeJobLogsBefore(admin, ago90d);
 
-    return NextResponse.json({ ok: true, deleted });
+    return NextResponse.json({ ok: true, deleted, autoResolved: hygiene.archived, buckets: hygiene.buckets });
   });
 }

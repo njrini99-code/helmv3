@@ -6,7 +6,7 @@ import {
   type SentryIssue,
   type SentryStatsPoint,
 } from '@/lib/admin/sentry-api';
-import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+import { fetchVercelDeployments, type VercelDeployment } from '@/lib/admin/vercel-api';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import {
   mergeTriage,
@@ -96,6 +96,7 @@ export function buildFilteredIncidentsReport(incidents: readonly TriageItem[], f
 export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   sentry: AdminFetchResult<SentryIssue[]>;
   hourly: AdminFetchResult<SentryStatsPoint[]>;
+  deployments: AdminFetchResult<VercelDeployment[]>;
   deployMarkers: number[];
   incidents: TriageItem[];
   rlsDenials24h: number;
@@ -107,13 +108,22 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   let query = admin
     .from('admin_events')
     .select(
-      'id, title, message, severity, sport, fingerprint, user_id, url, created_at, source, feature, stack_trace, metadata',
+      'id, title, message, severity, sport, fingerprint, user_id, user_email, url, created_at, source, feature, stack_trace, metadata',
     )
     .eq('event_type', 'error')
     .eq('resolved', false)
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(500);
+  // `info` rows (integrity-check PASS sweeps, pattern-miner "tried and found
+  // nothing" starvation, philosophy-gate filter counts, and other routine
+  // telemetry) are never incidents — they still get written to admin_events
+  // (Feature Health's green-dot classifier reads get_feature_health()
+  // independently of this query, so capture is unaffected), just never
+  // surfaced in this feed/export. Skipped only when a filter chip explicitly
+  // asks for `severity=info` — the UI never offers that chip, but an explicit
+  // request should still work instead of silently contradicting itself.
+  if (filters.severity !== 'info') query = query.neq('severity', 'info');
   if (filters.sport) query = query.eq('sport', filters.sport);
   if (filters.severity) query = query.eq('severity', filters.severity);
   if (filters.source) query = query.eq('source', filters.source);
@@ -137,6 +147,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   return {
     sentry,
     hourly,
+    deployments: deploys,
     deployMarkers,
     incidents: mergeTriage({ sentryIssues: [], appEvents }),
     rlsDenials24h: rlsRes.count ?? 0,

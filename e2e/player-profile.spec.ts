@@ -151,8 +151,16 @@ test.describe('Player Profile', () => {
       if (await messageButton.count() > 0 && await messageButton.first().isVisible({ timeout: 2000 })) {
         await messageButton.first().click();
 
-        // Should navigate to messages or open message modal
-        await page.waitForTimeout(1000);
+        // Wait for whichever the click actually triggers — navigation to
+        // /messages or a message modal opening — instead of a flat 1000ms guess.
+        await Promise.race([
+          page.waitForURL((u) => u.pathname.includes('/messages'), { timeout: 5000 }).catch(() => {}),
+          page
+            .locator('[data-testid="message-modal"], .message-modal')
+            .first()
+            .waitFor({ state: 'visible', timeout: 5000 })
+            .catch(() => {}),
+        ]);
 
         const url = page.url();
         const hasMessageModal = await page.locator('[data-testid="message-modal"], .message-modal').count() > 0;
@@ -170,8 +178,12 @@ test.describe('Player Profile', () => {
       if (await backButton.count() > 0 && await backButton.first().isVisible({ timeout: 2000 })) {
         await backButton.first().click();
 
-        // Should navigate back
-        await page.waitForTimeout(1000);
+        // Wait for the actual back-navigation instead of a flat 1000ms guess.
+        await page
+          .waitForURL((u) => u.pathname.includes('/discover') || u.pathname.includes('/watchlist'), {
+            timeout: 5000,
+          })
+          .catch(() => {});
 
         const url = page.url();
         expect(url.includes('/discover') || url.includes('/watchlist')).toBeTruthy();
@@ -187,9 +199,8 @@ test.describe('Player Profile', () => {
       if (await tabs.count() > 1) {
         // Click second tab
         await tabs.nth(1).click();
-        await page.waitForTimeout(500);
 
-        // Should show active state
+        // toHaveClass polls/retries on its own — no separate sleep needed.
         await expect(tabs.nth(1)).toHaveClass(/active|selected/i);
       }
     });

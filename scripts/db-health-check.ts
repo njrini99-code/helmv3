@@ -1,7 +1,17 @@
+import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtbnNzcnJvbHBpbnZ3ampudWZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODMyNjg0MCwiZXhwIjoyMDgzOTAyODQwfQ.pW8-66rT0Y3LXcPYSXMPqj0_y0K_AYnPj22nXjdMU6I';
-const URL = 'https://qmnssrrolpinvwjjnufo.supabase.co';
+loadEnv({ path: '.env.local' });
+
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!URL || !SERVICE_KEY) {
+  console.error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY. Set them in .env.local and run with `dotenv/config` or export them in your shell.'
+  );
+  process.exit(1);
+}
 
 const db = createClient(URL, SERVICE_KEY);
 

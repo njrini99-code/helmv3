@@ -993,26 +993,31 @@ export async function getPlayerToday(
       // null (computeReadiness stays honest) rather than failing the daily loop.
       // The soreness map is keyed off THIS checkin's id, so it reads the same
       // unified helm_lifting_soreness_maps table the checkin now lives in.
-      // Bodyweight + availability remain on their existing baseball_* tables —
-      // those are player-keyed, not part of the W2-G lifting/readiness rewire.
+      // Bodyweight + availability also live in the unified helm_lifting_*
+      // tables (athlete_id-keyed) — liftCtx/athleteId were already resolved
+      // above (this branch only runs when the checkin query, gated on the
+      // same liftCtx/athleteId, returned a row).
       const [soreRes, bwRes, availRes] = await Promise.all([
         fromUntyped(supabase, 'helm_lifting_soreness_maps')
           .select('body_region, severity')
           .eq('checkin_id', checkin.id),
-        db
-          .from('baseball_bodyweight_entries')
-          .select('entry_date, weight_lbs')
-          .eq('player_id', playerId)
-          .order('entry_date', { ascending: false })
-          .limit(8),
-        db
-          .from('baseball_availability_statuses')
-          .select('status, starts_at')
-          .eq('player_id', playerId)
-          .eq('team_id', teamId)
-          .order('starts_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+        liftCtx && athleteId
+          ? fromUntyped(supabase, 'helm_lifting_bodyweight_entries')
+              .select('entry_date, weight_lbs')
+              .eq('organization_id', liftCtx.organizationId)
+              .eq('athlete_id', athleteId)
+              .order('entry_date', { ascending: false })
+              .limit(8)
+          : Promise.resolve({ data: [], error: null }),
+        liftCtx && athleteId
+          ? fromUntyped(supabase, 'helm_lifting_availability_statuses')
+              .select('status, starts_at')
+              .eq('organization_id', liftCtx.organizationId)
+              .eq('athlete_id', athleteId)
+              .order('starts_at', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
 
       const soreList = (soreRes?.data ?? []) as Array<{

@@ -59,7 +59,13 @@ test('formatReportLine renders PASS/FAIL/SKIP and the row count or error', () =>
 
 test('every required surface in the contract has a non-empty table and route', () => {
   for (const entry of SURFACE_COVERAGE) {
-    assert.ok(entry.table.startsWith('baseball_'), `${entry.table} must be sport-prefixed`);
+    // helm_lifting_* is the cross-sport Helm Lift Lab table family (org_id +
+    // sport-scoped, not name-prefixed per sport) — a sanctioned sibling to
+    // baseball_*, same as src/lib/admin/__tests__/feature-registry.test.ts.
+    assert.ok(
+      entry.table.startsWith('baseball_') || entry.table.startsWith('helm_lifting_'),
+      `${entry.table} must be sport-prefixed (baseball_) or a Helm Lift Lab table (helm_lifting_)`,
+    );
     assert.ok(entry.route.length > 0, `${entry.table} must map to a route`);
   }
 });

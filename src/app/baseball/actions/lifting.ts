@@ -17,7 +17,7 @@
 // Capability map (see capabilities.ts / migration 0030 / 0050):
 //   - Exercise library writes ............ can_manage_lifting
 //   - Assignment create/update/delete .... can_manage_lifting (scoped via RLS
-//                                          can_manage_baseball_lift_group)
+//                                          helm_lifting_can_edit_org)
 //   - Player-logged set result ........... NO requiredCapability — the player
 //                                          writes their OWN result; RLS enforces
 //                                          athlete_id on helm_lifting_set_results.
@@ -104,7 +104,7 @@ const createAssignmentSchema = z
   .object({
     playerId: uuid.optional().nullable(),
     groupScope: z.array(uuid).max(200).optional().nullable(),
-    // A baseball_lift_exercises (V11 library) id — the single source of truth for
+    // A helm_lifting_exercises (V11 library) id — the single source of truth for
     // lifting. Flows to the materialized session (whose FK targets that table),
     // never to the legacy baseball_lift_assignments.exercise_id (FK → baseball_exercises).
     exerciseId: uuid.optional().nullable(),
@@ -228,8 +228,9 @@ export const createExercise = withBaseballAction(
 //    assignment in the unified model. Returns the helm_lifting_sessions.id so
 //    callers (updateAssignmentStatus, logLiftResult) can target the right row.
 //    Group quick-assign (no single playerId, groupScope provided): fetches all
-//    members from baseball_strength_group_members, resolves their athlete IDs,
-//    and bulk-inserts one helm_lifting_session per member — real materialization.
+//    members from helm_lifting_group_members (which store the helm athlete id
+//    directly), and bulk-inserts one helm_lifting_session per member — real
+//    materialization.
 // -----------------------------------------------------------------------------
 
 export const createLiftAssignment = withBaseballAction(
@@ -262,22 +263,21 @@ export const createLiftAssignment = withBaseballAction(
 
       const scheduledDate = input.dueDate ?? new Date().toISOString().slice(0, 10);
 
-      // 1. Collect all baseball_players.id values from the specified groups.
-      const { data: memberRows } = await fromUntyped(supabase, 'baseball_strength_group_members')
-        .select('player_id')
-        .in('group_id', groups) as { data: Array<{ player_id: string }> | null };
+      // 1. Collect all helm_lifting_athletes.id values from the specified groups —
+      //    helm_lifting_group_members.athlete_id already IS the helm athlete id,
+      //    so no baseball_players remap is needed here.
+      const { data: memberRows } = await fromUntyped(supabase, 'helm_lifting_group_members')
+        .select('athlete_id')
+        .in('group_id', groups) as { data: Array<{ athlete_id: string }> | null };
 
-      const playerIds = [...new Set((memberRows ?? []).map((r) => r.player_id))];
-      if (playerIds.length === 0) {
+      const groupAthleteIds = [...new Set((memberRows ?? []).map((r) => r.athlete_id))];
+      if (groupAthleteIds.length === 0) {
         // Groups are empty — succeed silently (coach will see no new assignments).
         revalidatePath(PERFORMANCE_PATH);
         return { success: true };
       }
 
-      // 2. Resolve baseball_players.id → helm_lifting_athletes.id for all members.
-      const athleteMap = await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds);
-
-      // 3. Resolve the exercise snapshot name (same as single-player path).
+      // 2. Resolve the exercise snapshot name (same as single-player path).
       let exerciseName = input.title ?? 'Lift';
       let liftExerciseId: string | null = null;
       if (input.exerciseId) {
@@ -296,13 +296,10 @@ export const createLiftAssignment = withBaseballAction(
       };
       const titleValue = input.title ?? 'Lift';
 
-      // 4. Bulk-insert one session per resolved athlete (idempotent upsert on
+      // 3. Bulk-insert one session per resolved athlete (idempotent upsert on
       //    (athlete_id, scheduled_date, title, program_assignment_id=null)).
       let insertedCount = 0;
-      for (const playerId of playerIds) {
-        const athleteId = athleteMap[playerId];
-        if (!athleteId) continue; // player not yet seeded in helm — skip, never throw.
-
+      for (const athleteId of groupAthleteIds) {
         // Dedupe check: if a session already exists for this athlete + date + title,
         // skip the insert to stay idempotent (never delete-then-reinsert).
         const { data: dupe } = await fromUntyped(supabase, 'helm_lifting_sessions')

@@ -19,8 +19,8 @@
  *   baseball_videos                   (5)
  *   baseball_tasks                    (5)
  *   baseball_task_assignments         (8)
- *   baseball_strength_groups          (2)
- *   baseball_strength_group_members   (6)
+ *   helm_lifting_groups                (2)
+ *   helm_lifting_group_members         (up to 6 — see Phase-2 note below)
  *   baseball_developmental_plans      (3)
  *   baseball_seasons                  (2)
  *   baseball_import_sources           (2)
@@ -39,8 +39,13 @@
  *     are skipped with a warning instead of failing the run.
  *   - Scoped strictly to the Phase-1 demo org/team/coach/roster ids. Phase-1
  *     MUST have run first (this script depends on ids it created). Phase-2
- *     (lifting) does NOT need to have run — this script has no dependency
- *     on helm_lifting_* data.
+ *     (lifting, scripts/seed-baseball-lifting-demo.ts) does NOT need to have
+ *     run for most of this script. The one exception is helm_lifting_
+ *     group_members (§4): each member row needs the player's
+ *     helm_lifting_athletes row (created by Phase-2) to resolve an
+ *     athlete_id. If Phase-2 hasn't run yet, those member rows are skipped
+ *     with a warning (never thrown) — helm_lifting_groups itself still
+ *     seeds either way.
  *   - Tables/columns from a not-yet-applied migration fail closed: the
  *     upsert() wrapper catches "table/column not found" errors per table and
  *     logs a skip instead of throwing, so schema drift never aborts the run.
@@ -175,6 +180,31 @@ async function upsert(table: string, rows: readonly unknown[], conflict = 'id') 
 async function lookupUserId(email: string): Promise<string | null> {
   const { data } = await supabase.from('users').select('id').ilike('email', email).maybeSingle();
   return (data?.id as string | undefined) ?? null;
+}
+
+/**
+ * Resolve baseball_players.id → helm_lifting_athletes.id for the demo org.
+ * Reimplements (rather than imports) the mapping logic in
+ * src/lib/lifting/resolve-baseball-context.ts's resolveBaseballAthleteIds —
+ * that helper is `import 'server-only'` and calls Next's request-scoped
+ * createClient(), so it cannot run inside this standalone service-role
+ * script. Returns a partial map: players without a helm_lifting_athletes row
+ * (Phase-2 lifting seed not yet run) are simply absent — callers must skip
+ * them, never throw.
+ */
+async function resolveAthleteIds(baseballPlayerIds: string[]): Promise<Record<string, string>> {
+  if (baseballPlayerIds.length === 0) return {};
+  const { data } = await supabase
+    .from('helm_lifting_athletes')
+    .select('id, sport_player_id')
+    .eq('organization_id', ORG_ID)
+    .eq('sport', 'baseball')
+    .in('sport_player_id', baseballPlayerIds);
+  const map: Record<string, string> = {};
+  for (const row of (data ?? []) as Array<{ id: string; sport_player_id: string | null }>) {
+    if (row.sport_player_id) map[row.sport_player_id] = row.id;
+  }
+  return map;
 }
 
 // ===========================================================================
@@ -497,46 +527,82 @@ async function main() {
   ]);
 
   // -------------------------------------------------------------------------
-  // 4. baseball_strength_groups + baseball_strength_group_members.
-  //    group_type CHECK: static|dynamic|imported|temporary.
-  //    member source CHECK: manual|rule|import.
+  // 4. helm_lifting_groups + helm_lifting_group_members (helm Lift Lab
+  //    unification — legacy baseball_strength_groups / _group_members are
+  //    graveyard-bound, 0 rows in prod). group_type CHECK:
+  //    static|dynamic|imported|temporary. member source CHECK:
+  //    manual|rule|import. created_by_coach_id / added_by_coach_id FK
+  //    helm_lifting_coaches — a Phase-2-lifting-seed identity, not the
+  //    Phase-1 baseball COACH_ID above — left unset (both columns are
+  //    nullable) rather than coupling to Phase-2's coach-id derivation.
   // -------------------------------------------------------------------------
   const GROUP_PITCHING = detId('stronggroup:pitching');
   const GROUP_DYNAMIC = detId('stronggroup:dynamic_high_readiness');
 
-  await upsert('baseball_strength_groups', [
+  await upsert('helm_lifting_groups', [
     {
       id: GROUP_PITCHING,
+      organization_id: ORG_ID,
+      sport: 'baseball',
       team_id: TEAM_ID,
       name: 'Pitching Staff',
       description: 'All rostered pitchers — arm-care-first lifting track.',
       group_type: 'static',
       rule_json: {},
-      created_by_coach_id: COACH_ID,
       is_active: true,
       created_at: isoDaysAgo(30),
     },
     {
       id: GROUP_DYNAMIC,
+      organization_id: ORG_ID,
+      sport: 'baseball',
       team_id: TEAM_ID,
       name: 'High Readiness — This Week',
       description: 'Auto-populated from this week\u2019s readiness check-ins (green band).',
       group_type: 'dynamic',
       rule_json: { rule: 'readiness_band', operator: 'eq', value: 'green', window_days: 7 },
-      created_by_coach_id: COACH_ID,
       is_active: true,
       created_at: isoDaysAgo(7),
     },
   ]);
 
-  await upsert('baseball_strength_group_members', [
-    { id: detId('groupmember:pitching:p4'), group_id: GROUP_PITCHING, player_id: playerIdByKey.p4, source: 'manual', added_by_coach_id: COACH_ID, starts_at: isoDaysAgo(30) },
-    { id: detId('groupmember:pitching:p7'), group_id: GROUP_PITCHING, player_id: playerIdByKey.p7, source: 'manual', added_by_coach_id: COACH_ID, starts_at: isoDaysAgo(30) },
-    { id: detId('groupmember:dynamic:p1'), group_id: GROUP_DYNAMIC, player_id: playerIdByKey.p1, source: 'rule', starts_at: isoDaysAgo(7) },
-    { id: detId('groupmember:dynamic:p2'), group_id: GROUP_DYNAMIC, player_id: playerIdByKey.p2, source: 'rule', starts_at: isoDaysAgo(7) },
-    { id: detId('groupmember:dynamic:p3'), group_id: GROUP_DYNAMIC, player_id: playerIdByKey.p3, source: 'rule', starts_at: isoDaysAgo(7) },
-    { id: detId('groupmember:dynamic:p5'), group_id: GROUP_DYNAMIC, player_id: playerIdByKey.p5, source: 'rule', starts_at: isoDaysAgo(7) },
-  ]);
+  // Members need each player's helm_lifting_athletes.id (athlete_id), which
+  // only exists once Phase-2 (scripts/seed-baseball-lifting-demo.ts) has run.
+  // Resolve what we can and skip the rest honestly — never throw.
+  const memberSpecs: {
+    idKey: string;
+    groupId: string;
+    key: RosterKey;
+    source: 'manual' | 'rule';
+    daysAgo: number;
+  }[] = [
+    { idKey: 'groupmember:pitching:p4', groupId: GROUP_PITCHING, key: 'p4', source: 'manual', daysAgo: 30 },
+    { idKey: 'groupmember:pitching:p7', groupId: GROUP_PITCHING, key: 'p7', source: 'manual', daysAgo: 30 },
+    { idKey: 'groupmember:dynamic:p1', groupId: GROUP_DYNAMIC, key: 'p1', source: 'rule', daysAgo: 7 },
+    { idKey: 'groupmember:dynamic:p2', groupId: GROUP_DYNAMIC, key: 'p2', source: 'rule', daysAgo: 7 },
+    { idKey: 'groupmember:dynamic:p3', groupId: GROUP_DYNAMIC, key: 'p3', source: 'rule', daysAgo: 7 },
+    { idKey: 'groupmember:dynamic:p5', groupId: GROUP_DYNAMIC, key: 'p5', source: 'rule', daysAgo: 7 },
+  ];
+  const groupAthleteMap = await resolveAthleteIds(memberSpecs.map((m) => playerIdByKey[m.key]));
+  const groupMemberRows = memberSpecs
+    .map((m) => {
+      const athleteId = groupAthleteMap[playerIdByKey[m.key]];
+      if (!athleteId) return null;
+      return {
+        id: detId(m.idKey),
+        group_id: m.groupId,
+        athlete_id: athleteId,
+        source: m.source,
+        starts_at: isoDaysAgo(m.daysAgo),
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+  if (groupMemberRows.length < memberSpecs.length) {
+    skipped.push(
+      `helm_lifting_group_members — ${memberSpecs.length - groupMemberRows.length} of ${memberSpecs.length} member(s) skipped (player not yet seeded in helm_lifting_athletes; run scripts/seed-baseball-lifting-demo.ts --confirm first for full coverage)`,
+    );
+  }
+  await upsert('helm_lifting_group_members', groupMemberRows);
 
   // -------------------------------------------------------------------------
   // 5. baseball_developmental_plans — 3 players, mixed active/draft status.

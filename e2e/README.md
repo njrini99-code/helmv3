@@ -242,8 +242,9 @@ redirect check. `baseball-onboarding-smoke.spec.ts` is a small, anonymous
 companion covering signup + onboarding rendering. Unlike the rest of `e2e/`
 (which self-skips when no seeded fixture is present, e.g.
 `baseball-phase1.spec.ts`'s `PLAYWRIGHT_BASEBALL_SEEDED` guard), this suite
-has no skip guard and is wired as a **blocking** step in
-`.github/workflows/playwright.yml` — a failure here fails CI.
+has no spec-level skip guard and is wired as a **blocking** step in
+`.github/workflows/playwright.yml` whenever the required repo secrets are
+available. A failure there fails CI.
 
 ### How it authenticates
 
@@ -269,13 +270,14 @@ half of the file).
 Register the first three (well, four counting the two coach/player email +
 password pairs) as **GitHub Secrets** on the repo
 (`Settings → Secrets and variables → Actions`) — the workflow injects them
-into the `e2e` job's `env:` block. If they're absent, `npm run seed:baseball:ci`
-exits non-zero immediately with `Missing required env var: ... — cannot seed
-baseball CI accounts`, and if the seed step is skipped/bypassed,
-`playwright/baseball-auth.setup.ts` throws `Baseball seeded auth missing —
-set E2E_BASEBALL_*_EMAIL / E2E_BASEBALL_*_PASSWORD and run \`npm run
-seed:baseball:ci\`` — either way CI fails loudly rather than silently
-skipping.
+into the `e2e` job's `env:` block. Trusted PRs with these secrets run
+`npm run seed:baseball:ci` and the mandatory BaseballHelm smoke as hard gates.
+Dependabot and fork `pull_request` runs do not receive repo secrets from
+GitHub, so the workflow skips only the secret-backed seed/smoke path and keeps
+running the rest of the Playwright job. If a trusted run invokes the setup
+without credentials, `playwright/baseball-auth.setup.ts` still throws
+``Baseball seeded auth missing — set E2E_BASEBALL_*_EMAIL /
+E2E_BASEBALL_*_PASSWORD and run `npm run seed:baseball:ci` ``.
 
 ### Seeding / resetting the fixture
 

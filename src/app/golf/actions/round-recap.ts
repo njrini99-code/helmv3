@@ -24,6 +24,18 @@
  * The recap is generated lazily — first read of the round detail page
  * after completion fires the generation, persists the result, and
  * subsequent reads return cached text.
+ *
+ * Render vs. action callers:
+ *   - The round detail page (`/golf/dashboard/rounds/[id]`) calls
+ *     `generateRoundRecap(roundId)` during Server Component render. Next.js
+ *     forbids `revalidatePath` during render (Sentry fingerprint
+ *     d0a9265f), and the page doesn't need it anyway — it already has the
+ *     freshly generated recap in hand from this same call.
+ *   - A real form/action entrypoint (e.g. a future "Regenerate recap"
+ *     button, invoked from an event handler rather than render) should pass
+ *     `{ revalidate: true }` so the cached route entry is invalidated for
+ *     subsequent navigations. `revalidatePath` only runs when explicitly
+ *     opted into via that flag — it defaults to off.
  */
 
 import { revalidatePath } from 'next/cache';
@@ -58,7 +70,21 @@ interface PlayerStatContext {
   rounds_played: number | null;
 }
 
-async function generateRoundRecapImpl(roundId: string): Promise<{ recap: string | null; cached: boolean }> {
+interface GenerateRoundRecapOptions {
+  /**
+   * Revalidate the round detail route's cache entry after persisting the
+   * recap. Must stay `false` (the default) for any caller invoked during
+   * render — Next.js throws if `revalidatePath` runs mid-render. Only a
+   * true out-of-render action entrypoint (form action / event handler)
+   * should pass `true`.
+   */
+  revalidate?: boolean;
+}
+
+async function generateRoundRecapImpl(
+  roundId: string,
+  options: GenerateRoundRecapOptions = {},
+): Promise<{ recap: string | null; cached: boolean }> {
   const supabase = await createClient();
 
   // 1. Fetch round + verify status
@@ -106,19 +132,36 @@ async function generateRoundRecapImpl(roundId: string): Promise<{ recap: string 
     } as unknown as never)
     .eq('id', roundId);
 
-  revalidatePath(`/golf/dashboard/rounds/${roundId}`);
+  // Gated: never runs on the render path (page.tsx's lazy first-generation
+  // call), only when a real action entrypoint explicitly opts in. See the
+  // "Render vs. action callers" note in the file header.
+  if (options.revalidate) {
+    revalidatePath(`/golf/dashboard/rounds/${roundId}`);
+  }
 
   return { recap, cached: false };
 }
 
 const observedGenerateRoundRecap = withAdminObserved(
   'generateRoundRecap',
-  { sport: 'golf', feature: 'round_review_ai' },
+  {
+    sport: 'golf',
+    feature: 'round_review_ai',
+    // The round detail page already knows the round it's rendering — wire
+    // that into admin_events on failure instead of relying solely on the
+    // authenticated user id (which is null for any unauthenticated/expired
+    // session edge case, and never carries which round/player was involved
+    // either way).
+    contextFrom: ([roundId]) => ({ roundId }),
+  },
   generateRoundRecapImpl,
 );
 
-export async function generateRoundRecap(roundId: string): Promise<{ recap: string | null; cached: boolean }> {
-  return observedGenerateRoundRecap(roundId);
+export async function generateRoundRecap(
+  roundId: string,
+  options: GenerateRoundRecapOptions = {},
+): Promise<{ recap: string | null; cached: boolean }> {
+  return observedGenerateRoundRecap(roundId, options);
 }
 
 // --- LLM path -------------------------------------------------------------

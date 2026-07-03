@@ -1,23 +1,40 @@
 // =============================================================================
-// Integration test: publishLiftDay bridges into helm_lifting_sessions (#486,
-// #492 remediation).
+// Integration test: publishLiftDay MATERIALIZES directly into
+// helm_lifting_sessions / helm_lifting_session_exercises (#486, #492
+// remediation; program-builder→helm unification).
 //
-// REGRESSION THIS GUARDS AGAINST: the first #486 "fix" bridged
-// baseball_lift_sessions into helm_lifting_sessions / helm_lifting_session_
-// exercises via `.upsert(rows, { onConflict: 'legacy_baseball_id' })`. That
-// column only has a PARTIAL unique index (migration 20260625000020 —
-// `WHERE legacy_baseball_id IS NOT NULL`), and PostgREST's onConflict never
-// emits a partial index's WHERE predicate, so Postgres raised "there is no
-// unique or exclusion constraint matching the ON CONFLICT specification" on
-// EVERY publish. The bridge's bare try/catch swallowed that error, so publish
-// "succeeded" while writing nothing — a 100% no-op that looked fixed but
-// wasn't. This test wires the REAL publishLiftDay + the REAL
-// resolveBaseballLiftingOrg / resolveBaseballAthleteIds helpers against an
-// in-memory Postgres-shaped fake (no onConflict emulation — exactly like the
-// production partial index) and asserts a session round-trips into
-// helm_lifting_sessions for the published date. It also covers #492's second
-// half: an edited prescription must UPDATE in place on re-publish, not be
-// skipped.
+// HISTORY: publishLiftDay used to write baseball_lift_sessions /
+// baseball_lift_session_exercises (the "V11 legacy" tables) and, for the
+// player-facing surfaces, additionally bridge those rows into their
+// helm_lifting_* mirrors via `.upsert(rows, { onConflict: 'legacy_baseball_id'
+// })`. That column only had a PARTIAL unique index (migration
+// 20260625000020 — `WHERE legacy_baseball_id IS NOT NULL`), and PostgREST's
+// onConflict never emits a partial index's WHERE predicate, so Postgres
+// raised "there is no unique or exclusion constraint matching the ON
+// CONFLICT specification" on EVERY publish. The bridge's bare try/catch
+// swallowed that error, so publish "succeeded" while writing nothing — a
+// 100% no-op that looked fixed but wasn't.
+//
+// Both the legacy materialization and the bridge have since been removed
+// (the program-builder→helm unification): publishLiftDay now reads its
+// template from helm_lifting_sections / helm_lifting_prescriptions /
+// helm_lifting_exercises and writes helm_lifting_sessions /
+// helm_lifting_session_exercises DIRECTLY and exclusively — there is no
+// legacy write and no best-effort bridge left to swallow a failure. This
+// test wires the REAL publishLiftDay + the REAL resolveBaseballLiftingOrg /
+// resolveBaseballAthleteIds helpers against an in-memory Postgres-shaped
+// fake and asserts:
+//   * a session round-trips into helm_lifting_sessions for the published date
+//   * re-publishing is idempotent (upsert on program_assignment_id,athlete_id
+//     — no duplicate session, no duplicate assignment row)
+//   * an edited prescription UPDATEs the existing session_exercise row in
+//     place on re-publish (#492's stage-and-swap requirement), never
+//     duplicating or dropping it
+//   * a genuine write failure now surfaces as a THROWN error — direct writes
+//     have no best-effort catch left to swallow it into a false "success"
+//   * a team with no Lift Lab organization configured fails FAST with a
+//     friendly error, since org resolution is no longer a best-effort side
+//     bridge but the primary path's first step
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -52,20 +69,17 @@ function nextId(prefix: string) {
 }
 
 // Set by a test to simulate an unexpected write failure on a specific table
-// (e.g. an RLS gap) — used to prove real errors are logged, not swallowed.
+// (e.g. an RLS gap) — used to prove a genuine failure now propagates as a
+// thrown error instead of being swallowed by a best-effort bridge.
 let forcedInsertError: string | null = null;
 
-type Filter = { col: string; op: 'eq' | 'in'; val: unknown };
+type Filter = { col: string; op: 'eq' | 'in' | 'is'; val: unknown };
 
 /**
  * A minimal chainable PostgREST-shaped query builder over the in-memory
- * tables. Deliberately does NOT implement onConflict/partial-index semantics
- * for .upsert() against legacy_baseball_id — because the fix under test must
- * never call .upsert({ onConflict: 'legacy_baseball_id' }) at all. If a
- * regression reintroduces that call, this fake's .upsert() below still
- * "succeeds" (unlike real Postgres), so the REAL guard against regression is
- * the round-trip assertions below, not a simulated Postgres error — see the
- * "does not use onConflict against legacy_baseball_id" test.
+ * tables, plus a bare `.rpc()` stub (publishLiftDay's roster-sync step calls
+ * `supabase.rpc('helm_lifting_sync_org_athletes', ...)` best-effort — the
+ * stub always succeeds, matching the idempotent ON CONFLICT DO NOTHING RPC).
  */
 function makeBuilder(table: string) {
   const filters: Filter[] = [];
@@ -77,6 +91,7 @@ function makeBuilder(table: string) {
   function matches(row: Row): boolean {
     return filters.every((f) => {
       if (f.op === 'eq') return row[f.col] === f.val;
+      if (f.op === 'is') return (row[f.col] ?? null) === f.val;
       return Array.isArray(f.val) && (f.val as unknown[]).includes(row[f.col]);
     });
   }
@@ -122,6 +137,10 @@ function makeBuilder(table: string) {
     }
 
     if (mode === 'upsert') {
+      if (forcedInsertError === table) {
+        cached = { data: null, error: { message: `Simulated DB failure on ${table}` } };
+        return cached;
+      }
       const rowsIn = Array.isArray(payload) ? payload : payload ? [payload] : [];
       const conflictCols = (upsertOpts?.onConflict ?? 'id').split(',').map((c) => c.trim());
       const results: Row[] = [];
@@ -157,6 +176,10 @@ function makeBuilder(table: string) {
     },
     eq(col: string, val: unknown) {
       filters.push({ col, op: 'eq', val });
+      return builder;
+    },
+    is(col: string, val: unknown) {
+      filters.push({ col, op: 'is', val });
       return builder;
     },
     in(col: string, val: unknown[]) {
@@ -207,6 +230,9 @@ function makeClient() {
   return {
     auth: { getUser: vi.fn(async () => ({ data: { user: { id: 'user-1' } } })) },
     from: (table: string) => makeBuilder(table),
+    // ensureBaseballAthletesSynced calls this best-effort — always succeeds,
+    // matching the idempotent ON CONFLICT DO NOTHING RPC in production.
+    rpc: vi.fn(async () => ({ data: null, error: null })),
   };
 }
 
@@ -280,10 +306,10 @@ function seedTemplateAndOrg() {
   db.helm_lifting_athletes = [
     { id: ATHLETE_ID, sport_player_id: PLAYER_ID, organization_id: ORG_ID, sport: 'baseball' },
   ];
-  db.baseball_lift_sections = [
-    { id: SECTION_ID, lift_day_id: LIFT_DAY_ID, name: 'Main', section_type: 'strength', section_order: 0 },
+  db.helm_lifting_sections = [
+    { id: SECTION_ID, lift_day_id: LIFT_DAY_ID, name: 'Main', section_type: 'main_strength', section_order: 0 },
   ];
-  db.baseball_lift_prescriptions = [
+  db.helm_lifting_prescriptions = [
     {
       id: PRESCRIPTION_ID,
       section_id: SECTION_ID,
@@ -296,7 +322,7 @@ function seedTemplateAndOrg() {
       target_rpe: 8,
     },
   ];
-  db.baseball_lift_exercises = [{ id: EXERCISE_ID, name: 'Back Squat' }];
+  db.helm_lifting_exercises = [{ id: EXERCISE_ID, name: 'Back Squat' }];
 }
 
 function publish(overrides: Partial<PublishInput> = {}) {
@@ -318,7 +344,7 @@ beforeEach(() => {
   seedTemplateAndOrg();
 });
 
-describe('publishLiftDay — Helm Lifting Lab bridge (#486)', () => {
+describe('publishLiftDay — direct Helm Lifting Lab materialization (#486, #492)', () => {
   it('AC: publish -> a row round-trips into helm_lifting_sessions for that date', async () => {
     const result = await publish();
     expect(result.success).toBe(true);
@@ -328,9 +354,8 @@ describe('publishLiftDay — Helm Lifting Lab bridge (#486)', () => {
     expect(helmSession.athlete_id).toBe(ATHLETE_ID);
     expect(helmSession.organization_id).toBe(ORG_ID);
     expect(helmSession.scheduled_date).toBe(SCHEDULED_DATE);
-
-    const baseballSession = firstRow('baseball_lift_sessions');
-    expect(helmSession.legacy_baseball_id).toBe(baseballSession.id);
+    // Direct write — no legacy identity to carry forward.
+    expect(helmSession.legacy_baseball_id ?? null).toBeNull();
 
     expect(rows('helm_lifting_session_exercises')).toHaveLength(1);
     const helmSessionExercise = firstRow('helm_lifting_session_exercises');
@@ -339,13 +364,7 @@ describe('publishLiftDay — Helm Lifting Lab bridge (#486)', () => {
     expect(helmSessionExercise.prescribed_reps).toBe(5);
   });
 
-  it('does not call .upsert against helm_lifting_sessions / helm_lifting_session_exercises (no onConflict on the partial-unique legacy_baseball_id column)', async () => {
-    // Spy on the mode transitions by wrapping makeBuilder indirectly: assert
-    // the end state instead — a real onConflict('legacy_baseball_id') upsert
-    // against a partial index throws in production. Our fake doesn't
-    // simulate that Postgres error, so the meaningful guard is behavioral:
-    // republishing (below) must UPDATE the existing row in place rather than
-    // upsert-or-duplicate — which we verify via stable ids and lengths.
+  it('re-publishing is idempotent: upserts the SAME helm_lifting_sessions row (program_assignment_id, athlete_id), never a duplicate', async () => {
     const first = await publish();
     expect(first.success).toBe(true);
     const firstHelmSessionId = firstRow('helm_lifting_sessions').id;
@@ -364,7 +383,7 @@ describe('publishLiftDay — Helm Lifting Lab bridge (#486)', () => {
     expect(firstRow('helm_lifting_session_exercises').prescribed_sets).toBe(3);
 
     // Coach edits the prescription (sets 3 -> 5, reps 5 -> 3) and re-publishes.
-    const prescription = firstRow('baseball_lift_prescriptions');
+    const prescription = firstRow('helm_lifting_prescriptions');
     prescription.sets = 5;
     prescription.reps = 3;
 
@@ -379,37 +398,31 @@ describe('publishLiftDay — Helm Lifting Lab bridge (#486)', () => {
     expect(exerciseAfter.prescribed_reps).toBe(3);
   });
 
-  it('#492: re-publishing does not create a second baseball_lift_program_assignments row for the same program/day/date', async () => {
+  it('#492: re-publishing does not create a second helm_lifting_program_assignments row for the same program/day/date', async () => {
     await publish();
     await publish();
-    expect(rows('baseball_lift_program_assignments')).toHaveLength(1);
-    expect(rows('baseball_lift_sessions')).toHaveLength(1);
+    expect(rows('helm_lifting_program_assignments')).toHaveLength(1);
+    expect(rows('helm_lifting_sessions')).toHaveLength(1);
   });
 
-  it('logs (not silently swallows) an unexpected Helm bridge failure, and publish still succeeds best-effort', async () => {
+  it('a genuine write failure on the primary helm_lifting_sessions write now THROWS — direct writes have no best-effort bridge left to swallow it', async () => {
     forcedInsertError = 'helm_lifting_sessions';
 
-    const result = await publish();
-
-    // Best-effort: the legacy baseball_lift_sessions materialization already
-    // succeeded, so the coach-facing publish action itself still succeeds...
-    expect(result.success).toBe(true);
-    // ...but the Helm bridge write never landed...
+    // Unlike the old bridge (which caught + logged and let publish "succeed"
+    // with zero rows written), the direct write path propagates a real DB
+    // error straight to the caller — the coach sees the failure instead of a
+    // false "published" confirmation.
+    await expect(publish()).rejects.toThrow(/Simulated DB failure on helm_lifting_sessions/);
     expect(rows('helm_lifting_sessions')).toHaveLength(0);
-    // ...and the failure is now VISIBLE via logServerError, unlike the
-    // original bare `catch {}` this replaces.
-    expect(logServerError).toHaveBeenCalledTimes(1);
-    expect(logServerError.mock.calls[0]?.[0]).toMatch(/Helm Lifting Lab bridge failed/i);
+    // Not a bridge side-effect anymore — logServerError is not this path's job.
+    expect(logServerError).not.toHaveBeenCalled();
   });
 
-  it('degrades silently (no log) when the team has no Helm Lifting organization configured', async () => {
+  it('a team with no Lift Lab organization configured fails fast with a friendly error, before any write', async () => {
     db.baseball_teams = [{ id: TEAM_ID, organization_id: null }];
 
-    const result = await publish();
-
-    expect(result.success).toBe(true);
+    await expect(publish()).rejects.toThrow('This team has no Lift Lab organization configured.');
     expect(rows('helm_lifting_sessions')).toHaveLength(0);
-    // Expected, not an error — no team org is a normal degrade path, not a bug.
-    expect(logServerError).not.toHaveBeenCalled();
+    expect(rows('helm_lifting_program_assignments')).toHaveLength(0);
   });
 });

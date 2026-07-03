@@ -3,7 +3,7 @@ import { withRateLimit } from '@/lib/middleware/rate-limit';
 import { RATE_LIMITS } from '@/lib/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
+import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
 import type { Json } from '@/lib/types/database';
 
@@ -28,7 +28,40 @@ export async function POST(request: NextRequest) {
     // Anonymous writes are accepted, flagged, and severity-capped.
     const isAnonymous = !user;
 
-    const errorReport = await request.json();
+    // Read body defensively. sendBeacon flushes (tab close, navigation,
+    // aborted requests) can arrive empty or truncated, and request.json()
+    // throws a raw SyntaxError on those — which used to fall through to
+    // the bare catch below and return a generic 500 for what is really a
+    // client-side no-op. Read as text first so empty/malformed bodies get
+    // a clean, cheap response instead of being treated as a server failure.
+    const raw = await request.text();
+    if (!raw.trim()) {
+      return new NextResponse(null, { status: 204 });
+    }
+
+    let rawReport: Record<string, unknown>;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+      }
+      rawReport = parsed as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
+    // Pluck fields into known types up front — the payload is client-
+    // supplied JSON (typed `unknown` after parsing), and everything below
+    // is inserted into typed Supabase columns.
+    const errorReport = {
+      severity: typeof rawReport.severity === 'string' ? rawReport.severity : undefined,
+      message: typeof rawReport.message === 'string' ? rawReport.message : undefined,
+      stack: typeof rawReport.stack === 'string' ? rawReport.stack : undefined,
+      url: typeof rawReport.url === 'string' ? rawReport.url : undefined,
+      timestamp: typeof rawReport.timestamp === 'string' ? rawReport.timestamp : undefined,
+      context: rawReport.context,
+    };
+
     const adminClient = createAdminClient();
 
     const severityMap: Record<string, 'info' | 'warning' | 'error' | 'critical'> = {
@@ -37,7 +70,7 @@ export async function POST(request: NextRequest) {
       high: 'error',
       critical: 'critical',
     };
-    let severity = severityMap[errorReport.severity] || 'error';
+    let severity = (errorReport.severity && severityMap[errorReport.severity]) || 'error';
     // Anonymous (pre-auth) reports are capped at 'error' — an unauthenticated
     // client claiming 'critical' should never page the on-call team the same
     // way an authenticated user's report does.
@@ -45,7 +78,7 @@ export async function POST(request: NextRequest) {
       severity = 'error';
     }
     const message = String(errorReport.message || 'Unknown error').slice(0, 2000);
-    const stack = errorReport.stack ? String(errorReport.stack).slice(0, 8000) : null;
+    const stack = errorReport.stack ? errorReport.stack.slice(0, 8000) : null;
     const url = errorReport.url || request.headers.get('referer') || null;
     const timestamp = errorReport.timestamp || new Date().toISOString();
     const userAgent = request.headers.get('user-agent');
@@ -92,6 +125,10 @@ export async function POST(request: NextRequest) {
       context: contextWithAnonymity,
       userAgent,
       ip,
+      // Only reached when shouldPersistAdminTables() is true, so this is
+      // always 'production' in practice — tagged explicitly so a future
+      // gate regression is visible in the row itself.
+      runtimeEnv: getRuntimeEnv(),
     } as Json;
 
     const [errorLogResult, adminEventResult] = await Promise.all([

@@ -142,3 +142,68 @@ export async function archiveIncidentsByCriteria(
 
   return { archived };
 }
+
+export interface KnownIncidentHygieneResult {
+  archived: number;
+  buckets: Array<{ label: string; archived: number }>;
+}
+
+const KNOWN_NON_ACTIONABLE_INCIDENTS: ReadonlyArray<ResolveCriteria & { label: string }> = [
+  {
+    label: 'next_dynamic_server_usage',
+    messageMatch: '%Dynamic server usage:%',
+    resolution:
+      'Auto-resolved: Next.js static-render/control-flow signal, not a runtime incident. Server logger now drops these before admin_events.',
+  },
+  {
+    label: 'log_event_malformed_json',
+    messageMatch: '%[log-event] Unexpected error: Unexpected end of JSON input%',
+    resolution:
+      'Auto-resolved: malformed/empty client beacon input. /api/admin/log-event now reads text and returns 204/400 without logging itself.',
+  },
+  {
+    label: 'coachhelm_philosophy_gate_counts',
+    messageMatch: '%philosophy gate filtered%tier-1 insight(s)%',
+    resolution:
+      'Auto-resolved: expected CoachHelm philosophy-gate telemetry, not a user-impacting incident.',
+  },
+  {
+    label: 'lifting_access_denied_control_flow',
+    messageMatch: '%You do not have access to this Lifting Lab.%',
+    resolution:
+      'Auto-resolved: expected Lifting Lab access control flow. The wrapper now logs these as info instead of warning incidents.',
+  },
+  {
+    label: 'signed_out_control_flow',
+    messageMatch: '%You must be signed in%',
+    resolution:
+      'Auto-resolved: expected signed-out control flow, excluded from triage.',
+  },
+  {
+    label: 'baseball_no_active_team_control_flow',
+    messageMatch: '%No active baseball team%',
+    resolution:
+      'Auto-resolved: expected no-active-team control flow, excluded from triage.',
+  },
+];
+
+/**
+ * Daily hygiene for known fixed or deliberately non-actionable admin_events.
+ * This is intentionally allowlisted: it does not archive generic
+ * `[object Object]`, database, or route failures because those still need a
+ * source fix unless a specific resolution is added here.
+ */
+export async function archiveKnownResolvedIncidents(): Promise<KnownIncidentHygieneResult> {
+  const buckets: KnownIncidentHygieneResult['buckets'] = [];
+
+  for (const criteria of KNOWN_NON_ACTIONABLE_INCIDENTS) {
+    const { label, ...rest } = criteria;
+    const result = await archiveIncidentsByCriteria(rest);
+    buckets.push({ label, archived: result.archived });
+  }
+
+  return {
+    archived: buckets.reduce((sum, bucket) => sum + bucket.archived, 0),
+    buckets,
+  };
+}

@@ -1,5 +1,46 @@
-import { describe, it, expect } from 'vitest';
-import { buildDailyActivity, groupTeamErrorsByFingerprint } from '@/lib/admin/data/team-detail';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Minimal chainable Supabase mock, keyed per-table with a FIFO queue so two
+// different queries against the SAME table (golf_rounds is queried twice —
+// once completed-only for the roster, once unfiltered for the header badge)
+// can return two different canned results, in call order.
+const mocks = vi.hoisted(() => ({
+  tableQueue: {} as Record<string, Array<{ data: unknown; error: unknown }>>,
+}));
+
+function nextResult(table: string) {
+  const queue = mocks.tableQueue[table];
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+function makeChain(table: string) {
+  const chain: Record<string, unknown> = {
+    select: () => chain,
+    eq: () => chain,
+    not: () => chain,
+    in: () => chain,
+    gte: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    maybeSingle: () => Promise.resolve(nextResult(table)),
+    then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+      Promise.resolve(nextResult(table)).then(resolve, reject),
+  };
+  return chain;
+}
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: (table: string) => makeChain(table) }),
+}));
+
+// resolveTeamUserIds has its own multi-table query shape unrelated to this
+// bug fix — stub it so the daily-activity section's login lookup is a no-op.
+vi.mock('@/lib/admin/data/team-scope', () => ({
+  resolveTeamUserIds: () => Promise.resolve(new Set<string>()),
+}));
+
+import { buildDailyActivity, groupTeamErrorsByFingerprint, fetchTeamDetail } from '@/lib/admin/data/team-detail';
 
 describe('buildDailyActivity', () => {
   const now = new Date('2026-07-02T12:00:00Z');
@@ -68,5 +109,56 @@ describe('groupTeamErrorsByFingerprint', () => {
 
   it('returns an empty array for no rows', () => {
     expect(groupTeamErrorsByFingerprint([])).toEqual([]);
+  });
+});
+
+describe('fetchTeamDetail — teamLastActivity (header health-badge parity with /admin/golf)', () => {
+  beforeEach(() => {
+    mocks.tableQueue = {};
+  });
+
+  function seedTeam() {
+    mocks.tableQueue.golf_teams = [
+      {
+        data: {
+          id: 'team-1', name: 'Rini U', gender: 'M', season: null, season_active: true,
+          organization_id: null, join_code: 'ABC123', created_at: null,
+        },
+        error: null,
+      },
+    ];
+    mocks.tableQueue.golf_team_coach_staff = [{ data: [], error: null }];
+    mocks.tableQueue.golf_team_members = [{ data: [], error: null }];
+    mocks.tableQueue.admin_events = [{ data: [], error: null }];
+  }
+
+  it('is sourced from the unfiltered latest golf_rounds row, independent of the roster reduce', async () => {
+    seedTeam();
+    // golf_rounds is queried twice, in this order: (1) roundsForTeam —
+    // status=completed, feeds the roster table's per-player lastRoundAt;
+    // (2) teamLastActivity — no status filter, no roster join.
+    mocks.tableQueue.golf_rounds = [
+      { data: [], error: null }, // (1) no completed rounds for the active roster
+      { data: { created_at: '2026-07-01T09:00:00Z' }, error: null }, // (2) latest round overall
+    ];
+
+    const result = await fetchTeamDetail('team-1');
+
+    expect(result.teamLastActivity).toBe('2026-07-01T09:00:00Z');
+    // The old bug: with an empty roster, `roster.reduce(...)` collapses to
+    // null (dormant) even though a round exists — teamLastActivity must not
+    // do that.
+    expect(result.roster).toEqual([]);
+  });
+
+  it('degrades to null (not a thrown error) when the query fails', async () => {
+    seedTeam();
+    mocks.tableQueue.golf_rounds = [
+      { data: [], error: null },
+      { data: null, error: { message: 'boom' } },
+    ];
+
+    const result = await fetchTeamDetail('team-1');
+    expect(result.teamLastActivity).toBeNull();
   });
 });

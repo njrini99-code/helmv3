@@ -20,6 +20,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getResendActivityStats } from './resend-activity';
 
 // ---------------------------------------------------------------------------
@@ -129,8 +130,13 @@ export async function getTemplatePerformance(
 
   if (error) {
     await logServerError(
-      `[crm-insights] template performance rpc failed: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'crm_insights.getTemplatePerformance' },
+      `[crm-insights] template performance rpc failed: ${describeError(error)}`,
+      {
+        action: 'crm_insights.getTemplatePerformance',
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      },
     );
     return [];
   }
@@ -182,8 +188,13 @@ export async function getTimeToOpenDistribution(
 
   if (error) {
     await logServerError(
-      `[crm-insights] time-to-open rpc failed: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'crm_insights.getTimeToOpenDistribution' },
+      `[crm-insights] time-to-open rpc failed: ${describeError(error)}`,
+      {
+        action: 'crm_insights.getTimeToOpenDistribution',
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      },
     );
     return [];
   }
@@ -222,8 +233,13 @@ export async function getClickDestinations(
 
   if (error) {
     await logServerError(
-      `[crm-insights] click destinations rpc failed: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'crm_insights.getClickDestinations' },
+      `[crm-insights] click destinations rpc failed: ${describeError(error)}`,
+      {
+        action: 'crm_insights.getClickDestinations',
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      },
     );
     return [];
   }

@@ -54,6 +54,7 @@ describe('buildFilteredIncidentsReport', () => {
     sport: 'golf', occurrences: 1, affectedUsers: 1,
     firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T00:00:00Z',
     permalink: null, eventIds: ['e1'], substatus: null,
+    source: 'server_action', feature: 'round_tracking', actionName: 'savePartialRound', route: '/api/golf/rounds',
     report: '# Incident report: savePartialRound failed',
     ...over,
   });

@@ -1,11 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
+import { config as loadEnv } from 'dotenv';
 
-const supabaseUrl = 'https://qmnssrrolpinvwjjnufo.supabase.co';
+loadEnv({ path: '.env.local' });
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!serviceRoleKey) {
-  console.error('Missing SUPABASE_SERVICE_ROLE_KEY');
+if (!supabaseUrl || !serviceRoleKey) {
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 

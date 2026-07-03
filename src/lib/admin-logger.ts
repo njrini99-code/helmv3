@@ -6,7 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
+import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 // ============================================
@@ -74,7 +74,10 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
         title: input.title,
         severity: (input.severity ?? 'info') as 'info' | 'warning' | 'error' | 'critical',
         message: input.message ?? null,
-        metadata: (input.metadata ?? {}) as Json,
+        // Only reached when shouldPersistAdminTables() is true, so this is
+        // always 'production' in practice — tagged explicitly so a future
+        // gate regression is visible in the row itself.
+        metadata: { ...(input.metadata ?? {}), runtimeEnv: getRuntimeEnv() } as Json,
         user_id: input.userId ?? null,
         user_email: input.userEmail ?? null,
         url: input.url ?? null,

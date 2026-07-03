@@ -117,6 +117,12 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
     const daysAgo = (d: number) => new Date(Date.now() - d * 86400_000).toISOString();
     const now = new Date().toISOString();
 
+    // `res.ok === false` (401/403/5xx) is a fetch FAILURE, not "zero
+    // visitors" — collapsing the two used to make an expired/misscoped
+    // token look identical to genuinely quiet traffic. Surface the first
+    // non-ok status via `failed()` (fail-soft: caller renders a stale/
+    // config-warning panel) instead of silently returning 0.
+    let httpFailureStatus: number | null = null;
     const fetchPeriod = async (from: string): Promise<number> => {
       const params = new URLSearchParams({ projectId, from, to: now });
       if (teamId) params.set('teamId', teamId);
@@ -124,7 +130,10 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
         headers: { Authorization: `Bearer ${token}` },
         next: { revalidate: 900 },
       });
-      if (!res.ok) return 0;
+      if (!res.ok) {
+        httpFailureStatus ??= res.status;
+        return 0;
+      }
       const data = await res.json();
       return data?.data?.visitors ?? data?.visitors ?? 0;
     };
@@ -134,6 +143,9 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
       fetchPeriod(daysAgo(7)),
       fetchPeriod(daysAgo(30)),
     ]);
+    if (httpFailureStatus !== null) {
+      return failed(`Vercel web insights fetch failed: ${httpFailureStatus}`);
+    }
     return ok({ visitors24h: v24h, visitors7d: v7d, visitors30d: v30d });
   } catch (err) {
     return failed(`Vercel web insights threw: ${err instanceof Error ? err.message : String(err)}`);
