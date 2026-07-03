@@ -132,8 +132,10 @@ jobs:
               )
             )
           }}
+        env:
+          MISSING_BASEBALL_SECRETS: ${{ steps.baseball-auth-ready.outputs.missing }}
         run: |
-          echo "::error::Missing required secret(s): ${{ steps.baseball-auth-ready.outputs.missing }}"
+          echo "::error::Missing required secret(s): ${MISSING_BASEBALL_SECRETS}"
           echo "The BaseballHelm mandatory smoke (#372) needs these to seed + log in the CI baseball accounts."
           echo "Set them in Settings -> Secrets and variables -> Actions."
           exit 1
