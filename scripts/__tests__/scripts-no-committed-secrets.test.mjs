@@ -17,8 +17,27 @@ const HARDCODED_PROD_URL = /qmnssrrolpinvwjjnufo\.supabase\.co/;
 // literally, even for the developer's own demo accounts. Real values belong
 // in env vars only (see scripts/seed-rini-baseball-demo.ts).
 const KNOWN_LEAKED_DEMO_PASSWORD = /Pirates#09/;
+const PASSWORD_LITERAL_ASSIGNMENT =
+  /\b(?:const|let|var)\s+[$\w]*(?:PASS|PASSWORD|PW)[$\w]*\s*=\s*(?:process\.env\.[A-Z0-9_]+\s*\|\|\s*)?(['"`])([^'"`\n]{8,})\1/g;
+const PASSWORD_PROPERTY_LITERAL = /\bpassword\s*:\s*(['"`])([^'"`\n]{8,})\1/g;
 
 const SCRIPT_EXTENSIONS = new Set(['.ts', '.mjs', '.js', '.cjs', '.sh']);
+const GENERIC_PASSWORD_ALLOWLIST = new Set([
+  'scripts/seed-baseball-e2e.ts::TestCoach123!',
+  'scripts/seed-baseball-e2e.ts::TestPlayer123!',
+  'scripts/seed-baseball-e2e.ts::BaseballE2eSeed2026!',
+  'scripts/ui-smoke.mjs::Demo2026',
+  'scripts/seed-baseball-lifting-demo.ts::BaseballDemo2026',
+  'scripts/gen-appstore-screenshots.mjs::Demo2026',
+  'scripts/seed-baseball-roster.mjs::HelmSeed2026!!',
+  'scripts/verify-ios-itinerary-create.mjs::DenisonBigRed2026!',
+  'scripts/seed-baseball-demo.ts::BaseballDemo2026',
+  'scripts/setup-admin.ts::Helm2026!!',
+]);
+const SECRET_FIXTURE_ALLOWLIST = new Set([
+  'scripts/__tests__/check-required-env.test.mjs::prod-url-fixture',
+  'scripts/__tests__/seed-baseball-stats.safety.test.mjs::jwt-prefix-fixture',
+]);
 
 /**
  * Every script file, recursively, excluding tests/fixtures/node_modules.
@@ -38,7 +57,7 @@ async function listScriptFiles(dir, acc = []) {
   for (const entry of entries) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === '__tests__' || entry.name === 'node_modules') continue;
+      if (entry.name === 'node_modules') continue;
       await listScriptFiles(full, acc);
     } else if (SCRIPT_EXTENSIONS.has(extname(entry.name))) {
       acc.push(full);
@@ -47,8 +66,42 @@ async function listScriptFiles(dir, acc = []) {
   return acc;
 }
 
+function findNewPasswordLiteralOffenders(rel, text) {
+  if (rel === 'scripts/__tests__/scripts-no-committed-secrets.test.mjs') return [];
+
+  const offenders = [];
+  for (const pattern of [PASSWORD_LITERAL_ASSIGNMENT, PASSWORD_PROPERTY_LITERAL]) {
+    pattern.lastIndex = 0;
+    for (const match of text.matchAll(pattern)) {
+      const literal = match[2];
+      if (literal.startsWith('(') && literal.endsWith(')')) continue;
+      if (!GENERIC_PASSWORD_ALLOWLIST.has(`${rel}::${literal}`)) {
+        offenders.push(`${rel} (${literal})`);
+      }
+    }
+  }
+  return offenders;
+}
+
+function hasBlockedKnownSecret(rel, text) {
+  if (rel === 'scripts/__tests__/scripts-no-committed-secrets.test.mjs') return false;
+  if (
+    HARDCODED_PROD_URL.test(text) &&
+    !SECRET_FIXTURE_ALLOWLIST.has(`${rel}::prod-url-fixture`)
+  ) {
+    return true;
+  }
+  if (
+    HARDCODED_JWT.test(text) &&
+    !SECRET_FIXTURE_ALLOWLIST.has(`${rel}::jwt-prefix-fixture`)
+  ) {
+    return true;
+  }
+  return KNOWN_LEAKED_DEMO_PASSWORD.test(text);
+}
+
 describe('scripts secret hygiene', () => {
-  it('no script commits a service-role JWT, prod Supabase URL, or known-leaked demo password (#516)', async () => {
+  it('no script commits service-role JWTs, prod Supabase URLs, or new hardcoded passwords (#516)', async () => {
     const files = await listScriptFiles(SCRIPTS_DIR);
     const offenders = [];
     for (const file of files) {
@@ -58,13 +111,11 @@ describe('scripts secret hygiene', () => {
       } catch {
         continue;
       }
-      if (
-        HARDCODED_JWT.test(text) ||
-        HARDCODED_PROD_URL.test(text) ||
-        KNOWN_LEAKED_DEMO_PASSWORD.test(text)
-      ) {
+      const rel = file.replace(`${REPO_ROOT}/`, '');
+      if (hasBlockedKnownSecret(rel, text)) {
         offenders.push(file.replace(`${REPO_ROOT}/`, ''));
       }
+      offenders.push(...findNewPasswordLiteralOffenders(rel, text));
     }
     expect(offenders, `committed secrets found in:\n${offenders.join('\n')}`).toEqual([]);
   });
