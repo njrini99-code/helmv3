@@ -59,7 +59,10 @@ interface AdminEventInput {
 async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
   // Off-prod runtimes (CI dev servers, local dev/next start, preview builds)
   // hold prod Supabase creds — keep their telemetry out of the prod feed.
-  if (!shouldPersistAdminTables()) return null;
+  if (!shouldPersistAdminTables()) {
+    console.info(`[AdminLogger] ${input.eventType} not persisted off-prod (set ADMIN_EVENTS_FORCE_CAPTURE=1 to override)`);
+    return null;
+  }
   try {
     const adminDb = createAdminClient();
     

@@ -81,8 +81,19 @@ async function parseDatabaseTypes() {
   return { tables, views, functions, enums };
 }
 
+/**
+ * database.ts declares the empty `graphql_public` schema BEFORE `public`, and
+ * both nest identically-indented Tables/Views/Functions/Enums blocks — a bare
+ * first-match indexOf locks onto graphql_public and reports an empty database.
+ * Anchor every block search inside the `public` schema.
+ */
+function publicSchemaOffset(src) {
+  const start = src.indexOf('  public: {');
+  return start === -1 ? 0 : start;
+}
+
 function extractTopLevelKeys(src, blockName) {
-  const blockStart = src.indexOf(`    ${blockName}: {`);
+  const blockStart = src.indexOf(`    ${blockName}: {`, publicSchemaOffset(src));
   if (blockStart === -1) return [];
   let depth = 0;
   let i = blockStart + `    ${blockName}: {`.length - 1;
@@ -104,7 +115,7 @@ function extractTopLevelKeys(src, blockName) {
 }
 
 function extractEnums(src) {
-  const blockStart = src.indexOf('    Enums: {');
+  const blockStart = src.indexOf('    Enums: {', publicSchemaOffset(src));
   if (blockStart === -1) return [];
   let depth = 0;
   let i = blockStart + '    Enums: {'.length - 1;
