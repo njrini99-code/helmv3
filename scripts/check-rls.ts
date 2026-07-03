@@ -1,9 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  'https://qmnssrrolpinvwjjnufo.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtbnNzcnJvbHBpbnZ3ampudWZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODMyNjg0MCwiZXhwIjoyMDgzOTAyODQwfQ.pW8-66rT0Y3LXcPYSXMPqj0_y0K_AYnPj22nXjdMU6I'
-);
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const TEST_LOGIN_EMAIL = process.env.RLS_DIAGNOSTIC_TEST_EMAIL;
+const TEST_LOGIN_PASSWORD = process.env.RLS_DIAGNOSTIC_TEST_PASSWORD;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !SUPABASE_ANON_KEY) {
+  console.error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY. Set them in .env.local and run with `dotenv/config` or export them in your shell.'
+  );
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function checkRLS() {
   const testPlayerUserId = '7f13c6f0-e097-4e2d-b881-70f7712a093e';
@@ -62,15 +72,17 @@ async function checkRLS() {
 
   // 8. Try to query golf_team_members as the player would
   // Simulate RLS by using anon key with a specific user context
-  const anonClient = createClient(
-    'https://qmnssrrolpinvwjjnufo.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtbnNzcnJvbHBpbnZ3ampudWZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMjY4NDAsImV4cCI6MjA4MzkwMjg0MH0.5CVd_a4BTOXsvone_Zz76RBITMNuk73JYM-SMfZmIPc'
-  );
+  const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  if (!TEST_LOGIN_EMAIL || !TEST_LOGIN_PASSWORD) {
+    console.log('\n8. Sign in as player: SKIPPED (set RLS_DIAGNOSTIC_TEST_EMAIL / RLS_DIAGNOSTIC_TEST_PASSWORD to run this step)');
+    return;
+  }
 
   // Sign in as the test player
   const { error: signInErr } = await anonClient.auth.signInWithPassword({
-    email: 'rinin376@gmail.com',
-    password: 'Pirates#09!!!'
+    email: TEST_LOGIN_EMAIL,
+    password: TEST_LOGIN_PASSWORD
   });
   console.log('\n8. Sign in as player:', signInErr ? `ERROR: ${signInErr.message}` : 'SUCCESS');
 

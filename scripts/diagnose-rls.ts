@@ -1,8 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtbnNzcnJvbHBpbnZ3ampudWZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODMyNjg0MCwiZXhwIjoyMDgzOTAyODQwfQ.pW8-66rT0Y3LXcPYSXMPqj0_y0K_AYnPj22nXjdMU6I';
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtbnNzcnJvbHBpbnZ3ampudWZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMjY4NDAsImV4cCI6MjA4MzkwMjg0MH0.5CVd_a4BTOXsvone_Zz76RBITMNuk73JYM-SMfZmIPc';
-const URL = 'https://qmnssrrolpinvwjjnufo.supabase.co';
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const TEST_LOGIN_EMAIL = process.env.RLS_DIAGNOSTIC_TEST_EMAIL;
+const TEST_LOGIN_PASSWORD = process.env.RLS_DIAGNOSTIC_TEST_PASSWORD;
+
+if (!URL || !SERVICE_KEY || !ANON_KEY || !TEST_LOGIN_EMAIL || !TEST_LOGIN_PASSWORD) {
+  console.error(
+    'Missing one of NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY / RLS_DIAGNOSTIC_TEST_EMAIL / RLS_DIAGNOSTIC_TEST_PASSWORD. Set them in .env.local and run with `dotenv/config` or export them in your shell.'
+  );
+  process.exit(1);
+}
 
 const admin = createClient(URL, SERVICE_KEY);
 
@@ -14,8 +23,8 @@ async function diagnose() {
   // 1. Sign in as Test Player
   const playerClient = createClient(URL, ANON_KEY);
   const { error: signInErr } = await playerClient.auth.signInWithPassword({
-    email: 'rinin376@gmail.com',
-    password: 'Pirates#09!!!'
+    email: TEST_LOGIN_EMAIL,
+    password: TEST_LOGIN_PASSWORD
   });
   
   if (signInErr) {
