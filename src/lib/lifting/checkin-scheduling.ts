@@ -196,68 +196,8 @@ function eachSelectedWeekday(
   return result;
 }
 
-// -----------------------------------------------------------------------------
-// Convenience helpers callers can use without re-implementing date math
-// -----------------------------------------------------------------------------
 
-/**
- * Returns true if a given ISO date string falls within the schedule's active
- * window (start_date ≤ date ≤ end_date, or end_date is null).
- */
-export function isDateInScheduleWindow(schedule: ScheduleWindow, isoDate: string): boolean {
-  if (isoDate < schedule.start_date) return false;
-  if (schedule.end_date && isoDate > schedule.end_date) return false;
-  return true;
-}
 
-/**
- * Given a schedule, returns the next due date on or after `fromIso`.
- * Returns null if the schedule has ended or no date lands in the window.
- *
- * Useful for UX: "Next due: Monday, June 30."
- */
-export function nextDueDate(schedule: ScheduleWindow, fromIso: string): string | null {
-  // Look 90 days ahead as a reasonable horizon
-  const lookAheadDays = 90;
-  const toDate = addDays(cloneFromIso(fromIso), lookAheadDays);
-  const dates = materializeWindow(schedule, fromIso, toIso(toDate));
-  return dates[0] ?? null;
-}
 
-/**
- * Returns a human-readable recurrence summary string for coach UIs.
- * Examples: "Daily", "Mon, Wed, Fri", "Once on Jun 25", "Custom (3 days/wk)"
- */
-export function recurrenceLabel(schedule: ScheduleWindow): string {
-  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  switch (schedule.frequency_type) {
-    case 'once':
-      return `Once on ${schedule.start_date}`;
-    case 'daily':
-      return 'Daily';
-    case 'weekly': {
-      if (!schedule.days_of_week?.length) return 'Weekly';
-      const names = schedule.days_of_week
-        .slice()
-        .sort((a, b) => a - b)
-        .map((d) => DAY_NAMES[d] ?? `Day${d}`)
-        .join(', ');
-      return names;
-    }
-    case 'custom': {
-      if (!schedule.days_of_week?.length) return 'Custom';
-      const names = schedule.days_of_week
-        .slice()
-        .sort((a, b) => a - b)
-        .map((d) => DAY_NAMES[d] ?? `Day${d}`)
-        .join(', ');
-      return `Custom (${names})`;
-    }
-    default: {
-      const _never: never = schedule.frequency_type;
-      void _never;
-      return 'Unknown';
-    }
-  }
-}
+

@@ -482,20 +482,6 @@ export function videoEvidenceGenerator(input: VideoCoverageInput): BaseballInsig
 // V10 generator ids + insight types (extends the W10 skeleton set).
 // =============================================================================
 
-export const BASEBALL_V10_GENERATOR_IDS = [
-  'readiness',
-  'lift_compliance',
-  'lift_rpe_spike',
-  'practice_effectiveness',
-  'import_quality',
-  'video_evidence',
-] as const;
 
-export const BASEBALL_V10_INSIGHT_TYPES = [
-  'coachhelm_readiness',
-  'coachhelm_lift_compliance',
-  'coachhelm_lift_rpe',
-  'coachhelm_practice_effectiveness',
-  'coachhelm_import_quality',
-  'coachhelm_video_evidence',
-] as const;
+
+

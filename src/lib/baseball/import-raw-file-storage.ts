@@ -16,7 +16,7 @@
 // action imports. They take the already-constructed Supabase server client.
 // =============================================================================
 
-export const BASEBALL_IMPORTS_BUCKET = 'baseball-imports';
+const BASEBALL_IMPORTS_BUCKET = 'baseball-imports';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StorageClient = { storage: any };
@@ -33,7 +33,7 @@ function safeFileName(fileName: string): string {
  * The storage object key for a run's raw file. Deterministic from (team, run,
  * filename) so the same run always resolves to the same object.
  */
-export function rawFileStoragePath(
+function rawFileStoragePath(
   teamId: string,
   runId: string,
   fileName: string,

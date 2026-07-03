@@ -101,5 +101,4 @@ export const STANDING_REFRESH_DEFERRED_METRIC_IDS: readonly MetricId[] = [
 /** Maximum teams the cron sends to refresh_player_standing per invocation. */
 export const TEAMS_PER_CHUNK = 50;
 
-/** Min cache.rounds_played for a player to enter the standing computation. */
-export const MIN_ROUNDS_FOR_STANDING = 5;
+

@@ -259,12 +259,7 @@ export function generateCoachCalendar(
   });
 }
 
-/**
- * Parse ISO date string to Date object
- */
-export function parseEventDate(dateString: string): Date {
-  return parseISO(dateString);
-}
+
 
 /**
  * Convert database event to ICalEvent

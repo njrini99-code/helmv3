@@ -10,13 +10,6 @@ export interface ClipRange {
   endTime: number;   // in seconds
 }
 
-interface ClipMetadata {
-  title: string;
-  description?: string;
-  clipType?: string;
-  parentVideoId: string;
-}
-
 /**
  * Formats seconds into MM:SS display format
  */
@@ -48,31 +41,7 @@ export function validateClipRange(range: ClipRange, videoDuration: number): stri
   return null;
 }
 
-/**
- * Alternative: Create clip using video trimming with the Blob API
- * This is faster but doesn't re-encode the video
- */
-export async function createClipMetadataOnly(
-  parentVideoId: string,
-  range: ClipRange,
-  metadata: ClipMetadata
-): Promise<{
-  parent_video_id: string;
-  clip_start_time: number;
-  clip_end_time: number;
-  title: string;
-  description?: string;
-  clip_type?: string;
-}> {
-  return {
-    parent_video_id: parentVideoId,
-    clip_start_time: range.startTime,
-    clip_end_time: range.endTime,
-    title: metadata.title,
-    description: metadata.description,
-    clip_type: metadata.clipType,
-  };
-}
+
 
 /**
  * Generates a thumbnail from a video at a specific time

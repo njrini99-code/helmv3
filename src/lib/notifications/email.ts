@@ -844,30 +844,4 @@ export async function sendEmailNotification(
   }
 }
 
-/**
- * Send notification to multiple recipients
- */
-export async function sendBulkEmailNotification(
-  type: NotificationType,
-  recipients: Array<{ id: string; email: string }>,
-  data: Record<string, unknown>
-): Promise<{ sent: number; failed: number }> {
-  let sent = 0;
-  let failed = 0;
 
-  for (const recipient of recipients) {
-    const result = await sendEmailNotification(
-      type,
-      recipient.id,
-      recipient.email,
-      data
-    );
-    if (result.success) {
-      sent++;
-    } else {
-      failed++;
-    }
-  }
-
-  return { sent, failed };
-}

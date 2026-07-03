@@ -37,7 +37,7 @@ export interface TokenizedCsv {
  * (some EU locales), or tab (TrackMan "Tab" export). We pick the delimiter that
  * yields the most cells on the header line — ties favor comma.
  */
-export function detectDelimiter(headerLine: string): CsvDelimiter {
+function detectDelimiter(headerLine: string): CsvDelimiter {
   const candidates: CsvDelimiter[] = [',', '\t', ';'];
   let best: CsvDelimiter = ',';
   let bestCount = -1;

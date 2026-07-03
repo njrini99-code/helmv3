@@ -354,9 +354,7 @@ export type BaseballClassConflictUpdate = Partial<
   Omit<BaseballClassConflictInsert, 'team_id' | 'player_id'>
 >;
 
-/** Dispositions that count as "open" (still on the conflict board). */
-export const OPEN_CONFLICT_DISPOSITIONS: readonly BaseballClassConflictDisposition[] =
-  ['open', 'acknowledged'] as const;
+
 
 /** Severity rank for sorting (hard first). */
 export const CONFLICT_SEVERITY_RANK: Record<BaseballClassConflictSeverity, number> = {

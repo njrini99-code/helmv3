@@ -345,7 +345,7 @@ function clampConfidence(n: number): number {
 // THE RULE REGISTRY
 // =============================================================================
 
-export const OPERATIONAL_RULES: readonly OperationalRule[] = [
+const OPERATIONAL_RULES: readonly OperationalRule[] = [
   // ---------------------------------------------------------------------------
   // TEAM OPERATIONS
   // ---------------------------------------------------------------------------

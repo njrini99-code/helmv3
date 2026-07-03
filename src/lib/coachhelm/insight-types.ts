@@ -278,9 +278,7 @@ const FOCUS_AREA_CONFIGS: Record<FocusAreaCategory, FocusAreaConfig> = {
 // HELPER FUNCTIONS
 // ============================================================================
 
-export function getInsightConfig(type: InsightType): InsightTypeConfig {
-  return INSIGHT_TYPE_CONFIGS[type];
-}
+
 
 const FOCUS_AREA_FALLBACK: FocusAreaConfig = {
   category: 'ball_striking',
@@ -299,34 +297,6 @@ export function getFocusAreaConfig(category: FocusAreaCategory | string | null |
   return cfg ?? FOCUS_AREA_FALLBACK;
 }
 
-export function getPriorityColor(priority: InsightPriority): string {
-  switch (priority) {
-    case 'urgent':
-      return 'red';
-    case 'high':
-      return 'orange';
-    case 'medium':
-      return 'yellow';
-    case 'low':
-      return 'blue';
-  }
-}
 
-export function formatInsightAge(createdAt: string): string {
-  const now = new Date();
-  const created = new Date(createdAt);
-  const diffMs = now.getTime() - created.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 60) {
-    return `${diffMins}m ago`;
-  } else if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  } else if (diffDays < 7) {
-    return `${diffDays}d ago`;
-  } else {
-    return created.toLocaleDateString();
-  }
-}
+

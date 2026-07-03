@@ -13,7 +13,7 @@
  * - Sync status UI components
  */
 
-import { useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
+import { useEffect, useCallback, createContext, type ReactNode } from 'react';
 import { useConnectionStatus, type ConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useServiceWorker } from '@/hooks/golf/use-service-worker';
 import { useOfflineSyncStore, useOfflineSyncStatus, useOfflineSyncActions } from '@/stores/offline-sync-store';
@@ -71,16 +71,7 @@ interface OfflineProviderProps {
 
 const OfflineContext = createContext<OfflineContextValue | null>(null);
 
-/**
- * Hook to access offline context
- */
-export function useOffline(): OfflineContextValue {
-  const context = useContext(OfflineContext);
-  if (!context) {
-    throw new Error('useOffline must be used within an OfflineProvider');
-  }
-  return context;
-}
+
 
 // ============================================================================
 // PROVIDER COMPONENT

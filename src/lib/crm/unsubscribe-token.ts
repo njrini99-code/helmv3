@@ -30,7 +30,7 @@ const APP_URL = (
 ).replace(/\/+$/, '');
 
 /** HMAC token for a coach id — identical to tokenFor()/unsubUrl() elsewhere. */
-export function signUnsubToken(coachId: string): string {
+function signUnsubToken(coachId: string): string {
   return createHmac('sha256', SECRET).update(String(coachId)).digest('hex').slice(0, 16);
 }
 

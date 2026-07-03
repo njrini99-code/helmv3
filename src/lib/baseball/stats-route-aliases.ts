@@ -21,10 +21,7 @@ export const BASEBALL_STATS_ROUTE_ALIASES = {
 
 export type BaseballStatsLegacyRoute = keyof typeof BASEBALL_STATS_ROUTE_ALIASES;
 
-/** Paths that must not appear in hrefs, tests, or docs (except redirect stubs). */
-export const BASEBALL_STATS_STALE_LINK_PATHS = [
-  BASEBALL_STATS_GAME_CREATE_LEGACY_PATH,
-] as const;
+
 
 export function getBaseballStatsGameCreateHref(): string {
   return BASEBALL_STATS_GAME_CREATE_PATH;

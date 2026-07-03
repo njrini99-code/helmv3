@@ -183,45 +183,4 @@ export interface CoachTeamManagementData {
   organizationId: string | null;
 }
 
-/**
- * Load the coach's management team using active-team/default-team resolution.
- */
-export async function loadCoachTeamForManagement(
-  supabase: TypedSupabaseClient,
-  coachId: string,
-  organizationId: string,
-  cookieTeamId: string | null | undefined,
-): Promise<CoachTeamManagementData | null> {
-  const teamId = await resolveCoachActiveTeamId(
-    supabase,
-    organizationId,
-    coachId,
-    cookieTeamId,
-  );
-  if (!teamId) return null;
 
-  type TeamRow = {
-    id: string;
-    name: string;
-    team_type: string;
-    join_code: string | null;
-    organization_id: string | null;
-  };
-
-  const { data: team, error } = await supabase
-    .from('baseball_teams')
-    .select('id, name, team_type, join_code, organization_id')
-    .eq('id', teamId)
-    .maybeSingle() as { data: TeamRow | null; error: unknown };
-
-  if (error || !team) return null;
-  if (team.organization_id !== organizationId) return null;
-
-  return {
-    id: team.id,
-    name: team.name,
-    teamType: team.team_type,
-    inviteCode: team.join_code,
-    organizationId: team.organization_id,
-  };
-}

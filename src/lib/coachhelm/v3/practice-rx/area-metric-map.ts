@@ -16,7 +16,7 @@
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 
 /** The 5 team category ids → their representative SG metric in the v3 registry. */
-export const AREA_TO_METRIC: Record<string, MetricId> = {
+const AREA_TO_METRIC: Record<string, MetricId> = {
   driving: 'sg_ott',
   approach: 'sg_approach',
   short_game: 'sg_around_green',

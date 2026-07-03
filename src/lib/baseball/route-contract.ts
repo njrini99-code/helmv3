@@ -154,7 +154,7 @@ export function collectDeclaredHrefs(): DeclaredHref[] {
 }
 
 /** Human-readable origin label, used in gap reasons + the JSON report. */
-export function describeOrigin(origin: DeclaredHrefOrigin): string {
+function describeOrigin(origin: DeclaredHrefOrigin): string {
   switch (origin.kind) {
     case 'nav-registry':
       return `nav-registry:${origin.id}${origin.variant === 'playerHref' ? ' (playerHref)' : ''}`;

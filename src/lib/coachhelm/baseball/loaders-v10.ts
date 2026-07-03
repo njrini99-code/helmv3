@@ -160,7 +160,7 @@ function toMetric(
  * (highest soreness, lowest energy/sleep, highest arm-status) in the window —
  * a single bad day is the operational signal, not an average that hides it.
  */
-export function loadReadinessMetrics(
+function loadReadinessMetrics(
   playerId: string,
   rows: ReadinessRow[],
 ): Partial<Record<BaseballMetricId, LoadedMetric>> {
@@ -212,7 +212,7 @@ export function loadReadinessMetrics(
  * state that is past due counts against compliance unless completed; 'excused'
  * is treated as not-counted (it was legitimately removed from the denominator).
  */
-export function loadLiftMetrics(
+function loadLiftMetrics(
   playerId: string,
   sessions: LiftSessionRow[],
   setResults: LiftSetResultRow[],

@@ -10,7 +10,6 @@
 export {
   FairwayPlayerHub,
   FairwayPlayerHubWrapper,
-  default as FairwayPlayerHubDefault,
   type FairwayPlayerHubProps,
   type FairwayPlayerHubWrapperProps,
 } from './FairwayPlayerHub';

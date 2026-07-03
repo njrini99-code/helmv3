@@ -91,7 +91,6 @@ async function searchInsightsImpl({
     // stale v2 phantoms or archived/tentative rows if the redesign flag is ever
     // flipped off. The text-search `.or(...)` chained below ANDs with the
     // helper's v3-engine `.or(...)` per PostgREST semantics.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let queryBuilder = applyInsightVisibility(
       (supabase as any)
         .from('golf_coach_insights')

@@ -53,10 +53,4 @@ export interface PlayerStanding {
   computed_at: string;
 }
 
-/**
- * Cold-start helper: does this standing have enough team data to render
- * the team marker? Master plan Part VII.3: render when team_n >= 5.
- */
-export function hasTeamMarker(s: PlayerStanding): boolean {
-  return s.team_n >= 5 && s.team_avg !== null;
-}
+

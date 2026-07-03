@@ -57,7 +57,7 @@ const MAX_SAMPLE_IDS = 5;
 // the same way the helper does. Keep them pure + side-effect free.
 // ---------------------------------------------------------------------------
 
-export function normalizeIncidentMessagePrefix(message: string, length = MESSAGE_PREFIX_LEN): string {
+function normalizeIncidentMessagePrefix(message: string, length = MESSAGE_PREFIX_LEN): string {
   return message
     .trim()
     .toLowerCase()

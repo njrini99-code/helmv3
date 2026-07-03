@@ -11,7 +11,7 @@
  * greeting with no first name, never a thrown error.
  */
 
-export const LAST_FIRST_NAME_KEY = 'helm:lastFirstName';
+const LAST_FIRST_NAME_KEY = 'helm:lastFirstName';
 
 export type SceneVariant = 'dawn' | 'dusk';
 
@@ -21,7 +21,7 @@ export type SceneVariant = 'dawn' | 'dusk';
  * Room's is dawn — both scenes accept either variant (spec: "two
  * sky-gradient states, subtle").
  */
-export function variantFromHour(hour: number): SceneVariant {
+function variantFromHour(hour: number): SceneVariant {
   return hour >= 5 && hour < 12 ? 'dawn' : 'dusk';
 }
 
@@ -30,7 +30,7 @@ export function variantFromHour(hour: number): SceneVariant {
  * Uses plain `window.location.search` rather than `useSearchParams()` so
  * callers don't inherit its Suspense-boundary requirement.
  */
-export function sceneVariantOverride(): SceneVariant | null {
+function sceneVariantOverride(): SceneVariant | null {
   if (typeof window === 'undefined') return null;
   const value = new URLSearchParams(window.location.search).get('scene-variant');
   return value === 'dawn' || value === 'dusk' ? value : null;

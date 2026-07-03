@@ -150,13 +150,7 @@ export async function loadStandardsForGender(
   return merged;
 }
 
-/** Look up a single metric's baseline for the given tour. Returns null if unknown. */
-export async function loadPgaStandard(
-  metricId: MetricId,
-): Promise<PgaStandard | null> {
-  const all = await loadPgaStandards();
-  return all.get(metricId) ?? null;
-}
+
 
 /**
  * Pick the canonical "Tour reference value" for a metric, falling back

@@ -38,7 +38,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconPlus,
@@ -553,58 +553,4 @@ export function LiftBuilderClient({
 // Loading skeleton — re-exported for page-level loading.tsx if needed.
 // =============================================================================
 
-export function LiftBuilderSkeleton() {
-  return (
-    <div
-      className="space-y-6"
-      aria-busy="true"
-      aria-label="Loading lift builder…"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <Skeleton className="h-3 w-28" />
-          <Skeleton className="h-7 w-40" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-        <Skeleton className="h-9 w-32 rounded-xl" />
-      </div>
 
-      {/* Availability grid */}
-      <div className="space-y-2">
-        <Skeleton className="h-5 w-44" />
-        <div className="overflow-x-auto">
-          <div
-            className="rounded-2xl border border-warm-100 overflow-hidden"
-            style={{ display: 'grid', gridTemplateColumns: '160px repeat(7, 1fr)' }}
-          >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-11 rounded-none" />
-            ))}
-            {Array.from({ length: 24 }).map((_, i) => (
-              <Skeleton key={i + 8} className="h-11 rounded-none" />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Canvas area */}
-      <div className="flex flex-col gap-4 lg:flex-row min-h-[480px]">
-        <Skeleton className="w-64 flex-shrink-0 rounded-2xl" />
-        <div className="flex-1 space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-2xl" />
-          ))}
-        </div>
-        <Skeleton className="w-72 flex-shrink-0 rounded-2xl" />
-      </div>
-
-      {/* Save bar */}
-      <div className="flex gap-3">
-        <Skeleton className="h-10 flex-1 rounded-xl" />
-        <Skeleton className="h-10 w-44 rounded-xl" />
-        <Skeleton className="h-10 w-40 rounded-xl" />
-      </div>
-    </div>
-  );
-}

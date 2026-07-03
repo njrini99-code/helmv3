@@ -13,7 +13,6 @@
 // ---- Foundations frame (owned here) ----------------------------------------
 export {
   StatVisualFrame,
-  EmptyState as StatVisualEmptyState,
   type StatVisualState,
   type StatVisualFrameProps,
   type StatVisualSourceChip,

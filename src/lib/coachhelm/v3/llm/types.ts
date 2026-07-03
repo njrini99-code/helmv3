@@ -64,7 +64,7 @@ export interface ComposeResult {
  * compose wrapper to compute cost_usd before logging.
  * Source: Anthropic pricing 2026-Q1 via Vercel AI Gateway.
  */
-export const MODEL_COST_USD_PER_MTOK: Record<string, { input: number; output: number }> = {
+const MODEL_COST_USD_PER_MTOK: Record<string, { input: number; output: number }> = {
   'anthropic/claude-haiku-4-5':   { input: 1.0,  output: 5.0  },
   'anthropic/claude-sonnet-4-6':  { input: 3.0,  output: 15.0 },
   'anthropic/claude-opus-4-7':    { input: 15.0, output: 75.0 },

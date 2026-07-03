@@ -122,14 +122,14 @@ export const DELIVERY_NOTIFICATION_GROUPS: readonly DeliveryNotificationGroup[] 
 ] as const;
 
 /** Categories that keep delivering even when quiet mode is on. */
-export const QUIET_EXEMPT_DELIVERY_KEYS: ReadonlySet<DeliveryNotificationKey> = new Set(
+const QUIET_EXEMPT_DELIVERY_KEYS: ReadonlySet<DeliveryNotificationKey> = new Set(
   DELIVERY_NOTIFICATION_GROUPS.flatMap((g) =>
     g.quietExempt ? ([g.emailKey, g.pushKey].filter(Boolean) as DeliveryNotificationKey[]) : [],
   ),
 );
 
 /** Defaults — mirrors DEFAULT_NOTIFICATION_PREFERENCES + quiet_mode off. */
-export const DEFAULT_DELIVERY_NOTIFICATION_PREFERENCES: DeliveryNotificationPreferences = {
+const DEFAULT_DELIVERY_NOTIFICATION_PREFERENCES: DeliveryNotificationPreferences = {
   email_messages: true,
   email_pipeline_updates: true,
   email_event_reminders: true,

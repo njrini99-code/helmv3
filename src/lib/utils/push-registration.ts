@@ -24,7 +24,7 @@ const SOFT_ASK_STORAGE_KEY = 'golfhelm-push-soft-ask-state';
 
 type SoftAskState = 'pending' | 'accepted' | 'dismissed';
 
-export function getPushSoftAskState(): SoftAskState {
+function getPushSoftAskState(): SoftAskState {
   if (typeof window === 'undefined') return 'pending';
   try {
     const raw = window.localStorage.getItem(SOFT_ASK_STORAGE_KEY);
@@ -166,19 +166,7 @@ export async function requestPushPermission(): Promise<'granted' | 'denied'> {
   }
 }
 
-/**
- * Unregister push listeners (call on logout).
- */
-export async function unregisterPushNotifications(): Promise<void> {
-  if (!isNativeApp()) return;
 
-  try {
-    const { PushNotifications } = await import('@capacitor/push-notifications');
-    await PushNotifications.removeAllListeners();
-  } catch {
-    // Plugin not available
-  }
-}
 
 /**
  * Clear the iOS app icon badge count. Call when the user reads all notifications.
@@ -193,11 +181,4 @@ export async function clearPushBadge(): Promise<void> {
   }
 }
 
-/**
- * @deprecated Kept for backwards-compat with existing callers.
- * Use `initPushListeners()` on app launch and `requestPushPermission()`
- * from the soft-ask sheet instead.
- */
-export async function registerForPushNotifications(): Promise<void> {
-  await initPushListeners();
-}
+

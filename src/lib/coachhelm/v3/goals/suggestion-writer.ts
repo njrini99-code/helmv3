@@ -77,10 +77,10 @@ export interface SuggestionDraft {
  * documents ("midpoint(team_avg, pga_value)") — we use midpoint of
  * (player_value, pga_value) when no team value is available on the row.
  */
-export const DEFAULT_TARGET_CLOSURE_PCT = 0.5;
+const DEFAULT_TARGET_CLOSURE_PCT = 0.5;
 
 /** Default suggested window (days) — matches `golf_goal_suggestions.suggested_window_days` default. */
-export const DEFAULT_SUGGESTED_WINDOW_DAYS = 30;
+const DEFAULT_SUGGESTED_WINDOW_DAYS = 30;
 
 /** Default TTL (days) before evaluator flips state→'expired'. */
 export const DEFAULT_SUGGESTION_TTL_DAYS = 14;
@@ -91,7 +91,7 @@ export const DEFAULT_SUGGESTION_TTL_DAYS = 14;
  * positive severity, or `null` when the row is ineligible (not worse than
  * baseline, or no finite PGA baseline to aim at).
  */
-export function rowSeverity(row: StandingRowWithDirection): number | null {
+function rowSeverity(row: StandingRowWithDirection): number | null {
   if (!Number.isFinite(row.pga_value)) return null;
   const rawDelta = row.pga_delta ?? row.player_value - row.pga_value;
   const severity = row.direction === 'higher_better' ? -rawDelta : rawDelta;

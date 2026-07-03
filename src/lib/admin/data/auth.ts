@@ -53,7 +53,7 @@ export interface DailyCount {
  * (never silently dropped), so a genuinely quiet week renders as a flat-zero
  * series rather than a shorter one.
  */
-export function bucketDailyCounts(
+function bucketDailyCounts(
   rows: ReadonlyArray<{ created_at: string }>,
   days: number,
   now: Date,

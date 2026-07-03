@@ -26,7 +26,6 @@ import { createClient } from '@/lib/supabase/server';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import {
   videoAnchorKind,
-  CONFLICT_SEVERITY_RANK,
   type BaseballVideoLink,
   type BaseballVideoAnchorKind,
   type BaseballVideoReviewStatus,
@@ -161,71 +160,6 @@ export async function getVideoLibrary(opts?: {
 // (B) Class conflicts
 // -----------------------------------------------------------------------------
 
-const ZERO_COUNTS: Record<BaseballClassConflictSeverity, number> = {
-  hard: 0,
-  soft: 0,
-  watch: 0,
-  informational: 0,
-};
 
-/**
- * Load OPEN class conflicts for the active team (staff) or the current player
- * (own non-staff_only conflicts). RLS enforces academic-capability + visibility;
- * this returns an honest authorized:true envelope for both roles.
- */
-export async function getClassConflicts(opts?: {
-  playerId?: string;
-  includeResolved?: boolean;
-}): Promise<ClassConflictResult> {
-  const empty: ClassConflictResult = {
-    authorized: false,
-    isStaff: false,
-    conflicts: [],
-    countsBySeverity: { ...ZERO_COUNTS },
-  };
 
-  const ctx = await getActiveBaseballContext();
-  if (!ctx) return empty;
 
-  const isStaff = ctx.activeRole === 'coach' && Boolean(ctx.activeCoachId);
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q = (supabase as any)
-    .from('baseball_class_conflicts')
-    .select('*')
-    .eq('team_id', ctx.activeTeamId);
-
-  if (!opts?.includeResolved) {
-    q = q.in('disposition', ['open', 'acknowledged']);
-  }
-  if (opts?.playerId) q = q.eq('player_id', opts.playerId);
-
-  const { data } = await q;
-  const list = (data as BaseballClassConflict[] | null) ?? [];
-
-  const counts: Record<BaseballClassConflictSeverity, number> = { ...ZERO_COUNTS };
-  for (const c of list) counts[c.severity] = (counts[c.severity] ?? 0) + 1;
-
-  const conflicts: ConflictRow[] = list
-    .map((c) => ({
-      conflict: c,
-      sourceRefs: parseSignalSourceRefs(c.source_refs) as BaseballSignalSourceRef[],
-    }))
-    .sort((a, b) => {
-      const sa =
-        CONFLICT_SEVERITY_RANK[a.conflict.severity] -
-        CONFLICT_SEVERITY_RANK[b.conflict.severity];
-      if (sa !== 0) return sa;
-      return (a.conflict.obligation_start ?? '').localeCompare(
-        b.conflict.obligation_start ?? '',
-      );
-    });
-
-  return {
-    authorized: true,
-    isStaff,
-    conflicts,
-    countsBySeverity: counts,
-  };
-}

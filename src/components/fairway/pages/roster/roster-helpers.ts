@@ -68,21 +68,7 @@ export function formatScoreToPar(score: number | null): string {
   return String(score);
 }
 
-/* ---------------------------------------------------------------------------
- * Score-to-par display — ONE-DECIMAL form. VERBATIM from the legacy
- * KeyMetricsGrid.tsx (avgScoreToPar is a fractional average there). Kept as a
- * distinct export so callers that show an AVERAGE keep the exact prior output.
- *   ·  null   → '—'
- *   ·  0      → 'E'
- *   ·  > 0    → '+2.3'
- *   ·  < 0    → '-1.1'
- * ------------------------------------------------------------------------- */
-export function formatScoreToParDecimal(toPar: number | null): string {
-  if (toPar === null) return '—';
-  if (toPar === 0) return 'E';
-  if (toPar > 0) return `+${toPar.toFixed(1)}`;
-  return toPar.toFixed(1);
-}
+
 
 /* ---------------------------------------------------------------------------
  * Score color map (lower is better) — VERBATIM legacy Tailwind classes from
@@ -141,10 +127,4 @@ export function scoreTone(toPar: number | null): RosterStatusTone {
   return 'danger';
 }
 
-/** Percentage → tone (higher is better). Mirrors getPercentageColor thresholds. */
-export function percentageTone(pct: number | null, goodThreshold = 50): RosterStatusTone {
-  if (pct === null) return 'neutral';
-  if (pct >= goodThreshold) return 'success';
-  if (pct >= goodThreshold - 15) return 'warning';
-  return 'danger';
-}
+

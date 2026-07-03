@@ -17,7 +17,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   DecisionRoomPlayerFocus,
   DecisionRoomImportIssue,
-  DecisionRoomSummaryPlayer,
 } from '@/app/baseball/actions/decision-room';
 import { OPEN_SIGNAL_DISPOSITIONS } from '@/lib/types/baseball-signals';
 
@@ -79,28 +78,6 @@ interface ImportRunRow {
   created_at: string | null;
   committed_at: string | null;
   rolled_back_at: string | null;
-}
-
-/** Embedded player relation as selected in `loadSummaryPlayers`. */
-interface EmbeddedPlayerRef {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  primary_position: string | null;
-  secondary_position: string | null;
-  grad_year: number | null;
-  avatar_url: string | null;
-}
-
-/** Row shape selected from `baseball_team_members` (joined to player). */
-interface TeamMemberRow {
-  id: string;
-  team_id: string;
-  player_id: string | null;
-  status: string | null;
-  jersey_number: number | null;
-  position: string | null;
-  player: EmbeddedPlayerRef | EmbeddedPlayerRef[] | null;
 }
 
 /**
@@ -237,60 +214,4 @@ export async function loadImportIssues(
   })) as unknown as DecisionRoomImportIssue[];
 }
 
-/**
- * SUMMARY PLAYERS — the team roster, joined from membership to the player
- * profile, for the Decision Room summary header.
- *
- * Sources:
- *   - baseball_team_members (team_id, player_id, status, jersey_number,
- *     position) — the membership edge, scoped by team_id under RLS.
- *   - baseball_players (id, first_name, last_name, primary_position, grad_year,
- *     avatar_url) — the player profile, via the embedded relationship.
- *
- * Uses a single embedded select so the join is one round-trip and RLS on both
- * tables applies.
- */
-export async function loadSummaryPlayers(
-  supabase: Client,
-  teamId: string,
-): Promise<DecisionRoomSummaryPlayer[]> {
-  if (!teamId) return [];
 
-  const { data, error } = await supabase
-    .from('baseball_team_members')
-    .select(
-      `id, team_id, player_id, status, jersey_number, position,
-       player:baseball_players!baseball_team_members_player_id_fkey (
-         id, first_name, last_name, primary_position, secondary_position, grad_year, avatar_url
-       )`,
-    )
-    .eq('team_id', teamId)
-    .order('jersey_number', { ascending: true, nullsFirst: false })
-    .limit(MAX_ROWS);
-
-  if (error) {
-    throw new Error(`loadSummaryPlayers: query failed — ${error.message}`);
-  }
-
-  const rows = (data ?? []) as TeamMemberRow[];
-
-  return rows.map((row) => {
-    // Embedded relation may arrive as an object or a single-element array
-    // depending on how PostgREST infers cardinality.
-    const player = Array.isArray(row.player) ? row.player[0] : row.player;
-    return {
-      id: (row.player_id ?? player?.id ?? row.id) as string,
-      memberId: row.id as string,
-      name:
-        fullName(player?.first_name, player?.last_name) ?? 'Unnamed player',
-      position:
-        nonEmpty(row.position) ??
-        nonEmpty(player?.primary_position) ??
-        nonEmpty(player?.secondary_position),
-      jerseyNumber: (row.jersey_number ?? null) as number | null,
-      gradYear: (player?.grad_year ?? null) as number | null,
-      status: nonEmpty(row.status),
-      avatarUrl: nonEmpty(player?.avatar_url),
-    };
-  }) as unknown as DecisionRoomSummaryPlayer[];
-}

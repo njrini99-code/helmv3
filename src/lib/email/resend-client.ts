@@ -29,10 +29,7 @@ export function getResendClient(): Resend | null {
   return _resend;
 }
 
-/** Exposed for tests — allows resetting the cached client between runs. */
-export function __resetResendClientForTests(): void {
-  _resend = undefined;
-}
+
 
 // ─── Public send API ────────────────────────────────────────────────────────
 

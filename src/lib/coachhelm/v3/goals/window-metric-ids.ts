@@ -13,7 +13,7 @@
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 
-export const WINDOWED_METRIC_IDS: ReadonlySet<MetricId> = new Set<MetricId>([
+const WINDOWED_METRIC_IDS: ReadonlySet<MetricId> = new Set<MetricId>([
   'sg_total',
   'sg_ott',
   'sg_approach',

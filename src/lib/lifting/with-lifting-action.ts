@@ -40,7 +40,7 @@ import type { HelmLiftingAccessResult } from '@/lib/types/helm-lifting';
 // Error types
 // -----------------------------------------------------------------------------
 
-export class LiftingUnauthorizedError extends Error {
+class LiftingUnauthorizedError extends Error {
   readonly status = 401;
   constructor(message = 'You must be signed in.') {
     super(message);
@@ -48,7 +48,7 @@ export class LiftingUnauthorizedError extends Error {
   }
 }
 
-export class LiftingNoOrgError extends Error {
+class LiftingNoOrgError extends Error {
   readonly status = 403;
   constructor(message = 'No Lifting Lab org resolved for this action.') {
     super(message);
@@ -56,7 +56,7 @@ export class LiftingNoOrgError extends Error {
   }
 }
 
-export class LiftingForbiddenError extends Error {
+class LiftingForbiddenError extends Error {
   readonly status = 403;
   constructor(message = 'You do not have edit access to this Lifting Lab.') {
     super(message);

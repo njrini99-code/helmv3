@@ -52,7 +52,7 @@ export function fmtDate(iso: string | null | undefined): string {
 }
 
 /** "3d ago" style relative freshness, null -> null (no line). */
-export function fmtFreshness(iso: string | null | undefined): string | null {
+function fmtFreshness(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso.length <= 10 ? `${iso}T00:00:00` : iso);
   if (Number.isNaN(d.getTime())) return null;

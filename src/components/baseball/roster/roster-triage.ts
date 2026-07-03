@@ -76,14 +76,7 @@ export type AttentionReason =
   | 'no-data'
   | 'stale-data';
 
-const REASON_LABELS: Record<AttentionReason, string> = {
-  injured: 'Injured',
-  pending: 'Awaiting join',
-  inactive: 'Inactive',
-  declining: 'Trending down',
-  'no-data': 'No sessions',
-  'stale-data': 'Data stale',
-};
+
 
 export interface Attention {
   /** True when the player needs a coach's eyes. */
@@ -93,34 +86,7 @@ export interface Attention {
   summary: string;
 }
 
-/**
- * Derive whether a player needs attention and why. A coach's roster is an
- * action queue: injured / not-yet-joined / inactive members, a declining
- * trend, or missing/stale data all surface here so they can be filtered and
- * sorted to the top.
- */
-export function getAttention(
-  status: MemberStatus | null,
-  agg: BaseballPlayerAggregates | undefined,
-): Attention {
-  const reasons: AttentionReason[] = [];
 
-  if (status === 'injured') reasons.push('injured');
-  if (status === 'pending') reasons.push('pending');
-  if (status === 'inactive') reasons.push('inactive');
-
-  if (agg?.recent_trend === 'declining') reasons.push('declining');
-
-  const freshness = getFreshness(agg);
-  if (freshness.level === 'none') reasons.push('no-data');
-  else if (freshness.level === 'stale') reasons.push('stale-data');
-
-  return {
-    needsAttention: reasons.length > 0,
-    reasons,
-    summary: reasons.map((r) => REASON_LABELS[r]).join(' · '),
-  };
-}
 
 /** Position groups for quick-filtering (v10 §Roster: "quick filters for position group"). */
 export type PositionGroup = 'all' | 'pitchers' | 'catchers' | 'infield' | 'outfield';
@@ -138,11 +104,4 @@ export function positionGroupOf(position: string | null): PositionGroup | null {
   return null;
 }
 
-export function matchesPositionGroup(
-  group: PositionGroup,
-  primary: string | null,
-  secondary: string | null,
-): boolean {
-  if (group === 'all') return true;
-  return positionGroupOf(primary) === group || positionGroupOf(secondary) === group;
-}
+

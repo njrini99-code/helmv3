@@ -13,7 +13,7 @@
  * All three are pure functions over the vector — no DB hits.
  */
 
-import { GENOME_DIMENSIONS, getDimension } from './registry';
+import { GENOME_DIMENSIONS } from './registry';
 import { normalizeForRadar } from './normalize';
 import type { DimensionResult, GenomeVector } from './types';
 
@@ -126,19 +126,6 @@ function buildCourseProfile(vector: GenomeVector): string {
   return sentence.charAt(0).toUpperCase() + sentence.slice(1) + '.';
 }
 
-/**
- * Utility for the dimension grid — returns dim ids ordered by category
- * (radar spoke order) so the grid + radar visually agree.
- */
-export function orderedDimensions(): Array<{ id: string; label: string; category: string }> {
-  return GENOME_DIMENSIONS.map((d) => ({
-    id: d.id,
-    label: d.label,
-    category: d.category,
-  }));
-}
 
-/** Lookup helper for compare-page tooling. */
-export function dimensionLabel(id: string): string {
-  return getDimension(id)?.label ?? id;
-}
+
+

@@ -178,7 +178,7 @@ export function resolveAiPolicy(
 export type AiVisibility = 'team' | 'player_only' | 'staff_only';
 
 /** Whether an AI visibility value reaches a player (team or player_only). */
-export function isPlayerFacing(visibility: AiVisibility): boolean {
+function isPlayerFacing(visibility: AiVisibility): boolean {
   return visibility === 'team' || visibility === 'player_only';
 }
 
@@ -395,7 +395,7 @@ const ACADEMIC_TERMS: readonly RegExp[] = [
 ];
 
 /** A neutral placeholder substituted for a redacted phrase. */
-export const GUARDRAIL_REDACTION = '[redacted]';
+const GUARDRAIL_REDACTION = '[redacted]';
 
 interface GuardrailScanResult {
   /** The text after redaction (unchanged when nothing matched). */
@@ -423,7 +423,7 @@ function scanOne(text: string, terms: readonly RegExp[]): { out: string; hit: bo
  * (possibly redacted) text plus which guardrails fired. A null/empty input
  * passes through untouched.
  */
-export function applyGuardrailsToText(
+function applyGuardrailsToText(
   policy: AiPolicy,
   text: string | null | undefined,
 ): GuardrailScanResult {

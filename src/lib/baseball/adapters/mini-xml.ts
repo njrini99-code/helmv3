@@ -141,10 +141,7 @@ export function findAll(node: XmlNode | null, tag: string): XmlNode[] {
   return out;
 }
 
-/** First descendant element with the given tag, or null. */
-export function findFirst(node: XmlNode | null, tag: string): XmlNode | null {
-  return findAll(node, tag)[0] ?? null;
-}
+
 
 /** Read an attribute case-insensitively, trying several candidate names. */
 export function attr(node: XmlNode, ...names: string[]): string | null {

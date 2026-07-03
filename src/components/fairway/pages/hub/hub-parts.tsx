@@ -37,7 +37,6 @@ import {
   Bell,
   ClipboardList,
   Upload,
-  CalendarCheck2,
 } from 'lucide-react';
 
 import {
@@ -812,18 +811,7 @@ export function NoUpcomingTrips() {
   );
 }
 
-export function NothingToRSVP() {
-  return (
-    <Surface padding="sm">
-      <EmptyState
-        variant="subtle"
-        icon={CalendarCheck2}
-        title="Nothing to RSVP to right now"
-        description="When your coach schedules events, they'll appear here to respond to."
-      />
-    </Surface>
-  );
-}
+
 
 export function NoTasks() {
   return (
@@ -838,28 +826,6 @@ export function NoTasks() {
   );
 }
 
-export function NoEvents() {
-  return (
-    <Surface padding="sm">
-      <EmptyState
-        variant="subtle"
-        icon={CalendarClock}
-        title="No events scheduled"
-        description="Upcoming team events will appear here once your coach adds them."
-      />
-    </Surface>
-  );
-}
 
-export function AllCaughtUp() {
-  return (
-    <Surface padding="sm">
-      <EmptyState
-        variant="subtle"
-        icon={Check}
-        title="You're all caught up"
-        description="No tasks, trips, or RSVPs need your attention right now."
-      />
-    </Surface>
-  );
-}
+
+

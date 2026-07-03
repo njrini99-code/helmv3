@@ -114,10 +114,7 @@ function getRedis(): Redis | null {
   return cachedRedis;
 }
 
-/** Exposed for tests — resets the lazy Redis singleton. */
-export function __resetDispatchRedisForTests(): void {
-  cachedRedis = undefined;
-}
+
 
 function todayUtcStamp(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);

@@ -33,7 +33,7 @@ import {
 } from './tools';
 import { MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
 
-export const COACH_CHAT_INSTRUCTIONS = `
+const COACH_CHAT_INSTRUCTIONS = `
 You are a college golf coach's analytics assistant. The coach is your user.
 
 Use the provided tools to look up player data, recent rounds, standings,

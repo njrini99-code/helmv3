@@ -86,7 +86,7 @@ export type ActivityKind =
   | 'document_uploaded'
   | 'error';
 
-export const ALL_ACTIVITY_KINDS: readonly ActivityKind[] = [
+const ALL_ACTIVITY_KINDS: readonly ActivityKind[] = [
   'round_submitted',
   'signup',
   'sign_in',

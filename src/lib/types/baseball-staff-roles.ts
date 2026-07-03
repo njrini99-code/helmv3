@@ -39,21 +39,7 @@ export type BaseballStaffRole =
   | 'analyst'
   | 'volunteer';
 
-/** Ordered runtime list of the 12 V11 staff roles. */
-export const BASEBALL_STAFF_ROLES: readonly BaseballStaffRole[] = [
-  'head_coach',
-  'associate_head_coach',
-  'assistant_coach',
-  'pitching_coach',
-  'hitting_coach',
-  'catching_coach',
-  'defensive_coach',
-  'strength_coach',
-  'athletic_trainer',
-  'director_ops',
-  'analyst',
-  'volunteer',
-] as const;
+
 
 /** Product label + default landing route for each role (spec "Role Taxonomy"). */
 export interface BaseballStaffRoleMeta {
@@ -63,7 +49,7 @@ export interface BaseballStaffRoleMeta {
   defaultLanding: string;
 }
 
-export const BASEBALL_STAFF_ROLE_META: Record<
+const BASEBALL_STAFF_ROLE_META: Record<
   BaseballStaffRole,
   BaseballStaffRoleMeta
 > = {
@@ -147,7 +133,7 @@ function preset(granted: readonly BaseballCapability[]): BaseballStaffRolePreset
   return out;
 }
 
-export const BASEBALL_STAFF_ROLE_PRESETS: Record<
+const BASEBALL_STAFF_ROLE_PRESETS: Record<
   BaseballStaffRole,
   BaseballStaffRolePreset
 > = {

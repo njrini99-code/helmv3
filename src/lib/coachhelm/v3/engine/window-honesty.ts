@@ -62,7 +62,7 @@ export function attemptGate(
 }
 
 /** Days after which a card must disclose how old its newest data is. */
-export const STALE_DATA_DISCLOSURE_DAYS = 21;
+const STALE_DATA_DISCLOSURE_DAYS = 21;
 
 /**
  * Staleness disclosure for cache-backed cards (regrade VAL-P3): a "high"

@@ -31,10 +31,8 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerException } from '@/lib/server-error-logger';
 import {
   ACTIVE_BASEBALL_TEAM_COOKIE,
-  ACTIVE_BASEBALL_TEAM_COOKIE_MAX_AGE,
   type ActiveBaseballContext,
   type ActiveBaseballRole,
-  type SetActiveBaseballTeamResult,
 } from './active-context-shared';
 
 /** Minimal membership shape used internally for validation + fallback. */
@@ -172,54 +170,4 @@ export async function getActiveBaseballContext(): Promise<ActiveBaseballContext 
   }
 }
 
-/**
- * Server action: set the active baseball team for the current user.
- *
- * Validates server-side that the authenticated user is a player-member or staff
- * of `teamId` BEFORE writing the cookie. Membership is read from database rows,
- * never from client input or user metadata. A non-member request is rejected
- * without mutating the cookie.
- */
-export async function setActiveBaseballTeam(
-  teamId: string
-): Promise<SetActiveBaseballTeamResult> {
-  try {
-    if (!teamId || typeof teamId !== 'string') {
-      return { success: false, error: 'A valid team id is required.' };
-    }
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'You must be signed in.' };
-    }
-
-    const memberships = await loadMemberships(supabase, user.id);
-    const isMember = memberships.some((m) => m.teamId === teamId);
-    if (!isMember) {
-      return { success: false, error: 'You are not a member of this team.' };
-    }
-
-    const cookieStore = await cookies();
-    cookieStore.set(ACTIVE_BASEBALL_TEAM_COOKIE, teamId, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: ACTIVE_BASEBALL_TEAM_COOKIE_MAX_AGE,
-    });
-
-    return { success: true };
-  } catch (error) {
-    unstable_rethrow(error);
-    await logServerException(error, {
-      action: 'setActiveBaseballTeam',
-      featureArea: 'baseball-auth',
-      source: 'server_action',
-      handled: true,
-    });
-    return { success: false, error: 'Could not switch teams. Please try again.' };
-  }
-}

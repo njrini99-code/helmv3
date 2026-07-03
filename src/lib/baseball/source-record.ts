@@ -26,7 +26,7 @@
 // shares nothing with GolfHelm.
 // =============================================================================
 
-import type { Json } from '@/lib/types';
+
 
 // -----------------------------------------------------------------------------
 // Source identity
@@ -202,10 +202,7 @@ export function toSourcedRecord<T>(
   };
 }
 
-/** True when the record is a plan/assignment/schedule, NOT an observed value. */
-export function isLoggedIntent(rec: { captureMode: CaptureMode }): boolean {
-  return rec.captureMode === 'logged_intent';
-}
+
 
 /**
  * A small, serializable provenance badge descriptor the UI can render without
@@ -251,16 +248,4 @@ export function toSourceBadge(rec: {
   };
 }
 
-/**
- * Helper for write paths (insight/timeline/import writers in later waves): build
- * the `source_refs`-shaped jsonb payload a row should persist so its provenance
- * round-trips. Kept here so the read + write sides agree on the shape.
- */
-export function sourceRefToJson(ref: SourceRef, confidence: number | null): Json {
-  return {
-    source: ref.source,
-    source_id: ref.sourceId,
-    label: ref.label,
-    confidence,
-  } as Json;
-}
+
