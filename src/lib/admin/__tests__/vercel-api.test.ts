@@ -77,11 +77,15 @@ describe('fetchVercelWebInsights', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it('fails soft (zeros, not a crash) when an individual period request 404s', async () => {
-    fetchMock.mockResolvedValue(new Response('nope', { status: 404 }));
+  it('surfaces a failed status (not fake zeros) when a period request 404s/403s', async () => {
+    // An auth failure or misconfigured token must never render identically
+    // to "genuinely zero visitors" — that was the pre-fix bug. It now maps
+    // to the same error/status contract fetchVercelDeployments already used.
+    fetchMock.mockResolvedValue(new Response('nope', { status: 403 }));
     const res = await fetchVercelWebInsights();
-    expect(res.status).toBe('ok');
-    expect(res.data).toEqual({ visitors24h: 0, visitors7d: 0, visitors30d: 0 });
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('403');
+    expect(res.data).toBeNull();
   });
 
   it('fails soft on thrown network error', async () => {

@@ -89,6 +89,43 @@ describe('withAdminObserved', () => {
     expect(ctx).toMatchObject({ feature: null, featureArea: null });
   });
 
+  it('contextFrom derives roundId/playerId/teamId from the original call args at error time', async () => {
+    const boom = new Error('recap failed');
+    const wrapped = withAdminObserved(
+      'generateRoundRecap',
+      {
+        sport: 'golf',
+        feature: 'round_review_ai',
+        contextFrom: ([roundId]: [string]) => ({ roundId }),
+      },
+      async (_roundId: string) => { throw boom; },
+    );
+    await expect(wrapped('round-123')).rejects.toBe(boom);
+    const [, ctx] = mocks.logServerException.mock.calls[0]!;
+    expect(ctx).toMatchObject({ roundId: 'round-123', userId: 'user-1' });
+  });
+
+  it('omits roundId/playerId/teamId/route (null) when no contextFrom is given', async () => {
+    const boom = new Error('boom');
+    const wrapped = withAdminObserved('demo', {}, async () => { throw boom; });
+    await expect(wrapped()).rejects.toBe(boom);
+    const [, ctx] = mocks.logServerException.mock.calls[0]!;
+    expect(ctx).toMatchObject({ roundId: null, playerId: null, teamId: null, route: null });
+  });
+
+  it('a throwing contextFrom callback never masks the real failure or blocks logging', async () => {
+    const boom = new Error('real failure');
+    const wrapped = withAdminObserved(
+      'demo',
+      { contextFrom: () => { throw new Error('contextFrom exploded'); } },
+      async () => { throw boom; },
+    );
+    await expect(wrapped()).rejects.toBe(boom);
+    expect(mocks.logServerException).toHaveBeenCalledTimes(1);
+    const [loggedErr] = mocks.logServerException.mock.calls[0]!;
+    expect(loggedErr).toBe(boom);
+  });
+
   it('lets Next control-flow throws pass WITHOUT logging (classic noise source)', async () => {
     const redirect = Object.assign(new Error('redirect'), { digest: 'NEXT_REDIRECT;replace;/x;307' });
     const wrapped = withAdminObserved('demo', {}, async () => { throw redirect; });

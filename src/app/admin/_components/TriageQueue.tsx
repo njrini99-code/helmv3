@@ -19,6 +19,23 @@ const SEVERITY_TONE: Record<TriageSeverity, 'danger' | 'warning' | 'neutral' | '
   info: 'neutral',
 };
 
+/**
+ * "0 users" reads as "this affected nobody," which is misleading for `app`
+ * incidents: affectedUsers there is a count of DISTINCT KNOWN identities
+ * (user_id/user_email), so 0 usually means the failure happened before/
+ * outside auth (anonymous, system/cron, or identity wasn't wired into the
+ * observed-action call) — not that zero people were impacted. Sentry-origin
+ * items use Sentry's own userCount, which IS a real zero-means-zero metric,
+ * so only `app` incidents get the "unknown" wording.
+ */
+export function affectedUsersLabel(item: Pick<TriageItem, 'origin' | 'affectedUsers' | 'occurrences'>): string {
+  if (item.origin === 'app' && item.affectedUsers === 0 && item.occurrences > 0) {
+    return 'unknown user';
+  }
+  const n = item.affectedUsers;
+  return `${n} user${n === 1 ? '' : 's'}`;
+}
+
 export function TriageQueue({
   items,
   onResolve = resolveTriageEvents,
@@ -107,7 +124,7 @@ export function TriageQueue({
               <p className="break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{item.title}</p>
             )}
             <p className="font-fw-mono text-xs tabular-nums text-warm-500">
-              {item.affectedUsers} users · {item.occurrences} events · last{' '}
+              {affectedUsersLabel(item)} · {item.occurrences} events · last{' '}
               <LocalTime iso={item.lastSeen} />
               {item.substatus === 'regressed' ? ' · REGRESSED' : ''}
             </p>
