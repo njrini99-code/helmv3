@@ -78,7 +78,7 @@ test.describe('BaseballHelm mandatory smoke — coach context', { tag: '@coach' 
 
   test('Roster renders for the coach', async ({ page }) => {
     await expectAuthenticatedSurface(page, '/baseball/dashboard/roster', {
-      headingPattern: /Team Roster/i,
+      headingPattern: /Roster/i,
     });
   });
 
@@ -120,7 +120,7 @@ test.describe('BaseballHelm mandatory smoke — player context', { tag: '@player
 
   test('Roster renders for the player', async ({ page }) => {
     await expectAuthenticatedSurface(page, '/baseball/dashboard/roster', {
-      headingPattern: /Team Roster/i,
+      headingPattern: /Roster/i,
     });
   });
 

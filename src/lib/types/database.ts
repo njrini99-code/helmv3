@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_allowlist: {
@@ -18319,6 +18344,7 @@ export type Database = {
           id: string
           is_active: boolean
           last_name: string | null
+          onboarded_at: string | null
           organization_id: string
           position: string | null
           sport: string
@@ -18333,6 +18359,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string | null
+          onboarded_at?: string | null
           organization_id: string
           position?: string | null
           sport: string
@@ -18347,6 +18374,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string | null
+          onboarded_at?: string | null
           organization_id?: string
           position?: string | null
           sport?: string
@@ -21830,6 +21858,10 @@ export type Database = {
         Args: { p_athlete: string }
         Returns: boolean
       }
+      helm_lifting_mark_athlete_onboarded: {
+        Args: { p_athlete_id: string }
+        Returns: string
+      }
       helm_lifting_sync_org_athletes: {
         Args: { p_org: string; p_sport: string; p_team_id: string }
         Returns: number
@@ -22242,6 +22274,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       admin_event_severity: ["info", "warning", "error", "critical"],
