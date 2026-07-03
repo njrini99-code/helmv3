@@ -1,17 +1,42 @@
 'use client';
 
+// =============================================================================
+// CollegeInterestClient — the coach-facing "who's scouting my players" surface,
+// migrated onto "The Living Annual" kit (War Room lane, clay ink — spec §5
+// Lane 2, alongside Discover / Watchlist / Signals; P4.30).
+//
+// PRESENTATION ONLY. Every data path below is byte-for-byte unchanged:
+// fetchCoachTeam, fetchInterests (the engagement-event query, the filter/sort
+// math), and — LOAD-BEARING, do not touch — the `isAnonymous = !event.coach_id`
+// derivation that nulls out coach_name/coach_school/coach_division for a
+// not-yet-activated viewer. Only the render moved to the kit.
+//
+// The 3 player-gate states are preserved EXACTLY — same 3 branches, same
+// conditions (college-player lock → not-yet-activated lock → in-flight-redirect
+// loading for an activated non-college player) — only restyled from the old
+// glass Card + IconLock treatment onto `<EditorsLetter>` (green/Passport ink,
+// since these are messages addressed TO a player).
+// =============================================================================
+
 import { useState, useEffect } from 'react';
-import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
-import { IconEye, IconStar, IconTrendingUp, IconLock } from '@/components/icons';
+import { Skeleton } from '@/components/ui/skeleton';
+import { IconEye, IconVideo, IconStarFilled } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { usePlayerRecruitingGate } from '@/hooks/use-route-protection';
 import { createClient } from '@/lib/supabase/client';
-import { getFullName, formatRelativeTime } from '@/lib/utils';
+import { cn, getFullName, formatRelativeTime } from '@/lib/utils';
+import {
+  SectionMasthead,
+  Eyebrow,
+  RuledStatLine,
+  PaperCard,
+  InkBadge,
+  EditorsLetter,
+  Reveal,
+} from '@/components/baseball/living-annual';
 
 interface EngagementEvent {
   id: string;
@@ -53,6 +78,113 @@ interface PlayerInterest {
     coach_school: string | null;
     coach_division: string | null;
   }>;
+}
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
+const GATE_SHELL = 'mx-auto max-w-lg px-4 py-16 sm:px-6';
+
+const INTEREST_FILTERS: Array<{ value: 'all' | 'high' | 'recent'; label: string }> = [
+  { value: 'all', label: 'All Players' },
+  { value: 'high', label: 'High Interest' },
+  { value: 'recent', label: 'Recent (7d)' },
+];
+
+// Segmented filter control — same local pattern as StatsCenterClient's
+// `SegmentedControl` (the established War Room / record-book convention for a
+// button-group toggle), clay-ink active state for this lane. `<Button>` already
+// owns its own press/haptic system (spec §7.1) — no bespoke hover/press CSS.
+function InterestFilterControl({
+  value,
+  onChange,
+}: {
+  value: 'all' | 'high' | 'recent';
+  onChange: (v: 'all' | 'high' | 'recent') => void;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Interest filter"
+      className="inline-flex flex-wrap gap-1 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1"
+    >
+      {INTEREST_FILTERS.map((f) => {
+        const active = f.value === value;
+        return (
+          <Button
+            key={f.value}
+            type="button"
+            variant="ghost"
+            role="radio"
+            aria-checked={active}
+            haptic="none"
+            onClick={() => onChange(f.value)}
+            className={cn(
+              'min-h-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium',
+              active
+                ? 'bg-pursuit text-white shadow-sm hover:bg-pursuit'
+                : 'text-text-secondary hover:bg-[color:var(--paper-canvas)]',
+            )}
+          >
+            {f.label}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Skeleton loader (not a spinner) for the interest list, matching the kit's
+// double-bezel PaperCard rhythm so the loading frame IS the final frame.
+function InterestListSkeleton() {
+  return (
+    <div className="space-y-6">
+      {[0, 1, 2].map((i) => (
+        <PaperCard key={i} className="p-4">
+          <div className="flex items-start gap-3">
+            <Skeleton variant="circular" width={40} height={40} />
+            <div className="flex-1 space-y-2">
+              <Skeleton variant="text" width="40%" height={16} />
+              <Skeleton variant="text" width="30%" height={11} />
+            </div>
+          </div>
+          <div className="mt-4 space-y-2 border-t border-[color:var(--hairline)] pt-3">
+            <Skeleton variant="text" width={110} height={10} />
+            <Skeleton variant="text" width="80%" height={14} />
+            <Skeleton variant="text" width="65%" height={14} />
+          </div>
+        </PaperCard>
+      ))}
+    </div>
+  );
+}
+
+// Icons carry the read via SHAPE, not chrome color — every activity icon stays
+// in lane ink (clay) per spec §4.2 rule 2 ("clay only on stamps/seals/hot
+// signals... never generic chrome"); differentiating by red/blue/amber/purple
+// literals would violate the two-ink system.
+function getEngagementIcon(type: string) {
+  switch (type) {
+    case 'profile_view':
+      return <IconEye size={14} className="text-pursuit" aria-hidden />;
+    case 'video_view':
+      return <IconVideo size={14} className="text-pursuit" aria-hidden />;
+    case 'watchlist_add':
+      return <IconStarFilled size={14} className="text-pursuit" aria-hidden />;
+    default:
+      return <IconEye size={14} className="text-text-tertiary" aria-hidden />;
+  }
+}
+
+function getEngagementLabel(type: string) {
+  switch (type) {
+    case 'profile_view':
+      return 'Viewed profile';
+    case 'video_view':
+      return 'Watched video';
+    case 'watchlist_add':
+      return 'Added to watchlist';
+    default:
+      return 'Activity';
+  }
 }
 
 export default function CollegeInterestClient() {
@@ -240,19 +372,12 @@ export default function CollegeInterestClient() {
     // College players cannot activate recruiting at all — they use team features.
     if (playerType === 'college') {
       return (
-        <div className="p-8">
-          <Card variant="glass" className="border border-warm-200">
-            <CardContent className="p-12 text-center">
-              <div className="w-14 h-14 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                <IconLock size={28} className="text-warm-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">Not available for college players</h3>
-              <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
-                College interest tracking is a coach-facing tool. As a college player,
-                your team features are available from the team dashboard.
-              </p>
-            </CardContent>
-          </Card>
+        <div className={GATE_SHELL}>
+          <EditorsLetter
+            ink="team"
+            title="Not available for college players"
+            body="College interest tracking is a coach-facing tool. As a college player, your team features are available from the team dashboard."
+          />
         </div>
       );
     }
@@ -260,65 +385,33 @@ export default function CollegeInterestClient() {
     // Non-college players who haven't activated recruiting yet.
     if (!isActivated) {
       return (
-        <div className="p-8">
-          <Card variant="glass" className="border border-warm-200">
-            <CardContent className="p-12 text-center">
-              <div className="w-14 h-14 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                <IconLock size={28} className="text-warm-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">Activate recruiting first</h3>
-              <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
-                Once you activate recruiting, you&apos;ll be able to see which college programs
-                are viewing your profile.
-              </p>
-            </CardContent>
-          </Card>
+        <div className={GATE_SHELL}>
+          <EditorsLetter
+            ink="team"
+            title="Activate recruiting first"
+            body="Once you activate recruiting, you'll be able to see which college programs are viewing your profile."
+          />
         </div>
       );
     }
 
-    // Activated non-college player — this is a coach surface; redirect is handled
-    // by the gate hook. Show nothing while redirect is in flight.
-    return null;
+    // Non-college player — this is a coach surface; redirect is handled by the
+    // gate hook (now fires for all non-college players, activated or not).
+    // Show a loading state while the redirect is in flight.
+    return <PageLoading />;
   }
 
   if (user?.role !== 'coach') {
     return (
-      <div className="p-8">
-        <Card variant="glass" className="border border-warm-200">
-          <CardContent className="p-12 text-center">
-            <p className="text-warm-500">Only coaches can access college interest tracking.</p>
-          </CardContent>
-        </Card>
+      <div className={GATE_SHELL}>
+        <EditorsLetter
+          ink="team"
+          title="Coaches only"
+          body="Only coaches can access college interest tracking."
+        />
       </div>
     );
   }
-
-  const getEngagementIcon = (type: string) => {
-    switch (type) {
-      case 'profile_view':
-        return <IconEye size={14} className="text-blue-600" />;
-      case 'video_view':
-        return <IconEye size={14} className="text-purple-600" />;
-      case 'watchlist_add':
-        return <IconStar size={14} className="text-amber-600" />;
-      default:
-        return <IconEye size={14} className="text-warm-400" />;
-    }
-  };
-
-  const getEngagementLabel = (type: string) => {
-    switch (type) {
-      case 'profile_view':
-        return 'Viewed profile';
-      case 'video_view':
-        return 'Watched video';
-      case 'watchlist_add':
-        return 'Added to watchlist';
-      default:
-        return 'Activity';
-    }
-  };
 
   const stats = {
     totalPlayers: interests.length,
@@ -330,239 +423,126 @@ export default function CollegeInterestClient() {
   };
 
   return (
-    <>
-      <Header
-        title="College Interest"
-        subtitle="Track which colleges are viewing your players"
-      />
-      <div className="p-4 lg:p-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-          <Card variant="glass">
-            <CardContent className="p-4 lg:p-6">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">Players Tracked</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.totalPlayers}</p>
-                </div>
-                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 ml-2">
-                  <IconEye size={20} className="text-blue-600 lg:hidden" />
-                  <IconEye size={24} className="text-blue-600 hidden lg:block" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <div className={cn(PAGE_SHELL, 'space-y-8')}>
+      <SectionMasthead eyebrow="THE WAR ROOM · RECRUITING ACTIVITY" title="College Interest" ink="pursuit">
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          Track which colleges are viewing and tracking your players.
+        </p>
+      </SectionMasthead>
 
-          <Card variant="glass">
-            <CardContent className="p-4 lg:p-6">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">High Interest</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.highInterest}</p>
-                </div>
-                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0 ml-2">
-                  <IconStar size={20} className="text-amber-600 lg:hidden" />
-                  <IconStar size={24} className="text-amber-600 hidden lg:block" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Contents strip — clay ink (War Room lane; KPIContentsStrip is team-green
+          by design and would mix inks here, so this composes RuledStatLine directly). */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-7 lg:grid-cols-4 lg:gap-x-8">
+        <RuledStatLine label="Players Tracked" value={stats.totalPlayers} ink="pursuit" size="row" />
+        <RuledStatLine
+          label="High Interest"
+          value={stats.highInterest}
+          ink="pursuit"
+          size="row"
+          emphasis={stats.highInterest > 0}
+        />
+        <RuledStatLine label="Total Views" value={stats.totalViews} ink="pursuit" size="row" />
+        <RuledStatLine label="Avg Coaches" value={stats.avgCoachesPerPlayer} ink="pursuit" size="row" />
+      </div>
 
-          <Card variant="glass">
-            <CardContent className="p-4 lg:p-6">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">Total Views</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.totalViews}</p>
-                </div>
-                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 ml-2">
-                  <IconEye size={20} className="text-purple-600 lg:hidden" />
-                  <IconEye size={24} className="text-purple-600 hidden lg:block" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass">
-            <CardContent className="p-4 lg:p-6">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">Avg Coaches</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.avgCoachesPerPlayer}</p>
-                </div>
-                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0 ml-2">
-                  <IconTrendingUp size={20} className="text-primary-600 lg:hidden" />
-                  <IconTrendingUp size={24} className="text-primary-600 hidden lg:block" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex flex-col gap-4 border-t border-[color:var(--hairline)] pt-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <Eyebrow as="h2" ink="pursuit">Player Interest Activity</Eyebrow>
+          <p className="mt-1 hidden font-annual text-body-sm text-text-secondary lg:block">
+            See which colleges are viewing and tracking your players.
+          </p>
         </div>
+        <InterestFilterControl value={filter} onChange={setFilter} />
+      </div>
 
-        {/* Interest List */}
-        <Card variant="glass">
-          <CardHeader>
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <h2 className="font-semibold text-warm-900">Player Interest Activity</h2>
-                <p className="text-sm leading-relaxed text-warm-500 mt-1 hidden lg:block">
-                  See which colleges are viewing and tracking your players
-                </p>
-              </div>
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
-                <Button
-                  variant={filter === 'all' ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setFilter('all')}
-                  className="whitespace-nowrap flex-shrink-0"
-                >
-                  All Players
-                </Button>
-                <Button
-                  variant={filter === 'high' ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setFilter('high')}
-                  className="whitespace-nowrap flex-shrink-0"
-                >
-                  High Interest
-                </Button>
-                <Button
-                  variant={filter === 'recent' ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setFilter('recent')}
-                  className="whitespace-nowrap flex-shrink-0"
-                >
-                  Recent (7d)
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-4 lg:space-y-6 py-2">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="border border-warm-200 rounded-lg p-3 lg:p-4 space-y-3"
-                    style={{ animationDelay: `${i * 60}ms` }}
-                  >
-                    {/* Player avatar + name + position row */}
-                    <div className="flex items-start gap-3 lg:gap-4">
-                      <div className="w-10 h-10 rounded-full bg-warm-200/60 flex-shrink-0 skeleton-shimmer" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 w-2/5 bg-warm-200/60 rounded skeleton-shimmer" />
-                        <div className="h-3 w-1/3 bg-warm-100/60 rounded skeleton-shimmer" />
-                        <div className="h-3 w-1/2 bg-warm-100/60 rounded skeleton-shimmer" />
-                      </div>
+      {loading ? (
+        <InterestListSkeleton />
+      ) : interests.length === 0 ? (
+        <EditorsLetter
+          ink="pursuit"
+          live
+          title="No college interest yet."
+          body="When college coaches view your players' profiles or add them to watchlists, you'll see the activity here."
+        />
+      ) : (
+        <div className="space-y-6">
+          {interests.map((interest, i) => (
+            <Reveal key={interest.player_id} staggerIndex={Math.min(i, 10)}>
+              <PaperCard className="p-4 lg:p-5">
+                <div className="flex items-start gap-3 lg:gap-4">
+                  <Avatar name={interest.player_name} src={interest.player_avatar_url || undefined} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-annual text-h3 font-semibold leading-tight text-text-primary">
+                        {interest.player_name}
+                      </h3>
+                      {interest.watchlist_adds > 0 && (
+                        <InkBadge
+                          tone="pursuit"
+                          variant="solid"
+                          label={`${interest.watchlist_adds} WATCHLIST${interest.watchlist_adds > 1 ? 'S' : ''}`}
+                        />
+                      )}
                     </div>
-                    {/* Recent activity rows */}
-                    <div className="border-t border-warm-100 pt-3 space-y-2">
-                      <div className="h-3 w-28 bg-warm-100/60 rounded skeleton-shimmer" />
-                      {[0, 1].map((j) => (
-                        <div key={j} className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded bg-warm-100/60 skeleton-shimmer flex-shrink-0" />
-                          <div className="h-3 bg-warm-100/60 rounded skeleton-shimmer" style={{ width: j === 0 ? '75%' : '60%' }} />
+                    <Eyebrow
+                      ink="muted"
+                      className="mt-1"
+                      items={[interest.player_position, interest.player_grad_year != null ? String(interest.player_grad_year) : null]}
+                    />
+                    <div className="mt-3 flex flex-wrap gap-x-8 gap-y-3">
+                      <RuledStatLine label="Views" value={interest.total_views} ink="pursuit" size="row" />
+                      <RuledStatLine
+                        label="Colleges"
+                        value={interest.unique_coaches}
+                        ink="pursuit"
+                        size="row"
+                        leader={interest.unique_coaches > 0}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Activity */}
+                {interest.recent_activity.length > 0 && (
+                  <div className="mt-4 border-t border-[color:var(--hairline)] pt-3">
+                    <Eyebrow ink="muted" className="mb-2">Recent Activity</Eyebrow>
+                    <div className="space-y-2.5">
+                      {interest.recent_activity.slice(0, 5).map((activity) => (
+                        <div key={activity.id} className="flex items-start gap-2.5">
+                          <div className="mt-0.5 flex-shrink-0">{getEngagementIcon(activity.engagement_type)}</div>
+                          <div className="min-w-0 flex-1">
+                            {!activity.coach_name ? (
+                              <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
+                                <span className="font-semibold text-text-primary">A college coach</span>{' '}
+                                {getEngagementLabel(activity.engagement_type).toLowerCase()}
+                                {activity.coach_division && (
+                                  <span className="text-text-tertiary"> · {activity.coach_division}</span>
+                                )}
+                              </p>
+                            ) : (
+                              <p className="font-annual text-body-sm leading-relaxed text-text-secondary">
+                                <span className="font-semibold text-text-primary">{activity.coach_name}</span> from{' '}
+                                <span className="font-semibold text-text-primary">{activity.coach_school}</span>{' '}
+                                {getEngagementLabel(activity.engagement_type).toLowerCase()}
+                                {activity.coach_division && (
+                                  <span className="text-text-tertiary"> · {activity.coach_division}</span>
+                                )}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex-shrink-0 font-annual text-microbadge uppercase tracking-[0.1em] text-text-tertiary">
+                            {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : interests.length === 0 ? (
-              /* Empty State */
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                  <IconEye size={32} className="text-warm-400" />
-                </div>
-                <h3 className="text-lg font-medium text-warm-900 mb-2">No college interest yet</h3>
-                <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">
-                  When college coaches view your players' profiles or add them to watchlists, you'll see the activity here.
-                </p>
-              </div>
-            ) : (
-              /* Interest List */
-              <div className="space-y-4 lg:space-y-6">
-                {interests.map((interest) => (
-                  <div
-                    key={interest.player_id}
-                    className="border border-warm-200 rounded-lg p-3 lg:p-4"
-                  >
-                    <div className="flex items-start gap-3 lg:gap-4 mb-3 lg:mb-4">
-                      <Avatar
-                        name={interest.player_name}
-                        src={interest.player_avatar_url || undefined}
-                        size="md"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-warm-900 text-sm lg:text-base">{interest.player_name}</h3>
-                          {interest.watchlist_adds > 0 && (
-                            <Badge variant="default" className="text-xs">
-                              {interest.watchlist_adds} watchlist{interest.watchlist_adds > 1 ? 's' : ''}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs lg:text-sm leading-relaxed text-warm-600">
-                          {interest.player_position} • {interest.player_grad_year}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 lg:gap-4 mt-2 text-xs lg:text-sm text-warm-500">
-                          <span>{interest.total_views} views</span>
-                          <span className="hidden lg:inline">•</span>
-                          <span>{interest.unique_coaches} college{interest.unique_coaches !== 1 ? 's' : ''}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Recent Activity */}
-                    {interest.recent_activity.length > 0 && (
-                      <div className="border-t border-warm-200 pt-3 space-y-2">
-                        <p className="text-label font-medium uppercase tracking-wider text-warm-400 mb-2">Recent Activity</p>
-                        {interest.recent_activity.slice(0, 5).map((activity) => (
-                          <div
-                            key={activity.id}
-                            className="flex items-start lg:items-center gap-2 lg:gap-3 text-xs lg:text-sm"
-                          >
-                            <div className="flex-shrink-0 mt-0.5 lg:mt-0">
-                              {getEngagementIcon(activity.engagement_type)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              {!activity.coach_name ? (
-                                <p className="text-warm-600">
-                                  <span className="font-medium">A college coach</span>{' '}
-                                  <span className="hidden lg:inline">{getEngagementLabel(activity.engagement_type).toLowerCase()}</span>
-                                  <span className="lg:hidden">viewed</span>
-                                  {activity.coach_division && (
-                                    <span className="text-warm-500"> • {activity.coach_division}</span>
-                                  )}
-                                </p>
-                              ) : (
-                                <p className="text-warm-600">
-                                  <span className="font-medium">{activity.coach_name}</span>
-                                  <span className="hidden lg:inline"> from <span className="font-medium">{activity.coach_school}</span> {getEngagementLabel(activity.engagement_type).toLowerCase()}</span>
-                                  <span className="lg:hidden block text-warm-500">{activity.coach_school}</span>
-                                  {activity.coach_division && (
-                                    <span className="text-warm-500 hidden lg:inline"> • {activity.coach_division}</span>
-                                  )}
-                                </p>
-                              )}
-                              <span className="text-micro lg:hidden text-warm-400 block mt-0.5">
-                                {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
-                              </span>
-                            </div>
-                            <div className="flex-shrink-0 text-xs text-warm-400 hidden lg:block">
-                              {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </>
+                )}
+              </PaperCard>
+            </Reveal>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

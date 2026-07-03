@@ -38,7 +38,11 @@ import { BASEBALL_TARGET_N, type LoadedMetric, type LoadedPlayerMetrics } from '
 // Source row shapes (subsets of the V10 lite tables we read).
 // -----------------------------------------------------------------------------
 
-/** One row from baseball_readiness_checkins. */
+/**
+ * One row from helm_lifting_readiness_checkins (W2-G rewire), already mapped
+ * into the legacy baseball_readiness_checkins field names the engine expects
+ * (check_date, sleep_hours, soreness_level, arm_status).
+ */
 export interface ReadinessRow {
   id: string;
   player_id: string;
@@ -170,19 +174,19 @@ export function loadReadinessMetrics(
   const soreness = mine.map((r) => r.soreness_level).filter((v): v is number => v != null);
   if (soreness.length > 0) {
     out.soreness_level = toMetric('soreness_level', Math.max(...soreness), soreness.length, [
-      ref('baseball_readiness_checkins', 'soreness_level', 'staff_only', soreness.length, 'Recent soreness (1-5)'),
+      ref('helm_lifting_readiness_checkins','soreness_level', 'staff_only', soreness.length, 'Recent soreness (1-5)'),
     ]);
   }
   const energy = mine.map((r) => r.energy_level).filter((v): v is number => v != null);
   if (energy.length > 0) {
     out.energy_level = toMetric('energy_level', Math.min(...energy), energy.length, [
-      ref('baseball_readiness_checkins', 'energy_level', 'staff_only', energy.length, 'Recent energy (1-5)'),
+      ref('helm_lifting_readiness_checkins','energy_level', 'staff_only', energy.length, 'Recent energy (1-5)'),
     ]);
   }
   const sleep = mine.map((r) => r.sleep_hours).filter((v): v is number => v != null);
   if (sleep.length > 0) {
     out.sleep_hours = toMetric('sleep_hours', Math.min(...sleep), sleep.length, [
-      ref('baseball_readiness_checkins', 'sleep_hours', 'staff_only', sleep.length, 'Recent sleep (hours)'),
+      ref('helm_lifting_readiness_checkins','sleep_hours', 'staff_only', sleep.length, 'Recent sleep (hours)'),
     ]);
   }
   const arm = mine
@@ -190,7 +194,7 @@ export function loadReadinessMetrics(
     .filter((v): v is number => v != null);
   if (arm.length > 0) {
     out.arm_status_level = toMetric('arm_status_level', Math.max(...arm), arm.length, [
-      ref('baseball_readiness_checkins', 'arm_status', 'staff_only', arm.length, 'Recent arm status'),
+      ref('helm_lifting_readiness_checkins','arm_status', 'staff_only', arm.length, 'Recent arm status'),
     ]);
   }
   return out;

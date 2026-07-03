@@ -1,51 +1,27 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
-import { SkeletonTable } from '@/components/ui/skeleton';
-import {
-  IconUsers,
-  IconSearch,
-  IconFilter,
-  IconLink,
-  IconClipboardList,
-  IconX,
-  IconChevronDown,
-} from '@/components/icons';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
-import { InviteModal } from '@/components/coach/InviteModal';
-import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { saveLineup } from '@/app/baseball/actions/lineups';
 import { useToast } from '@/components/ui/sonner';
-import {
-  PlayerRow,
-  PlayerCard,
-  PositionBoard,
-  StatusBoard,
-  DevelopmentBoard,
-  RosterToolbar,
-  exportRosterCSV,
-  type RosterBoardMember,
-  type SortField,
-  type SortDirection,
-  type ViewMode,
-} from '@/components/baseball/roster';
+import type { RosterBoardMember } from '@/components/baseball/roster';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { RosterReadModel } from '@/lib/baseball/read-models/roster';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { RosterFairway } from './RosterFairway';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
 export type RosterSurface = 'cards' | 'position' | 'status' | 'development';
+export type SortField = 'name' | 'position' | 'avg' | 'obp' | 'slg' | 'ops' | 'exit_velo' | 'sessions';
+export type SortDirection = 'asc' | 'desc';
 
 export interface RosterClientProps {
   teamId: string | null;
@@ -77,8 +53,63 @@ export interface TeamMember {
   status: MemberStatus | null;
 }
 
-const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'OF', 'LHP', 'RHP', 'UTL'];
-const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
+/** Export the current roster + career stats as a downloadable CSV. */
+function exportRosterCSV(
+  players: Array<{
+    first_name: string | null;
+    last_name: string | null;
+    primary_position: string | null;
+    grad_year: number | null;
+    jersey_number: number | null;
+    career_avg: number | null;
+    career_obp: number | null;
+    career_slg: number | null;
+    career_ops: number | null;
+    avg_exit_velocity: number | null;
+    total_sessions: number | null;
+    status: string | null;
+  }>,
+) {
+  const headers = [
+    'First Name',
+    'Last Name',
+    'Position',
+    'Grad Year',
+    'Jersey #',
+    'AVG',
+    'OBP',
+    'SLG',
+    'OPS',
+    'Exit Velo',
+    'Sessions',
+    'Status',
+  ];
+  const rows = players.map((p) => [
+    p.first_name || '',
+    p.last_name || '',
+    p.primary_position || '',
+    p.grad_year?.toString() || '',
+    p.jersey_number?.toString() || '',
+    p.career_avg !== null ? p.career_avg.toFixed(3) : '',
+    p.career_obp !== null ? p.career_obp.toFixed(3) : '',
+    p.career_slg !== null ? p.career_slg.toFixed(3) : '',
+    p.career_ops !== null ? p.career_ops.toFixed(3) : '',
+    p.avg_exit_velocity !== null ? p.avg_exit_velocity.toFixed(1) : '',
+    p.total_sessions?.toString() || '0',
+    p.status || '',
+  ]);
+
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${cell}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `roster_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClientProps) {
   const router = useRouter();
@@ -111,7 +142,6 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
   const { showToast } = useToast();
 
   // Filters
-  const [showFilters, setShowFilters] = useState(false);
   const [positionFilter, setPositionFilter] = useState<string>('');
   const [gradYearFilter, setGradYearFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -119,7 +149,6 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
   // Sort and View
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [viewMode, setViewMode] = useState<ViewMode>('expanded');
   const [rosterSurface, setRosterSurface] = useState<RosterSurface>('cards');
 
   // Resolved team ID: prefer store, fall back to first team in org
@@ -363,11 +392,6 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
     setSortDirection(direction);
   };
 
-  // Handle view mode change
-  const handleViewModeChange = (mode: ViewMode) => {
-    setViewMode(mode);
-  };
-
   const handleSelectPlayer = (playerId: string) => {
     router.push(`/baseball/dashboard/players/${playerId}`);
   };
@@ -405,645 +429,134 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
 
   if (authLoading) return <PageLoading />;
 
-  if (loadError === 'unauthorized') {
+  // Role-aware "back home" target for the coach-only walls below, so a player
+  // who lands here by direct URL is guided back to their own home rather than a
+  // coach surface (the nav no longer advertises Roster to players).
+  const homeHref =
+    user?.role === 'player'
+      ? '/baseball/player/today'
+      : '/baseball/dashboard/command-center';
+
+  if (loadError === 'unauthorized' || (loadError === null && user?.role !== 'coach')) {
     return (
-      <div className="p-8">
-        <Card variant="glass">
-          <CardContent className="p-12 text-center">
-            <p className="text-warm-500">You do not have permission to view this team roster.</p>
-          </CardContent>
-        </Card>
+      <div className={fairwayScope('min-h-full')}>
+        <div className="mx-auto w-full max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">
+          <EditorsLetter
+            ink="team"
+            title="Roster is coach-only."
+            body="The team roster workspace — lineups, player management, and exports — is available to coaches and staff. Your schedule, stats, and assignments live on your own dashboard."
+            action={
+              <Link href={homeHref}>
+                <Button variant="primary" size="md">
+                  {user?.role === 'player' ? 'Back to My Today' : 'Back to Command Center'}
+                </Button>
+              </Link>
+            }
+          />
+        </div>
       </div>
     );
   }
 
   if (loadError === 'roster') {
     return (
-      <div className="p-8">
-        <Card variant="glass">
-          <CardContent className="p-12 text-center">
-            <p className="text-warm-500">We could not load the roster. Try refreshing the page.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (user?.role !== 'coach') {
-    return (
-      <div className="p-8">
-        <Card variant="glass">
-          <CardContent className="p-12 text-center">
-            <p className="text-warm-500">Only coaches can access roster management.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // ── Fairway (warm-premium) presentation — flag-gated, presentation-only.
-  // Passes the SAME computed state/data/handlers this component already owns.
-  // The lineup roster map + onSave closure are duplicated here (rather than
-  // extracted) so the legacy return below stays byte-for-byte unchanged.
-  if (isRedesignEnabled()) {
-    return (
       <div className={fairwayScope('min-h-full')}>
-        <RosterFairway
-          teamName={selectedTeam?.name || 'Your Team'}
-          activeView={activeView}
-          onActiveViewChange={setActiveView}
-          rosterSurface={rosterSurface}
-          onRosterSurfaceChange={setRosterSurface}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          positionFilter={positionFilter}
-          onPositionFilterChange={setPositionFilter}
-          gradYearFilter={gradYearFilter}
-          onGradYearFilterChange={setGradYearFilter}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          activeFilterCount={activeFilterCount}
-          onClearFilters={clearFilters}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSortChange={handleSortChange}
-          members={filteredRoster}
-          boardMembers={boardMembers}
-          aggregates={aggregates}
-          stats={rosterStats}
-          loading={loading}
-          aggregatesWarning={aggregatesWarning}
-          onSelectPlayer={handleSelectPlayer}
-          onExport={handleExport}
-          lineupRoster={roster.map((m) => ({
-            id: m.player.id,
-            first_name: m.player.first_name,
-            last_name: m.player.last_name,
-            primary_position: m.player.primary_position,
-            jersey_number: m.jersey_number,
-            avatar_url: m.player.avatar_url,
-          }))}
-          onSaveLineup={async (lineup, name) => {
-            if (!resolvedTeamId) {
-              showToast('No team selected', 'error');
-              return;
+        <div className="mx-auto w-full max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">
+          <EditorsLetter
+            ink="team"
+            title="We couldn't load the roster."
+            body="Something went wrong fetching your team roster. Refresh the page to try again."
+            action={
+              <Button variant="primary" size="md" onClick={() => router.refresh()}>
+                Try again
+              </Button>
             }
-            const positions = lineup
-              .filter((slot) => slot.player !== null)
-              .map((slot) => ({ order: slot.order, playerId: slot.player!.id }));
-            if (positions.length === 0) {
-              showToast('Please add at least one player to the lineup', 'error');
-              return;
-            }
-            setSavingLineup(true);
-            try {
-              await saveLineup({
-                teamId: resolvedTeamId,
-                name: name || 'Untitled Lineup',
-                positions,
-              });
-              showToast('Lineup saved successfully', 'success');
-            } catch (error) {
-              showToast(
-                error instanceof Error ? error.message : 'Failed to save lineup',
-                'error',
-              );
-            } finally {
-              setSavingLineup(false);
-            }
-          }}
-          onInvite={() => setShowInviteModal(true)}
-          showInviteModal={showInviteModal}
-          onCloseInvite={() => setShowInviteModal(false)}
-          inviteTeamId={resolvedTeamId}
-          inviteTeamName={selectedTeam?.name || 'Your Team'}
-          inviteCoachId={coach?.id ?? null}
-        />
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <Header
-        title="Roster"
-        subtitle={`Manage your team - ${(coach?.organization as { name?: string })?.name || 'Your Team'}`}
-      >
-        <Button onClick={() => setShowInviteModal(true)}>
-          <IconLink size={16} className="mr-2" />
-          Invite Players
-        </Button>
-      </Header>
-
-      <div className="p-6 lg:p-8">
-        {aggregatesWarning ? (
-          <Card variant="glass" className="mb-4 border-amber-200/60">
-            <CardContent className="p-4 text-sm text-warm-600">
-              Player trend stats are temporarily unavailable. Roster data is still shown.
-            </CardContent>
-          </Card>
-        ) : null}
-        {/* View Tabs */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button variant="primary"
-            onClick={() => setActiveView('roster')}
-            className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
-              activeView === 'roster'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <IconUsers size={18} />
-              <span>Roster</span>
-            </div>
-          </Button>
-          <Button variant="primary"
-            onClick={() => setActiveView('lineup')}
-            className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
-              activeView === 'lineup'
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <IconClipboardList size={18} />
-              <span>Lineup Builder</span>
-            </div>
-          </Button>
-        </div>
-
-        {/* Roster View */}
-        {activeView === 'roster' && (
-          <>
-            {/* Roster Stats Summary */}
-            {!loading && roster.length > 0 && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
-                    Total Players
-                  </p>
-                  <p className="text-2xl font-semibold text-warm-900 mt-1 tabular-nums">
-                    {rosterStats.total}
-                  </p>
-                </div>
-                <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
-                    Active
-                  </p>
-                  <p className="text-2xl font-semibold text-primary-600 mt-1 tabular-nums">
-                    {rosterStats.active}
-                  </p>
-                </div>
-                <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
-                    Positions
-                  </p>
-                  <p className="text-2xl font-semibold text-warm-900 mt-1 tabular-nums">
-                    {rosterStats.positions}
-                  </p>
-                </div>
-                <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
-                    With Stats
-                  </p>
-                  <p className="text-2xl font-semibold text-warm-900 mt-1 tabular-nums">
-                    {rosterStats.withStats}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Search and Filters */}
-            <Card variant="glass" className="mb-6">
-              <CardContent className="p-4">
-                <div className="flex flex-col gap-4">
-                  {/* Search Row */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 relative">
-                      <IconSearch
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400"
-                      />
-                      <Input
-                        type="text"
-                        placeholder="Search by name, position, grad year, or jersey #..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Button
-                      variant={showFilters || activeFilterCount > 0 ? 'primary' : 'secondary'}
-                      onClick={() => setShowFilters(!showFilters)}
-                    >
-                      <IconFilter size={16} className="mr-2" />
-                      Filters
-                      {activeFilterCount > 0 && (
-                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/20 rounded-full">
-                          {activeFilterCount}
-                        </span>
-                      )}
-                      <IconChevronDown
-                        size={14}
-                        className={`ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`}
-                      />
-                    </Button>
-                  </div>
-
-                  {/* Filter Row */}
-                  {showFilters && (
-                    <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-warm-200">
-                      {/* Position Filter */}
-                      <div className="flex flex-col gap-1">
-                        <label htmlFor="roster-position-filter" className="text-xs font-medium text-warm-500">Position</label>
-                        <NativeSelect
-                          id="roster-position-filter"
-                          value={positionFilter}
-                          onChange={(e) => setPositionFilter(e.target.value)}
-                          className="min-h-0 px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        >
-                          <option value="">All Positions</option>
-                          {POSITIONS.map((pos) => (
-                            <option key={pos} value={pos}>
-                              {pos}
-                            </option>
-                          ))}
-                        </NativeSelect>
-                      </div>
-
-                      {/* Grad Year Filter */}
-                      <div className="flex flex-col gap-1">
-                        <label htmlFor="roster-gradyear-filter" className="text-xs font-medium text-warm-500">Grad Year</label>
-                        <NativeSelect
-                          id="roster-gradyear-filter"
-                          value={gradYearFilter}
-                          onChange={(e) => setGradYearFilter(e.target.value)}
-                          className="min-h-0 px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        >
-                          <option value="">All Years</option>
-                          {GRAD_YEARS.map((year) => (
-                            <option key={year} value={year.toString()}>
-                              Class of {year}
-                            </option>
-                          ))}
-                        </NativeSelect>
-                      </div>
-
-                      {/* Status Filter */}
-                      <div className="flex flex-col gap-1">
-                        <label htmlFor="roster-status-filter" className="text-xs font-medium text-warm-500">Status</label>
-                        <NativeSelect
-                          id="roster-status-filter"
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
-                          className="min-h-0 px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        >
-                          <option value="">All Status</option>
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                          <option value="injured">Injured</option>
-                          <option value="alumni">Alumni</option>
-                          <option value="pending">Pending</option>
-                        </NativeSelect>
-                      </div>
-
-                      {/* Clear Filters */}
-                      {activeFilterCount > 0 && (
-                        <Button variant="ghost"
-                          onClick={clearFilters}
-                          className="flex items-center gap-1 px-3 py-2 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors mt-auto"
-                        >
-                          <IconX size={14} />
-                          Clear filters
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Roster Toolbar - Sort & View Controls */}
-            {!loading && roster.length > 0 && (
-              <div className="mb-4 space-y-3">
-                <div className="flex w-full gap-2 overflow-x-auto rounded-2xl border border-warm-200 bg-cream-100/80 p-1 shadow-sm">
-                  {[
-                    { id: 'cards' as const, label: 'Cards' },
-                    { id: 'position' as const, label: 'Position Board' },
-                    { id: 'status' as const, label: 'Status Board' },
-                    { id: 'development' as const, label: 'Development Board' },
-                  ].map((surface) => (
-                    <Button
-                      key={surface.id}
-                      variant={rosterSurface === surface.id ? 'primary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setRosterSurface(surface.id)}
-                      className="min-h-[40px] flex-shrink-0 rounded-xl px-3"
-                    >
-                      {surface.label}
-                    </Button>
-                  ))}
-                </div>
-                <RosterToolbar
-                  playerCount={filteredRoster.length}
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  viewMode={viewMode}
-                  onSortChange={handleSortChange}
-                  onViewModeChange={handleViewModeChange}
-                  onExport={handleExport}
-                />
-              </div>
-            )}
-
-            {/* Roster Table */}
-            <Card variant="glass">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="font-semibold text-warm-900">Team Roster</h2>
-                    <p className="text-sm leading-relaxed text-warm-500 mt-1">
-                      {filteredRoster.length} {filteredRoster.length === 1 ? 'player' : 'players'}
-                      {(searchQuery || activeFilterCount > 0) && roster.length !== filteredRoster.length && (
-                        <span className="text-warm-400"> of {roster.length}</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <>
-                    {/* Mobile loading skeleton */}
-                    <div className="lg:hidden grid grid-cols-1 gap-4">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="bg-white rounded-xl border border-warm-200 p-4 animate-pulse"
-                        >
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-warm-200" />
-                            <div className="flex-1">
-                              <div className="h-4 bg-warm-200 rounded w-2/3 mb-2" />
-                              <div className="h-3 bg-warm-200 rounded w-1/3" />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2 mb-3">
-                            {Array.from({ length: 4 }).map((_, j) => (
-                              <div key={j} className="h-16 bg-warm-100 rounded-lg" />
-                            ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <div className="h-11 bg-warm-200 rounded-lg flex-1" />
-                            <div className="h-11 bg-warm-200 rounded-lg flex-1" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Desktop loading skeleton */}
-                    <div className="hidden lg:block">
-                      <SkeletonTable rows={5} columns={9} />
-                    </div>
-                  </>
-                ) : roster.length === 0 ? (
-                  /* Empty State */
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                      <IconUsers size={32} className="text-warm-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-warm-900 mb-2">Build your roster</h3>
-                    <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">
-                      Invite players to join your team by generating a team invite link. Players
-                      can use this link to join and complete their profiles.
-                    </p>
-                    <Button onClick={() => setShowInviteModal(true)}>
-                      <IconLink size={16} className="mr-2" />
-                      Generate Invite Link
-                    </Button>
-                  </div>
-                ) : filteredRoster.length === 0 ? (
-                  /* No Results */
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                      <IconSearch size={32} className="text-warm-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-warm-900 mb-2">No players found</h3>
-                    <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">
-                      Try adjusting your search or filters to find what you&apos;re looking for.
-                    </p>
-                    <Button variant="secondary" onClick={clearFilters}>
-                      Clear all filters
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    {rosterSurface === 'position' && (
-                      <PositionBoard members={boardMembers} onSelect={handleSelectPlayer} />
-                    )}
-
-                    {rosterSurface === 'status' && (
-                      <StatusBoard members={boardMembers} onSelect={handleSelectPlayer} />
-                    )}
-
-                    {rosterSurface === 'development' && (
-                      <DevelopmentBoard members={boardMembers} onSelect={handleSelectPlayer} />
-                    )}
-
-                    {rosterSurface === 'cards' && (
-                      <>
-                        {/* Mobile card view */}
-                        <div className="lg:hidden grid grid-cols-1 gap-4">
-                          {filteredRoster.map((member) => (
-                            <PlayerCard
-                              key={member.id}
-                              player={member.player}
-                              jerseyNumber={member.jersey_number}
-                              status={member.status}
-                              aggregates={aggregates[member.player.id]}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Desktop table view */}
-                        <div className="hidden lg:block overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="border-b border-warm-200">
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Player
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Position
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Class
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  AVG
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  OBP
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  SLG
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  OPS
-                                </th>
-                                {viewMode === 'expanded' && (
-                                  <>
-                                    <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                      Last 5
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                      Exit Velo
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                      Sessions
-                                    </th>
-                                  </>
-                                )}
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Status
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Actions
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-warm-200">
-                              {filteredRoster.map((member) => (
-                                <PlayerRow
-                                  key={member.id}
-                                  memberId={member.id}
-                                  player={member.player}
-                                  jerseyNumber={member.jersey_number}
-                                  status={member.status}
-                                  aggregates={aggregates[member.player.id]}
-                                  compact={viewMode === 'compact'}
-                                />
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Team Invite Instructions - Only show when there's no roster */}
-            {roster.length === 0 && (
-              <Card variant="glass" className="mt-6">
-                <CardHeader>
-                  <h2 className="font-semibold text-warm-900">How to add players</h2>
-                </CardHeader>
-                <CardContent>
-                  <ol className="space-y-3 text-sm text-warm-600">
-                    <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
-                        1
-                      </span>
-                      <div>
-                        <span className="font-medium text-warm-900">Generate an invite link</span>
-                        <p className="text-warm-500 mt-1">
-                          Create a unique link that players can use to join your team.
-                        </p>
-                      </div>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
-                        2
-                      </span>
-                      <div>
-                        <span className="font-medium text-warm-900">Share with your players</span>
-                        <p className="text-warm-500 mt-1">
-                          Send the link via email, text, or team messaging platform.
-                        </p>
-                      </div>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
-                        3
-                      </span>
-                      <div>
-                        <span className="font-medium text-warm-900">
-                          Players join automatically
-                        </span>
-                        <p className="text-warm-500 mt-1">
-                          When players sign up using your link, they&apos;ll be added to your roster.
-                        </p>
-                      </div>
-                    </li>
-                  </ol>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* Lineup Builder View */}
-        {activeView === 'lineup' && (
-          <LineupBuilder
-            roster={roster.map((m) => ({
-              id: m.player.id,
-              first_name: m.player.first_name,
-              last_name: m.player.last_name,
-              primary_position: m.player.primary_position,
-              jersey_number: m.jersey_number,
-              avatar_url: m.player.avatar_url,
-            }))}
-            onSave={async (lineup, name) => {
-              if (!resolvedTeamId) {
-                showToast('No team selected', 'error');
-                return;
-              }
-
-              // Filter out empty slots and map to the format expected by saveLineup
-              const positions = lineup
-                .filter((slot) => slot.player !== null)
-                .map((slot) => ({
-                  order: slot.order,
-                  playerId: slot.player!.id,
-                }));
-
-              if (positions.length === 0) {
-                showToast('Please add at least one player to the lineup', 'error');
-                return;
-              }
-
-              setSavingLineup(true);
-              try {
-                await saveLineup({
-                  teamId: resolvedTeamId,
-                  name: name || 'Untitled Lineup',
-                  positions,
-                });
-                showToast('Lineup saved successfully', 'success');
-              } catch (error) {
-                showToast(
-                  error instanceof Error ? error.message : 'Failed to save lineup',
-                  'error'
-                );
-              } finally {
-                setSavingLineup(false);
-              }
-            }}
-          />
-        )}
-      </div>
-
-      {/* Invite Modal */}
-      {showInviteModal && resolvedTeamId && coach?.id && (
-        <InviteModal
-          teamId={resolvedTeamId}
-          teamName={selectedTeam?.name || 'Your Team'}
-          coachId={coach.id}
-          onClose={() => setShowInviteModal(false)}
-        />
-      )}
-    </>
+    <div className={fairwayScope('min-h-full')}>
+      <RosterFairway
+        teamName={selectedTeam?.name || 'Your Team'}
+        activeView={activeView}
+        onActiveViewChange={setActiveView}
+        rosterSurface={rosterSurface}
+        onRosterSurfaceChange={setRosterSurface}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        positionFilter={positionFilter}
+        onPositionFilterChange={setPositionFilter}
+        gradYearFilter={gradYearFilter}
+        onGradYearFilterChange={setGradYearFilter}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        activeFilterCount={activeFilterCount}
+        onClearFilters={clearFilters}
+        sortField={sortField}
+        sortDirection={sortDirection}
+        onSortChange={handleSortChange}
+        members={filteredRoster}
+        boardMembers={boardMembers}
+        aggregates={aggregates}
+        stats={rosterStats}
+        loading={loading}
+        aggregatesWarning={aggregatesWarning}
+        onSelectPlayer={handleSelectPlayer}
+        onExport={handleExport}
+        lineupRoster={roster.map((m) => ({
+          id: m.player.id,
+          first_name: m.player.first_name,
+          last_name: m.player.last_name,
+          primary_position: m.player.primary_position,
+          jersey_number: m.jersey_number,
+          avatar_url: m.player.avatar_url,
+        }))}
+        onSaveLineup={async (lineup, name) => {
+          if (!resolvedTeamId) {
+            showToast('No team selected', 'error');
+            return;
+          }
+          const positions = lineup
+            .filter((slot) => slot.player !== null)
+            .map((slot) => ({ order: slot.order, playerId: slot.player!.id }));
+          if (positions.length === 0) {
+            showToast('Please add at least one player to the lineup', 'error');
+            return;
+          }
+          setSavingLineup(true);
+          try {
+            // saveLineup returns { success: false, error } for validation
+            // failures (duplicate orders, > 9 players, missing coach) without
+            // throwing, so check the result before claiming success.
+            const result = await saveLineup({
+              teamId: resolvedTeamId,
+              name: name || 'Untitled Lineup',
+              positions,
+            });
+            if (result.success) {
+              showToast('Lineup saved successfully', 'success');
+            } else {
+              showToast(result.error || 'Failed to save lineup', 'error');
+            }
+          } catch (error) {
+            showToast(
+              error instanceof Error ? error.message : 'Failed to save lineup',
+              'error',
+            );
+          } finally {
+            setSavingLineup(false);
+          }
+        }}
+        onInvite={() => setShowInviteModal(true)}
+        showInviteModal={showInviteModal}
+        onCloseInvite={() => setShowInviteModal(false)}
+        inviteTeamId={resolvedTeamId}
+        inviteTeamName={selectedTeam?.name || 'Your Team'}
+        inviteCoachId={coach?.id ?? null}
+      />
+    </div>
   );
 }

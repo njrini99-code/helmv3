@@ -189,6 +189,8 @@ export interface PlayerTodayAssignment {
   baseballContext: string | null;
   estimatedMinutes: number | null;
   isToday: boolean;
+  /** Scheduled before today and still open — surfaced as "Overdue" on Today. */
+  isOverdue: boolean;
   sourceRef: SourceRef;
 }
 
@@ -344,6 +346,12 @@ export interface PlayerTodayReadModel {
     assignmentsToday: number;
     /** Open (not completed/skipped) lift sessions today. */
     assignmentsOpen: number;
+    /**
+     * Lift sessions the player still owes: due today PLUS overdue-but-open.
+     * This is the count the right-rail Lift & Check-in card shows, so the
+     * summary tile and the card never contradict each other.
+     */
+    assignmentsDue: number;
     /** Coach-assigned actions still live for the player (open/in_progress/blocked). */
     coachActionsOpen: number;
     /** Coach-assigned actions that are due today or overdue. */
@@ -491,6 +499,7 @@ export async function getPlayerToday(
       recentStatCount: 0,
       assignmentsToday: 0,
       assignmentsOpen: 0,
+      assignmentsDue: 0,
       coachActionsOpen: 0,
       coachActionsDue: 0,
       readinessNeedsAttention: false,
@@ -504,10 +513,18 @@ export async function getPlayerToday(
 
   const supabase = await createClient();
   const me = await resolvePlayer(supabase, teamId);
-  if (!me.isMember || !me.playerId) {
+  // resolvePlayer only ever sets playerId in the branch where userId is also
+  // set (both come from the same authenticated-user path) -- but that's an
+  // invariant of resolvePlayer's own control flow, not something TS can see
+  // from these two independently-typed properties. Check userId here too so
+  // it's narrowed to non-null once, at the source, instead of re-checked
+  // later against a property TS still (correctly, from its view) sees as
+  // nullable.
+  if (!me.isMember || !me.playerId || !me.userId) {
     return base(me.playerId, false, null); // honest unauthorized envelope
   }
   const playerId = me.playerId;
+  const userId = me.userId;
 
   // The TEAM's IANA tz is the single source of truth for "today" (mirrors the
   // Daily Contract read/write — see contract-day.ts). `forDate` (when passed by
@@ -569,10 +586,15 @@ export async function getPlayerToday(
       .eq('team_id', teamId)
       .order('session_date', { ascending: false })
       .limit(Math.min(Math.max(recentStatLimit, 1), 25)),
-    // Assignments: this player's open lift sessions from today through the
-    // near-term horizon. Reads helm_lifting_sessions — the unified Lab table
-    // publishLiftDay materializes into and the Lift & Check-in card
-    // (player-today-lift.ts) reads — so "Lifts Due" agrees with the card (#456).
+    // Assignments: this player's OPEN lift sessions — overdue (still not done)
+    // through the near-term horizon. Reads helm_lifting_sessions — the unified
+    // Lab table publishLiftDay materializes into and the Lift & Check-in card
+    // (player-today-lift.ts) reads. The card includes overdue-but-open sessions
+    // (scheduled_date <= today, open status); this feed previously started its
+    // window at `day` (>= today), so an overdue lift showed on the right-rail
+    // card but NOT in the "Lifts Due" section or the summary tile — the page
+    // contradicted itself (card: 2 overdue / body: 0 due). We now use the same
+    // "open + not past horizon" window as the card so both surfaces agree.
     // Degrades to an honest empty result when the team has no lifting
     // organization or this player has no helm_lifting_athletes row yet.
     liftCtx && athleteId
@@ -582,7 +604,6 @@ export async function getPlayerToday(
           )
           .eq('athlete_id', athleteId)
           .eq('organization_id', liftCtx.organizationId)
-          .gte('scheduled_date', day)
           .lte('scheduled_date', horizonYmd)
           .in('status', ['assigned', 'started', 'modified'])
           .order('scheduled_date', { ascending: true })
@@ -644,18 +665,23 @@ export async function getPlayerToday(
       .order('task_id', { ascending: true })
       .limit(20),
     // Player-visible coach notes (spec line 85): baseball_coach_notes where
-    // scope = 'player_visible' AND player_id = me AND team_id = teamId AND
-    // NOT soft-deleted (deleted_at is null). Staff-only scopes are NEVER shown.
-    // Real columns only (verified against migration 20260624000900 /
-    // BaseballCoachNoteRow): the table has no title, pinned, or archived_at
-    // column — selecting/filtering on those made this query fail outright (#507).
+    // scope = 'player_visible' AND player_id = me AND team_id = teamId AND NOT
+    // archived (archived_at is null). Staff-only scopes are NEVER shown.
+    // Columns verified live against the deployed table: it DOES have
+    // title / pinned / archived_at — the soft-delete column is `archived_at`,
+    // NOT `deleted_at`. The previous query filtered `.is('deleted_at', null)`
+    // on a non-existent column, which made every read fail and surfaced the
+    // spurious "Your coach notes could not be loaded." banner on Today. We now
+    // select the real title/pinned columns so the note cards render with their
+    // heading + pin state instead of stripping them to null.
     supabase
       .from('baseball_coach_notes')
-      .select('id, body, created_at')
+      .select('id, title, body, pinned, created_at')
       .eq('player_id', playerId)
       .eq('team_id', teamId)
       .eq('scope', 'player_visible')
-      .is('deleted_at', null)
+      .is('archived_at', null)
+      .order('pinned', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(5),
     // Practice group (spec line 84): today's published practice plan for the
@@ -690,15 +716,18 @@ export async function getPlayerToday(
   let ackByEvent = new Map<string, string>(); // event_id -> acknowledged_at
   if (eventsRes.error) {
     error = 'Your schedule could not be loaded.';
-  } else if (eventRows.length > 0 && me.userId) {
+  } else if (eventRows.length > 0) {
     const eventIds = eventRows.map((e) => e.id);
     const { data: acks, error: ackErr } = await supabase
       .from('baseball_event_acknowledgements')
       .select('event_id, acknowledged_at')
-      .eq('user_id', me.userId)
+      .eq('user_id', userId)
       .in('event_id', eventIds);
     if (ackErr) {
-      error = error ?? 'Acknowledgement status could not be loaded.';
+      // Direct assignment: this branch is mutually exclusive with the
+      // schedule-error branch above, so `error` is provably still null here
+      // (CodeQL js/trivial-conditional flagged the dead `error ??`).
+      error = 'Acknowledgement status could not be loaded.';
     } else {
       ackByEvent = new Map(
         (acks ?? []).map((a) => [a.event_id, a.acknowledged_at]),
@@ -802,6 +831,10 @@ export async function getPlayerToday(
       baseballContext: r.sport_context,
       estimatedMinutes: r.estimated_minutes,
       isToday: r.scheduled_date === day,
+      // Scheduled before today and still open (the query only returns
+      // assigned/started/modified) → overdue. Surfaced with an "Overdue" label
+      // so the player can lead with what they still owe.
+      isOverdue: r.scheduled_date < day,
       // The lift session row is the source object (source -> signal -> action:
       // opening the session is the action). sourceId cites the session id.
       sourceRef: buildSourceRef({
@@ -810,6 +843,16 @@ export async function getPlayerToday(
         label: 'Lift session',
       }),
     }));
+    // Surface what's owed first: overdue, then today, then upcoming — matching
+    // the right-rail card's "open sessions first" ordering.
+    items.sort((a, b) => {
+      const rank = (x: PlayerTodayAssignment) =>
+        x.isOverdue ? 0 : x.isToday ? 1 : 2;
+      const ra = rank(a);
+      const rb = rank(b);
+      if (ra !== rb) return ra - rb;
+      return a.scheduledDate.localeCompare(b.scheduledDate);
+    });
     assignments = {
       available: true,
       items,
@@ -826,6 +869,12 @@ export async function getPlayerToday(
   const TERMINAL_LIFT_STATUSES = new Set(['completed', 'missed', 'excused']);
   const assignmentsOpen = assignments.items.filter(
     (a) => a.isToday && !TERMINAL_LIFT_STATUSES.has(a.status),
+  ).length;
+  // "Due" = everything the player still owes right now: due today PLUS overdue.
+  // This is the figure the right-rail Lift & Check-in card shows, so the summary
+  // tile and the card can never disagree (the reconciliation the QA flagged).
+  const assignmentsDue = assignments.items.filter(
+    (a) => (a.isToday || a.isOverdue) && !TERMINAL_LIFT_STATUSES.has(a.status),
   ).length;
 
   // ---- Coach-assigned actions (player side of source -> signal -> action) ----
@@ -1102,17 +1151,17 @@ export async function getPlayerToday(
   } else {
     const noteRows = (coachNotesRes?.data ?? []) as Array<{
       id: string;
+      title: string | null;
       body: string;
+      pinned: boolean | null;
       created_at: string;
     }>;
-    // baseball_coach_notes has no title/pinned columns — always render an
-    // honest null/false rather than a value the table never actually stores.
     const noteItems: PlayerTodayCoachNote[] = noteRows.map((n) => ({
       id: n.id,
       body: n.body,
-      title: null,
+      title: n.title ?? null,
       createdAt: n.created_at,
-      pinned: false,
+      pinned: n.pinned ?? false,
     }));
     coachNotes = {
       available: true,
@@ -1199,6 +1248,7 @@ export async function getPlayerToday(
       recentStatCount: recentStats.length,
       assignmentsToday,
       assignmentsOpen,
+      assignmentsDue,
       coachActionsOpen,
       coachActionsDue,
       readinessNeedsAttention,

@@ -3,37 +3,42 @@
 // =============================================================================
 // src/components/baseball/signals/CommandSignalStack.tsx
 //
-// Packet: signal-inbox — the compact Signal Stack embedded in the Coach Command
-// Center (V10 §Command Center "Signal Stack: grouped by urgency"). Shows the top
-// open, source-backed signals with severity + source chip + confidence, and a
-// link into the full Signals workspace. Read-only here (triage + conversion
-// happen on /signals); this is the 20-second "what changed" surface.
+// Packet: signal-inbox — the compact Signal Stack meant for embedding in the
+// Coach Command Center (V10 §Command Center "Signal Stack: grouped by
+// urgency"). Shows the top open, source-backed signals with severity + source
+// chip, and a link into the full Signals workspace. Read-only here (triage +
+// conversion happen on /signals); this is the 20-second "what changed" surface.
 //
-// Cream/green GolfHelm look (Card + Badge + SourceTrustBadge). NO golf labels.
-// Every async surface has a skeleton (loading), a friendly error, and a genuine
-// empty state. Entrance motion is reduced-motion-safe.
+// A self-contained `<PaperCard>` so it composes cleanly wherever it's mounted —
+// including a green (`team`) Pressbox page — without forcing the host page's
+// lane. Severity itself stays `pursuit` ink per spec §4.2 rule 2 ("hot
+// signals" are a sanctioned clay use even outside the War Room). Every async
+// surface has a skeleton (loading), a friendly error, and a genuine empty
+// state — never a yellow/amber box. Entrance motion is reduced-motion-safe via
+// the shared `<Reveal>` primitive.
+//
+// NOTE (collision guard, docs/baseball/ui-migration-execution-plan.md §3.2
+// signals row): this component is not currently imported by the Command
+// Center (`CommandCenterFairway.tsx` reuses `RiskFeedStrip` verbatim instead —
+// verified via repo-wide grep before this change). The prop contract below is
+// kept STABLE (`signals, playerNames, openCount, error, loading, limit`) so a
+// future embed keeps working either way.
 // =============================================================================
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  PaperCard,
+  InkBadge,
+  Eyebrow,
+  EditorsLetter,
+  Reveal,
+  HoverReveal,
+} from '@/components/baseball/living-annual';
+import { InlineNotice, Skeleton } from '@/components/fairway';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
-import {
-  IconShieldAlert,
-  IconArrowRight,
-  IconAlertCircle,
-  IconWarning,
-} from '@/components/icons';
+import { IconShieldAlert, IconArrowRight, IconAlertCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import {
-  DURATION,
-  EASE_CINEMATIC,
-  STAGGER_STEP,
-  useReducedMotionGuard,
-} from '@/lib/coachhelm/v3/motion';
 import type { SignalInboxRow } from '@/lib/baseball/read-models/signal-inbox';
 import { getSeverityPresentation, getCategoryLabel } from './signal-presentation';
 
@@ -60,43 +65,45 @@ function StackShell({
   children,
 }: {
   openCount: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <Card variant="overlay" hover={false} padding="md" className="border-warm-200/60">
+    <PaperCard className="p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-warm-100 text-warm-500">
-            <IconShieldAlert size={14} />
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-fw-sm bg-[color:var(--hairline)]/40 text-text-tertiary">
+            <IconShieldAlert size={14} aria-hidden />
           </span>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-warm-800">
+          <Eyebrow as="h2" ink="pursuit">
             Signal Stack
-          </h2>
-          {openCount > 0 && (
-            <Badge tone="primary" appearance="soft" size="sm">
-              {openCount} open
-            </Badge>
-          )}
+          </Eyebrow>
+          {openCount > 0 && <InkBadge label={`${openCount} open`} tone="pursuit" />}
         </div>
-        <Link
-          href="/baseball/dashboard/signals"
-          className="group inline-flex items-center gap-1 rounded-md px-1 -mx-1 text-xs font-medium text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-50"
+        <HoverReveal
+          reveal={
+            <IconArrowRight
+              size={13}
+              aria-hidden
+              className="translate-x-0 text-pursuit transition-transform duration-200 ease-out"
+            />
+          }
         >
-          Triage all
-          <IconArrowRight
-            size={13}
-            className="transition-transform duration-200 ease-out group-hover:translate-x-0.5"
-          />
-        </Link>
+          <Link
+            href="/baseball/dashboard/signals"
+            className="rounded-fw-sm font-annual text-body-sm font-medium text-pursuit outline-none focus-visible:ring-2 focus-visible:ring-pursuit focus-visible:ring-offset-1"
+          >
+            Triage all
+          </Link>
+        </HoverReveal>
       </div>
       {children}
-    </Card>
+    </PaperCard>
   );
 }
 
 function StackRowSkeleton() {
   return (
-    <li className="flex items-start gap-3 rounded-xl border border-warm-200/50 bg-cream-100/70 p-3">
+    <li className="flex items-start gap-3 rounded-fw-sm border border-[color:var(--hairline)] bg-[var(--paper)] p-3">
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex items-center gap-1.5">
           <Skeleton className="h-4 w-14" />
@@ -105,7 +112,7 @@ function StackRowSkeleton() {
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-3 w-1/3" />
       </div>
-      <Skeleton variant="circular" className="h-5 w-5 flex-shrink-0" />
+      <Skeleton circle className="h-5 w-5 flex-shrink-0" />
     </li>
   );
 }
@@ -118,7 +125,6 @@ export function CommandSignalStack({
   loading = false,
   limit = 5,
 }: CommandSignalStackProps) {
-  const reduce = useReducedMotionGuard();
   const shown = signals.slice(0, limit);
 
   // ── Loading — matched-shape skeleton, never a spinner ───────────────────────
@@ -139,74 +145,59 @@ export function CommandSignalStack({
   if (error) {
     return (
       <StackShell openCount={openCount}>
-        <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/70 bg-amber-50/70 px-3 py-3">
-          <IconWarning size={15} className="mt-0.5 flex-shrink-0 text-amber-500" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-amber-800">
-              Couldn&apos;t load the latest signals
-            </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-amber-700">{error}</p>
-          </div>
-        </div>
+        <InlineNotice tone="warning" title="Couldn't load the latest signals">
+          {error}
+        </InlineNotice>
       </StackShell>
     );
   }
 
-  // ── Empty — genuinely reassuring, not a dead end ───────────────────────────
+  // ── Empty — a genuinely reassuring "you're clear," not a mismatched ticker
+  //    line (this is a triage inbox, not a commit/offer wire — the shared
+  //    `EmptyIssue` 'signals' preset is copy-mismatched for this surface, so
+  //    this composes `<EditorsLetter>` directly with the correct framing). ──
   if (shown.length === 0) {
     return (
       <StackShell openCount={openCount}>
-        <EmptyState
-          variant="minimal"
-          icon={<IconShieldAlert size={20} />}
-          title="No open signals"
-          description="You're clear. New signals appear here when fresh data lands."
+        <EditorsLetter
+          ink="pursuit"
+          title="All clear on the signal stack."
+          body="New signals surface here the moment fresh data lands — imports, readiness check-ins, or a schedule conflict."
         />
       </StackShell>
     );
   }
 
   // ── Data ───────────────────────────────────────────────────────────────────
+  // `role="list"`/`role="listitem"` (not literal <ul>/<li>) so each row can be
+  // a <Reveal> (a <div> wrapper) without producing invalid <div> children of a
+  // real <ul> — list semantics for assistive tech are preserved via ARIA.
   return (
     <StackShell openCount={openCount}>
-      <LazyMotion features={domAnimation} strict>
-        <ul className="space-y-2">
-          {shown.map((s, i) => {
-            const sev = getSeverityPresentation(s.severity);
-            return (
-              <m.li
-                key={s.id}
-                initial={reduce ? false : { opacity: 0, y: 6 }}
-                animate={reduce ? false : { opacity: 1, y: 0 }}
-                transition={{
-                  duration: DURATION.short,
-                  ease: EASE_CINEMATIC,
-                  delay: i * STAGGER_STEP,
-                }}
-                className="group relative flex items-start gap-3 overflow-hidden rounded-xl border border-warm-200/50 bg-cream-100/70 p-3 transition-colors duration-200 ease-out hover:border-warm-200 hover:bg-cream-50"
+      <div role="list" className="space-y-2">
+        {shown.map((s, i) => {
+          const sev = getSeverityPresentation(s.severity);
+          return (
+            <Reveal key={s.id} staggerIndex={i}>
+              <div
+                role="listitem"
+                className="relative flex items-start gap-3 overflow-hidden rounded-fw-sm border border-[color:var(--hairline)] bg-[var(--paper)] p-3"
               >
-                <span
-                  aria-hidden
-                  className={cn('absolute left-0 top-0 bottom-0 w-1', sev.accentClass)}
-                />
+                <span aria-hidden className={cn('absolute left-0 top-0 bottom-0 w-[3px]', sev.ruleClass)} />
                 <div className="min-w-0 flex-1 pl-1">
                   <div className="mb-0.5 flex flex-wrap items-center gap-1.5">
-                    <Badge tone={sev.tone} appearance="soft" size="sm">
-                      {sev.label}
-                    </Badge>
-                    <Badge tone="warm" appearance="outline" size="sm">
-                      {getCategoryLabel(s.category)}
-                    </Badge>
+                    <InkBadge label={sev.label} tone={sev.tone} variant={sev.variant} />
+                    <InkBadge label={getCategoryLabel(s.category)} tone="neutral" />
                     {s.sampleTooSmall && (
-                      <span className="flex items-center gap-0.5 text-eyebrow uppercase tracking-wide text-warm-500">
-                        <IconAlertCircle size={11} /> small sample
+                      <span className="flex items-center gap-0.5 font-annual text-eyebrow uppercase tracking-wide text-text-tertiary">
+                        <IconAlertCircle size={11} aria-hidden /> small sample
                       </span>
                     )}
                   </div>
-                  <p className="truncate text-sm font-medium leading-snug text-warm-900">
+                  <p className="truncate font-annual text-body-sm font-medium leading-snug text-text-primary">
                     {s.title}
                   </p>
-                  <p className="mt-0.5 text-xs text-warm-500">
+                  <p className="mt-0.5 font-annual text-eyebrow text-text-tertiary">
                     {s.playerId ? (playerNames[s.playerId] ?? 'Player') : 'Team-wide'}
                   </p>
                 </div>
@@ -218,11 +209,11 @@ export function CommandSignalStack({
                     iconOnly
                   />
                 </div>
-              </m.li>
-            );
-          })}
-        </ul>
-      </LazyMotion>
+              </div>
+            </Reveal>
+          );
+        })}
+      </div>
     </StackShell>
   );
 }

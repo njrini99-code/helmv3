@@ -7,7 +7,8 @@ export const BASEBALL_SETTINGS_ALIASES = {
   notifications: `${BASEBALL_PROGRAM_SETTINGS_PATH}#notifications`,
   'player-access': `${BASEBALL_PROGRAM_SETTINGS_PATH}#player-access`,
   'data-retention': `${BASEBALL_PROGRAM_SETTINGS_PATH}#data-retention`,
-  'demo-mode': `${BASEBALL_PROGRAM_SETTINGS_PATH}#demo-mode`,
+  // NOTE: no 'demo-mode' alias — the Demo Mode section was removed from Program
+  // Settings (PKT-12), so there is no #demo-mode anchor to deep-link to.
   'showcase-profile': `${BASEBALL_PROGRAM_SETTINGS_PATH}#showcase-profile`,
 } as const;
 

@@ -226,7 +226,7 @@ export default function PlayerLiftToday({
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3">
               <Skeleton className="h-12 w-full rounded-xl" />
               <Skeleton className="h-12 w-full rounded-xl" />
               <Skeleton className="h-12 w-full rounded-xl" />
@@ -287,12 +287,10 @@ export default function PlayerLiftToday({
                   OPEN_STATUSES.includes(s.status) &&
                   s.scheduled_date != null &&
                   s.scheduled_date < today;
+                // The "Overdue" state is now carried by the status badge, so the
+                // date line just states the day (no redundant "Overdue ·" prefix).
                 const dateLabel =
-                  s.scheduled_date === today
-                    ? 'Today'
-                    : isOverdue
-                      ? `Overdue · ${s.scheduled_date}`
-                      : s.scheduled_date;
+                  s.scheduled_date === today ? 'Today' : s.scheduled_date;
                 // A coach-initiated modification (e.g. converted from a Signal)
                 // carries the WHY in coach_note. Surfacing it inline turns a bare
                 // "Adjusted" badge into a real coach->player message so the player
@@ -307,14 +305,40 @@ export default function PlayerLiftToday({
                     href={`/baseball/dashboard/lift/${s.id}`}
                     className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 lg:px-6"
                   >
-                    <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary-100">
-                      <IconDumbbell size={18} className="text-primary-600" />
+                    <div
+                      className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
+                        isOverdue ? 'bg-red-100' : 'bg-primary-100'
+                      }`}
+                    >
+                      <IconDumbbell
+                        size={18}
+                        className={isOverdue ? 'text-red-600' : 'text-primary-600'}
+                      />
                     </div>
+                    {/* The title now shares its OWN row with the status badge and
+                        is allowed to wrap to two lines. The previous layout put the
+                        title, badge and chevron on one horizontal axis inside the
+                        narrow right rail, squeezing the title to "To…" / "U…". */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-warm-900">
-                        {s.title || 'Lift'}
-                      </p>
-                      <p className="text-sm text-warm-500">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 font-medium leading-snug text-warm-900 [overflow-wrap:anywhere] line-clamp-2">
+                          {s.title || 'Lift'}
+                        </p>
+                        <Badge
+                          className={`mt-0.5 flex-shrink-0 ${
+                            isOverdue
+                              ? 'bg-red-100 text-red-700'
+                              : badge.className
+                          }`}
+                        >
+                          {isOverdue ? 'Overdue' : badge.label}
+                        </Badge>
+                      </div>
+                      <p
+                        className={`mt-0.5 text-sm ${
+                          isOverdue ? 'text-red-500' : 'text-warm-500'
+                        }`}
+                      >
                         {dateLabel}
                         {s.estimated_minutes ? ` · ~${s.estimated_minutes} min` : ''}
                       </p>
@@ -327,12 +351,9 @@ export default function PlayerLiftToday({
                         </p>
                       )}
                     </div>
-                    <Badge className={`mt-0.5 flex-shrink-0 ${badge.className}`}>
-                      {badge.label}
-                    </Badge>
                     <IconChevronRight
                       size={16}
-                      className="mt-2.5 flex-shrink-0 text-warm-400 transition-transform group-hover:translate-x-0.5"
+                      className="mt-0.5 flex-shrink-0 self-center text-warm-400 transition-transform group-hover:translate-x-0.5"
                     />
                   </Link>
                 );
@@ -354,7 +375,7 @@ export default function PlayerLiftToday({
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Sleep (h)">
               <Input
                 type="number"

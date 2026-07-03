@@ -23,6 +23,13 @@
 // Server actions (acknowledgeTimelineEvent / withdrawTimelineAcknowledgement)
 // run inside withBaseballAction — capability/self enforcement is server-side;
 // this client cannot assert it.
+//
+// PRESENTATION: renders through `PlayerTimelineFairway` (Living-Annual kit) —
+// a PARALLEL component to the shared `ProfileTimeline`, not that component
+// itself. `ProfileTimeline` is also used by the coach player-profile surface
+// and is out of scope for this migration; this client only ever needed the
+// player-only rendering path, so it now owns its own presentation instead of
+// forking a shared one.
 // =============================================================================
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
@@ -32,7 +39,7 @@ import {
   acknowledgeTimelineEvent,
   withdrawTimelineAcknowledgement,
 } from '@/app/baseball/actions/timeline-acks';
-import { ProfileTimeline } from '@/components/baseball/player-profile/ProfileTimeline';
+import { PlayerTimelineFairway } from '@/components/baseball/player-today/PlayerTimelineFairway';
 import { useToast } from '@/components/ui/sonner';
 import type { PlayerTimelineReadModel } from '@/lib/baseball/read-models/timeline';
 
@@ -114,9 +121,8 @@ export function PlayerTimelineClient({ model, initialAcks }: PlayerTimelineClien
   );
 
   return (
-    <ProfileTimeline
+    <PlayerTimelineFairway
       events={model.events}
-      viewerRole="player"
       hiddenCount={model.hiddenCount}
       error={model.error}
       acknowledged={mergedAcks}

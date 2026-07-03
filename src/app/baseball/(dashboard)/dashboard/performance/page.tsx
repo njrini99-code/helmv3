@@ -25,6 +25,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { getPerformanceCommandData } from '@/lib/baseball/read-models/performance-command';
 import { PerformanceCommandCenter } from '@/components/baseball/performance/PerformanceCommandCenter';
 import { PerformanceDashboardClient } from '@/components/baseball/performance/PerformanceDashboardClient';
@@ -232,7 +233,19 @@ export default async function PerformancePage() {
   const teamName = (teamRow as { name?: string } | null)?.name ?? 'Team';
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-6">
+    <div className={fairwayScope('mx-auto max-w-7xl space-y-8 px-4 py-6')}>
+      {/*
+        ONE performance surface. The Command Center is the primary dashboard
+        (header + KPI strip + Today Weight Room board + readiness queue). The
+        prescribe/library management tools render BELOW it in `embedded` mode —
+        which drops the duplicate header, the duplicate KPI summary, and the
+        duplicate readiness list the Command Center already shows. Previously
+        both components rendered in full, stacking two "Performance" headers and
+        two readiness lists of the same roster on one page.
+        The embedded section is only worth rendering for coaches who can manage
+        lifting (Assignments/Library); a readiness-only coach already sees
+        everything in the Command Center.
+      */}
       <PerformanceCommandCenter
         teamName={teamName}
         trainingWeekLabel="This week"
@@ -241,16 +254,20 @@ export default async function PerformancePage() {
         readiness={command.readiness}
         readinessWithheld={command.readinessWithheld}
         playerNameById={playerNameById}
-      />
-      <PerformanceDashboardClient
-        teamId={teamId}
         canManageLifting={canManageLifting}
-        canViewReadiness={canViewReadiness}
-        roster={roster}
-        assignments={assignments}
-        exercises={exercises}
-        readiness={readiness}
       />
+      {canManageLifting && (
+        <PerformanceDashboardClient
+          teamId={teamId}
+          canManageLifting={canManageLifting}
+          canViewReadiness={canViewReadiness}
+          roster={roster}
+          assignments={assignments}
+          exercises={exercises}
+          readiness={readiness}
+          embedded
+        />
+      )}
     </div>
   );
 }

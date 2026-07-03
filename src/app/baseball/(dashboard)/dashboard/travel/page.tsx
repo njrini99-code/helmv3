@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
@@ -100,50 +99,46 @@ export default function BaseballTravelPage() {
     }
   }
 
+  // NOTE: the page-level global <Header> was removed here — the dashboard shell
+  // now owns the single top bar (search / notifications / user menu / breadcrumb),
+  // and TravelClient renders its own page title + primary action. Rendering the
+  // legacy Header here produced the duplicate top-bar chrome and a redundant
+  // "Travel" heading stacked above TravelClient's own. The lightweight page
+  // headings below keep orientation in the non-content states.
   if (authLoading || loading) {
-    return (
-      <>
-        <Header title="Travel" subtitle="Team travel and expense tracking" />
-        <PageLoading />
-      </>
-    );
+    return <PageLoading />;
   }
 
   if (!teamId) {
     return (
-      <>
-        <Header title="Travel" subtitle="Team travel and expense tracking" />
-        <div className="p-8 text-center">
-          <h2 className="text-lg font-semibold text-warm-900 mb-2">No Team Found</h2>
+      <div className="mx-auto max-w-5xl p-4 md:p-6">
+        <h1 className="text-2xl font-bold tracking-tight text-warm-900">Travel</h1>
+        <div className="mt-8 rounded-2xl border border-white/20 bg-white/70 p-10 text-center backdrop-blur-xl">
+          <h2 className="mb-2 text-lg font-semibold text-warm-900">No team found</h2>
           <p className="text-warm-500">You must be on a team to access travel itineraries.</p>
         </div>
-      </>
+      </div>
     );
   }
 
   if (loadError) {
     return (
-      <>
-        <Header title="Travel" subtitle="Team travel and expense tracking" />
-        <div className="p-6 lg:p-8">
-          <ReadModelStateNotice
-            state="error"
-            title="Travel unavailable"
-            onRetry={() => void detectRoleAndLoad()}
-          />
-        </div>
-      </>
+      <div className="mx-auto max-w-5xl p-4 md:p-6">
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-warm-900">Travel</h1>
+        <ReadModelStateNotice
+          state="error"
+          title="Travel unavailable"
+          onRetry={() => void detectRoleAndLoad()}
+        />
+      </div>
     );
   }
 
   return (
-    <>
-      <Header title="Travel" subtitle="Team travel and expense tracking" />
-      <TravelClient
-        itineraries={itineraries}
-        teamId={teamId}
-        isCoach={isCoach}
-      />
-    </>
+    <TravelClient
+      itineraries={itineraries}
+      teamId={teamId}
+      isCoach={isCoach}
+    />
   );
 }

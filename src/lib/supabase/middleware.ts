@@ -233,10 +233,20 @@ async function checkRouteAuthorization(
 
   const { data: team } = await supabase
     .from('baseball_teams')
-    .select('program_type')
+    .select('program_type, team_type')
     .eq('id', String(staffRow.team_id))
     .maybeSingle();
-  const programType = normalizeProgramType(team?.program_type);
+  // Effective program mode with a defense-in-depth fallback: program_type is the
+  // controlling setting, but if it is ever null/absent (e.g. the demo team, created
+  // with team_type:'college' but no program_type, or a pre-backfill/transient read
+  // gap) we derive it from the always-present team_type enum. Otherwise a real
+  // college coach is silently stripped of Pipeline/Discover/Watchlist/Compare and
+  // bounced to the Command Center even though the sidebar advertises them.
+  // nav-context.ts derives the SAME effective type, so nav visibility and route
+  // gating share one source of truth. This resolves the mode; it does NOT weaken
+  // the gate — a high_school program still fails the recruiting check below.
+  const programType =
+    normalizeProgramType(team?.program_type) ?? normalizeProgramType(team?.team_type);
 
   if (requiredCapability && !staffHasCapability(staffRow, requiredCapability)) {
     return {

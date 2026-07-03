@@ -39,6 +39,7 @@ import {
   IconCheck,
 } from '@/components/icons';
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+import type { BaseballNoteScope } from '@/lib/types/baseball-extended';
 import type { SnapshotHeader } from '@/lib/baseball/read-models/player-snapshot-cards';
 import type { TimelineEventView } from '@/lib/baseball/read-models/timeline';
 import { PlayerInsightsPanel } from './PlayerInsightsPanel';
@@ -46,7 +47,9 @@ import { PlayerNotesSection } from './PlayerNotesSection';
 import { ProfileTimeline } from './ProfileTimeline';
 import { SnapshotHeaderBand } from './snapshot-cards';
 import { Button, IconButton } from '@/components/ui/button';
+import { VideoPlayer } from '@/components/features/video-player';
 import { Textarea } from '@/components/ui/textarea';
+import { NativeSelect } from '@/components/ui/select';
 import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
 import { createCoachNote } from '@/app/baseball/actions/coach-notes';
 
@@ -91,6 +94,9 @@ interface PlayerProfileClientProps {
     video_url: string | null;
     created_at: string;
     video_type?: string;
+    is_clip?: boolean | null;
+    clip_start_time?: number | null;
+    clip_end_time?: number | null;
   }>;
   teamId: string;
   teamName: string;
@@ -269,6 +275,9 @@ export function PlayerProfileClient({
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   // ── Note add form state ────────────────────────────────────────────────────
   const [noteBody, setNoteBody] = useState('');
+  // Both scopes are authorable by any staff member (canAuthorScope), so no
+  // capability data is needed to offer this choice; the server still enforces it.
+  const [noteScope, setNoteScope] = useState<BaseballNoteScope>('staff_public');
   const [noteError, setNoteError] = useState<string | null>(null);
   const [noteSuccess, setNoteSuccess] = useState(false);
   const [isPendingNote, startNoteTransition] = useTransition();
@@ -409,7 +418,7 @@ export function PlayerProfileClient({
     setNoteError(null);
     setNoteSuccess(false);
     startNoteTransition(async () => {
-      const result = await createCoachNote({ playerId: player.id, body, scope: 'staff_public' });
+      const result = await createCoachNote({ playerId: player.id, body, scope: noteScope });
       if (result.success) {
         setNoteBody('');
         setNoteSuccess(true);
@@ -1376,6 +1385,28 @@ export function PlayerProfileClient({
                   rows={4}
                   disabled={isPendingNote}
                 />
+                {/* Visibility scope — staff-only vs. shared with the player. A
+                    player_visible note surfaces on the player's Today + timeline. */}
+                <div className="mt-3">
+                  <label htmlFor="note-visibility" className="block text-xs font-medium text-warm-500 mb-1.5">
+                    Visibility
+                  </label>
+                  <NativeSelect
+                    id="note-visibility"
+                    value={noteScope}
+                    onChange={(e) => setNoteScope(e.target.value as BaseballNoteScope)}
+                    disabled={isPendingNote}
+                    className="w-56 text-sm"
+                  >
+                    <option value="staff_public">Staff only</option>
+                    <option value="player_visible">Visible to player</option>
+                  </NativeSelect>
+                  <p className="text-xs text-warm-400 mt-1.5">
+                    {noteScope === 'player_visible'
+                      ? 'The player will see this note on their Today and timeline.'
+                      : 'Only staff can see this note.'}
+                  </p>
+                </div>
                 <div className="flex items-center justify-between mt-3">
                   <div>
                     {noteError && (
@@ -1559,18 +1590,20 @@ export function PlayerProfileClient({
                 <IconX size={18} />
               </IconButton>
 
-              {/* Video player */}
+              {/* Video player — clipStart/clipEnd clamp playback to the clip's
+                  bounds instead of playing the full parent video (mirrors
+                  video-detail-client.tsx and VideoLibraryClient's VideoModal). */}
               <div className="aspect-video bg-black">
                 {selectedVideo.video_url ? (
-                  // eslint-disable-next-line jsx-a11y/media-has-caption -- user-uploaded video, no captions available
-                  <video
+                  <VideoPlayer
                     src={selectedVideo.video_url}
-                    controls
+                    thumbnail={selectedVideo.thumbnail_url}
+                    title={selectedVideo.title ?? undefined}
                     autoPlay
-                    className="w-full h-full"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                    className="rounded-none aspect-auto h-full"
+                    clipStart={selectedVideo.clip_start_time ?? undefined}
+                    clipEnd={selectedVideo.clip_end_time ?? undefined}
+                  />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                     <IconVideo size={40} className="text-warm-600" />

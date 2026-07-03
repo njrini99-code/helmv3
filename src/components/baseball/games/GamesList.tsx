@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { getBaseballStatsGameCreateHref } from '@/lib/baseball/stats-route-aliases';
 import { GameCard } from './GameCard';
-import { getTeamGames, deleteGame } from '@/app/baseball/actions/games';
+import { getTeamGames, getTeamSeasonRecord, deleteGame, type TeamSeasonRecord } from '@/app/baseball/actions/games';
 import type { BaseballGame, BaseballGameType } from '@/lib/types';
 import { IconPlus, IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,10 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear());
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Season record is computed over the FULL season (all completed games) via a
+  // dedicated selector — never over the possibly limit-truncated display list —
+  // so this header matches the Games & Scrimmages page exactly on every surface.
+  const [seasonRecord, setSeasonRecord] = useState<TeamSeasonRecord | null>(null);
 
   const fetchGames = useCallback(
     async (isRefresh = false) => {
@@ -40,17 +44,18 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       else setLoading(true);
       setError(null);
 
-      const result = await getTeamGames(teamId, {
-        gameType: activeTab === 'all' ? undefined : (activeTab as BaseballGameType),
-        seasonYear,
-        limit,
-      });
+      const gameType = activeTab === 'all' ? undefined : (activeTab as BaseballGameType);
+      const [result, recordResult] = await Promise.all([
+        getTeamGames(teamId, { gameType, seasonYear, limit }),
+        getTeamSeasonRecord(teamId, seasonYear, gameType),
+      ]);
 
       if (result.success) {
         setGames(result.data ?? []);
       } else {
         setError(result.error ?? 'Failed to load games');
       }
+      setSeasonRecord(recordResult.success ? (recordResult.data ?? null) : null);
       setLoading(false);
       setRefreshing(false);
     },
@@ -73,27 +78,16 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
     setDeletingId(null);
   }
 
-  const completedGames = games.filter((g) => g.status === 'completed');
-  const { wins, losses, ties } = completedGames.reduce(
-    (record, g) => {
-      if (g.our_score == null || g.opponent_score == null) return record;
-      if (g.our_score > g.opponent_score) record.wins += 1;
-      else if (g.our_score < g.opponent_score) record.losses += 1;
-      else record.ties += 1;
-      return record;
-    },
-    { wins: 0, losses: 0, ties: 0 }
-  );
-
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-warm-900">{title}</h2>
-          {completedGames.length > 0 && (
-            <p className="text-sm text-warm-500 mt-0.5">
-              {completedGames.length} played · {wins}W-{losses}L{ties > 0 ? `-${ties}T` : ''}
+          {title ? <h2 className="text-xl font-bold text-warm-900">{title}</h2> : null}
+          {seasonRecord && seasonRecord.played > 0 && (
+            <p className={`text-sm text-warm-500 ${title ? 'mt-0.5' : ''}`}>
+              {seasonRecord.played} played · {seasonRecord.wins}W-{seasonRecord.losses}L
+              {seasonRecord.ties > 0 ? `-${seasonRecord.ties}T` : ''}
             </p>
           )}
         </div>
@@ -195,17 +189,25 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       ) : (
         <div className="space-y-3">
           {games.map((game) => (
-            <div key={game.id} className="relative">
+            <div key={game.id} className="relative group">
               <GameCard game={game} />
               {deletingId === game.id && (
                 <div className="absolute inset-0 bg-cream-100/82 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                   <span className="text-sm text-warm-500">Deleting...</span>
                 </div>
               )}
-              {/* Delete action - accessible via right-click context or small button */}
+              {/* Delete action. Desktop (hover-capable pointers): hidden by
+                  default and fully non-interactive (pointer-events-none)
+                  until the row is hovered or the button receives keyboard
+                  focus, so it can never intercept a click meant for
+                  GameCard's content underneath. Touch (no hover — e.g.
+                  iPad/phone in this Capacitor app): there is no hover to
+                  reveal it, so it stays always visible in a muted style and
+                  tappable — it must never be invisible-yet-interactive. */}
               <Button variant="danger"
                 onClick={() => handleDelete(game.id)}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-warm-300 hover:text-red-500 transition-all text-xs hidden"
+                disabled={deletingId === game.id}
+                className="absolute top-3 right-3 text-xs text-warm-300 hover:text-red-500 transition-all opacity-60 pointer-events-auto [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
                 aria-label="Delete game"
               >
                 ×

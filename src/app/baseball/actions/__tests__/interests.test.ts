@@ -40,7 +40,7 @@ vi.mock('@/lib/validation/server-action-validator', async (importOriginal) => {
   };
 });
 
-import { addToInterests, removeFromInterests } from '@/app/baseball/actions/interests';
+import { addToInterests, removeFromInterests, updateInterestStatus } from '@/app/baseball/actions/interests';
 import { logSecurityEvent } from '@/lib/validation/server-action-validator';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 
@@ -165,5 +165,71 @@ describe('removeFromInterests', () => {
     expect(res.success).toBe(true);
     expect(firstEq).toHaveBeenCalledWith('player_id', PLAYER_ID);
     expect(secondEq).toHaveBeenCalledWith('organization_id', ORG_ID);
+  });
+});
+
+describe('updateInterestStatus', () => {
+  const INTEREST_ID = '33333333-3333-4333-8333-333333333333';
+
+  function mockOwnedInterest(ownerId: string) {
+    const updateEq2 = vi.fn(async () => ({ error: null }));
+    const updateEq1 = vi.fn(() => ({ eq: updateEq2 }));
+    const updateFn = vi.fn(() => ({ eq: updateEq1 }));
+
+    from.mockImplementation((table: string) => {
+      if (table === 'baseball_recruiting_interests') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn(async () => ({
+                data: { id: INTEREST_ID, player_id: ownerId },
+                error: null,
+              })),
+            })),
+          })),
+          update: updateFn,
+        };
+      }
+      return mockTable(table);
+    });
+
+    return { updateFn, updateEq1, updateEq2 };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockActivePlayerContext();
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+  });
+
+  it('updates status when the interest belongs to the active player (validated 6-value vocab)', async () => {
+    const { updateFn, updateEq1, updateEq2 } = mockOwnedInterest(PLAYER_ID);
+
+    const res = await updateInterestStatus(INTEREST_ID, 'contacted');
+
+    expect(res.success).toBe(true);
+    expect(updateFn).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'contacted' }),
+    );
+    expect(updateEq1).toHaveBeenCalledWith('id', INTEREST_ID);
+    expect(updateEq2).toHaveBeenCalledWith('player_id', PLAYER_ID);
+  });
+
+  it('rejects a status value outside the 6-value player journey vocab', async () => {
+    const { updateFn } = mockOwnedInterest(PLAYER_ID);
+
+    const res = await updateInterestStatus(INTEREST_ID, 'high_priority');
+
+    expect(res.success).toBe(false);
+    expect(updateFn).not.toHaveBeenCalled();
+  });
+
+  it('rejects updating an interest owned by a different player', async () => {
+    const { updateFn } = mockOwnedInterest('someone-else-id');
+
+    const res = await updateInterestStatus(INTEREST_ID, 'contacted');
+
+    expect(res.success).toBe(false);
+    expect(updateFn).not.toHaveBeenCalled();
   });
 });

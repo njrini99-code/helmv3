@@ -4,6 +4,13 @@ import type {
   DecisionRoomAttendanceSummary,
   DecisionRoomAvailabilityConcern,
 } from '@/app/baseball/actions/decision-room';
+import { fromUntyped } from '@/lib/supabase/untyped';
+import {
+  resolveBaseballLiftingOrg,
+  resolveBaseballAthleteIds,
+} from '@/lib/lifting/resolve-baseball-context';
+import { extractArmStatusFromNotes } from '@/lib/lifting/adapters/baseball-view-adapter';
+import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-data';
 
 /**
  * Decision Room — Availability + Attendance read models.
@@ -14,10 +21,13 @@ import type {
  * client here.
  *
  * Tables wired:
- *   - baseball_availability_statuses  (coach-set availability flags)
- *   - baseball_readiness_checkins     (player-reported daily readiness)
- *   - baseball_event_attendance       (event RSVP / check-in)
- *   - baseball_practice_attendance    (practice attendance)
+ *   - baseball_availability_statuses    (coach-set availability flags)
+ *   - helm_lifting_readiness_checkins   (player-reported daily readiness — W2-G
+ *                                        rewire; the legacy baseball_readiness_
+ *                                        checkins table is write-dead since
+ *                                        submitReadinessCheckin only writes helm)
+ *   - baseball_event_attendance         (event RSVP / check-in)
+ *   - baseball_practice_attendance      (practice attendance)
  *
  * Schema vocabulary (verified against prod via information_schema + CHECK
  * constraints — do not guess these):
@@ -31,6 +41,11 @@ import type {
  * NOTE: baseball_event_attendance has NO team_id column — it is scoped to the
  * team only through baseball_events.team_id, so we filter via an !inner embed
  * on the event. baseball_practice_attendance DOES carry team_id directly.
+ *
+ * NOTE: helm_lifting_readiness_checkins has NO FK to baseball_players (it is
+ * athlete_id-keyed into helm_lifting_athletes), so the player embed used for
+ * the legacy table is fetched separately here and matched via the baseball
+ * player_id <-> helm athlete_id map from resolveBaseballAthleteIds.
  */
 
 /** Availability statuses that should surface as a Decision Room concern. */
@@ -133,6 +148,32 @@ export async function loadAvailabilityConcerns(
 
   const nowIso = new Date().toISOString();
 
+  // Roster + player embeds for the readiness join — helm_lifting_readiness_
+  // checkins has no FK to baseball_players, so this is fetched separately
+  // (same pattern as performance/page.tsx after the W2-G rewire).
+  const { data: members } = await supabase
+    .from('baseball_team_members')
+    .select(
+      `player_id,
+       baseball_players!inner ( id, first_name, last_name, avatar_url, primary_position )`,
+    )
+    .eq('team_id', teamId);
+  const rosterPlayers = ((members ?? []) as unknown as Array<{ baseball_players: EmbeddedPlayer }>)
+    .map((m) => m.baseball_players)
+    .filter((p): p is EmbeddedPlayer => Boolean(p?.id));
+  const playerById = new Map(rosterPlayers.map((p) => [p.id, p]));
+  const rosterPlayerIds = rosterPlayers.map((p) => p.id);
+
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const athleteMap = liftCtx && rosterPlayerIds.length
+    ? await resolveBaseballAthleteIds(liftCtx.organizationId, rosterPlayerIds)
+    : {};
+  const athleteToPlayer = new Map<string, string>();
+  for (const [playerId, athleteId] of Object.entries(athleteMap)) {
+    athleteToPlayer.set(athleteId, playerId);
+  }
+  const teamAthleteIds = Object.values(athleteMap);
+
   const [availabilityRes, readinessRes] = await Promise.all([
     // Source A — coach-set availability flags currently in effect.
     supabase
@@ -149,21 +190,21 @@ export async function loadAvailabilityConcerns(
       .order('starts_at', { ascending: false })
       .limit(MAX_ROWS),
 
-    // Source B — recent player-reported readiness check-ins.
-    supabase
-      .from('baseball_readiness_checkins')
-      .select(
-        `id, player_id, check_date, readiness_score, readiness_band, arm_status,
-         soreness_level, illness_flag, notes, created_at,
-         player:baseball_players!baseball_readiness_checkins_player_id_fkey (
-           id, first_name, last_name, avatar_url, primary_position
-         )`,
-      )
-      .eq('team_id', teamId)
-      .gte('check_date', daysAgoDate(READINESS_LOOKBACK_DAYS))
-      .order('check_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(MAX_ROWS),
+    // Source B — recent player-reported readiness check-ins. W2-G rewire: reads
+    // helm_lifting_readiness_checkins (the legacy baseball_readiness_checkins
+    // table is write-dead — submitReadinessCheckin only writes helm now).
+    liftCtx && teamAthleteIds.length
+      ? (fromUntyped(supabase, 'helm_lifting_readiness_checkins')
+          .select(
+            'id, athlete_id, checkin_date, readiness_score, readiness_band, soreness_overall, illness_flag, notes, created_at',
+          )
+          .eq('organization_id', liftCtx.organizationId)
+          .in('athlete_id', teamAthleteIds)
+          .gte('checkin_date', daysAgoDate(READINESS_LOOKBACK_DAYS))
+          .order('checkin_date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(MAX_ROWS) as unknown as Promise<{ data: HelmLiftingReadinessCheckinRow[] | null; error: unknown }>)
+      : Promise.resolve({ data: [] as HelmLiftingReadinessCheckinRow[], error: null }),
   ]);
 
   if (availabilityRes.error) throw availabilityRes.error;
@@ -189,11 +230,25 @@ export async function loadAvailabilityConcerns(
 
   // --- Readiness check-ins: keep latest per player, flag low readiness -----
   const latestByPlayer = new Map<string, ReadinessRow>();
-  for (const row of (readinessRes.data ?? []) as unknown as ReadinessRow[]) {
+  for (const helmRow of (readinessRes.data ?? []) as HelmLiftingReadinessCheckinRow[]) {
+    const playerId = athleteToPlayer.get(helmRow.athlete_id);
+    if (!playerId) continue; // athlete not (yet) mapped to a roster player — skip honestly.
     // Rows are ordered newest-first, so the first one seen per player wins.
-    if (!latestByPlayer.has(row.player_id)) {
-      latestByPlayer.set(row.player_id, row);
-    }
+    if (latestByPlayer.has(playerId)) continue;
+    const row: ReadinessRow = {
+      id: helmRow.id,
+      player_id: playerId,
+      check_date: helmRow.checkin_date,
+      readiness_score: helmRow.readiness_score,
+      readiness_band: helmRow.readiness_band,
+      arm_status: extractArmStatusFromNotes(helmRow.notes),
+      soreness_level: helmRow.soreness_overall,
+      illness_flag: helmRow.illness_flag,
+      notes: helmRow.notes,
+      created_at: helmRow.created_at,
+      player: playerById.get(playerId) ?? null,
+    };
+    latestByPlayer.set(playerId, row);
   }
 
   for (const row of latestByPlayer.values()) {

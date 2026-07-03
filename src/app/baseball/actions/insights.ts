@@ -300,7 +300,10 @@ function analyzePlayer(
   if (totalHits >= 50 && totalHits % 25 === 0) {
     insights.push({
       player_id: playerId,
-      insight_type: 'development_milestone',
+      // Distinct from the HR milestone so both survive reconciliation, which
+      // keys insights by `${playerId}::${insight_type}`. A player crossing both
+      // a hit and an HR milestone in one run now persists two independent rows.
+      insight_type: 'milestone_hits',
       priority: 'low',
       title: `${playerName} reached ${totalHits} hits!`,
       description: `Career milestone: ${totalHits} hits in ${aggregates?.total_sessions || 0} sessions.`,
@@ -316,7 +319,9 @@ function analyzePlayer(
   if (totalHR >= 10 && totalHR % 5 === 0) {
     insights.push({
       player_id: playerId,
-      insight_type: 'development_milestone',
+      // Distinct from the hits milestone (see above) so the HR milestone is
+      // reconciled and refreshed independently rather than overwriting it.
+      insight_type: 'milestone_hr',
       priority: 'low',
       title: `${playerName} hit ${totalHR} home runs!`,
       description: `Power milestone achieved.`,
@@ -503,12 +508,19 @@ function analyzeTeam(
  * Comparing an insight's `coach_id` directly against `supabase.auth.getUser().id`
  * compares two different id domains and rejects every real coach. Returns
  * null when the user has no coach row.
+ *
+ * Not a standalone server action — an internal resolver that takes an
+ * already-authenticated `supabase` client and `userId` from its caller (every
+ * call site in this file derives `userId` from its own prior
+ * `supabase.auth.getUser()` check, e.g. `dismissInsight` below). Exported
+ * only so insight-lifecycle.test.ts can unit-test it directly.
  */
 export async function resolveCallerCoachId(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   userId: string,
 ): Promise<string | null> {
+  // nosemgrep: helmv3-server-action-missing-auth-check -- see JSDoc above; this helper trusts its caller's already-authenticated `userId`, it doesn't own a session to re-check.
   const { data: coach } = await supabase
     .from('baseball_coaches')
     .select('id')

@@ -61,26 +61,34 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
     if (!draggedPlayer) return;
 
     const newLineup = [...lineup];
+    const toSlot = newLineup[toSlotIndex];
+    if (!toSlot) {
+      setDraggedPlayer(null);
+      setDraggedSlotIndex(null);
+      return;
+    }
 
-    // If dragging from a slot, clear that slot
+    // Whoever currently occupies the target slot (may be null). When moving a
+    // player between two slots we SWAP — the incumbent takes the source slot —
+    // instead of nulling the source and dropping the incumbent out of the
+    // lineup. When dragging in from the bench, the incumbent simply returns to
+    // the available pool (they no longer occupy any slot).
+    const displacedPlayer = toSlot.player;
+
     if (draggedSlotIndex !== null) {
-      const slot = newLineup[draggedSlotIndex];
-      if (slot) {
+      const fromSlot = newLineup[draggedSlotIndex];
+      if (fromSlot) {
         newLineup[draggedSlotIndex] = {
-          order: slot.order,
-          player: null
+          order: fromSlot.order,
+          player: displacedPlayer,
         };
       }
     }
 
-    // Place player in new slot
-    const toSlot = newLineup[toSlotIndex];
-    if (toSlot) {
-      newLineup[toSlotIndex] = {
-        order: toSlot.order,
-        player: draggedPlayer
-      };
-    }
+    newLineup[toSlotIndex] = {
+      order: toSlot.order,
+      player: draggedPlayer,
+    };
 
     setLineup(newLineup);
     setDraggedPlayer(null);

@@ -197,6 +197,85 @@ const removeFromInterestsAction = withBaseballAction(
   },
 );
 
+export async function updateInterestStatus(
+  interestId: string,
+  status: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    return await updateInterestStatusAction(interestId, status);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'interests.updateInterestStatus', featureArea: 'baseball-interests' },
+    );
+    return mapInterestActionError(error);
+  }
+}
+
+const updateInterestStatusAction = withBaseballAction(
+  'updateInterestStatus',
+  { featureArea: 'baseball-interests' },
+  async (ctx, interestId: string, status: string): Promise<{ success: boolean; error?: string }> => {
+    const validated = RecruitingSchemas.updateStatus.parse({
+      interest_id: interestId,
+      status,
+    });
+
+    const playerId = ctx.activePlayerId;
+    if (!playerId) {
+      throw new BaseballActionError('Player not found');
+    }
+
+    const supabase = await createClient();
+
+    // Verify ownership before mutating (mirrors verifyWatchlistOwnership's
+    // pattern on the coach side): the interest must belong to this player.
+    const { data: existing, error: fetchError } = await supabase
+      .from('baseball_recruiting_interests')
+      .select('id, player_id')
+      .eq('id', validated.interest_id)
+      .maybeSingle();
+
+    if (fetchError || !existing) {
+      throw new BaseballActionError('Interest not found');
+    }
+    if (existing.player_id !== playerId) {
+      throw new BaseballActionError('Not your interest');
+    }
+
+    await logSecurityEvent({
+      event: 'recruiting_interest_status_update',
+      action: 'interests.updateInterestStatus',
+      userId: ctx.user.id,
+      metadata: {
+        playerId,
+        interestId: validated.interest_id,
+        newStatus: validated.status,
+      },
+    });
+
+    const { error } = await supabase
+      .from('baseball_recruiting_interests')
+      .update({
+        status: validated.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', validated.interest_id)
+      .eq('player_id', playerId);
+
+    if (error) {
+      await logServerError(`[interests] Failed to update interest status: ${error.message}`, {
+        action: 'interests.updateInterestStatus',
+        metadata: { playerId, interestId: validated.interest_id },
+      });
+      throw new BaseballActionError('Failed to update status');
+    }
+
+    revalidateInterestPaths();
+    return { success: true };
+  },
+);
+
 export async function getPlayerInterests() {
   const supabase = await createClient();
 

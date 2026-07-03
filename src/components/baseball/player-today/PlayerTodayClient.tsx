@@ -200,7 +200,7 @@ function SectionHeader({
 // -----------------------------------------------------------------------------
 
 function SummaryStrip({ model }: { model: PlayerTodayReadModel }) {
-  const liftsOpen = model.summary.assignmentsOpen;
+  const liftsDue = model.summary.assignmentsDue;
   const coachOpen = model.summary.coachActionsOpen;
   const coachDue = model.summary.coachActionsDue;
   const tiles = [
@@ -235,11 +235,14 @@ function SummaryStrip({ model }: { model: PlayerTodayReadModel }) {
         coachDue > 0 ? 'bg-amber-50' : coachOpen > 0 ? 'bg-primary-50' : 'bg-warm-100',
     },
     {
-      label: 'Lifts Today',
-      value: model.summary.assignmentsToday,
+      // "Lifts Due" (not "Lifts Today"): counts sessions the player still owes —
+      // today PLUS overdue-but-open — so this tile agrees with the right-rail
+      // Lift & Check-in card instead of reading 0 while the card shows overdue.
+      label: 'Lifts Due',
+      value: liftsDue,
       icon: <IconDumbbell size={18} />,
-      tone: liftsOpen > 0 ? 'text-primary-600' : 'text-warm-600',
-      bg: liftsOpen > 0 ? 'bg-primary-50' : 'bg-warm-100',
+      tone: liftsDue > 0 ? 'text-primary-600' : 'text-warm-600',
+      bg: liftsDue > 0 ? 'bg-primary-50' : 'bg-warm-100',
     },
   ];
 
@@ -436,24 +439,41 @@ function AssignmentsSection({
         <Card variant="raised" noPadding>
           <ul className="divide-y divide-warm-100">
             {feed.items.map((a: PlayerTodayAssignment) => {
-              const badge = LIFT_STATUS_LABEL[a.status] ?? {
-                label: prettyLabel(a.status),
-                cls: 'bg-warm-100 text-warm-600',
-              };
+              const badge = a.isOverdue
+                ? { label: 'Overdue', cls: 'bg-red-100 text-red-700' }
+                : (LIFT_STATUS_LABEL[a.status] ?? {
+                    label: prettyLabel(a.status),
+                    cls: 'bg-warm-100 text-warm-600',
+                  });
+              const dateLabel = a.isToday
+                ? 'Today'
+                : a.isOverdue
+                  ? `Overdue · ${a.scheduledDate}`
+                  : a.scheduledDate;
               return (
                 <li
                   key={a.id}
                   className="flex items-center gap-3 px-5 py-3.5"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                      a.isOverdue
+                        ? 'bg-red-50 text-red-600'
+                        : 'bg-primary-50 text-primary-600'
+                    }`}
+                  >
                     <IconDumbbell size={16} />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-warm-900">
                       {a.title}
                     </p>
-                    <p className="text-eyebrow uppercase tracking-wide text-warm-400">
-                      {a.isToday ? 'Today' : a.scheduledDate}
+                    <p
+                      className={`text-eyebrow uppercase tracking-wide ${
+                        a.isOverdue ? 'text-red-500' : 'text-warm-400'
+                      }`}
+                    >
+                      {dateLabel}
                       {a.estimatedMinutes ? ` · ~${a.estimatedMinutes} min` : ''}
                       {a.baseballContext ? ` · ${prettyLabel(a.baseballContext)}` : ''}
                     </p>
@@ -619,7 +639,7 @@ function CoachAssignmentCard({
           )}
           {completed && (
             <p className="mt-3 border-t border-warm-100 pt-3 text-eyebrow text-primary-600">
-              Nice work — your coach can see this is done.
+              Nice work. Your coach can see this is done.
             </p>
           )}
         </div>
@@ -1579,7 +1599,7 @@ export function PlayerTodayClient({
 
   // Derived values for first-viewport hero + CTA row
   const hasPendingAck = model.summary.eventsPendingAck > 0;
-  const hasLiftToday = model.summary.assignmentsToday > 0;
+  const hasLiftToday = model.summary.assignmentsDue > 0;
   const practiceId = model.practiceGroup.practiceId;
 
   // activeRole is always 'player' in this player-dashboard route group (coaches
@@ -1600,7 +1620,7 @@ export function PlayerTodayClient({
               {longDate}
             </h1>
             <p className="mt-1 text-warm-500">
-              Your daily rundown — schedule, recent work, and what needs your attention.
+              Your daily rundown: schedule, recent work, and what needs your attention.
             </p>
 
             {/* Primary CTA row (spec lines 72-76): Check In · Acknowledge · View Today Plan.
@@ -1725,7 +1745,7 @@ export function PlayerTodayClient({
                 <SectionHeader icon={<IconClock size={16} />} title="My Timeline" />
                 <Card variant="raised" padding="md" className="hover:border-warm-300 hover:shadow-sm transition-all duration-200">
                   <p className="text-sm text-warm-500">
-                    Your full development story — stats, notes, and coach insights in order.
+                    Your full development story: stats, notes, and coach insights in order.
                   </p>
                   <Link
                     href="/baseball/player/timeline"

@@ -11,6 +11,7 @@ import type {
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { IconSave, IconUser, IconTrendingUp } from '@/components/icons';
+import { sumInningsPitched } from '@/lib/baseball/innings';
 
 interface PlayerRow {
   id: string;
@@ -454,7 +455,8 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                       <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="pitching-entry-totals-row">
                         <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
                         <td className="px-2 py-2.5 text-center tabular-nums font-mono">
-                          {pitchingRows.reduce((s, r) => s + r.ip, 0).toFixed(1)}
+                          {/* .1/.2 are outs — sum via outs, not base-10 (#434) */}
+                          {sumInningsPitched(pitchingRows.map((r) => r.ip)).toFixed(1)}
                         </td>
                         <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.h, 0)}</td>
                         <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.r, 0)}</td>

@@ -23,7 +23,7 @@ interface BoxScoreUploadProps {
   initialPitching?: BoxScorePitchingInput[];
 }
 
-type UploadTab = 'manual' | 'csv' | 'pdf';
+type UploadTab = 'manual' | 'csv';
 type CSVType = 'batting' | 'pitching';
 
 const BATTING_TEMPLATE = `player_name,ab,r,h,2b,3b,hr,rbi,bb,k,sb,cs,hbp,sac,sf,lob
@@ -69,7 +69,6 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
   const [allMatched, setAllMatched] = useState(false);
   const [resolving, setResolving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   function updateUnmatchedResolution(csvName: string, playerId: string) {
     setUnmatched((prev) =>
@@ -141,23 +140,13 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
     setCsvContent(text);
   }
 
-  async function handlePDFSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // For PDF, we show a user-friendly message — server-side parsing happens via API
-    setUploadError(
-      'PDF upload: Copy the text content from your PDF box score and paste it into the CSV tab using the column format shown in the template.'
-    );
-  }
-
   const unresolvedCount = unmatched.filter((u) => !u.resolvedPlayerId).length;
 
   return (
     <div className="space-y-5">
       {/* Tab selector */}
       <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
-        {(['manual', 'csv', 'pdf'] as UploadTab[]).map((tab) => (
+        {(['manual', 'csv'] as UploadTab[]).map((tab) => (
           <Button variant="ghost"
             key={tab}
             onClick={() => {
@@ -174,7 +163,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
                 : 'text-warm-500 hover:text-warm-700'
             }`}
           >
-            {tab === 'manual' ? '✏️ Manual Entry' : tab === 'csv' ? '📄 CSV Upload' : '📑 PDF Upload'}
+            {tab === 'manual' ? '✏️ Manual Entry' : '📄 CSV Upload'}
           </Button>
         ))}
       </div>
@@ -379,49 +368,6 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* PDF upload tab */}
-      {activeTab === 'pdf' && (
-        <div className="glass-standard rounded-2xl p-8 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80 mx-auto">
-            <IconUpload size={26} />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-warm-800 mb-1">Upload Box Score PDF</h3>
-            <p className="text-sm text-warm-500 max-w-sm mx-auto">
-              Upload a PDF box score and we&apos;ll extract player stats automatically. 
-              Works best with standard box score formats.
-            </p>
-          </div>
-
-          <input
-            ref={pdfInputRef}
-            type="file"
-            accept=".pdf,application/pdf"
-            onChange={handlePDFSelect}
-            className="hidden"
-          />
-
-          <Button
-            onClick={() => pdfInputRef.current?.click()}
-            variant="outline"
-            className="mx-auto"
-          >
-            <IconUpload size={16} className="mr-2" />
-            Choose PDF File
-          </Button>
-
-          {uploadError && (
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-700 text-left max-w-md mx-auto">
-              {uploadError}
-            </div>
-          )}
-
-          <p className="text-xs text-warm-400">
-            Tip: If PDF parsing doesn&apos;t work, use the CSV tab — download the template and fill it in manually.
-          </p>
         </div>
       )}
     </div>

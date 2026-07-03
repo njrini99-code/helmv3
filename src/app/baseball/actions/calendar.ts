@@ -184,8 +184,12 @@ const createBaseballEventAction = withBaseballAction(
       input.timezoneOffset,
     );
 
-    const { data, error } = await supabase
-      .from('baseball_events')
+    // Routed through fromUntyped because the generated baseball_events types
+    // drift from the live schema. The column list MUST match the live table:
+    // baseball_events has NO `requires_rsvp` column — writing it made PostgREST
+    // reject the whole insert, so "Add Event" silently failed. RSVP intent is
+    // instead expressed by seeding attendance rows below.
+    const { data, error } = await fromUntyped(supabase, 'baseball_events')
       .insert({
         team_id: resolvedTeamId,
         created_by: coachId,
@@ -193,6 +197,7 @@ const createBaseballEventAction = withBaseballAction(
         event_type: input.eventType,
         start_time: startDateTime,
         end_time: endDateTime,
+        all_day: input.allDay ?? false,
         location: input.location || null,
         description: input.description || null,
         is_mandatory: input.isMandatory ?? false,
@@ -270,6 +275,9 @@ const updateBaseballEventAction = withBaseballAction(
     if (input.location !== undefined) updateData.location = input.location;
     if (input.description !== undefined) updateData.description = input.description;
     if (input.isMandatory !== undefined) updateData.is_mandatory = input.isMandatory;
+    // NOTE: baseball_events has no `requires_rsvp` column — do NOT write it here
+    // (it rejects the whole update). RSVP intent lives in baseball_event_attendance.
+    if (input.allDay !== undefined) updateData.all_day = input.allDay;
     if (input.maxAttendees !== undefined) updateData.max_attendees = input.maxAttendees;
     if (input.rsvpDeadline !== undefined) {
       updateData.rsvp_deadline = buildRsvpDeadline(input.rsvpDeadline, input.timezoneOffset);

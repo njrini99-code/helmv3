@@ -1,0 +1,263 @@
+/* ============================================================================
+ * BaseballHelm — Entry World FRONT DOOR (ADDITIVE / baseball-only)
+ * ----------------------------------------------------------------------------
+ * Full-bleed painterly-scene surface for the six src/app/baseball/(auth)/
+ * pages (login, signup, complete-signup, forgot-password, reset-password,
+ * demo). Namespaced `.baseball-auth-*` so it can never collide with golf's
+ * `.bg-auth-golf` / `.auth-glass-card` chrome (untouched, still golf-only) or
+ * anything else in globals.css. Consumes tokens from both
+ * src/styles/baseball-living-annual.css (--hairline / --grade-plus /
+ * --pursuit-ink) and, for the glass panel, the shared First Light `--fl-*`
+ * vars (src/components/marketing/first-light/first-light.css, imported by
+ * baseball-auth-shell.tsx — see docs/baseball/ENTRY_SCENES_DESIGN.md's
+ * "same glass tokens across landing/login/onboarding").
+ * ========================================================================== */
+
+/* Base fill behind the full-bleed scene — only visible for the instant
+   before the scene SVG paints (or with JS/CSS disabled). Same deep-cream
+   the rest of the Living Annual redesign uses. */
+.baseball-auth-field {
+  background: var(--paper-canvas);
+}
+
+/* The glass panel — grade-3 glass grammar (blur 24, faint grain via
+   `.fl-glass-3`'s own `::before`) but warmed to cream instead of
+   `.fl-glass-3`'s default deep-sage-ink tint, and with its `brightness(0.92)`
+   darkening dropped entirely. The panel sits over a painterly scene rather
+   than a dark band, and the existing form components (labels, inputs)
+   assume dark-on-light text — a warm, mostly-opaque glass keeps that
+   legible without touching those components.
+   The selector below MUST be the combined `.fl-glass-3.baseball-auth-panel`
+   (0,2,0) — a bare `.baseball-auth-panel` (0,1,0) is a specificity TIE with
+   `.fl-glass-3`'s own (0,1,0) background/backdrop-filter rules, decided by
+   unpredictable CSS-chunk import order in the merged bundle. (Confirmed:
+   an earlier version of this file used the bare selector despite this exact
+   comment already claiming the combined one — in the integration build,
+   `.fl-glass-3`'s dark `rgba(--fl-pine-rgb, 0.55)` + `brightness(0.92)` won,
+   rendering the panel as a dark gray-green slab.) The combined selector
+   always outranks `.fl-glass-3` alone regardless of order. */
+.fl-glass-3.baseball-auth-panel {
+  /* §D2 (Nick): MORE CREAM, NO WHITE — the panel fill is true cream, never
+     the near-white cream-high (that stays for the 1px specular lip below). */
+  background: rgba(var(--fl-cream-rgb), 0.9);
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  /* Replaces `.fl-glass-3`'s own brass top edge-light box-shadow with a
+     cream specular lip, plus a faint sage-ink hairline ring — the panel's
+     only "dark" note, at 8% opacity, so it still unmistakably reads as
+     glass rather than a flat cream card. */
+  box-shadow:
+    inset 0 1px 0 rgba(var(--fl-cream-high-rgb), 0.9),
+    0 0 0 1px rgba(var(--fl-sage-ink-rgb), 0.08);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fl-glass-3.baseball-auth-panel {
+    /* §D2: fallback fill is true cream too — never near-white. */
+    background: rgba(var(--fl-cream-rgb), 0.97);
+  }
+}
+
+/* Quiet lane-ink wash inside the glass panel — `--auth-accent` defaults to
+   team green; pages in the "pursuit" lane (demo) override it to clay via
+   inline style. Sits at z-index 0, below `.fl-glass-3`'s own grain
+   `::before` (z-index 1) and the panel's `relative z-10` content wrapper.
+   Never more than a 16% tint — atmosphere, not chrome. This is NOT the
+   reserved --clay dark canvas (that rule only governs the literal --clay
+   custom property, untouched here). */
+.baseball-auth-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 55% at 50% -6%,
+    color-mix(in oklch, var(--auth-accent, var(--grade-plus)) 16%, transparent) 0%,
+    transparent 62%
+  );
+}
+
+/* ============================================================================
+ * SAGE & CREAM panel recolor (docs/baseball/ENTRY_SCENES_DESIGN.md ⚠
+ * AMENDMENT — "FIX EVERY NAMED PANEL DEFECT"; docs/LANDING_ENTRY_WORLD_DESIGN.md
+ * ⚠ SAGE & CREAM AMENDMENT — kelly AND clay both demoted to product-only,
+ * "landing/auth chrome never uses [them] directly").
+ *
+ * The six baseball auth pages (login/signup/complete-signup/forgot-password/
+ * reset-password/demo) + their two form components still reach for the
+ * baseball-native `grade-plus` (kelly team ink) and `pursuit`/`pursuit-deep`
+ * (clay recruiting ink) tokens directly — success banners, role-selector
+ * active states, icon accents, the EditorsLetter/Eyebrow/HairlineRule atoms'
+ * default inks, and the shared `Input`/`Button` primitives' kelly focus
+ * ring + primary-600 button fill. None of that is this file's job to hunt
+ * down page-by-page (those two components + the six pages are governed by
+ * the "flows are sacred" rule and belong to other lanes' byte-identical
+ * contract) — instead every one of those colors is recolored HERE, scoped to
+ * `.baseball-auth-panel`, via two different CSS mechanisms depending on how
+ * the source color is defined:
+ *
+ *  1. `--grade-plus` / `--pursuit-ink` / `--pursuit-deep` / `--focus-ring`
+ *     are declared in tailwind.config.ts / src/styles/tokens.css as plain
+ *     `var(--x)` references (never a literal hex baked into the utility) —
+ *     so redefining what they POINT TO, scoped to this panel, silently
+ *     recolors every `.bg-grade-plus`, `.text-pursuit`, `.border-pursuit-
+ *     deep`, `focus-visible:ring-[color:var(--focus-ring)]`, etc. AND every
+ *     inline `style={{ background: 'var(--grade-plus)' }}` (EditorsLetter's
+ *     live dot) that inherits it — zero page/component edits, zero
+ *     specificity fights, and (critically) it reaches inside shared
+ *     baseball-native atoms (EditorsLetter used in demo/page.tsx) that this
+ *     file has no other way to touch.
+ *  2. `primary-{500,600,700,800}` (tailwind.config.ts `colors.primary`) ARE
+ *     literal hex (`600: '#16A34A'`) — no var indirection to redefine — so
+ *     those need an actual class-selector override. `.baseball-auth-panel
+ *     .bg-primary-600` = specificity (0,2,0) beats the bare Tailwind utility
+ *     `.bg-primary-600` = (0,1,0) regardless of stylesheet import order
+ *     (same technique as `.fl-glass-3.baseball-auth-panel` above) — this is
+ *     the literal "default-kelly button" defect Nick named; every
+ *     `<Button variant="primary">` in this panel (Sign in / Create account /
+ *     Send reset link / Update password / Complete Setup / Continue to
+ *     Dashboard) renders sage-deep instead. Scoped to `button.` (not just
+ *     `.bg-primary-600`) so it can never reach into the unrelated shared
+ *     `PasswordStrengthIndicator` meter (signup + reset-password render it
+ *     inside this same panel) — that meter's weak/fair/good/strong bars are
+ *     plain `<div>`s using the same `primary-400`/`primary-600` classes for
+ *     an unrelated semantic (a strength scale, not brand chrome), so they're
+ *     deliberately left alone, same as the red error state below.
+ * ========================================================================== */
+
+.baseball-auth-panel {
+  /* Both the "team" (kelly) and "pursuit" (clay) baseball-native inks
+     collapse to the same two sage tones on auth chrome — see the SAGE &
+     CREAM amendment's demotion of both. */
+  --grade-plus: var(--fl-sage-deep);
+  --pursuit-ink: var(--fl-sage-deep);
+  --pursuit-deep: var(--fl-sage-ink);
+  /* Recolors every shared Input/Button's `focus-visible:ring-[color:var(--focus-ring)]`
+     from kelly rgba (src/styles/tokens.css `:root`) to sage-deep rgba. */
+  --focus-ring: rgba(var(--fl-sage-deep-rgb), 0.4);
+}
+
+.baseball-auth-panel button.bg-primary-600 {
+  background-color: var(--fl-sage-deep);
+}
+.baseball-auth-panel button.hover\:bg-primary-700:hover {
+  background-color: var(--fl-sage-ink);
+}
+.baseball-auth-panel .text-primary-700,
+.baseball-auth-panel .text-primary-600 {
+  color: var(--fl-sage-deep);
+}
+.baseball-auth-panel a.hover\:text-primary-700:hover,
+.baseball-auth-panel a.hover\:text-primary-800:hover {
+  color: var(--fl-sage-ink);
+}
+
+/* The shared Button's `focus-visible:ring-primary-500/40 focus-visible:
+   ring-offset-white` is baked directly into its base styles (every
+   variant, not just primary) — a keyboard-focused button in this panel
+   would otherwise flash a kelly ring behind a white offset gap. Full
+   `box-shadow` replacement (not a `--tw-ring-*` var poke) is the reliable
+   way to override a Tailwind ring utility from outside: `.baseball-auth-
+   panel button:focus-visible` = (0,2,1) beats `.focus-visible\:ring-2:
+   focus-visible` = (0,2,0) regardless of import order. */
+.baseball-auth-panel button:focus-visible {
+  outline: none;
+  /* §D2: ring-offset matches the panel's true-cream fill, not cream-high —
+     the halo shouldn't read as a whiter patch than the glass around it. */
+  box-shadow:
+    0 0 0 2px var(--fl-cream),
+    0 0 0 4px rgba(var(--fl-sage-deep-rgb), 0.55);
+}
+
+/* ----------------------------------------------------------------------
+ * Inputs — inset glass wells, NEVER white rectangles (the amendment's
+ * explicit fix). The shared `Input` component's default variant
+ * (`bg-cream-50/92 border-warm-200` — cream-50 is #FBFAF7, a near-white
+ * fill) is recolored + given an inset shadow via the same specificity
+ * technique: `.baseball-auth-panel input` = (0,1,1) beats any single
+ * Tailwind utility class = (0,1,0), regardless of import order.
+ *
+ * `:not([aria-invalid="true"])` guards the border/focus recolor so a real
+ * validation error (Input sets `aria-invalid` whenever its `error` prop is
+ * set — see src/components/ui/input.tsx) keeps its red border/ring exactly
+ * as before; only the "well" background + inset shadow apply universally
+ * (every input reads as glass, error or not). Focus already goes sage-deep
+ * via the `--focus-ring` custom-property redirect above (consumed by the
+ * shared Input's `focus-visible:ring-[color:var(--focus-ring)]`); the
+ * explicit `:focus`/`:focus-visible` block below additionally recolors the
+ * border and keeps the inset shadow so the well doesn't flatten out when
+ * the Tailwind ring utility takes over.
+ * ---------------------------------------------------------------------- */
+.baseball-auth-panel input {
+  background-color: rgba(var(--fl-cream-rgb), 0.55);
+  color: var(--fl-sage-ink);
+  box-shadow: inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.1);
+}
+.baseball-auth-panel input::placeholder {
+  color: rgba(var(--fl-sage-ink-rgb), 0.45);
+}
+.baseball-auth-panel input:not([aria-invalid='true']) {
+  border-color: rgba(var(--fl-sage-ink-rgb), 0.1);
+}
+.baseball-auth-panel input:not([aria-invalid='true']):hover {
+  border-color: rgba(var(--fl-sage-ink-rgb), 0.2);
+}
+.baseball-auth-panel input:not([aria-invalid='true']):focus,
+.baseball-auth-panel input:not([aria-invalid='true']):focus-visible {
+  border-color: var(--fl-sage-deep);
+  box-shadow:
+    inset 0 1px 3px rgba(var(--fl-sage-ink-rgb), 0.1),
+    0 0 0 3px rgba(var(--fl-sage-deep-rgb), 0.3);
+}
+
+/* §D2 (Nick): "no white … including autofill/webkit states." globals.css's
+   app-wide `input:-webkit-autofill` rule paints a near-white
+   `rgba(255,255,255,0.95)` inset shadow over any autofilled field — cheap
+   to override here, scoped to the panel, without touching that global rule
+   (still correct for the rest of the app). `.baseball-auth-panel
+   input:-webkit-autofill` = (0,2,1) beats the global `input:-webkit-
+   autofill` = (0,1,1) regardless of import order. */
+.baseball-auth-panel input:-webkit-autofill,
+.baseball-auth-panel input:-webkit-autofill:hover,
+.baseball-auth-panel input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(var(--fl-cream-rgb), 0.9) inset;
+  -webkit-text-fill-color: var(--fl-sage-ink);
+  caret-color: var(--fl-sage-deep);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Labels — sage-ink on the cream glass (the amendment's exact wording).
+   warm-900/warm-700 (the shared Input's default label colors) are already
+   dark enough to read fine on cream, but this keeps the ink on-palette. */
+.baseball-auth-panel label {
+  color: var(--fl-sage-ink);
+}
+
+/* Required-field asterisk — the shared Input/Textarea's default
+   `<span className="text-red-500">*</span>` (src/components/ui/input.tsx,
+   rendered next to every required field's label) is a stock red that
+   clashes with the sage-and-cream palette. CSS-only, scoped to the panel;
+   the shared component itself is untouched. */
+.baseball-auth-panel label span.text-red-500 {
+  color: var(--fl-brass);
+}
+
+/* ----------------------------------------------------------------------
+ * entry-accent-text — the shared "Sign up" / "Sign in" switch-CTA link
+ * color (AuthFooterLinks, src/components/auth/baseball-auth-shell.tsx).
+ * Was referenced on that link but never defined anywhere (a real bug —
+ * the link rendered with no color at all). Global rather than panel-
+ * scoped since it's a plain reusable utility class, not a Tailwind
+ * utility needing an override: sage-deep, underline on hover, per the
+ * amendment ("Links … sage-deep, legible, underline on hover").
+ * ---------------------------------------------------------------------- */
+.entry-accent-text {
+  color: var(--fl-sage-deep);
+}
+.entry-accent-text:hover {
+  color: var(--fl-sage-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

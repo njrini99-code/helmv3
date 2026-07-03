@@ -85,12 +85,23 @@ vi.mock('@/lib/coachhelm/baseball/engine', async (importOriginal) => {
 
 import { runBaseballEngineCore, type EngineRunClient } from '@/lib/baseball/coachhelm/engine-run';
 
+const ORG_ID = 'org-1';
+
 function baseTables() {
   return {
     baseball_team_members: [{ team_id: TEAM_ID, player_id: PLAYER_ID }],
     baseball_player_stats: [],
     baseball_events: [],
-    baseball_readiness_checkins: [],
+    // W2-G rewire: engine-run.ts resolves org -> athlete -> readiness inline
+    // against baseball_teams / helm_lifting_athletes / helm_lifting_readiness_
+    // checkins (the legacy baseball_readiness_checkins table is write-dead).
+    // Seeding the team + athlete scaffolding here exercises the REAL
+    // resolve-then-read path rather than short-circuiting on a missing org.
+    baseball_teams: [{ id: TEAM_ID, organization_id: ORG_ID }],
+    helm_lifting_athletes: [
+      { id: 'athlete-1', organization_id: ORG_ID, sport: 'baseball', sport_player_id: PLAYER_ID },
+    ],
+    helm_lifting_readiness_checkins: [] as Array<Record<string, unknown>>,
     baseball_lift_sessions: [],
     baseball_lift_set_results: [],
     baseball_import_runs: [],

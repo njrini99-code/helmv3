@@ -18,6 +18,20 @@ export type MemberStatus =
   | 'injured'
   | 'alumni';
 
+/** A roster member as read by the triage boards (position/status/development). */
+export interface RosterBoardMember {
+  memberId: string;
+  playerId: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  primaryPosition: string | null;
+  secondaryPosition: string | null;
+  jerseyNumber: number | null;
+  status: MemberStatus | null;
+  aggregates?: BaseballPlayerAggregates;
+}
+
 /** How recently this player's data was last refreshed from a session. */
 export type FreshnessLevel = 'fresh' | 'recent' | 'stale' | 'none';
 

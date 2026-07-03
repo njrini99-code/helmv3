@@ -16,11 +16,13 @@ export function useColleges(options: UseCollegesOptions = {}) {
   const [colleges, setColleges] = useState<College[]>([]);
   const [interests, setInterests] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuthStore();
   const supabase = createClient();
 
   const fetchColleges = useCallback(async () => {
     setLoading(true);
+    setError(null);
     let query = supabase.from('organizations').select('*').eq('type', 'college').order('name');
 
     if (options.division) {
@@ -36,8 +38,13 @@ export function useColleges(options: UseCollegesOptions = {}) {
       query = query.or(`name.ilike.%${options.search}%,location_city.ilike.%${options.search}%,location_state.ilike.%${options.search}%`);
     }
 
-    const { data } = await query;
-    setColleges(data || []);
+    const { data, error: queryError } = await query;
+    if (queryError) {
+      setError(queryError.message);
+      setColleges([]);
+    } else {
+      setColleges(data || []);
+    }
     setLoading(false);
   }, [options.division, options.state, options.conference, options.search, supabase]);
 
@@ -45,13 +52,13 @@ export function useColleges(options: UseCollegesOptions = {}) {
     if (!user) return;
 
     // Get player record
-    const { data: player } = await supabase
+    const { data: player, error: playerError } = await supabase
       .from('baseball_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (!player) return;
+    if (playerError || !player) return;
 
     // Get interests - use organization_id to match against college id
     const { data: interestsData } = await supabase
@@ -85,58 +92,73 @@ export function useColleges(options: UseCollegesOptions = {}) {
     });
   };
 
-  return { colleges, interests, loading, refetch: fetchColleges, toggleInterest };
+  return { colleges, interests, loading, error, refetch: fetchColleges, toggleInterest };
 }
 
 export function useStates() {
   const [states, setStates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
-  useEffect(() => {
-    async function fetchStates() {
-      // Use RPC or distinct query since 'state' column may not be on organizations
-      // Query from baseball_players which has state column
-      const { data } = await supabase
-        .from('baseball_players')
-        .select('state')
-        .not('state', 'is', null);
+  const fetchStates = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    // States must reflect colleges that can actually be filtered on
+    // (location_state on organizations), not player home states.
+    const { data, error: queryError } = await supabase
+      .from('organizations')
+      .select('location_state')
+      .eq('type', 'college')
+      .not('location_state', 'is', null);
 
-      if (data) {
-        const statesArray = data.map(d => d.state).filter(Boolean) as string[];
-        const uniqueStates = Array.from(new Set(statesArray)).sort();
-        setStates(uniqueStates);
-      }
-      setLoading(false);
+    if (queryError) {
+      setError(queryError.message);
+      setStates([]);
+    } else if (data) {
+      const statesArray = data.map(d => d.location_state).filter(Boolean) as string[];
+      const uniqueStates = Array.from(new Set(statesArray)).sort();
+      setStates(uniqueStates);
     }
-    fetchStates();
+    setLoading(false);
   }, [supabase]);
 
-  return { states, loading };
+  useEffect(() => {
+    fetchStates();
+  }, [fetchStates]);
+
+  return { states, loading, error, refetch: fetchStates };
 }
 
 export function useConferences() {
   const [conferences, setConferences] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
-  useEffect(() => {
-    async function fetchConferences() {
-      const { data } = await supabase
-        .from('organizations')
-        .select('conference')
-        .eq('type', 'college')
-        .not('conference', 'is', null);
+  const fetchConferences = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: queryError } = await supabase
+      .from('organizations')
+      .select('conference')
+      .eq('type', 'college')
+      .not('conference', 'is', null);
 
-      if (data) {
-        const conferencesArray = data.map(d => d.conference).filter(Boolean) as string[];
-        const uniqueConferences = Array.from(new Set(conferencesArray)).sort();
-        setConferences(uniqueConferences);
-      }
-      setLoading(false);
+    if (queryError) {
+      setError(queryError.message);
+      setConferences([]);
+    } else if (data) {
+      const conferencesArray = data.map(d => d.conference).filter(Boolean) as string[];
+      const uniqueConferences = Array.from(new Set(conferencesArray)).sort();
+      setConferences(uniqueConferences);
     }
-    fetchConferences();
+    setLoading(false);
   }, [supabase]);
 
-  return { conferences, loading };
+  useEffect(() => {
+    fetchConferences();
+  }, [fetchConferences]);
+
+  return { conferences, loading, error, refetch: fetchConferences };
 }

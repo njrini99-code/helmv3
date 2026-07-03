@@ -50,7 +50,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
     setMessaging(true);
     try {
       const result = await createConversation([player.user_id]);
-      router.push(`/dashboard/messages/${result.conversationId}`);
+      router.push(`/baseball/dashboard/messages/${result.conversationId}`);
     } catch (error) {
       console.error('Error creating conversation:', error);
       showToast('Failed to create conversation', 'error');

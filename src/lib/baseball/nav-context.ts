@@ -54,10 +54,27 @@ import {
   type BaseballProgramType,
 } from '@/lib/types/baseball-settings';
 
+function normalizeProgramType(raw: unknown): BaseballProgramType | null {
+  return typeof raw === 'string' &&
+    (BASEBALL_PROGRAM_TYPES as readonly string[]).includes(raw)
+    ? (raw as BaseballProgramType)
+    : null;
+}
+
 /**
- * Read the active team's program_type (the variant engine's selector). RLS-scoped
- * read; returns null on any miss so callers fall back to the college-neutral
- * default nav order. Never throws into the nav resolve.
+ * Read the active team's effective program type (the variant engine's selector).
+ * RLS-scoped read; returns null on any miss so callers fall back to the
+ * college-neutral default nav order. Never throws into the nav resolve.
+ *
+ * FALLBACK (QA nav dead-end fix): `program_type` is nullable and is left unset on
+ * some teams (e.g. the demo team was created with `team_type: 'college'` but no
+ * `program_type`). Middleware's recruiting gate treats a null program type as
+ * "recruiting disabled" and hard-redirects Pipeline / Discover / Watchlist /
+ * Compare back to the Command Center — while the sidebar still advertised those
+ * items, producing silent dead links. We resolve the SAME effective program type
+ * here that the middleware now derives (program_type, then team_type), so nav
+ * visibility/ordering and route gating read one source of truth and a college
+ * team is never stripped of its recruiting surfaces.
  */
 async function readActiveProgramType(
   teamId: string,
@@ -65,14 +82,14 @@ async function readActiveProgramType(
   try {
     const supabase = await createClient();
     const { data } = await fromUntyped(supabase, 'baseball_teams')
-      .select('program_type')
+      .select('program_type, team_type')
       .eq('id', teamId)
       .maybeSingle();
-    const raw = (data as { program_type?: unknown } | null)?.program_type;
-    return typeof raw === 'string' &&
-      (BASEBALL_PROGRAM_TYPES as readonly string[]).includes(raw)
-      ? (raw as BaseballProgramType)
-      : null;
+    const row = data as { program_type?: unknown; team_type?: unknown } | null;
+    return (
+      normalizeProgramType(row?.program_type) ??
+      normalizeProgramType(row?.team_type)
+    );
   } catch {
     return null;
   }

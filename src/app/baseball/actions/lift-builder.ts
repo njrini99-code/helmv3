@@ -120,6 +120,8 @@ const saveLiftSessionPlanSchema = z.object({
    * Optional subset of player IDs to target within the resolved group/team.
    * When present, the resolved athlete list is intersected with these IDs —
    * callers cannot expand scope beyond what the group/team already grants.
+   * An explicitly-provided empty array targets nobody (count: 0); only an
+   * omitted (undefined) value falls back to the whole resolved scope.
    */
   playerIds: z.array(uuid).max(200).optional(),
 });
@@ -321,8 +323,9 @@ export const saveLiftSessionPlan = withBaseballAction(
 
     // If the caller supplied a player-ID subset, restrict to the intersection
     // with the resolved scope.  Callers cannot expand scope beyond what the
-    // group/team membership already grants.
-    if (input.playerIds && input.playerIds.length > 0) {
+    // group/team membership already grants.  An explicitly-provided empty set
+    // means "nobody" (count: 0) — it must NOT fall back to the whole team/group.
+    if (input.playerIds) {
       const requested = new Set(input.playerIds);
       playerIds = playerIds.filter((id) => requested.has(id));
     }

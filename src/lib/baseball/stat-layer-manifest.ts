@@ -152,6 +152,13 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     status: 'pending migration',
     note: 'Reads baseball_player_stats practice-type rows for before/after practice-effectiveness comparisons.',
   },
+  {
+    path: 'src/app/baseball/actions/teams.ts',
+    group: 'server-action',
+    status: 'pending migration',
+    note:
+      "deleteTeam()'s pre-delete history guard counts rows in baseball_player_stats directly (alongside 10 other tables) to decide whether a team's history would be silently lost by the CASCADE delete. This deliberately targets the deprecated table's own row count — legacy rows written by the still-grandfathered imports.ts/stats.ts writers wouldn't be visible through stats-center.ts's read-model aggregation, so routing this check through the canonical layer would under-count and let a team with real legacy stat history be deleted. Only migrates once imports.ts/stats.ts stop writing baseball_player_stats.",
+  },
 
   // --- Read models (NOT yet behind the canonical entry points) -------------
   {
@@ -324,6 +331,13 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     group: 'test',
     status: 'pending migration',
     note: 'Exercises imports.ts commitImport() against a fake baseball_player_stats table.',
+  },
+  {
+    path: 'src/app/baseball/actions/__tests__/upload-stats-csv.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      'Regression coverage for PR #664 (roster-scoped playerId verification + honest failed-upload status) on uploadStatsCSV in stats.ts, an already-grandfathered consumer above. Uses a table-aware Supabase recorder that inserts into baseball_player_stats and upserts baseball_player_aggregates to mirror that production write path — mirrors imports-registry.test.ts above; production reference is the server-action entry for stats.ts, not a new one.',
   },
   {
     path: 'src/contracts/baseball/product-trust.contract.test.ts',

@@ -43,6 +43,7 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { buildSourceTrust } from '@/components/baseball/source-trust/build-source-trust';
 import type { SourceTrust } from '@/components/baseball/source-trust/source-trust-types';
 import {
@@ -50,6 +51,12 @@ import {
   readinessBandTone,
 } from '@/lib/baseball/lifting/readiness-compute';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
+import {
+  resolveBaseballLiftingOrg,
+  resolveBaseballAthleteIds,
+} from '@/lib/lifting/resolve-baseball-context';
+import { extractArmStatusFromNotes, sleepQualityToHours } from '@/lib/lifting/adapters/baseball-view-adapter';
+import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-data';
 
 // The V6 event/elite tables + V11 lifting/readiness tables ship via migrations
 // and are NOT in the generated database.ts (no db:types regen without a live
@@ -514,6 +521,23 @@ export async function getPlayerSnapshotCards(
   let error: string | null = null;
   const note = (msg: string) => { error = error ?? msg; };
 
+  // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
+  // helm_lifting_readiness_checkins now — the legacy baseball_readiness_
+  // checkins table is write-dead. Resolve this player's helm athlete id BEFORE
+  // the fan-out below so the checkin read can target the right table.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const athleteMap = liftCtx
+    ? await resolveBaseballAthleteIds(liftCtx.organizationId, [playerId])
+    : {};
+  const athleteId = athleteMap[playerId] ?? null;
+  const checkinQuery = liftCtx && athleteId
+    ? fromUntyped(db, 'helm_lifting_readiness_checkins')
+        .select('id, checkin_date, sleep_quality, energy_level, stress_level, soreness_overall, notes, lower_body_status, illness_flag')
+        .eq('organization_id', liftCtx.organizationId)
+        .eq('athlete_id', athleteId)
+        .order('checkin_date', { ascending: false }).limit(1).maybeSingle()
+    : Promise.resolve({ data: null, error: null });
+
   // --- Fan out every independent read in parallel ---
   const [
     playerRes,
@@ -562,10 +586,9 @@ export async function getPlayerSnapshotCards(
       .order('starts_at', { ascending: false }).limit(1).maybeSingle(),
     // No persisted band column — pull the inputs and run computeReadiness (the
     // same transparent function the coach Readiness board + Player Today use).
-    db.from('baseball_readiness_checkins')
-      .select('id, check_date, sleep_hours, energy_level, stress_level, soreness_level, arm_status, lower_body_status, illness_flag')
-      .eq('team_id', teamId).eq('player_id', playerId)
-      .order('check_date', { ascending: false }).limit(1).maybeSingle(),
+    // W2-G rewire: reads helm_lifting_readiness_checkins (resolved above into
+    // checkinQuery — the legacy baseball_readiness_checkins table is write-dead).
+    checkinQuery,
     db.from('baseball_fielding_events')
       .select('position, result, error_type, throw_velocity, measured_at, created_at')
       .eq('team_id', teamId).eq('player_id', playerId)
@@ -788,20 +811,38 @@ export async function getPlayerSnapshotCards(
     id: string; title: string | null; scheduled_date: string; status: string; completed_at: string | null;
   }>;
   const liftNext = (liftNextRes?.error ? null : liftNextRes?.data ?? null) as null | { title: string | null; scheduled_date: string };
-  const checkin = (checkinRes?.error ? null : checkinRes?.data ?? null) as null | {
+  if (checkinRes?.error) note('Readiness check-in could not be loaded.');
+  const checkinRow = (checkinRes?.error ? null : checkinRes?.data ?? null) as HelmLiftingReadinessCheckinRow | null;
+  // Remap the helm row into the legacy field-name shape this function has
+  // always built (check_date/sleep_hours/soreness_level/arm_status), so
+  // computeReadiness() below is unchanged.
+  const checkin: null | {
     id: string; check_date: string; sleep_hours: number | null; energy_level: number | null;
     stress_level: number | null; soreness_level: number | null;
     arm_status: 'fresh' | 'normal' | 'tight' | 'sore' | 'pain' | null;
     lower_body_status: number | null; illness_flag: boolean | null;
-  };
-  if (checkinRes?.error) note('Readiness check-in could not be loaded.');
+  } = checkinRow
+    ? {
+        id: checkinRow.id,
+        check_date: checkinRow.checkin_date,
+        sleep_hours: sleepQualityToHours(checkinRow.sleep_quality),
+        energy_level: checkinRow.energy_level,
+        stress_level: checkinRow.stress_level,
+        soreness_level: checkinRow.soreness_overall,
+        arm_status: extractArmStatusFromNotes(checkinRow.notes),
+        lower_body_status: checkinRow.lower_body_status,
+        illness_flag: checkinRow.illness_flag,
+      }
+    : null;
 
   // Soreness map for the latest check-in (drives card severity + readiness band).
+  // helm_lifting_soreness_maps FKs checkin_id -> helm_lifting_readiness_checkins(id),
+  // matching checkin.id above.
   let sorenessMax: number | null = null;
   let soreUpper = false;
   let soreLower = false;
   if (checkin?.id) {
-    const soreRes = await db.from('baseball_soreness_maps').select('body_region, severity').eq('checkin_id', checkin.id);
+    const soreRes = await fromUntyped(db, 'helm_lifting_soreness_maps').select('body_region, severity').eq('checkin_id', checkin.id);
     if (!soreRes?.error) {
       const rows = (soreRes?.data ?? []) as Array<{ body_region: string; severity: number }>;
       sorenessMax = rows.length ? Math.max(...rows.map((s) => s.severity)) : null;

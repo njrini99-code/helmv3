@@ -23,6 +23,28 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({}),
 }));
 
+// Mock next/font/google. Vitest needs the mocked module's export names
+// available synchronously (it builds the ESM namespace via
+// Object.getOwnPropertyNames before any property is accessed), so a bare
+// `new Proxy({}, { get })` with no real own keys fails validation with
+// "No 'X' export is defined on the mock" even though the get trap would
+// happily serve it — the trap is never reached. List every Google Font
+// currently imported anywhere in the codebase (grep: `from 'next/font/google'`)
+// and add new ones here as they're introduced.
+const mockFont = () => ({
+  className: 'mock-font',
+  style: { fontFamily: 'mock' },
+  variable: '--mock-font',
+});
+vi.mock('next/font/google', () => ({
+  Fraunces: mockFont,
+  DM_Sans: mockFont,
+  Fragment_Mono: mockFont,
+  Space_Grotesk: mockFont,
+  Playfair_Display: mockFont,
+  Satisfy: mockFont,
+}));
+
 // Mock Next.js image
 vi.mock('next/image', () => ({
   default: ({

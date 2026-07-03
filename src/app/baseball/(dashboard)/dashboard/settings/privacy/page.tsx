@@ -25,31 +25,16 @@ export default async function PrivacySettingsPage() {
     .eq('player_id', player.id)
     .maybeSingle();
 
-  // Transform database settings to component format
-  // Map database fields to component expected fields (use defaults for missing fields)
-  // Database columns: show_contact_info, show_academics, show_dream_schools, profile_visibility
-  const transformedSettings = settings ? {
-    id: settings.id,
-    player_id: settings.player_id,
-    // Map database fields that exist
-    show_contact_email: settings.show_contact_info ?? undefined,
-    show_academics: settings.show_academics ?? undefined,
-    show_dream_schools: settings.show_dream_schools ?? undefined,
-    profile_visibility: settings.profile_visibility ?? undefined,
-    // Default values for fields not in database
-    show_full_name: true,
-    show_school: true,
-    show_phone: settings.show_contact_info ?? undefined,
-    show_social_links: true,
-    show_height_weight: true,
-    show_position: true,
-    show_grad_year: true,
-    show_bats_throws: true,
-    show_videos: true,
-    show_calendar: true,
-    show_stats: true,
-    allow_messages: true,
-  } : undefined;
+  // Map the real baseball_player_settings privacy columns to the form. Only
+  // show_contact_info, show_academics, and show_dream_schools are editable
+  // toggles; profile_visibility is managed elsewhere and left untouched.
+  const transformedSettings = settings
+    ? {
+        show_contact_info: settings.show_contact_info ?? undefined,
+        show_academics: settings.show_academics ?? undefined,
+        show_dream_schools: settings.show_dream_schools ?? undefined,
+      }
+    : undefined;
 
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">

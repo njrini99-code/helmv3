@@ -43,6 +43,12 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import { computeReadiness, type ReadinessInputs } from '@/lib/baseball/lifting/readiness-compute';
 import type { BaseballReadinessBand } from '@/lib/types/baseball-lifting-v11';
+import {
+  resolveBaseballLiftingOrg,
+  resolveBaseballAthleteIds,
+} from '@/lib/lifting/resolve-baseball-context';
+import { extractArmStatusFromNotes, sleepQualityToHours } from '@/lib/lifting/adapters/baseball-view-adapter';
+import type { HelmLiftingReadinessCheckinRow, HelmLiftingSorenessMapRow } from '@/lib/types/helm-lifting-data';
 import { SAMPLE_THRESHOLDS } from '@/components/baseball/stat-visuals/chart-geometry';
 import {
   getEliteStatEvents,
@@ -308,27 +314,61 @@ async function buildReadiness(
   const sinceYmd = since.toISOString().slice(0, 10);
   const today = todayYmd();
 
-  const { data: checkins } = await db
-    .from('baseball_readiness_checkins')
-    .select('id, player_id, check_date, sleep_hours, energy_level, soreness_level, arm_status')
-    .eq('team_id', teamId)
-    .gte('check_date', sinceYmd)
-    .order('check_date', { ascending: true });
-  const checkinRows = (checkins ?? []) as Array<{
+  // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
+  // helm_lifting_readiness_checkins now — the legacy baseball_readiness_
+  // checkins table is write-dead. Resolve org + athlete-id map for the roster,
+  // then read helm and remap results back into the SAME row shape this
+  // function has always built (check_date/sleep_hours/soreness_level/
+  // arm_status) so the rest of buildReadiness needs no logic changes.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const rosterPlayerIds = roster.map((p) => p.id);
+  const athleteMap = liftCtx && rosterPlayerIds.length
+    ? await resolveBaseballAthleteIds(liftCtx.organizationId, rosterPlayerIds)
+    : {};
+  const athleteToPlayer = new Map<string, string>();
+  for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+  const teamAthleteIds = Object.values(athleteMap);
+
+  let checkinRows: Array<{
     id: string; player_id: string; check_date: string;
     sleep_hours: number | null; energy_level: number | null;
     soreness_level: number | null; arm_status: ReadinessInputs['armStatus'];
-  }>;
+  }> = [];
+  if (liftCtx && teamAthleteIds.length) {
+    const { data: checkins } = await fromUntyped(db, 'helm_lifting_readiness_checkins')
+      .select('id, athlete_id, checkin_date, sleep_quality, energy_level, soreness_overall, notes')
+      .eq('organization_id', liftCtx.organizationId)
+      .in('athlete_id', teamAthleteIds)
+      .gte('checkin_date', sinceYmd)
+      .order('checkin_date', { ascending: true }) as { data: HelmLiftingReadinessCheckinRow[] | null };
+
+    checkinRows = (checkins ?? [])
+      .map((c) => {
+        const playerId = athleteToPlayer.get(c.athlete_id);
+        if (!playerId || !c.checkin_date) return null;
+        return {
+          id: c.id,
+          player_id: playerId,
+          check_date: c.checkin_date,
+          sleep_hours: sleepQualityToHours(c.sleep_quality),
+          energy_level: c.energy_level,
+          soreness_level: c.soreness_overall,
+          arm_status: extractArmStatusFromNotes(c.notes),
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r != null);
+  }
 
   // Soreness maps for those check-ins (for the upper/lower flags + max severity).
+  // helm_lifting_soreness_maps FKs checkin_id -> helm_lifting_readiness_checkins(id),
+  // matching the ids selected above.
   const checkinIds = checkinRows.map((c) => c.id);
   const soreByCheckin = new Map<string, Array<{ region: string; severity: number }>>();
   if (checkinIds.length) {
-    const { data: sm } = await db
-      .from('baseball_soreness_maps')
+    const { data: sm } = await fromUntyped(db, 'helm_lifting_soreness_maps')
       .select('checkin_id, body_region, severity')
-      .in('checkin_id', checkinIds);
-    for (const s of (sm ?? []) as Array<{ checkin_id: string; body_region: string; severity: number }>) {
+      .in('checkin_id', checkinIds) as { data: Pick<HelmLiftingSorenessMapRow, 'checkin_id' | 'body_region' | 'severity'>[] | null };
+    for (const s of sm ?? []) {
       const arr = soreByCheckin.get(s.checkin_id) ?? [];
       arr.push({ region: s.body_region, severity: s.severity });
       soreByCheckin.set(s.checkin_id, arr);

@@ -2,39 +2,52 @@
 
 /**
  * ============================================================================
- * CommandCenterFairway — Fairway (warm-premium) presentation of the coach
- * Command Center. Phase B leaf migration (flag-gated behind isRedesignEnabled).
+ * CommandCenterFairway — the coach Command Center as a magazine COVER, composed
+ * from the "Living Annual" kit (spec: docs/baseball/design-system-living-annual.md
+ * §6 P0 #3 "The Command Center Cover"; map: docs/baseball/ui-migration-map.md
+ * command-center row).
  * ----------------------------------------------------------------------------
- * PRESENTATION ONLY. Takes the SAME props the legacy `CommandCenterClient`
- * receives (assembled server-side) and re-composes them with Fairway
- * primitives from `@/components/fairway`. No data path, action, read-model, or
- * query is touched here — the heavy AI-brief / risk / contracts panels are
- * REUSED verbatim (rendered inside the new frame per the migration playbook).
+ * PRESENTATION ONLY. Takes the SAME props the page assembles server-side and
+ * re-skins them with the Living-Annual kit — no data path, action, read-model,
+ * or query is touched here:
  *
- * Roster + Stats are separate Wave-1 surfaces, so this curated overview links
- * out to them rather than embedding the legacy tabs.
+ *   • CoverHero        — this week's next opponent as the dominant cover line;
+ *                        its honest STANDING-BY letter when there's no next game.
+ *   • KPIContentsStrip — the real KPIs the read model already carries (ROSTER,
+ *                        ON THE RECORD, OPEN RISKS, TODAY) as a green-ruled
+ *                        table-of-contents. Omitted whole when no summary exists;
+ *                        never a fabricated zero card. (No W-L record data exists
+ *                        in the baseball read models, so RECORD is omitted.)
+ *   • EditorsLetter    — the CoachHelm daily brief's empty & degraded states,
+ *                        signed "From the desk of CoachHelm" (kills the yellow
+ *                        box). Real AI brief content still renders through the
+ *                        reused DailyBriefPanel verbatim.
+ *
+ * The heavy read-model panels (DailyBriefPanel, RiskFeedStrip, CoachDailyContracts)
+ * are REUSED verbatim; roster + stats are separate surfaces this cover links out
+ * to rather than embedding.
  * ========================================================================== */
 
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  ViewHeader,
-  MetricCard,
-  Surface,
-  SurfaceHeader,
-  SurfaceBody,
-  EmptyState,
-  StatusPill,
-  Button,
-  type FwStatusTone,
-} from '@/components/fairway';
-import { IconUsers, IconCalendar, IconChartBar, IconTrendingUp } from '@/components/icons';
-import { Calendar as LucideCalendar } from 'lucide-react';
+import { Button } from '@/components/fairway';
+import { IconChartBar, IconUsers, IconCalendar, IconTrendingUp } from '@/components/icons';
 import type { BaseballRosterPlayer } from '@/lib/types';
 import type { RiskFeedItem } from '@/lib/baseball/read-models/command-center';
 import type { CoachDailyContractsReadModel } from '@/lib/baseball/read-models/coach-daily-contracts';
 import type { ReadModelLoadState } from '@/lib/product-trust/read-model-state';
+import {
+  CoverHero,
+  KPIContentsStrip,
+  EditorsLetter,
+  EmptyIssue,
+  PaperCard,
+  HairlineRule,
+  Eyebrow,
+  InkBadge,
+  type KPIContentsItem,
+} from '@/components/baseball/living-annual';
 import { BaseballInviteButton } from './BaseballInviteButton';
 import { RiskFeedStrip } from './RiskFeedStrip';
 import { DailyBriefPanel } from './DailyBriefPanel';
@@ -76,21 +89,56 @@ export interface CommandCenterFairwayProps {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Map a calendar event type to a Fairway status tone for the upcoming list. */
-function eventTone(type: string): FwStatusTone {
-  const t = type.toLowerCase();
-  if (t.includes('game')) return 'accent';
-  if (t.includes('scrimmage')) return 'info';
-  if (t.includes('tournament')) return 'warning';
-  return 'neutral';
+/** Event types that carry an opponent and can headline the cover. */
+const OPPONENT_EVENT = /game|scrimmage|tournament/i;
+
+/** Ink for an event-type stamp — games/tournaments read green, the rest quiet. */
+function eventInk(type: string): 'team' | 'neutral' {
+  return /game|tournament/i.test(type) ? 'team' : 'neutral';
 }
 
-/** Friendly weekday + time label for an ISO timestamp. */
+/** Friendly weekday + time label for an ISO timestamp (this-week strip). */
 function fmtEventWhen(iso: string): string {
   const d = new Date(iso);
   const day = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   return `${day} · ${time}`;
+}
+
+/** Compact cover kicker, e.g. `Sun 4:30 PM`. */
+function fmtCoverWhen(iso: string): string {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString(undefined, { weekday: 'short' });
+  const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${day} ${time}`;
+}
+
+interface CoverLine {
+  opponent: string;
+  homeAway: 'home' | 'away';
+  dateLabel: string;
+}
+
+/**
+ * Derive the cover line from the soonest upcoming opponent event. Honest best-
+ * effort parse of the coach-authored event title: the opponent is whatever
+ * follows a `vs` / `@` / `at` token, and an explicit `@` / `at` / `away` marks an
+ * away game. Returns null when there's no upcoming game — CoverHero then renders
+ * its STANDING-BY letter rather than a blank cover.
+ */
+function deriveCover(events: CalendarEvent[]): CoverLine | null {
+  const now = Date.now();
+  const next = events
+    .filter((e) => OPPONENT_EVENT.test(e.event_type) && Date.parse(e.start_time) >= now)
+    .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+  if (!next) return null;
+
+  const raw = next.title.trim();
+  const away = /(^|\s)(@|at|away)(\s|$)/i.test(raw);
+  const sep = raw.match(/(?:vs\.?|@|at)\s+(.+)$/i);
+  const opponent = sep?.[1]?.trim() || raw.replace(/^(game|scrimmage|tournament)\b[:\s-]*/i, '').trim() || raw;
+
+  return { opponent, homeAway: away ? 'away' : 'home', dateLabel: fmtCoverWhen(next.start_time) };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -103,18 +151,21 @@ export function CommandCenterFairway({
   riskFeedError = null,
   coachDailyContracts,
   summary,
+  loadState,
 }: CommandCenterFairwayProps) {
+  // A REAL load failure (loadState === 'error') is distinct from an honest
+  // "no data yet" — the read model's counts default to 0 when a sub-read
+  // fails, which would otherwise render as if the team genuinely had an
+  // empty roster / zero risks. Ghost the KPI figures instead so the label
+  // stays visible but the number reads "not confirmed", not "confirmed zero".
+  const hasLoadError = loadState === 'error';
   const router = useRouter();
 
   const openPlayer = (playerId: string) =>
     router.push(`/baseball/dashboard/players/${playerId}`);
 
-  const hasSummary = Boolean(summary);
-  const rosterSize = summary?.rosterSize ?? 0;
-  const playersWithData = summary?.playersWithData ?? 0;
-  const openRisks = summary?.openRisks ?? 0;
-  const criticalRisks = summary?.criticalRisks ?? 0;
-  const eventsToday = summary?.eventsToday ?? 0;
+  // This week's cover story — the next opponent (null → CoverHero standing-by).
+  const cover = useMemo(() => deriveCover(calendarEvents), [calendarEvents]);
 
   // Upcoming events for the week strip: earliest first, capped for calm density.
   const upcoming = useMemo(
@@ -125,135 +176,139 @@ export function CommandCenterFairway({
     [calendarEvents],
   );
 
+  // The daily brief has real CoachHelm (AI-sourced) content only when the engine
+  // has written some — otherwise the slot is the signed STANDING-BY letter.
+  const hasAiBrief = useMemo(
+    () => riskFeed.some((i) => i.sourceRef.source === 'ai'),
+    [riskFeed],
+  );
+
+  // Table-of-contents KPIs — real read-model counts only. Omitted entirely when
+  // there's no summary (no team yet), never shown as broken zero cards.
+  const kpis: KPIContentsItem[] = [];
+  if (summary) {
+    kpis.push({ label: 'Roster', value: summary.rosterSize, ghost: hasLoadError });
+    kpis.push({
+      label: 'On the Record',
+      value: summary.playersWithData,
+      emphasis: summary.rosterSize > 0 && summary.playersWithData === summary.rosterSize,
+      ghost: hasLoadError,
+    });
+    kpis.push({ label: 'Open Risks', value: summary.openRisks, ghost: hasLoadError });
+    kpis.push({ label: 'Today', value: summary.eventsToday, ghost: hasLoadError });
+  }
+
   return (
     <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <ViewHeader
-        eyebrow={team.name}
-        title="Command Center"
-        description={coachName ? `Welcome back, ${coachName}.` : undefined}
-        primaryAction={
-          team.id ? (
+      {/* ── Masthead line + quick actions (the CoverHero is the header) ─────── */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <Eyebrow as="h1" items={[team.name, 'Command Center']} ink="team" />
+        <div className="flex items-center gap-2">
+          {team.id ? (
             <BaseballInviteButton
               teamId={team.id}
               teamName={team.name}
               existingCode={team.inviteCode}
             />
-          ) : undefined
-        }
-        secondaryActions={
+          ) : null}
           <Button asChild variant="secondary" size="sm" leftIcon={<IconChartBar size={16} />}>
             <Link href="/baseball/dashboard/stats/upload">Upload stats</Link>
           </Button>
-        }
+        </div>
+      </header>
+
+      {/* ── The cover: this week's opponent (or an honest standing-by letter) ─ */}
+      <CoverHero
+        opponent={cover?.opponent ?? ''}
+        dateLabel={cover?.dateLabel}
+        homeAway={cover?.homeAway}
       />
 
-      {/* ── KPI scoreboard ─────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Program summary">
-        <MetricCard
-          label="Roster"
-          value={rosterSize}
-          icon={<IconUsers size={16} />}
-          footnote="players"
-          empty={!hasSummary}
-        />
-        <MetricCard
-          label="With data"
-          value={playersWithData}
-          icon={<IconChartBar size={16} />}
-          footnote={hasSummary ? `of ${rosterSize}` : undefined}
-          empty={!hasSummary}
-        />
-        <MetricCard
-          label="Open risks"
-          value={openRisks}
-          tone="neutral"
-          footnote={criticalRisks > 0 ? `${criticalRisks} critical` : 'none critical'}
-          empty={!hasSummary}
-        />
-        <MetricCard
-          label="Today"
-          value={eventsToday}
-          icon={<IconCalendar size={16} />}
-          footnote="events"
-          empty={!hasSummary}
-        />
-      </section>
+      {/* ── Masthead contents strip: the real KPIs on green rules ──────────── */}
+      {kpis.length > 0 ? (
+        <KPIContentsStrip items={kpis} columns={kpis.length >= 4 ? 4 : kpis.length} />
+      ) : null}
 
       {/* ── Brief + risk (reused read-model panels) alongside the week strip ── */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <DailyBriefPanel
-            items={riskFeed}
-            coachName={coachName}
-            error={riskFeedError}
-            onOpenPlayer={openPlayer}
-          />
-          <RiskFeedStrip
-            items={riskFeed}
-            error={riskFeedError}
-            onOpenPlayer={openPlayer}
-            maxItems={6}
-          />
-          {coachDailyContracts?.authorized && (
-            <CoachDailyContracts model={coachDailyContracts} onOpenPlayer={openPlayer} />
+          {riskFeedError ? (
+            <EditorsLetter
+              ink="team"
+              title="Some data couldn't load."
+              body={riskFeedError}
+              signoff="— From the desk of CoachHelm"
+            />
+          ) : hasAiBrief ? (
+            <DailyBriefPanel
+              items={riskFeed}
+              coachName={coachName}
+              onOpenPlayer={openPlayer}
+            />
+          ) : (
+            <EditorsLetter
+              ink="team"
+              live
+              title="Standing by — awaiting first pitch."
+              body="Your morning brief prints here the moment CoachHelm reads recent stats, workload, and trends."
+              signoff="— From the desk of CoachHelm"
+            />
           )}
+
+          {!riskFeedError ? (
+            <RiskFeedStrip items={riskFeed} onOpenPlayer={openPlayer} maxItems={6} />
+          ) : null}
+
+          {coachDailyContracts?.authorized ? (
+            <CoachDailyContracts model={coachDailyContracts} onOpenPlayer={openPlayer} />
+          ) : null}
         </div>
 
         <aside className="space-y-6">
-          <Surface elevation="border" padding="none">
-            <SurfaceHeader
-              title="This week"
-              actions={
+          {upcoming.length === 0 ? (
+            <EmptyIssue variant="calendar" />
+          ) : (
+            <PaperCard className="p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <Eyebrow ink="team">This week</Eyebrow>
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/baseball/dashboard/calendar">View calendar</Link>
-                </Button>
-              }
-            />
-            <SurfaceBody>
-              {upcoming.length === 0 ? (
-                <EmptyState
-                  icon={LucideCalendar}
-                  title="Nothing scheduled"
-                  description="Events you add show up here for the week ahead."
-                />
-              ) : (
-                <ul className="space-y-3">
-                  {upcoming.map((event) => (
-                    <li key={event.id} className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-text-primary">
-                          {event.title}
-                        </p>
-                        <p className="text-xs text-text-tertiary">
-                          {fmtEventWhen(event.start_time)}
-                        </p>
-                      </div>
-                      <StatusPill tone={eventTone(event.event_type)} size="sm">
-                        {event.event_type}
-                      </StatusPill>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </SurfaceBody>
-          </Surface>
-
-          <Surface elevation="border" padding="none">
-            <SurfaceHeader title="Jump to" />
-            <SurfaceBody>
-              <div className="flex flex-col gap-2">
-                <Button asChild variant="ghost" size="sm" leftIcon={<IconUsers size={16} />}>
-                  <Link href="/baseball/dashboard/roster">Roster</Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm" leftIcon={<IconTrendingUp size={16} />}>
-                  <Link href="/baseball/dashboard/stats">Team stats</Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm" leftIcon={<IconCalendar size={16} />}>
                   <Link href="/baseball/dashboard/calendar">Calendar</Link>
                 </Button>
               </div>
-            </SurfaceBody>
-          </Surface>
+              <HairlineRule ink="team" className="mb-4" />
+              <ul className="space-y-3.5">
+                {upcoming.map((event) => (
+                  <li key={event.id} className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-annual text-body-lg text-text-primary">
+                        {event.title}
+                      </p>
+                      <p className="text-eyebrow uppercase tracking-[0.14em] tabular-nums text-text-tertiary">
+                        {fmtEventWhen(event.start_time)}
+                      </p>
+                    </div>
+                    <InkBadge label={event.event_type} tone={eventInk(event.event_type)} />
+                  </li>
+                ))}
+              </ul>
+            </PaperCard>
+          )}
+
+          <PaperCard className="p-5">
+            <Eyebrow ink="team" className="mb-4">Jump to</Eyebrow>
+            <HairlineRule ink="team" className="mb-4" />
+            <div className="flex flex-col gap-2">
+              <Button asChild variant="ghost" size="sm" leftIcon={<IconUsers size={16} />}>
+                <Link href="/baseball/dashboard/roster">Roster</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm" leftIcon={<IconTrendingUp size={16} />}>
+                <Link href="/baseball/dashboard/stats">Team stats</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm" leftIcon={<IconCalendar size={16} />}>
+                <Link href="/baseball/dashboard/calendar">Calendar</Link>
+              </Button>
+            </div>
+          </PaperCard>
         </aside>
       </div>
     </div>

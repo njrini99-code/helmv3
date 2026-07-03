@@ -1,20 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Header } from '@/components/layout/header';
-import { Card, CardContent } from '@/components/ui/card';
 import { PageLoading } from '@/components/ui/loading';
-import { IconBell } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getAnnouncementsWithMeta } from '@/app/baseball/actions/announcements';
-import { AnnouncementsCoachView } from '@/components/baseball/announcements/AnnouncementsCoachView';
-import { AnnouncementsPlayerView } from '@/components/baseball/announcements/AnnouncementsPlayerView';
-import { CreateAnnouncementFlow } from '@/components/baseball/announcements/CreateAnnouncementFlow';
-import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { AnnouncementsFairway } from '@/components/baseball/announcements/AnnouncementsFairway';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
+import { fairwayScope } from '@/lib/redesign/flag';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
 
 interface RosterPlayer {
@@ -59,8 +53,10 @@ export default function BaseballAnnouncementsPage() {
       setLoadError(result.error ?? 'Announcements could not be loaded.');
     }
 
-    // For coaches: also fetch roster for the create flow
-    if (isCoach && selectedTeamId) {
+    // For coaches: also fetch roster for the create flow. selectedTeamId is
+    // already guaranteed truthy here (guard clause above returns otherwise,
+    // and this closure's value can't change mid-call), so only isCoach gates.
+    if (isCoach) {
       const supabase = createClient();
       const { data: members } = await supabase
         .from('baseball_team_members')
@@ -96,117 +92,36 @@ export default function BaseballAnnouncementsPage() {
 
   if (authLoading) return <PageLoading />;
 
-  const recentCount = announcements.filter(a => {
-    if (!a.published_at) return false;
-    return (Date.now() - new Date(a.published_at).getTime()) < 7 * 86400000;
-  }).length;
-
-  if (isRedesignEnabled()) {
+  if (loadError) {
     return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <AnnouncementsFairway
-          announcements={announcements}
-          players={players}
-          selectedTeamId={selectedTeamId}
-          isCoach={isCoach}
-          playerId={player?.id || ''}
-          loading={loading}
-          loadError={loadError}
-          recentCount={recentCount}
-          onRefresh={fetchAnnouncements}
+      <div className={fairwayScope('mx-auto max-w-5xl p-4 md:p-6')}>
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-warm-900">Announcements</h1>
+        <ReadModelStateNotice
+          state="error"
+          title="Announcements unavailable"
+          onRetry={() => void fetchAnnouncements()}
         />
       </div>
     );
   }
 
+  const recentCount = announcements.filter(a => {
+    if (!a.published_at) return false;
+    return (Date.now() - new Date(a.published_at).getTime()) < 7 * 86400000;
+  }).length;
+
   return (
-    <>
-      <Header
-        title="Announcements"
-        subtitle={isCoach ? 'Share updates with your team' : 'Team news and updates'}
-      >
-        {isCoach && selectedTeamId && (
-          <CreateAnnouncementFlow
-            players={players}
-            teamId={selectedTeamId}
-            onCreated={fetchAnnouncements}
-          />
-        )}
-      </Header>
-
-      <div className="p-6 lg:p-8">
-        {/* Recent count badge */}
-        {recentCount > 0 && !loading && (
-          <div className="mb-4">
-            <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
-              {recentCount} new this week
-            </span>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="glass-standard rounded-2xl p-6 animate-pulse">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-warm-200" />
-                  <div className="flex-1">
-                    <div className="h-4 bg-warm-200 rounded w-1/3 mb-3" />
-                    <div className="h-3 bg-warm-200 rounded w-2/3 mb-2" />
-                    <div className="h-3 bg-warm-200 rounded w-1/2" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : !selectedTeamId ? (
-          <Card variant="glass">
-            <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                <IconBell size={28} className="text-warm-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">No Team Selected</h3>
-              <p className="text-warm-500 max-w-sm mx-auto">
-                Please select a team from the sidebar to view announcements.
-              </p>
-            </CardContent>
-          </Card>
-        ) : loadError ? (
-          <ReadModelStateNotice
-            state="error"
-            title="Announcements unavailable"
-            onRetry={() => void fetchAnnouncements()}
-          />
-        ) : announcements.length === 0 ? (
-          <Card variant="glass">
-            <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                <IconBell size={28} className="text-warm-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">No Announcements</h3>
-              <p className="text-warm-500 mb-6 max-w-sm mx-auto">
-                {isCoach
-                  ? 'Create announcements to keep your team informed about schedule changes, game updates, and important news.'
-                  : 'No announcements have been posted yet. Check back later for team updates.'}
-              </p>
-              {isCoach && selectedTeamId && (
-                <CreateAnnouncementFlow
-                  players={players}
-                  teamId={selectedTeamId}
-                  onCreated={fetchAnnouncements}
-                />
-              )}
-            </CardContent>
-          </Card>
-        ) : isCoach ? (
-          <AnnouncementsCoachView announcements={announcements} onDeleted={fetchAnnouncements} />
-        ) : (
-          <AnnouncementsPlayerView
-            announcements={announcements}
-            playerId={player?.id || ''}
-          />
-        )}
-      </div>
-    </>
+    <div className={fairwayScope('min-h-full')}>
+      <AnnouncementsFairway
+        announcements={announcements}
+        players={players}
+        selectedTeamId={selectedTeamId}
+        isCoach={isCoach}
+        playerId={player?.id || ''}
+        loading={loading}
+        recentCount={recentCount}
+        onRefresh={fetchAnnouncements}
+      />
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { notFound } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import {
   IconUsers,
   IconBuilding,
   IconShield,
+  IconLock,
 } from '@/components/icons';
 import { Metadata } from 'next';
 import Image from 'next/image';
@@ -52,11 +54,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: team } = await supabase
-    .from('baseball_teams')
+  // Read through the anon-safe public view — metadata generation runs for
+  // logged-out visitors too, and the base baseball_teams table is
+  // authenticated-only via RLS.
+  const { data: team } = await fromUntyped(supabase, 'baseball_teams_public_profile')
     .select('name, team_type')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (!team) {
     return {
@@ -75,122 +79,133 @@ export default async function TeamProfilePage({ params }: PageProps) {
   const supabase = await createClient();
 
   // ============================================================
-  // AUTH CHECK: Only college/juco coaches can view team profiles
+  // GATING: public route group, but access is tiered:
+  // - Logged-out visitors: SAFE public view (team/org identity, coaching
+  //   staff name+role+avatar, team-level facts). Roster stays gated.
+  // - Authenticated college/juco (recruiting) coaches: full current
+  //   behavior, unchanged.
+  // - Any other authenticated user (player, HS/showcase coach, etc.):
+  //   unchanged pre-existing block — this task only widens access for
+  //   LOGGED-OUT visitors, per product decision.
   // ============================================================
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    notFound(); // Block unauthenticated access
+  let coach: { coach_type: string } | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from('baseball_coaches')
+      .select('coach_type')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!data || !['college', 'juco'].includes(data.coach_type)) {
+      notFound(); // Block non-recruiting authenticated users (unchanged)
+    }
+    coach = data;
   }
 
-  // Check if user is a recruiting coach (college or juco)
-  const { data: coach } = await supabase
-    .from('baseball_coaches')
-    .select('coach_type')
-    .eq('user_id', user.id)
-    .single();
+  const isPublicViewer = !user;
 
-  if (!coach || !['college', 'juco'].includes(coach.coach_type)) {
-    notFound(); // Block non-recruiting coaches
-  }
-
-  // Define team type for type assertions (until Supabase types are regenerated)
-  interface TeamData {
+  interface TeamCore {
     id: string;
     name: string;
     team_type: string;
     description: string | null;
-    logo_url: string | null;
-    join_code: string | null;
-    organization: {
-      id: string;
-      name: string;
-      logo_url: string | null;
-      description: string | null;
-      division: string | null;
-      conference: string | null;
-      website_url: string | null;
-      location_city: string | null;
-      location_state: string | null;
-      organization_staff?: Array<{
-        id: string;
-        name: string;
-        title: string;
-        bio: string | null;
-        headshot_url: string | null;
-        is_public: boolean;
-        display_order: number;
-      }>;
-      organization_facilities?: Array<{
-        id: string;
-        name: string;
-        facility_type: string | null;
-        description: string | null;
-        image_url: string | null;
-        display_order: number;
-      }>;
-    } | null;
   }
 
-  // Fetch team with organization data
-  const { data: teamData, error: teamError } = await supabase
-    .from('baseball_teams')
-    .select(`
-      id,
-      name,
-      team_type,
-      description,
-      logo_url,
-      join_code,
-      organization:organizations (
+  interface TeamOrganization {
+    id?: string;
+    name?: string;
+    logo_url: string | null;
+    description: string | null;
+    division: string | null;
+    conference: string | null;
+    website_url: string | null;
+    location_city: string | null;
+    location_state: string | null;
+  }
+
+  let team: TeamCore;
+  let org: TeamOrganization | null = null;
+
+  if (isPublicViewer) {
+    // ------------------------------------------------------------
+    // ANON PATH: read exclusively through the anon-safe public views
+    // (supabase/migrations/20260702110000_baseball_public_team_program_profile_views.sql,
+    // db_gated). The base tables are authenticated-only via RLS.
+    // ------------------------------------------------------------
+    const { data: publicTeam } = await fromUntyped(supabase, 'baseball_teams_public_profile')
+      .select('id, name, team_type, description, organization_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!publicTeam) {
+      notFound();
+    }
+
+    team = {
+      id: publicTeam.id,
+      name: publicTeam.name,
+      team_type: publicTeam.team_type,
+      description: publicTeam.description,
+    };
+
+    if (publicTeam.organization_id) {
+      const { data: publicOrg } = await fromUntyped(supabase, 'organizations_public_profile')
+        .select('logo_url, description, division, conference, website_url, location_city, location_state')
+        .eq('id', publicTeam.organization_id)
+        .maybeSingle();
+      org = publicOrg ?? null;
+    }
+  } else {
+    // ------------------------------------------------------------
+    // AUTHENTICATED RECRUITING COACH PATH: unchanged from prior behavior.
+    // ------------------------------------------------------------
+    interface FullTeamData extends TeamCore {
+      logo_url: string | null;
+      join_code: string | null;
+      organization: TeamOrganization | null;
+    }
+
+    const { data: teamData, error: teamError } = await supabase
+      .from('baseball_teams')
+      .select(`
         id,
         name,
-        logo_url,
+        team_type,
         description,
-        division,
-        conference,
-        website_url,
-        location_city,
-        location_state,
-        organization_staff (
+        logo_url,
+        join_code,
+        organization:organizations (
           id,
           name,
-          title,
-          bio,
-          headshot_url,
-          is_public,
-          display_order
-        ),
-        organization_facilities (
-          id,
-          name,
-          facility_type,
+          logo_url,
           description,
-          image_url,
-          display_order
+          division,
+          conference,
+          website_url,
+          location_city,
+          location_state
         )
-      )
-    `)
-    .eq('id', id)
-    .single();
+      `)
+      .eq('id', id)
+      .single();
 
-  // Type assertion to handle TypeScript until types are regenerated
-  const team = teamData as unknown as TeamData | null;
+    // Type assertion to handle TypeScript until types are regenerated
+    const fullTeam = teamData as unknown as FullTeamData | null;
 
-  if (teamError || !team) {
-    notFound();
+    if (teamError || !fullTeam) {
+      notFound();
+    }
+
+    team = {
+      id: fullTeam.id,
+      name: fullTeam.name,
+      team_type: fullTeam.team_type,
+      description: fullTeam.description,
+    };
+    org = fullTeam.organization;
   }
-
-  // Type assertions for organization data
-  type OrgStaff = {
-    id: string;
-    name: string;
-    title: string;
-    bio: string | null;
-    headshot_url: string | null;
-    is_public: boolean;
-    display_order: number;
-  };
 
   type OrgFacility = {
     id: string;
@@ -201,28 +216,23 @@ export default async function TeamProfilePage({ params }: PageProps) {
     display_order: number;
   };
 
-  interface TeamOrganization {
+  type StaffMember = {
     id: string;
     name: string;
-    logo_url: string | null;
-    description: string | null;
-    division: string | null;
-    conference: string | null;
-    website_url: string | null;
-    location_city: string | null;
-    location_state: string | null;
-    organization_staff?: OrgStaff[];
-    organization_facilities?: OrgFacility[];
-  }
-
-  const org = team.organization as TeamOrganization | null;
+    title: string;
+    bio: string | null;
+    headshot_url: string | null;
+    display_order: number;
+  };
 
   // ============================================================
-  // ROSTER VISIBILITY: Coaches can only view rosters of teams they recruit from
+  // ROSTER VISIBILITY: Coaches can only view rosters of teams they recruit
+  // from. Logged-out visitors never see the roster.
   // - College coaches: can view HS and Showcase rosters
   // - JUCO coaches: can only view HS rosters
   // ============================================================
   const canViewRoster = (() => {
+    if (isPublicViewer || !coach) return false;
     if (coach.coach_type === 'college') {
       return ['high_school', 'showcase'].includes(team.team_type);
     }
@@ -231,31 +241,6 @@ export default async function TeamProfilePage({ params }: PageProps) {
     }
     return false;
   })();
-
-  // Fetch roster (team members with player data) - only if coach can view it
-  const { data: rosterData } = await supabase
-    .from('baseball_team_members')
-    .select(`
-      id,
-      position,
-      jersey_number,
-      status,
-      joined_at,
-      player:baseball_players (
-        id,
-        first_name,
-        last_name,
-        primary_position,
-        secondary_position,
-        grad_year,
-        avatar_url,
-        recruiting_activated,
-        city,
-        state
-      )
-    `)
-    .eq('team_id', id)
-    .or('status.eq.active,status.is.null');
 
   type RosterMember = {
     id: string;
@@ -277,28 +262,128 @@ export default async function TeamProfilePage({ params }: PageProps) {
     } | null;
   };
 
-  const roster = (rosterData as RosterMember[] | null) || [];
+  let sortedRoster: RosterMember[] = [];
 
-  // Sort roster by last name, then first name
-  const sortedRoster = roster
-    .filter((m) => m.player)
-    .sort((a, b) => {
-      const lastA = a.player?.last_name || '';
-      const lastB = b.player?.last_name || '';
-      if (lastA !== lastB) return lastA.localeCompare(lastB);
-      const firstA = a.player?.first_name || '';
-      const firstB = b.player?.first_name || '';
-      return firstA.localeCompare(firstB);
-    });
+  if (canViewRoster) {
+    // Fetch roster (team members with player data) - only if coach can view it
+    const { data: rosterData } = await supabase
+      .from('baseball_team_members')
+      .select(`
+        id,
+        position,
+        jersey_number,
+        status,
+        joined_at,
+        player:baseball_players (
+          id,
+          first_name,
+          last_name,
+          primary_position,
+          secondary_position,
+          grad_year,
+          avatar_url,
+          recruiting_activated,
+          city,
+          state
+        )
+      `)
+      .eq('team_id', id)
+      .or('status.eq.active,status.is.null');
 
-  // Get staff from organization
-  const staff = (org?.organization_staff || [])
-    .filter((s) => s.is_public)
-    .sort((a, b) => a.display_order - b.display_order);
+    const roster = (rosterData as RosterMember[] | null) || [];
+
+    // Sort roster by last name, then first name
+    sortedRoster = roster
+      .filter((m) => m.player)
+      .sort((a, b) => {
+        const lastA = a.player?.last_name || '';
+        const lastB = b.player?.last_name || '';
+        if (lastA !== lastB) return lastA.localeCompare(lastB);
+        const firstA = a.player?.first_name || '';
+        const firstB = b.player?.first_name || '';
+        return firstA.localeCompare(firstB);
+      });
+  }
+
+  // Fetch coaching staff. Authenticated recruiting coaches get the full
+  // identity (name, title, bio, headshot) via the base tables; logged-out
+  // visitors get the SAFE subset (name, role, avatar — no bio) via the
+  // anon-readable public view.
+  const staff: StaffMember[] = [];
+
+  if (isPublicViewer) {
+    const { data: publicStaffRows } = await fromUntyped(supabase, 'baseball_team_coach_staff_public')
+      .select('coach_id, is_primary, role, full_name, avatar_url')
+      .eq('team_id', id);
+
+    if (publicStaffRows) {
+      const seen = new Set<string>();
+      const sortedStaffRows = [...publicStaffRows].sort(
+        (a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)
+      );
+      sortedStaffRows.forEach((row, index) => {
+        const coachId = row.coach_id as string | null;
+        if (!coachId || seen.has(coachId)) return;
+        seen.add(coachId);
+        staff.push({
+          id: coachId,
+          name: (row.full_name as string | null)?.trim() || 'Coach',
+          title: row.is_primary ? 'Head Coach' : ((row.role as string | null) ?? 'Assistant Coach'),
+          bio: null,
+          headshot_url: row.avatar_url as string | null,
+          display_order: index,
+        });
+      });
+    }
+  } else {
+    // Fetch coaching staff via baseball_team_coach_staff -> baseball_coaches (scoped to this team)
+    // NOTE: baseball_coaches has `full_name`, not first_name/last_name — do not select
+    // first_name/last_name here, PostgREST will 400 (see database.ts baseball_coaches.Row).
+    const { data: staffRows } = await supabase
+      .from('baseball_team_coach_staff')
+      .select(`
+        is_primary,
+        role,
+        baseball_coaches!inner(
+          id,
+          full_name,
+          bio,
+          avatar_url
+        )
+      `)
+      .eq('team_id', id);
+
+    if (staffRows) {
+      const seen = new Set<string>();
+      // Sort: primary coaches first
+      const sortedStaffRows = [...staffRows].sort(
+        (a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)
+      );
+      sortedStaffRows.forEach((row, index) => {
+        const c = row.baseball_coaches as unknown as {
+          id: string;
+          full_name: string | null;
+          bio: string | null;
+          avatar_url: string | null;
+        } | null;
+        if (!c || seen.has(c.id)) return;
+        seen.add(c.id);
+        staff.push({
+          id: c.id,
+          name: c.full_name?.trim() || 'Coach',
+          title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
+          bio: c.bio,
+          headshot_url: c.avatar_url,
+          display_order: index,
+        });
+      });
+    }
+  }
 
   // Get facilities from organization (only for college/juco)
+  // organization_facilities has no backing table yet — always empty until it exists.
   const showFacilities = team.team_type === 'college' || team.team_type === 'juco';
-  const facilities = showFacilities ? (org?.organization_facilities || []).sort((a, b) => a.display_order - b.display_order) : [];
+  const facilities: OrgFacility[] = [];
 
   // Location - use org location (teams don't have city/state directly)
   const location = {
@@ -380,8 +465,32 @@ export default async function TeamProfilePage({ params }: PageProps) {
               )}
             </Card>
 
-            {/* Roster - Only shown if coach has permission to view */}
-            {canViewRoster ? (
+            {/* Roster - gated: sign-in prompt for anon, permission-gated for coaches */}
+            {isPublicViewer ? (
+              <Card className="overflow-hidden">
+                <div className="p-6 border-b border-warm-200 bg-cream-50">
+                  <div className="flex items-center gap-2">
+                    <IconUsers size={20} className="text-primary-600" />
+                    <h2 className="text-lg font-semibold tracking-tight text-warm-900">Roster</h2>
+                  </div>
+                </div>
+                <div className="p-8 text-center">
+                  <div className="text-warm-400 mb-2">
+                    <IconLock size={32} className="mx-auto" />
+                  </div>
+                  <p className="text-warm-600 font-medium">Sign in to view roster</p>
+                  <p className="text-sm text-warm-500 mt-1 mb-4">
+                    Roster details are visible to verified college and JUCO coaches.
+                  </p>
+                  <Link
+                    href={`/baseball/login?returnTo=${encodeURIComponent(`/baseball/team/${id}`)}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-600 px-5 py-2.5 min-h-[44px] text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-primary-700 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              </Card>
+            ) : canViewRoster ? (
               <Card className="overflow-hidden">
                 <div className="p-6 border-b border-warm-200 bg-white">
                   <div className="flex items-center justify-between">
@@ -456,7 +565,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                   </div>
                   <p className="text-warm-600 font-medium">Roster not available</p>
                   <p className="text-sm text-warm-500 mt-1">
-                    {coach.coach_type === 'juco'
+                    {coach?.coach_type === 'juco'
                       ? 'JUCO coaches can only view high school team rosters.'
                       : 'You do not have access to view this team\'s roster.'}
                   </p>

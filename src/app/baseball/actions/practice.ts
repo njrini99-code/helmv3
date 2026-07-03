@@ -133,7 +133,7 @@ export async function getTeamPractices(): Promise<ActionResult<BaseballPracticeW
       *,
       blocks:baseball_practice_blocks(
         *,
-        coach_owner:baseball_coaches(id, first_name, last_name)
+        coach_owner:baseball_coaches(id, full_name)
       ),
       attendance:baseball_practice_attendance(*)
     `,
@@ -150,7 +150,7 @@ export async function getTeamPractices(): Promise<ActionResult<BaseballPracticeW
       .map((b: any) => ({
         ...b,
         coach_owner_name: b.coach_owner
-          ? `${b.coach_owner.first_name ?? ''} ${b.coach_owner.last_name ?? ''}`.trim() || null
+          ? (b.coach_owner.full_name?.trim() || null)
           : null,
       }))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -661,7 +661,7 @@ export async function getPlayerPractices(): Promise<
         id, start_offset_min, duration_min, activity, description,
         location, station_type, group_label, equipment, is_measured,
         coach_owner_id, visibility,
-        coach_owner:baseball_coaches(id, first_name, last_name)
+        coach_owner:baseball_coaches(id, full_name)
       ),
       attendance:baseball_practice_attendance(player_id, status)
     `,
@@ -769,7 +769,7 @@ export async function getPlayerPractices(): Promise<
     const blocks: PlayerPracticeBlockView[] = visibleBlocks.map((b: any) => {
       const coachOwner = Array.isArray(b.coach_owner) ? b.coach_owner[0] : b.coach_owner;
       const coachName = coachOwner
-        ? `${coachOwner.first_name ?? ''} ${coachOwner.last_name ?? ''}`.trim() || null
+        ? (coachOwner.full_name?.trim() || null)
         : null;
 
       const { hasConflict, names } = detectConflicts(

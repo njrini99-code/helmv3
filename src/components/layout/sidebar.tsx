@@ -24,15 +24,15 @@ import {
   IconMap,
   IconFileText,
   IconTarget,
-  IconStar,
 } from '@/components/icons';
 import {
   COACH_TEAM_TABS,
   COACH_STATS_TABS,
   COACH_DEVELOPMENT_TABS,
   COACH_MANAGEMENT_TABS,
-  COACH_RECRUITING_TABS,
   COACH_ACADEMICS_TABS,
+  COACH_HUB_ORDER,
+  COACH_HUB_DEFS,
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
@@ -45,6 +45,7 @@ import { useSidebar } from '@/contexts/sidebar-context';
 import { Button } from '@/components/ui/button';
 import {
   getVisibleBaseballNav,
+  BASEBALL_MESSAGES_NAV,
   type BaseballNavContext,
 } from '@/lib/baseball/nav-registry';
 
@@ -103,31 +104,19 @@ const COACH_MANAGEMENT_HUB: SidebarHubItem = {
   icon: IconBuilding,
   hubPrefixes: hubPrefixesFrom(COACH_MANAGEMENT_TABS),
 };
-const COACH_RECRUITING_HUB: SidebarHubItem = {
-  name: 'Recruiting',
-  href: COACH_RECRUITING_TABS[0]!.href,
-  icon: IconStar,
-  hubPrefixes: hubPrefixesFrom(COACH_RECRUITING_TABS),
-};
-const COACH_ORGANIZATION_HUB: SidebarHubItem = {
-  name: 'Organization',
-  href: '/baseball/dashboard/organization',
-  icon: IconBuilding,
-  hubPrefixes: [
-    '/baseball/dashboard/organization',
-    '/baseball/dashboard/teams',
-    '/baseball/dashboard/events',
-  ],
-};
 const COACH_ACADEMICS_HUB: SidebarHubItem = {
   name: 'Academics',
   href: COACH_ACADEMICS_TABS[0]!.href,
   icon: IconGraduationCap,
   hubPrefixes: hubPrefixesFrom(COACH_ACADEMICS_TABS),
 };
+// Messages — persistent cross-cutting slot (golf-style), never a hub sub-tab.
+// Deliberately outside BASEBALL_NAV_REGISTRY (see nav-registry.ts), so every
+// nav consumer injects it explicitly; this is the shared literal both the
+// condensed (8-tab) nav and the legacy showcase org nav inject.
 const COACH_MESSAGES_ITEM: SidebarHubItem = {
-  name: 'Messages',
-  href: '/baseball/dashboard/messages',
+  name: BASEBALL_MESSAGES_NAV.label,
+  href: BASEBALL_MESSAGES_NAV.href,
   icon: IconMessage,
   badge: true,
 };
@@ -251,6 +240,15 @@ function hasAnyVisible(ids: Set<string>, candidates: string[]) {
   return candidates.some((id) => ids.has(id));
 }
 
+/**
+ * The condensed 8-tab coach nav (COACH_NAV_8TAB_PROPOSAL.md, approved
+ * 2026-07-01): Dashboard, Team, Messages, Stats & Performance, Development,
+ * Recruiting, Academics, Management. GROUPED BY `entry.hub` (via
+ * COACH_HUB_ORDER / COACH_HUB_DEFS in hub-definitions.ts, itself derived from
+ * BASEBALL_NAV_REGISTRY) — this function never hand-lists a hub's member
+ * routes, so a new registry entry tagged with an existing `hub` is picked up
+ * automatically, with no risk of re-orphaning a feature from the sidebar.
+ */
 function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubItem[] {
   const ids = visibleIdSet(ctx);
 
@@ -281,39 +279,42 @@ function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubIt
     ];
   }
 
-  const items: SidebarHubItem[] = [
-    { name: 'Command', href: '/baseball/dashboard/command-center', icon: IconHome },
-  ];
+  const items: SidebarHubItem[] = [];
 
-  if (ids.has('signals')) {
-    items.push({ name: 'Signals', href: '/baseball/dashboard/signals', icon: IconTarget });
+  for (const hubId of COACH_HUB_ORDER) {
+    const def = COACH_HUB_DEFS[hubId];
+
+    // Recruiting/Academics are MODE-gated (RECRUITING_PROGRAM_TYPES / JUCO-only),
+    // not just capability-gated — checked up front so a recruiting-ineligible
+    // program type never shows the hub, even if a member id happens to also be
+    // capability-visible.
+    if (hubId === 'recruiting' && !(ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType))) {
+      continue;
+    }
+    if (hubId === 'academics' && !ids.has('academics')) continue;
+
+    // Every other hub (including Management) hides itself when NO member is
+    // visible for this coach — Command Center/Signals (Dashboard) are always
+    // capability-free, so Dashboard is never actually hidden by this in
+    // practice; Management legitimately can be for a narrow staff role with
+    // none of can_manage_settings/can_invite_staff. This mirrors
+    // resolveActiveHub's own "empty hub → null, no strip" precedent and keeps
+    // this shell and BaseballFairwayShell.tsx's section builder in lockstep.
+    if (!hasAnyVisible(ids, def.tabs.map((t) => t.id))) continue;
+
+    items.push({
+      name: def.label,
+      href: def.tabs[0]!.href,
+      icon: def.icon,
+      hubPrefixes: def.tabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
+    });
+
+    // Messages: persistent cross-cutting slot (golf-style), injected right
+    // after Dashboard — never a hub sub-tab (nav-registry.ts: "messages lives
+    // outside this set").
+    if (hubId === 'dashboard') items.push(COACH_MESSAGES_ITEM);
   }
 
-  if (hasAnyVisible(ids, ['organization', 'teams', 'events'])) {
-    items.push(COACH_ORGANIZATION_HUB);
-  }
-
-  if (hasAnyVisible(ids, ['roster', 'calendar', 'announcements', 'documents', 'travel'])) {
-    items.push(COACH_TEAM_HUB);
-  }
-
-  if (hasAnyVisible(ids, ['stats-center', 'performance', 'postgame-review', 'practice-effectiveness', 'import-center'])) {
-    items.push(COACH_STATS_HUB);
-  }
-
-  if (hasAnyVisible(ids, ['dev-plans', 'videos'])) {
-    items.push(COACH_DEVELOPMENT_HUB);
-  }
-
-  if (ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType)) {
-    items.push(COACH_RECRUITING_HUB);
-  }
-
-  if (ids.has('academics')) {
-    items.push(COACH_ACADEMICS_HUB);
-  }
-
-  items.push(COACH_MANAGEMENT_HUB);
   return items;
 }
 
@@ -458,7 +459,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
       )}
       {/* Logo */}
       <div className={cn(
-        'h-16 flex items-center border-b border-white/10',
+        'h-16 shrink-0 flex items-center border-b border-white/10',
         'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
@@ -514,12 +515,29 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className={cn(
-        'flex-1 py-4 overflow-y-auto overflow-x-hidden custom-scrollbar',
-        'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-        isCollapsed ? 'px-2' : 'px-3'
-      )}>
+      {/* Navigation
+          `min-h-0` is required here: this is a flex child inside a
+          `flex flex-col h-dvh` column alongside the fixed-height logo header
+          and the non-growing bottom (Settings/Sign-out) block. Without an
+          explicit min-height, some WebKit builds (notably Capacitor's iOS
+          WKWebView) size this item to its content instead of the remaining
+          flex space, which pushes the bottom block off-screen and clips the
+          list's last item(s) behind it. `pb-8` (vs. the `pt-4` top inset)
+          gives the last item real breathing room at the scroll end instead
+          of ending flush against the bottom block's top border, and the
+          inline styles enable native momentum scrolling on touch devices
+          without letting an exhausted scroll chain up into the page. */}
+      <nav
+        className={cn(
+          'flex-1 min-h-0 pt-4 pb-8 overflow-y-auto overflow-x-hidden custom-scrollbar',
+          'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
+          isCollapsed ? 'px-2' : 'px-3'
+        )}
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}
+      >
         {/* ARCHIVED: Recruiting mode toggle hidden — re-enable when recruiting is ready */}
         {/* {showModeToggle && !isCollapsed && (
           <div className="mb-4 px-1 animate-fade-in">
@@ -555,7 +573,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                     'transition-colors duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
-                      ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                      ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
                       : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
@@ -565,7 +583,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                     aria-hidden="true"
                     className={cn(
                       'flex-shrink-0 transition-colors duration-150',
-                      isActive ? 'text-primary-400' : 'text-white/50'
+                      isActive ? 'text-primary-400 nav-item-active-icon' : 'text-white/50'
                     )}
                   />
                   {/* Text - animates out */}
@@ -619,7 +637,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                         'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
                         'transition-colors duration-150 ease-out',
                         isActive
-                          ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                          ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
                           : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                         isCollapsed ? 'justify-center px-2' : 'px-3'
                       )}
@@ -629,7 +647,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                         aria-hidden="true"
                         className={cn(
                           'flex-shrink-0 transition-colors',
-                          isActive ? 'text-primary-400' : 'text-white/50'
+                          isActive ? 'text-primary-400 nav-item-active-icon' : 'text-white/50'
                         )}
                       />
                       <span
@@ -670,7 +688,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                     'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out',
                     isActive
-                      ? 'bg-white/10 text-primary-400'
+                      ? 'bg-white/10 text-primary-400 nav-item-active'
                       : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
@@ -691,9 +709,13 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Bottom section */}
+      {/* Bottom section (Settings / Sign-out) — pinned below the scrollable
+          nav by normal flex flow (not `position: sticky`); `shrink-0` keeps
+          it at its natural content height so it never gets compressed by
+          the flex layout on short viewports, which would otherwise let its
+          own content (or the nav list above it) overlap/clip. */}
       <div className={cn(
-        'border-t border-white/10 space-y-0.5',
+        'shrink-0 border-t border-white/10 space-y-0.5',
         'transition-[padding] duration-300',
         isCollapsed ? 'p-2' : 'p-3'
       )}>

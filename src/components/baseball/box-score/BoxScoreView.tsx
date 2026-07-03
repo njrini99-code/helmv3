@@ -2,6 +2,7 @@
 
 import type { BaseballGame, BaseballBoxScoreBatting, BaseballBoxScorePitching } from '@/lib/types';
 import { IconCalendar, IconMapPin } from '@/components/icons';
+import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 
 interface BoxScoreViewProps {
   game: BaseballGame;
@@ -57,7 +58,8 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
   // Pitching totals
   const pitchTotals = pitching.reduce(
     (acc, r) => ({
-      ip: acc.ip + r.ip,
+      // .1/.2 are outs, not decimals — sum via outs (6.1 + 6.2 → 13.0). (#434)
+      ip: sumInningsPitched([acc.ip, r.ip]),
       h: acc.h + r.h,
       r: acc.r + r.r,
       er: acc.er + r.er,
@@ -68,8 +70,10 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
     { ip: 0, h: 0, r: 0, er: 0, bb: 0, k: 0, hr: 0 }
   );
 
-  const teamERA = pitchTotals.ip > 0 ? (9 * pitchTotals.er / pitchTotals.ip).toFixed(2) : '—';
-  const teamWHIP = pitchTotals.ip > 0 ? ((pitchTotals.bb + pitchTotals.h) / pitchTotals.ip).toFixed(3) : '—';
+  // Rates divide by TRUE innings (outs / 3), not the notation value. (#434)
+  const teamInnings = ipToInnings(pitchTotals.ip);
+  const teamERA = teamInnings > 0 ? (9 * pitchTotals.er / teamInnings).toFixed(2) : '—';
+  const teamWHIP = teamInnings > 0 ? ((pitchTotals.bb + pitchTotals.h) / teamInnings).toFixed(3) : '—';
 
   return (
     <div className="space-y-5">

@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Loading } from '@/components/ui/loading';
-import { IconBuilding, IconSearch } from '@/components/icons';
+import { IconBuilding, IconSearch, IconAlertCircle } from '@/components/icons';
 import { useColleges, useStates, useConferences } from '@/hooks/use-colleges';
 
 const divisions = [
@@ -26,7 +26,7 @@ export default function CollegesPage() {
   const [conferenceFilter, setConferenceFilter] = useState('');
   const [search, setSearch] = useState('');
 
-  const { colleges, interests, loading, toggleInterest } = useColleges({
+  const { colleges, interests, loading, error, refetch, toggleInterest } = useColleges({
     division: division || undefined,
     state: stateFilter || undefined,
     conference: conferenceFilter || undefined,
@@ -94,6 +94,13 @@ export default function CollegesPage() {
         {/* Results */}
         {loading ? (
           <Loading />
+        ) : error ? (
+          <EmptyState
+            icon={<IconAlertCircle size={24} />}
+            title="Couldn't load colleges"
+            description={error}
+            action={{ label: 'Retry', onClick: refetch }}
+          />
         ) : colleges.length === 0 ? (
           <EmptyState
             icon={<IconBuilding size={24} />}

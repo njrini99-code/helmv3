@@ -51,6 +51,7 @@ import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import {
   resolveBaseballLiftingOrg,
   resolveBaseballAthleteIds,
+  resolveMyBaseballAthleteId,
 } from '@/lib/lifting/resolve-baseball-context';
 import type {
   BaseballStrengthGroupRules,
@@ -2021,7 +2022,95 @@ async function detectAndRecordPr(
 
 // ============================================================================
 // SESSION LIFECYCLE + SET LOGGING (player-self + coach-observed)
+//
+// DUAL-SPACE RECONCILIATION: the player Lift surface (PlayerLiftSessionClient,
+// via getPlayerLiftSession) reads sessions from helm_lifting_sessions and hands
+// out helm-space ids (see player-lift.ts + baseball-view-adapter.ts). The coach
+// Live Weight Room (LiveWeightRoom.tsx, via getLiveWeightRoomData) still reads
+// the legacy baseball_lift_sessions materialization and hands out legacy ids.
+// Both surfaces call the SAME actions below (startLiftSession / logSetResult /
+// completeLiftSession) with whichever id space their read model produced, so
+// these actions resolve the session's table space per-call (resolveLiftSessionSpace)
+// instead of assuming one space — a legacy-only lookup 404'd every player-self
+// set log with "Session not found" once the read side moved to helm_lifting_*.
 // ============================================================================
+
+interface HelmLiftSpace {
+  space: 'helm';
+  sessionId: string;
+  organizationId: string;
+  sport: string;
+  teamId: string | null;
+  athleteId: string;
+  legacyBaseballId: string | null;
+}
+
+interface LegacyLiftSpace {
+  space: 'legacy';
+  sessionId: string;
+  teamId: string;
+  playerId: string;
+}
+
+type LiftSessionSpace = HelmLiftSpace | LegacyLiftSpace;
+
+/**
+ * Resolve which table space a given lift-session id lives in. Tries
+ * helm_lifting_sessions first (the current player-facing read model), then
+ * falls back to the legacy baseball_lift_sessions materialization (the current
+ * coach Live Weight Room read model). Returns null when the id exists in
+ * neither — RLS on both tables backstops cross-tenant access either way.
+ */
+async function resolveLiftSessionSpace(
+  supabase: Db,
+  sessionId: string,
+): Promise<LiftSessionSpace | null> {
+  const { data: helmSession } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+    .select('id, organization_id, sport, team_id, athlete_id, legacy_baseball_id')
+    .eq('id', sessionId)
+    .maybeSingle()) as {
+    data: {
+      id: string;
+      organization_id: string;
+      sport: string;
+      team_id: string | null;
+      athlete_id: string;
+      legacy_baseball_id: string | null;
+    } | null;
+  };
+  if (helmSession) {
+    return {
+      space: 'helm',
+      sessionId: helmSession.id,
+      organizationId: helmSession.organization_id,
+      sport: helmSession.sport,
+      teamId: helmSession.team_id,
+      athleteId: helmSession.athlete_id,
+      legacyBaseballId: helmSession.legacy_baseball_id,
+    };
+  }
+
+  const { data: legacySession } = await supabase
+    .from('baseball_lift_sessions')
+    .select('id, team_id, player_id')
+    .eq('id', sessionId)
+    .maybeSingle();
+  if (legacySession) {
+    const s = legacySession as { id: string; team_id: string; player_id: string };
+    return { space: 'legacy', sessionId: s.id, teamId: s.team_id, playerId: s.player_id };
+  }
+
+  return null;
+}
+
+/** Resolve a helm_lifting_athletes.id back to the baseball_players.id it was seeded from. */
+async function resolveAthletePlayerId(supabase: Db, athleteId: string): Promise<string | null> {
+  const { data } = (await fromUntyped(supabase, 'helm_lifting_athletes')
+    .select('sport_player_id')
+    .eq('id', athleteId)
+    .maybeSingle()) as { data: { sport_player_id: string | null } | null };
+  return data?.sport_player_id ?? null;
+}
 
 const startSessionSchema = z.object({ sessionId: uuid });
 
@@ -2031,18 +2120,34 @@ export const startLiftSession = withBaseballAction(
   async (ctx, raw: z.input<typeof startSessionSchema>): Promise<ActionResult> => {
     const input = startSessionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
-    const { data, error } = await supabase
-      .from('baseball_lift_sessions')
-      .update({ status: 'started', started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq('id', input.sessionId)
-      .eq('status', 'assigned')
-      .select('id')
-      .maybeSingle();
-    if (error) throw error;
     void ctx;
+
+    const resolved = await resolveLiftSessionSpace(supabase, input.sessionId);
+    let started = false;
+    if (resolved?.space === 'helm') {
+      const { data, error } = await fromUntyped(supabase, 'helm_lifting_sessions')
+        .update({ status: 'started', started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', input.sessionId)
+        .eq('status', 'assigned')
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      started = Boolean(data);
+    } else if (resolved?.space === 'legacy') {
+      const { data, error } = await supabase
+        .from('baseball_lift_sessions')
+        .update({ status: 'started', started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', input.sessionId)
+        .eq('status', 'assigned')
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      started = Boolean(data);
+    }
+
     revalidatePath(`${PLAYER_LIFT}/${input.sessionId}`);
     revalidatePath(PLAYER_TODAY);
-    return { success: true, id: input.sessionId, count: data ? 1 : 0 };
+    return { success: true, id: input.sessionId, count: started ? 1 : 0 };
   },
 );
 
@@ -2070,61 +2175,137 @@ export const logSetResult = withBaseballAction(
     const input = logSetSchema.parse(raw);
     const supabase = (await createClient()) as Db;
 
-    // Resolve the session's player + team so we set the row's owner correctly
-    // (RLS will reject a mismatch). A coach-entered set marks coach_observed.
-    const { data: sess, error: sErr } = await supabase
-      .from('baseball_lift_sessions')
-      .select('id, team_id, player_id')
-      .eq('id', input.sessionId)
-      .maybeSingle();
-    if (sErr) throw sErr;
-    if (!sess) throw new BaseballActionError('Session not found or not accessible.');
+    const resolved = await resolveLiftSessionSpace(supabase, input.sessionId);
+    if (!resolved) throw new BaseballActionError('Session not found or not accessible.');
 
     const isCoach = ctx.activeRole === 'coach';
-    const { data, error } = await supabase
-      .from('baseball_lift_set_results')
-      .upsert(
-        {
-          session_exercise_id: input.sessionExerciseId,
-          team_id: (sess as { team_id: string }).team_id,
-          player_id: (sess as { player_id: string }).player_id,
-          set_number: input.setNumber,
-          actual_reps: input.actualReps ?? null,
-          actual_load: input.actualLoad ?? null,
-          load_unit: input.loadUnit ?? null,
-          rpe: input.rpe ?? null,
-          velocity: input.velocity ?? null,
-          player_note: input.playerNote ?? null,
-          coach_observed: isCoach,
-          completed_at: new Date().toISOString(),
-        },
-        { onConflict: 'session_exercise_id,set_number' },
-      )
-      .select('id')
-      .single();
-    if (error) throw error;
+
+    let setRowId: string;
+    let teamId: string;
+    let playerId: string;
+    // Legacy-space ids to feed detectAndRecordPr — PR/max tables still FK to
+    // baseball_lift_sessions / baseball_lift_exercises. In helm space these are
+    // resolved via legacy_baseball_id (set by the publishLiftDay bridge); a
+    // helm session with no legacy mirror simply skips PR detection (honest —
+    // no PR row is fabricated, matches detectAndRecordPr's own swallow-errors
+    // contract).
+    let prSessionId: string | null = null;
+    let prSessionExerciseId: string | null = null;
+
+    if (resolved.space === 'helm') {
+      const resolvedPlayerId = await resolveAthletePlayerId(supabase, resolved.athleteId);
+      if (!resolvedPlayerId) throw new BaseballActionError('Session not found or not accessible.');
+      playerId = resolvedPlayerId;
+      teamId = resolved.teamId ?? ctx.targetTeamId;
+
+      const { data, error } = await fromUntyped(supabase, 'helm_lifting_set_results')
+        .upsert(
+          {
+            session_exercise_id: input.sessionExerciseId,
+            organization_id: resolved.organizationId,
+            sport: resolved.sport,
+            athlete_id: resolved.athleteId,
+            set_number: input.setNumber,
+            actual_reps: input.actualReps ?? null,
+            actual_load: input.actualLoad ?? null,
+            load_unit: input.loadUnit ?? null,
+            rpe: input.rpe ?? null,
+            velocity: input.velocity ?? null,
+            player_note: input.playerNote ?? null,
+            coach_observed: isCoach,
+            completed_at: new Date().toISOString(),
+          },
+          // Matches the real DB constraint (uq_helm_lifting_set — see migration
+          // 20260625000020): UNIQUE (session_exercise_id, set_number). NOT
+          // (..., athlete_id, ...) — that 3-column form (used by the
+          // src/app/lifting/actions/* helm-native actions) targets a
+          // constraint that doesn't exist and would 400 on every upsert.
+          { onConflict: 'session_exercise_id,set_number' },
+        )
+        .select('id')
+        .single();
+      if (error) throw error;
+      setRowId = (data as { id: string }).id;
+
+      // Auto-advance assigned -> started (mirrors the helm-native
+      // player-sessions.ts logMySetResult behavior).
+      await fromUntyped(supabase, 'helm_lifting_sessions')
+        .update({ status: 'started', started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', input.sessionId)
+        .eq('status', 'assigned');
+
+      if (resolved.legacyBaseballId) {
+        const { data: legacySe } = (await fromUntyped(supabase, 'helm_lifting_session_exercises')
+          .select('legacy_baseball_id')
+          .eq('id', input.sessionExerciseId)
+          .maybeSingle()) as { data: { legacy_baseball_id: string | null } | null };
+        prSessionId = resolved.legacyBaseballId;
+        prSessionExerciseId = legacySe?.legacy_baseball_id ?? null;
+      }
+    } else {
+      // Legacy space — coach Live Weight Room today. Unchanged behavior.
+      const { data: sess, error: sErr } = await supabase
+        .from('baseball_lift_sessions')
+        .select('id, team_id, player_id')
+        .eq('id', input.sessionId)
+        .maybeSingle();
+      if (sErr) throw sErr;
+      if (!sess) throw new BaseballActionError('Session not found or not accessible.');
+
+      teamId = (sess as { team_id: string }).team_id;
+      playerId = (sess as { player_id: string }).player_id;
+
+      const { data, error } = await supabase
+        .from('baseball_lift_set_results')
+        .upsert(
+          {
+            session_exercise_id: input.sessionExerciseId,
+            team_id: teamId,
+            player_id: playerId,
+            set_number: input.setNumber,
+            actual_reps: input.actualReps ?? null,
+            actual_load: input.actualLoad ?? null,
+            load_unit: input.loadUnit ?? null,
+            rpe: input.rpe ?? null,
+            velocity: input.velocity ?? null,
+            player_note: input.playerNote ?? null,
+            coach_observed: isCoach,
+            completed_at: new Date().toISOString(),
+          },
+          { onConflict: 'session_exercise_id,set_number' },
+        )
+        .select('id')
+        .single();
+      if (error) throw error;
+      setRowId = (data as { id: string }).id;
+      prSessionId = input.sessionId;
+      prSessionExerciseId = input.sessionExerciseId;
+    }
 
     // Close the loop to PRs: a freshly logged set is checked against the player's
     // prior best for this exercise. Side-effect only — never rolls back the set.
-    const prCount = await detectAndRecordPr(supabase, {
-      teamId: (sess as { team_id: string }).team_id,
-      playerId: (sess as { player_id: string }).player_id,
-      sessionId: input.sessionId,
-      sessionExerciseId: input.sessionExerciseId,
-      actualLoad: input.actualLoad ?? null,
-      actualReps: input.actualReps ?? null,
-      loadUnit: input.loadUnit ?? null,
-      actorIsCoach: isCoach,
-      activeCoachId: ctx.activeCoachId,
-    });
+    const prCount =
+      prSessionId && prSessionExerciseId
+        ? await detectAndRecordPr(supabase, {
+            teamId,
+            playerId,
+            sessionId: prSessionId,
+            sessionExerciseId: prSessionExerciseId,
+            actualLoad: input.actualLoad ?? null,
+            actualReps: input.actualReps ?? null,
+            loadUnit: input.loadUnit ?? null,
+            actorIsCoach: isCoach,
+            activeCoachId: ctx.activeCoachId,
+          })
+        : 0;
 
     revalidatePath(`${PLAYER_LIFT}/${input.sessionId}`);
     revalidatePath(`${PERFORMANCE}/live`);
     revalidatePath(PLAYER_TODAY);
     if (prCount > 0) {
-      revalidatePath(`${PERFORMANCE}/players/${(sess as { player_id: string }).player_id}`);
+      revalidatePath(`${PERFORMANCE}/players/${playerId}`);
     }
-    return { success: true, id: (data as { id: string }).id, count: prCount };
+    return { success: true, id: setRowId, count: prCount };
   },
 );
 
@@ -2139,39 +2320,92 @@ export const completeLiftSession = withBaseballAction(
   async (ctx, raw: z.input<typeof completeSessionSchema>): Promise<CompleteSessionResult> => {
     const input = completeSessionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
-    const { data, error } = await supabase
-      .from('baseball_lift_sessions')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        player_note: input.playerNote ?? null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.sessionId)
-      .select('id, team_id, player_id, title')
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) throw new BaseballActionError('Session not found or not editable.');
 
-    const session = data as {
-      id: string;
-      team_id: string;
-      player_id: string;
-      title: string | null;
-    };
+    const resolved = await resolveLiftSessionSpace(supabase, input.sessionId);
+    if (!resolved) throw new BaseballActionError('Session not found or not editable.');
+
     const isCoach = ctx.activeRole === 'coach';
 
-    // Gather this session's exercise ids + name snapshots (needed for both PR
-    // sweep and the H2 completion stats: top-set display and RPE average).
-    const { data: seRows } = await supabase
-      .from('baseball_lift_session_exercises')
-      .select('id, exercise_name_snapshot')
-      .eq('session_id', input.sessionId);
-    type SeRow = { id: string; exercise_name_snapshot: string | null };
-    const seIds = (seRows ?? []).map((r: SeRow) => r.id);
-    const seNameMap = new Map<string, string>(
-      (seRows ?? []).map((r: SeRow) => [r.id, r.exercise_name_snapshot ?? 'Exercise']),
-    );
+    let teamId: string;
+    let playerId: string;
+    let title: string | null;
+    // Each session_exercise as { id (table-space-local), nameSnapshot, legacyId }.
+    // legacyId feeds the PR sweep below — baseball_strength_prs/maxes still FK to
+    // the legacy baseball_lift_* tables — and is null for a helm session_exercise
+    // with no legacy mirror (skipped, never fabricated).
+    let seList: Array<{ id: string; nameSnapshot: string; legacyId: string | null }>;
+    let legacySessionIdForPr: string | null;
+
+    if (resolved.space === 'helm') {
+      const resolvedPlayerId = await resolveAthletePlayerId(supabase, resolved.athleteId);
+      if (!resolvedPlayerId) throw new BaseballActionError('Session not found or not editable.');
+      playerId = resolvedPlayerId;
+      teamId = resolved.teamId ?? ctx.targetTeamId;
+      legacySessionIdForPr = resolved.legacyBaseballId;
+
+      const { data, error } = await fromUntyped(supabase, 'helm_lifting_sessions')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          player_note: input.playerNote ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.sessionId)
+        .select('id, title')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new BaseballActionError('Session not found or not editable.');
+      title = (data as { title: string | null }).title;
+
+      const { data: seRows } = (await fromUntyped(supabase, 'helm_lifting_session_exercises')
+        .select('id, exercise_name_snapshot, legacy_baseball_id')
+        .eq('session_id', input.sessionId)) as {
+        data: Array<{
+          id: string;
+          exercise_name_snapshot: string | null;
+          legacy_baseball_id: string | null;
+        }> | null;
+      };
+      seList = (seRows ?? []).map((r) => ({
+        id: r.id,
+        nameSnapshot: r.exercise_name_snapshot ?? 'Exercise',
+        legacyId: r.legacy_baseball_id,
+      }));
+    } else {
+      teamId = resolved.teamId;
+      playerId = resolved.playerId;
+      legacySessionIdForPr = input.sessionId;
+
+      const { data, error } = await supabase
+        .from('baseball_lift_sessions')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          player_note: input.playerNote ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.sessionId)
+        .select('id, title')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new BaseballActionError('Session not found or not editable.');
+      title = (data as { title: string | null }).title;
+
+      const { data: seRows } = await supabase
+        .from('baseball_lift_session_exercises')
+        .select('id, exercise_name_snapshot')
+        .eq('session_id', input.sessionId);
+      type SeRow = { id: string; exercise_name_snapshot: string | null };
+      seList = ((seRows ?? []) as SeRow[]).map((r) => ({
+        id: r.id,
+        nameSnapshot: r.exercise_name_snapshot ?? 'Exercise',
+        legacyId: r.id,
+      }));
+    }
+
+    const seIds = seList.map((s) => s.id);
+    const seNameMap = new Map(seList.map((s) => [s.id, s.nameSnapshot]));
+    const seLegacyMap = new Map(seList.map((s) => [s.id, s.legacyId]));
 
     // All logged sets for this session — no load/reps filter so bodyweight sets
     // contribute to the RPE average and the top-set scan covers everything.
@@ -2184,36 +2418,38 @@ export const completeLiftSession = withBaseballAction(
     };
     const allSets: SetStatRow[] = [];
     if (seIds.length > 0) {
-      const { data: setData } = await supabase
-        .from('baseball_lift_set_results')
-        .select('session_exercise_id, actual_load, actual_reps, load_unit, rpe')
-        .in('session_exercise_id', seIds);
+      const { data: setData } =
+        resolved.space === 'helm'
+          ? await fromUntyped(supabase, 'helm_lifting_set_results')
+              .select('session_exercise_id, actual_load, actual_reps, load_unit, rpe')
+              .in('session_exercise_id', seIds)
+          : await supabase
+              .from('baseball_lift_set_results')
+              .select('session_exercise_id, actual_load, actual_reps, load_unit, rpe')
+              .in('session_exercise_id', seIds);
       if (setData) allSets.push(...(setData as SetStatRow[]));
     }
 
     // Final PR sweep: catch any best from a logged set in this session that
     // hasn't already produced a PR (idempotent — detectAndRecordPr re-reads the
     // current best each time, so an already-recorded PR is not re-emitted).
+    // Sourced from `allSets` (already fetched from the correct table space)
+    // instead of a second query, so this works identically in both spaces; a
+    // session_exercise with no legacy mirror is skipped (no PR/max FK target
+    // exists for it yet).
     let prCount = 0;
-    if (seIds.length > 0) {
-      const { data: sweepSets } = await supabase
-        .from('baseball_lift_set_results')
-        .select('session_exercise_id, actual_load, actual_reps, load_unit')
-        .eq('player_id', session.player_id)
-        .gt('actual_load', 0)
-        .gt('actual_reps', 0)
-        .in('session_exercise_id', seIds);
-      for (const s of (sweepSets ?? []) as Array<{
-        session_exercise_id: string;
-        actual_load: number | null;
-        actual_reps: number | null;
-        load_unit: string | null;
-      }>) {
+    if (legacySessionIdForPr) {
+      for (const s of allSets) {
+        const load = Number(s.actual_load ?? 0);
+        const reps = Number(s.actual_reps ?? 0);
+        if (load <= 0 || reps <= 0) continue;
+        const legacySeId = seLegacyMap.get(s.session_exercise_id);
+        if (!legacySeId) continue;
         prCount += await detectAndRecordPr(supabase, {
-          teamId: session.team_id,
-          playerId: session.player_id,
-          sessionId: input.sessionId,
-          sessionExerciseId: s.session_exercise_id,
+          teamId,
+          playerId,
+          sessionId: legacySessionIdForPr,
+          sessionExerciseId: legacySeId,
           actualLoad: s.actual_load,
           actualReps: s.actual_reps,
           loadUnit: s.load_unit,
@@ -2249,12 +2485,12 @@ export const completeLiftSession = withBaseballAction(
     // Always close the loop to the timeline: even with no PR, a completed lift is
     // a real player_only event so the lifting loop reaches the player timeline.
     await appendLiftTimelineEvent({
-      teamId: session.team_id,
-      playerId: session.player_id,
+      teamId,
+      playerId,
       title:
         prCount > 0
-          ? `Completed ${session.title ?? 'lift'} — ${prCount} new PR${prCount === 1 ? '' : 's'}`
-          : `Completed ${session.title ?? 'lift'}`,
+          ? `Completed ${title ?? 'lift'} — ${prCount} new PR${prCount === 1 ? '' : 's'}`
+          : `Completed ${title ?? 'lift'}`,
       sourceId: input.sessionId,
       actorIsCoach: isCoach,
       createdBy: isCoach ? ctx.activeCoachId : null,
@@ -2263,7 +2499,7 @@ export const completeLiftSession = withBaseballAction(
     revalidatePath(`${PLAYER_LIFT}/${input.sessionId}`);
     revalidatePath(PERFORMANCE);
     revalidatePath(PLAYER_TODAY);
-    revalidatePath(`${PERFORMANCE}/players/${session.player_id}`);
+    revalidatePath(`${PERFORMANCE}/players/${playerId}`);
     return { success: true, id: input.sessionId, count: prCount, prCount, topSet, rpeAverage };
   },
 );
@@ -2549,29 +2785,41 @@ export const saveSorenessMap = withBaseballAction(
     if (!ctx.activePlayerId) throw new BaseballActionError('Only a player can report soreness.');
     const supabase = (await createClient()) as Db;
 
+    // W2-G: submitReadinessCheckin now writes helm_lifting_readiness_checkins, so
+    // input.checkinId is a helm checkin id. The legacy baseball_soreness_maps
+    // table FKs checkin_id -> baseball_readiness_checkins(id), which no longer
+    // has that row -> 23503 on every soreness >= 3 report. Write to the parallel
+    // helm_lifting_soreness_maps table instead (its FK targets
+    // helm_lifting_readiness_checkins, so the id resolves).
+    const liftCtx = await resolveBaseballLiftingOrg(ctx.activeTeamId);
+    if (!liftCtx) throw new BaseballActionError('Team has no lifting organization configured.');
+    const athleteId = await resolveMyBaseballAthleteId(liftCtx.organizationId);
+    if (!athleteId) throw new BaseballActionError('Player not found in the lifting system.');
+
     // Stage-and-swap: insert the new regions, then remove prior regions for this
     // check-in that the player no longer reports (scoped to this check-in only).
-    const { data: existing } = await supabase
-      .from('baseball_soreness_maps')
+    const { data: existing } = await fromUntyped(supabase, 'helm_lifting_soreness_maps')
       .select('id')
-      .eq('checkin_id', input.checkinId);
+      .eq('checkin_id', input.checkinId)
+      .eq('athlete_id', athleteId);
 
     if (input.regions.length) {
       const rows = input.regions.map((r) => ({
         checkin_id: input.checkinId,
-        team_id: ctx.activeTeamId,
-        player_id: ctx.activePlayerId,
+        organization_id: liftCtx.organizationId,
+        sport: 'baseball' as const,
+        athlete_id: athleteId,
         body_region: r.bodyRegion,
         side: r.side ?? 'both',
         severity: r.severity,
         note: r.note ?? null,
       }));
-      const { error } = await fromUntyped(supabase, 'baseball_soreness_maps').insert(rows);
+      const { error } = await fromUntyped(supabase, 'helm_lifting_soreness_maps').insert(rows);
       if (error) throw error;
     }
     const oldIds = (existing ?? []).map((r: { id: string }) => r.id);
     if (oldIds.length) {
-      const { error: delErr } = await fromUntyped(supabase, 'baseball_soreness_maps').delete().in('id', oldIds);
+      const { error: delErr } = await fromUntyped(supabase, 'helm_lifting_soreness_maps').delete().in('id', oldIds);
       if (delErr) throw delErr;
     }
 

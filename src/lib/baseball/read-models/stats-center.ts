@@ -44,6 +44,7 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 import type { BaseballGameType } from '@/lib/types';
 
 // -----------------------------------------------------------------------------
@@ -431,13 +432,15 @@ export function finalizeBatting(b: BattingSplit): BattingSplit {
 }
 
 export function finalizePitching(p: PitchingSplit): PitchingSplit {
-  if (p.ip > 0) {
-    p.era = round2((p.er * 9) / p.ip);
-    p.whip = round2((p.bb + p.h) / p.ip);
-    p.k9 = round2((p.k * 9) / p.ip);
-    p.bb9 = round2((p.bb * 9) / p.ip);
-    p.hr9 = round2((p.hr * 9) / p.ip);
-    p.h9 = round2((p.h * 9) / p.ip);
+  // .1/.2 in p.ip are outs, so rates divide by TRUE innings (outs / 3). (#434)
+  const innings = ipToInnings(p.ip);
+  if (innings > 0) {
+    p.era = round2((p.er * 9) / innings);
+    p.whip = round2((p.bb + p.h) / innings);
+    p.k9 = round2((p.k * 9) / innings);
+    p.bb9 = round2((p.bb * 9) / innings);
+    p.hr9 = round2((p.hr * 9) / innings);
+    p.h9 = round2((p.h * 9) / innings);
   }
   p.kPct = ratio(p.k, p.bf);
   p.bbPct = ratio(p.bb, p.bf);
@@ -923,7 +926,8 @@ export async function getStatsCenter(
   };
 
   const addPitching = (dst: PitchingSplit, line: PitchingLineRow) => {
-    dst.ip += line.ip ?? 0;
+    // .1/.2 are outs — accumulate IP via outs so partials add up (6.1 + 6.2 → 13.0). (#434)
+    dst.ip = sumInningsPitched([dst.ip, line.ip]);
     dst.h += line.h ?? 0;
     dst.r += line.r ?? 0;
     dst.er += line.er ?? 0;

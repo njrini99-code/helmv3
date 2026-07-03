@@ -31,6 +31,8 @@ import Image from 'next/image';
 import { formatHeight, cn } from '@/lib/utils';
 import { toggleWatchlistPlayer } from '@/app/baseball/actions/watchlist';
 import { toast } from '@/components/ui/sonner';
+import { Modal } from '@/components/ui/modal';
+import { VideoPlayer } from '@/components/features/video-player';
 
 interface PlayerSettings {
   show_videos?: boolean;
@@ -51,6 +53,9 @@ interface PlayerVideo {
   is_primary: boolean;
   video_type: string | null;
   created_at: string;
+  is_clip?: boolean | null;
+  clip_start_time?: number | null;
+  clip_end_time?: number | null;
 }
 
 interface RecruitingInterest {
@@ -1006,52 +1011,77 @@ function StatRow({ label, value, highlight }: { label: string; value: string; hi
 }
 
 function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
+  // Opens an in-page player instead of linking straight to the raw file in a
+  // new tab — a clip row's `url` is the same file as its parent video, so a
+  // bare link would play the whole parent unbounded. VideoPlayer's
+  // clipStart/clipEnd props (the mechanism PR #665 built for the coach
+  // dashboard's video library) clamp playback to the clip's own bounds.
+  const [viewing, setViewing] = useState(false);
+
   return (
-    <a
-      href={video.url || '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group relative bg-white rounded-xl border border-warm-200 overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-300"
-    >
-      {video.thumbnail_url ? (
-        <div className={cn("relative", large ? "aspect-video" : "aspect-[16/10]")}>
-          <Image
-            src={video.thumbnail_url}
-            alt={video.title}
-            fill
-            className="w-full h-full object-cover"
-            unoptimized
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="w-14 h-14 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
-              <div className="w-0 h-0 border-l-[18px] border-l-primary-600 border-y-[11px] border-y-transparent ml-1" />
+    <>
+      {/* eslint-disable-next-line helm/no-raw-button -- full-bleed card is a single tap target */}
+      <button
+        type="button"
+        onClick={() => setViewing(true)}
+        aria-label={`Play ${video.title}`}
+        className="group relative bg-white rounded-xl border border-warm-200 overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-300 w-full text-left"
+      >
+        {video.thumbnail_url ? (
+          <div className={cn("relative", large ? "aspect-video" : "aspect-[16/10]")}>
+            <Image
+              src={video.thumbnail_url}
+              alt={video.title}
+              fill
+              className="w-full h-full object-cover"
+              unoptimized
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="w-14 h-14 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
+                <div className="w-0 h-0 border-l-[18px] border-l-primary-600 border-y-[11px] border-y-transparent ml-1" />
+              </div>
             </div>
+            {video.is_primary && (
+              <div className="absolute top-2 right-2">
+                <Badge className="bg-primary-500 text-white border-0 text-xs shadow-lg">Featured</Badge>
+              </div>
+            )}
           </div>
-          {video.is_primary && (
-            <div className="absolute top-2 right-2">
-              <Badge className="bg-primary-500 text-white border-0 text-xs shadow-lg">Featured</Badge>
-            </div>
-          )}
+        ) : (
+          <div className={cn("bg-warm-100 flex items-center justify-center", large ? "aspect-video" : "aspect-[16/10]")}>
+            <IconVideo size={40} className="text-warm-300" />
+          </div>
+        )}
+        <div className="p-4">
+          <p className="font-medium text-warm-900 truncate">{video.title}</p>
+          <div className="flex items-center justify-between mt-1">
+            {video.video_type && (
+              <span className="text-xs text-warm-500">{video.video_type}</span>
+            )}
+            {video.duration && (
+              <span className="text-xs text-warm-400">
+                {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+              </span>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className={cn("bg-warm-100 flex items-center justify-center", large ? "aspect-video" : "aspect-[16/10]")}>
-          <IconVideo size={40} className="text-warm-300" />
-        </div>
-      )}
-      <div className="p-4">
-        <p className="font-medium text-warm-900 truncate">{video.title}</p>
-        <div className="flex items-center justify-between mt-1">
-          {video.video_type && (
-            <span className="text-xs text-warm-500">{video.video_type}</span>
-          )}
-          {video.duration && (
-            <span className="text-xs text-warm-400">
-              {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
-            </span>
-          )}
-        </div>
-      </div>
-    </a>
+      </button>
+
+      <Modal open={viewing} onClose={() => setViewing(false)} title={video.title} size="xl">
+        {video.url ? (
+          <VideoPlayer
+            src={video.url}
+            thumbnail={video.thumbnail_url}
+            title={video.title}
+            autoPlay
+            clipStart={video.clip_start_time ?? undefined}
+            clipEnd={video.clip_end_time ?? undefined}
+          />
+        ) : (
+          <p className="text-sm text-warm-500 text-center py-8">Video unavailable</p>
+        )}
+      </Modal>
+    </>
   );
 }

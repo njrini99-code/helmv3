@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -73,9 +74,17 @@ export default async function BaseballCalendarPage() {
 
   if (teamId) {
     const [eventsResult, membersResult, teamOrgResult] = await Promise.all([
-      supabase
-        .from('baseball_events')
-        .select('id, team_id, title, event_type, start_time, end_time, location, description, is_mandatory, max_attendees, rsvp_deadline, created_by')
+      // Read via fromUntyped so the select is not type-checked against the
+      // generated baseball_events types (which drift from the live schema).
+      //
+      // IMPORTANT: the column list MUST match the live baseball_events schema.
+      // A previous revision selected `requires_rsvp`, which does NOT exist on
+      // baseball_events — PostgREST rejected the whole query, so `.data` came
+      // back null and the calendar rendered EMPTY even with seeded events.
+      // `all_day` / `status` / `recurring` DO exist and are needed so the grid
+      // places all-day events correctly and dims cancelled ones.
+      fromUntyped(supabase, 'baseball_events')
+        .select('id, team_id, title, event_type, start_time, end_time, location, description, is_mandatory, max_attendees, rsvp_deadline, all_day, status, recurring, created_by')
         .eq('team_id', teamId)
         .order('start_time', { ascending: true }),
       supabase
@@ -90,24 +99,54 @@ export default async function BaseballCalendarPage() {
         .maybeSingle(),
     ]);
 
-    // Map baseball_events → CalendarEvent
-    events = (eventsResult.data || []).map((event) => ({
-      id: event.id,
-      team_id: event.team_id || '',
-      title: event.title,
-      event_type: event.event_type || 'other',
-      start_date: event.start_time,
-      end_date: event.end_time || event.start_time,
-      start_time: event.start_time,
-      end_time: event.end_time,
-      location: event.location || undefined,
-      description: event.description || undefined,
-      is_mandatory: event.is_mandatory ?? false,
-      max_attendees: event.max_attendees,
-      rsvp_deadline: event.rsvp_deadline,
-      created_by: event.created_by,
-      requires_rsvp: false,
-    }));
+    // Map baseball_events → CalendarEvent. Row is annotated because the query
+    // uses fromUntyped (the generated types drift from the live schema).
+    // All-day events are normalized to local midnight so the week/day grid
+    // places them in the all-day rail rather than at a UTC-shifted hour.
+    events = (eventsResult.data || []).map((event: {
+      id: string;
+      team_id: string | null;
+      title: string;
+      event_type: string | null;
+      start_time: string;
+      end_time: string | null;
+      location: string | null;
+      description: string | null;
+      is_mandatory: boolean | null;
+      max_attendees: number | null;
+      rsvp_deadline: string | null;
+      all_day: boolean | null;
+      status: string | null;
+      recurring: boolean | null;
+      created_by: string | null;
+    }) => {
+      const normalizeAllDay = (d: string) => `${d.slice(0, 10)}T00:00:00`;
+      const startDate = event.all_day ? normalizeAllDay(event.start_time) : event.start_time;
+      const endDate = event.all_day
+        ? normalizeAllDay(event.end_time || event.start_time)
+        : event.end_time || event.start_time;
+      return {
+        id: event.id,
+        team_id: event.team_id || '',
+        title: event.title,
+        event_type: event.event_type || 'other',
+        start_date: startDate,
+        end_date: endDate,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        location: event.location || undefined,
+        description: event.description || undefined,
+        is_mandatory: event.is_mandatory ?? false,
+        max_attendees: event.max_attendees,
+        rsvp_deadline: event.rsvp_deadline,
+        all_day: event.all_day ?? false,
+        status: event.status ?? undefined,
+        recurring: event.recurring ?? false,
+        created_by: event.created_by,
+        // baseball_events has no requires_rsvp column; RSVP is not modeled here.
+        requires_rsvp: false,
+      };
+    });
 
     // Coaches on this team. Read non-PII identity from the baseball_coaches_public
     // view (not the base table) so this player-reachable roster panel keeps
@@ -151,10 +190,26 @@ export default async function BaseballCalendarPage() {
   }
 
   // ── Event summary strip ─────────────────────────────────────────────────────
-
+  //
+  // "Upcoming" = start time at or after local midnight TODAY (not the exact
+  // `now` instant) — an event scheduled earlier today still counts as
+  // upcoming for the rest of the day, and the boundary can't drift mid-render
+  // between the two numbers below.
+  //
+  // Both the headline count and the per-type badges are derived from the SAME
+  // filtered list. Previously `upcomingEvents` filtered by date while
+  // `eventTypeCounts` summed EVERY event this team has ever had (no date
+  // filter at all) — on a team with only past/demo events that showed the
+  // contradictory "0 upcoming events · 1 Practice · 1 Meeting · 1 Game" (the
+  // badges counting events the headline had already excluded). Single source
+  // of truth below so the two numbers can never disagree again.
   const now = new Date();
-  const upcomingEvents = events.filter((e) => new Date(e.start_time || e.start_date) >= now).length;
-  const eventTypeCounts = events.reduce<Record<string, number>>((acc, e) => {
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const upcomingEventsList = events.filter(
+    (e) => new Date(e.start_time || e.start_date) >= startOfToday
+  );
+  const upcomingEvents = upcomingEventsList.length;
+  const eventTypeCounts = upcomingEventsList.reduce<Record<string, number>>((acc, e) => {
     const t = e.event_type || 'other';
     acc[t] = (acc[t] || 0) + 1;
     return acc;
@@ -238,14 +293,19 @@ export default async function BaseballCalendarPage() {
         background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
       }}
     >
-      {/* Event summary strip — only shown when there are events */}
-      {events.length > 0 && (
+      {/* Event summary strip — only shown when there's an upcoming event to
+          summarize. Gating on `upcomingEvents` (not `events.length`) matches
+          what the strip actually says: a team with only past events has
+          nothing "upcoming" to report, so showing "0 upcoming events ·"
+          with no badges after it would just be a second, quieter version of
+          the same contradiction this strip exists to avoid. */}
+      {upcomingEvents > 0 && (
         <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
-          <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
             <span className="text-sm font-medium text-warm-600 whitespace-nowrap">
               {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
             </span>
-            <span className="text-warm-300">|</span>
+            <span className="text-warm-300" aria-hidden="true">|</span>
             {Object.entries(eventTypeCounts).map(([type, count]) => {
               const cfg = EVENT_TYPE_CONFIG[type] ?? { label: type, dot: 'bg-warm-400' };
               return (

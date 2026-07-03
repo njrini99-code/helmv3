@@ -308,7 +308,19 @@ function EmptyState({
 
 interface VideoModalProps {
   open: boolean;
-  video: { url: string | null; thumbnail?: string | null; title: string; description?: string | null; created_at?: string | null; view_count?: number | null; video_type?: string | null; player?: VideoPlayerRef | null } | null;
+  video: {
+    url: string | null;
+    thumbnail?: string | null;
+    title: string;
+    description?: string | null;
+    created_at?: string | null;
+    view_count?: number | null;
+    video_type?: string | null;
+    player?: VideoPlayerRef | null;
+    is_clip?: boolean | null;
+    clip_start_time?: number | null;
+    clip_end_time?: number | null;
+  } | null;
   onClose: () => void;
   onShare?: () => void;
 }
@@ -324,6 +336,8 @@ function VideoModal({ open, video, onClose, onShare }: VideoModalProps) {
             thumbnail={video.thumbnail ?? null}
             title={video.title}
             autoPlay
+            clipStart={video.clip_start_time ?? undefined}
+            clipEnd={video.clip_end_time ?? undefined}
           />
         )}
         {video.player && (
@@ -573,6 +587,9 @@ function LibraryView({
           view_count: viewing.view_count,
           video_type: viewing.video_type,
           player: viewing.player,
+          is_clip: viewing.is_clip,
+          clip_start_time: viewing.clip_start_time,
+          clip_end_time: viewing.clip_end_time,
         } : null}
         onClose={() => setViewing(null)}
         onShare={viewing?.url ? () => handleShare(viewing.url!) : undefined}
@@ -778,6 +795,9 @@ function PlayerView({ data }: { data: PlayerReadModel }) {
           view_count: viewing.view_count,
           video_type: viewing.video_type,
           player: viewing.player,
+          is_clip: viewing.is_clip,
+          clip_start_time: viewing.clip_start_time,
+          clip_end_time: viewing.clip_end_time,
         } : null}
         onClose={() => setViewing(null)}
       />
@@ -1241,6 +1261,17 @@ export function VideoLibraryClient({
     evidence: evidence.totalCount,
   };
 
+  // Honest header subtitle: derive from the real clip count, never a fixed
+  // number. The old copy read "Team film — 5 views" (meaning 5 organizational
+  // tabs), which reads as a play/view count and directly contradicted the
+  // "No videos yet" empty state below it on a library with zero clips.
+  const totalClips = library.totalCount;
+  const headerSubtitle = isCoach
+    ? totalClips > 0
+      ? `Team film · ${totalClips} ${totalClips === 1 ? 'clip' : 'clips'}`
+      : 'Team film and tagged clips'
+    : 'Your videos and team film';
+
   // Mutations (upload / edit / delete / set-primary) call revalidatePath()
   // server-side, but this client component's props are only re-fetched when the
   // router actually re-renders the server tree — router.refresh() triggers that
@@ -1252,10 +1283,7 @@ export function VideoLibraryClient({
 
   return (
     <>
-      <Header
-        title="Video Library"
-        subtitle={isCoach ? "Team film — 5 views" : "Your videos and team film"}
-      />
+      <Header title="Video Library" subtitle={headerSubtitle} />
 
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Tab bar */}

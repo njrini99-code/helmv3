@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Loading } from '@/components/ui/loading';
@@ -10,7 +10,7 @@ import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { useConversations, useMessages } from '@/hooks/use-messages';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/sonner';
-import { createConversation } from '@/app/baseball/actions/messages';
+import { createConversation, getPlayerUserId } from '@/app/baseball/actions/messages';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 import { getParticipantDetails } from '@/lib/types/messages';
 import { MessagesFairway } from '@/components/baseball/messages/MessagesFairway';
@@ -20,6 +20,7 @@ function MessagesContent() {
   const searchParams = useSearchParams();
   const conversationIdParam = searchParams.get('conversation');
   const openNewParam = searchParams.get('new');
+  const playerIdParam = searchParams.get('player');
   const { showToast } = useToast();
 
   const { user } = useAuthStore();
@@ -99,6 +100,62 @@ function MessagesContent() {
       showToast('Failed to start conversation', 'error');
     }
   };
+
+  // Guards the auto-start effect below against double-firing for the same
+  // player id (e.g. React StrictMode's dev-only mount/cleanup/remount cycle,
+  // or any other spurious re-run). Persists for the life of this component
+  // instance rather than being reset on cleanup, so a genuine StrictMode
+  // double-invoke is suppressed while a later visit with a *different*
+  // player id still fires normally.
+  const autoStartedPlayerRef = useRef<string | null>(null);
+
+  // Auto-start (or open) a conversation with a player when ?player=<playerId> is in URL
+  // (e.g. from the Discover peek panel's "Message" action).
+  useEffect(() => {
+    if (!playerIdParam) return;
+    if (autoStartedPlayerRef.current === playerIdParam) return;
+    autoStartedPlayerRef.current = playerIdParam;
+
+    // Strip the `player` param from the CURRENT history entry FIRST, using the
+    // raw history API synchronously -- not router.replace(), whose
+    // navigation is async and wouldn't guarantee this lands before
+    // handleNewConversation's own window.history.pushState() call (inside
+    // handleSelectConversation) reads window.location.href.
+    //
+    // Why the ordering matters: handleNewConversation() -> handleSelectConversation()
+    // calls window.history.pushState(...) using window.location.href AT THAT
+    // MOMENT. If `player` is still in the URL when that runs, it gets copied
+    // into the newly pushed history entry too -- and the entry underneath
+    // (pushed by DiscoverView's router.push('/messages?player=...')) also
+    // still carries it. Either way, pressing Back would land on a
+    // `?player=...` URL and re-fire this entire effect (duplicate
+    // getPlayerUserId/createConversation round-trips + a duplicate
+    // "Conversation started" toast, and a second Back press repeats the
+    // cycle -- a history trap). Stripping the param from the *current* entry
+    // before any of that runs means every entry involved ends up clean, so
+    // Back always lands on a URL with no `player` param.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('player');
+    window.history.replaceState({}, '', url);
+
+    let cancelled = false;
+
+    (async () => {
+      const resolvedUserId = await getPlayerUserId(playerIdParam);
+      if (cancelled) return;
+
+      if (resolvedUserId) {
+        await handleNewConversation(resolvedUserId);
+      } else {
+        showToast('Could not start conversation with this player', 'error');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerIdParam]);
 
   // Handle sending a message
   const handleSendMessage = async (content: string) => {

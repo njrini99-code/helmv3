@@ -34,6 +34,40 @@ async function signDocumentStoragePath(
   return data.signedUrl;
 }
 
+/**
+ * Resolve display names/emails for a set of `uploaded_by` user ids.
+ *
+ * `baseball_documents.uploaded_by` / `baseball_document_versions.uploaded_by`
+ * are FKs to `public.users(id)`, which only has `id`/`email`/`role` — it has
+ * no `full_name` column. A PostgREST embed like `uploader:uploaded_by(full_name,
+ * email)` therefore always throws `column users_1.full_name does not exist`
+ * (confirmed against the live schema), which is why the documents page
+ * unconditionally rendered its error state. `full_name` actually lives on
+ * `baseball_coaches` (documents can only be uploaded by a coach — upload/create
+ * requires the `can_manage_documents` capability), keyed by the same
+ * `public.users.id` via `baseball_coaches.user_id`. Resolve it with a
+ * follow-up query instead of a broken embed; unknown/removed uploaders
+ * degrade to `null` rather than failing the whole page load.
+ */
+async function resolveUploaders(
+  supabase: SupabaseServerClient,
+  userIds: Array<string | null | undefined>,
+): Promise<Map<string, { full_name: string | null; email: string | null }>> {
+  const ids = Array.from(new Set(userIds.filter((id): id is string => Boolean(id))));
+  if (ids.length === 0) return new Map();
+
+  const { data } = await (supabase as any)
+    .from('baseball_coaches')
+    .select('user_id, full_name, email')
+    .in('user_id', ids);
+
+  const map = new Map<string, { full_name: string | null; email: string | null }>();
+  for (const row of (data as { user_id: string; full_name: string | null; email: string | null }[] | null) || []) {
+    map.set(row.user_id, { full_name: row.full_name, email: row.email });
+  }
+  return map;
+}
+
 function mapDocumentActionError(error: unknown): { success: false; error: string } {
   if (error instanceof BaseballUnauthorizedError) {
     return { success: false, error: 'Not authenticated' };
@@ -160,15 +194,17 @@ export async function getTeamDocuments(
   try {
     const supabase = await createClient();
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
+
     let query = supabase
       .from('baseball_documents' as any)
-      .select(`
-        *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        )
-      `)
+      .select('*')
       .eq('team_id', teamId)
       .order('created_at', { ascending: false });
 
@@ -181,7 +217,14 @@ export async function getTeamDocuments(
 
     if (error) throw error;
 
-    const documents = await withFreshDocumentUrls(supabase, data as unknown as BaseballDocument[]);
+    const rows = (data as unknown as BaseballDocument[]) || [];
+    const uploaderMap = await resolveUploaders(supabase, rows.map((d) => d.uploaded_by));
+    const withUploaders = rows.map((doc) => ({
+      ...doc,
+      uploader: uploaderMap.get(doc.uploaded_by ?? '') ?? null,
+    }));
+
+    const documents = await withFreshDocumentUrls(supabase, withUploaders);
 
     return { data: documents, error: null };
   } catch (error) {
@@ -195,36 +238,43 @@ export async function getDocument(
   try {
     const supabase = await createClient();
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
+
     const { data, error } = await (supabase as any)
       .from('baseball_documents')
       .select(`
         *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        ),
-        versions:baseball_document_versions(
-          *,
-          uploader:uploaded_by(
-            full_name,
-            email
-          )
-        )
+        versions:baseball_document_versions(*)
       `)
       .eq('id', documentId)
       .single();
 
     if (error) throw error;
 
-    // Sort versions by version number descending
-    if (data?.versions) {
-      (data.versions as BaseballDocumentVersion[]).sort(
-        (a: BaseballDocumentVersion, b: BaseballDocumentVersion) =>
-          b.version_number - a.version_number
-      );
-    }
+    const document = data as unknown as BaseballDocument;
+    const versions = (document?.versions as BaseballDocumentVersion[] | undefined) ?? [];
 
-    return { data: data as BaseballDocument, error: null };
+    const uploaderMap = await resolveUploaders(supabase, [
+      document?.uploaded_by,
+      ...versions.map((v) => v.uploaded_by),
+    ]);
+
+    document.uploader = uploaderMap.get(document?.uploaded_by ?? '') ?? null;
+
+    // Sort versions by version number descending
+    versions.sort((a, b) => b.version_number - a.version_number);
+    document.versions = versions.map((v) => ({
+      ...v,
+      uploader: uploaderMap.get(v.uploaded_by ?? '') ?? null,
+    }));
+
+    return { data: document, error: null };
   } catch (error) {
     return { data: null, error: handleError(error) };
   }
@@ -556,13 +606,7 @@ const uploadNewVersionAction = withBaseballAction(
         change_notes: changeNotes || null,
         uploaded_by: ctx.user.id,
       })
-      .select(`
-        *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        )
-      `)
+      .select('*')
       .single();
 
     if (versionError) throw versionError;
@@ -579,11 +623,14 @@ const uploadNewVersionAction = withBaseballAction(
 
     if (updateError) throw updateError;
 
+    const uploaderMap = await resolveUploaders(supabase, [ctx.user.id]);
+
     revalidatePath(DOCUMENTS_PATH);
     return {
       success: true as const,
       version: {
         ...(version as unknown as BaseballDocumentVersion),
+        uploader: uploaderMap.get(ctx.user.id) ?? null,
         file_url: signedUrl,
         file_size: file.size,
       },
@@ -597,25 +644,29 @@ export async function getVersionHistory(
   try {
     const supabase = await createClient();
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     const { data: rawData, error } = await (supabase as any)
       .from('baseball_document_versions')
-      .select(`
-        *,
-        uploader:uploaded_by(
-          full_name,
-          email
-        )
-      `)
+      .select('*')
       .eq('document_id', documentId)
       .order('version_number', { ascending: false });
 
     if (error) throw error;
 
-    const versionsData = rawData as unknown as BaseballDocumentVersion[] | null;
+    const versionsData = (rawData as unknown as BaseballDocumentVersion[] | null) || [];
+    const uploaderMap = await resolveUploaders(supabase, versionsData.map((v) => v.uploaded_by));
 
     const versionsWithUrls = await Promise.all(
-      (versionsData || []).map(async (version) => ({
+      versionsData.map(async (version) => ({
         ...version,
+        uploader: uploaderMap.get(version.uploaded_by ?? '') ?? null,
         file_url: await signDocumentStoragePath(supabase, version.storage_path),
       })),
     );
@@ -713,6 +764,14 @@ export async function getPreviewUrl(
   try {
     const supabase = await createClient();
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
+
     if (versionNumber) {
       // Get specific version
       const { data: versionData, error } = await (supabase as any)
@@ -766,6 +825,14 @@ export async function getTextFileContent(
 ): Promise<{ data: string | null; error: string | null }> {
   try {
     const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { data: null, error: 'Not authenticated' };
+    }
 
     let storagePath: string;
 

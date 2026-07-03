@@ -3,31 +3,33 @@
 // =============================================================================
 // src/components/baseball/performance/PerformanceCommandCenter.tsx
 //
-// V11 Performance Command Center (spec L39-79). The strength-coach first viewport:
-//   * KPI strip (spec L54-60): completion / missed / readiness risk / new PRs /
-//     pitcher red flags / load mods pending / bodyweight alerts.
-//   * Today Weight Room board (spec L82-117): dense table of today's sessions.
-//   * Readiness & availability queue (spec L119-150): turns check-ins into
-//     decisions with transparent, NON-MEDICAL bands + reasons.
+// V11 Performance Command Center (spec L39-79) — Living-Annual pass (P4.14.a,
+// spec: docs/baseball/design-system-living-annual.md §7; map/plan:
+// docs/baseball/ui-migration-execution-plan.md §3.1 "performance"). The
+// strength-coach first viewport, re-skinned onto the kit:
+//   * KPI strip (spec L54-60) → `<KPIContentsStrip>` on a green rule.
+//   * Today Weight Room board (spec L82-117) → a wall of Paper rows.
+//   * Readiness & availability queue (spec L119-150) → transparent,
+//     NON-MEDICAL bands + reasons, quiet ink instead of amber/red boxes.
 //
-// Cream/green GolfHelm palette ONLY — reuses Card / Button / EmptyState verbatim,
-// status tones map to existing success/warning/error tokens. No navy/amber.
-// Every chart-equivalent has a table; status uses color PLUS label (spec L568).
+// PRESENTATION ONLY — same props, same read-model, same
+// `readinessWithheld` honesty gate, same Lab adapters upstream (untouched).
+// `PlayerInspectorPanel` (the slide-in drawer) is reused verbatim; this
+// pass does not edit it. Sub-routes (builder/groups/live/programs) are
+// deferred to a follow-up wave.
 // =============================================================================
 
-import { useMemo, useState, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { useMemo, useState, useCallback, type KeyboardEvent } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/select';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getFullName } from '@/lib/utils';
+import { Button } from '@/components/fairway';
+import { IconActivity, IconClipboardList, IconUsers, IconLayers } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { readinessBandLabel, readinessBandTone } from '@/lib/baseball/lifting/readiness-compute';
+import { readinessBandLabel } from '@/lib/baseball/lifting/readiness-compute';
 import { PlayerInspectorPanel } from './PlayerInspectorPanel';
 import type { ActionRailAction } from '@/components/baseball/ui/ActionRail';
 import type {
@@ -36,6 +38,22 @@ import type {
   BaseballReadinessComputation,
   BaseballReadinessBand,
 } from '@/lib/types/baseball-lifting-v11';
+import {
+  SectionMasthead,
+  Eyebrow,
+  PaperCard,
+  HairlineRule,
+  PositionChip,
+  StatReadout,
+  Reveal,
+  pressableClass,
+  GRADE_TEXT_CLASS,
+  GRADE_VAR,
+  KPIContentsStrip,
+  EmptyIssue,
+  type GradeBand,
+  type KPIContentsItem,
+} from '@/components/baseball/living-annual';
 
 interface Props {
   teamName: string;
@@ -52,43 +70,6 @@ interface Props {
   canModifyAvailability?: boolean;
 }
 
-const TONE_CLASS: Record<'success' | 'warning' | 'error' | 'info', string> = {
-  success: 'bg-primary-50 text-primary-700 border-primary-200',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200',
-  error: 'bg-red-50 text-red-700 border-red-200',
-  info: 'bg-warm-50 text-warm-700 border-warm-200',
-};
-
-// KPI card accent: left-border color mirrors tone without full-bleed tint.
-const KPI_BORDER_CLASS: Record<'success' | 'warning' | 'error' | 'info', string> = {
-  success: 'border-l-4 border-l-primary-400',
-  warning: 'border-l-4 border-l-amber-400',
-  error: 'border-l-4 border-l-red-400',
-  info: 'border-l-4 border-l-warm-300',
-};
-const KPI_VALUE_CLASS: Record<'success' | 'warning' | 'error' | 'info', string> = {
-  success: 'text-primary-700',
-  warning: 'text-amber-700',
-  error: 'text-red-700',
-  info: 'text-warm-700',
-};
-
-function BandChip({ band }: { band: BaseballReadinessBand | null }) {
-  if (!band) {
-    return (
-      <span className="inline-flex items-center rounded-full border border-warm-200 bg-cream-100 px-2 py-0.5 text-xs font-medium text-warm-500">
-        No check-in
-      </span>
-    );
-  }
-  const tone = readinessBandTone(band);
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${TONE_CLASS[tone]}`}>
-      {readinessBandLabel(band)}
-    </span>
-  );
-}
-
 const SESSION_STATUS_LABEL: Record<string, string> = {
   assigned: 'Not started',
   started: 'In progress',
@@ -97,6 +78,116 @@ const SESSION_STATUS_LABEL: Record<string, string> = {
   missed: 'Missed',
   excused: 'Excused',
 };
+
+// Readiness band → the kit's existing 20-80 grade ramp (low/avg/plus). Three
+// bands is a deliberate simplification of the six real bands: the exact
+// wording (readinessBandLabel) still carries the full precision, the ramp
+// just gives the eye a quiet green/graphite/muted-clay-red read instead of a
+// yellow/amber status box. `red` alone gets the `solid` (heavier ground)
+// treatment so "hold and review" reads with more weight than "modify".
+const BAND_RAMP: Record<BaseballReadinessBand, GradeBand> = {
+  green: 'plus',
+  yellow: 'avg',
+  orange_lower: 'low',
+  orange_upper: 'low',
+  red: 'low',
+  blue: 'avg',
+};
+
+function BandChip({ band }: { band: BaseballReadinessBand | null }) {
+  if (!band) {
+    return (
+      <span className="inline-flex items-center rounded-fw-sm border border-[color:var(--hairline)] px-1.5 py-0.5 font-annual text-microbadge uppercase leading-none tracking-[0.12em] text-text-tertiary">
+        No check-in
+      </span>
+    );
+  }
+  const ramp = BAND_RAMP[band];
+  const solid = band === 'red';
+  const varRef = GRADE_VAR[ramp];
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-fw-sm px-1.5 py-0.5 font-annual text-microbadge uppercase leading-none tracking-[0.12em]',
+        GRADE_TEXT_CLASS[ramp],
+        solid && 'border',
+      )}
+      style={{
+        backgroundColor: `color-mix(in oklch, ${varRef} ${solid ? 16 : 8}%, transparent)`,
+        borderColor: solid ? `color-mix(in oklch, ${varRef} 32%, transparent)` : undefined,
+      }}
+    >
+      {readinessBandLabel(band)}
+    </span>
+  );
+}
+
+/** A quiet label + value cell inside a `WeightRoomRow` (Group / Status / Main lift). */
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 flex-col items-start gap-1 sm:items-end">
+      <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">{label}</span>
+      <span className="max-w-[11rem] truncate font-annual text-body-sm text-text-primary">{value}</span>
+    </div>
+  );
+}
+
+/** One Today Weight Room record — name plate + readiness + record-book stats, on a green rule. */
+function WeightRoomRow({
+  row,
+  readinessWithheld,
+}: {
+  row: BaseballWeightRoomBoardRow;
+  readinessWithheld: boolean;
+}) {
+  const delta = row.bodyweight_delta_7d;
+  const deltaTone = delta != null && delta <= -3 ? GRADE_TEXT_CLASS.low : undefined;
+  const mainLift = row.prescribed_main_lift
+    ? `${row.prescribed_main_lift}${row.actual_main_load != null ? ` · ${row.actual_main_load} lb` : ''}`
+    : '—';
+
+  return (
+    <div>
+      <div className="flex flex-col gap-3 px-1 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+          <Link
+            href={`/baseball/dashboard/performance/players/${row.player_id}`}
+            className={cn(
+              'truncate rounded-fw-sm font-annual leading-none text-text-primary',
+              pressableClass({ ink: 'team', tint: false }),
+            )}
+          >
+            <span className="font-normal text-text-secondary">{row.first_name} </span>
+            <span className="font-semibold uppercase" style={{ fontVariant: 'small-caps' }}>
+              {row.last_name}
+            </span>
+          </Link>
+          {row.primary_position ? <PositionChip label={row.primary_position} size="sm" /> : null}
+          {readinessWithheld ? (
+            <span className="text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">Gated</span>
+          ) : (
+            <BandChip band={row.readiness_band} />
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <StatCell label="Group" value={row.group_names[0] ?? '—'} />
+          <StatCell label="Status" value={SESSION_STATUS_LABEL[row.session.status] ?? row.session.status} />
+          <StatCell label="Main lift" value={mainLift} />
+          <div className="flex min-w-[3.5rem] flex-col items-start gap-1 sm:items-end">
+            <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">BW Δ7d</span>
+            {delta == null ? (
+              <span className="font-annual tabular-nums text-text-tertiary">—</span>
+            ) : (
+              <StatReadout value={delta} prefix={delta > 0 ? '+' : ''} className={deltaTone} />
+            )}
+          </div>
+        </div>
+      </div>
+      <HairlineRule ink="team" />
+    </div>
+  );
+}
 
 export function PerformanceCommandCenter({
   teamName,
@@ -112,7 +203,10 @@ export function PerformanceCommandCenter({
 }: Props) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const prefersReducedMotion = useReducedMotion();
+  // Stale check-ins (8d+ old, low confidence) collapse into one summary row so
+  // the queue surfaces genuinely-actionable flags first instead of a wall of
+  // near-identical "check-in is 8d old · stale data" cards.
+  const [staleOpen, setStaleOpen] = useState(false);
   const router = useRouter();
 
   // ── Inspector selection helpers ─────────────────────────────────────────
@@ -167,15 +261,15 @@ export function PerformanceCommandCenter({
   );
 
   // ── KPI / board / queue derivations (hoisted above early return per Rules of Hooks) ──
-  const kpiItems = useMemo(
+  const kpiItems: KPIContentsItem[] = useMemo(
     () => [
-      { label: 'Today completion', value: `${kpis.today_completion_pct}%`, sub: `${kpis.today_completed}/${kpis.today_total} sessions`, tone: kpis.today_completion_pct >= 80 ? 'success' : 'warning' as const },
-      { label: 'Missed lifts', value: kpis.missed_lifts, tone: kpis.missed_lifts ? 'error' : 'success' as const },
-      { label: 'Readiness risk', value: kpis.readiness_risk, tone: kpis.readiness_risk ? 'warning' : 'success' as const },
-      { label: 'New PRs', value: kpis.new_prs, tone: 'success' as const },
-      { label: 'Pitcher red flags', value: kpis.pitcher_red_flags, tone: kpis.pitcher_red_flags ? 'error' : 'success' as const },
-      { label: 'Load mods pending', value: kpis.load_modifications_pending, tone: kpis.load_modifications_pending ? 'warning' : 'success' as const },
-      { label: 'Bodyweight alerts', value: kpis.bodyweight_alerts, tone: kpis.bodyweight_alerts ? 'warning' : 'success' as const },
+      { label: 'Today completion', value: kpis.today_completion_pct, unit: '%', emphasis: kpis.today_completion_pct >= 80 },
+      { label: 'Missed lifts', value: kpis.missed_lifts },
+      { label: 'Readiness risk', value: kpis.readiness_risk },
+      { label: 'New PRs', value: kpis.new_prs, leader: kpis.new_prs > 0 },
+      { label: 'Pitcher red flags', value: kpis.pitcher_red_flags },
+      { label: 'Load mods pending', value: kpis.load_modifications_pending },
+      { label: 'Bodyweight alerts', value: kpis.bodyweight_alerts },
     ],
     [kpis],
   );
@@ -194,149 +288,164 @@ export function PerformanceCommandCenter({
     [readiness],
   );
 
+  // Split into actionable (fresh) flags vs stale check-ins. The stale group is
+  // dominated by identical "8d+ old, low-confidence" rows and gets collapsed.
+  const freshQueue = useMemo(() => queue.filter((r) => !r.stale), [queue]);
+  const staleQueue = useMemo(() => queue.filter((r) => r.stale), [queue]);
+  const boardEmpty = board.length === 0;
+  const todayLabel = useMemo(
+    () => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }),
+    [],
+  );
+
+  const renderQueueRow = (r: BaseballReadinessComputation) => {
+    const isSelected = selectedPlayerId === r.player_id;
+    return (
+      <li key={r.player_id}>
+        {/* A bespoke tappable Paper tile (not `<Button>`) — `pressableClass`
+            owns the press/hover physics per the interaction-layer doctrine
+            (motion.ts §7.1); `role="button"` + a manual Enter/Space handler
+            keeps it keyboard-operable, mirroring `PlayerRowPlate`'s onClick
+            row shape. */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => handleRowClick(r.player_id)}
+          onKeyDown={activateOnEnterOrSpace(() => handleRowClick(r.player_id))}
+          aria-pressed={isSelected}
+          aria-label={`Inspect ${playerNameById[r.player_id] ?? 'player'}`}
+          className={cn(
+            'w-full rounded-fw-md border p-3 text-left',
+            pressableClass({ ink: 'team' }),
+            isSelected ? 'border-grade-plus bg-grade-plus/[0.06]' : 'border-[color:var(--hairline)]',
+          )}
+        >
+          <div className="flex w-full items-center justify-between gap-2">
+            <span className={cn('font-annual text-body-lg', isSelected ? 'text-grade-plus' : 'text-text-primary')}>
+              {playerNameById[r.player_id] ?? 'Player'}
+            </span>
+            <BandChip band={r.band} />
+          </div>
+          {r.reasons.length > 0 && (
+            <ul className="mt-1.5 list-inside list-disc font-annual text-body-sm text-text-secondary">
+              {r.reasons.slice(0, 3).map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          )}
+          {r.suggested_action && (
+            <p className="mt-1.5 font-annual text-body-sm font-medium text-text-primary">→ {r.suggested_action}</p>
+          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+            <span>Confidence: {r.confidence}</span>
+            {r.stale && <span className={GRADE_TEXT_CLASS.low}>· stale data</span>}
+            {r.missing_inputs.length > 0 && <span>· missing: {r.missing_inputs.join(', ')}</span>}
+          </div>
+        </div>
+      </li>
+    );
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-6 p-4 lg:p-8" aria-busy="true" aria-label="Loading command center…">
+      <div className="space-y-6" aria-busy="true" aria-label="Loading command center…">
         {/* Header skeleton */}
         <div className="flex items-center justify-between">
           <div className="space-y-1.5">
             <Skeleton className="h-7 w-52" />
             <Skeleton className="h-4 w-36" />
           </div>
-          <Skeleton className="h-9 w-32 rounded-xl" />
+          <Skeleton className="h-9 w-32 rounded-full" />
         </div>
         {/* KPI strip skeleton */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div
-              key={i}
-              className="glass-standard backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 space-y-2 border-l-4 border-l-warm-200"
-              style={{ animationDelay: `${i * 40}ms` }}
-            >
+            <div key={i} className="space-y-2">
               <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-7 w-10" />
+              <Skeleton className="h-7 w-16" />
+              <Skeleton className="h-[1.5px] w-full" />
             </div>
           ))}
         </div>
-        {/* Board skeleton */}
-        <div className="glass-standard backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
-          <div className="px-6 py-4 border-b border-warm-100">
+        {/* Board + queue skeleton */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <PaperCard className="space-y-4 p-5 lg:col-span-2">
             <Skeleton className="h-5 w-40" />
-          </div>
-          <div className="divide-y divide-warm-100">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-3" style={{ animationDelay: `${i * 50}ms` }}>
-                <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
-                <div className="flex-1 space-y-1">
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-3 w-24" />
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton variant="circular" className="h-8 w-8 flex-shrink-0" />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-6 w-20 rounded-full" />
                 </div>
-                <Skeleton className="h-6 w-20 rounded-full" />
-                <Skeleton className="h-6 w-16 rounded-full" />
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Readiness queue skeleton */}
-        <div className="glass-standard backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
-          <div className="px-6 py-4 border-b border-warm-100">
+              ))}
+            </div>
+          </PaperCard>
+          <PaperCard className="space-y-4 p-5">
             <Skeleton className="h-5 w-48" />
-          </div>
-          <div className="divide-y divide-warm-100">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-3" style={{ animationDelay: `${i * 50}ms` }}>
-                <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
-                <div className="flex-1 space-y-1">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-20" />
-                </div>
-                <Skeleton className="h-6 w-24 rounded-full" />
-              </div>
-            ))}
-          </div>
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-fw-md" />
+              ))}
+            </div>
+          </PaperCard>
         </div>
       </div>
     );
   }
 
   return (
-    <motion.div
-      className="space-y-6"
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-eyebrow uppercase text-primary-700">Weight room</p>
-          <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Performance</h1>
-          <p className="mt-1 text-sm text-warm-500">
-            {teamName} · {trainingWeekLabel} · {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
-          </p>
+    <div className="space-y-8">
+      {/* ── Masthead ────────────────────────────────────────────────────── */}
+      <SectionMasthead
+        eyebrow="THE PRESSBOX · WEIGHT ROOM"
+        title="Performance"
+        ink="team"
+        actions={
+          <Button asChild variant="primary" size="sm" leftIcon={<IconActivity size={16} />}>
+            <Link href="/baseball/dashboard/performance/live">Live Weight Room</Link>
+          </Button>
+        }
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Eyebrow ink="muted">
+            {teamName} · {trainingWeekLabel} · {todayLabel}
+          </Eyebrow>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="ghost" size="sm" leftIcon={<IconClipboardList size={16} />}>
+              <Link href="/baseball/dashboard/performance/programs">Programs</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" leftIcon={<IconUsers size={16} />}>
+              <Link href="/baseball/dashboard/performance/groups">Groups</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={16} />}>
+              <Link href="/baseball/dashboard/performance/builder">Builder</Link>
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/baseball/dashboard/performance/live"
-            className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
-          >
-            Live Weight Room
-          </Link>
-          <Link
-            href="/baseball/dashboard/performance/programs"
-            className="rounded-xl border border-warm-200 glass-standard px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
-          >
-            Programs
-          </Link>
-          <Link
-            href="/baseball/dashboard/performance/groups"
-            className="rounded-xl border border-warm-200 glass-standard px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
-          >
-            Groups
-          </Link>
-          <Link
-            href="/baseball/dashboard/performance/builder"
-            className="rounded-xl border border-warm-200 glass-standard px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
-          >
-            Builder
-          </Link>
-        </div>
+      </SectionMasthead>
+
+      {/* ── KPI strip: the real numbers, on a green rule ───────────────── */}
+      <div>
+        <KPIContentsStrip items={kpiItems} columns={4} />
+        <p className="mt-3 text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          {kpis.today_completed}/{kpis.today_total} sessions completed today
+        </p>
       </div>
 
-      {/* KPI strip */}
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-        {kpiItems.map((k, i) => (
-          <motion.li
-            key={k.label}
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: prefersReducedMotion ? 0 : i * 0.04 }}
-            className="last:col-span-2 sm:last:col-span-1"
-          >
-            <Card
-              className={`p-4 transition-shadow duration-200 hover:shadow-card-hover ${KPI_BORDER_CLASS[k.tone as keyof typeof KPI_BORDER_CLASS]}`}
-            >
-              <div
-                className={`text-2xl font-semibold tabular-nums ${KPI_VALUE_CLASS[k.tone as keyof typeof KPI_VALUE_CLASS]}`}
-                aria-label={`${k.value} ${k.label}`}
-              >
-                {k.value}
-              </div>
-              <div className="mt-1 text-xs font-medium text-warm-500">{k.label}</div>
-              {k.sub ? <div className="mt-0.5 text-eyebrow text-warm-400">{k.sub}</div> : null}
-            </Card>
-          </motion.li>
-        ))}
-      </ul>
-
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={cn('grid gap-6', boardEmpty ? 'lg:grid-cols-2' : 'lg:grid-cols-3')}>
         {/* Today Weight Room board */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+        <div className={boardEmpty ? undefined : 'lg:col-span-2'}>
+          <PaperCard className="p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold text-warm-900">Today Weight Room</h2>
-                <p className="text-xs text-warm-500">Who is lifting, status, readiness, and the main lift.</p>
+                <Eyebrow ink="team">Today Weight Room</Eyebrow>
+                <p className="mt-1 font-annual text-body-sm text-text-secondary">
+                  Who is lifting, status, readiness, and the main lift.
+                </p>
               </div>
               <NativeSelect
                 value={statusFilter}
@@ -346,160 +455,124 @@ export function PerformanceCommandCenter({
               >
                 <option value="all">All statuses</option>
                 {Object.entries(SESSION_STATUS_LABEL).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
                 ))}
               </NativeSelect>
-            </CardHeader>
-            <CardContent>
-              {board.length === 0 ? (
-                <EmptyState
-                  title="No lifts scheduled today"
-                  description="Publish a training day from a program to materialize today's weight-room board."
-                  action={{ label: 'Open programs', href: '/baseball/dashboard/performance/programs' }}
-                />
-              ) : filteredBoard.length === 0 ? (
-                <EmptyState
-                  title="No athletes match this status"
-                  description={`Nothing on today's board is "${SESSION_STATUS_LABEL[statusFilter] ?? statusFilter}". Clear the filter to see everyone.`}
-                  action={{ label: 'Show all statuses', onClick: () => setStatusFilter('all') }}
-                />
-              ) : (
-                <div className="-mx-2 overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-sm">
-                    <thead>
-                      <tr className="border-b border-warm-100 text-left text-xs font-medium uppercase tracking-wide text-warm-400">
-                        <th className="px-2 py-2">Athlete</th>
-                        <th className="px-2 py-2">Group</th>
-                        <th className="px-2 py-2">Status</th>
-                        <th className="px-2 py-2">Readiness</th>
-                        <th className="px-2 py-2">Main lift</th>
-                        <th className="px-2 py-2 text-right">BW Δ7d</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredBoard.map((b) => (
-                        <tr key={b.session.id} className="border-b border-warm-50 transition-colors hover:bg-cream-100/50">
-                          <td className="px-2 py-2">
-                            <Link
-                              href={`/baseball/dashboard/performance/players/${b.player_id}`}
-                              className="rounded font-medium text-warm-900 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
-                            >
-                              {getFullName(b.first_name, b.last_name)}
-                            </Link>
-                            <div className="text-eyebrow text-warm-400">{b.primary_position ?? '—'}</div>
-                          </td>
-                          <td className="px-2 py-2 text-warm-600">{b.group_names[0] ?? '—'}</td>
-                          <td className="px-2 py-2">
-                            <span className="text-warm-700">{SESSION_STATUS_LABEL[b.session.status] ?? b.session.status}</span>
-                          </td>
-                          <td className="px-2 py-2">
-                            {readinessWithheld ? <span className="text-xs text-warm-400">Gated</span> : <BandChip band={b.readiness_band} />}
-                          </td>
-                          <td className="px-2 py-2 text-warm-700">
-                            {b.prescribed_main_lift ?? '—'}
-                            {b.actual_main_load != null ? <span className="ml-1 text-warm-400">· {b.actual_main_load} lb</span> : null}
-                          </td>
-                          <td className="px-2 py-2 text-right tabular-nums">
-                            {b.bodyweight_delta_7d == null ? (
-                              <span className="text-warm-300">—</span>
-                            ) : (
-                              <span className={b.bodyweight_delta_7d <= -3 ? 'text-amber-700' : 'text-warm-600'}>
-                                {b.bodyweight_delta_7d > 0 ? '+' : ''}{b.bodyweight_delta_7d}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            </div>
+            <HairlineRule ink="team" className="mb-2" />
+
+            {board.length === 0 ? (
+              <EmptyIssue
+                variant="today"
+                action={
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href="/baseball/dashboard/performance/programs">Open programs</Link>
+                  </Button>
+                }
+              />
+            ) : filteredBoard.length === 0 ? (
+              <EmptyIssue
+                variant="generic"
+                action={
+                  <Button variant="secondary" size="sm" onClick={() => setStatusFilter('all')}>
+                    Show all statuses
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="min-w-[560px]">
+                  {filteredBoard.map((b, i) => (
+                    <Reveal key={b.session.id} staggerIndex={Math.min(i, 10)}>
+                      <WeightRoomRow row={b} readinessWithheld={readinessWithheld} />
+                    </Reveal>
+                  ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </PaperCard>
         </div>
 
         {/* Readiness & availability queue */}
         <div>
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-semibold text-warm-900">Readiness queue</h2>
-              <p className="text-xs text-warm-500">
-                Operational review only — not a medical assessment.
-                {!readinessWithheld && queue.length > 0 && (
-                  <span className="ml-1 text-warm-400">Click a row to inspect.</span>
+          <PaperCard className="p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <Eyebrow ink="team">Readiness queue</Eyebrow>
+              {!readinessWithheld && queue.length > 0 ? (
+                <span className="text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+                  Click a row to inspect
+                </span>
+              ) : null}
+            </div>
+            <p className="mb-4 font-annual text-body-sm text-text-secondary">
+              Operational review only — not a medical assessment.
+            </p>
+            <HairlineRule ink="team" className="mb-4" />
+
+            {readinessWithheld ? (
+              <EmptyIssue
+                variant="generic"
+                action={
+                  <p className="font-annual text-body-sm text-text-secondary">
+                    You need the readiness-view capability to see soreness, sleep, and availability.
+                  </p>
+                }
+              />
+            ) : queue.length === 0 ? (
+              <EmptyIssue
+                variant="generic"
+                action={
+                  <p className="font-annual text-body-sm text-text-secondary">
+                    All clear — no athletes flagged for review today.
+                  </p>
+                }
+              />
+            ) : (
+              <div className="space-y-3">
+                {freshQueue.length > 0 ? (
+                  <ul className="space-y-3">{freshQueue.map(renderQueueRow)}</ul>
+                ) : (
+                  staleQueue.length > 0 && (
+                    <p className="rounded-fw-md border border-[color:var(--hairline)] px-3 py-2.5 font-annual text-body-sm leading-relaxed text-text-secondary">
+                      No fresh flags today. The check-ins below are just out of date — nudge these
+                      athletes to re-report.
+                    </p>
+                  )
                 )}
-              </p>
-            </CardHeader>
-            <CardContent>
-              {readinessWithheld ? (
-                <EmptyState
-                  title="Readiness is gated"
-                  description="You need the readiness-view capability to see soreness, sleep, and availability."
-                />
-              ) : queue.length === 0 ? (
-                <EmptyState title="All clear" description="No athletes flagged for review today." />
-              ) : (
-                <ul className="space-y-3">
-                  {queue.map((r) => {
-                    const isSelected = selectedPlayerId === r.player_id;
-                    return (
-                      <li key={r.player_id}>
-                        <Button
-                          variant="ghost"
-                          type="button"
-                          onClick={() => handleRowClick(r.player_id)}
-                          aria-pressed={isSelected}
-                          aria-label={`Inspect ${playerNameById[r.player_id] ?? 'player'}`}
-                          className={cn(
-                            'w-full flex-col items-start rounded-xl border p-3 text-left transition-all duration-150 whitespace-normal',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
-                            isSelected
-                              ? 'border-primary-300 bg-primary-50/60 shadow-sm ring-1 ring-primary-200'
-                              : 'border-warm-100 glass-standard hover:border-warm-200 hover:bg-cream-50',
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={cn(
-                                'text-sm font-medium',
-                                isSelected ? 'text-primary-800' : 'text-warm-900',
-                              )}
-                            >
-                              {playerNameById[r.player_id] ?? 'Player'}
-                            </span>
-                            <BandChip band={r.band} />
-                          </div>
-                          {r.reasons.length > 0 && (
-                            <ul className="mt-1 list-inside list-disc text-xs text-warm-500">
-                              {r.reasons.slice(0, 3).map((reason) => (
-                                <li key={reason}>{reason}</li>
-                              ))}
-                            </ul>
-                          )}
-                          {r.suggested_action && (
-                            <p className="mt-1.5 text-xs font-medium text-warm-700">
-                              → {r.suggested_action}
-                            </p>
-                          )}
-                          <div className="mt-1 flex items-center gap-2 text-eyebrow text-warm-400">
-                            <span>Confidence: {r.confidence}</span>
-                            {r.stale && <span className="text-amber-600">· stale data</span>}
-                            {r.missing_inputs.length > 0 && (
-                              <span>· missing: {r.missing_inputs.join(', ')}</span>
-                            )}
-                          </div>
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+
+                {staleQueue.length > 0 && (
+                  <div className="rounded-fw-md border border-[color:var(--hairline)]">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setStaleOpen((o) => !o)}
+                      onKeyDown={activateOnEnterOrSpace(() => setStaleOpen((o) => !o))}
+                      aria-expanded={staleOpen}
+                      className={cn(
+                        'flex w-full items-center justify-between rounded-fw-md px-3 py-2.5 text-left',
+                        pressableClass({ ink: 'team' }),
+                      )}
+                    >
+                      <span className="font-annual text-body-sm font-medium text-text-primary">
+                        {staleQueue.length} athlete{staleQueue.length === 1 ? '' : 's'} with stale
+                        check-ins (8d+)
+                      </span>
+                      <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus">
+                        {staleOpen ? 'Hide' : 'Review'}
+                      </span>
+                    </div>
+                    {staleOpen && <ul className="space-y-3 p-3 pt-0">{staleQueue.map(renderQueueRow)}</ul>}
+                  </div>
+                )}
+              </div>
+            )}
+          </PaperCard>
         </div>
       </div>
 
-      {/* ── Player Inspector panel (slide-in drawer) ─────────────────────── */}
+      {/* ── Player Inspector panel (slide-in drawer, reused verbatim) ────── */}
       <AnimatePresence>
         {selectedPlayerId && (
           <PlayerInspectorPanel
@@ -518,7 +591,7 @@ export function PerformanceCommandCenter({
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -531,4 +604,16 @@ function bandRank(band: BaseballReadinessBand): number {
     case 'yellow': return 2;
     case 'green': return 1;
   }
+}
+
+/** Enter/Space activation for a `role="button"` div (kit-atom tappable tiles
+ *  use `pressableClass`, not `<Button>`, so they need this themselves —
+ *  mirrors `PlayerRowPlate`'s own `handleKey`). */
+function activateOnEnterOrSpace(onActivate: () => void) {
+  return (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onActivate();
+    }
+  };
 }

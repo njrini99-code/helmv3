@@ -21,7 +21,7 @@ import {
   manifestHrefsByStatus,
   type NavManifestEntry,
 } from '../nav-manifest';
-import { BASEBALL_NAV_REGISTRY, BASEBALL_MESSAGES_NAV } from '../nav-registry';
+import { BASEBALL_NAV_REGISTRY, BASEBALL_MESSAGES_NAV, type BaseballNavHub } from '../nav-registry';
 import {
   COACH_TEAM_TABS,
   COACH_STATS_TABS,
@@ -129,7 +129,9 @@ describe('BASEBALL_NAV_MANIFEST', () => {
     const aliases = manifestHrefsByStatus('alias');
 
     it('sanity: alias hrefs were actually collected', () => {
-      expect(aliases.length).toBe(8);
+      // 7, not 8 — the Demo Mode section (and its #demo-mode alias) was removed
+      // from Program Settings (PKT-12); see settings-route-aliases.ts's note.
+      expect(aliases.length).toBe(7);
     });
 
     it.each(aliases.map((href) => [href] as const))('%s base path resolves', (href) => {
@@ -222,6 +224,48 @@ describe('BASEBALL_NAV_MANIFEST', () => {
           true,
         );
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // COACH_NAV_8TAB_PROPOSAL.md (approved 2026-07-01) — every coach/both
+  // registry entry must declare exactly one grouped hub, so hub-definitions.ts
+  // can GROUP BY `entry.hub` instead of hand-listing routes per hub. A
+  // coach/both entry with no hub (or, structurally impossible via the type
+  // system, more than one) is silently invisible to every hub-derived array —
+  // the exact "5 unreachable features" bug this field exists to prevent from
+  // recurring.
+  // ---------------------------------------------------------------------------
+  describe('every coach/both registry entry declares exactly one hub', () => {
+    const VALID_HUBS: readonly BaseballNavHub[] = [
+      'dashboard',
+      'team',
+      'stats-performance',
+      'development',
+      'recruiting',
+      'academics',
+      'management',
+    ];
+
+    it('sanity: the registry has a non-trivial coach/both entry set', () => {
+      const coachOrBoth = BASEBALL_NAV_REGISTRY.filter((e) => e.role !== 'player');
+      expect(coachOrBoth.length).toBeGreaterThan(20);
+    });
+
+    it.each(
+      BASEBALL_NAV_REGISTRY.filter((e) => e.role !== 'player').map((e) => [e.id] as const),
+    )('%s declares a hub from the 7-hub set', (id) => {
+      const entry = BASEBALL_NAV_REGISTRY.find((e) => e.id === id)!;
+      expect(entry.hub, `registry entry "${id}" (role: ${entry.role}) is missing a hub`).toBeTruthy();
+      expect(
+        VALID_HUBS.includes(entry.hub!),
+        `registry entry "${id}" declares hub "${entry.hub}", which is not one of the 7 grouped hubs`,
+      ).toBe(true);
+    });
+
+    it('no role: player entry declares a hub (players are never grouped into a coach hub)', () => {
+      const playerEntriesWithHub = BASEBALL_NAV_REGISTRY.filter((e) => e.role === 'player' && e.hub);
+      expect(playerEntriesWithHub.map((e) => e.id)).toEqual([]);
     });
   });
 });

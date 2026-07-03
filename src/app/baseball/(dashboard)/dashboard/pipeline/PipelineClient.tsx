@@ -1,34 +1,72 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+/**
+ * ============================================================================
+ * PipelineClient — THE WAR ROOM recruiting pipeline, composed from the
+ * "Living Annual" kit (spec: docs/baseball/design-system-living-annual.md;
+ * plan: docs/baseball/ui-migration-execution-plan.md §3.2 pipeline row).
+ * ----------------------------------------------------------------------------
+ * PRESENTATION ONLY (P4.21.a). Same read/write paths as before — `useWatchlist`,
+ * the watchlist server actions, dnd-kit drag orchestration, and the keyboard
+ * navigation state machine are untouched. Only the chrome is re-skinned onto
+ * the kit (`RecruitCard`, `SectionMasthead`, `EmptyIssue`, `CommitSeal`, …).
+ *
+ * pipeline/page.tsx and the Fairway shell wiring are a separate task (W16) —
+ * this file keeps its existing default export shape (`export default function
+ * PipelinePage()`) so page.tsx keeps working unmodified.
+ * ========================================================================== */
+
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ShineEffect } from '@/components/ui/shine-effect';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { Header } from '@/components/layout/header';
-import { PipelineColumn } from '@/components/features/pipeline-column';
-import { PipelineCard } from '@/components/features/pipeline-card';
-import { SkeletonPipeline } from '@/components/ui/skeleton';
-import { Button, IconButton } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Avatar } from '@/components/ui/avatar';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import Link from 'next/link';
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import {
+  SectionMasthead,
+  Eyebrow,
+  PaperCard,
+  HairlineRule,
+  InkBadge,
+  StatReadout,
+  EditorsLetter,
+  EmptyIssue,
+  CommitSeal,
+  RecruitCard,
+  Reveal,
+  HoverReveal,
+  pressableClass,
+  EASE_SOFT,
+  PACE,
+} from '@/components/baseball/living-annual';
+import { Button, IconButton, Select, Checkbox, Avatar, InlineNotice, Skeleton, TextArea } from '@/components/fairway';
 import { PlayerDetailModal } from '@/components/coach/PlayerDetailModal';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { PositionPlanner } from '@/components/baseball/position-planner';
-import { Badge } from '@/components/ui/badge';
-import { IconUsers, IconTrash, IconUser, IconLayoutGrid, IconList, IconTarget, IconEye, IconStar, IconCheck, IconX as IconXCircle } from '@/components/icons';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { IconUsers, IconLayoutGrid, IconList, IconTarget, IconTrash } from '@/components/icons';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
-import { getFullName, cn } from '@/lib/utils';
+import { getFullName, getPipelineStageLabel, cn } from '@/lib/utils';
 import {
   removeFromWatchlist,
   updateWatchlistStatus,
-  addWatchlistNote
+  addWatchlistNote,
 } from '@/app/baseball/actions/watchlist';
-import Link from 'next/link';
-import type { PipelineStage, Player } from '@/lib/types';
+import type { PipelineStage, Player, WatchlistWithPlayer } from '@/lib/types';
 import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
 
 const gradYearOptions = [
@@ -40,7 +78,17 @@ const gradYearOptions = [
   { value: '2029', label: '2029' },
 ];
 
+/** Fairway `<Select>` needs a real option value — map the "no filter" empty
+ * string to this sentinel at the select boundary only; every other piece of
+ * filtering logic keeps comparing against `''` exactly as before. */
+const ALL_GRAD_YEARS = '__all__';
+
 const statusOptions = PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label }));
+
+// Droppable columns use the stage id; draggable cards use the watchlist-row
+// UUID. This set lets the drag handler tell a real drop-target column apart
+// from a card that `closestCorners` happened to land on.
+const PIPELINE_STAGE_IDS = new Set<PipelineStage>(PIPELINE_STAGES.map((s) => s.id));
 
 const filterTabs = [
   { value: 'all', label: 'All' },
@@ -49,19 +97,38 @@ const filterTabs = [
 
 type ViewMode = 'pipeline' | 'list' | 'position';
 
-// Pipeline Stats Summary Bar Component
-function PipelineStatsSummary({ watchlist }: { watchlist: Array<{ pipeline_stage: PipelineStage | null }> }) {
+const VIEW_MODES: Array<{ value: ViewMode; label: string; icon: React.ReactNode }> = [
+  { value: 'pipeline', label: 'Board', icon: <IconLayoutGrid size={14} /> },
+  { value: 'position', label: 'Positions', icon: <IconTarget size={14} /> },
+  { value: 'list', label: 'List', icon: <IconList size={14} /> },
+];
+
+/** The one headline measurable a recruiting card can honestly show — real
+ * fastball/exit velo only, never a fabricated or rounded-to-uselessness figure
+ * (60-yard/pop times are decimal-sensitive and RecruitCard's topStat has no
+ * decimals slot, so they're intentionally left out rather than misreported). */
+function headlineStat(player?: Player | null): { label: string; value: number; unit: string } | undefined {
+  if (!player) return undefined;
+  if (typeof player.pitch_velo === 'number') return { label: 'FB Velo', value: player.pitch_velo, unit: 'MPH' };
+  if (typeof player.exit_velo === 'number') return { label: 'Exit Velo', value: player.exit_velo, unit: 'MPH' };
+  return undefined;
+}
+
+function formatDate(dateString: string | null) {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ─── Pipeline stats strip — clay KPI contents, StatReadout(flashOnChange) on ──
+// green rules would break the two-ink law, so this composes the atoms
+// KPIContentsStrip is built from directly (RuledStatLine hard-codes team ink
+// and has no flashOnChange passthrough) rather than the team-only molecule.
+
+function PipelineStatsStrip({ watchlist }: { watchlist: WatchlistWithPlayer[] }) {
   const stats = useMemo(() => {
-    const counts = {
-      total: watchlist.length,
-      watching: 0,
-      highPriority: 0,
-      offers: 0,
-      committed: 0,
-      uninterested: 0,
-    };
-    
-    watchlist.forEach(item => {
+    const counts = { total: watchlist.length, watching: 0, highPriority: 0, offers: 0, committed: 0, uninterested: 0 };
+    watchlist.forEach((item) => {
       switch (item.pipeline_stage) {
         case 'watchlist':
           counts.watching++;
@@ -80,83 +147,364 @@ function PipelineStatsSummary({ watchlist }: { watchlist: Array<{ pipeline_stage
           break;
       }
     });
-    
     return counts;
   }, [watchlist]);
 
   if (watchlist.length === 0) return null;
 
+  const items: Array<{ label: string; value: number; highlight?: boolean }> = [
+    { label: 'Total', value: stats.total },
+    { label: 'Watching', value: stats.watching },
+    { label: 'High Priority', value: stats.highPriority },
+    { label: 'Offers', value: stats.offers },
+    { label: 'Committed', value: stats.committed, highlight: stats.committed > 0 },
+    { label: 'Not Interested', value: stats.uninterested },
+  ];
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-warm-50 border border-warm-200">
-        <div className="w-9 h-9 rounded-lg bg-warm-200 flex items-center justify-center">
-          <IconUsers size={18} className="text-warm-600" />
+    <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
+      {items.map((it) => (
+        <div key={it.label} className="flex flex-col gap-1">
+          <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">{it.label}</span>
+          <div className="relative">
+            <StatReadout
+              value={it.value}
+              flashOnChange
+              ariaLabel={it.label}
+              className={cn('pb-1 font-annual text-ink leading-none', it.highlight ? 'text-pursuit' : 'text-text-primary')}
+            />
+            <HairlineRule ink="pursuit" weight={1.5} />
+          </div>
         </div>
-        <div>
-          <p className="text-lg font-semibold text-warm-900">{stats.total}</p>
-          <p className="text-xs text-warm-500">Total</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200">
-        <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
-          <IconEye size={18} className="text-blue-600" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-blue-900">{stats.watching}</p>
-          <p className="text-xs text-blue-600">Watching</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
-        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
-          <IconStar size={18} className="text-amber-600" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-amber-900">{stats.highPriority}</p>
-          <p className="text-xs text-amber-600">High Priority</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-purple-50 border border-purple-200">
-        <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center">
-          <IconTarget size={18} className="text-purple-600" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-purple-900">{stats.offers}</p>
-          <p className="text-xs text-purple-600">Offers</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-50 border border-primary-200">
-        <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
-          <IconCheck size={18} className="text-primary-600" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-primary-900">{stats.committed}</p>
-          <p className="text-xs text-primary-600">Committed</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-warm-50 border border-warm-200">
-        <div className="w-9 h-9 rounded-lg bg-warm-200 flex items-center justify-center">
-          <IconXCircle size={18} className="text-warm-500" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-warm-700">{stats.uninterested}</p>
-          <p className="text-xs text-warm-500">Not Interested</p>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
+
+// ─── Kanban board ──────────────────────────────────────────────────────────
+
+function PipelineBoardSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label="Loading pipeline"
+      className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0"
+    >
+      {PIPELINE_STAGES.map((s) => (
+        <div key={s.id} className="w-[280px] flex-shrink-0 lg:w-auto">
+          <PaperCard className="flex h-full min-h-[420px] flex-col p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton circle className="h-5 w-5" />
+            </div>
+            <HairlineRule ink="hairline" className="mb-4" />
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-card" />
+              ))}
+            </div>
+          </PaperCard>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface PipelineBoardCardProps {
+  item: WatchlistWithPlayer;
+  onOpenPeek: (playerId: string) => void;
+  onQuickMove: (item: WatchlistWithPlayer, stage: PipelineStage) => void;
+  onQuickRemove: (item: WatchlistWithPlayer) => void;
+}
+
+function PipelineBoardCard({ item, onOpenPeek, onQuickMove, onQuickRemove }: PipelineBoardCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id });
+  const style = { transform: CSS.Transform.toString(transform) };
+  const currentStage = (item.pipeline_stage ?? 'watchlist') as PipelineStage;
+  const stageIndex = PIPELINE_STAGES.findIndex((s) => s.id === currentStage);
+  const prevStage = stageIndex > 0 ? PIPELINE_STAGES[stageIndex - 1] : undefined;
+  const nextStage = stageIndex >= 0 && stageIndex < PIPELINE_STAGES.length - 1 ? PIPELINE_STAGES[stageIndex + 1] : undefined;
+  const name = getFullName(item.player?.first_name, item.player?.last_name);
+
+  function openPeek() {
+    if (isDragging) return;
+    if (item.player?.id) onOpenPeek(item.player.id);
+  }
+
+  function handleKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openPeek();
+    }
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      role="button"
+      tabIndex={0}
+      onClick={openPeek}
+      onKeyDown={handleKeyDown}
+      data-testid="pipeline-card"
+      data-id={item.id}
+      data-player-id={item.player_id}
+      data-stage={currentStage}
+      className={cn('rounded-card', pressableClass({ ink: 'pursuit', lift: true }), isDragging && 'opacity-40')}
+    >
+      <HoverReveal
+        position="overlay"
+        reveal={
+          <div className="flex h-full flex-col justify-end">
+            <div className="flex items-end justify-between gap-1 rounded-b-card bg-gradient-to-t from-[var(--paper)] via-[var(--paper)]/95 to-transparent p-2 pt-8">
+              {prevStage ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e: ReactMouseEvent) => {
+                    e.stopPropagation();
+                    onQuickMove(item, prevStage.id);
+                  }}
+                >
+                  ← {getPipelineStageLabel(prevStage.id)}
+                </Button>
+              ) : (
+                <span />
+              )}
+              <div className="flex items-center gap-1">
+                {nextStage ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e: ReactMouseEvent) => {
+                      e.stopPropagation();
+                      onQuickMove(item, nextStage.id);
+                    }}
+                  >
+                    {getPipelineStageLabel(nextStage.id)} →
+                  </Button>
+                ) : null}
+                <IconButton
+                  variant="danger"
+                  size="sm"
+                  aria-label={`Remove ${name} from pipeline`}
+                  onClick={(e: ReactMouseEvent) => {
+                    e.stopPropagation();
+                    onQuickRemove(item);
+                  }}
+                >
+                  <IconTrash size={14} />
+                </IconButton>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <RecruitCard
+          firstName={item.player?.first_name || 'Unknown'}
+          lastName={item.player?.last_name || 'Player'}
+          position={item.player?.primary_position ?? undefined}
+          classYear={item.player?.grad_year ? String(item.player.grad_year) : undefined}
+          state={item.player?.state ?? undefined}
+          topStat={headlineStat(item.player)}
+          stage={getPipelineStageLabel(currentStage)}
+        />
+      </HoverReveal>
+    </div>
+  );
+}
+
+interface PipelineBoardColumnProps {
+  stage: PipelineStage;
+  items: WatchlistWithPlayer[];
+  onOpenPeek: (playerId: string) => void;
+  onQuickMove: (item: WatchlistWithPlayer, stage: PipelineStage) => void;
+  onQuickRemove: (item: WatchlistWithPlayer) => void;
+}
+
+function PipelineBoardColumn({ stage, items, onOpenPeek, onQuickMove, onQuickRemove }: PipelineBoardColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage });
+  const label = getPipelineStageLabel(stage);
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-testid={`pipeline-column-${stage}`}
+      className="w-[280px] flex-shrink-0 snap-start lg:w-auto lg:snap-align-none"
+    >
+      <PaperCard
+        className={cn(
+          'flex h-full min-h-[520px] flex-col p-4 transition-colors',
+          isOver && 'bg-pursuit/[0.05] ring-2 ring-pursuit',
+        )}
+      >
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <Eyebrow ink="pursuit">{label}</Eyebrow>
+          <InkBadge label={String(items.length)} tone="pursuit" variant={items.length > 0 ? 'solid' : 'soft'} />
+        </div>
+        <HairlineRule ink="pursuit" className="mb-4" />
+        <div className="flex-1 space-y-3">
+          {items.map((item, index) => (
+            <Reveal key={item.id} staggerIndex={index}>
+              <PipelineBoardCard item={item} onOpenPeek={onOpenPeek} onQuickMove={onQuickMove} onQuickRemove={onQuickRemove} />
+            </Reveal>
+          ))}
+          {items.length === 0 ? (
+            <p
+              className={cn(
+                'py-8 text-center font-annual text-body-sm',
+                isOver ? 'font-semibold text-pursuit' : 'text-text-tertiary',
+              )}
+            >
+              {isOver ? 'Drop here' : 'No players'}
+            </p>
+          ) : null}
+        </div>
+      </PaperCard>
+    </div>
+  );
+}
+
+// ─── List (table) view ──────────────────────────────────────────────────────
+
+interface PipelineListRowProps {
+  item: WatchlistWithPlayer;
+  focused: boolean;
+  selected: boolean;
+  editing: boolean;
+  noteValue: string;
+  onFocus: () => void;
+  onOpenPeek: () => void;
+  onToggleSelect: () => void;
+  onStatusChange: (stage: PipelineStage) => void;
+  onStartEditNote: () => void;
+  onNoteValueChange: (value: string) => void;
+  onSaveNote: () => void;
+  onCancelNote: () => void;
+  onViewProfile: () => void;
+  onRemove: () => void;
+}
+
+function PipelineListRow({
+  item,
+  focused,
+  selected,
+  editing,
+  noteValue,
+  onFocus,
+  onOpenPeek,
+  onToggleSelect,
+  onStatusChange,
+  onStartEditNote,
+  onNoteValueChange,
+  onSaveNote,
+  onCancelNote,
+  onViewProfile,
+  onRemove,
+}: PipelineListRowProps) {
+  const name = getFullName(item.player?.first_name, item.player?.last_name);
+  const location = item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A';
+
+  return (
+    <tr
+      onClick={onFocus}
+      className={cn(
+        'align-top transition-colors',
+        pressableClass({ ink: 'pursuit', tint: !focused }),
+        focused && 'bg-pursuit/[0.06] ring-2 ring-inset ring-pursuit',
+      )}
+    >
+      <td className="px-3 py-4">
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select ${name}`} />
+      </td>
+      <td className="px-3 py-4">
+        <Button
+          variant="ghost"
+          onClick={onOpenPeek}
+          className="h-auto min-h-0 justify-start gap-3 rounded-fw-sm px-2 py-1 text-left font-normal"
+        >
+          <Avatar src={item.player?.avatar_url} name={name} size="md" />
+          <div className="min-w-0">
+            <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
+            <span className="text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</span>
+          </div>
+        </Button>
+      </td>
+      <td className="px-3 py-4 font-annual text-body-sm text-text-secondary">{item.player?.primary_position || '—'}</td>
+      <td className="px-3 py-4 font-annual text-body-sm text-text-secondary">{item.player?.grad_year ?? '—'}</td>
+      <td className="px-3 py-4 font-annual text-body-sm text-text-secondary">{location}</td>
+      <td className="px-3 py-4">
+        <div className="w-44">
+          <Select
+            size="sm"
+            aria-label={`Change stage for ${name}`}
+            value={item.pipeline_stage ?? 'watchlist'}
+            onValueChange={(v) => v && onStatusChange(v as PipelineStage)}
+            options={statusOptions}
+          />
+        </div>
+      </td>
+      <td className="px-3 py-4 font-annual text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+        {formatDate(item.updated_at)}
+      </td>
+      <td className="px-3 py-4">
+        {editing ? (
+          <div className="w-56 space-y-2">
+            <TextArea
+              size="sm"
+              value={noteValue}
+              onChange={(e) => onNoteValueChange(e.target.value)}
+              placeholder="Add notes about this player…"
+              rows={3}
+              className="w-full resize-none focus-visible:ring-pursuit"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onSaveNote}>
+                Save
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onCancelNote}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            title={item.notes || 'Add note'}
+            onClick={onStartEditNote}
+            className="h-auto min-h-0 max-w-[160px] justify-start truncate px-2 py-1 text-left font-normal underline decoration-[color:var(--hairline)] underline-offset-2"
+          >
+            {item.notes ? (item.notes.length > 24 ? `${item.notes.slice(0, 24)}…` : item.notes) : 'Add note'}
+          </Button>
+        )}
+      </td>
+      <td className="px-3 py-4">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={onViewProfile}>
+            View
+          </Button>
+          <IconButton variant="danger" size="sm" aria-label={`Remove ${name} from pipeline`} onClick={onRemove}>
+            <IconTrash size={16} />
+          </IconButton>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function PipelinePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const { coach } = useAuth();
-  const { watchlist, loading, updateStage, refetch } = useWatchlist();
+  const { watchlist, loading, updateStage, removeFromWatchlist: quickRemoveFromWatchlist, refetch } = useWatchlist();
+  const reducedMotion = useReducedMotion() ?? false;
 
   // View state from URL
   const viewParam = searchParams.get('view');
@@ -170,6 +518,7 @@ export default function PipelinePage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [gradYearFilter, setGradYearFilter] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [celebrateCommit, setCelebrateCommit] = useState(false);
 
   // Watchlist (Table) state
   const [filterTab, setFilterTab] = useState('all');
@@ -182,10 +531,9 @@ export default function PipelinePage() {
   const [removing, setRemoving] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [peekPlayerId, setPeekPlayerId] = useState<string | null>(null);
-  
+
   // Keyboard navigation state
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
-  const listContainerRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -209,6 +557,13 @@ export default function PipelinePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only re-runs when viewMode changes; adding router/searchParams would cause loop
   }, [viewMode]);
 
+  // Auto-clear the commit ceremony after it's had its moment.
+  useEffect(() => {
+    if (!celebrateCommit) return;
+    const timer = setTimeout(() => setCelebrateCommit(false), 1800);
+    return () => clearTimeout(timer);
+  }, [celebrateCommit]);
+
   // Filter watchlist by grad year (for pipeline view)
   const filteredByGradYear = useMemo(() => {
     if (!gradYearFilter) return watchlist;
@@ -230,6 +585,8 @@ export default function PipelinePage() {
   // Get unique positions for filters
   const uniquePositions = Array.from(new Set(watchlist.map(item => item.player?.primary_position).filter((pos): pos is string => Boolean(pos))));
 
+  const isFiltered = Boolean(gradYearFilter) || filterTab !== 'all' || positionFilter !== 'all';
+
   // Pipeline handlers
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -243,29 +600,56 @@ export default function PipelinePage() {
       return;
     }
 
-    const activeItem = filteredByGradYear.find((item) => item.id === active.id);
-    const newStage = over.id as PipelineStage;
+    const draggedItem = filteredByGradYear.find((item) => item.id === active.id);
 
-    if (activeItem && activeItem.pipeline_stage !== newStage) {
-      try {
-        await updateStage(activeItem.player_id, newStage);
-        setError(null);
-        const playerName = getFullName(activeItem.player?.first_name, activeItem.player?.last_name);
-        const stageLabel = statusOptions.find(o => o.value === newStage)?.label || newStage;
-        showToast(`${playerName} moved to ${stageLabel}`, 'success');
-      } catch (err) {
-        console.error('Error updating pipeline stage:', err);
-        setError('Failed to update player stage. Please try again.');
+    // With closestCorners, `over` is often another card (a watchlist UUID),
+    // not a column. Resolve the target stage from the column id, falling back
+    // to the stage of the card being hovered; anything else is an invalid drop
+    // and must be a no-op (no DB write).
+    const overId = over.id as string;
+    const newStage: PipelineStage | null = PIPELINE_STAGE_IDS.has(overId as PipelineStage)
+      ? (overId as PipelineStage)
+      : (filteredByGradYear.find((item) => item.id === overId)?.pipeline_stage ?? null);
+
+    if (draggedItem && newStage && draggedItem.pipeline_stage !== newStage) {
+      // updateStage shows its own success/error toast and only refetches on
+      // success (so the card reverts to its column on failure). Just reflect
+      // the boolean return — never a second, unconditional success toast.
+      const ok = await updateStage(draggedItem.player_id, newStage);
+      setError(ok ? null : 'Failed to update player stage. Please try again.');
+      if (ok && newStage === 'committed') {
+        setCelebrateCommit(true);
       }
     }
 
     setActiveId(null);
   };
 
+  const handleQuickMove = useCallback(
+    async (item: WatchlistWithPlayer, stage: PipelineStage) => {
+      const ok = await updateStage(item.player_id, stage);
+      if (ok && stage === 'committed') {
+        setCelebrateCommit(true);
+      }
+    },
+    [updateStage]
+  );
+
+  const handleQuickRemove = useCallback(
+    (item: WatchlistWithPlayer) => {
+      void quickRemoveFromWatchlist(item.player_id);
+    },
+    [quickRemoveFromWatchlist]
+  );
+
   // Watchlist handlers
   async function handleStatusChange(watchlistId: string, newStatus: PipelineStage) {
     try {
-      await updateWatchlistStatus(watchlistId, newStatus);
+      const result = await updateWatchlistStatus(watchlistId, newStatus);
+      if (!result.success) {
+        showToast(result.error || 'Failed to update status', 'error');
+        return;
+      }
       refetch();
     } catch {
       showToast('Failed to update status', 'error');
@@ -306,12 +690,6 @@ export default function PipelinePage() {
     setNoteValue(currentNote || '');
   }
 
-  function formatDate(dateString: string | null) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-
   function togglePlayerSelection(watchlistId: string) {
     setSelectedPlayers(prev => {
       const newSet = new Set(prev);
@@ -336,11 +714,15 @@ export default function PipelinePage() {
     if (selectedPlayers.size === 0) return;
 
     try {
-      await Promise.all(
+      const results = await Promise.all(
         Array.from(selectedPlayers).map(watchlistId =>
           updateWatchlistStatus(watchlistId, newStatus)
         )
       );
+      const failed = results.filter(r => !r.success).length;
+      if (failed > 0) {
+        showToast(`Failed to update ${failed} player${failed !== 1 ? 's' : ''}`, 'error');
+      }
       refetch();
       setSelectedPlayers(new Set());
     } catch {
@@ -376,7 +758,7 @@ export default function PipelinePage() {
   const handleKeyboardNavigation = useCallback((e: KeyboardEvent) => {
     // Only handle in list view when not editing
     if (viewMode !== 'list' || editingNote || filteredWatchlist.length === 0) return;
-    
+
     // Don't intercept if user is typing in an input
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
@@ -428,544 +810,314 @@ export default function PipelinePage() {
     setFocusedIndex(-1);
   }, [filterTab, positionFilter, gradYearFilter]);
 
-  if (loading) return (
-    <>
-      <Header title="Pipeline" subtitle="Manage your recruiting pipeline" />
-      <div className="p-6 lg:p-8">
-        <SkeletonPipeline />
-      </div>
-    </>
-  );
-
-  return (
-    <>
-      <Header
-        title="Pipeline"
-        subtitle={watchlist.length === 0 ? 'Manage your recruiting pipeline' : `${watchlist.length} player${watchlist.length !== 1 ? 's' : ''} total`}
-      />
-      <div className="p-6 lg:p-8">
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
-            <span>{error}</span>
-            <Button variant="danger"
-              onClick={() => setError(null)}
-              className="text-red-600 hover:text-red-700 font-medium transition-colors"
+  const masthead = (
+    <SectionMasthead eyebrow="THE WAR ROOM · RECRUITING PIPELINE" title="Pipeline" ink="pursuit">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex items-center gap-1 rounded-fw-sm border border-border-subtle bg-surface-sunken p-1">
+          {VIEW_MODES.map((mode) => (
+            <Button
+              key={mode.value}
+              variant={viewMode === mode.value ? 'secondary' : 'ghost'}
+              size="sm"
+              aria-pressed={viewMode === mode.value}
+              leftIcon={mode.icon}
+              onClick={() => setViewMode(mode.value)}
             >
-              Dismiss
+              {mode.label}
             </Button>
-          </div>
-        )}
-
-        {/* Pipeline Stats Summary */}
-        <PipelineStatsSummary watchlist={watchlist} />
-
-        {/* View Toggle Tabs */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-1 p-1 bg-warm-100 rounded-lg overflow-x-auto scrollbar-hide">
-            <Button variant="ghost"
-              onClick={() => setViewMode('pipeline')}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
-                viewMode === 'pipeline'
-                  ? 'bg-white text-warm-900 shadow-sm'
-                  : 'text-warm-600 hover:text-warm-900'
-              )}
-            >
-              <IconLayoutGrid size={16} />
-              Pipeline
-            </Button>
-            <Button variant="ghost"
-              onClick={() => setViewMode('position')}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
-                viewMode === 'position'
-                  ? 'bg-white text-warm-900 shadow-sm'
-                  : 'text-warm-600 hover:text-warm-900'
-              )}
-            >
-              <IconTarget size={16} />
-              <span className="hidden sm:inline">Position Planner</span>
-              <span className="sm:hidden">Planner</span>
-            </Button>
-            <Button variant="ghost"
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
-                viewMode === 'list'
-                  ? 'bg-white text-warm-900 shadow-sm'
-                  : 'text-warm-600 hover:text-warm-900'
-              )}
-            >
-              <IconList size={16} />
-              List
-            </Button>
-          </div>
-
-          {/* Grad Year Filter (shared) */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-warm-700 whitespace-nowrap">Grad Year:</span>
-            <Select
-              options={gradYearOptions}
-              value={gradYearFilter}
-              onChange={(value) => setGradYearFilter(value)}
-              className="w-36 text-base"
-            />
-            {gradYearFilter && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setGradYearFilter('')}
-                className="min-h-[44px]"
-              >
-                Clear
-              </Button>
-            )}
-          </div>
+          ))}
         </div>
 
-        {/* Empty State Banner */}
-        {watchlist.length === 0 && (
-          <div className="relative glass-standard rounded-2xl p-8 mb-6 text-center overflow-clip">
-            <ShineEffect />
-            <IconUsers size={32} className="mx-auto mb-3 text-primary-600" />
-            <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">Your pipeline is empty</h3>
-            <p className="text-sm leading-relaxed text-warm-600 mb-4">
-              Start by adding players to your watchlist from the Discover page.
-            </p>
-            <Link href="/baseball/dashboard/discover">
-              <Button>Discover Players</Button>
-            </Link>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">Grad Year</span>
+          <div className="w-36">
+            <Select
+              size="sm"
+              aria-label="Filter by grad year"
+              value={gradYearFilter || ALL_GRAD_YEARS}
+              onValueChange={(v) => setGradYearFilter(!v || v === ALL_GRAD_YEARS ? '' : v)}
+              options={gradYearOptions.map((o) => ({ value: o.value || ALL_GRAD_YEARS, label: o.label }))}
+            />
           </div>
+          {gradYearFilter && (
+            <Button variant="ghost" size="sm" onClick={() => setGradYearFilter('')}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+    </SectionMasthead>
+  );
+
+  if (loading) {
+    return (
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+        {masthead}
+        <div className="mt-8">
+          <PipelineBoardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
+      {masthead}
+
+      <div className="mt-8 space-y-8">
+        {error && (
+          <InlineNotice tone="danger" dismissible onDismiss={() => setError(null)}>
+            {error}
+          </InlineNotice>
         )}
 
-        {/* Pipeline (Kanban) View */}
-        {viewMode === 'pipeline' && watchlist.length > 0 && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex lg:grid lg:grid-cols-7 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none scroll-smooth">
-              {PIPELINE_STAGES.map((s) => (
-                <PipelineColumn
-                  key={s.id}
-                  stage={s.id}
-                  items={filteredByGradYear.filter((w) => w.pipeline_stage === s.id)}
-                />
-              ))}
-            </div>
+        <PipelineStatsStrip watchlist={watchlist} />
 
-            <DragOverlay>
-              {activeItem ? (
-                <div className="opacity-90 rotate-[2deg] scale-105 shadow-xl">
-                  <PipelineCard item={activeItem} isDragging />
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        )}
-
-        {/* Position Planner View */}
-        {viewMode === 'position' && watchlist.length > 0 && (
-          <PositionPlanner
-            watchlist={watchlist}
-            gradYearFilter={gradYearFilter}
-            onGradYearChange={setGradYearFilter}
+        {watchlist.length === 0 ? (
+          <EmptyIssue
+            variant="pipeline"
+            ink="pursuit"
+            action={
+              <Button asChild variant="primary" size="sm">
+                <Link href="/baseball/dashboard/discover" className="inline-flex items-center gap-2">
+                  <IconUsers size={16} />
+                  Discover players
+                </Link>
+              </Button>
+            }
           />
-        )}
-
-        {/* List (Table) View */}
-        {viewMode === 'list' && watchlist.length > 0 && (
+        ) : (
           <>
-            {/* Status Filter Tabs with count badges */}
-            <div className="flex items-center gap-2 mb-6 border-b border-warm-200 overflow-x-auto scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0" role="tablist" aria-label="Filter by status">
-              {filterTabs.map(tab => {
-                const count = tab.value === 'all'
-                  ? watchlist.length
-                  : watchlist.filter(w => w.pipeline_stage === tab.value).length;
-                return (
-                  <Button variant="ghost"
-                    key={tab.value}
-                    role="tab"
-                    aria-selected={filterTab === tab.value}
-                    onClick={() => setFilterTab(tab.value)}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 min-h-[44px] flex items-center gap-1.5 ${
-                      filterTab === tab.value
-                        ? 'border-primary-600 text-primary-700'
-                        : 'border-transparent text-warm-600 hover:text-warm-900'
-                    }`}
-                  >
-                    {tab.label}
-                    {count > 0 && (
-                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full ${
-                        filterTab === tab.value
-                          ? 'bg-primary-100 text-primary-700'
-                          : 'bg-warm-100 text-warm-500'
-                      }`}>
-                        {count}
-                      </span>
-                    )}
-                  </Button>
-                );
-              })}
-            </div>
-
-            {/* Additional Filters */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-warm-700">Position:</span>
-                <Select
-                  options={[
-                    { value: 'all', label: 'All Positions' },
-                    ...uniquePositions.map(pos => ({ value: pos, label: pos }))
-                  ]}
-                  value={positionFilter}
-                  onChange={(value) => setPositionFilter(value)}
-                  className="w-40 text-sm"
-                />
-              </div>
-              {positionFilter !== 'all' && (
-                <Button variant="ghost"
-                  onClick={() => setPositionFilter('all')}
-                  className="text-sm leading-relaxed text-warm-600 hover:text-warm-900 underline"
-                >
-                  Clear position filter
-                </Button>
-              )}
-            </div>
-
-            {/* Bulk Actions Bar */}
-            {selectedPlayers.size > 0 && (
-              <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-clip">
-                <ShineEffect />
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-primary-700">
-                    {selectedPlayers.size} player{selectedPlayers.size !== 1 ? 's' : ''} selected
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Select
-                      options={[{ value: '', label: 'Change status...' }, ...statusOptions]}
-                      value=""
-                      onChange={(value) => {
-                        if (value) {
-                          handleBulkStatusChange(value as PipelineStage);
-                        }
-                      }}
-                      className="w-48 text-sm"
+            {viewMode === 'pipeline' && (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory scroll-smooth lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0 lg:snap-none">
+                  {PIPELINE_STAGES.map((s) => (
+                    <PipelineBoardColumn
+                      key={s.id}
+                      stage={s.id}
+                      items={filteredByGradYear.filter((w) => w.pipeline_stage === s.id)}
+                      onOpenPeek={setPeekPlayerId}
+                      onQuickMove={handleQuickMove}
+                      onQuickRemove={handleQuickRemove}
                     />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setBulkRemoveConfirm(true)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors active:bg-red-100"
-                    >
-                      Remove Selected
-                    </Button>
-                    <Button variant="ghost"
-                      onClick={() => setSelectedPlayers(new Set())}
-                      className="text-sm leading-relaxed text-warm-600 hover:text-warm-900 underline"
-                    >
-                      Clear selection
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {filteredWatchlist.length === 0 ? (
-              <EmptyState
-                icon={<IconUser size={24} />}
-                title={filterTab === 'all' ? 'No players match filters' : `No players in "${filterTabs.find(t => t.value === filterTab)?.label}"`}
-                description="Try adjusting your filters or add more players to your pipeline."
-              />
-            ) : (
-              <>
-                {/* Mobile card view */}
-                <div className="lg:hidden space-y-4">
-                  {filteredWatchlist.map((item) => (
-                    <div key={item.id} className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm">
-                      {/* Player header */}
-                      <div className="flex items-start gap-3 mb-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedPlayers.has(item.id)}
-                          onChange={() => togglePlayerSelection(item.id)}
-                          className="mt-1 rounded border-warm-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          haptic="none"
-                          className="min-h-0 h-auto flex-1 min-w-0 justify-start gap-3 rounded-none p-0 text-left font-normal hover:bg-transparent"
-                          onClick={() => setPeekPlayerId(item.player?.id || null)}
-                        >
-                          <Avatar
-                            src={item.player?.avatar_url}
-                            name={getFullName(item.player?.first_name, item.player?.last_name)}
-                            size="md"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-warm-900 truncate">
-                              {getFullName(item.player?.first_name, item.player?.last_name)}
-                            </h3>
-                            <p className="text-sm text-warm-500">
-                              {item.player?.primary_position || 'N/A'} {item.player?.grad_year ? `\u2022 ${item.player.grad_year}` : ''}
-                            </p>
-                          </div>
-                        </Button>
-                        <Badge
-                          variant={
-                            item.pipeline_stage === 'committed' ? 'success'
-                              : item.pipeline_stage === 'high_priority' ? 'warning'
-                              : item.pipeline_stage === 'offer_extended' ? 'primary'
-                              : item.pipeline_stage === 'uninterested' ? 'danger'
-                              : 'secondary'
-                          }
-                        >
-                          {statusOptions.find(o => o.value === item.pipeline_stage)?.label || 'Watching'}
-                        </Badge>
-                      </div>
-
-                      {/* Quick stats */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3 text-sm">
-                        <div>
-                          <span className="text-warm-500">Location:</span>
-                          <span className="ml-1 text-warm-900">
-                            {item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-warm-500">Updated:</span>
-                          <span className="ml-1 text-warm-900">{formatDate(item.updated_at)}</span>
-                        </div>
-                      </div>
-
-                      {/* Notes preview */}
-                      {item.notes && (
-                        <p className="text-sm text-warm-600 line-clamp-2 mb-3 bg-warm-50 rounded-lg px-3 py-2">
-                          {item.notes}
-                        </p>
-                      )}
-
-                      {/* Note editing inline */}
-                      {editingNote === item.id && (
-                        <div className="mb-3 space-y-2">
-                          <textarea
-                            value={noteValue}
-                            onChange={(e) => setNoteValue(e.target.value)}
-                            placeholder="Add notes about this player..."
-                            className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-none text-base"
-                            rows={3}
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => handleSaveNote(item.id)} className="flex-1 min-h-[44px]">Save</Button>
-                            <Button variant="ghost" size="sm" onClick={() => { setEditingNote(null); setNoteValue(''); }} className="flex-1 min-h-[44px]">Cancel</Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Status select */}
-                      <div className="mb-3">
-                        <Select
-                          options={statusOptions}
-                          value={item.pipeline_stage ?? undefined}
-                          onChange={(value) => handleStatusChange(item.id, value as PipelineStage)}
-                          className="w-full text-base"
-                        />
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => item.player && setSelectedPlayer(item.player)}
-                          className="flex-1 min-h-[44px]"
-                        >
-                          View Profile
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => startEditingNote(item.id, item.notes)}
-                          className="min-h-[44px] min-w-[44px]"
-                        >
-                          {item.notes ? 'Edit Note' : 'Add Note'}
-                        </Button>
-                        <IconButton variant="default"
-                          onClick={() => setRemoveConfirm(item.id)}
-                          className="min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
-                          aria-label="Remove from pipeline"
-                        >
-                          <IconTrash size={18} />
-                        </IconButton>
-                      </div>
-                    </div>
                   ))}
                 </div>
 
-                {/* Keyboard shortcuts hint */}
-                {viewMode === 'list' && (
-                  <p className="text-xs text-warm-400 mb-3">
-                    <span className="hidden lg:inline">
-                      <kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">j</kbd>/<kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">k</kbd> navigate • <kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">Enter</kbd> view • <kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">x</kbd> select
-                    </span>
-                  </p>
+                <DragOverlay>
+                  {activeItem ? (
+                    <div className="w-[260px] rotate-2 scale-105 rounded-card shadow-raise">
+                      <RecruitCard
+                        firstName={activeItem.player?.first_name || 'Unknown'}
+                        lastName={activeItem.player?.last_name || 'Player'}
+                        position={activeItem.player?.primary_position ?? undefined}
+                        classYear={activeItem.player?.grad_year ? String(activeItem.player.grad_year) : undefined}
+                        state={activeItem.player?.state ?? undefined}
+                        topStat={headlineStat(activeItem.player)}
+                        stage={getPipelineStageLabel((activeItem.pipeline_stage ?? 'watchlist') as PipelineStage)}
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            )}
+
+            {viewMode === 'position' && (
+              <PositionPlanner
+                watchlist={watchlist}
+                gradYearFilter={gradYearFilter}
+                onGradYearChange={setGradYearFilter}
+              />
+            )}
+
+            {viewMode === 'list' && (
+              <div className="space-y-4">
+                <div className="-mx-6 overflow-x-auto px-6 lg:mx-0 lg:px-0">
+                  <div className="flex items-center gap-2" role="tablist" aria-label="Filter by status">
+                    {filterTabs.map((tab) => {
+                      const count = tab.value === 'all'
+                        ? watchlist.length
+                        : watchlist.filter(w => w.pipeline_stage === tab.value).length;
+                      return (
+                        <Button
+                          key={tab.value}
+                          role="tab"
+                          aria-selected={filterTab === tab.value}
+                          variant={filterTab === tab.value ? 'secondary' : 'ghost'}
+                          size="sm"
+                          onClick={() => setFilterTab(tab.value)}
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            {tab.label}
+                            {count > 0 ? <InkBadge label={String(count)} tone="pursuit" /> : null}
+                          </span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">Position</span>
+                  <div className="w-40">
+                    <Select
+                      size="sm"
+                      aria-label="Filter by position"
+                      value={positionFilter}
+                      onValueChange={(v) => v && setPositionFilter(v)}
+                      options={[{ value: 'all', label: 'All Positions' }, ...uniquePositions.map((pos) => ({ value: pos, label: pos }))]}
+                    />
+                  </div>
+                  {positionFilter !== 'all' && (
+                    <Button variant="ghost" size="sm" onClick={() => setPositionFilter('all')}>
+                      Clear position filter
+                    </Button>
+                  )}
+                </div>
+
+                {selectedPlayers.size > 0 && (
+                  <PaperCard className="p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="font-annual text-body-sm text-pursuit">
+                        {selectedPlayers.size} player{selectedPlayers.size !== 1 ? 's' : ''} selected
+                      </span>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="w-48">
+                          <Select
+                            size="sm"
+                            aria-label="Change status for selected players"
+                            placeholder="Change status…"
+                            value=""
+                            onValueChange={(v) => v && handleBulkStatusChange(v as PipelineStage)}
+                            options={statusOptions}
+                          />
+                        </div>
+                        <IconButton
+                          variant="danger"
+                          size="sm"
+                          aria-label="Remove selected players"
+                          onClick={() => setBulkRemoveConfirm(true)}
+                        >
+                          <IconTrash size={16} />
+                        </IconButton>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedPlayers(new Set())}>
+                          Clear selection
+                        </Button>
+                      </div>
+                    </div>
+                  </PaperCard>
                 )}
 
-                {/* Desktop table view */}
-                <div ref={listContainerRef} className="hidden lg:block bg-white rounded-2xl border border-warm-200 overflow-hidden">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-warm-200 bg-warm-50">
-                        <th className="px-4 py-3 w-12">
-                          <input
-                            type="checkbox"
-                            checked={selectedPlayers.size === filteredWatchlist.length && filteredWatchlist.length > 0}
-                            onChange={toggleSelectAll}
-                            className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                          />
-                        </th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Player</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Position</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Grad Year</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Location</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Status</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Updated</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Notes</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-warm-200">
-                      {filteredWatchlist.map((item, index) => (
-                        <React.Fragment key={item.id}>
-                          <tr 
-                            className={cn(
-                              'hover:bg-warm-50 active:bg-warm-100 transition-colors',
-                              focusedIndex === index && 'bg-primary-50 ring-2 ring-inset ring-primary-500'
-                            )}
-                            onClick={() => setFocusedIndex(index)}
-                          >
-                            <td className="px-4 py-4">
-                              <input
-                                type="checkbox"
-                                checked={selectedPlayers.has(item.id)}
-                                onChange={() => togglePlayerSelection(item.id)}
-                                className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                              />
-                            </td>
-                            <td className="px-6 py-4">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                haptic="none"
-                                className="min-h-0 h-auto w-full justify-start gap-3 rounded-none p-0 text-left font-normal group hover:bg-transparent"
-                                onClick={() => setPeekPlayerId(item.player?.id || null)}
-                              >
-                                <Avatar
-                                  src={item.player?.avatar_url}
-                                  name={getFullName(item.player?.first_name, item.player?.last_name)}
-                                  size="md"
+                {filteredWatchlist.length === 0 ? (
+                  <EditorsLetter
+                    ink="pursuit"
+                    title={filterTab === 'all' ? 'No players match your filters.' : `No players in "${filterTabs.find(t => t.value === filterTab)?.label}."`}
+                    body="Widen a filter — the rest of your pipeline is one clear away."
+                    action={
+                      isFiltered ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setFilterTab('all');
+                            setPositionFilter('all');
+                            setGradYearFilter('');
+                          }}
+                        >
+                          Clear all filters
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+                      <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">j</kbd>/
+                      <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">k</kbd> navigate ·{' '}
+                      <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">Enter</kbd> view ·{' '}
+                      <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">x</kbd> select
+                    </p>
+
+                    <PaperCard className="overflow-hidden p-0">
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-[color:var(--hairline)]">
+                              <th className="px-3 py-3">
+                                <Checkbox
+                                  checked={selectedPlayers.size === filteredWatchlist.length && filteredWatchlist.length > 0}
+                                  onCheckedChange={toggleSelectAll}
+                                  aria-label="Select all players"
                                 />
-                                <div>
-                                  <p className="text-sm font-medium text-warm-900 group-hover:text-primary-600 transition-colors">
-                                    {getFullName(item.player?.first_name, item.player?.last_name)}
-                                  </p>
-                                  <p className="text-xs text-warm-500">
-                                    {item.player?.high_school_name || 'No school'}
-                                  </p>
-                                </div>
-                              </Button>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-600">
-                              {item.player?.primary_position}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-600">
-                              {item.player?.grad_year}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-600">
-                              {item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A'}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Select
-                                options={statusOptions}
-                                value={item.pipeline_stage ?? undefined}
-                                onChange={(value) => handleStatusChange(item.id, value as PipelineStage)}
-                                className="w-44 text-sm"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-warm-500">
-                              {formatDate(item.updated_at)}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Button variant="ghost"
-                                onClick={() => startEditingNote(item.id, item.notes)}
-                                className="text-xs text-warm-600 hover:text-warm-900 underline max-w-[120px] truncate block"
-                                title={item.notes || 'Add note'}
-                              >
-                                {item.notes ? (item.notes.length > 20 ? item.notes.substring(0, 20) + '...' : item.notes) : 'Add note'}
-                              </Button>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => item.player && setSelectedPlayer(item.player)}
+                              </th>
+                              {['Player', 'Position', 'Grad Year', 'Location', 'Status', 'Updated', 'Notes', 'Actions'].map((col) => (
+                                <th
+                                  key={col}
+                                  className="px-3 py-3 text-left text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary"
                                 >
-                                  View
-                                </Button>
-                                <IconButton variant="default"
-                                  onClick={() => setRemoveConfirm(item.id)}
-                                  className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
-                                  aria-label="Remove from watchlist"
-                                >
-                                  <IconTrash size={16} />
-                                </IconButton>
-                              </div>
-                            </td>
-                          </tr>
-                          {editingNote === item.id && (
-                            <tr>
-                              <td colSpan={9} className="px-6 py-4 bg-warm-50">
-                                <div className="flex items-start gap-3">
-                                  <textarea
-                                    value={noteValue}
-                                    onChange={(e) => setNoteValue(e.target.value)}
-                                    placeholder="Add notes about this player..."
-                                    className="flex-1 px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
-                                    rows={3}
-                                  />
-                                  <div className="flex gap-2">
-                                    <Button size="sm" onClick={() => handleSaveNote(item.id)}>
-                                      Save
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setEditingNote(null);
-                                        setNoteValue('');
-                                      }}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              </td>
+                                  {col}
+                                </th>
+                              ))}
                             </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+                          </thead>
+                          <tbody className="divide-y divide-[color:var(--hairline)]">
+                            {filteredWatchlist.map((item, index) => (
+                              <PipelineListRow
+                                key={item.id}
+                                item={item}
+                                focused={focusedIndex === index}
+                                selected={selectedPlayers.has(item.id)}
+                                editing={editingNote === item.id}
+                                noteValue={noteValue}
+                                onFocus={() => setFocusedIndex(index)}
+                                onOpenPeek={() => setPeekPlayerId(item.player?.id || null)}
+                                onToggleSelect={() => togglePlayerSelection(item.id)}
+                                onStatusChange={(stage) => handleStatusChange(item.id, stage)}
+                                onStartEditNote={() => startEditingNote(item.id, item.notes)}
+                                onNoteValueChange={setNoteValue}
+                                onSaveNote={() => handleSaveNote(item.id)}
+                                onCancelNote={() => {
+                                  setEditingNote(null);
+                                  setNoteValue('');
+                                }}
+                                onViewProfile={() => item.player && setSelectedPlayer(item.player)}
+                                onRemove={() => setRemoveConfirm(item.id)}
+                              />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </PaperCard>
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
       </div>
+
+      {/* Commit ceremony — fires once, on a successful drag into `committed`. */}
+      <AnimatePresence>
+        {celebrateCommit ? (
+          <m.div
+            key="commit-seal"
+            role="status"
+            aria-live="polite"
+            className="pointer-events-none fixed inset-x-0 top-20 z-50 flex flex-col items-center gap-2"
+            initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : PACE.base, ease: EASE_SOFT }}
+          >
+            <CommitSeal label="COMMITTED" size="md" />
+            <span className="sr-only">Player marked committed</span>
+          </m.div>
+        ) : null}
+      </AnimatePresence>
 
       {/* Player Detail Modal */}
       {selectedPlayer && coach?.id && (
@@ -1005,6 +1157,6 @@ export default function PipelinePage() {
         playerId={peekPlayerId}
         onClose={() => setPeekPlayerId(null)}
       />
-    </>
+    </div>
   );
 }

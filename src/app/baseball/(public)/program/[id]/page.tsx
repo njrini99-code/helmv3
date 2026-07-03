@@ -1,15 +1,18 @@
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { notFound } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
+import Link from 'next/link';
 import {
   IconMapPin,
   IconMail,
   IconUsers,
   IconStar,
   IconBuilding,
+  IconLock,
 } from '@/components/icons';
 import { Metadata } from 'next';
 import Image from 'next/image';
@@ -24,11 +27,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: org } = await supabase
-    .from('organizations')
+  // Read through the anon-safe public view — metadata generation runs for
+  // logged-out visitors too, and the base organizations table is
+  // authenticated-only via RLS.
+  const { data: org } = await fromUntyped(supabase, 'organizations_public_profile')
     .select('name, type')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (!org) {
     return {
@@ -47,102 +52,177 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
   const supabase = await createClient();
 
   // ============================================================
-  // AUTH CHECK: Only college/juco coaches can view program profiles
+  // GATING: same tiered access as the sibling public team profile page —
+  // - Logged-out visitors: SAFE public view (org identity, coaching staff
+  //   name+role+avatar). Roster stays gated.
+  // - Authenticated college/juco (recruiting) coaches: full current
+  //   behavior, unchanged.
+  // - Any other authenticated user: unchanged pre-existing block — this
+  //   task only widens access for LOGGED-OUT visitors, per product
+  //   decision.
   // ============================================================
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    notFound(); // Block unauthenticated access
+  let coach: { coach_type: string } | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from('baseball_coaches')
+      .select('coach_type')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!data || !['college', 'juco'].includes(data.coach_type)) {
+      notFound(); // Block non-recruiting authenticated users (unchanged)
+    }
+    coach = data;
   }
 
-  // Check if user is a recruiting coach (college or juco)
-  const { data: coach } = await supabase
-    .from('baseball_coaches')
-    .select('coach_type')
-    .eq('user_id', user.id)
-    .single();
+  const isPublicViewer = !user;
 
-  if (!coach || !['college', 'juco'].includes(coach.coach_type)) {
-    notFound(); // Block non-recruiting coaches
+  interface OrganizationCore {
+    id: string;
+    name: string;
+    type: string;
+    division: string | null;
+    conference: string | null;
+    location_city: string | null;
+    location_state: string | null;
+    logo_url: string | null;
+    description: string | null;
+    website_url: string | null;
   }
 
-  // Fetch organization data
-  // Note: organization_settings, organization_staff, organization_facilities,
-  // and program_commitments tables don't exist yet - will be added in future
-  const { data: organization, error } = await supabase
-    .from('organizations')
-    .select('*')
-    .eq('id', id)
-    .single();
+  let organization: OrganizationCore;
 
-  if (error || !organization) {
-    notFound();
+  if (isPublicViewer) {
+    // ------------------------------------------------------------
+    // ANON PATH: read exclusively through the anon-safe public view
+    // (supabase/migrations/20260702110000_baseball_public_team_program_profile_views.sql,
+    // db_gated). The base organizations table is authenticated-only via RLS.
+    // ------------------------------------------------------------
+    const { data: publicOrg } = await fromUntyped(supabase, 'organizations_public_profile')
+      .select('id, name, type, division, conference, location_city, location_state, logo_url, description, website_url')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!publicOrg) {
+      notFound();
+    }
+    organization = publicOrg;
+  } else {
+    // ------------------------------------------------------------
+    // AUTHENTICATED RECRUITING COACH PATH: unchanged from prior behavior.
+    // Note: organization_settings, organization_staff, organization_facilities,
+    // and program_commitments tables don't exist yet - will be added in future
+    // ------------------------------------------------------------
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      notFound();
+    }
+    organization = data;
   }
 
   const showDescription = true;
 
-  // Fetch real coaching staff via baseball_team_coach_staff → baseball_coaches
+  // Fetch real coaching staff via baseball_team_coach_staff → baseball_coaches.
+  // Authenticated recruiting coaches get full identity (name, title, bio,
+  // headshot) via the base tables; logged-out visitors get the SAFE subset
+  // (name, role, avatar — no bio) via the anon-readable public view.
   type CoachStaffMember = {
     id: string;
     name: string;
     title: string;
     bio: string | null;
     headshot_url: string | null;
-    email: string | null;
     is_primary: boolean;
   };
 
   const staff: CoachStaffMember[] = [];
 
-  // Get teams for this org, then fetch coach staff
-  const { data: orgTeams } = await supabase
-    .from('baseball_teams')
-    .select('id, name')
-    .eq('organization_id', id);
+  if (isPublicViewer) {
+    const { data: publicTeams } = await fromUntyped(supabase, 'baseball_teams_public_profile')
+      .select('id')
+      .eq('organization_id', id);
 
-  if (orgTeams && orgTeams.length > 0) {
-    const teamIds = orgTeams.map((t) => t.id);
-    const { data: staffRows } = await supabase
-      .from('baseball_team_coach_staff')
-      .select(`
-        is_primary,
-        role,
-        baseball_coaches!inner(
-          id,
-          first_name,
-          last_name,
-          email,
-          bio,
-          avatar_url
-        )
-      `)
-      .in('team_id', teamIds);
+    const teamIds = ((publicTeams ?? []) as { id: string }[]).map((t) => t.id);
 
-    if (staffRows) {
-      const seen = new Set<string>();
-      // Sort: primary coaches first
-      const sorted = [...staffRows].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
-      sorted.forEach((row) => {
-        const c = row.baseball_coaches as unknown as {
-          id: string;
-          first_name: string | null;
-          last_name: string | null;
-          email: string | null;
-          bio: string | null;
-          avatar_url: string | null;
-        } | null;
-        if (!c || seen.has(c.id)) return;
-        seen.add(c.id);
-        staff.push({
-          id: c.id,
-          name: `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Coach',
-          title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
-          bio: c.bio,
-          headshot_url: c.avatar_url,
-          email: c.email,
-          is_primary: row.is_primary ?? false,
+    if (teamIds.length > 0) {
+      const { data: publicStaffRows } = await fromUntyped(supabase, 'baseball_team_coach_staff_public')
+        .select('coach_id, is_primary, role, full_name, avatar_url')
+        .in('team_id', teamIds);
+
+      if (publicStaffRows) {
+        const seen = new Set<string>();
+        const sorted = [...publicStaffRows].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
+        sorted.forEach((row) => {
+          const coachId = row.coach_id as string | null;
+          if (!coachId || seen.has(coachId)) return;
+          seen.add(coachId);
+          staff.push({
+            id: coachId,
+            name: (row.full_name as string | null)?.trim() || 'Coach',
+            title: row.is_primary ? 'Head Coach' : ((row.role as string | null) ?? 'Assistant Coach'),
+            bio: null,
+            headshot_url: row.avatar_url as string | null,
+            is_primary: row.is_primary ?? false,
+          });
         });
-      });
+      }
+    }
+  } else {
+    // Get teams for this org, then fetch coach staff
+    // NOTE: baseball_coaches has `full_name`, not first_name/last_name — do not
+    // select first_name/last_name here, PostgREST will 400 (see database.ts
+    // baseball_coaches.Row; see also the sibling team/[id]/page.tsx fix).
+    const { data: orgTeams } = await supabase
+      .from('baseball_teams')
+      .select('id, name')
+      .eq('organization_id', id);
+
+    if (orgTeams && orgTeams.length > 0) {
+      const teamIds = orgTeams.map((t) => t.id);
+      const { data: staffRows } = await supabase
+        .from('baseball_team_coach_staff')
+        .select(`
+          is_primary,
+          role,
+          baseball_coaches!inner(
+            id,
+            full_name,
+            bio,
+            avatar_url
+          )
+        `)
+        .in('team_id', teamIds);
+
+      if (staffRows) {
+        const seen = new Set<string>();
+        // Sort: primary coaches first
+        const sorted = [...staffRows].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
+        sorted.forEach((row) => {
+          const c = row.baseball_coaches as unknown as {
+            id: string;
+            full_name: string | null;
+            bio: string | null;
+            avatar_url: string | null;
+          } | null;
+          if (!c || seen.has(c.id)) return;
+          seen.add(c.id);
+          staff.push({
+            id: c.id,
+            name: c.full_name?.trim() || 'Coach',
+            title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
+            bio: c.bio,
+            headshot_url: c.avatar_url,
+            is_primary: row.is_primary ?? false,
+          });
+        });
+      }
     }
   }
 
@@ -233,7 +313,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
 
             {/* Tabs: Overview and Roster */}
             <ProgramTabs
-              coachType={coach.coach_type}
+              coachType={coach?.coach_type}
               overviewContent={
                 <div className="space-y-6">
                   {/* Coaching Staff */}
@@ -382,11 +462,31 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 </div>
               }
               rosterContent={
-                <ProgramRoster
-                  organizationId={organization.id}
-                  organizationType={organization.type || 'high_school'}
-                  coachType={coach.coach_type}
-                />
+                isPublicViewer ? (
+                  <Card className="p-8 text-center">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
+                      <IconLock size={28} className="text-warm-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-warm-900 mb-2">
+                      Sign in to view roster
+                    </h3>
+                    <p className="text-sm text-warm-500 max-w-sm mx-auto mb-4">
+                      Roster details are visible to verified college and JUCO coaches.
+                    </p>
+                    <Link
+                      href={`/baseball/login?returnTo=${encodeURIComponent(`/baseball/program/${id}`)}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-600 px-5 py-2.5 min-h-[44px] text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-primary-700 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    >
+                      Sign in
+                    </Link>
+                  </Card>
+                ) : (
+                  <ProgramRoster
+                    organizationId={organization.id}
+                    organizationType={organization.type || 'high_school'}
+                    coachType={coach?.coach_type}
+                  />
+                )
               }
             />
           </div>
