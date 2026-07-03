@@ -1,71 +1,68 @@
 /**
  * Session Activity Tracking
  *
- * Tracks user activity and enforces session timeout after 30 minutes of inactivity.
- * Uses cookies to maintain activity timestamp and automatic logout.
+ * Enforces an idle-session timeout: after SESSION_IDLE_TIMEOUT_MS (5 minutes) of
+ * no user activity, the user is signed out and must log in again. Shares the
+ * `sb_last_activity` cookie with the server middleware, which enforces the same
+ * window on navigations/reopens — this hook covers the "app stays open but idle"
+ * and "mobile reopen from background (bfcache — no network request)" cases the
+ * server can't see.
  */
 
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import {
+  SESSION_IDLE_COOKIE,
+  SESSION_IDLE_COOKIE_MAX_AGE_S,
+  isSessionIdleExpired,
+  parseLastActivity,
+} from '@/lib/auth/session-idle-shared';
 
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-const ACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
-const COOKIE_NAME = 'last_activity';
+const ACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Re-check every minute
 
-/**
- * Get last activity timestamp from cookie
- */
-function getLastActivity(): number {
-  if (typeof window === 'undefined') return Date.now();
+/** Read the last-activity timestamp (epoch ms) from the shared cookie, or null. */
+function getLastActivity(): number | null {
+  if (typeof document === 'undefined') return null;
 
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
-    if (name === COOKIE_NAME && value) {
-      const timestamp = parseInt(value, 10);
-      return isNaN(timestamp) ? Date.now() : timestamp;
-    }
+    if (name === SESSION_IDLE_COOKIE) return parseLastActivity(value);
   }
-  return Date.now();
+  return null;
 }
 
 /**
- * Update last activity timestamp in cookie
+ * Write the last-activity timestamp to the shared cookie.
+ *
+ * NOT httpOnly (the client owns it) and long-lived (max-age, not expires-at-
+ * timeout) so the timestamp survives an idle gap and can be detected as stale.
+ * `Secure` only on https so it still works on http://localhost in dev.
  */
 function updateLastActivity(): void {
-  if (typeof window === 'undefined') return;
+  if (typeof document === 'undefined') return;
 
-  const now = Date.now();
-  const expires = new Date(now + SESSION_TIMEOUT_MS).toUTCString();
-
-  document.cookie = `${COOKIE_NAME}=${now}; path=/; expires=${expires}; SameSite=Strict; Secure`;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie =
+    `${SESSION_IDLE_COOKIE}=${Date.now()}; path=/; max-age=${SESSION_IDLE_COOKIE_MAX_AGE_S}; SameSite=Lax${secure}`;
 }
 
-/**
- * Clear activity tracking cookie
- */
+/** Clear the activity marker. */
 function clearLastActivity(): void {
-  if (typeof window === 'undefined') return;
-
-  document.cookie = `${COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  if (typeof document === 'undefined') return;
+  document.cookie = `${SESSION_IDLE_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
 }
 
-/**
- * Check if session has timed out
- */
+/** True when the session has been idle past the timeout. */
 function isSessionTimedOut(): boolean {
-  const lastActivity = getLastActivity();
-  const now = Date.now();
-  const inactiveMs = now - lastActivity;
-
-  return inactiveMs >= SESSION_TIMEOUT_MS;
+  return isSessionIdleExpired(getLastActivity(), Date.now());
 }
 
 /**
- * React hook for automatic session timeout and activity tracking
+ * React hook for automatic idle-session timeout + activity tracking.
  *
  * Usage:
  * ```tsx
@@ -78,20 +75,26 @@ function isSessionTimedOut(): boolean {
 export function useSessionActivity() {
   const router = useRouter();
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const supabase = createClient();
+  // Memoize — createClient() returns a fresh client per call; without this the
+  // callbacks below would re-create on every render.
+  const supabase = useMemo(() => createClient(), []);
 
   const handleLogout = useCallback(async () => {
-    console.warn('[Session] Session timeout - logging out');
-
-    // Clear activity cookie
     clearLastActivity();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* best-effort — still redirect to the login screen below */
+    }
 
-    // Sign out from Supabase
-    await supabase.auth.signOut();
-
-    // Redirect to login with timeout message
-    const sport = window.location.pathname.startsWith('/golf') ? 'golf' : 'baseball';
-    router.push(`/${sport}/login?message=Session expired due to inactivity. Please log in again.`);
+    const path = window.location.pathname;
+    const sport = path.startsWith('/golf')
+      ? 'golf'
+      : path.startsWith('/lifting')
+        ? 'lifting'
+        : 'baseball';
+    // replace() so the back button doesn't return to the timed-out page.
+    router.replace(`/${sport}/login?message=session_expired`);
   }, [router, supabase]);
 
   const checkSessionTimeout = useCallback(async () => {
@@ -100,18 +103,25 @@ export function useSessionActivity() {
     }
   }, [handleLogout]);
 
-  const updateActivity = useCallback(() => {
-    updateLastActivity();
-  }, []);
-
   useEffect(() => {
-    // Initialize activity tracking
-    updateActivity();
+    // Check for a stale session BEFORE recording new activity, so a reopen after
+    // the idle window actually logs out — instead of the mount itself refreshing
+    // the marker and masking the timeout (the previous fail-open behavior).
+    if (isSessionTimedOut()) {
+      void handleLogout();
+      return;
+    }
 
-    // Set up periodic timeout check
-    checkIntervalRef.current = setInterval(checkSessionTimeout, ACTIVITY_CHECK_INTERVAL_MS);
+    // Fresh/bootstrap: record activity now.
+    updateLastActivity();
 
-    // Track user activity events
+    // Periodic check catches "app open but idle" (no interaction, no requests).
+    checkIntervalRef.current = setInterval(() => {
+      void checkSessionTimeout();
+    }, ACTIVITY_CHECK_INTERVAL_MS);
+
+    // Track real user interaction. Throttled so we don't rewrite the cookie on
+    // every mousemove.
     const activityEvents = [
       'mousedown',
       'mousemove',
@@ -119,16 +129,15 @@ export function useSessionActivity() {
       'scroll',
       'touchstart',
       'click',
-    ];
+    ] as const;
 
-    // Throttle activity updates to avoid excessive cookie writes
     let lastUpdate = Date.now();
-    const throttleMs = 10 * 1000; // Update at most every 10 seconds
+    const throttleMs = 10 * 1000; // at most one cookie write / 10s
 
     const handleActivity = () => {
       const now = Date.now();
       if (now - lastUpdate >= throttleMs) {
-        updateActivity();
+        updateLastActivity();
         lastUpdate = now;
       }
     };
@@ -137,7 +146,17 @@ export function useSessionActivity() {
       window.addEventListener(event, handleActivity, { passive: true });
     });
 
-    // Cleanup
+    // Mobile Safari / PWA reopen restores from bfcache WITHOUT a network request,
+    // so the server middleware never sees it. Re-check the moment the tab becomes
+    // visible again (visibilitychange) or is restored (pageshow).
+    const handleReshow = () => {
+      if (document.visibilityState === 'visible') {
+        void checkSessionTimeout();
+      }
+    };
+    document.addEventListener('visibilitychange', handleReshow);
+    window.addEventListener('pageshow', handleReshow);
+
     return () => {
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
@@ -145,14 +164,10 @@ export function useSessionActivity() {
       activityEvents.forEach((event) => {
         window.removeEventListener(event, handleActivity);
       });
+      document.removeEventListener('visibilitychange', handleReshow);
+      window.removeEventListener('pageshow', handleReshow);
     };
-  }, [updateActivity, checkSessionTimeout]);
-
-  // Check for session timeout on mount
-  useEffect(() => {
-    checkSessionTimeout();
-  }, [checkSessionTimeout]);
+  }, [handleLogout, checkSessionTimeout]);
 
   return null;
 }
-
