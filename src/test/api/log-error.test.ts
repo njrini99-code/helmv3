@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
@@ -27,7 +27,11 @@ describe('POST /api/log-error', () => {
   beforeEach(() => {
     createClientMock.mockReset();
     createAdminMock.mockReset();
+    // The route is prod-gated by shouldPersistAdminTables(); the force-capture
+    // hatch keeps these tests exercising the real persistence path.
+    vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '1');
   });
+  afterEach(() => { vi.unstubAllEnvs(); });
 
   it('accepts anonymous requests, flags them, and caps severity below critical', async () => {
     // W7: unauthenticated client errors (login/signup flow failures) were

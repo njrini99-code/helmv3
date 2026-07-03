@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   inserted: [] as Record<string, unknown>[],
@@ -20,7 +20,13 @@ vi.mock('@/lib/supabase/admin', () => ({
 import { logLogin } from '@/lib/admin-logger';
 
 describe('admin-logger bridge columns', () => {
-  beforeEach(() => { mocks.inserted.length = 0; });
+  beforeEach(() => {
+    mocks.inserted.length = 0;
+    // Writers are prod-gated by shouldPersistAdminTables(); the force-capture
+    // hatch keeps these column-mapping tests exercising the real write path.
+    vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '1');
+  });
+  afterEach(() => { vi.unstubAllEnvs(); });
 
   it('logLogin writes source=auth and passes sport through', async () => {
     await logLogin('user-1', 'a@b.c', { sport: 'golf' });

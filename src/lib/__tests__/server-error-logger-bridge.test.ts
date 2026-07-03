@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   inserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
@@ -28,7 +28,13 @@ vi.mock('@sentry/nextjs', () => ({
 import { logServerError } from '@/lib/server-error-logger';
 
 describe('server-error-logger bridge columns', () => {
-  beforeEach(() => { mocks.inserts.length = 0; });
+  beforeEach(() => {
+    mocks.inserts.length = 0;
+    // Writers are prod-gated by shouldPersistAdminTables(); the force-capture
+    // hatch keeps these column-mapping tests exercising the real write path.
+    vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '1');
+  });
+  afterEach(() => { vi.unstubAllEnvs(); });
 
   it('writes sport/team_id/fingerprint/source onto the admin_events row', async () => {
     await logServerError('boom', {
