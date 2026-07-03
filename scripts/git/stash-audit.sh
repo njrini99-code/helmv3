@@ -3,6 +3,7 @@ set -euo pipefail
 
 out_dir="${1:-docs/audits/generated/stashes}"
 mkdir -p "$out_dir"
+rm -f "$out_dir"/stash-*-stat.txt
 
 git stash list > "$out_dir/stash-list.txt"
 

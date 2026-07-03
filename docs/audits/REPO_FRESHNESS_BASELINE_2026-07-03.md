@@ -232,19 +232,14 @@ Additional full-audit-only notable findings:
 - `uuid <11.1.1` via `@lhci/cli`.
 - Additional `js-yaml` and `protobufjs` ranges through dev/tooling dependencies.
 
-`npm audit fix --dry-run` was run. It did not change the working tree, but it proposed a large dependency reshuffle:
+Do not run `npm audit fix` or `npm audit fix --dry-run` for this cleanup track. Those commands can propose broad dependency churn that is not reviewable as part of repo hygiene work.
 
-- 152 packages added
-- 24 packages removed
-- 122 packages changed
-- includes Next.js `16.2.7 -> 16.2.10`, `tar 7.5.15 -> 7.5.19`, `ws 7.5.10 -> 7.5.11`, OpenTelemetry package upgrades, Babel patch upgrades, and protobuf/js-yaml updates
-
-Because the dry-run proposes broad observability/tooling movement, do not apply it as a blind cleanup.
+Known security fixes should be handled through narrow dependency PRs, starting with already-open Dependabot work where possible.
 
 Recommended security PR order:
 
 1. Merge or reproduce Dependabot `#735` for `tar`.
-2. Patch Next.js to the wanted patch version before attempting any force audit fix.
+2. Patch Next.js to the wanted patch version in its own dependency PR.
 3. Inspect OpenTelemetry dependency source before bumping observability packages.
 
 ## 14. Verification Gates

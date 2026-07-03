@@ -96,6 +96,7 @@ context7.json
 
 # Local hygiene / audit runs (regenerated)
 .cleanup/
+.codebase-memory/
 
 # Repomix context packs (regenerated, can contain sensitive repo context)
 .repomix/

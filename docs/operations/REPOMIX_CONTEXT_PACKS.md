@@ -1,6 +1,6 @@
 # Repomix Context Packs
 
-HelmV3 uses Repomix as an on-demand AI context pack generator. It is intentionally not installed as a devDependency because current Repomix releases require Node 22+, while the app engine remains `>=20.16.0`.
+HelmV3 uses Repomix as an on-demand AI context pack generator. It is intentionally not installed as a devDependency because current Repomix releases require Node 22+, while the app engine remains `>=20.16.0`. The `ctx:*` scripts rely on `scripts/context/repomix.sh` for the Node 22 guard instead of raising the app-wide engine floor.
 
 ## Setup
 
@@ -29,6 +29,7 @@ npm run ctx:repo              # full repo XML
 npm run ctx:repo:compressed   # compressed full repo XML
 npm run ctx:repo:diff         # repo plus git diff/log context
 npm run ctx:repo:md           # full repo markdown
+npm run ctx:repo:no-top-files # full repo XML without top-file summary
 npm run ctx:token-tree        # token distribution only
 npm run ctx:db                # migrations, DB types, DB docs
 npm run ctx:baseball          # BaseballHelm surface
@@ -39,6 +40,8 @@ npm run ctx:tests             # tests and test config
 npm run ctx:changed           # locally modified and untracked files
 npm run ctx:staged            # staged files only
 npm run ctx:docs              # docs and memory context
+npm run ctx:budget:compressed # compressed repo pack capped by token budget
+npm run ctx:budget:changed    # changed-files pack capped by token budget
 ```
 
 Outputs go under `.repomix/` and are gitignored. Treat generated packs as sensitive because they can contain broad source context.

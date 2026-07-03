@@ -1,20 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+default_branch="${1:-}"
+if [ -z "$default_branch" ]; then
+  default_branch="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##' || true)"
+fi
+if [ -z "$default_branch" ]; then
+  default_branch="main"
+fi
+
+if git show-ref --verify --quiet "refs/heads/$default_branch"; then
+  baseline_ref="$default_branch"
+elif git show-ref --verify --quiet "refs/remotes/origin/$default_branch"; then
+  baseline_ref="origin/$default_branch"
+else
+  baseline_ref="HEAD"
+fi
+
 echo "## Git Status"
 git status --short --branch
+
+echo
+echo "## Baseline Ref"
+echo "$baseline_ref"
 
 echo
 echo "## Local Branches"
 git branch -vv
 
 echo
-echo "## Merged Non-Main Branches"
-git branch --merged main | sed 's/^[* ]*//' | grep -v '^main$' || true
+echo "## Merged Non-Baseline Branches"
+git branch --merged "$baseline_ref" | sed 's/^[* ]*//' | grep -v "^$default_branch$" || true
 
 echo
 echo "## Non-Merged Branches"
-git branch --no-merged main || true
+git branch --no-merged "$baseline_ref" || true
 
 echo
 echo "## Remote Prune Dry Run"

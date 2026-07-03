@@ -1,5 +1,4 @@
 {
-  "$schema": "https://repomix.com/schemas/latest/schema.json",
   "output": {
     "filePath": ".repomix/helmv3-full.xml",
     "style": "xml",
