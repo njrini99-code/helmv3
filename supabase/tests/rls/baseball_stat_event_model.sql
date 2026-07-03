@@ -14,24 +14,34 @@
 --      (no player self-insert).
 --   6. The development-metric table only exposes player_visible rows to the
 --      player (not the broader "<> staff_only" carve-out used by raw events).
---   7. Source registry + field mappings are import-capability gated on write.
+--   7. Source registry is import-capability gated on write (field-mappings
+--      table graveyarded 2026-07-04 — see note below).
 --
 -- Schema-light: asserts the security contract over pg_policy / pg_class without
 -- seeding integration data (matches the deferral note in _helpers.sql).
 --
 -- Source: Wave / packet elite-stats (BaseballHelm — stats-integrations).
+--
+-- 2026-07-04 graveyard update: baseball_import_field_mappings and
+-- baseball_stat_facts moved out of public into the graveyard schema
+-- (20260704060000_graveyard_dead_tables_phase1.sql — zero live refs / no
+-- importer ever wrote to baseball_stat_facts; baseball_import_field_mappings
+-- only referenced in a generated-types comment). Removed from the table
+-- arrays / CRUD-verb matrix / write-gating assertions below. See
+-- docs/audits/DB_TABLE_AUDIT_2026-07-04.md.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(87);
+SELECT plan(78);
 
 -- ============================================================================
 -- The new event tables under test (player-column-bearing event grain).
 -- ============================================================================
 -- Asserted in a fixed list so a forgotten table fails loudly.
 
--- 1. RLS ENABLED on every new table (13 tables).
+-- 1. RLS ENABLED on every new table (11 tables — baseball_import_field_mappings
+--    and baseball_stat_facts graveyarded 2026-07-04, removed; see header).
 SELECT ok(
   (SELECT relrowsecurity FROM pg_class c
      JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -40,7 +50,6 @@ SELECT ok(
 )
 FROM unnest(ARRAY[
   'baseball_stat_sources',
-  'baseball_import_field_mappings',
   'baseball_plate_appearances',
   'baseball_pitch_events',
   'baseball_batted_ball_events',
@@ -50,11 +59,10 @@ FROM unnest(ARRAY[
   'baseball_baserunning_events',
   'baseball_workload_events',
   'baseball_video_events',
-  'baseball_stat_facts',
   'baseball_player_development_metrics'
 ]) AS t;
 
--- 2. anon has NO SELECT privilege on any new table (13 tables).
+-- 2. anon has NO SELECT privilege on any new table (11 tables).
 SELECT isnt(
   has_table_privilege('anon', format('public.%s', t), 'SELECT'),
   true,
@@ -62,7 +70,6 @@ SELECT isnt(
 )
 FROM unnest(ARRAY[
   'baseball_stat_sources',
-  'baseball_import_field_mappings',
   'baseball_plate_appearances',
   'baseball_pitch_events',
   'baseball_batted_ball_events',
@@ -72,7 +79,6 @@ FROM unnest(ARRAY[
   'baseball_baserunning_events',
   'baseball_workload_events',
   'baseball_video_events',
-  'baseball_stat_facts',
   'baseball_player_development_metrics'
 ]) AS t;
 
@@ -84,7 +90,8 @@ SELECT isnt(has_table_privilege('anon', 'public.baseball_stat_sources', 'INSERT'
 
 -- ============================================================================
 -- 3. Every CRUD verb has exactly one policy on each player-grain event table.
---    (10 event tables x 4 verbs = 40 assertions.)
+--    (9 event tables x 4 verbs = 36 assertions — baseball_stat_facts
+--    graveyarded 2026-07-04, removed; see header.)
 -- ============================================================================
 SELECT is(
   (SELECT COUNT(*)::int FROM pg_policies
@@ -102,8 +109,7 @@ FROM
     'baseball_catching_events',
     'baseball_baserunning_events',
     'baseball_workload_events',
-    'baseball_video_events',
-    'baseball_stat_facts'
+    'baseball_video_events'
   ]) AS t,
   unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) AS v;
 
@@ -214,7 +220,9 @@ SELECT ok(
 );
 
 -- ============================================================================
--- 8. Source registry + field mappings: WRITE is import-capability gated.
+-- 8. Source registry: WRITE is import-capability gated. (baseball_
+--    import_field_mappings graveyarded 2026-07-04, its INSERT-gate assertion
+--    removed; see header.)
 -- ============================================================================
 SELECT ok(
   position('can_manage_imports' IN COALESCE((
@@ -225,16 +233,6 @@ SELECT ok(
         AND p.polname = 'baseball_stat_sources_insert'
   ), '')) > 0,
   'baseball_stat_sources_insert is gated on can_manage_imports'
-);
-SELECT ok(
-  position('can_manage_imports' IN COALESCE((
-    SELECT pg_get_expr(p.polwithcheck, p.polrelid)
-      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE n.nspname = 'public' AND c.relname = 'baseball_import_field_mappings'
-        AND p.polname = 'baseball_import_field_mappings_insert'
-  ), '')) > 0,
-  'baseball_import_field_mappings_insert is gated on can_manage_imports'
 );
 -- Source registry is READABLE by any team staff (chips render for non-importers).
 SELECT ok(
