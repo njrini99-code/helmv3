@@ -7147,9 +7147,14 @@ export type Database = {
           completion_notes: string | null
           completion_status: string
           created_at: string
+          description: string | null
           duration_min: number
+          equipment: string | null
+          group_label: string | null
           id: string
+          is_measured: boolean
           location: string | null
+          measurement_target: string | null
           practice_id: string
           quality_grade: string | null
           reps_completed: number | null
@@ -7158,6 +7163,7 @@ export type Database = {
           source_reason: string | null
           source_signal_id: string | null
           start_offset_min: number
+          station_type: string | null
           target_group_ids: string[] | null
           team_id: string
           updated_at: string | null
@@ -7170,9 +7176,14 @@ export type Database = {
           completion_notes?: string | null
           completion_status?: string
           created_at?: string
+          description?: string | null
           duration_min: number
+          equipment?: string | null
+          group_label?: string | null
           id?: string
+          is_measured?: boolean
           location?: string | null
+          measurement_target?: string | null
           practice_id: string
           quality_grade?: string | null
           reps_completed?: number | null
@@ -7181,6 +7192,7 @@ export type Database = {
           source_reason?: string | null
           source_signal_id?: string | null
           start_offset_min: number
+          station_type?: string | null
           target_group_ids?: string[] | null
           team_id: string
           updated_at?: string | null
@@ -7193,9 +7205,14 @@ export type Database = {
           completion_notes?: string | null
           completion_status?: string
           created_at?: string
+          description?: string | null
           duration_min?: number
+          equipment?: string | null
+          group_label?: string | null
           id?: string
+          is_measured?: boolean
           location?: string | null
+          measurement_target?: string | null
           practice_id?: string
           quality_grade?: string | null
           reps_completed?: number | null
@@ -7204,6 +7221,7 @@ export type Database = {
           source_reason?: string | null
           source_signal_id?: string | null
           start_offset_min?: number
+          station_type?: string | null
           target_group_ids?: string[] | null
           team_id?: string
           updated_at?: string | null
