@@ -80,7 +80,7 @@ export default async function TeamStatsPage() {
         <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
           <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8">
             <EmptyState
-              icon={Users}
+              icon={<Users strokeWidth={1.75} />}
               title="No team yet"
               description="Create a team and add players to see team statistics, strokes-gained, and where the strokes leak."
               action={
@@ -138,7 +138,7 @@ export default async function TeamStatsPage() {
             />
             <div className="mt-8">
               <EmptyState
-                icon={Users}
+                icon={<Users strokeWidth={1.75} />}
                 title="No players on your roster yet"
                 description="Add players to your roster and their rounds will roll up here into team strokes-gained, leak maps, and per-player tiles."
                 action={
