@@ -18,7 +18,7 @@ const HARDCODED_PROD_URL = /qmnssrrolpinvwjjnufo\.supabase\.co/;
 // in env vars only (see scripts/seed-rini-baseball-demo.ts).
 const KNOWN_LEAKED_DEMO_PASSWORD = /Pirates#09/;
 
-const SCRIPT_EXTENSIONS = new Set(['.ts', '.mjs', '.js', '.cjs']);
+const SCRIPT_EXTENSIONS = new Set(['.ts', '.mjs', '.js', '.cjs', '.sh']);
 
 /**
  * Every script file, recursively, excluding tests/fixtures/node_modules.

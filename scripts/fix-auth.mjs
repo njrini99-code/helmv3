@@ -4,7 +4,10 @@
  * Run with: node scripts/fix-auth.mjs
  */
 
+import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+
+loadEnv({ path: '.env.local' });
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

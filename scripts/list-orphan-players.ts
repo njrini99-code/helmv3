@@ -1,4 +1,7 @@
+import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+
+loadEnv({ path: '.env.local' });
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

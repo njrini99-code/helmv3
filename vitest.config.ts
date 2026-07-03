@@ -53,12 +53,10 @@ export default defineConfig({
   },
   test: {
     ...sharedTestConfig,
-    // Root-level include/exclude is the fallback when no project filter
-    // is given (e.g. `vitest --list-all`). The per-project blocks below
-    // override these.
+    // Root-level include/exclude is the shared fallback when no project filter
+    // is given. The per-project blocks below override these for named runs.
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
     ],
     exclude: ['node_modules', '.next', 'archive', 'helm-website-ui', 'helm-intelligence'],
 

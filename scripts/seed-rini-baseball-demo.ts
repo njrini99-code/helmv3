@@ -15,9 +15,11 @@
  * Golf is NEVER touched. The two auth users are SHARED with golf (same login),
  * so the passwords below also become the golf logins for these emails.
  */
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+
+loadEnv({ path: '.env.local' });
 
 // --- Verified prod identity -------------------------------------------------
 const COACH_USER_ID = 'c8dcf7d5-da14-439b-93c6-58d1e0dd38a0'; // njrini99@gmail.com

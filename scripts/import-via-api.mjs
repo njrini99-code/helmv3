@@ -1,4 +1,7 @@
 import { readFileSync } from 'fs';
+import { config as loadEnv } from 'dotenv';
+
+loadEnv({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
