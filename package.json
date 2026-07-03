@@ -65,7 +65,7 @@
     "node": ">=20.16.0"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.81",
+    "@ai-sdk/anthropic": "^4.0.0",
     "@base-ui-components/react": "^1.0.0-rc.0",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
