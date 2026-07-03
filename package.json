@@ -130,7 +130,7 @@
     "postcss": "^8.5.15",
     "postgres": "^3.4.9",
     "posthog-js": "^1.257.0",
-    "posthog-node": "^4.18.0",
+    "posthog-node": "^5.38.5",
     "react": "^19.2.7",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.7",
