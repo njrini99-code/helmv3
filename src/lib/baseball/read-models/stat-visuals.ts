@@ -478,28 +478,37 @@ async function buildLiftProgression(
   since.setDate(since.getDate() - windowDays * 2); // lifts are less frequent
   const sinceYmd = since.toISOString().slice(0, 10);
 
+  // Sessions + set results live in the unified helm_lifting_* tables
+  // (organization_id + athlete_id scoped) — the legacy baseball_lift_sessions /
+  // _session_exercises / _set_results tables are write-dead. Resolve this
+  // player's Helm Lifting Lab org + athlete id first.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const athleteMap = liftCtx ? await resolveBaseballAthleteIds(liftCtx.organizationId, [playerId]) : {};
+  const athleteId = athleteMap[playerId] ?? null;
+  if (!liftCtx || !athleteId) return { exercise: 'No lift data', points: [] };
+
   // session-exercise rows for this player's completed sessions
-  const { data: sessions } = await db
-    .from('baseball_lift_sessions')
+  const { data: sessions } = await fromUntyped(db, 'helm_lifting_sessions')
     .select('id, scheduled_date')
-    .eq('team_id', teamId)
-    .eq('player_id', playerId)
+    .eq('organization_id', liftCtx.organizationId)
+    .eq('athlete_id', athleteId)
     .gte('scheduled_date', sinceYmd)
-    .order('scheduled_date', { ascending: true });
-  const sessionIds = (sessions ?? []).map((s: { id: string }) => s.id);
+    .order('scheduled_date', { ascending: true }) as { data: Array<{ id: string; scheduled_date: string }> | null };
+  const sessionIds = (sessions ?? []).map((s) => s.id);
   const dateBySession = new Map<string, string>(
-    (sessions ?? []).map((s: { id: string; scheduled_date: string }) => [s.id, s.scheduled_date]),
+    (sessions ?? []).map((s) => [s.id, s.scheduled_date]),
   );
   if (sessionIds.length === 0) return { exercise: 'No lift data', points: [] };
 
-  const { data: ex } = await db
-    .from('baseball_lift_session_exercises')
+  const { data: ex } = await fromUntyped(db, 'helm_lifting_session_exercises')
     .select('id, session_id, exercise_name_snapshot, prescribed_load, section_type_snapshot')
-    .in('session_id', sessionIds);
-  const exRows = (ex ?? []) as Array<{
-    id: string; session_id: string; exercise_name_snapshot: string;
-    prescribed_load: number | null; section_type_snapshot: string | null;
-  }>;
+    .in('session_id', sessionIds) as {
+    data: Array<{
+      id: string; session_id: string; exercise_name_snapshot: string;
+      prescribed_load: number | null; section_type_snapshot: string | null;
+    }> | null;
+  };
+  const exRows = ex ?? [];
   if (exRows.length === 0) return { exercise: 'No lift data', points: [] };
 
   // Pick the most-frequent main-strength exercise as the progression subject.
@@ -526,15 +535,16 @@ async function buildLiftProgression(
   // Actual loads come from the set-results grain; take each exercise's TOP set
   // (heaviest completed load) as the day's progression point — honest about the
   // best work done, not an average that hides a back-off set.
-  const { data: sets } = await db
-    .from('baseball_lift_set_results')
+  const { data: sets } = await fromUntyped(db, 'helm_lifting_set_results')
     .select('session_exercise_id, actual_load, actual_reps, rpe')
-    .eq('player_id', playerId)
-    .in('session_exercise_id', seIds);
+    .eq('athlete_id', athleteId)
+    .in('session_exercise_id', seIds) as {
+    data: Array<{
+      session_exercise_id: string; actual_load: number | null; actual_reps: number | null; rpe: number | null;
+    }> | null;
+  };
   const topBySe = new Map<string, { load: number | null; reps: number | null; rpe: number | null }>();
-  for (const s of (sets ?? []) as Array<{
-    session_exercise_id: string; actual_load: number | null; actual_reps: number | null; rpe: number | null;
-  }>) {
+  for (const s of sets ?? []) {
     const cur = topBySe.get(s.session_exercise_id);
     if (!cur || (s.actual_load ?? -1) > (cur.load ?? -1)) {
       topBySe.set(s.session_exercise_id, { load: s.actual_load, reps: s.actual_reps, rpe: s.rpe });

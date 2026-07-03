@@ -47,7 +47,7 @@ import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -3879,12 +3879,17 @@ async function triggerPlayerInsightsAfterRoundImpl(
     }
 
     // 2026-05-24 Wave 8 — surface philosophy-gate filter count for
-    // post-deploy verification. Logged at info via warning level only
-    // when non-zero so log noise stays low; the count tells us how much
-    // upstream filtering replaced the Wave 6 post-write archive sweep.
+    // post-deploy verification. Logged at info (not warning — this is a
+    // metric, not a malfunction) only when non-zero so log noise stays low;
+    // the count tells us how much upstream filtering replaced the Wave 6
+    // post-write archive sweep. The message itself is count-stable — the
+    // count lives in `extra.gatedCount`, never interpolated into the string
+    // — so every occurrence fingerprints as ONE stream instead of minting a
+    // new fingerprint per distinct count (Bridge incident hygiene: a message
+    // that embeds a variable value can never be deduped).
     if (analysis.tier1GateMetrics && analysis.tier1GateMetrics.gatedCount > 0) {
-      await logServerError(
-        `[insights.triggerPlayerInsightsAfterRound] philosophy gate filtered ${analysis.tier1GateMetrics.gatedCount} tier-1 insight(s)`,
+      await logServerEvent(
+        `[insights.triggerPlayerInsightsAfterRound] philosophy gate filtered tier-1 insights`,
         {
           action: 'insights.triggerPlayerInsightsAfterRound.gateMetrics',
           featureArea: 'coachhelm',
@@ -3893,7 +3898,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
           skipSentry: true,
           extra: { gatedCount: analysis.tier1GateMetrics.gatedCount },
         },
-        'warning',
+        'info',
       );
     }
 

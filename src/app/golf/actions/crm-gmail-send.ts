@@ -23,6 +23,7 @@ import { isGmailSendConfigured, sendGmailEmail } from '@/lib/crm/gmail-send';
 import { verifyEmailDeliverability } from '@/lib/crm/email-verify';
 import { checkDomainAuth, type DomainAuthResult } from '@/lib/crm/domain-auth-check';
 import { mergeTags, type Recipient } from '@/lib/crm/merge-tags';
+import { describeError } from '@/lib/utils/describe-error';
 
 const CRM_REVALIDATE_PATH = '/golf/admin/crm';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -232,7 +233,7 @@ export async function sendCoachViaGmail(input: {
     revalidatePath(CRM_REVALIDATE_PATH);
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return { ok: false, error: describeError(err) };
   }
 }
 
@@ -343,7 +344,7 @@ export async function sendNextBatchViaGmail(input: {
         details.push({ name: c.name, school: c.school, status: 'sent' });
       } catch (err) {
         failed++;
-        details.push({ name: c.name, school: c.school, status: 'failed', reason: err instanceof Error ? err.message : String(err) });
+        details.push({ name: c.name, school: c.school, status: 'failed', reason: describeError(err) });
       }
       if (i < targets.length - 1) await sleep(jitterGapMs()); // jittered pace for deliverability
     }
@@ -351,6 +352,6 @@ export async function sendNextBatchViaGmail(input: {
     revalidatePath(CRM_REVALIDATE_PATH);
     return { ok: true, sent, skipped, failed, capped: sentToday + sent >= dailyCap, details };
   } catch (err) {
-    return { ok: false, ...empty, error: err instanceof Error ? err.message : String(err) };
+    return { ok: false, ...empty, error: describeError(err) };
   }
 }

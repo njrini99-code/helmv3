@@ -3834,100 +3834,6 @@ export type Database = {
           },
         ]
       }
-      baseball_lift_assignments: {
-        Row: {
-          assigned_by_coach_id: string | null
-          created_at: string
-          due_date: string | null
-          exercise_id: string | null
-          group_scope: string[] | null
-          id: string
-          player_id: string | null
-          prescription: Json
-          source_reason: string | null
-          source_signal_id: string | null
-          status: string
-          team_id: string
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          assigned_by_coach_id?: string | null
-          created_at?: string
-          due_date?: string | null
-          exercise_id?: string | null
-          group_scope?: string[] | null
-          id?: string
-          player_id?: string | null
-          prescription?: Json
-          source_reason?: string | null
-          source_signal_id?: string | null
-          status?: string
-          team_id: string
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          assigned_by_coach_id?: string | null
-          created_at?: string
-          due_date?: string | null
-          exercise_id?: string | null
-          group_scope?: string[] | null
-          id?: string
-          player_id?: string | null
-          prescription?: Json
-          source_reason?: string | null
-          source_signal_id?: string | null
-          status?: string
-          team_id?: string
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_lift_assignments_assigned_by_coach_id_fkey"
-            columns: ["assigned_by_coach_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_assignments_assigned_by_coach_id_fkey"
-            columns: ["assigned_by_coach_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_coaches_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_assignments_exercise_id_fkey"
-            columns: ["exercise_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_assignments_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_assignments_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_assignments_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams_public_profile"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       baseball_lift_days: {
         Row: {
           baseball_context: string | null
@@ -3965,79 +3871,6 @@ export type Database = {
             columns: ["week_id"]
             isOneToOne: false
             referencedRelation: "baseball_lift_weeks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      baseball_lift_exercise_substitutions: {
-        Row: {
-          created_at: string
-          created_by_coach_id: string | null
-          exercise_id: string
-          id: string
-          reason: string | null
-          substitute_exercise_id: string
-          team_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by_coach_id?: string | null
-          exercise_id: string
-          id?: string
-          reason?: string | null
-          substitute_exercise_id: string
-          team_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by_coach_id?: string | null
-          exercise_id?: string
-          id?: string
-          reason?: string | null
-          substitute_exercise_id?: string
-          team_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_lift_exercise_substitution_substitute_exercise_id_fkey"
-            columns: ["substitute_exercise_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_lift_exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_exercise_substitutions_created_by_coach_id_fkey"
-            columns: ["created_by_coach_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_exercise_substitutions_created_by_coach_id_fkey"
-            columns: ["created_by_coach_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_coaches_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_exercise_substitutions_exercise_id_fkey"
-            columns: ["exercise_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_lift_exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_exercise_substitutions_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_exercise_substitutions_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams_public_profile"
             referencedColumns: ["id"]
           },
         ]
@@ -4161,163 +3994,6 @@ export type Database = {
           },
         ]
       }
-      baseball_lift_import_rows: {
-        Row: {
-          created_at: string
-          id: string
-          import_run_id: string
-          match_status: string
-          matched_player_id: string | null
-          raw_json: Json
-          row_number: number
-          team_id: string
-          validation_error: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          import_run_id: string
-          match_status?: string
-          matched_player_id?: string | null
-          raw_json?: Json
-          row_number: number
-          team_id: string
-          validation_error?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          import_run_id?: string
-          match_status?: string
-          matched_player_id?: string | null
-          raw_json?: Json
-          row_number?: number
-          team_id?: string
-          validation_error?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_lift_import_rows_import_run_id_fkey"
-            columns: ["import_run_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_lift_import_runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_import_rows_matched_player_id_fkey"
-            columns: ["matched_player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_import_rows_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_import_rows_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams_public_profile"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      baseball_lift_import_runs: {
-        Row: {
-          committed_at: string | null
-          created_at: string
-          created_by_coach_id: string | null
-          file_hash: string | null
-          file_name: string | null
-          id: string
-          import_kind: string
-          mapping_json: Json
-          matched_rows: number
-          rolled_back_at: string | null
-          source: string
-          source_confidence: string
-          status: string
-          team_id: string
-          total_rows: number
-          units_json: Json
-          unmatched_rows: number
-          updated_at: string
-        }
-        Insert: {
-          committed_at?: string | null
-          created_at?: string
-          created_by_coach_id?: string | null
-          file_hash?: string | null
-          file_name?: string | null
-          id?: string
-          import_kind?: string
-          mapping_json?: Json
-          matched_rows?: number
-          rolled_back_at?: string | null
-          source?: string
-          source_confidence?: string
-          status?: string
-          team_id: string
-          total_rows?: number
-          units_json?: Json
-          unmatched_rows?: number
-          updated_at?: string
-        }
-        Update: {
-          committed_at?: string | null
-          created_at?: string
-          created_by_coach_id?: string | null
-          file_hash?: string | null
-          file_name?: string | null
-          id?: string
-          import_kind?: string
-          mapping_json?: Json
-          matched_rows?: number
-          rolled_back_at?: string | null
-          source?: string
-          source_confidence?: string
-          status?: string
-          team_id?: string
-          total_rows?: number
-          units_json?: Json
-          unmatched_rows?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_lift_import_runs_created_by_coach_id_fkey"
-            columns: ["created_by_coach_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_import_runs_created_by_coach_id_fkey"
-            columns: ["created_by_coach_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_coaches_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_import_runs_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_import_runs_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams_public_profile"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       baseball_lift_prescriptions: {
         Row: {
           coaching_note: string | null
@@ -4395,13 +4071,6 @@ export type Database = {
             columns: ["section_id"]
             isOneToOne: false
             referencedRelation: "baseball_lift_sections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_prescriptions_substitution_group_id_fkey"
-            columns: ["substitution_group_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_lift_exercise_substitutions"
             referencedColumns: ["id"]
           },
         ]
@@ -4600,100 +4269,6 @@ export type Database = {
           },
           {
             foreignKeyName: "baseball_lift_programs_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams_public_profile"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      baseball_lift_results: {
-        Row: {
-          assignment_id: string | null
-          created_at: string
-          exercise_id: string | null
-          id: string
-          import_run_id: string | null
-          notes: string | null
-          performed_at: string
-          player_id: string
-          reps: number | null
-          rpe: number | null
-          sets: number | null
-          source: string
-          team_id: string
-          weight: number | null
-        }
-        Insert: {
-          assignment_id?: string | null
-          created_at?: string
-          exercise_id?: string | null
-          id?: string
-          import_run_id?: string | null
-          notes?: string | null
-          performed_at?: string
-          player_id: string
-          reps?: number | null
-          rpe?: number | null
-          sets?: number | null
-          source?: string
-          team_id: string
-          weight?: number | null
-        }
-        Update: {
-          assignment_id?: string | null
-          created_at?: string
-          exercise_id?: string | null
-          id?: string
-          import_run_id?: string | null
-          notes?: string | null
-          performed_at?: string
-          player_id?: string
-          reps?: number | null
-          rpe?: number | null
-          sets?: number | null
-          source?: string
-          team_id?: string
-          weight?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_lift_results_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_lift_assignments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_results_exercise_id_fkey"
-            columns: ["exercise_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_results_import_run_id_fkey"
-            columns: ["import_run_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_import_runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_results_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_results_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_results_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "baseball_teams_public_profile"
@@ -4925,13 +4500,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "baseball_lift_sessions_readiness_checkin_id_fkey"
-            columns: ["readiness_checkin_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_readiness_checkins"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "baseball_lift_sessions_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -4940,95 +4508,6 @@ export type Database = {
           },
           {
             foreignKeyName: "baseball_lift_sessions_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams_public_profile"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      baseball_lift_set_results: {
-        Row: {
-          actual_load: number | null
-          actual_reps: number | null
-          coach_observed: boolean
-          completed_at: string | null
-          created_at: string
-          id: string
-          load_unit: string | null
-          player_id: string
-          player_note: string | null
-          prescribed_load: number | null
-          prescribed_reps: number | null
-          rir: number | null
-          rpe: number | null
-          session_exercise_id: string
-          set_number: number
-          team_id: string
-          velocity: number | null
-        }
-        Insert: {
-          actual_load?: number | null
-          actual_reps?: number | null
-          coach_observed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          load_unit?: string | null
-          player_id: string
-          player_note?: string | null
-          prescribed_load?: number | null
-          prescribed_reps?: number | null
-          rir?: number | null
-          rpe?: number | null
-          session_exercise_id: string
-          set_number: number
-          team_id: string
-          velocity?: number | null
-        }
-        Update: {
-          actual_load?: number | null
-          actual_reps?: number | null
-          coach_observed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          load_unit?: string | null
-          player_id?: string
-          player_note?: string | null
-          prescribed_load?: number | null
-          prescribed_reps?: number | null
-          rir?: number | null
-          rpe?: number | null
-          session_exercise_id?: string
-          set_number?: number
-          team_id?: string
-          velocity?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_lift_set_results_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_set_results_session_exercise_id_fkey"
-            columns: ["session_exercise_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_lift_session_exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_set_results_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_lift_set_results_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "baseball_teams_public_profile"
@@ -7862,94 +7341,6 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "baseball_coaches_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      baseball_readiness_checkins: {
-        Row: {
-          arm_status: string | null
-          check_date: string
-          created_at: string
-          energy_level: number | null
-          id: string
-          illness_flag: boolean
-          lift_session_id: string | null
-          lower_body_status: number | null
-          mood: string | null
-          notes: string | null
-          player_id: string
-          readiness_band: string | null
-          readiness_score: number | null
-          sleep_hours: number | null
-          soreness_level: number | null
-          stress_level: number | null
-          team_id: string
-          updated_at: string
-          visibility: string
-        }
-        Insert: {
-          arm_status?: string | null
-          check_date: string
-          created_at?: string
-          energy_level?: number | null
-          id?: string
-          illness_flag?: boolean
-          lift_session_id?: string | null
-          lower_body_status?: number | null
-          mood?: string | null
-          notes?: string | null
-          player_id: string
-          readiness_band?: string | null
-          readiness_score?: number | null
-          sleep_hours?: number | null
-          soreness_level?: number | null
-          stress_level?: number | null
-          team_id: string
-          updated_at?: string
-          visibility?: string
-        }
-        Update: {
-          arm_status?: string | null
-          check_date?: string
-          created_at?: string
-          energy_level?: number | null
-          id?: string
-          illness_flag?: boolean
-          lift_session_id?: string | null
-          lower_body_status?: number | null
-          mood?: string | null
-          notes?: string | null
-          player_id?: string
-          readiness_band?: string | null
-          readiness_score?: number | null
-          sleep_hours?: number | null
-          soreness_level?: number | null
-          stress_level?: number | null
-          team_id?: string
-          updated_at?: string
-          visibility?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_readiness_checkins_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_readiness_checkins_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_readiness_checkins_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams_public_profile"
             referencedColumns: ["id"]
           },
         ]
@@ -18700,6 +18091,83 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations_public_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helm_lifting_group_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          group_id: string | null
+          id: string
+          legacy_baseball_id: string | null
+          note: string | null
+          organization_id: string
+          sport: string
+          target_athlete_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          legacy_baseball_id?: string | null
+          note?: string | null
+          organization_id: string
+          sport?: string
+          target_athlete_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          legacy_baseball_id?: string | null
+          note?: string | null
+          organization_id?: string
+          sport?: string
+          target_athlete_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_group_audit_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_group_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_group_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_group_audit_target_athlete_id_fkey"
+            columns: ["target_athlete_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_athletes"
             referencedColumns: ["id"]
           },
         ]

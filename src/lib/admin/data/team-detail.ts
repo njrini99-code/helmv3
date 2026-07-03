@@ -107,6 +107,14 @@ export interface TeamDetailResult {
   activityDaily: TeamDetailDailyActivity[];
   errors: TeamDetailErrorCluster[];
   coachhelm: TeamDetailCoachHelmUsage | null;
+  /** Header health-badge input — MUST match /admin/golf's classifyTeamHealth
+   *  input exactly: MAX(golf_rounds.created_at) for this team_id, NO status
+   *  filter, NO roster filter (mirrors get_admin_rounds_rollup's
+   *  all_rounds_minimal CTE). Deliberately NOT derived from `roster` — an
+   *  in-progress round or a round logged by a since-removed player still
+   *  counts for "is this team active," even though neither surfaces as a
+   *  completed round on any current roster row. */
+  teamLastActivity: string | null;
 }
 
 const ROSTER_LIMIT = 300;
@@ -254,7 +262,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     : null;
 
   if (!team) {
-    return { team: null, coaches: [], roster: [], activityDaily: [], errors: [], coachhelm: null };
+    return { team: null, coaches: [], roster: [], activityDaily: [], errors: [], coachhelm: null, teamLastActivity: null };
   }
 
   let coaches: TeamDetailCoach[] = [];
@@ -302,6 +310,25 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     roundsForTeam = (data ?? []) as unknown as RoundForTeamRow[];
   } catch {
     roundsForTeam = [];
+  }
+
+  // Separate ONE-row query for the header health badge — see
+  // `teamLastActivity` doc on TeamDetailResult for why this can't reuse
+  // `roundsForTeam` above (that's status=completed + implicitly
+  // active-roster-only once joined into `roster`; this is neither).
+  let teamLastActivity: string | null = null;
+  try {
+    const { data, error } = await admin
+      .from('golf_rounds')
+      .select('created_at')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    teamLastActivity = (data as { created_at: string | null } | null)?.created_at ?? null;
+  } catch {
+    teamLastActivity = null;
   }
 
   const lastRoundByPlayer = new Map<string, string>();
@@ -435,5 +462,5 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
     }
   }
 
-  return { team, coaches, roster, activityDaily, errors, coachhelm };
+  return { team, coaches, roster, activityDaily, errors, coachhelm, teamLastActivity };
 }

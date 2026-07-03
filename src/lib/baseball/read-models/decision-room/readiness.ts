@@ -11,7 +11,10 @@ import {
   resolveBaseballAthleteIds,
 } from '@/lib/lifting/resolve-baseball-context';
 import { extractArmStatusFromNotes } from '@/lib/lifting/adapters/baseball-view-adapter';
-import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-data';
+import type {
+  HelmLiftingAvailabilityStatusRow,
+  HelmLiftingReadinessCheckinRow,
+} from '@/lib/types/helm-lifting-data';
 
 /**
  * Decision Room — Availability + Attendance read models.
@@ -22,10 +25,13 @@ import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-da
  * client here.
  *
  * Tables wired:
- *   - baseball_availability_statuses    (coach-set availability flags)
- *   - helm_lifting_readiness_checkins   (player-reported daily readiness — W2-G
- *                                        rewire; the legacy baseball_readiness_
- *                                        checkins table is write-dead since
+ *   - helm_lifting_availability_statuses (coach-set availability flags — the
+ *                                         unified Helm Lifting Lab table; the
+ *                                         legacy baseball_availability_statuses
+ *                                         table is write-dead)
+ *   - helm_lifting_readiness_checkins   (player-reported daily readiness — the
+ *                                        legacy baseball_readiness_checkins
+ *                                        table is write-dead since
  *                                        submitReadinessCheckin only writes helm)
  *   - baseball_event_attendance         (event RSVP / check-in)
  *   - baseball_practice_attendance      (practice attendance)
@@ -43,10 +49,11 @@ import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-da
  * team only through baseball_events.team_id, so we filter via an !inner embed
  * on the event. baseball_practice_attendance DOES carry team_id directly.
  *
- * NOTE: helm_lifting_readiness_checkins has NO FK to baseball_players (it is
- * athlete_id-keyed into helm_lifting_athletes), so the player embed used for
- * the legacy table is fetched separately here and matched via the baseball
- * player_id <-> helm athlete_id map from resolveBaseballAthleteIds.
+ * NOTE: helm_lifting_availability_statuses and helm_lifting_readiness_checkins
+ * have NO FK to baseball_players (they are athlete_id-keyed into
+ * helm_lifting_athletes), so the player embed used by the legacy tables is
+ * fetched separately here and matched via the baseball player_id <-> helm
+ * athlete_id map from resolveBaseballAthleteIds.
  */
 
 /** Availability statuses that should surface as a Decision Room concern. */
@@ -79,19 +86,6 @@ interface EmbeddedPlayer {
   last_name: string | null;
   avatar_url: string | null;
   primary_position: string | null;
-}
-
-/** Row shape selected from `baseball_availability_statuses` (joined to player). */
-interface AvailabilityRow {
-  id: string;
-  player_id: string;
-  status: string;
-  reason_category: string | null;
-  note: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
-  created_at: string | null;
-  player: EmbeddedPlayer | null;
 }
 
 /** Row shape selected from `baseball_readiness_checkins` (joined to player). */
@@ -176,20 +170,20 @@ export async function loadAvailabilityConcerns(
   const teamAthleteIds = Object.values(athleteMap);
 
   const [availabilityRes, readinessRes] = await Promise.all([
-    // Source A — coach-set availability flags currently in effect.
-    supabase
-      .from('baseball_availability_statuses')
-      .select(
-        `id, player_id, status, reason_category, note, starts_at, ends_at, created_at,
-         player:baseball_players!baseball_availability_statuses_player_id_fkey (
-           id, first_name, last_name, avatar_url, primary_position
-         )`,
-      )
-      .eq('team_id', teamId)
-      .in('status', CONCERNING_AVAILABILITY_STATUSES as unknown as string[])
-      .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
-      .order('starts_at', { ascending: false })
-      .limit(MAX_ROWS),
+    // Source A — coach-set availability flags currently in effect. Reads
+    // helm_lifting_availability_statuses (the unified Helm Lifting Lab table;
+    // the legacy baseball_availability_statuses table is write-dead). No FK to
+    // baseball_players — matched back to the roster via athleteToPlayer below.
+    liftCtx && teamAthleteIds.length
+      ? (fromUntyped(supabase, 'helm_lifting_availability_statuses')
+          .select('id, athlete_id, status, reason_category, note, starts_at, ends_at, created_at')
+          .eq('organization_id', liftCtx.organizationId)
+          .in('athlete_id', teamAthleteIds)
+          .in('status', CONCERNING_AVAILABILITY_STATUSES as unknown as string[])
+          .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+          .order('starts_at', { ascending: false })
+          .limit(MAX_ROWS) as unknown as Promise<{ data: HelmLiftingAvailabilityStatusRow[] | null; error: unknown }>)
+      : Promise.resolve({ data: [] as HelmLiftingAvailabilityStatusRow[], error: null }),
 
     // Source B — recent player-reported readiness check-ins. W2-G rewire: reads
     // helm_lifting_readiness_checkins (the legacy baseball_readiness_checkins
@@ -214,18 +208,19 @@ export async function loadAvailabilityConcerns(
   const concerns: DecisionRoomAvailabilityConcern[] = [];
 
   // --- Availability flags --------------------------------------------------
-  for (const row of (availabilityRes.data ?? []) as unknown as AvailabilityRow[]) {
-    const player = row.player;
-    const status = row.status;
+  for (const helmRow of (availabilityRes.data ?? []) as HelmLiftingAvailabilityStatusRow[]) {
+    const playerId = athleteToPlayer.get(helmRow.athlete_id);
+    if (!playerId) continue; // athlete not (yet) mapped to a roster player — skip honestly.
+    const player = playerById.get(playerId) ?? null;
     concerns.push({
-      id: `availability:${row.id}`,
-      playerId: row.player_id,
+      id: `availability:${helmRow.id}`,
+      playerId,
       playerName: playerName(player),
-      status: status === 'unavailable' ? 'out' : 'limited',
-      reasonCategory: row.reason_category ?? null,
-      note: row.note ?? null,
-      startsAt: row.starts_at ?? new Date().toISOString(),
-      endsAt: row.ends_at ?? null,
+      status: helmRow.status === 'unavailable' ? 'out' : 'limited',
+      reasonCategory: helmRow.reason_category ?? null,
+      note: helmRow.note ?? null,
+      startsAt: helmRow.starts_at ?? new Date().toISOString(),
+      endsAt: helmRow.ends_at ?? null,
     } as DecisionRoomAvailabilityConcern);
   }
 

@@ -19,7 +19,14 @@ import { CoachTimeline } from '../../components/timeline/CoachTimeline';
 // Admin auth is enforced by the parent CRM layout
 // (src/app/golf/admin/crm/layout.tsx). This page only needs to load coach
 // data and render.
+//
+// Coach data is per-request (cookies + a live row lookup by [id]). Without
+// force-dynamic, build/ISR prerender attempts throw DYNAMIC_SERVER_USAGE
+// inside createClient()/getCoachEngagement() — see
+// src/app/golf/admin/demo-sessions/page.tsx for the same fix.
 // ============================================================================
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Coach · CRM',

@@ -308,11 +308,25 @@ export const saveLiftSessionPlan = withBaseballAction(
     // Resolve player IDs from group or team.
     let playerIds: string[] = [];
     if (input.groupId) {
-      const { data: members } = await supabase
-        .from('baseball_strength_group_members')
-        .select('player_id')
-        .eq('group_id', input.groupId) as { data: Array<{ player_id: string }> | null };
-      playerIds = [...new Set((members ?? []).map((m) => m.player_id))];
+      // helm_lifting_group_members stores the helm athlete id directly, so
+      // reverse it through helm_lifting_athletes.sport_player_id to land back
+      // in baseball_players.id — the space the rest of this action (and the
+      // input.playerIds intersection filter below) operates in.
+      const { data: memberRows } = await fromUntyped(supabase, 'helm_lifting_group_members')
+        .select('athlete_id')
+        .eq('group_id', input.groupId) as { data: Array<{ athlete_id: string }> | null };
+      const memberAthleteIds = [...new Set((memberRows ?? []).map((m) => m.athlete_id))];
+
+      if (memberAthleteIds.length > 0) {
+        const { data: athleteRows } = await fromUntyped(supabase, 'helm_lifting_athletes')
+          .select('sport_player_id')
+          .in('id', memberAthleteIds) as { data: Array<{ sport_player_id: string | null }> | null };
+        playerIds = [...new Set(
+          (athleteRows ?? [])
+            .map((a) => a.sport_player_id)
+            .filter((id): id is string => Boolean(id)),
+        )];
+      }
     } else {
       const { data: members } = await supabase
         .from('baseball_team_members')

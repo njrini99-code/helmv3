@@ -114,6 +114,15 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(500);
+  // `info` rows (integrity-check PASS sweeps, pattern-miner "tried and found
+  // nothing" starvation, philosophy-gate filter counts, and other routine
+  // telemetry) are never incidents — they still get written to admin_events
+  // (Feature Health's green-dot classifier reads get_feature_health()
+  // independently of this query, so capture is unaffected), just never
+  // surfaced in this feed/export. Skipped only when a filter chip explicitly
+  // asks for `severity=info` — the UI never offers that chip, but an explicit
+  // request should still work instead of silently contradicting itself.
+  if (filters.severity !== 'info') query = query.neq('severity', 'info');
   if (filters.sport) query = query.eq('sport', filters.sport);
   if (filters.severity) query = query.eq('severity', filters.severity);
   if (filters.source) query = query.eq('source', filters.source);

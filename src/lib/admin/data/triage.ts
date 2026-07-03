@@ -230,6 +230,13 @@ export async function fetchTriageQueue(): Promise<{
       )
       .eq('event_type', 'error')
       .eq('resolved', false)
+      // `info` rows (integrity-check PASS sweeps, pattern-miner starvation,
+      // philosophy-gate filter counts, etc.) are routine telemetry, not
+      // incidents — excluded from this feed (Needs Attention + the ops
+      // digest) the same way as the /admin/errors tab (errors.ts). They are
+      // still captured in admin_events and still feed Feature Health's
+      // green-dot classifier via a separate query (get_feature_health()).
+      .neq('severity', 'info')
       .order('created_at', { ascending: false })
       .limit(500),
   ]);
