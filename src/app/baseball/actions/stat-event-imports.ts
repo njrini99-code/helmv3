@@ -409,24 +409,27 @@ export const commitEventImport = withBaseballAction(
     // GAP 4 — REVIEW HOLD (#415). Recompute detection band server-side when raw
     // bytes are available; never trust client-supplied detectionAutoCommit alone.
     const validation = validateEventRows(rows);
-    let serverAutoCommit: SourceFileDetection['autoCommit'] | undefined;
-    if (args.rawFileBody && args.rawFileBody.length > 0) {
-      const parser = getConcreteParser(sourceKey)!;
-      const parsed = parser(args.rawFileBody);
-      const detection = detectFromParse(
-        parsed.sourceKey,
-        {
-          rows: parsed.rows,
-          rowsRead: parsed.rowsRead,
-          warnings: parsed.warnings,
-          preservedText: parsed.preservedText,
-        },
-        args.rawFileBody.slice(0, 4096),
+    if (!args.rawFileBody || args.rawFileBody.length === 0) {
+      throw new Error(
+        'Raw file body is required to commit event imports. Re-run detection from the original file before committing.',
       );
-      serverAutoCommit = detection.autoCommit;
     }
 
-    const autoCommitBand = serverAutoCommit ?? args.detectionAutoCommit;
+    const parser = getConcreteParser(sourceKey)!;
+    const parsed = parser(args.rawFileBody);
+    const detection = detectFromParse(
+      parsed.sourceKey,
+      {
+        rows: parsed.rows,
+        rowsRead: parsed.rowsRead,
+        warnings: parsed.warnings,
+        preservedText: parsed.preservedText,
+      },
+      args.rawFileBody.slice(0, 4096),
+    );
+    const serverAutoCommit: SourceFileDetection['autoCommit'] = detection.autoCommit;
+
+    const autoCommitBand = serverAutoCommit;
     if (autoCommitBand === 'do_not_commit') {
       throw new Error(
         'This file cannot be committed automatically. Detection confidence is too low — review the source format.',

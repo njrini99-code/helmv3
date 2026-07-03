@@ -163,14 +163,14 @@ describe('commitEventImport review-band server authority (#415)', () => {
     expect(inserted['baseball_swing_events'] ?? []).toHaveLength(0);
   });
 
-  it('without rawFileBody, the server falls back to the client-echoed band (documented current behavior)', async () => {
-    // No rawFileBody => no server recompute is possible; the action falls
-    // back to args.detectionAutoCommit. This is the one path where a
-    // forged client value would still be trusted — tracked as a residual
-    // #415 follow-up rather than silently assumed safe.
-    const result = await commitEventImport(
+  it('without rawFileBody, the server rejects instead of trusting a client-echoed band', async () => {
+    await expect(
+      commitEventImport(
       baseArgs({ detectionAutoCommit: 'hold_for_review' }),
-    );
-    expect(result.heldForReview).toBe(true);
+      ),
+    ).rejects.toThrow(/raw file body is required/i);
+
+    expect(inserted['baseball_import_runs'] ?? []).toHaveLength(0);
+    expect(inserted['baseball_stat_uploads'] ?? []).toHaveLength(0);
   });
 });

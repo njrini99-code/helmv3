@@ -136,8 +136,9 @@ describe('generatePostgameReview (#477 disposition preservation)', () => {
     expect(after.data[0]!.disposition).toBe('converted_to_timeline');
   });
 
-  it('regenerate preserves dismissed and resolved dispositions the same way', async () => {
-    for (const disposition of ['dismissed', 'resolved'] as const) {
+  it.each(['dismissed', 'resolved'] as const)(
+    'regenerate preserves %s disposition',
+    async (disposition) => {
       const tables = seedGameAndBoxScore();
       fake = createFakeSupabase({ user: { id: 'user-1' }, tables });
       const { generatePostgameReview } = await import('@/app/baseball/actions/postgame');
@@ -151,8 +152,8 @@ describe('generatePostgameReview (#477 disposition preservation)', () => {
       const after = await reviewItemsTable().select();
       expect(after.data).toHaveLength(1);
       expect(after.data[0]!.disposition).toBe(disposition);
-    }
-  });
+    },
+  );
 
   it('an item no longer emitted is soft-dismissed, never deleted', async () => {
     const tables = seedGameAndBoxScore();
