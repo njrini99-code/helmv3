@@ -5,6 +5,7 @@ import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelNoData } from '../../_components/PanelStates';
+import { CopyReportButton } from '../../_components/CopyReportButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ export default async function FingerprintDetailPage({
   const fingerprint = decodeURIComponent(rawFingerprint);
 
   async function Body() {
-    const { events } = await fetchFingerprintDetail(rawFingerprint);
+    const { events, report } = await fetchFingerprintDetail(rawFingerprint);
 
     if (events.length === 0) {
       return (
@@ -43,17 +44,20 @@ export default async function FingerprintDetailPage({
 
     return (
       <>
-        <p className="text-sm text-warm-600">{events.length} events · affected users link to Users & Teams</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-warm-600">{events.length} events · affected users link to Users & Teams</p>
+          <CopyReportButton report={report} label="Copy full report" size="md" />
+        </div>
         <ul className="mt-3 space-y-3">
           {events.map((e) => (
-            <Surface as="li" key={e.id} padding="sm">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-warm-900">{e.title}</p>
-                <StatusPill tone={severityTone(e.severity)} dot size="sm">
+            <Surface as="li" key={e.id} padding="sm" className="min-w-0">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <p className="min-w-0 flex-1 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{e.title}</p>
+                <StatusPill tone={severityTone(e.severity)} dot size="sm" className="shrink-0">
                   {e.severity}
                 </StatusPill>
               </div>
-              <p className="font-fw-mono text-xs tabular-nums text-warm-500">
+              <p className="break-words font-fw-mono text-xs tabular-nums text-warm-500 [overflow-wrap:anywhere]">
                 {e.created_at ? new Date(e.created_at).toLocaleString() : 'unknown time'} · {e.url ?? 'no url'}
               </p>
               {e.user_id ? (
@@ -74,7 +78,7 @@ export default async function FingerprintDetailPage({
   return (
     <div className="space-y-4">
       <Link href="/admin/errors" className="text-xs text-warm-500 underline">← Errors</Link>
-      <h1 className="font-fw-mono text-lg text-warm-900">fingerprint {fingerprint}</h1>
+      <h1 className="break-words font-fw-mono text-lg text-warm-900 [overflow-wrap:anywhere]">fingerprint {fingerprint}</h1>
       <PanelBoundary title="Fingerprint detail">
         <Body />
       </PanelBoundary>

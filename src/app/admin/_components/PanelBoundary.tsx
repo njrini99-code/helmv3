@@ -25,7 +25,7 @@ class PanelErrorBoundary extends Component<
     if (this.state.error) {
       return (
         <section aria-label={this.props.title}>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+          <h2 className="mb-2 border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
             {this.props.title}
           </h2>
           {/* The h2 above already carries the panel title (and the <section>

@@ -25,11 +25,35 @@ describe('fetchSentryIssues', () => {
   });
   afterEach(() => vi.unstubAllEnvs());
 
-  it('returns unconfigured (NOT an error) when SENTRY_READ_TOKEN is absent', async () => {
+  it('returns unconfigured (NOT an error) when neither token env is set', async () => {
     vi.stubEnv('SENTRY_READ_TOKEN', '');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', '');
     const res = await fetchSentryIssues();
     expect(res.status).toBe('unconfigured');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to SENTRY_AUTH_TOKEN when SENTRY_READ_TOKEN is absent', async () => {
+    vi.stubEnv('SENTRY_READ_TOKEN', '');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token');
+    fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const res = await fetchSentryIssues();
+    expect(res.status).toBe('ok');
+    const headers = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
+    expect(headers.headers.Authorization).toBe('Bearer ci-token');
+  });
+
+  it('prefers SENTRY_READ_TOKEN over SENTRY_AUTH_TOKEN when both are set', async () => {
+    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token');
+    fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const res = await fetchSentryIssues();
+    expect(res.status).toBe('ok');
+    const headers = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
+    expect(headers.headers.Authorization).toBe('Bearer tok');
   });
 
   it('maps issues and coerces string counts to numbers', async () => {
@@ -85,8 +109,9 @@ describe('fetchSentryFeatureCounts', () => {
   });
   afterEach(() => vi.unstubAllEnvs());
 
-  it('returns null (not an error) when SENTRY_READ_TOKEN is absent', async () => {
+  it('returns null (not an error) when neither token env is set', async () => {
     vi.stubEnv('SENTRY_READ_TOKEN', '');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', '');
     const res = await fetchSentryFeatureCounts(['round_tracking']);
     expect(res).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();

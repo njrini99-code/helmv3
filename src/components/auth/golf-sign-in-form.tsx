@@ -7,6 +7,7 @@ import { loginAction } from '@/app/golf/actions/auth';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { Button } from '@/components/ui/button';
 
 function getErrorMessage(error: string): string {
@@ -86,11 +87,11 @@ export function GolfSignInForm() {
       // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('golf_login_returnTo');
 
-      // Validate returnTo to prevent open redirect attacks.
-      // Only allow relative paths starting with /golf/ or /baseball/
-      const isValidReturnTo = (path: string): boolean => {
-        return (path.startsWith('/golf/') || path.startsWith('/baseball/')) && !path.includes('//');
-      };
+      // Validate returnTo to prevent open redirect attacks — shared with the
+      // already-authenticated fast path (page.tsx) and the welcome screen so
+      // the safe-path allowlist (/golf/, /baseball/, and the Helm Bridge
+      // /admin surface) can't drift between entry points.
+      const isValidReturnTo = isSafeInternalPath;
 
       // Only use returnTo verbatim if the user is fully onboarded (redirectTo =
       // dashboard). If they still need onboarding, send them there first — but

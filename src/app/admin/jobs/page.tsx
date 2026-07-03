@@ -19,7 +19,11 @@ const CRON_STATUS_TONE: Record<CronBoardRow['status'], FwStatusTone> = {
 };
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">{children}</h2>;
+  return (
+    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+      {children}
+    </h2>
+  );
 }
 
 function formatDuration(ms: number | null): string {
@@ -123,7 +127,10 @@ async function JobsBody() {
 
   return (
     <div className="space-y-6">
-      <Surface padding="sm">
+      {/* Key panel: the board that answers "is anything actually running on
+          schedule" — a 2px green left edge, same signal as the overview's
+          Feature health rollup. */}
+      <Surface padding="sm" className="border-l-2 border-l-accent-500">
         <SectionLabel>Cron board — expected vs actual</SectionLabel>
         <p className="mt-1 text-xs text-warm-500">
           A job with no row yet reads &ldquo;awaiting first run&rdquo; (neutral) — never a red alarm until it has
@@ -145,9 +152,9 @@ async function JobsBody() {
       </Surface>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatTile label="admin_events rows" value={tab.logHealth.adminEvents} mono />
-        <StatTile label="error_logs rows" value={tab.logHealth.errorLogs} mono />
-        <StatTile label="job log rows" value={tab.logHealth.jobLogs} mono />
+        <StatTile label="admin_events rows" value={tab.logHealth.adminEvents} tone="neutral" mono />
+        <StatTile label="error_logs rows" value={tab.logHealth.errorLogs} tone="neutral" mono />
+        <StatTile label="job log rows" value={tab.logHealth.jobLogs} tone="neutral" mono />
         <Surface padding="sm">
           <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Inngest</p>
           <p className="mt-1 text-sm text-warm-800">

@@ -23,7 +23,13 @@ const REVALIDATE_SECONDS = 60;
 const MAX_PAGES = 3;
 
 function config(): { token: string; org: string; project: string } | null {
-  const token = process.env.SENTRY_READ_TOKEN;
+  // Fall back to the CI sourcemap-upload token when the dedicated read token
+  // isn't provisioned yet (`||`, not `??` — an unset OR blank-string env var
+  // both mean "absent" here, matching the `!token` check below). Still
+  // fail-soft: if SENTRY_AUTH_TOKEN lacks event:read the calls below
+  // 404/403 and every panel degrades to its existing not-configured/stale
+  // state, never a crash.
+  const token = process.env.SENTRY_READ_TOKEN || process.env.SENTRY_AUTH_TOKEN;
   const org = process.env.SENTRY_ORG;
   const project = process.env.SENTRY_PROJECT;
   if (!token || !org || !project) return null;

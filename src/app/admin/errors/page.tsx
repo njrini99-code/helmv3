@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { parseErrorsFilters, fetchErrorsTab } from '@/lib/admin/data/errors';
+import {
+  parseErrorsFilters,
+  fetchErrorsTab,
+  buildFilteredIncidentsReport,
+} from '@/lib/admin/data/errors';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
 import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import { TriageQueue } from '../_components/TriageQueue';
@@ -10,6 +14,7 @@ import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { CopyReportButton } from '../_components/CopyReportButton';
 import { ErrorsFilterChips } from './ErrorsFilterChips';
 
 export const dynamic = 'force-dynamic';
@@ -88,7 +93,7 @@ export default async function ErrorsPage({
         </section>
 
         <Surface as="section" padding="sm">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Sentry unresolved</h2>
+          <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Sentry unresolved</h2>
           {tab.sentry.status === 'ok' && tab.sentry.data ? (
             tab.sentry.data.length === 0 ? (
               <PanelAllClear label="No unresolved Sentry issues" checkedAt={tab.sentry.fetchedAt ?? new Date().toISOString()} />
@@ -100,7 +105,7 @@ export default async function ErrorsPage({
                       {issue.level}
                     </StatusPill>
                     <span className="w-20 shrink-0 font-fw-mono text-xs tabular-nums text-warm-500">{issue.shortId}</span>
-                    <span className="min-w-0 flex-1 basis-full truncate text-sm text-warm-900 sm:basis-auto">{issue.title}</span>
+                    <span className="min-w-0 flex-1 basis-full break-words text-sm text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">{issue.title}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                       {issue.userCount} users · {issue.count} events
                     </span>
@@ -119,7 +124,13 @@ export default async function ErrorsPage({
         </Surface>
 
         <Surface as="section" padding="sm">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">In-app incidents</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-accent-600/25 pb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">In-app incidents</h2>
+            <CopyReportButton
+              report={buildFilteredIncidentsReport(tab.incidents, filters)}
+              label={`Copy all (filtered) · ${tab.incidents.length}`}
+            />
+          </div>
           <TriageQueue items={tab.incidents} />
           <p className="mt-2 text-xs text-warm-500">
             Row detail: <span className="font-fw-mono">/admin/errors/&lt;fingerprint&gt;</span> (click-through from each app row title)
