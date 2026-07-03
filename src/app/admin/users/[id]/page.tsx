@@ -8,6 +8,7 @@ import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelNoData } from '../../_components/PanelStates';
 import { SportBadge } from '../../_components/SportBadge';
 import { enterViewAs } from '../../actions/view-as';
+import { EngagementPanel } from './EngagementPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +68,10 @@ export default async function UserDetailPage({
             </Button>
           )}
         </header>
+
+        <PanelBoundary title="Engagement">
+          <EngagementPanel userId={id} />
+        </PanelBoundary>
 
         <Surface padding="sm">
           <SectionLabel>Memberships</SectionLabel>
