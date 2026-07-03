@@ -25,12 +25,25 @@ export function PanelNoData({ label, description }: { label: string; description
   );
 }
 
-export function PanelStale({ label, error }: { label: string; error?: string }) {
+export function PanelStale({
+  label,
+  error,
+  action,
+}: {
+  label: string;
+  error?: string;
+  action?: React.ReactNode;
+}) {
+  // Copy must be honest: this state renders when the fetch FAILED and there
+  // is no data below it. It previously claimed "showing last known data",
+  // which was never true (nothing cached is rendered) — flagged in the
+  // 2026-07-03 Mission Control sweep while every panel was down with 42501.
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl bg-fw-warning-bg px-6 py-8 text-center">
       <CloudOff size={20} className="text-fw-warning" aria-hidden />
-      <p className="text-sm font-medium text-warm-800">{label} — showing last known data</p>
+      <p className="text-sm font-medium text-warm-800">{label} — temporarily unavailable</p>
       {error ? <p className="font-fw-mono text-xs text-warm-600">{error}</p> : null}
+      {action}
     </div>
   );
 }
