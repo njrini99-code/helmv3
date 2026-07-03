@@ -88,7 +88,7 @@ BEGIN
   -- 5. Admin-UI browser-client readability: every table the admin UI reads
   --    with the browser client (not service_role) must have at least one
   --    SELECT (or ALL) policy that actually applies to `authenticated` —
-  --    otherwise a badge/count RPC (SECURITY DEFINER, RLS-exempt) can read
+  --    otherwise a badge/count RPC (definer-elevated, RLS-exempt) can read
   --    N rows while the paired list view silently reads 0.
   SELECT count(*), COALESCE(jsonb_agg(objname) FILTER (WHERE rn <= 15), '[]'::jsonb)
   INTO n, sample
