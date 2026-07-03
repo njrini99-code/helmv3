@@ -71,7 +71,7 @@ export function DecisionRoomScreen({ active, instant = false, className }: Scree
             <m.div
               key={s.title}
               variants={rowVariants}
-              className="flex items-start justify-between gap-3 rounded-md px-2.5 py-2 transition-colors hover:bg-[rgba(var(--fl-sage-rgb),0.12)]"
+              className="flex items-center justify-between gap-3 rounded-md px-2.5 py-2 transition-colors hover:bg-[rgba(var(--fl-sage-rgb),0.12)]"
               style={{
                 border: '1px solid rgba(var(--fl-brass-rgb), 0.2)',
                 background: 'rgba(var(--fl-sage-rgb), 0.07)',
