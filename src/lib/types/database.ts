@@ -18095,6 +18095,83 @@ export type Database = {
           },
         ]
       }
+      helm_lifting_group_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          group_id: string | null
+          id: string
+          legacy_baseball_id: string | null
+          note: string | null
+          organization_id: string
+          sport: string
+          target_athlete_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          legacy_baseball_id?: string | null
+          note?: string | null
+          organization_id: string
+          sport?: string
+          target_athlete_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          legacy_baseball_id?: string | null
+          note?: string | null
+          organization_id?: string
+          sport?: string
+          target_athlete_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_group_audit_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_group_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_group_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_group_audit_target_athlete_id_fkey"
+            columns: ["target_athlete_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_athletes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       helm_lifting_group_members: {
         Row: {
           added_by_coach_id: string | null

@@ -1,17 +1,21 @@
 // =============================================================================
 // src/lib/baseball/read-models/strength-groups.ts
 //
-// V11 Strength Groups read model (spec L151-198 + Packet C). Composes the three
-// panes of the group builder:
+// V11 Strength Groups read model (spec L151-198 + Packet C).
 //   * getStrengthGroupsBoard — the group list (counts + status badges) + the full
 //     roster attribute snapshot (powers the center athlete table AND the right-pane
 //     live rule preview, via the shared evaluateGroupRule engine).
-//   * getStrengthGroupDetail — one group's membership (with sources) + recent audit.
 //
 // SERVER-ONLY plain async (NOT 'use server'). RLS backs every query (group SELECT
 // is staff-scoped). The V11 tables are not in the generated database.ts (no live
 // apply to regen against) — we cast the builder and lean on the hand-written types
 // as the contract, exactly like performance-command.ts and lift-programs.ts.
+//
+// Groups, memberships, availability, and bodyweight all read from the unified
+// Helm Lifting Lab tables (organization_id + sport='baseball' scoped); group
+// membership is athlete_id-keyed and is resolved back to baseball_players.id via
+// resolveBaseballLiftingOrg / resolveBaseballAthleteIds, same as the readiness/
+// lift-history sections below.
 //
 // The roster snapshot is assembled in a fixed number of scoped passes (roster,
 // workload, availability, soreness, bodyweight, lift history) — no N+1. Each
@@ -32,11 +36,7 @@ import {
   trainingAgeFromGradYear,
   type PlayerRuleAttributes,
 } from '@/lib/baseball/lifting/strength-group-rules';
-import type {
-  BaseballStrengthGroupRow,
-  BaseballStrengthGroupAuditRow,
-  BaseballGroupMemberSource,
-} from '@/lib/types/baseball-lifting-v11';
+import type { BaseballStrengthGroupRow } from '@/lib/types/baseball-lifting-v11';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -52,20 +52,6 @@ export interface StrengthGroupsBoardData {
   roster: PlayerRuleAttributes[];
   /** How many of the 12 default groups already exist (drives the seed CTA). */
   defaultGroupsPresent: number;
-}
-
-export interface StrengthGroupMemberDetail {
-  player_id: string;
-  source: BaseballGroupMemberSource;
-  first_name: string | null;
-  last_name: string | null;
-  primary_position: string | null;
-}
-
-export interface StrengthGroupDetailData {
-  group: BaseballStrengthGroupRow;
-  members: StrengthGroupMemberDetail[];
-  audit: BaseballStrengthGroupAuditRow[];
 }
 
 /** The 12 default group names (spec L155-168) — used to detect seed state. */
@@ -125,23 +111,44 @@ export async function getStrengthGroupsBoard(
     .sort((a: RosterRow, b: RosterRow) => (a.last_name ?? '').localeCompare(b.last_name ?? ''));
   const playerIds = roster.map((p) => p.id);
 
-  // ---- Groups + members ----------------------------------------------------
-  const { data: groupRows } = await supabase
-    .from('baseball_strength_groups')
-    .select('*')
-    .eq('team_id', teamId)
-    .order('created_at', { ascending: true });
-  const groups = (groupRows ?? []) as BaseballStrengthGroupRow[];
+  // ---- Helm Lifting Lab org + athlete-id map (resolved once, reused below) --
+  // Groups, membership, availability, bodyweight, soreness, and lift history
+  // all live in the unified helm_lifting_* tables (organization_id + sport
+  // scoped) — the legacy baseball_strength_* / baseball_availability_statuses /
+  // baseball_bodyweight_entries / baseball_readiness_checkins / baseball_lift_
+  // sessions tables are write-dead. Resolved once here and reused throughout.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const athleteMap = liftCtx && playerIds.length
+    ? await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds)
+    : {};
+  const athleteToPlayer = new Map<string, string>();
+  for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+  const teamAthleteIds = Object.values(athleteMap);
+
+  // ---- Groups + members ------------------------------------------------------
+  const groups: BaseballStrengthGroupRow[] = [];
+  if (liftCtx) {
+    const { data: groupRows } = await fromUntyped(supabase, 'helm_lifting_groups')
+      .select(
+        'id, team_id, name, description, group_type, rule_json, created_by_coach_id, is_active, created_at, updated_at',
+      )
+      .eq('organization_id', liftCtx.organizationId)
+      .eq('sport', 'baseball')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: true }) as { data: BaseballStrengthGroupRow[] | null };
+    groups.push(...(groupRows ?? []));
+  }
 
   const membersByGroup = new Map<string, string[]>();
   if (groups.length) {
-    const { data: gm } = await supabase
-      .from('baseball_strength_group_members')
-      .select('group_id, player_id')
-      .in('group_id', groups.map((g) => g.id));
-    for (const row of (gm ?? []) as Array<{ group_id: string; player_id: string }>) {
+    const { data: gm } = await fromUntyped(supabase, 'helm_lifting_group_members')
+      .select('group_id, athlete_id')
+      .in('group_id', groups.map((g) => g.id)) as { data: Array<{ group_id: string; athlete_id: string }> | null };
+    for (const row of gm ?? []) {
+      const pid = athleteToPlayer.get(row.athlete_id);
+      if (!pid) continue; // athlete not resolved to a roster player — skip honestly.
       const arr = membersByGroup.get(row.group_id) ?? [];
-      arr.push(row.player_id);
+      arr.push(pid);
       membersByGroup.set(row.group_id, arr);
     }
   }
@@ -184,32 +191,19 @@ export async function getStrengthGroupsBoard(
 
   // ---- Availability (latest per player) ------------------------------------
   const availByPlayer = new Map<string, PlayerRuleAttributes['availability_status']>();
-  {
-    const { data: avail } = await supabase
-      .from('baseball_availability_statuses')
-      .select('player_id, status, starts_at')
-      .eq('team_id', teamId)
-      .order('starts_at', { ascending: false });
-    for (const a of (avail ?? []) as Array<{ player_id: string; status: string }>) {
-      if (!availByPlayer.has(a.player_id)) {
-        availByPlayer.set(a.player_id, a.status as PlayerRuleAttributes['availability_status']);
+  if (liftCtx && teamAthleteIds.length) {
+    const { data: avail } = await fromUntyped(supabase, 'helm_lifting_availability_statuses')
+      .select('athlete_id, status, starts_at')
+      .eq('organization_id', liftCtx.organizationId)
+      .in('athlete_id', teamAthleteIds)
+      .order('starts_at', { ascending: false }) as { data: Array<{ athlete_id: string; status: string }> | null };
+    for (const a of avail ?? []) {
+      const pid = athleteToPlayer.get(a.athlete_id);
+      if (pid && !availByPlayer.has(pid)) {
+        availByPlayer.set(pid, a.status as PlayerRuleAttributes['availability_status']);
       }
     }
   }
-
-  // ---- Helm Lifting Lab org + athlete-id map (resolved once, reused below) --
-  // W2-G rewire: submitReadinessCheckin / createLiftAssignment / logLiftResult
-  // (lifting.ts) write ONLY to the unified helm_lifting_* tables now — the
-  // legacy baseball_readiness_checkins / baseball_lift_sessions tables are
-  // write-dead. Resolved once here and reused for both the soreness section
-  // and the lift-history section below.
-  const liftCtx = await resolveBaseballLiftingOrg(teamId);
-  const athleteMap = liftCtx && playerIds.length
-    ? await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds)
-    : {};
-  const athleteToPlayer = new Map<string, string>();
-  for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
-  const teamAthleteIds = Object.values(athleteMap);
 
   // ---- Soreness: max severity on each player's latest check-in -------------
   const sorenessByPlayer = new Map<string, number>();
@@ -248,14 +242,15 @@ export async function getStrengthGroupsBoard(
 
   // ---- Bodyweight: latest entry per player (fallback to profile weight) -----
   const bwByPlayer = new Map<string, number>();
-  {
-    const { data: bw } = await supabase
-      .from('baseball_bodyweight_entries')
-      .select('player_id, entry_date, weight_lbs')
-      .eq('team_id', teamId)
-      .order('entry_date', { ascending: false });
-    for (const e of (bw ?? []) as Array<{ player_id: string; weight_lbs: number }>) {
-      if (!bwByPlayer.has(e.player_id)) bwByPlayer.set(e.player_id, e.weight_lbs);
+  if (liftCtx && teamAthleteIds.length) {
+    const { data: bw } = await fromUntyped(supabase, 'helm_lifting_bodyweight_entries')
+      .select('athlete_id, entry_date, weight_lbs')
+      .eq('organization_id', liftCtx.organizationId)
+      .in('athlete_id', teamAthleteIds)
+      .order('entry_date', { ascending: false }) as { data: Array<{ athlete_id: string; weight_lbs: number }> | null };
+    for (const e of bw ?? []) {
+      const pid = athleteToPlayer.get(e.athlete_id);
+      if (pid && !bwByPlayer.has(pid)) bwByPlayer.set(pid, e.weight_lbs);
     }
   }
 
@@ -307,54 +302,5 @@ export async function getStrengthGroupsBoard(
     })),
     roster: rosterAttrs,
     defaultGroupsPresent,
-  };
-}
-
-/** One group's membership (resolved to player names + source) + recent audit. */
-export async function getStrengthGroupDetail(
-  teamId: string,
-  groupId: string,
-): Promise<StrengthGroupDetailData | null> {
-  const supabase = (await createClient()) as Db;
-
-  const { data: group } = await supabase
-    .from('baseball_strength_groups')
-    .select('*')
-    .eq('id', groupId)
-    .eq('team_id', teamId)
-    .maybeSingle();
-  if (!group) return null;
-
-  const { data: memberRows } = await supabase
-    .from('baseball_strength_group_members')
-    .select('player_id, source, baseball_players!inner ( first_name, last_name, primary_position )')
-    .eq('group_id', groupId);
-  const members: StrengthGroupMemberDetail[] = (memberRows ?? [])
-    .map((m: {
-      player_id: string;
-      source: BaseballGroupMemberSource;
-      baseball_players: { first_name: string | null; last_name: string | null; primary_position: string | null };
-    }) => ({
-      player_id: m.player_id,
-      source: m.source,
-      first_name: m.baseball_players?.first_name ?? null,
-      last_name: m.baseball_players?.last_name ?? null,
-      primary_position: m.baseball_players?.primary_position ?? null,
-    }))
-    .sort((a: StrengthGroupMemberDetail, b: StrengthGroupMemberDetail) =>
-      (a.last_name ?? '').localeCompare(b.last_name ?? ''),
-    );
-
-  const { data: auditRows } = await supabase
-    .from('baseball_strength_group_audit')
-    .select('*')
-    .eq('group_id', groupId)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  return {
-    group: group as BaseballStrengthGroupRow,
-    members,
-    audit: (auditRows ?? []) as BaseballStrengthGroupAuditRow[],
   };
 }

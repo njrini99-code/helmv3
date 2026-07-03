@@ -85,15 +85,11 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
     );
   }
 
-  const { team, coaches, roster, activityDaily, errors, coachhelm } = detail;
+  const { team, coaches, roster, activityDaily, errors, coachhelm, teamLastActivity } = detail;
   const coachIds = coaches.map((c) => c.id);
   const extras = await fetchTeamPageExtras({ teamId, organizationId: team.organizationId, coachIds });
 
   const now = new Date();
-  const teamLastActivity = roster.reduce<string | null>(
-    (latest, r) => (r.lastRoundAt && (!latest || r.lastRoundAt > latest) ? r.lastRoundAt : latest),
-    null,
-  );
   const health = classifyTeamHealth(teamLastActivity, now);
   const rounds30d = activityDaily.reduce((sum, d) => sum + d.rounds, 0);
   const logins30d = activityDaily.reduce((sum, d) => sum + d.logins, 0);

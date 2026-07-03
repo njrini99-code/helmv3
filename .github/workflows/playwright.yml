@@ -96,6 +96,29 @@ jobs:
         with:
           persist-credentials: false
 
+      # Fails in seconds instead of minutes when a required secret is
+      # missing/empty. The BaseballHelm mandatory smoke below is a hard gate
+      # (no `|| echo` shim) — without this check a missing secret surfaces
+      # 15-20 minutes in as an opaque login/seed failure after `npm ci` +
+      # `npm run build` + browser install have already run. Golf's
+      # E2E_GOLF_* vars are intentionally NOT checked here: those specs
+      # self-skip when unset (see course-library.spec.ts), so an empty value
+      # is a valid, supported state for them — only the vars that make a
+      # later step unconditionally fail belong in this gate.
+      - name: Verify required secrets are present
+        run: |
+          missing=()
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing+=("SUPABASE_SERVICE_ROLE_KEY")
+          [ -z "$E2E_BASEBALL_COACH_PASSWORD" ] && missing+=("E2E_BASEBALL_COACH_PASSWORD")
+          [ -z "$E2E_BASEBALL_PLAYER_PASSWORD" ] && missing+=("E2E_BASEBALL_PLAYER_PASSWORD")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secret(s): ${missing[*]}"
+            echo "The BaseballHelm mandatory smoke (#372) needs these to seed + log in the CI baseball accounts."
+            echo "Set them in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "All required secrets present."
+
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:

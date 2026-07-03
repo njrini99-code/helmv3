@@ -61,12 +61,14 @@ test.describe('Messaging', () => {
 
       if (await firstConversation.count() > 0 && await firstConversation.isVisible({ timeout: 2000 })) {
         await firstConversation.click();
-        await page.waitForTimeout(500);
 
         // Find message input
         const messageInput = page.locator(
           'textarea[placeholder*="message"], input[placeholder*="message"], [data-testid="message-input"]'
         );
+        // Wait for the conversation panel to actually mount instead of
+        // guessing 500ms — the subsequent .count() check doesn't wait on its own.
+        await messageInput.first().waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
 
         if (await messageInput.count() > 0) {
           // Type message
@@ -98,10 +100,12 @@ test.describe('Messaging', () => {
 
       if (await firstConversation.count() > 0 && await firstConversation.isVisible({ timeout: 2000 })) {
         await firstConversation.click();
-        await page.waitForTimeout(500);
 
         // Look for read receipts or status indicators
         const statusIndicator = page.locator('[data-testid="message-status"], .message-status, svg[class*="check"]');
+        // Wait for the conversation panel to actually mount instead of
+        // guessing 500ms — the subsequent .count() check doesn't wait on its own.
+        await statusIndicator.first().waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
 
         if (await statusIndicator.count() > 0) {
           await expect(statusIndicator.first()).toBeVisible();
@@ -120,7 +124,8 @@ test.describe('Messaging', () => {
 
       if (await searchInput.count() > 0) {
         await searchInput.first().fill('test');
-        await page.waitForTimeout(1000);
+        // Wait for the filtered fetch to settle instead of a flat 1000ms guess.
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 
         // Results should filter
         const conversations = page.locator('[data-testid="conversation-item"], .conversation-item');
@@ -178,9 +183,9 @@ test.describe('Messaging', () => {
 
       if (await unreadConversation.count() > 0 && await unreadConversation.isVisible({ timeout: 2000 })) {
         await unreadConversation.click();
-        await page.waitForTimeout(1000);
 
-        // Unread badge should disappear
+        // Unread badge should disappear — the assertion below already polls,
+        // so no separate sleep is needed before it.
         const unreadBadge = unreadConversation.locator('.unread-badge');
         if (await unreadBadge.count() > 0) {
           await expect(unreadBadge).not.toBeVisible({ timeout: 5000 });

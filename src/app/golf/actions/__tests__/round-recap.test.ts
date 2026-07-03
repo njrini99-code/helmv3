@@ -79,11 +79,14 @@ vi.mock('@/lib/coachhelm/v3/llm/compose', () => ({
 }));
 
 // generateRoundRecapImpl calls revalidatePath('/golf/dashboard/rounds/...')
-// after persisting the recap. Outside a real Next.js request, that throws
-// "Invariant: static generation store missing" — mock it out like the
-// other action test suites (program-onboarding, travel, etc.) do.
+// when explicitly opted into via { revalidate: true } (see the "prod incident
+// d0a9265f" describe block below). Outside a real Next.js request, an
+// unmocked revalidatePath throws "Invariant: static generation store
+// missing" — mock it out like the other action test suites (program-
+// onboarding, travel, etc.) do, and assert on the mock's call count.
+const revalidatePathMock = vi.fn();
 vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
+  revalidatePath: (...args: [string]) => revalidatePathMock(...args),
 }));
 
 import { generateRoundRecap } from '../round-recap';
@@ -118,6 +121,7 @@ describe('generateRoundRecap — 9-hole vs 18-hole average comparisons', () => {
     persistedUpdate = null;
     composeMock.mockClear();
     mockFrom.mockClear();
+    revalidatePathMock.mockClear();
   });
 
   it('skips the season-average and best-round comparisons for a 9-hole round', async () => {

@@ -232,25 +232,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse body
-    let body: unknown;
-    const contentType = request.headers.get('content-type');
-    
-    if (contentType?.includes('application/json')) {
-      body = await request.json();
-    } else {
-      // Handle sendBeacon which sends as text/plain
-      const text = await request.text();
-      try {
-        body = JSON.parse(text);
-      } catch {
-        return NextResponse.json(
-          { error: 'Invalid JSON' },
-          { status: 400 }
-        );
-      }
+    // Read body defensively. sendBeacon flushes (tab close, navigation,
+    // aborted requests) can arrive empty or truncated regardless of the
+    // declared content-type, and request.json() throws a raw SyntaxError
+    // on those — which used to escape uncaught to the outer catch below
+    // and mint a logServerError incident for every dropped beacon (an
+    // error-logging endpoint that errors on bad input creates a noise
+    // loop). Read as text first so empty/malformed bodies get a clean,
+    // un-logged response; logServerError stays reserved for genuine
+    // internal failures after a valid body is parsed.
+    const raw = await request.text();
+    if (!raw.trim()) {
+      return new NextResponse(null, { status: 204 });
     }
-    
+
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON' },
+        { status: 400 }
+      );
+    }
+
     // Validate
     if (!validatePayload(body)) {
       return NextResponse.json(

@@ -2,6 +2,11 @@ import { test, expect } from '@playwright/test';
 import { loginAsCoach, TEST_USERS } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
+// Mirrors playwright/baseball-auth.setup.ts's SUCCESS_URL_RE: the real
+// post-login contract is /baseball/dashboard/* (coach) or /baseball/player/*
+// (player) — a player login never contains "/dashboard/" in its URL.
+const SUCCESS_URL_RE = /\/baseball\/(dashboard|player)/;
+
 test.describe('Authentication', () => {
   test.describe('Login', () => {
     test('should successfully log in as a coach', async ({ page }) => {
@@ -34,11 +39,12 @@ test.describe('Authentication', () => {
       // Submit form
       await page.click('button[type="submit"]');
 
-      // Should redirect to dashboard
-      await page.waitForURL('**/dashboard/**', { timeout: 10000 });
+      // Players land on /baseball/player/*, not /baseball/dashboard/* — use
+      // the real post-login URL contract, not the coach-only '/dashboard/' glob.
+      await page.waitForURL(SUCCESS_URL_RE, { timeout: 10000 });
 
-      // Verify we're on the dashboard
-      expect(page.url()).toContain('/dashboard');
+      // Verify we landed on an authenticated baseball surface.
+      expect(page.url()).toMatch(SUCCESS_URL_RE);
     });
 
     test('should show error with invalid credentials', async ({ page }) => {

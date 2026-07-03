@@ -67,8 +67,8 @@ test.describe('Player Discovery', () => {
         // Select a graduation year
         await gradYearFilter.first().selectOption('2025');
 
-        // Wait for filtered results
-        await page.waitForTimeout(1000);
+        // Wait for the filtered fetch to settle instead of a flat 1000ms guess.
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 
         // Check that results updated
         const playerCards = page.locator('[data-testid="player-card"], .player-card');
@@ -91,8 +91,9 @@ test.describe('Player Discovery', () => {
         // Select a position
         await positionFilter.first().selectOption('SS');
 
-        // Wait for filtered results
-        await page.waitForTimeout(1000);
+        // Wait for the real state change under test — the URL param — instead
+        // of guessing how long the filter takes.
+        await page.waitForURL((u) => u.searchParams.get('position') === 'SS', { timeout: 5000 }).catch(() => {});
 
         // Verify URL or state updated
         const url = page.url();
@@ -112,8 +113,9 @@ test.describe('Player Discovery', () => {
         // Select a state
         await stateFilter.first().selectOption('TX');
 
-        // Wait for filtered results
-        await page.waitForTimeout(1000);
+        // Wait for the real state change under test — the URL param — instead
+        // of guessing how long the filter takes.
+        await page.waitForURL((u) => u.searchParams.get('state') === 'TX', { timeout: 5000 }).catch(() => {});
 
         // Verify URL or state updated
         const url = page.url();
@@ -129,7 +131,7 @@ test.describe('Player Discovery', () => {
 
       if (await gradYearFilter.count() > 0) {
         await gradYearFilter.first().selectOption('2025');
-        await page.waitForTimeout(500);
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 
         // Look for clear/reset button
         const clearButton = page.locator(
@@ -138,7 +140,12 @@ test.describe('Player Discovery', () => {
 
         if (await clearButton.count() > 0) {
           await clearButton.first().click();
-          await page.waitForTimeout(500);
+
+          // Real state change: the select's own value resets — poll on that
+          // instead of guessing how long the reset takes.
+          await expect
+            .poll(async () => gradYearFilter.first().inputValue(), { timeout: 5000 })
+            .not.toBe('2025');
 
           // Filter should be reset
           const selectedValue = await gradYearFilter.first().inputValue();
@@ -161,8 +168,8 @@ test.describe('Player Discovery', () => {
         // Type in search query
         await searchInput.first().fill('John');
 
-        // Wait for search results
-        await page.waitForTimeout(1000);
+        // Wait for the search fetch to settle instead of a flat 1000ms guess.
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 
         // Should show filtered results
         const playerCards = page.locator('[data-testid="player-card"], .player-card');
@@ -185,11 +192,10 @@ test.describe('Player Discovery', () => {
         // Start typing
         await searchInput.first().fill('Jo');
 
-        // Wait for suggestions
-        await page.waitForTimeout(500);
-
-        // Check for dropdown/suggestions
+        // Check for dropdown/suggestions — wait for it to actually mount
+        // instead of guessing 500ms, tolerant since it's an opt-in affordance.
         const suggestions = page.locator('[role="listbox"], [data-testid="autocomplete-list"], .autocomplete-suggestions');
+        await suggestions.first().waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
 
         if (await suggestions.count() > 0) {
           await expect(suggestions.first()).toBeVisible();

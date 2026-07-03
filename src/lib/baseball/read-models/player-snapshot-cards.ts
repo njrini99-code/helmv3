@@ -538,6 +538,41 @@ export async function getPlayerSnapshotCards(
         .order('checkin_date', { ascending: false }).limit(1).maybeSingle()
     : Promise.resolve({ data: null, error: null });
 
+  // Strength card: active availability, bodyweight trend, and lift session
+  // history all live in the unified helm_lifting_* tables (athlete_id-keyed),
+  // resolved via the same org + athlete-id bridge as the checkin query above.
+  const availQuery = liftCtx && athleteId
+    ? fromUntyped(db, 'helm_lifting_availability_statuses')
+        .select('status, reason_category, starts_at')
+        .eq('organization_id', liftCtx.organizationId)
+        .eq('athlete_id', athleteId)
+        .order('starts_at', { ascending: false }).limit(1).maybeSingle()
+    : Promise.resolve({ data: null, error: null });
+  const bwQuery = liftCtx && athleteId
+    ? fromUntyped(db, 'helm_lifting_bodyweight_entries')
+        .select('entry_date, weight_lbs')
+        .eq('organization_id', liftCtx.organizationId)
+        .eq('athlete_id', athleteId)
+        .order('entry_date', { ascending: false }).limit(8)
+    : Promise.resolve({ data: [], error: null });
+  const liftDoneQuery = liftCtx && athleteId
+    ? fromUntyped(db, 'helm_lifting_sessions')
+        .select('id, title, scheduled_date, status, completed_at')
+        .eq('organization_id', liftCtx.organizationId)
+        .eq('athlete_id', athleteId)
+        .lte('scheduled_date', today)
+        .order('scheduled_date', { ascending: false }).limit(30)
+    : Promise.resolve({ data: [], error: null });
+  const liftNextQuery = liftCtx && athleteId
+    ? fromUntyped(db, 'helm_lifting_sessions')
+        .select('id, title, scheduled_date, status')
+        .eq('organization_id', liftCtx.organizationId)
+        .eq('athlete_id', athleteId)
+        .gte('scheduled_date', today)
+        .in('status', ['assigned', 'started', 'modified'])
+        .order('scheduled_date', { ascending: true }).limit(1).maybeSingle()
+    : Promise.resolve({ data: null, error: null });
+
   // --- Fan out every independent read in parallel ---
   const [
     playerRes,
@@ -580,10 +615,10 @@ export async function getPlayerSnapshotCards(
       .select('id, title, category, severity, confidence, created_at, disposition, visibility')
       .eq('team_id', teamId).eq('player_id', playerId)
       .order('created_at', { ascending: false }).limit(5),
-    db.from('baseball_availability_statuses')
-      .select('status, reason_category, starts_at')
-      .eq('team_id', teamId).eq('player_id', playerId)
-      .order('starts_at', { ascending: false }).limit(1).maybeSingle(),
+    // Strength card availability — resolved above into availQuery (the unified
+    // helm_lifting_availability_statuses table; the legacy
+    // baseball_availability_statuses table is write-dead).
+    availQuery,
     // No persisted band column — pull the inputs and run computeReadiness (the
     // same transparent function the coach Readiness board + Player Today use).
     // W2-G rewire: reads helm_lifting_readiness_checkins (resolved above into
@@ -597,23 +632,16 @@ export async function getPlayerSnapshotCards(
       .select('event_type, pop_time, block_result, measured_at, created_at')
       .eq('team_id', teamId).eq('catcher_id', playerId)
       .order('created_at', { ascending: false }).limit(500),
-    db.from('baseball_bodyweight_entries')
-      .select('entry_date, weight_lbs')
-      .eq('player_id', playerId).eq('team_id', teamId)
-      .order('entry_date', { ascending: false }).limit(8),
-    // Completed/assigned lift sessions in the trailing 30-day window.
-    db.from('baseball_lift_sessions')
-      .select('id, title, scheduled_date, status, completed_at')
-      .eq('player_id', playerId).eq('team_id', teamId)
-      .lte('scheduled_date', today)
-      .order('scheduled_date', { ascending: false }).limit(30),
-    // Next scheduled (assigned/started/modified) lift after today.
-    db.from('baseball_lift_sessions')
-      .select('id, title, scheduled_date, status')
-      .eq('player_id', playerId).eq('team_id', teamId)
-      .gte('scheduled_date', today)
-      .in('status', ['assigned', 'started', 'modified'])
-      .order('scheduled_date', { ascending: true }).limit(1).maybeSingle(),
+    // Bodyweight trend — resolved above into bwQuery (the unified
+    // helm_lifting_bodyweight_entries table; the legacy
+    // baseball_bodyweight_entries table is write-dead).
+    bwQuery,
+    // Completed/assigned lift sessions in the trailing 30-day window — resolved
+    // above into liftDoneQuery (the unified helm_lifting_sessions table).
+    liftDoneQuery,
+    // Next scheduled (assigned/started/modified) lift after today — resolved
+    // above into liftNextQuery.
+    liftNextQuery,
     supabase.from('baseball_player_classes')
       .select('class_name, semester, days, start_time, updated_at')
       .eq('player_id', playerId).order('updated_at', { ascending: false }).limit(40),

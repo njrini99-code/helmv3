@@ -28,7 +28,28 @@ export async function POST(request: NextRequest) {
     // Anonymous writes are accepted, flagged, and severity-capped.
     const isAnonymous = !user;
 
-    const errorReport = await request.json();
+    // Read body defensively. sendBeacon flushes (tab close, navigation,
+    // aborted requests) can arrive empty or truncated, and request.json()
+    // throws a raw SyntaxError on those — which used to fall through to
+    // the bare catch below and return a generic 500 for what is really a
+    // client-side no-op. Read as text first so empty/malformed bodies get
+    // a clean, cheap response instead of being treated as a server failure.
+    const raw = await request.text();
+    if (!raw.trim()) {
+      return new NextResponse(null, { status: 204 });
+    }
+
+    let errorReport: Record<string, unknown>;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+      }
+      errorReport = parsed as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
     const adminClient = createAdminClient();
 
     const severityMap: Record<string, 'info' | 'warning' | 'error' | 'critical'> = {

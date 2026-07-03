@@ -3,30 +3,31 @@ import { test, expect } from '@playwright/test';
 /**
  * Golf Qualifier E2E Test
  * Tests qualifier creation, round submission, and leaderboard
+ *
+ * AUTH: env-gated (matches e2e/course-library.spec.ts's "authenticated
+ * flow" pattern) — the previous hardcoded coach@helmsportslabs.com /
+ * rinin376@gmail.com credentials were placeholder/personal accounts, not
+ * CI-seeded ones, so every run against real CI failed at login. Set
+ * E2E_GOLF_EMAIL / E2E_GOLF_PASSWORD to a seeded golf coach/player login to
+ * run these; otherwise they self-skip instead of failing.
  */
 
-const TEST_COACH = {
-  email: 'coach@helmsportslabs.com',
-  password: 'TestPassword123!',
-};
-
-const TEST_PLAYER = {
-  email: 'rinin376@gmail.com',
-  password: 'Pirates#09!!',
-};
+const GOLF_EMAIL = process.env.E2E_GOLF_EMAIL;
+const GOLF_PASSWORD = process.env.E2E_GOLF_PASSWORD;
+const hasSeededAuth = Boolean(GOLF_EMAIL && GOLF_PASSWORD);
 
 test.describe('Golf Qualifier - Coach Flow', () => {
   test.skip('should create a new qualifier', async ({ page }) => {
     // Skip if coach login not available
     // This test requires a coach account
 
-    await page.goto('http://localhost:3000/golf/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
+    await page.goto('/golf/login');
+    await page.fill('input[type="email"]', GOLF_EMAIL ?? '');
+    await page.fill('input[type="password"]', GOLF_PASSWORD ?? '');
     await page.click('button[type="submit"]');
 
     // Navigate to qualifiers
-    await page.goto('http://localhost:3000/golf/dashboard/qualifiers');
+    await page.goto('/golf/dashboard/qualifiers');
 
     // Click create qualifier
     await page.click('button:has-text("Create Qualifier")');
@@ -45,17 +46,19 @@ test.describe('Golf Qualifier - Coach Flow', () => {
 });
 
 test.describe('Golf Qualifier - Player Flow', () => {
+  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000/golf/login');
-    await page.fill('input[type="email"]', TEST_PLAYER.email);
-    await page.fill('input[type="password"]', TEST_PLAYER.password);
+    await page.goto('/golf/login');
+    await page.fill('input[type="email"]', GOLF_EMAIL as string);
+    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
     await page.click('button[type="submit"]');
     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
   });
 
   test('should view qualifiers list', async ({ page }) => {
     // Navigate to qualifiers page
-    await page.goto('http://localhost:3000/golf/dashboard/qualifiers');
+    await page.goto('/golf/dashboard/qualifiers');
 
     // Should see qualifiers heading
     await expect(page.locator('h1')).toContainText(/Qualifier/i);
@@ -66,7 +69,7 @@ test.describe('Golf Qualifier - Player Flow', () => {
   });
 
   test('should view qualifier details', async ({ page }) => {
-    await page.goto('http://localhost:3000/golf/dashboard/qualifiers');
+    await page.goto('/golf/dashboard/qualifiers');
 
     // Click on a qualifier if one exists
     const qualifierLink = page.locator('a[href*="/qualifiers/"]').first();
@@ -83,7 +86,7 @@ test.describe('Golf Qualifier - Player Flow', () => {
   });
 
   test('should submit a round for a qualifier', async ({ page }) => {
-    await page.goto('http://localhost:3000/golf/dashboard/qualifiers');
+    await page.goto('/golf/dashboard/qualifiers');
 
     // Find a qualifier with "Submit Round" option
     const submitButton = page.locator('button:has-text("Submit Round"), a:has-text("Submit Round")').first();
@@ -98,16 +101,18 @@ test.describe('Golf Qualifier - Player Flow', () => {
 });
 
 test.describe('Golf Qualifier - Leaderboard', () => {
+  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000/golf/login');
-    await page.fill('input[type="email"]', TEST_PLAYER.email);
-    await page.fill('input[type="password"]', TEST_PLAYER.password);
+    await page.goto('/golf/login');
+    await page.fill('input[type="email"]', GOLF_EMAIL as string);
+    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
     await page.click('button[type="submit"]');
     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
   });
 
   test('should display leaderboard correctly', async ({ page }) => {
-    await page.goto('http://localhost:3000/golf/dashboard/qualifiers');
+    await page.goto('/golf/dashboard/qualifiers');
 
     // Navigate to a qualifier
     const qualifierLink = page.locator('a[href*="/qualifiers/"]').first();
@@ -127,7 +132,7 @@ test.describe('Golf Qualifier - Leaderboard', () => {
   });
 
   test('should highlight qualifying positions', async ({ page }) => {
-    await page.goto('http://localhost:3000/golf/dashboard/qualifiers');
+    await page.goto('/golf/dashboard/qualifiers');
 
     const qualifierLink = page.locator('a[href*="/qualifiers/"]').first();
 

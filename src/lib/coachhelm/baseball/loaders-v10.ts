@@ -54,12 +54,12 @@ export interface ReadinessRow {
 }
 
 /**
- * One materialized session from baseball_lift_sessions (status drives
- * compliance). This is the V11 unified storage model — publishLiftDay
- * MATERIALIZES one session per player, and this is what the player Today card,
- * the player lift route, AND the engine all read. (The legacy
- * baseball_lift_assignments/baseball_lift_results island is no longer the engine
- * source — it was unreadable by the V11 publish path.)
+ * One materialized session from helm_lifting_sessions (status drives
+ * compliance). This is the unified Helm Lifting Lab storage model —
+ * publishLiftDay MATERIALIZES one session per player, and this is what the
+ * player Today card, the player lift route, AND the engine all read. (The
+ * legacy baseball_lift_sessions / baseball_lift_assignments /
+ * baseball_lift_results tables are write-dead — unreadable by the publish path.)
  */
 export interface LiftSessionRow {
   id: string;
@@ -69,7 +69,7 @@ export interface LiftSessionRow {
   status: string;
 }
 
-/** One set result from baseball_lift_set_results (per-set RPE). */
+/** One set result from helm_lifting_set_results (per-set RPE). */
 export interface LiftSetResultRow {
   id: string;
   player_id: string;
@@ -232,7 +232,7 @@ function loadLiftMetrics(
       'lift_completion_rate',
       completed / mineSessions.length,
       mineSessions.length,
-      [ref('baseball_lift_sessions', 'status,scheduled_date', 'staff_only', mineSessions.length, 'Lift completion (due sessions)')],
+      [ref('helm_lifting_sessions', 'status,scheduled_date', 'staff_only', mineSessions.length, 'Lift completion (due sessions)')],
     );
   }
 
@@ -246,7 +246,7 @@ function loadLiftMetrics(
   if (recentRpe.length > 0) {
     const avg = recentRpe.reduce((a, b) => a + num(b), 0) / recentRpe.length;
     out.lift_rpe_avg = toMetric('lift_rpe_avg', avg, recentRpe.length, [
-      ref('baseball_lift_set_results', 'rpe', 'staff_only', recentRpe.length, 'Rolling 14-day set RPE'),
+      ref('helm_lifting_set_results', 'rpe', 'staff_only', recentRpe.length, 'Rolling 14-day set RPE'),
     ]);
   }
   return out;

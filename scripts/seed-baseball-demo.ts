@@ -18,7 +18,11 @@
  *     reinsert anywhere. Nothing existing is destroyed; a second run is a no-op
  *     diff.
  *   - Auth users are looked up by email first (public.users) and only created
- *     if missing — never deleted, never password-reset destructively.
+ *     if missing — never deleted. The two synthetic CI identities (demo-coach@
+ *     / demo-player@baseballhelmdemo.com) have their password force-set on
+ *     every run (non-destructive — same DEMO_PASSWORD every time) to prevent
+ *     credential drift from bricking CI logins; all other seeded identities
+ *     keep the "never password-reset" rule.
  *   - Scoped strictly to the demo org/team ids below. Touches nothing else.
  *
  * DO NOT run automatically. This is a user-run script.
@@ -198,15 +202,48 @@ async function upsert(table: string, rows: readonly unknown[], conflict = 'id') 
 
 // ---------------------------------------------------------------------------
 // Auth user: look up by email (public.users), create only if missing.
-// Never deletes; never resets an existing user's password.
+// Never deletes.
+//
+// PASSWORD DRIFT (2026-07-03 CI forensics): for every OTHER seeded identity
+// (the 7 bench players) an existing user's password is left untouched, same
+// as always. But for the two synthetic CI identities — DEMO_COACH_EMAIL /
+// DEMO_PLAYER_EMAIL, the ones playwright/baseball-auth.setup.ts logs in
+// as — an existing row whose actual auth password has drifted from
+// DEMO_PASSWORD (e.g. someone rotated E2E_BASEBALL_*_PASSWORD without
+// updating the live user, or a manual password reset) turns every CI run
+// into a failed login. Playwright's retry logic (up to 3x) then hammers
+// that login 3 times per run, and login_attempts (10 failures -> 30min
+// lock) turns the FIRST bad run into a self-sustaining lockout for every
+// run after it, even after the credential mismatch is fixed. Force-setting
+// the password on every run for just these two accounts makes the seed the
+// single source of truth for their credentials, closing that loop.
 // ---------------------------------------------------------------------------
+const FORCE_PASSWORD_RESET_EMAILS = new Set(
+  [DEMO_COACH_EMAIL, DEMO_PLAYER_EMAIL].map((e) => e.toLowerCase()),
+);
+
 async function ensureAuthUser(email: string): Promise<{ userId: string | null; created: boolean }> {
   const { data: existing } = await supabase
     .from('users')
     .select('id')
     .ilike('email', email)
     .maybeSingle();
-  if (existing) return { userId: existing.id as string, created: false };
+  const forcePassword = FORCE_PASSWORD_RESET_EMAILS.has(email.toLowerCase());
+
+  if (existing) {
+    if (forcePassword && !DRY) {
+      const { error: resetErr } = await supabase.auth.admin.updateUserById(existing.id as string, {
+        password: DEMO_PASSWORD,
+      });
+      if (resetErr) {
+        // Don't fail the whole seed over this — but surface it loudly, since
+        // a silent failure here is exactly the "self-sustaining lockout"
+        // this guard exists to prevent.
+        console.warn(`  ⚠ password force-reset failed for ${email}: ${resetErr.message}`);
+      }
+    }
+    return { userId: existing.id as string, created: false };
+  }
   if (DRY) return { userId: null, created: false };
   const { data, error } = await supabase.auth.admin.createUser({
     email,
@@ -233,15 +270,14 @@ async function main() {
   }
   console.log(`${DRY ? '[DRY RUN] ' : ''}Seeding BaseballHelm Phase-1 demo (team ${TEAM_ID.slice(0, 8)})`);
 
-  // --- 0. Auth logins (coach + demo player) -------------------------------
-  const coachUser = await ensureAuthUser(DEMO_COACH_EMAIL);
-  const playerUser = await ensureAuthUser(DEMO_PLAYER_EMAIL);
-
-  // Lift any account lockout carried over from earlier failed CI runs —
-  // login_attempts is per-email and persists across runs (cap 10 → 30min
-  // lock), so one misconfigured-secret run can brick every later E2E run
-  // even after the secret is fixed (2026-07-02 forensics: both demo
-  // accounts at 10/10). Rows repopulate benignly on real failures.
+  // --- -1. Lift any account lockout carried over from earlier failed CI runs,
+  // BEFORE anything else. login_attempts is per-email and persists across
+  // runs (cap 10 -> 30min lock), so one misconfigured-secret or password-
+  // drift run can brick every later E2E run even after the root cause is
+  // fixed (2026-07-02 forensics: both demo accounts at 10/10). Cleared at
+  // seed start, ahead of the auth calls below, so this run's own login
+  // attempts (in the Playwright smoke that follows) never inherit a stale
+  // lock. Rows repopulate benignly on real failures.
   if (!DRY) {
     const { error: lockErr } = await supabase
       .from('login_attempts')
@@ -249,6 +285,10 @@ async function main() {
       .in('email', [DEMO_COACH_EMAIL, DEMO_PLAYER_EMAIL]);
     if (lockErr) console.warn(`login_attempts clear skipped: ${lockErr.message}`);
   }
+
+  // --- 0. Auth logins (coach + demo player) -------------------------------
+  const coachUser = await ensureAuthUser(DEMO_COACH_EMAIL);
+  const playerUser = await ensureAuthUser(DEMO_PLAYER_EMAIL);
 
   // --- 1. Organization + team --------------------------------------------
   await upsert('organizations', [{

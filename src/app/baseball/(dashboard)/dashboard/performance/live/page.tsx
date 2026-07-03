@@ -21,6 +21,8 @@ import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { getLiveWeightRoomData } from '@/lib/baseball/read-models/live-weight-room';
 import { LiveWeightRoom } from '@/components/baseball/performance/LiveWeightRoom';
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
+import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
 import { getFullName } from '@/lib/utils';
 
 interface PageProps {
@@ -60,17 +62,20 @@ export default async function LiveWeightRoomPage({ searchParams }: PageProps) {
     if (p?.id) playerNameById[p.id] = getFullName(p.first_name, p.last_name);
   }
 
-  // Exercise library (team + global) for the substitute action.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
-  const { data: exRows } = await db
-    .from('baseball_lift_exercises')
-    .select('id, name, category')
-    .or(`team_id.eq.${teamId},is_global.eq.true`)
-    .order('name', { ascending: true });
-  const exerciseLibrary = ((exRows ?? []) as Array<{ id: string; name: string; category: string | null }>).map(
-    (e) => ({ id: e.id, name: e.name, category: e.category ?? null }),
-  );
+  // Exercise library (org + global) for the substitute action.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  let exerciseLibrary: Array<{ id: string; name: string; category: string | null }> = [];
+  if (liftCtx) {
+    const { data: exRows } = await fromUntyped(supabase, 'helm_lifting_exercises')
+      .select('id, name, category')
+      .eq('sport', 'baseball')
+      .eq('is_active', true)
+      .or(`organization_id.eq.${liftCtx.organizationId},is_global.eq.true`)
+      .order('name', { ascending: true }) as {
+      data: Array<{ id: string; name: string; category: string | null }> | null;
+    };
+    exerciseLibrary = (exRows ?? []).map((e) => ({ id: e.id, name: e.name, category: e.category ?? null }));
+  }
 
   return (
     <LiveWeightRoom
