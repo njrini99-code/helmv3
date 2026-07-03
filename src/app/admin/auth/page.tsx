@@ -38,13 +38,14 @@ async function AuthBody() {
       ) : null}
 
       <section className="grid gap-3 md:grid-cols-3">
-        <MetricCard label="Signups · 7d" value={tab.funnel.signups7d} />
-        <MetricCard label="Activated within 7d" value={tab.funnel.activated7d} />
+        <MetricCard label="Signups · 7d" value={tab.funnel.signups7d} tone="neutral" />
+        <MetricCard label="Activated within 7d" value={tab.funnel.activated7d} tone="neutral" />
         <MetricCard
           label="Activation rate"
           value={Math.round(tab.funnel.activationRate * 1000) / 10}
           suffix="%"
           decimals={1}
+          tone="neutral"
         />
       </section>
 
@@ -58,7 +59,7 @@ async function AuthBody() {
       />
 
       <Surface padding="md">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Lockouts &amp; failed attempts
         </h2>
         <div className="mt-3">
@@ -77,7 +78,7 @@ async function AuthBody() {
                     <StatusPill tone={isLocked ? 'danger' : 'warning'} dot size="sm">
                       {isLocked ? 'locked' : 'failed'}
                     </StatusPill>
-                    <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{l.email}</span>
+                    <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">{l.email}</span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
                       {l.failed_attempts} failed
                     </span>
@@ -95,7 +96,7 @@ async function AuthBody() {
       </Surface>
 
       <Surface padding="md">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Sign-in &amp; auth feed (7d)
         </h2>
         <div className="mt-3">
@@ -114,7 +115,7 @@ async function AuthBody() {
                   <span className="w-16 shrink-0 font-fw-mono text-eyebrow uppercase text-warm-500">
                     {row.event_type}
                   </span>
-                  <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">
+                  <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
                     {row.title}
                     {row.user_email ? ` — ${row.user_email}` : ''}
                   </span>
@@ -136,7 +137,7 @@ async function Sessions() {
   const sessions = await fetchActiveSessions();
   return (
     <Surface padding="md">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+      <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
         Active sessions ({sessions.length})
       </h2>
       <div className="mt-3">

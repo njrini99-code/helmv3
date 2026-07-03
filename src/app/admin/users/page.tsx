@@ -11,7 +11,11 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 export const dynamic = 'force-dynamic';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">{children}</h2>;
+  return (
+    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+      {children}
+    </h2>
+  );
 }
 
 export default async function UsersPage({
@@ -54,10 +58,10 @@ export default async function UsersPage({
         </form>
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatTile label="Total users" value={tab.users.length} mono />
-          <StatTile label="Golf" value={golfCount} mono />
-          <StatTile label="Baseball" value={baseballCount} mono />
-          <StatTile label="At-risk" value={tab.atRisk.length} mono goodDirection="down" />
+          <StatTile label="Total users" value={tab.users.length} tone="neutral" mono />
+          <StatTile label="Golf" value={golfCount} tone="neutral" mono />
+          <StatTile label="Baseball" value={baseballCount} tone="neutral" mono />
+          <StatTile label="At-risk" value={tab.atRisk.length} tone="neutral" mono goodDirection="down" />
         </section>
 
         <Surface padding="sm">

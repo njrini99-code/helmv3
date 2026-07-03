@@ -22,6 +22,7 @@ import { DEMO_ENTER_EVENT } from '@/lib/demo/config';
 import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { captureServer } from '@/lib/analytics/posthog-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 
 export type LoginResult = {
   success: boolean;
@@ -155,6 +156,22 @@ async function loginActionImpl(
   // Trace demo coach logins server-side (fire-and-forget; never throws)
   if (isDemoCoachEmail(normalizedEmail)) {
     captureServer(DEMO_ENTER_EVENT, data.user.id, { ip }).catch(() => {});
+  }
+
+  // Helm Bridge — land super-admins on /admin with NO extra DB cost. The
+  // allowlist check is a pure env-var parse + Set lookup (same one middleware
+  // and requireSuperAdmin already use), so ordinary players/coaches pay
+  // nothing extra here. This MUST run before the coach/player onboarding
+  // resolution below: a super-admin account can be team-less (no
+  // golf_coaches/golf_players row), which would otherwise route it into
+  // onboarding instead of the admin console. A caller-supplied returnTo still
+  // wins over this default — the client only falls back to `redirectTo` when
+  // no returnTo is present (see golf-sign-in-form.tsx).
+  if (isSuperAdminUserId(data.user.id, process.env.SUPER_ADMIN_USER_IDS)) {
+    return {
+      success: true,
+      redirectTo: '/admin',
+    };
   }
 
   // Get user role and profile status to determine redirect

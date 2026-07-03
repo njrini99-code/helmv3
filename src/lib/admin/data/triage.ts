@@ -2,6 +2,12 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
+import {
+  buildIncidentReport,
+  extractActionName,
+  extractCollapsedCount,
+  extractRoute,
+} from '@/lib/admin/incident-report';
 
 export type TriageSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -15,6 +21,14 @@ export interface AppTriageEventRow {
   user_id: string | null;
   url: string | null;
   created_at: string;
+  // Optional — Copy-for-Claude incident reports (feed buildIncidentReport).
+  // Present when the caller's SELECT includes them; mergeTriage degrades
+  // gracefully to a leaner report when a caller (or an older test fixture)
+  // omits them.
+  source?: string | null;
+  feature?: string | null;
+  stack_trace?: string | null;
+  metadata?: unknown;
 }
 
 export interface TriageItem {
@@ -30,6 +44,8 @@ export interface TriageItem {
   permalink: string | null;
   eventIds: string[];
   substatus: string | null;
+  /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
+  report: string;
 }
 
 const SENTRY_LEVEL_TO_SEVERITY: Record<string, TriageSeverity> = {
@@ -111,6 +127,18 @@ export function mergeTriage(input: {
     permalink: issue.permalink,
     eventIds: [],
     substatus: issue.substatus,
+    report: buildIncidentReport({
+      title: issue.title,
+      message: issue.culprit ?? issue.title,
+      fingerprint: issue.shortId,
+      source: 'sentry',
+      severity: SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error',
+      eventCount: issue.count,
+      affectedUserCount: issue.userCount,
+      firstSeen: issue.firstSeen,
+      lastSeen: issue.lastSeen,
+      sentryUrl: issue.permalink,
+    }),
   }));
 
   const buckets = new Map<string, { rows: AppTriageEventRow[]; users: Set<string> }>();
@@ -131,6 +159,14 @@ export function mergeTriage(input: {
       const rank: Record<TriageSeverity, number> = { critical: 0, error: 1, warning: 2, info: 3 };
       return rank[r.severity] < rank[acc] ? r.severity : acc;
     }, 'info');
+    // Most-recent-first, for both the eventIds ordering readers expect and
+    // buildIncidentReport's "recent occurrences" section.
+    const mostRecentFirst = [...sorted].reverse();
+    const actionName =
+      mostRecentFirst.map((r) => extractActionName(r.metadata)).find((a) => a !== null) ?? null;
+    const stackTrace = mostRecentFirst.map((r) => r.stack_trace).find((s) => !!s) ?? null;
+    const collapsedCount = bucket.rows.reduce((sum, r) => sum + extractCollapsedCount(r.metadata), 0);
+
     items.push({
       key: `app:${fp}`,
       origin: 'app',
@@ -144,6 +180,27 @@ export function mergeTriage(input: {
       permalink: null,
       eventIds: sorted.map((r) => r.id),
       substatus: null,
+      report: buildIncidentReport({
+        title: last.title,
+        message: last.message,
+        fingerprint: fp,
+        source: last.source ?? null,
+        severity: worst,
+        sport: normalizeSport(last.sport),
+        featureKey: last.feature ?? null,
+        actionName,
+        eventCount: bucket.rows.length,
+        collapsedCount,
+        affectedUserCount: bucket.users.size,
+        firstSeen: first.created_at,
+        lastSeen: last.created_at,
+        stackTrace,
+        occurrences: mostRecentFirst.slice(0, 20).map((r) => ({
+          timestamp: r.created_at,
+          route: r.url ?? extractRoute(r.metadata),
+          userId: r.user_id,
+        })),
+      }),
     });
   }
 
@@ -168,7 +225,9 @@ export async function fetchTriageQueue(): Promise<{
     fetchSentryIssues(),
     admin
       .from('admin_events')
-      .select('id, title, message, severity, sport, fingerprint, user_id, url, created_at')
+      .select(
+        'id, title, message, severity, sport, fingerprint, user_id, url, created_at, source, feature, stack_trace, metadata',
+      )
       .eq('event_type', 'error')
       .eq('resolved', false)
       .order('created_at', { ascending: false })

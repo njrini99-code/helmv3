@@ -44,6 +44,15 @@ export interface StatTileProps {
   suffix?: string;
   /** Use the mono ledger face for the value. Default false (tabular sans). */
   mono?: boolean;
+  /**
+   * Value-face tone, forwarded to `Numeric`. `'accent'` (default) paints the
+   * figure in brand green; `'neutral'` renders heavy graphite ink
+   * (text-primary/warm-900) instead — used by admin console KPI tiles, which
+   * reserve green for delta/context chips only (see KpiTile). Additive: the
+   * default is unchanged, so every existing golf/baseball caller is
+   * unaffected.
+   */
+  tone?: 'accent' | 'neutral';
 
   /** Optional micro-trend series (oldest → newest). Drives the Sparkline. */
   trendData?: ReadonlyArray<number>;
@@ -95,6 +104,7 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
     prefix,
     suffix,
     mono = false,
+    tone = 'accent',
     trendData,
     goodDirection = 'up',
     flatThreshold = 0,
@@ -125,7 +135,15 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
         ref={ref}
         data-slot="stat-tile"
         data-state="insufficient-data"
-        className={cn('flex flex-col gap-2', className)}
+        className={cn(
+          // Same Inset chrome as the "ready" branch below (rounded-fw-md
+          // bg-surface-sunken p-4, h-full) so a starved tile is ONE
+          // self-contained panel — never a label floating above a
+          // separately-bordered dashed box at a different height than its
+          // neighbors (phone-width KPI grid audit, 2026-07-02).
+          'flex h-full flex-col gap-2 rounded-fw-md bg-surface-sunken p-4',
+          className,
+        )}
       >
         <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</span>
         <InsufficientData
@@ -135,6 +153,13 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
           unit={unit}
           current={current}
           required={required}
+          // No icon in this dense embedding — the label above already gives
+          // context, and the icon's 40px circle was the single biggest
+          // contributor to these tiles "dominating" a 2-col phone grid.
+          icon={null}
+          // Flatten into the outer panel above instead of drawing its own
+          // nested dashed border/background (never card-in-card, §Inset).
+          className="flex-1 justify-center border-0 bg-transparent p-0"
         />
       </div>
     );
@@ -163,7 +188,10 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
       data-state="ready"
       className={cn(
         // Inset chrome: sunken well, lighter than MetricCard's Surface card.
-        'flex flex-col gap-2 rounded-fw-md bg-surface-sunken p-4',
+        // `h-full` pairs with KpiTile's `h-full` Link so every cell in a KPI
+        // grid row (ready or starved) fills the row's stretched height —
+        // no more mismatched panel heights (phone-width KPI grid audit).
+        'flex h-full flex-col gap-2 rounded-fw-md bg-surface-sunken p-4',
         className,
       )}
     >
@@ -174,6 +202,7 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
           prefix={prefix}
           suffix={suffix}
           mono={mono}
+          tone={tone}
           label={label}
           size="sm"
         />

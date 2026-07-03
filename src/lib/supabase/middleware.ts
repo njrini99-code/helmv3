@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-shared';
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
 import { evaluateAdminGate } from '@/lib/admin/super-admin-shared';
+import {
+  SESSION_IDLE_COOKIE,
+  SESSION_IDLE_COOKIE_MAX_AGE_S,
+  isSessionIdleExpired,
+  parseLastActivity,
+} from '@/lib/auth/session-idle-shared';
 
 /**
  * STAFF_CAPABILITY_ROUTES — the middleware mirror of every nav-registry entry
@@ -388,6 +394,66 @@ export async function updateSession(request: NextRequest) {
                            pathname.startsWith('/golf/dashboard') ||
                            pathname.startsWith('/lifting/dashboard');
   const isProtectedRoute = isDashboardRoute;
+
+  // ── Idle-timeout enforcement (5-minute re-auth) ───────────────────────────
+  // A user who has been away longer than the idle window must sign in again,
+  // rather than the session silently refreshing and auto-loading them back in.
+  // The activity marker (sb_last_activity) is written by real user interaction
+  // (client hook) and bootstrapped here on first sight; its long lifetime means
+  // a genuine reopen after the window is always "present + stale". Absent/fresh
+  // markers are treated as active so a brand-new login is never bounced.
+  // Scoped to sport page routes (golf/baseball/lifting); /api and /admin are out.
+  if (user && sport) {
+    const lastActivity = parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value);
+    const now = Date.now();
+
+    if (isSessionIdleExpired(lastActivity, now)) {
+      try {
+        // Local scope: clear cookies without a GoTrue round-trip — middleware
+        // must stay fast and must not depend on auth-server reachability.
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch {
+        /* fall through — the explicit cookie clears below still sign them out */
+      }
+
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = `/${sport}/login`;
+      loginUrl.search = '';
+      loginUrl.searchParams.set('message', 'session_expired');
+      if (isProtectedRoute) loginUrl.searchParams.set('returnTo', pathname);
+
+      const res = NextResponse.redirect(loginUrl);
+      // Propagate any cookie removals signOut wrote onto supabaseResponse...
+      supabaseResponse.cookies.getAll().forEach((cookie) => res.cookies.set(cookie));
+      // ...and belt-and-suspenders: explicitly expire every Supabase auth cookie
+      // seen on EITHER the incoming request OR the post-getUser()/signOut response
+      // (a same-tick token refresh can re-chunk the session into new cookie names
+      // that appear only on the response), plus the activity marker — so a stale
+      // session can't survive the redirect.
+      const authCookieNames = new Set<string>();
+      const collectAuthCookie = (name: string) => {
+        if (name.startsWith('sb-') && name.includes('-auth-token')) authCookieNames.add(name);
+      };
+      request.cookies.getAll().forEach((cookie) => collectAuthCookie(cookie.name));
+      supabaseResponse.cookies.getAll().forEach((cookie) => collectAuthCookie(cookie.name));
+      authCookieNames.forEach((name) => res.cookies.delete(name));
+      res.cookies.delete(SESSION_IDLE_COOKIE);
+      return res;
+    }
+
+    // Bootstrap the marker on first sight (fresh login). Do NOT refresh it when
+    // present — activity is tracked by real interaction (client), not by every
+    // server request, or background fetches would keep a session alive forever.
+    if (lastActivity === null) {
+      supabaseResponse.cookies.set(SESSION_IDLE_COOKIE, String(now), {
+        path: '/',
+        maxAge: SESSION_IDLE_COOKIE_MAX_AGE_S,
+        sameSite: 'lax',
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+      });
+    }
+  }
 
   // Redirect to login if accessing protected route without auth
   // Always redirect unauthenticated users - client-side will handle auth state

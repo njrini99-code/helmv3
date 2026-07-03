@@ -23,6 +23,20 @@ export function isAdminPath(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 }
 
+/**
+ * Cheapest-possible super-admin membership check: a pure env-var parse plus a
+ * Set lookup, no DB round trip. Shared by the golf login success path (to
+ * land a super-admin account on /admin instead of the onboarding/team
+ * default) and anything else that needs the same allowlist decision without
+ * paying a per-call DB hit for ordinary users.
+ */
+export function isSuperAdminUserId(
+  userId: string,
+  allowlistRaw: string | undefined | null,
+): boolean {
+  return parseSuperAdminUserIds(allowlistRaw).has(userId);
+}
+
 export type AdminGateDecision =
   | 'not-admin-path'
   | 'block-native'
