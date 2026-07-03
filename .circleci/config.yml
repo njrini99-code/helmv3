@@ -29,11 +29,11 @@ parameters:
 executors:
   node:
     docker:
-      - image: cimg/node:20.16
+      - image: cimg/node:22.13
     resource_class: medium
   node-large:
     docker:
-      - image: cimg/node:20.16
+      - image: cimg/node:22.13
     resource_class: large
   python:
     docker:
@@ -173,7 +173,7 @@ jobs:
     steps:
       - checkout
       - node/install:
-          node-version: "20.16"
+          node-version: "22.13"
       - install-node-deps
       - run:
           name: Build web bundle (for Capacitor sync)
