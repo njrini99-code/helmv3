@@ -15,6 +15,9 @@ version: 2
 updates:
   # ── npm (repo root) ───────────────────────────────────────────────────────
   - package-ecosystem: "npm"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
     directory: "/"
     schedule:
       interval: "weekly"
@@ -43,6 +46,9 @@ updates:
 
   # ── GitHub Actions ────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
     directory: "/"
     schedule:
       interval: "weekly"
@@ -59,6 +65,9 @@ updates:
 
   # ── Nested npm projects (kept out of the root manifest) ───────────────────
   - package-ecosystem: "npm"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
     directory: "/helm-website-ui"
     schedule:
       interval: "weekly"
@@ -77,6 +86,9 @@ updates:
           - "patch"
 
   - package-ecosystem: "npm"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
     directory: "/helm-intelligence/typescript"
     schedule:
       interval: "weekly"
@@ -95,6 +107,9 @@ updates:
           - "patch"
 
   - package-ecosystem: "npm"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
     directory: "/tools/ultra-agent-audit"
     schedule:
       interval: "weekly"
@@ -113,6 +128,9 @@ updates:
           - "patch"
 
   - package-ecosystem: "npm"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
     directory: "/tools/ux-flow-auditor"
     schedule:
       interval: "weekly"
@@ -132,6 +150,9 @@ updates:
 
   # ── iOS native (Swift Package Manager under the Capacitor app) ────────────
   - package-ecosystem: "swift"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
     directory: "/ios/App/CapApp-SPM"
     schedule:
       interval: "weekly"

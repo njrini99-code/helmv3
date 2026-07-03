@@ -59,7 +59,7 @@ export default async function GolfTravelPage() {
             <div className="mt-8">
               <Surface elevation="shadow" padding="lg">
                 <EmptyState
-                  icon={Plane}
+                  icon={<Plane strokeWidth={1.75} />}
                   title="You're not on a team yet"
                   description="Travel itineraries are scoped to a team. Join your program to view and manage tournament trips, lodging, and expenses."
                   action={

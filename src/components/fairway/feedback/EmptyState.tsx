@@ -26,7 +26,7 @@
  * `action` (e.g. your own <Button> or <Link>) and it sits in the CTA slot.
  * ========================================================================== */
 
-import { forwardRef } from 'react';
+import { forwardRef, isValidElement } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Inbox, SearchX, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -37,8 +37,16 @@ export type EmptyStateVariant = 'default' | 'search' | 'subtle';
 export interface EmptyStateProps {
   /** Layout / default-icon variant. */
   variant?: EmptyStateVariant;
-  /** Lucide icon for the chip. Defaults per variant; pass `null` to hide. */
-  icon?: LucideIcon | null;
+  /**
+   * Lucide icon for the chip. Defaults per variant; pass `null` to hide.
+   *
+   * Server Components must pass a rendered ELEMENT (`icon={<Compass />}`),
+   * not the component type: this file is 'use client', and a component type
+   * (a forwardRef object) can't cross the RSC boundary — passing one crashed
+   * every /golf/dashboard notFound() with React digest 3173807121
+   * ("Functions cannot be passed directly to Client Components").
+   */
+  icon?: LucideIcon | React.ReactElement | null;
   /** The headline — "No rounds yet", "No matches found". */
   title: React.ReactNode;
   /** One line explaining what belongs here / how to proceed. */
@@ -69,7 +77,8 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
   ref,
 ) {
   const reduced = useReducedMotion() ?? false;
-  const Icon = icon === null ? null : (icon ?? DEFAULT_ICON[variant]);
+  const iconNode = isValidElement(icon) ? icon : null;
+  const Icon = icon === null || iconNode ? null : ((icon as LucideIcon | undefined) ?? DEFAULT_ICON[variant]);
   const isSubtle = variant === 'subtle';
 
   return (
@@ -86,15 +95,21 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
         className,
       )}
     >
-      {Icon && (
+      {(Icon || iconNode) && (
         <span
           aria-hidden="true"
           className={cn(
             'grid place-items-center rounded-full bg-surface-sunken text-text-tertiary',
-            isSubtle ? 'h-12 w-12' : 'h-16 w-16',
+            isSubtle
+              ? 'h-12 w-12 [&>svg]:h-5 [&>svg]:w-5'
+              : 'h-16 w-16 [&>svg]:h-7 [&>svg]:w-7',
           )}
         >
-          <Icon className={cn(isSubtle ? 'h-5 w-5' : 'h-7 w-7')} strokeWidth={1.75} />
+          {Icon ? (
+            <Icon className={cn(isSubtle ? 'h-5 w-5' : 'h-7 w-7')} strokeWidth={1.75} />
+          ) : (
+            iconNode
+          )}
         </span>
       )}
 

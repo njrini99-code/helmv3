@@ -21,7 +21,7 @@ export default function GolfDashboardNotFound() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-16">
       <EmptyState
-        icon={Compass}
+        icon={<Compass strokeWidth={1.75} />}
         title="We couldn't find that"
         description="This page may have been moved, or the item you were looking for no longer exists. It may have been removed from your team."
         action={

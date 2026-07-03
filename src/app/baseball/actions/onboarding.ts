@@ -58,6 +58,38 @@ function sanitizeHandedness(value: string | null | undefined, allowed: string[])
 }
 
 /**
+ * Ensure the public.users row exists with the requested self-service role,
+ * WITHOUT demoting an existing 'admin'. A plain upsert here runs as
+ * service_role (bypasses the self-escalation trigger) and clobbered
+ * admin@helmsportslabs.com down to 'coach' on 2026-07-03, locking the only
+ * admin out of /golf/admin. player<->coach conversion stays allowed.
+ */
+async function ensureUserRowPreservingAdmin(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  email: string,
+  role: 'coach' | 'player',
+): Promise<{ error: unknown }> {
+  const { data: existing, error: readError } = await admin
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle();
+  if (readError) return { error: readError };
+
+  if (!existing) {
+    const { error } = await admin
+      .from('users')
+      .upsert({ id: userId, email, role }, { onConflict: 'id', ignoreDuplicates: true });
+    return { error };
+  }
+  if (existing.role === 'admin' || existing.role === role) return { error: null };
+
+  const { error } = await admin.from('users').update({ role }).eq('id', userId);
+  return { error };
+}
+
+/**
  * Supabase PostgrestError objects are plain objects, not Error instances, so
  * `String(err)` / `err instanceof Error` produced the useless "[object Object]"
  * in our logs — which is exactly what hid the real cause of the silent
@@ -135,9 +167,9 @@ async function runCompleteCoachOnboardingCore(
     };
   }
 
-  const { error: userError } = await admin
-    .from('users')
-    .upsert({ id: user.id, email: user.email || '', role: 'coach' }, { onConflict: 'id' });
+  const { error: userError } = await ensureUserRowPreservingAdmin(
+    admin, user.id, user.email || '', 'coach',
+  );
 
   if (userError) {
     await logServerError(`[Onboarding] Failed to upsert user: ${describeDbError(userError)}`, { action: 'onboarding.completeCoachOnboarding' });
@@ -349,37 +381,42 @@ export async function signupAndCompleteCoachOnboarding(data: {
     // Also handles users who started onboarding but abandoned before their coach record was created.
     if (authError.message.includes('already registered') || authError.message.includes('already exists')
       || authError.status === 422 || (authError as { code?: string }).code === 'user_already_exists') {
-      const admin = createAdminClient();
+      // signUp erroring "already exists" says nothing about WHO is calling —
+      // the previous service-role lookup here resumed onboarding for any
+      // caller who merely knew the email. Require proof of ownership:
+      //  (a) the caller is already signed in as that email (the client-side
+      //      checkAuth() race this fallback was built for), or
+      //  (b) the submitted password actually signs in as that account (the
+      //      abandoned-onboarding retry — this also sets their session).
+      const { data: { user: authedUser } } = await supabase.auth.getUser();
+      let ownerUser: User | null =
+        authedUser?.email?.toLowerCase() === normalizedEmail ? authedUser : null;
 
-      // Look up the existing user in our public.users table (fast, indexed on email)
-      const { data: dbUser } = await admin
-        .from('users')
-        .select('id')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
-
-      if (dbUser?.id) {
-        const { data: { user: existingUser } } = await admin.auth.admin.getUserById(dbUser.id);
-        if (existingUser) {
-          console.info('[Onboarding] Email already registered — completing onboarding for existing user:', existingUser.id);
-          return completeCoachOnboarding(
-            {
-              coachType,
-              schoolName,
-              division: data.division,
-              city: data.city,
-              state: data.state,
-              fullName,
-              title: data.title,
-            },
-            existingUser
-          );
-        }
+      if (!ownerUser) {
+        const { data: signInData } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password: data.password,
+        });
+        ownerUser = signInData?.user ?? null;
       }
 
-      // User exists in Supabase Auth but not in our public.users table yet.
-      // This can happen if they abandoned onboarding before the first DB write.
-      // Guide them to sign in so their session cookie is set, then they can complete onboarding.
+      if (ownerUser) {
+        console.info('[Onboarding] Email already registered — completing onboarding for verified owner:', ownerUser.id);
+        return completeCoachOnboarding(
+          {
+            coachType,
+            schoolName,
+            division: data.division,
+            city: data.city,
+            state: data.state,
+            fullName,
+            title: data.title,
+          },
+          ownerUser
+        );
+      }
+
+      // Caller could not prove ownership of the existing account.
       return {
         success: false,
         error: 'An account with this email already exists. Please sign in to continue your setup.',
@@ -451,10 +488,10 @@ export async function completeBaseballSignup(data: {
     return { success: true, redirectTo: '/baseball/player/today' };
   }
 
-  // Upsert user record
-  await admin
-    .from('users')
-    .upsert({ id: user.id, email: userEmail, role: data.role }, { onConflict: 'id' });
+  // Ensure user record exists (never demotes an existing admin)
+  await ensureUserRowPreservingAdmin(
+    admin, user.id, userEmail, data.role === 'coach' ? 'coach' : 'player',
+  );
 
   if (data.role === 'coach') {
     try {

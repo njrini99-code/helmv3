@@ -6,6 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 // ============================================
@@ -56,6 +57,12 @@ interface AdminEventInput {
  * Uses service role to bypass RLS
  */
 async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
+  // Off-prod runtimes (CI dev servers, local dev/next start, preview builds)
+  // hold prod Supabase creds — keep their telemetry out of the prod feed.
+  if (!shouldPersistAdminTables()) {
+    console.info(`[AdminLogger] ${input.eventType} not persisted off-prod (set ADMIN_EVENTS_FORCE_CAPTURE=1 to override)`);
+    return null;
+  }
   try {
     const adminDb = createAdminClient();
     
