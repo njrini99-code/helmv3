@@ -3,6 +3,7 @@
 import { useState, type ComponentType } from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, MinusCircle, Info } from 'lucide-react';
 import { Button, StatusPill, Eyebrow, type FwStatusTone } from '@/components/fairway';
+import { cn } from '@/lib/utils';
 import type { FeatureHealth, FeatureStatus, FeatureTrend } from '@/lib/admin/data/feature-health';
 import { FeatureHealthCard } from './FeatureHealthCard';
 
@@ -63,6 +64,12 @@ function FeatureChip({
   onSelect: (key: string) => void;
 }) {
   const Icon = ICON_FOR_STATUS[feature.status];
+  // Richer green: a healthy feature gets a soft accent wash + a 2px green
+  // left bar (the console's "leader row" recipe) so a healthy row visibly
+  // recedes-forward as good news, not just a same-weight chip with a
+  // different dot color. Amber/red/neutral keep the plain matte chrome —
+  // color is still never the ONLY channel (icon + label carry the state too).
+  const richGreen = feature.status === 'green';
   return (
     <Button
       type="button"
@@ -71,7 +78,12 @@ function FeatureChip({
       onClick={() => onSelect(feature.key)}
       aria-pressed={selected}
       aria-label={`${feature.label}: ${STATUS_WORD[feature.status]} — ${feature.reason}`}
-      className="h-auto min-h-0 w-full justify-start gap-2 rounded-xl border border-border-subtle bg-surface px-3 py-2 text-left normal-case"
+      className={cn(
+        'h-auto min-h-0 w-full justify-start gap-2 rounded-xl border px-3 py-2 text-left normal-case',
+        richGreen
+          ? 'border-border-subtle border-l-2 border-l-accent-500 bg-accent-50/60 hover:bg-accent-50'
+          : 'border-border-subtle bg-surface',
+      )}
     >
       <StatusPill tone={TONE_FOR_STATUS[feature.status]} dot size="sm" className="min-w-0">
         <Icon size={12} aria-hidden />

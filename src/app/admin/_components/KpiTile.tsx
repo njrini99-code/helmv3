@@ -52,6 +52,12 @@ export function KpiTile({
         trendData={trendData}
         delta={delta}
         goodDirection={goodDirection}
+        // GREEN CONTRACT: admin KPI numerals are heavy graphite (warm-900),
+        // never the brand-green value face — green is spent ONLY on the
+        // delta/trend chip (StatTile's built-in TrendChip), not the number
+        // itself. `tone` here is unrelated to this tile's own `tone` prop
+        // (that one drives the danger/warning ring around the whole cell).
+        tone="neutral"
         mono
       />
     </Link>

@@ -44,6 +44,15 @@ export interface StatTileProps {
   suffix?: string;
   /** Use the mono ledger face for the value. Default false (tabular sans). */
   mono?: boolean;
+  /**
+   * Value-face tone, forwarded to `Numeric`. `'accent'` (default) paints the
+   * figure in brand green; `'neutral'` renders heavy graphite ink
+   * (text-primary/warm-900) instead — used by admin console KPI tiles, which
+   * reserve green for delta/context chips only (see KpiTile). Additive: the
+   * default is unchanged, so every existing golf/baseball caller is
+   * unaffected.
+   */
+  tone?: 'accent' | 'neutral';
 
   /** Optional micro-trend series (oldest → newest). Drives the Sparkline. */
   trendData?: ReadonlyArray<number>;
@@ -95,6 +104,7 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
     prefix,
     suffix,
     mono = false,
+    tone = 'accent',
     trendData,
     goodDirection = 'up',
     flatThreshold = 0,
@@ -192,6 +202,7 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
           prefix={prefix}
           suffix={suffix}
           mono={mono}
+          tone={tone}
           label={label}
           size="sm"
         />

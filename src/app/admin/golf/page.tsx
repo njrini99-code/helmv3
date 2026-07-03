@@ -16,7 +16,11 @@ const USD_FORMAT = { style: 'currency', currency: 'USD' } as StatTileProps['form
 const PERCENT_FORMAT: Intl.NumberFormatOptions = { style: 'percent', maximumFractionDigits: 1 };
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">{children}</h2>;
+  return (
+    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+      {children}
+    </h2>
+  );
 }
 
 async function GolfBody() {
@@ -84,8 +88,10 @@ async function GolfBody() {
         </p>
       </Surface>
 
-      {/* CoachHelm engine health */}
-      <Surface padding="sm">
+      {/* CoachHelm engine health — key panel: the AI engine that makes
+          CoachHelm worth paying for, so it earns the same 2px green left
+          edge as the overview's Feature health rollup. */}
+      <Surface padding="sm" className="border-l-2 border-l-accent-500">
         <SectionLabel>CoachHelm engine health</SectionLabel>
         <p className="mt-2 text-sm text-warm-700">
           Last insight generated:{' '}
@@ -94,10 +100,10 @@ async function GolfBody() {
           </span>
         </p>
         <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatTile label="Predictions 30d" value={ch.predictions30d} mono />
-          <StatTile label="Patterns 30d" value={ch.patterns30d} mono />
-          <StatTile label="Reviews this week" value={ch.reviewsThisWeek} mono />
-          <StatTile label="Coach philosophies set" value={ch.coachPhilosophyCount} mono />
+          <StatTile label="Predictions 30d" value={ch.predictions30d} tone="neutral" mono />
+          <StatTile label="Patterns 30d" value={ch.patterns30d} tone="neutral" mono />
+          <StatTile label="Reviews this week" value={ch.reviewsThisWeek} tone="neutral" mono />
+          <StatTile label="Coach philosophies set" value={ch.coachPhilosophyCount} tone="neutral" mono />
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -158,8 +164,8 @@ async function GolfBody() {
         <Surface padding="sm">
           <SectionLabel>AI / LLM spend (30d)</SectionLabel>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <StatTile label="Spend 30d" value={tab.llm.cost30d} format={USD_FORMAT} mono />
-            <StatTile label="Calls 30d" value={tab.llm.calls30d} mono />
+            <StatTile label="Spend 30d" value={tab.llm.cost30d} format={USD_FORMAT} tone="neutral" mono />
+            <StatTile label="Calls 30d" value={tab.llm.calls30d} tone="neutral" mono />
             <StatTile
               label="Budget remaining today"
               value={tab.llm.budgetRemaining ?? undefined}
@@ -167,6 +173,7 @@ async function GolfBody() {
               starvedTitle="No budget rows today"
               starvedDescription="No coach has an LLM budget row for today yet — this table tracks per-coach, per-day spend caps."
               format={USD_FORMAT}
+              tone="neutral"
               mono
             />
           </div>
@@ -176,8 +183,8 @@ async function GolfBody() {
         <Surface padding="sm">
           <SectionLabel>Demo & leads</SectionLabel>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <StatTile label="Demo sessions 30d" value={tab.demos.demoSessions30d} mono />
-            <StatTile label="Inbound requests" value={tab.demos.demoRequests} mono />
+            <StatTile label="Demo sessions 30d" value={tab.demos.demoSessions30d} tone="neutral" mono />
+            <StatTile label="Inbound requests" value={tab.demos.demoRequests} tone="neutral" mono />
           </div>
           <p className="mt-3 text-xs text-warm-500">
             Outreach and pipeline management live in the CRM —{' '}

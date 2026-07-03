@@ -82,7 +82,7 @@ async function TriagePanel() {
   return (
     <div className="grid gap-4 xl:grid-cols-3">
       <Surface as="section" padding="sm" className="min-w-0 xl:col-span-2">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Triage queue
         </h2>
         {sentry.status === 'error' ? (
@@ -96,7 +96,7 @@ async function TriagePanel() {
         <TriageQueue items={items.slice(0, 25)} />
       </Surface>
       <Surface as="section" padding="sm" className="min-w-0">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Regressed — a fix failed
         </h2>
         {regressed.length === 0 ? (
@@ -113,7 +113,10 @@ async function FeatureHealthPanel() {
   const raw = await fetchFeatureHealth();
   const summary = summarizeFeatureHealth(raw, new Date());
   return (
-    <Surface elevation="border" padding="sm">
+    // Key panel: the one place the whole platform's health rolls up to a
+    // single glance — a 2px green left edge marks it as a signal panel worth
+    // a second look, distinct from the plain-bordered cards around it.
+    <Surface elevation="border" padding="sm" className="border-l-2 border-l-accent-500">
       <Eyebrow as="h2" tone="tertiary" className="mb-2">
         Feature health
       </Eyebrow>

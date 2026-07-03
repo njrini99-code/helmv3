@@ -93,7 +93,7 @@ export default async function ErrorsPage({
         </section>
 
         <Surface as="section" padding="sm">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Sentry unresolved</h2>
+          <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Sentry unresolved</h2>
           {tab.sentry.status === 'ok' && tab.sentry.data ? (
             tab.sentry.data.length === 0 ? (
               <PanelAllClear label="No unresolved Sentry issues" checkedAt={tab.sentry.fetchedAt ?? new Date().toISOString()} />
@@ -124,7 +124,7 @@ export default async function ErrorsPage({
         </Surface>
 
         <Surface as="section" padding="sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-accent-600/25 pb-2">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">In-app incidents</h2>
             <CopyReportButton
               report={buildFilteredIncidentsReport(tab.incidents, filters)}
