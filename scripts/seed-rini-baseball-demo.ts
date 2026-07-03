@@ -6,20 +6,20 @@
  * (Phase-2): deterministic uuid ids, upsert-only (no destructive writes except the
  * explicit old-team delete below), dry-run by default, --confirm to write.
  *
- *   Coach : njrini99@gmail.com  / Pirates#09!!   (head coach + lifting coach)
- *   Player: rinin376@gmail.com  / Pirates#09!!!  (Marcus Rodriguez, SS #7)
- *
  * Run:
  *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-rini-baseball-demo.ts          # dry run
  *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-rini-baseball-demo.ts --confirm # write
  *
- * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+ * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+ * RINI_DEMO_COACH_PASSWORD, RINI_DEMO_PLAYER_PASSWORD, RINI_DEMO_FILLER_PASSWORD.
  * Golf is NEVER touched. The two auth users are SHARED with golf (same login),
  * so the passwords below also become the golf logins for these emails.
  */
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+
+loadEnv({ path: '.env.local' });
 
 // --- Verified prod identity -------------------------------------------------
 const COACH_USER_ID = 'c8dcf7d5-da14-439b-93c6-58d1e0dd38a0'; // njrini99@gmail.com
@@ -28,11 +28,18 @@ const COACH_ID = '5080d69c-4bd0-41fc-a02a-714062f2e74b'; // reuse existing baseb
 const OLD_TEAM_ID = 'f9bdd510-acf4-44c0-9003-4fdca5b48755'; // empty shell to delete
 
 const COACH_EMAIL = 'njrini99@gmail.com';
-const COACH_PASSWORD = 'Pirates#09!!';
+const COACH_PASSWORD = process.env.RINI_DEMO_COACH_PASSWORD;
 const PLAYER_EMAIL = 'rinin376@gmail.com';
-const PLAYER_PASSWORD = 'Pirates#09!!!';
+const PLAYER_PASSWORD = process.env.RINI_DEMO_PLAYER_PASSWORD;
 const FILLER_DOMAIN = 'rinibaseballdemo.com';
-const FILLER_PASSWORD = 'Pirates#09!!!';
+const FILLER_PASSWORD = process.env.RINI_DEMO_FILLER_PASSWORD;
+
+if (!COACH_PASSWORD || !PLAYER_PASSWORD || !FILLER_PASSWORD) {
+  console.error(
+    'Missing RINI_DEMO_COACH_PASSWORD / RINI_DEMO_PLAYER_PASSWORD / RINI_DEMO_FILLER_PASSWORD. Set them in .env.local — this script sets real auth passwords, so they must never be hardcoded.'
+  );
+  process.exit(1);
+}
 
 const NS = 'rini-baseball-demo-v1';
 function detId(key: string): string {

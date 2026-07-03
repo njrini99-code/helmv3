@@ -53,10 +53,11 @@ export default defineConfig({
   },
   test: {
     ...sharedTestConfig,
-    // Root-level include/exclude is the fallback when no project filter
-    // is given (e.g. `vitest --list-all`). The per-project blocks below
-    // override these.
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    // Root-level include/exclude is the shared fallback when no project filter
+    // is given. The per-project blocks below override these for named runs.
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+    ],
     exclude: ['node_modules', '.next', 'archive', 'helm-website-ui', 'helm-intelligence'],
 
     projects: [
@@ -68,6 +69,14 @@ export default defineConfig({
           include: [
             'src/**/*.test.{ts,tsx}',
             'src/**/*.spec.{ts,tsx}',
+            // Named explicitly (not a `scripts/**/*.test.mjs` glob): the other
+            // 46 files in scripts/__tests__/ are written for `node --test`
+            // (see their own "Run:" header comments) and are NOT wired into
+            // any CI job or npm script today — a separate, larger dead-test
+            // finding tracked in the stabilization report, out of scope for
+            // this P0 fix. Only the #516 secrets guard is promoted to vitest
+            // here, since it previously never ran under any mechanism at all.
+            'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
           ],
           exclude: [
             'node_modules',
