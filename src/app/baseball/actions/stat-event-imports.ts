@@ -406,8 +406,8 @@ export const commitEventImport = withBaseballAction(
       rows,
     });
 
-    // GAP 4 — REVIEW HOLD (#415). Recompute detection band server-side when raw
-    // bytes are available; never trust client-supplied detectionAutoCommit alone.
+    // GAP 4 — REVIEW HOLD (#415). Require raw bytes so the detection band is
+    // recomputed server-side; never trust client-supplied detectionAutoCommit.
     const validation = validateEventRows(rows);
     if (!args.rawFileBody || args.rawFileBody.length === 0) {
       throw new Error(

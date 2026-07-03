@@ -61,7 +61,7 @@ function tableHandle(table: string) {
   const result = (data: unknown) => ({ data, error: null });
   const chain: Record<string, unknown> = {};
   const ret = () => chain;
-  for (const m of ['select', 'eq', 'in', 'or', 'order', 'limit']) chain[m] = vi.fn(ret);
+  for (const m of ['select', 'eq', 'in', 'is', 'not', 'or', 'order', 'limit']) chain[m] = vi.fn(ret);
 
   // Import-source registry lookup (assertImportSourceAllowed): unregistered
   // source, so it's allowed by default. Also used for baseball_stat_sources
