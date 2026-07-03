@@ -10,10 +10,16 @@ Use Node 22+ for context generation:
 nvm use 22
 ```
 
-or install Repomix globally with Homebrew. The repo wrapper still calls `npx -y repomix@latest` so the app dependency graph stays clean:
+or install Repomix globally with Homebrew. The repo wrapper calls pinned `repomix@1.16.0` through `npx` so the app dependency graph stays clean:
 
 ```bash
 bash scripts/context/repomix.sh --version
+```
+
+To test a Repomix upgrade before changing the pinned default, set `REPOMIX_VERSION`:
+
+```bash
+REPOMIX_VERSION=1.16.0 bash scripts/context/repomix.sh --version
 ```
 
 ## Common Packs

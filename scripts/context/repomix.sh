@@ -19,4 +19,5 @@ if [ "$NODE_MAJOR" -lt 22 ]; then
   exit 1
 fi
 
-npx -y repomix@latest "$@"
+REPOMIX_VERSION="${REPOMIX_VERSION:-1.16.0}"
+npx -y "repomix@${REPOMIX_VERSION}" "$@"
