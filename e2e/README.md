@@ -276,8 +276,8 @@ Dependabot and fork `pull_request` runs do not receive repo secrets from
 GitHub, so the workflow skips only the secret-backed seed/smoke path and keeps
 running the rest of the Playwright job. If a trusted run invokes the setup
 without credentials, `playwright/baseball-auth.setup.ts` still throws
-`Baseball seeded auth missing — set E2E_BASEBALL_*_EMAIL /
-E2E_BASEBALL_*_PASSWORD and run \`npm run seed:baseball:ci\``.
+``Baseball seeded auth missing — set E2E_BASEBALL_*_EMAIL /
+E2E_BASEBALL_*_PASSWORD and run `npm run seed:baseball:ci` ``.
 
 ### Seeding / resetting the fixture
 
