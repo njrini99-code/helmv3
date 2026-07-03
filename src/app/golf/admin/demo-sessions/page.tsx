@@ -4,6 +4,12 @@ import { IconUsers, IconChevronRight, IconActivity } from '@/components/icons';
 
 export const metadata = { title: 'Demo Sessions' };
 
+// Admin data is per-request (cookies + live session rows). Without this,
+// build/ISR prerender attempts throw DYNAMIC_SERVER_USAGE inside
+// getDemoSessions, which the observed wrapper logged as prod incidents
+// (130 events on 2026-07-02/03, one burst per preview build).
+export const dynamic = 'force-dynamic';
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {

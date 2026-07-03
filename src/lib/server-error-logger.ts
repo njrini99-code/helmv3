@@ -1,6 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
+import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
@@ -246,6 +247,21 @@ function captureSentryTrace(
   });
 }
 
+/**
+ * Next.js control-flow "errors" (redirect(), notFound(), cookies() during
+ * static prerender) are framework signals, not incidents. Logging them
+ * produced 130 phantom "Dynamic server usage" admin_events on 2026-07-02/03
+ * — one burst per preview build. Match on digest when the original error is
+ * intact, and on the message when a wrapper already stringified it.
+ */
+function isNextControlFlowError(message: string, error: Error | null): boolean {
+  const digest = (error as { digest?: unknown } | null)?.digest;
+  if (typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))) {
+    return true;
+  }
+  return message.includes('Dynamic server usage:');
+}
+
 async function captureServerTrace(
   message: string,
   context: RoundErrorContext,
@@ -255,12 +271,21 @@ async function captureServerTrace(
 ): Promise<void> {
   const normalizedError = error ?? new Error(message);
 
+  // Skip, don't rethrow: callers already decide how the original error
+  // propagates; our only job is to not record framework signals as incidents.
+  if (isNextControlFlowError(message, error ?? null)) return;
+
   if (!context.skipSentry) {
     try {
       captureSentryTrace(message, normalizedError, context, severity, forceException);
     } catch {
       // Sentry should never block request handling.
     }
+  }
+
+  if (!shouldPersistAdminTables()) {
+    console.error(`[ServerErrorLogger] (${severity}, not persisted off-prod)`, message, context.action ?? '');
+    return;
   }
 
   try {
