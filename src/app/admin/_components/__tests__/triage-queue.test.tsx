@@ -23,6 +23,7 @@ const appItem: TriageItem = {
   sport: 'golf', occurrences: 3, affectedUsers: 2,
   firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T02:00:00Z',
   permalink: null, eventIds: ['e1', 'e2', 'e3'], substatus: null,
+  source: 'server_action', feature: 'rounds', actionName: 'savePartialRound', route: '/api/golf/rounds',
   report: '# Incident report: savePartialRound failed',
 };
 const sentryItem: TriageItem = {
@@ -30,6 +31,7 @@ const sentryItem: TriageItem = {
   sport: null, occurrences: 40, affectedUsers: 7,
   firstSeen: '2026-06-30T00:00:00Z', lastSeen: '2026-07-01T01:00:00Z',
   permalink: 'https://sentry.io/x', eventIds: [], substatus: 'regressed',
+  source: 'sentry', feature: null, actionName: null, route: 'rounds',
   report: '# Incident report: TypeError in rounds',
 };
 
@@ -39,6 +41,8 @@ describe('TriageQueue', () => {
     expect(screen.getByText('savePartialRound failed')).toBeInTheDocument();
     expect(screen.getByText(/2 users/)).toBeInTheDocument();
     expect(screen.getByText(/3 events/)).toBeInTheDocument();
+    expect(screen.getByText(/source server_action/)).toBeInTheDocument();
+    expect(screen.getByText(/action savePartialRound/)).toBeInTheDocument();
   });
   it('app rows expose Resolve; sentry rows expose the permalink instead', () => {
     const onResolve = vi.fn(async () => ({ resolvedCount: 3 }));

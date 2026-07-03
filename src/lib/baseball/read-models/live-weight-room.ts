@@ -145,30 +145,40 @@ export async function getLiveWeightRoomData(
   }
 
   // ---- Strength-group names per player + the group filter ------------------
-  const { data: groupRows } = await supabase
-    .from('baseball_strength_groups')
-    .select('id, name')
-    .eq('team_id', teamId)
-    .eq('is_active', true)
-    .order('name', { ascending: true });
-  const groups = (groupRows ?? []).map((g: { id: string; name: string }) => ({ id: g.id, name: g.name }));
-  const groupNameById = new Map<string, string>(groups.map((g: { id: string; name: string }) => [g.id, g.name]));
+  // Groups + membership live in the unified helm_lifting_groups /
+  // helm_lifting_group_members tables (organization_id + sport scoped);
+  // membership is athlete_id-keyed, so it is mapped back to baseball_players.id
+  // via the athleteToPlayer map resolved above (sessions section).
+  const groups: Array<{ id: string; name: string }> = [];
+  if (liftCtx) {
+    const { data: groupRows } = await fromUntyped(supabase, 'helm_lifting_groups')
+      .select('id, name')
+      .eq('organization_id', liftCtx.organizationId)
+      .eq('sport', 'baseball')
+      .eq('team_id', teamId)
+      .eq('is_active', true)
+      .order('name', { ascending: true }) as { data: Array<{ id: string; name: string }> | null };
+    groups.push(...(groupRows ?? []));
+  }
+  const groupNameById = new Map<string, string>(groups.map((g) => [g.id, g.name]));
 
-  const { data: memberRows } = await supabase
-    .from('baseball_strength_group_members')
-    .select('group_id, player_id');
   const groupsByPlayer = new Map<string, string[]>();
   const playersInFilterGroup = new Set<string>();
-  for (const m of memberRows ?? []) {
-    const gid = (m as { group_id: string }).group_id;
-    const pid = (m as { player_id: string }).player_id;
-    const name = groupNameById.get(gid);
-    if (name) {
-      const arr = groupsByPlayer.get(pid) ?? [];
-      arr.push(name);
-      groupsByPlayer.set(pid, arr);
+  if (groups.length) {
+    const { data: memberRows } = await fromUntyped(supabase, 'helm_lifting_group_members')
+      .select('group_id, athlete_id')
+      .in('group_id', groups.map((g) => g.id)) as { data: Array<{ group_id: string; athlete_id: string }> | null };
+    for (const m of memberRows ?? []) {
+      const pid = athleteToPlayer.get(m.athlete_id);
+      if (!pid) continue; // athlete not resolved to a roster player — skip honestly.
+      const name = groupNameById.get(m.group_id);
+      if (name) {
+        const arr = groupsByPlayer.get(pid) ?? [];
+        arr.push(name);
+        groupsByPlayer.set(pid, arr);
+      }
+      if (groupFilter && m.group_id === groupFilter) playersInFilterGroup.add(pid);
     }
-    if (groupFilter && gid === groupFilter) playersInFilterGroup.add(pid);
   }
 
   // Apply the group filter to the session set (top bar still reflects the filter).
@@ -317,19 +327,24 @@ export async function getLiveWeightRoomData(
       }
     }
 
-    const { data: bw } = await supabase
-      .from('baseball_bodyweight_entries')
-      .select('player_id, entry_date, weight_lbs')
-      .eq('team_id', teamId)
-      .gte('entry_date', sinceYmd)
-      .order('entry_date', { ascending: false });
     const bwDeltaByPlayer = new Map<string, number>();
     const bwByPlayer = new Map<string, Array<{ date: string; w: number }>>();
-    for (const e of bw ?? []) {
-      const r = e as { player_id: string; entry_date: string; weight_lbs: number };
-      const arr = bwByPlayer.get(r.player_id) ?? [];
-      arr.push({ date: r.entry_date, w: r.weight_lbs });
-      bwByPlayer.set(r.player_id, arr);
+    if (liftCtx && teamAthleteIds.length) {
+      const { data: bw } = await fromUntyped(supabase, 'helm_lifting_bodyweight_entries')
+        .select('athlete_id, entry_date, weight_lbs')
+        .eq('organization_id', liftCtx.organizationId)
+        .in('athlete_id', teamAthleteIds)
+        .gte('entry_date', sinceYmd)
+        .order('entry_date', { ascending: false }) as {
+        data: Array<{ athlete_id: string; entry_date: string; weight_lbs: number }> | null;
+      };
+      for (const e of bw ?? []) {
+        const pid = athleteToPlayer.get(e.athlete_id);
+        if (!pid) continue;
+        const arr = bwByPlayer.get(pid) ?? [];
+        arr.push({ date: e.entry_date, w: e.weight_lbs });
+        bwByPlayer.set(pid, arr);
+      }
     }
     for (const [pid, list] of bwByPlayer) {
       const newest = list[0];
@@ -339,14 +354,18 @@ export async function getLiveWeightRoomData(
       }
     }
 
-    const { data: avail } = await supabase
-      .from('baseball_availability_statuses')
-      .select('player_id, status, starts_at')
-      .eq('team_id', teamId)
-      .order('starts_at', { ascending: false });
-    for (const a of avail ?? []) {
-      const r = a as { player_id: string; status: BaseballAvailabilityStatus };
-      if (!availByPlayer.has(r.player_id)) availByPlayer.set(r.player_id, r.status);
+    if (liftCtx && teamAthleteIds.length) {
+      const { data: avail } = await fromUntyped(supabase, 'helm_lifting_availability_statuses')
+        .select('athlete_id, status, starts_at')
+        .eq('organization_id', liftCtx.organizationId)
+        .in('athlete_id', teamAthleteIds)
+        .order('starts_at', { ascending: false }) as {
+        data: Array<{ athlete_id: string; status: BaseballAvailabilityStatus }> | null;
+      };
+      for (const a of avail ?? []) {
+        const pid = athleteToPlayer.get(a.athlete_id);
+        if (pid && !availByPlayer.has(pid)) availByPlayer.set(pid, a.status);
+      }
     }
 
     for (const p of roster) {

@@ -148,29 +148,47 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     }
     await browse.click();
 
-    // Wait for the picker sheet, then let the entrance + coverflow settle.
+    // Wait for the picker sheet, then for the entrance animation's actual
+    // signal — the first carousel slide (role="group"/aria-roledescription
+    // "slide" in FairwayCoursePicker) mounted and visible — instead of a
+    // flat 1000ms guess at how long that entrance takes.
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(1000);
+    await expect(page.getByRole('group').first()).toBeVisible({ timeout: 10000 }).catch(() => {});
     await page.screenshot({ path: `${dir}/picker-desktop-stage-a.png` });
 
     // If the carousel has cards, advance it once to capture the coverflow mid-state.
+    // Real state signal: clicking "Next course" flips the carousel's `canLeft`
+    // flag, which sets the "Previous course" arrow's tabindex from -1 to 0
+    // (see CarouselArrow in FairwayCoursePicker.tsx) — wait on that instead
+    // of guessing how long the scroll-snap animation takes.
     const next = page.getByRole('button', { name: /Next course/i });
     if (await next.isVisible().catch(() => false)) {
       await next.click();
-      await page.waitForTimeout(800);
+      await expect(page.getByRole('button', { name: /Previous course/i })).toHaveAttribute(
+        'tabindex',
+        '0',
+        { timeout: 5000 },
+      ).catch(() => {});
       await page.screenshot({ path: `${dir}/picker-desktop-coverflow.png` });
     }
 
-    // Mobile full-screen view (the primary form factor for this sheet).
+    // Mobile full-screen view (the primary form factor for this sheet). No
+    // new content mounts on a viewport resize, so there is no DOM predicate
+    // to assert on — wait for the browser to actually finish a reflow/paint
+    // pass (two animation frames) rather than guessing a fixed duration.
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(600);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
     await page.screenshot({ path: `${dir}/picker-mobile-stage-a.png` });
 
     // The standalone library page too (CourseLibraryClient), for completeness.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(COURSES_PATH);
     await expect(page.locator('h1')).toContainText('Courses', { timeout: 10000 });
-    await page.waitForTimeout(600);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
     await page.screenshot({ path: `${dir}/course-library-page.png`, fullPage: true });
   });
 });

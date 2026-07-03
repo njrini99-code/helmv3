@@ -3,10 +3,16 @@
  *
  * Calls the SECURITY DEFINER `run_integrity_checks()` RPC (service_role-only
  * EXECUTE — supabase/migrations/20260701150000_run_integrity_checks_rpc.sql,
- * already applied to prod). It runs four checks: orphaned golf team members,
+ * already applied to prod). It runs five checks: orphaned golf team members,
  * stats-cache rows referencing deleted players, Bridge schema canaries
- * (recorded-but-unapplied migrations), and anon-grant drift on the six
- * Bridge-sensitive tables.
+ * (recorded-but-unapplied migrations), anon-grant drift on the six
+ * Bridge-sensitive tables, and (20260704130000_integrity_check_admin_
+ * readability_tripwire.sql) `admin_count_vs_list_readability` — every table
+ * the admin UI reads with the browser client (demo_requests + the crm_*
+ * tables + email_events) must have ≥1 SELECT/ALL policy that actually
+ * applies to `authenticated`, catching the "badge counts N, list shows 0"
+ * RLS class where a count RPC (RLS-exempt) and a browser-client list query
+ * silently disagree.
  *
  * Noise discipline: EVERY check writes an `admin_events` `source='integrity'`
  * row so /admin/jobs can always show "latest per check", but only FAILING

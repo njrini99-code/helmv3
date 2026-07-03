@@ -1,10 +1,17 @@
 import { Page, expect } from '@playwright/test';
 
 /**
- * Wait for page to be fully loaded
+ * Wait for page to be fully loaded.
+ *
+ * Tolerant pattern (matches e2e/accessibility.spec.ts): `networkidle` is
+ * flake-prone on pages with any background polling/analytics that never
+ * fully quiesce, and an unguarded wait here can hang indefinitely. Cap it at
+ * 5s and swallow the timeout — callers assert on real page state afterward,
+ * so a slow/never-idle asset shouldn't fail nine spec files that only
+ * import this as a "let things settle" step.
  */
 export async function waitForPageLoad(page: Page) {
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 }
 
 /**

@@ -9,10 +9,7 @@
  *     show severity=error, so the Overview "Needs Attention" tab shows the bug
  *     as live.
  *
- *  2. Demo request `[object Object]` from a CHECK violation — fixed by
- *     commit 8f2edde3 (demo-request CHECK constraint fix).
- *
- * Both classes are demoted to severity=info with a resolution note baked into
+ * The class is demoted to severity=info with a resolution note baked into
  * `metadata.auto_resolved/resolution/resolved_at` so the dashboard filters
  * them out but they remain available for forensic queries.
  *
@@ -21,7 +18,7 @@
  *     npx tsx -r dotenv/config scripts/archive-todays-resolved-incidents.ts
  */
 import 'dotenv/config';
-import { archiveIncidentsByCriteria } from '../src/lib/admin/incident-resolver';
+import { archiveIncidentsByCriteria, archiveKnownResolvedIncidents } from '../src/lib/admin/incident-resolver';
 
 async function main() {
   const predictor = await archiveIncidentsByCriteria({
@@ -31,11 +28,11 @@ async function main() {
   });
   console.log(`predictor: archived=${predictor.archived}`);
 
-  const demoRequest = await archiveIncidentsByCriteria({
-    messageMatch: '%[object Object]%',
-    resolution: 'Fixed by 8f2edde3 demo-request CHECK constraint fix',
-  });
-  console.log(`demo_request: archived=${demoRequest.archived}`);
+  const known = await archiveKnownResolvedIncidents();
+  console.log(`known_resolved: archived=${known.archived}`);
+  for (const bucket of known.buckets) {
+    console.log(`  ${bucket.label}: archived=${bucket.archived}`);
+  }
 }
 
 main().catch((err) => {

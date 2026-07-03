@@ -156,7 +156,23 @@ export default async function PlayerTodayPage() {
       // outage never breaks the baseball Today page — but we log it (instead
       // of swallowing silently) so a real regression (e.g. an access-gate
       // bug denying a legitimate athlete) is visible, not invisible forever.
+      //
+      // Exception: LiftingForbiddenError ("You do not have access to this
+      // Lifting Lab") is an expected degradation path, not an incident — a
+      // player with no Lift Lab org/canView grant hits this on every Today
+      // render (e.g. the CI e2e player fixture). withLiftingAction already
+      // records it once (skipSentry: true) before rethrowing, so logging it
+      // again here just triples routine 403s into page-level warnings per
+      // view. Stay silent and fall through to the existing honest empty
+      // state (performanceSlot stays null) instead.
+      const isLiftingForbiddenError = (error: unknown): boolean =>
+        error instanceof Error && error.name === 'LiftingForbiddenError';
+
       const logSlotFailure = (action: string) => async (error: unknown) => {
+        if (isLiftingForbiddenError(error)) {
+          return null;
+        }
+
         await logServerException(
           error,
           {

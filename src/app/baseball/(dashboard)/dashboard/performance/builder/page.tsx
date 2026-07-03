@@ -20,6 +20,7 @@
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import {
@@ -79,8 +80,7 @@ export default async function LiftBuilderPage() {
 
   // ── Light group list (for breadcrumb links / scope switcher hints) ───────────
   const supabase = await createClient();
-  const { data: groupRows } = await supabase
-    .from('baseball_strength_groups')
+  const { data: groupRows } = await fromUntyped(supabase, 'helm_lifting_groups')
     .select('id, name')
     .eq('team_id', teamId)
     .eq('is_active', true)

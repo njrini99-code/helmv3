@@ -79,11 +79,14 @@ vi.mock('@/lib/coachhelm/v3/llm/compose', () => ({
 }));
 
 // generateRoundRecapImpl calls revalidatePath('/golf/dashboard/rounds/...')
-// after persisting the recap. Outside a real Next.js request, that throws
-// "Invariant: static generation store missing" — mock it out like the
-// other action test suites (program-onboarding, travel, etc.) do.
+// when explicitly opted into via { revalidate: true } (see the "prod incident
+// d0a9265f" describe block below). Outside a real Next.js request, an
+// unmocked revalidatePath throws "Invariant: static generation store
+// missing" — mock it out like the other action test suites (program-
+// onboarding, travel, etc.) do, and assert on the mock's call count.
+const revalidatePathMock = vi.fn();
 vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
+  revalidatePath: (...args: [string]) => revalidatePathMock(...args),
 }));
 
 import { generateRoundRecap } from '../round-recap';
@@ -118,6 +121,7 @@ describe('generateRoundRecap — 9-hole vs 18-hole average comparisons', () => {
     persistedUpdate = null;
     composeMock.mockClear();
     mockFrom.mockClear();
+    revalidatePathMock.mockClear();
   });
 
   it('skips the season-average and best-round comparisons for a 9-hole round', async () => {
@@ -152,5 +156,53 @@ describe('generateRoundRecap — 9-hole vs 18-hole average comparisons', () => {
 
     const prompt = composeMock.mock.calls[0]?.[0]?.prompt ?? '';
     expect(prompt).toContain("Player's season scoring average: 74.2");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Prod incident (Sentry fingerprint d0a9265f): "/golf/dashboard/rounds/[id]
+// used revalidatePath during render, which is unsupported." The round detail
+// page calls generateRoundRecap(roundId) with no options directly inside its
+// Server Component render function on first view of a completed round.
+// revalidatePath must never fire on that call chain — it's now gated behind
+// an explicit { revalidate: true } reserved for a real action entrypoint
+// invoked outside render.
+// ---------------------------------------------------------------------------
+describe('generateRoundRecap — revalidatePath gating (prod incident d0a9265f)', () => {
+  beforeEach(() => {
+    mockRound = { ...baseRound };
+    mockStats = { scoring_average: 74.2, best_round: 70, rounds_played: 12 };
+    persistedUpdate = null;
+    composeMock.mockClear();
+    mockFrom.mockClear();
+    revalidatePathMock.mockClear();
+  });
+
+  it('never calls revalidatePath on the default (render-safe) call — the page.tsx call shape', async () => {
+    await generateRoundRecap('round-1');
+
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('never calls revalidatePath when explicitly passed { revalidate: false }', async () => {
+    await generateRoundRecap('round-1', { revalidate: false });
+
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('calls revalidatePath only when a caller explicitly opts in with { revalidate: true }', async () => {
+    await generateRoundRecap('round-1', { revalidate: true });
+
+    expect(revalidatePathMock).toHaveBeenCalledTimes(1);
+    expect(revalidatePathMock).toHaveBeenCalledWith('/golf/dashboard/rounds/round-1');
+  });
+
+  it('never calls revalidatePath on a cache hit, even with revalidate: true', async () => {
+    mockRound = { ...baseRound, ai_recap: 'Already generated.' };
+
+    const result = await generateRoundRecap('round-1', { revalidate: true });
+
+    expect(result.cached).toBe(true);
+    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 });

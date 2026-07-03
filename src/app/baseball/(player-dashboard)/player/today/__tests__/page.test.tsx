@@ -7,6 +7,11 @@
 // access-gate bug that denied every athlete) was completely invisible. Also
 // asserts performanceSlot.todayIso carries the server-resolved team-local
 // date so SorenessCheckCard can be wired to it instead of computing UTC.
+//
+// Follow-up (Incident B, 399 CI warning events): a LiftingForbiddenError
+// ("no Lift Lab access") is an EXPECTED degradation path for a player with
+// no lifting org/canView grant — not an incident worth logging on every
+// render. Only genuinely unexpected failures should still be logged.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -85,20 +90,35 @@ describe('PlayerTodayPage — performance check-in slot error handling', () => {
   });
 
   it('LOGS (does not silently swallow) an unexpected getPlayerSorenessToday failure', async () => {
-    const forbidden = new Error('You do not have access to this Lifting Lab.');
-    forbidden.name = 'LiftingForbiddenError';
-    getPlayerSorenessTodayMock.mockRejectedValue(forbidden);
+    const unexpected = new Error('Database connection reset');
+    getPlayerSorenessTodayMock.mockRejectedValue(unexpected);
 
     const element = await PlayerTodayPage();
 
     expect(logServerExceptionMock).toHaveBeenCalledWith(
-      forbidden,
+      unexpected,
       expect.objectContaining({ action: 'getPlayerSorenessToday' }),
       'warning',
     );
     // The page must still render — a lifting failure never breaks the
     // baseball Today page.
     expect(element.type).toBe(PlayerTodayClient);
+  });
+
+  it('does NOT log a LiftingForbiddenError — "no Lift Lab access" is an expected degradation, not an incident', async () => {
+    const forbidden = new Error('You do not have access to this Lifting Lab.');
+    forbidden.name = 'LiftingForbiddenError';
+    getPlayerSorenessTodayMock.mockRejectedValue(forbidden);
+
+    const element = await PlayerTodayPage();
+
+    expect(logServerExceptionMock).not.toHaveBeenCalled();
+    // A player without Lift Lab access gets the existing honest empty state
+    // (performanceSlot stays null) rather than an error cascade.
+    expect(element.type).toBe(PlayerTodayClient);
+    expect(
+      (element.props as { performanceSlot: unknown }).performanceSlot,
+    ).toBeNull();
   });
 
   it('does NOT log when the soreness fetch succeeds, and passes the resolved todayIso through the slot', async () => {

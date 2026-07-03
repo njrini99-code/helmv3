@@ -24,9 +24,9 @@ permissions:
 
 # Shared across jobs. Secrets resolve to '' when unset (the Golf authed
 # specs then test.skip()). The BaseballHelm mandatory smoke suite (#372)
-# diverges: playwright/baseball-auth.setup.ts THROWS on missing/broken
-# E2E_BASEBALL_* secrets here (CI is always truthy on GitHub Actions), so
-# that suite fails the job loudly instead of silently skipping.
+# runs as a hard gate only when the required secrets are available. GitHub
+# withholds repo secrets from Dependabot/fork PRs, so those PRs skip only
+# the secret-backed baseball seed/smoke path and still run the rest of E2E.
 # NEXT_PUBLIC_REDESIGN renders the Fairway shell — what production serves —
 # so authed specs exercise FairwayCoursePicker.
 env:
@@ -42,10 +42,9 @@ env:
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
   # Service-role key for scripts/seed-baseball-e2e.ts (issue #375) and
   # scripts/seed-baseball-demo.ts (issue #372). Same "resolves to '' when
-  # unset" pattern as the golf E2E secrets above — the #375 seed step is
-  # skipped and its specs self-skip via PLAYWRIGHT_BASEBALL_SEEDED, while
-  # the #372 mandatory smoke (below) fails loudly instead, since it's meant
-  # to be a hard CI gate rather than an opportunistic/skippable suite.
+  # unset" pattern as the golf E2E secrets above. Secretless Dependabot/fork
+  # runs skip the secret-backed seed/smoke path; trusted runs fail explicitly
+  # below if the required BaseballHelm smoke secrets are missing.
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
   # BaseballHelm mandatory smoke (#372) — see e2e/README.md.
   E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
@@ -89,12 +88,57 @@ jobs:
     # 30 -> 40: the BaseballHelm mandatory smoke (#372) adds a seed step plus
     # two extra `playwright test` invocations, each of which boots its own
     # `npm run dev` webServer (CI disables reuseExistingServer).
-    timeout-minutes: 40
+    # 40 -> 75: the broad chromium suite is currently a soft-fail/reporting
+    # pass, but job-level cancellation still fails the required workflow before
+    # the soft-fail shim can complete and upload artifacts.
+    timeout-minutes: 75
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
+
+      - name: Compute BaseballHelm auth readiness
+        id: baseball-auth-ready
+        run: |
+          missing=()
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing+=("SUPABASE_SERVICE_ROLE_KEY")
+          [ -z "$E2E_BASEBALL_COACH_EMAIL" ] && missing+=("E2E_BASEBALL_COACH_EMAIL")
+          [ -z "$E2E_BASEBALL_COACH_PASSWORD" ] && missing+=("E2E_BASEBALL_COACH_PASSWORD")
+          [ -z "$E2E_BASEBALL_PLAYER_EMAIL" ] && missing+=("E2E_BASEBALL_PLAYER_EMAIL")
+          [ -z "$E2E_BASEBALL_PLAYER_PASSWORD" ] && missing+=("E2E_BASEBALL_PLAYER_PASSWORD")
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            printf 'missing=%s\n' "${missing[*]}" >> "$GITHUB_OUTPUT"
+            echo "BaseballHelm auth secrets unavailable: ${missing[*]}"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "missing=" >> "$GITHUB_OUTPUT"
+            echo "BaseballHelm auth secrets available."
+          fi
+
+      # Fails early on trusted runs, while secretless Dependabot/fork PRs keep
+      # running the rest of E2E and skip only the secret-backed baseball path.
+      - name: Fail missing BaseballHelm secrets on trusted runs
+        if: >-
+          ${{
+            steps.baseball-auth-ready.outputs.ready != 'true' &&
+            (
+              github.event_name != 'pull_request' ||
+              (
+                github.event.pull_request.head.repo.full_name == github.repository &&
+                github.actor != 'dependabot[bot]'
+              )
+            )
+          }}
+        env:
+          MISSING_BASEBALL_SECRETS: ${{ steps.baseball-auth-ready.outputs.missing }}
+        run: |
+          echo "::error::Missing required secret(s): ${MISSING_BASEBALL_SECRETS}"
+          echo "The BaseballHelm mandatory smoke (#372) needs these to seed + log in the CI baseball accounts."
+          echo "Set them in Settings -> Secrets and variables -> Actions."
+          exit 1
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
@@ -128,20 +172,27 @@ jobs:
         run: npm run seed:baseball:e2e -- --confirm
 
       - name: Seed BaseballHelm CI accounts
-        # scripts/seed-baseball-demo.ts validates SUPABASE_SERVICE_ROLE_KEY /
-        # NEXT_PUBLIC_SUPABASE_URL itself and exits non-zero with a clear
-        # message if either is absent — that failure is the "secrets are
-        # missing" guard for the blocking step below. Idempotent: safe to
-        # re-run on every CI build (upserts by deterministic id).
+        # Secretless Dependabot/fork PRs cannot run this safely because GitHub
+        # does not expose SUPABASE_SERVICE_ROLE_KEY to them. Trusted PRs keep
+        # the hard seed/smoke path below. Idempotent: safe to re-run on every
+        # CI build with secrets (upserts by deterministic id).
+        if: ${{ steps.baseball-auth-ready.outputs.ready == 'true' }}
         run: npm run seed:baseball:ci
 
       - name: Run BaseballHelm mandatory smoke (blocking)
-        # #372 — these must actually execute for CI to be green. No `|| echo`
-        # soft-fail shim: a failure here (including baseball-auth.setup.ts
-        # throwing on missing/broken E2E_BASEBALL_* secrets) fails the job.
+        # #372 — on trusted PRs with secrets, these must actually execute for CI
+        # to be green. No `|| echo` soft-fail shim: a failure here still fails
+        # the job. Secretless Dependabot/fork PRs skip this step explicitly.
+        if: ${{ steps.baseball-auth-ready.outputs.ready == 'true' }}
         run: |
           npx playwright test --project=baseball-coach --project=baseball-player
           npx playwright test --project=chromium e2e/baseball-onboarding-smoke.spec.ts
+
+      - name: Explain skipped BaseballHelm mandatory smoke
+        if: ${{ steps.baseball-auth-ready.outputs.ready != 'true' }}
+        run: |
+          echo "Skipping BaseballHelm mandatory smoke because required E2E secrets are unavailable."
+          echo "This is expected for Dependabot and fork pull_request runs."
 
       - name: Run Playwright tests
         env:

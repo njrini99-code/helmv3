@@ -16,7 +16,7 @@
 //
 //   getGroupAvailability(scope, weekOf)
 //     — best-effort per-player block schedule for the week starting at weekOf.
-//       Uses baseball_games + baseball_events + baseball_availability_statuses
+//       Uses baseball_games + baseball_events + helm_lifting_availability_statuses
 //       as sources. Returns 'unknown' blocks for any day where data is absent.
 //
 // SERVER-ONLY plain async (NOT 'use server'). All helm_lifting_* queries use
@@ -105,21 +105,30 @@ async function resolveScope(
   scope: LiftBuilderScope,
 ): Promise<{ playerIds: string[]; teamId: string | null }> {
   if ('groupId' in scope && scope.groupId) {
-    // Resolve group → team (for org lookup) + member player IDs.
-    const { data: groupRow } = await supabase
-      .from('baseball_strength_groups')
-      .select('team_id')
+    // Resolve group → org + team (helm_lifting_groups) + member athlete IDs
+    // (helm_lifting_group_members), then map athlete_id back to
+    // baseball_players.id via helm_lifting_athletes — group membership has no
+    // FK to baseball_players.
+    const { data: groupRow } = await fromUntyped(supabase, 'helm_lifting_groups')
+      .select('team_id, organization_id')
       .eq('id', scope.groupId)
-      .maybeSingle();
-    const teamId = (groupRow as { team_id: string } | null)?.team_id ?? null;
+      .maybeSingle() as { data: { team_id: string | null; organization_id: string } | null };
+    const teamId = groupRow?.team_id ?? null;
+    if (!groupRow) return { playerIds: [], teamId: null };
 
-    const { data: members } = await supabase
-      .from('baseball_strength_group_members')
-      .select('player_id')
-      .eq('group_id', scope.groupId);
-    const playerIds = [...new Set(
-      ((members ?? []) as Array<{ player_id: string }>).map((m) => m.player_id),
-    )];
+    const { data: members } = await fromUntyped(supabase, 'helm_lifting_group_members')
+      .select('athlete_id')
+      .eq('group_id', scope.groupId) as { data: Array<{ athlete_id: string }> | null };
+    const athleteIds = [...new Set((members ?? []).map((m) => m.athlete_id))];
+    if (athleteIds.length === 0) return { playerIds: [], teamId };
+
+    const { data: athleteRows } = await fromUntyped(supabase, 'helm_lifting_athletes')
+      .select('id, sport_player_id')
+      .eq('organization_id', groupRow.organization_id)
+      .in('id', athleteIds) as { data: Array<{ id: string; sport_player_id: string | null }> | null };
+    const playerIds = (athleteRows ?? [])
+      .map((a) => a.sport_player_id)
+      .filter((id): id is string => Boolean(id));
 
     return { playerIds, teamId };
   }
@@ -352,32 +361,42 @@ export async function getGroupAvailability(
   }
 
   // Fetch player-level availability holds for the week.
-  // baseball_availability_statuses: player_id, status, starts_at, (optional ends_at)
-  type AvailRow = { player_id: string; status: string; starts_at: string; ends_at?: string | null };
+  // helm_lifting_availability_statuses: athlete_id, status, starts_at,
+  // (optional ends_at) — athlete_id-keyed, mapped back to baseball_players.id
+  // via resolveBaseballLiftingOrg / resolveBaseballAthleteIds.
+  type AvailRow = { athlete_id: string; status: string; starts_at: string; ends_at?: string | null };
   const unavailByPlayer = new Map<string, Set<string>>();
   {
-    const { data: availRows } = await supabase
-      .from('baseball_availability_statuses')
-      .select('player_id, status, starts_at, ends_at')
-      .eq('team_id', teamId)
-      .in('player_id', playerIds)
-      .in('status', ['hold', 'injured', 'suspended', 'unavailable', 'limited']) as {
-      data: AvailRow[] | null;
-    };
-    for (const av of availRows ?? []) {
-      if (!av.player_id || !av.starts_at) continue;
-      // Expand each hold across its full date range within the visible week.
-      // Open-ended holds (no ends_at) are treated as ongoing through week's end.
-      const start = av.starts_at.slice(0, 10);
-      const end = av.ends_at ? av.ends_at.slice(0, 10) : weekEnd;
-      const from = start > weekOf ? start : weekOf;
-      const to = end < weekEnd ? end : weekEnd;
-      if (from > to) continue;
-      const set = unavailByPlayer.get(av.player_id) ?? new Set<string>();
-      for (const slot of slots) {
-        if (slot >= from && slot <= to) set.add(slot);
+    const liftCtx = await resolveBaseballLiftingOrg(teamId);
+    const athleteMap = liftCtx ? await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds) : {};
+    const athleteToPlayer = new Map<string, string>();
+    for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+    const athleteIds = Object.values(athleteMap);
+
+    if (liftCtx && athleteIds.length) {
+      const { data: availRows } = await fromUntyped(supabase, 'helm_lifting_availability_statuses')
+        .select('athlete_id, status, starts_at, ends_at')
+        .eq('organization_id', liftCtx.organizationId)
+        .in('athlete_id', athleteIds)
+        .in('status', ['hold', 'injured', 'suspended', 'unavailable', 'limited']) as {
+        data: AvailRow[] | null;
+      };
+      for (const av of availRows ?? []) {
+        const pid = athleteToPlayer.get(av.athlete_id);
+        if (!pid || !av.starts_at) continue;
+        // Expand each hold across its full date range within the visible week.
+        // Open-ended holds (no ends_at) are treated as ongoing through week's end.
+        const start = av.starts_at.slice(0, 10);
+        const end = av.ends_at ? av.ends_at.slice(0, 10) : weekEnd;
+        const from = start > weekOf ? start : weekOf;
+        const to = end < weekEnd ? end : weekEnd;
+        if (from > to) continue;
+        const set = unavailByPlayer.get(pid) ?? new Set<string>();
+        for (const slot of slots) {
+          if (slot >= from && slot <= to) set.add(slot);
+        }
+        unavailByPlayer.set(pid, set);
       }
-      unavailByPlayer.set(av.player_id, set);
     }
   }
 

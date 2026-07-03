@@ -21,9 +21,18 @@ import {
   resolveBaseballLiftingOrg,
   resolveBaseballAthleteIds,
 } from '@/lib/lifting/resolve-baseball-context';
-import { extractArmStatusFromNotes, sleepQualityToHours } from '@/lib/lifting/adapters/baseball-view-adapter';
-import type { HelmLiftingReadinessCheckinRow, HelmLiftingSorenessMapRow } from '@/lib/types/helm-lifting-data';
+import {
+  adaptSession,
+  extractArmStatusFromNotes,
+  sleepQualityToHours,
+} from '@/lib/lifting/adapters/baseball-view-adapter';
 import type {
+  HelmLiftingReadinessCheckinRow,
+  HelmLiftingSessionRow,
+  HelmLiftingSorenessMapRow,
+} from '@/lib/types/helm-lifting-data';
+import type {
+  BaseballLiftSessionRow,
   BaseballPerformanceKpis,
   BaseballWeightRoomBoardRow,
   BaseballReadinessComputation,
@@ -69,60 +78,89 @@ export async function getPerformanceCommandData(
     .filter((p: RosterRow | null): p is RosterRow => Boolean(p?.id));
   const rosterById = new Map(roster.map((p) => [p.id, p]));
 
+  // ---- Helm Lifting Lab org + athlete-id map (resolved once, reused below) --
+  // Sessions, strength groups, PRs, bodyweight, and availability all live in
+  // the unified helm_lifting_* tables (organization_id + sport scoped); the
+  // legacy baseball_lift_* / baseball_strength_* / baseball_bodyweight_entries /
+  // baseball_availability_statuses tables are write-dead. Resolved once here
+  // and reused throughout (including inside the readiness gate below).
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const rosterPlayerIds = roster.map((p) => p.id);
+  const athleteMap = liftCtx && rosterPlayerIds.length
+    ? await resolveBaseballAthleteIds(liftCtx.organizationId, rosterPlayerIds)
+    : {};
+  const athleteToPlayer = new Map<string, string>();
+  for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+  const teamAthleteIds = Object.values(athleteMap);
+  const athleteToPlayerObj = Object.fromEntries(athleteToPlayer);
+
   // ---- Today's materialized sessions --------------------------------------
-  const { data: sessionRows } = await supabase
-    .from('baseball_lift_sessions')
-    .select('*')
-    .eq('team_id', teamId)
-    .eq('scheduled_date', today);
-  const sessions = sessionRows ?? [];
+  const sessions: BaseballLiftSessionRow[] = [];
+  if (liftCtx && teamAthleteIds.length) {
+    const { data: helmSessionRows } = await fromUntyped(supabase, 'helm_lifting_sessions')
+      .select('*')
+      .eq('organization_id', liftCtx.organizationId)
+      .eq('team_id', teamId)
+      .eq('scheduled_date', today)
+      .in('athlete_id', teamAthleteIds) as { data: HelmLiftingSessionRow[] | null };
+    for (const r of helmSessionRows ?? []) {
+      sessions.push(adaptSession(r, teamId, athleteToPlayerObj));
+    }
+  }
 
   // ---- Strength-group names per player ------------------------------------
-  const { data: groupRows } = await supabase
-    .from('baseball_strength_groups')
-    .select('id, name')
-    .eq('team_id', teamId)
-    .eq('is_active', true);
-  const groupNameById = new Map<string, string>(
-    (groupRows ?? []).map((g: { id: string; name: string }) => [g.id, g.name] as [string, string]),
-  );
-  const { data: memberRows } = await supabase
-    .from('baseball_strength_group_members')
-    .select('group_id, player_id');
+  const groupNameById = new Map<string, string>();
+  if (liftCtx) {
+    const { data: groupRows } = await fromUntyped(supabase, 'helm_lifting_groups')
+      .select('id, name')
+      .eq('organization_id', liftCtx.organizationId)
+      .eq('sport', 'baseball')
+      .eq('team_id', teamId)
+      .eq('is_active', true) as { data: Array<{ id: string; name: string }> | null };
+    for (const g of groupRows ?? []) groupNameById.set(g.id, g.name);
+  }
   const groupsByPlayer = new Map<string, string[]>();
-  for (const m of memberRows ?? []) {
-    const name = groupNameById.get((m as { group_id: string }).group_id);
-    if (!name) continue;
-    const pid = (m as { player_id: string }).player_id;
-    const arr = groupsByPlayer.get(pid) ?? [];
-    arr.push(name);
-    groupsByPlayer.set(pid, arr);
+  if (groupNameById.size) {
+    const { data: memberRows } = await fromUntyped(supabase, 'helm_lifting_group_members')
+      .select('group_id, athlete_id')
+      .in('group_id', Array.from(groupNameById.keys())) as { data: Array<{ group_id: string; athlete_id: string }> | null };
+    for (const m of memberRows ?? []) {
+      const name = groupNameById.get(m.group_id);
+      const pid = athleteToPlayer.get(m.athlete_id);
+      if (!name || !pid) continue;
+      const arr = groupsByPlayer.get(pid) ?? [];
+      arr.push(name);
+      groupsByPlayer.set(pid, arr);
+    }
   }
 
   // ---- New PRs today (any player on team) ---------------------------------
-  const { data: prRows } = await supabase
-    .from('baseball_strength_prs')
-    .select('id')
-    .eq('team_id', teamId)
-    .gte('achieved_at', `${today}T00:00:00Z`);
-  const newPrs = (prRows ?? []).length;
+  let newPrs = 0;
+  if (liftCtx && teamAthleteIds.length) {
+    const { data: prRows } = await fromUntyped(supabase, 'helm_lifting_prs')
+      .select('id')
+      .eq('organization_id', liftCtx.organizationId)
+      .in('athlete_id', teamAthleteIds)
+      .gte('achieved_at', `${today}T00:00:00Z`) as { data: Array<{ id: string }> | null };
+    newPrs = (prRows ?? []).length;
+  }
 
   // ---- Pending load modifications (coach-modified session exercises today) -
   // Cheap proxy: session exercises with a modification_reason on today's sessions.
-  const sessionIds = sessions.map((s: { id: string }) => s.id);
+  const sessionIds = sessions.map((s) => s.id);
   let loadModsPending = 0;
   const mainLiftBySession = new Map<string, { name: string | null; load: number | null }>();
   if (sessionIds.length) {
-    const { data: seRows } = await supabase
-      .from('baseball_lift_session_exercises')
+    const { data: seRows } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
       .select('session_id, exercise_name_snapshot, prescribed_load, section_type_snapshot, modification_reason, order_index')
       .in('session_id', sessionIds)
-      .order('order_index', { ascending: true });
-    for (const se of seRows ?? []) {
-      const r = se as {
+      .order('order_index', { ascending: true }) as {
+      data: Array<{
         session_id: string; exercise_name_snapshot: string; prescribed_load: number | null;
         section_type_snapshot: string | null; modification_reason: string | null;
-      };
+      }> | null;
+    };
+    for (const r of seRows ?? []) {
       if (r.modification_reason) loadModsPending += 1;
       // First main_strength exercise = the "main lift" surfaced on the board.
       if (r.section_type_snapshot === 'main_strength' && !mainLiftBySession.has(r.session_id)) {
@@ -144,19 +182,10 @@ export async function getPerformanceCommandData(
 
     // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
     // helm_lifting_readiness_checkins now — the legacy baseball_readiness_
-    // checkins table is write-dead. Resolve org + athlete-id map for the
-    // roster, then read helm and remap results back into the SAME
-    // Record<string, unknown> shape (keyed with legacy field names) that
-    // computeReadiness() below already expects, so downstream logic is
-    // unchanged.
-    const liftCtx = await resolveBaseballLiftingOrg(teamId);
-    const rosterPlayerIds = roster.map((p) => p.id);
-    const athleteMap = liftCtx && rosterPlayerIds.length
-      ? await resolveBaseballAthleteIds(liftCtx.organizationId, rosterPlayerIds)
-      : {};
-    const athleteToPlayer = new Map<string, string>();
-    for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
-    const teamAthleteIds = Object.values(athleteMap);
+    // checkins table is write-dead. Reuse the org + athlete-id map resolved
+    // above and remap results back into the SAME Record<string, unknown>
+    // shape (keyed with legacy field names) that computeReadiness() below
+    // already expects, so downstream logic is unchanged.
 
     // Latest check-in per player (14d window).
     const latestCheckin = new Map<string, Record<string, unknown>>();
@@ -204,18 +233,23 @@ export async function getPerformanceCommandData(
     }
 
     // Bodyweight 7d delta.
-    const { data: bw } = await supabase
-      .from('baseball_bodyweight_entries')
-      .select('player_id, entry_date, weight_lbs')
-      .eq('team_id', teamId)
-      .gte('entry_date', sinceYmd)
-      .order('entry_date', { ascending: false });
     const bwByPlayer = new Map<string, Array<{ date: string; w: number }>>();
-    for (const e of bw ?? []) {
-      const r = e as { player_id: string; entry_date: string; weight_lbs: number };
-      const arr = bwByPlayer.get(r.player_id) ?? [];
-      arr.push({ date: r.entry_date, w: r.weight_lbs });
-      bwByPlayer.set(r.player_id, arr);
+    if (liftCtx && teamAthleteIds.length) {
+      const { data: bw } = await fromUntyped(supabase, 'helm_lifting_bodyweight_entries')
+        .select('athlete_id, entry_date, weight_lbs')
+        .eq('organization_id', liftCtx.organizationId)
+        .in('athlete_id', teamAthleteIds)
+        .gte('entry_date', sinceYmd)
+        .order('entry_date', { ascending: false }) as {
+        data: Array<{ athlete_id: string; entry_date: string; weight_lbs: number }> | null;
+      };
+      for (const e of bw ?? []) {
+        const pid = athleteToPlayer.get(e.athlete_id);
+        if (!pid) continue;
+        const arr = bwByPlayer.get(pid) ?? [];
+        arr.push({ date: e.entry_date, w: e.weight_lbs });
+        bwByPlayer.set(pid, arr);
+      }
     }
     for (const [pid, list] of bwByPlayer) {
       const newest = list[0];
@@ -227,15 +261,19 @@ export async function getPerformanceCommandData(
     }
 
     // Active availability status per player.
-    const { data: avail } = await supabase
-      .from('baseball_availability_statuses')
-      .select('player_id, status, starts_at')
-      .eq('team_id', teamId)
-      .order('starts_at', { ascending: false });
     const availByPlayer = new Map<string, string>();
-    for (const a of avail ?? []) {
-      const r = a as { player_id: string; status: string };
-      if (!availByPlayer.has(r.player_id)) availByPlayer.set(r.player_id, r.status);
+    if (liftCtx && teamAthleteIds.length) {
+      const { data: avail } = await fromUntyped(supabase, 'helm_lifting_availability_statuses')
+        .select('athlete_id, status, starts_at')
+        .eq('organization_id', liftCtx.organizationId)
+        .in('athlete_id', teamAthleteIds)
+        .order('starts_at', { ascending: false }) as {
+        data: Array<{ athlete_id: string; status: string }> | null;
+      };
+      for (const a of avail ?? []) {
+        const pid = athleteToPlayer.get(a.athlete_id);
+        if (pid && !availByPlayer.has(pid)) availByPlayer.set(pid, a.status);
+      }
     }
 
     readiness = roster.map((p) => {
@@ -270,12 +308,12 @@ export async function getPerformanceCommandData(
   }
 
   // ---- Build the Today Weight Room board ----------------------------------
-  const board: BaseballWeightRoomBoardRow[] = sessions.map((s: Record<string, unknown>) => {
-    const pid = s.player_id as string;
+  const board: BaseballWeightRoomBoardRow[] = sessions.map((s) => {
+    const pid = s.player_id;
     const p = rosterById.get(pid);
-    const main = mainLiftBySession.get(s.id as string);
+    const main = mainLiftBySession.get(s.id);
     return {
-      session: s as never,
+      session: s,
       player_id: pid,
       first_name: p?.first_name ?? null,
       last_name: p?.last_name ?? null,
@@ -292,8 +330,8 @@ export async function getPerformanceCommandData(
 
   // ---- KPIs ----------------------------------------------------------------
   const total = sessions.length;
-  const completed = sessions.filter((s: { status: string }) => s.status === 'completed').length;
-  const missed = sessions.filter((s: { status: string }) => s.status === 'missed').length;
+  const completed = sessions.filter((s) => s.status === 'completed').length;
+  const missed = sessions.filter((s) => s.status === 'missed').length;
   const readinessRisk = readiness.filter(
     (r) => r.band === 'red' || r.band === 'orange_lower' || r.band === 'orange_upper',
   ).length;

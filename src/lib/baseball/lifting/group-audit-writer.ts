@@ -1,38 +1,78 @@
 // =============================================================================
 // src/lib/baseball/lifting/group-audit-writer.ts
 //
-// V11 Strength-group audit writer (spec L198: "Dynamic group membership changes
-// create audit events"). One server-only helper that appends immutable rows to
-// baseball_strength_group_audit whenever a group is created/updated or a member is
-// added/removed — for BOTH manual edits and dynamic-rule recomputes.
+// Helm Lift Lab strength-group audit writer (spec L198: "Dynamic group
+// membership changes create audit events"). One server-only helper that
+// appends immutable rows to helm_lifting_group_audit whenever a group is
+// created/updated or a member is added/removed — for BOTH manual edits and
+// dynamic-rule recomputes.
 //
-// WHY A WRITER (not raw inserts in every action): one place enforces append-only
-// provenance + the team/group consistency the RLS WITH CHECK also asserts, so the
-// ledger is honest and a forged team_id can never land. It NEVER throws into the
-// caller's happy path — an audit write is a side-effect of the membership mutation
-// and must not roll the membership change back; it returns { ok } the caller logs.
+// helm_lifting_group_audit (migration 20260704120000) is the helm mirror of
+// the legacy baseball_strength_group_audit table — the ONE legacy Lift Lab
+// table with no pre-existing helm equivalent, created ahead of the
+// program-builder→helm unification specifically so this writer could swap
+// targets. Column shape differs from the legacy table by the helm family
+// convention: `action` (was event_type), `actor_id` (an auth users.id — this
+// column has no FK, unlike the *_by_coach_id columns elsewhere in the Lift
+// Lab which FK to helm_lifting_coaches; mirrors the golf_review_events.actor_id
+// convention of storing users.id directly), `target_athlete_id` (was
+// player_id, now helm_lifting_athletes.id), `before_state`/`after_state`
+// (jsonb — replaces the old free-form `source` + `meta_json` pair; callers
+// fold `{ source, ...meta }` into `afterState`), `note` (was `detail`).
 //
-// Coach-initiated writes go through the caller's RLS-scoped client (the INSERT
-// policy requires has_baseball_staff_capability(team_id,'can_manage_lifting')).
+// WHY A WRITER (not raw inserts in every action): one place enforces
+// append-only provenance + the org/group consistency the RLS WITH CHECK also
+// asserts, so the ledger is honest and a forged organization_id can never
+// land. It NEVER throws into the caller's happy path — an audit write is a
+// side-effect of the membership mutation and must not roll the membership
+// change back; it returns { ok } the caller logs.
+//
+// Coach-initiated writes go through the caller's RLS-scoped client (the
+// INSERT policy requires helm_lifting_can_edit_org(organization_id) — see
+// migration 20260704120000_helm_lifting_group_audit.sql, hlga_insert).
 // =============================================================================
 
 import 'server-only';
 
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
-import type {
-  BaseballStrengthGroupAuditEvent,
-  BaseballStrengthGroupAuditSource,
-} from '@/lib/types/baseball-lifting-v11';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
 
+/**
+ * helm_lifting_group_audit is not yet in the generated Database types (it was
+ * added ahead of this unification — see migration
+ * 20260704120000_helm_lifting_group_audit.sql). Typed locally instead of
+ * `as any`, narrowly scoped to this insert shape.
+ */
+interface HelmLiftingGroupAuditInsert {
+  organization_id: string;
+  sport: 'baseball' | 'golf';
+  team_id: string | null;
+  group_id: string;
+  action: string;
+  actor_id: string | null;
+  target_athlete_id: string | null;
+  before_state: Record<string, unknown> | null;
+  after_state: Record<string, unknown> | null;
+  note: string | null;
+}
+
 export interface GroupAuditEntry {
-  eventType: BaseballStrengthGroupAuditEvent;
-  playerId?: string | null;
-  source?: BaseballStrengthGroupAuditSource;
-  detail?: string | null;
-  meta?: Record<string, unknown>;
+  /** Free-text action label (e.g. 'group_created', 'member_added', 'rule_changed'). */
+  action: string;
+  targetAthleteId?: string | null;
+  /** Human-readable note (was `detail`). */
+  note?: string | null;
+  /** Structured context from before the change. */
+  beforeState?: Record<string, unknown> | null;
+  /**
+   * Structured context from after the change — callers fold the legacy
+   * `source` ('manual' | 'rule' | 'import') and any extra `meta` fields in
+   * here, e.g. `{ source: 'rule', matched: 12 }`.
+   */
+  afterState?: Record<string, unknown> | null;
 }
 
 /**
@@ -43,28 +83,34 @@ export interface GroupAuditEntry {
 export async function appendGroupAudit(
   supabase: Db,
   args: {
-    teamId: string;
+    organizationId: string;
+    /** Defaults to 'baseball' — this writer is currently baseball-only. */
+    sport?: 'baseball' | 'golf';
+    teamId: string | null;
     groupId: string;
-    actorCoachId: string | null;
+    /** The acting auth user's id (users.id) — null for system-initiated entries. */
+    actorId: string | null;
     entries: GroupAuditEntry[];
   },
 ): Promise<{ ok: boolean }> {
   if (!args.entries.length) return { ok: true };
   try {
-    const rows = args.entries.map((e) => ({
+    const rows: HelmLiftingGroupAuditInsert[] = args.entries.map((e) => ({
+      organization_id: args.organizationId,
+      sport: args.sport ?? 'baseball',
       team_id: args.teamId,
       group_id: args.groupId,
-      event_type: e.eventType,
-      player_id: e.playerId ?? null,
-      source: e.source ?? 'manual',
-      detail: e.detail ?? null,
-      meta_json: e.meta ?? {},
-      actor_coach_id: args.actorCoachId,
+      action: e.action,
+      actor_id: args.actorId,
+      target_athlete_id: e.targetAthleteId ?? null,
+      before_state: e.beforeState ?? null,
+      after_state: e.afterState ?? null,
+      note: e.note ?? null,
     }));
-    const { error } = await supabase.from('baseball_strength_group_audit').insert(rows);
+    const { error } = await fromUntyped(supabase, 'helm_lifting_group_audit').insert(rows);
     if (error) {
       await logServerError(
-        `Failed to append strength-group audit: ${
+        `Failed to append Lift Lab group audit: ${
           error instanceof Error ? error.message : String(error)
         }`,
         { action: 'group-audit-writer.appendGroupAudit' },
@@ -74,7 +120,7 @@ export async function appendGroupAudit(
     return { ok: true };
   } catch (err) {
     await logServerError(
-      `Strength-group audit writer threw: ${err instanceof Error ? err.message : String(err)}`,
+      `Lift Lab group audit writer threw: ${err instanceof Error ? err.message : String(err)}`,
       { action: 'group-audit-writer.appendGroupAudit' },
     );
     return { ok: false };

@@ -17,6 +17,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type {
   CoachEngagement,
   CoachTemperature,
@@ -71,34 +72,57 @@ export async function getCoachEngagement(
   if (!coachIds.length) return {};
 
   await requireAdmin();
-  const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
-    .from('crm_coach_engagement')
-    .select('coach_id, score, temperature, opens_90d, clicks_90d, last_event_at')
-    .in('coach_id', coachIds);
+  // Resilience: a flaky read of the crm_coach_engagement matview (a resolved
+  // PostgrestError OR a thrown/rejected client call — e.g. the admin client
+  // failing to construct, a network blip) must never take down the CRM page
+  // render. Every caller (page.tsx, coach/[id]/page.tsx,
+  // EngagementDetailDrawer.tsx) treats a missing/empty map as "no engagement
+  // data yet", so degrading to {} here is always safe.
+  try {
+    const admin = createAdminClient();
 
-  if (error) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (admin as any)
+      .from('crm_coach_engagement')
+      .select('coach_id, score, temperature, opens_90d, clicks_90d, last_event_at')
+      .in('coach_id', coachIds);
+
+    if (error) {
+      // error is a Supabase PostgrestError — a plain object, not an Error
+      // instance. describeError() extracts code/message/details/hint instead
+      // of collapsing it to "[object Object]" via String(error).
+      await logServerError(
+        `[crm-engagement] getCoachEngagement failed: ${describeError(error)}`,
+        {
+          action: 'crm_engagement.getCoachEngagement',
+          errorCode: error.code,
+          errorHint: error.hint,
+          errorDetails: error.details,
+        },
+      );
+      return {};
+    }
+
+    const out: Record<string, CoachEngagement> = {};
+    for (const row of (data ?? []) as EngagementRow[]) {
+      out[row.coach_id] = {
+        coach_id: row.coach_id,
+        score: row.score,
+        temperature: row.temperature,
+        opens_90d: row.opens_90d,
+        clicks_90d: row.clicks_90d,
+        last_event_at: row.last_event_at,
+      };
+    }
+    return out;
+  } catch (err) {
     await logServerError(
-      `[crm-engagement] getCoachEngagement failed: ${error instanceof Error ? error.message : String(error)}`,
+      `[crm-engagement] getCoachEngagement threw: ${describeError(err)}`,
       { action: 'crm_engagement.getCoachEngagement' },
     );
     return {};
   }
-
-  const out: Record<string, CoachEngagement> = {};
-  for (const row of (data ?? []) as EngagementRow[]) {
-    out[row.coach_id] = {
-      coach_id: row.coach_id,
-      score: row.score,
-      temperature: row.temperature,
-      opens_90d: row.opens_90d,
-      clicks_90d: row.clicks_90d,
-      last_event_at: row.last_event_at,
-    };
-  }
-  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,8 +160,13 @@ export async function getEngagementLeaderboard(
 
   if (error) {
     await logServerError(
-      `[crm-engagement] getEngagementLeaderboard failed: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'crm_engagement.getEngagementLeaderboard' },
+      `[crm-engagement] getEngagementLeaderboard failed: ${describeError(error)}`,
+      {
+        action: 'crm_engagement.getEngagementLeaderboard',
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      },
     );
     return [];
   }

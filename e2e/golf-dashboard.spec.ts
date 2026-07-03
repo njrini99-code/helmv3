@@ -3,21 +3,29 @@ import { test, expect } from '@playwright/test';
 /**
  * Golf Dashboard E2E Test
  * Tests the complete golf dashboard flow with enhanced features
+ *
+ * AUTH: env-gated (matches e2e/course-library.spec.ts's "authenticated
+ * flow" pattern) — the previous hardcoded rinin376@gmail.com / Pirates#09!!
+ * credentials were a personal local account, not a CI-seeded one, so every
+ * run against real CI (no such account) failed at login. Set E2E_GOLF_EMAIL
+ * / E2E_GOLF_PASSWORD to a seeded golf coach/player login to run these;
+ * otherwise they self-skip instead of failing.
  */
 
-const TEST_USER = {
-  email: 'rinin376@gmail.com',
-  password: 'Pirates#09!!',
-};
+const GOLF_EMAIL = process.env.E2E_GOLF_EMAIL;
+const GOLF_PASSWORD = process.env.E2E_GOLF_PASSWORD;
+const hasSeededAuth = Boolean(GOLF_EMAIL && GOLF_PASSWORD);
 
 test.describe('Golf Dashboard - Player Flow', () => {
+  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
+
   test.beforeEach(async ({ page }) => {
     // Navigate to login page
-    await page.goto('http://localhost:3000/golf/login');
+    await page.goto('/golf/login');
 
     // Login
-    await page.fill('input[type="email"]', TEST_USER.email);
-    await page.fill('input[type="password"]', TEST_USER.password);
+    await page.fill('input[type="email"]', GOLF_EMAIL as string);
+    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
     await page.click('button[type="submit"]');
 
     // Wait for redirect to dashboard
@@ -45,7 +53,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
 
   test('should access new round page and see all steps', async ({ page }) => {
     // Navigate to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('/golf/dashboard/rounds/new');
 
     // Step 1: Setup - Should see course setup form
     await expect(page.locator('h1')).toContainText('New Round');
@@ -99,7 +107,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
 
   test('should navigate to stats page', async ({ page }) => {
     // Navigate to stats page
-    await page.goto('http://localhost:3000/golf/dashboard/stats');
+    await page.goto('/golf/dashboard/stats');
 
     // Should see stats page
     await expect(page.locator('h1')).toContainText('Stats');
@@ -114,7 +122,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
 
   test('should verify emerald color scheme throughout', async ({ page }) => {
     // Go to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('/golf/dashboard/rounds/new');
 
     // Check for emerald focus rings on inputs
     const courseNameInput = page.locator('#courseName');
@@ -147,18 +155,20 @@ test.describe('Golf Dashboard - Route Consolidation', () => {
     ];
 
     for (const route of oldRoutes) {
-      const response = await page.goto(`http://localhost:3000${route}`);
+      const response = await page.goto(route);
       // Should get 404 or redirect
       expect(response?.status()).not.toBe(200);
     }
   });
 
   test('login should redirect to golf dashboard', async ({ page }) => {
-    await page.goto('http://localhost:3000/golf/login');
+    test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
+
+    await page.goto('/golf/login');
 
     // Login
-    await page.fill('input[type="email"]', TEST_USER.email);
-    await page.fill('input[type="password"]', TEST_USER.password);
+    await page.fill('input[type="email"]', GOLF_EMAIL as string);
+    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
     await page.click('button[type="submit"]');
 
     // Should redirect to golf dashboard (not player-golf)

@@ -1036,7 +1036,7 @@ function synthesizeDefaultRow(
 // -----------------------------------------------------------------------------
 // update_program_block_order — drag-reorder for program sections (W5c).
 //
-// Accepts an ordered array of baseball_lift_sections.id values and writes
+// Accepts an ordered array of helm_lifting_sections.id values and writes
 // section_order (integer) back to each row in a loop. The column already
 // exists (migration 20260624000063 line 241) — no migration needed.
 //
@@ -1070,8 +1070,8 @@ export const updateProgramBlockOrder = withBaseballAction(
     for (let i = 0; i < input.orderedIds.length; i++) {
       const id = input.orderedIds[i];
       if (!id) continue;
-      const { error } = await fromUntyped(supabase, 'baseball_lift_sections')
-        .update({ section_order: i, updated_at: new Date().toISOString() })
+      const { error } = await fromUntyped(supabase, 'helm_lifting_sections')
+        .update({ section_order: i })
         .eq('id', id);
       if (error) throw error;
     }
