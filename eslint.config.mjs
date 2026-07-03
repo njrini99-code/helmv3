@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
+import globals from "globals";
 
 // W0 (2026-05-28) — six custom rules that enforce the canonical design
 // token system from src/styles/tokens.css. See
@@ -43,6 +44,14 @@ export default tseslint.config(
       ".next/**",
       "eslint-rules/**",
     ],
+  },
+  {
+    files: ["scripts/**/*.{js,mjs,cjs,ts,mts,cts}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
   },
   {
     plugins: {
