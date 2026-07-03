@@ -253,9 +253,9 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
       transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
       className={cn(
         'relative flex items-start gap-3 p-4 rounded-xl border shadow-xl min-w-[340px] max-w-md overflow-hidden',
-        'bg-white/90 backdrop-blur-xl',
+        'glass-prominent',
         config.borderClass,
-        toast.onClick && 'cursor-pointer hover:bg-white/95 transition-colors',
+        toast.onClick && 'cursor-pointer hover:bg-cream-50 transition-colors',
         toast.variant === 'critical' && 'ring-2 ring-red-500/20'
       )}
       onClick={toast.onClick}

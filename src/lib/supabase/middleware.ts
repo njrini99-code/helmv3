@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-shared';
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
-import { evaluateAdminGate } from '@/lib/admin/super-admin-shared';
+import { evaluateAdminGate, isAdminPath } from '@/lib/admin/super-admin-shared';
 import {
   SESSION_IDLE_COOKIE,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
@@ -307,6 +307,7 @@ async function checkRouteAuthorization(
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const sport = getSportFromPath(pathname);
+  const onAdminPath = isAdminPath(pathname);
 
   if (isNativeUserAgent(request) && isMarketingRoute(pathname)) {
     return NextResponse.redirect(new URL('/golf/login', request.url));
@@ -402,8 +403,10 @@ export async function updateSession(request: NextRequest) {
   // (client hook) and bootstrapped here on first sight; its long lifetime means
   // a genuine reopen after the window is always "present + stale". Absent/fresh
   // markers are treated as active so a brand-new login is never bounced.
-  // Scoped to sport page routes (golf/baseball/lifting); /api and /admin are out.
-  if (user && sport) {
+  // Scoped to sport page routes (golf/baseball/lifting) AND /admin — the
+  // single most powerful account in the app must not be exempt from the
+  // platform's own idle-reauth policy (see #730). /api is still out.
+  if (user && (sport || onAdminPath)) {
     const lastActivity = parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value);
     const now = Date.now();
 
@@ -417,10 +420,13 @@ export async function updateSession(request: NextRequest) {
       }
 
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = `/${sport}/login`;
+      // /admin has no login route of its own — it reuses /golf/login (same as
+      // evaluateAdminGate's 'redirect-login' decision above) with returnTo
+      // bringing them back to /admin after signing in again.
+      loginUrl.pathname = sport ? `/${sport}/login` : '/golf/login';
       loginUrl.search = '';
       loginUrl.searchParams.set('message', 'session_expired');
-      if (isProtectedRoute) loginUrl.searchParams.set('returnTo', pathname);
+      if (isProtectedRoute || onAdminPath) loginUrl.searchParams.set('returnTo', pathname);
 
       const res = NextResponse.redirect(loginUrl);
       // Propagate any cookie removals signOut wrote onto supabaseResponse...

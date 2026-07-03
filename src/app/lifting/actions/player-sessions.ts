@@ -146,6 +146,10 @@ export async function submitLiftReadiness(input: {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // Upsert on (athlete_id, checkin_date) — the only unique constraint on
+  // helm_lifting_readiness_checkins (uq_helm_lifting_checkin; verified via
+  // pg_constraint). A 4-column onConflict matches no constraint and Postgres
+  // rejects it with 42P10 on every call.
   const { data, error } = await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
     .upsert(
       {
@@ -159,7 +163,7 @@ export async function submitLiftReadiness(input: {
         notes: input.notes,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'organization_id,sport,athlete_id,checkin_date' },
+      { onConflict: 'athlete_id,checkin_date' },
     )
     .select('id')
     .maybeSingle() as { data: { id: string } | null; error: unknown };
@@ -228,8 +232,12 @@ export async function logMySetResult(input: {
     completed_at: new Date().toISOString(),
   };
 
+  // Upsert on (session_exercise_id, set_number) — the only unique
+  // constraint on helm_lifting_set_results (uq_helm_lifting_set; verified
+  // via pg_constraint). A 3-column onConflict including athlete_id matches
+  // no constraint and Postgres rejects it with 42P10 on every call.
   const { data, error } = await fromUntyped(supabase, 'helm_lifting_set_results')
-    .upsert(payload, { onConflict: 'session_exercise_id,athlete_id,set_number' })
+    .upsert(payload, { onConflict: 'session_exercise_id,set_number' })
     .select('id')
     .maybeSingle() as { data: { id: string } | null; error: unknown };
 

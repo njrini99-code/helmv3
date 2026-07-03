@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
 import {
   IconUpload,
@@ -532,7 +534,7 @@ export function StatsUploadClient({
               help you map columns and match player names.
             </p>
 
-            <input
+            <Input
               type="file"
               accept=".csv"
               onChange={handleFileInput}
@@ -714,7 +716,7 @@ export function StatsUploadClient({
                         ? 'bg-primary-50/50 border-primary-200'
                         : mapping.mappedTo
                           ? 'bg-warm-50 border-warm-200'
-                          : 'bg-white border-warm-100'
+                          : 'bg-cream-50 border-warm-100'
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -735,40 +737,35 @@ export function StatsUploadClient({
 
                       {/* Mapping Dropdown */}
                       <div className="sm:w-48">
-                        <select
+                        <Select
                           value={mapping.mappedTo || ''}
-                          onChange={(e) =>
+                          onChange={(value) =>
                             handleColumnMappingChange(
                               mapping.csvColumn,
-                              e.target.value || null
+                              value || null
                             )
                           }
-                          className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
+                          className={
                             mapping.mappedTo === 'player_name'
-                              ? 'border-primary-300 bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100'
-                              : 'border-warm-200 bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100'
-                          }`}
-                        >
-                          <option value="">Skip this column</option>
-                          {STAT_FIELDS.map((field) => {
-                            const isUsed = columnMappings.some(
-                              (m) =>
-                                m.mappedTo === field.key &&
-                                m.csvColumn !== mapping.csvColumn
-                            );
-                            return (
-                              <option
-                                key={field.key}
-                                value={field.key}
-                                disabled={isUsed}
-                              >
-                                {field.label}
-                                {field.required ? ' *' : ''}
-                                {isUsed ? ' (already mapped)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
+                              ? 'border-primary-300'
+                              : undefined
+                          }
+                          options={[
+                            { value: '', label: 'Skip this column' },
+                            ...STAT_FIELDS.map((field) => {
+                              const isUsed = columnMappings.some(
+                                (m) =>
+                                  m.mappedTo === field.key &&
+                                  m.csvColumn !== mapping.csvColumn
+                              );
+                              return {
+                                value: field.key,
+                                label: `${field.label}${field.required ? ' *' : ''}${isUsed ? ' (already mapped)' : ''}`,
+                                disabled: isUsed,
+                              };
+                            }),
+                          ]}
+                        />
                       </div>
                     </div>
                   </div>
@@ -829,7 +826,7 @@ export function StatsUploadClient({
                     {goodMatches.slice(0, 10).map((match) => (
                       <span
                         key={match.csvName}
-                        className="px-2 py-1 bg-white rounded text-xs text-warm-700 shadow-sm"
+                        className="px-2 py-1 bg-cream-50 rounded text-xs text-warm-700 shadow-sm"
                       >
                         {match.csvName} → {match.playerName}
                       </span>
@@ -875,7 +872,7 @@ export function StatsUploadClient({
                         key={match.csvName}
                         className={`border rounded-xl transition-all ${
                           isExpanded
-                            ? 'border-primary-300 bg-white shadow-sm'
+                            ? 'border-primary-300 bg-cream-50 shadow-sm'
                             : 'border-amber-200 bg-amber-50'
                         }`}
                       >
@@ -940,19 +937,15 @@ export function StatsUploadClient({
                               <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                                 Or search roster
                               </p>
-                              <div className="relative mb-2">
-                                <IconSearch
-                                  size={16}
-                                  className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400"
-                                />
-                                <input
+                              <div className="mb-2">
+                                <Input
                                   type="text"
                                   placeholder="Search players..."
                                   value={playerSearchQuery}
                                   onChange={(e) =>
                                     setPlayerSearchQuery(e.target.value)
                                   }
-                                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-warm-200 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
+                                  leftIcon={<IconSearch size={16} />}
                                 />
                               </div>
                               {playerSearchQuery && (
@@ -1086,14 +1079,11 @@ export function StatsUploadClient({
                   <label htmlFor="suc-session-date" className="block text-sm font-medium text-warm-700 mb-2">
                     Session Date
                   </label>
-                  <input
+                  <Input
                     id="suc-session-date"
                     type="date"
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-warm-200
-                               focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                               text-warm-900 transition-colors"
                   />
                 </div>
 
@@ -1102,15 +1092,12 @@ export function StatsUploadClient({
                   <label htmlFor="suc-session-name" className="block text-sm font-medium text-warm-700 mb-2">
                     Session Name (Optional)
                   </label>
-                  <input
+                  <Input
                     id="suc-session-name"
                     type="text"
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}
                     placeholder="e.g., Fall Scrimmage vs State"
-                    className="w-full px-4 py-2 rounded-lg border border-warm-200
-                               focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                               text-warm-900 placeholder:text-warm-400 transition-colors"
                   />
                 </div>
               </div>
@@ -1247,7 +1234,7 @@ export function StatsUploadClient({
 
               {uploadResult.unmatchedNames &&
                 uploadResult.unmatchedNames.length > 0 && (
-                  <div className="mt-4 bg-white rounded-lg p-4 text-left">
+                  <div className="mt-4 bg-cream-50 rounded-lg p-4 text-left">
                     <p className="text-xs font-semibold text-amber-600 uppercase mb-2">
                       Unmatched Names
                     </p>

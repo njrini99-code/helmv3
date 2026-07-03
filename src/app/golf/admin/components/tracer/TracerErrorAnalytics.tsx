@@ -46,10 +46,7 @@ type TimeRange = '7d' | '14d' | '30d';
 type FeedMode = 'all' | 'critical' | 'recent';
 type QueueTab = 'active' | 'resolved';
 
-const GLASS_CARD = cn(
-  'bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl',
-  'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
-);
+const GLASS_CARD = cn('glass-standard rounded-2xl');
 
 const TIME_RANGES: { label: TimeRange; days: number }[] = [
   { label: '7d', days: 7 },
@@ -138,7 +135,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
   if (!value) return null;
 
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 px-3 py-2">
+    <div className="rounded-xl border border-cream-300/50 bg-cream-50 px-3 py-2">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className={cn('mt-1 break-words text-sm text-warm-800', mono && 'font-mono text-caption')}>
         {value}
@@ -149,7 +146,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 
 function NarrativePanel({ label, body }: { label: string; body: string }) {
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+    <div className="rounded-xl border border-cream-300/50 bg-cream-50 p-3">
       <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className="mt-1.5 text-sm leading-6 text-warm-700">{body}</p>
     </div>
@@ -347,7 +344,7 @@ export default function TracerErrorAnalytics({
                 ? 'border-primary-200 bg-primary-50 text-primary-700'
                 : copyState?.target === 'feed' && copyState.status === 'error'
                   ? 'border-red-200 bg-red-50 text-red-700'
-                  : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
+                  : 'glass-standard text-warm-700 hover:bg-cream-100'
             )}
           >
             {copyState?.target === 'feed' && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
@@ -393,8 +390,8 @@ export default function TracerErrorAnalytics({
                 className={cn(
                   'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
                   queueTab === option.value
-                    ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
-                    : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
+                    ? 'border-warm-300 bg-cream-50 text-warm-900 shadow-sm'
+                    : 'glass-subtle text-warm-500 hover:bg-cream-100'
                 )}
               >
                 <span>{option.label}</span>
@@ -418,8 +415,8 @@ export default function TracerErrorAnalytics({
                 className={cn(
                   'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
                   feedMode === option.value
-                    ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
-                    : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
+                    ? 'border-warm-300 bg-cream-50 text-warm-900 shadow-sm'
+                    : 'glass-subtle text-warm-500 hover:bg-cream-100'
                 )}
               >
                 <span>{option.label}</span>
@@ -453,7 +450,7 @@ export default function TracerErrorAnalytics({
         </div>
 
         {visibleIncidents.length === 0 ? (
-          <div className="mt-5 flex flex-col items-center justify-center rounded-2xl border border-white/35 bg-white/55 px-6 py-10 text-sm text-warm-500">
+          <div className="mt-5 flex flex-col items-center justify-center rounded-2xl glass-subtle px-6 py-10 text-sm text-warm-500">
             <p>No tracer incidents match this filter.</p>
             {queueTab === 'active' && resolvedIncidents.length > 0 && (
               <Button variant="ghost"
@@ -476,7 +473,7 @@ export default function TracerErrorAnalytics({
                 <article
                   key={incident.id}
                   className={cn(
-                    'rounded-2xl border bg-white/55 p-3.5 md:p-4',
+                    'rounded-2xl border bg-cream-50 p-3.5 md:p-4',
                     style.border,
                     incident.status === 'open' && 'ring-1 ring-red-100'
                   )}
@@ -487,21 +484,21 @@ export default function TracerErrorAnalytics({
                         <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', style.badge)}>
                           {incident.severity}
                         </span>
-                        <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
+                        <span className="inline-flex items-center rounded-full border border-cream-300/50 bg-cream-50 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
                           {incident.featureArea}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-cream-300/50 bg-cream-50 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                           <Layers3 size={11} />
                           {incident.occurrences}
                         </span>
                         {incident.playerIds.length > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-cream-300/50 bg-cream-50 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                             <IconUser size={11} />
                             {incident.playerIds.length}
                           </span>
                         )}
                         {incident.roundIds.length > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-cream-300/50 bg-cream-50 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                             <IconRoute size={11} />
                             {incident.roundIds.length} rounds
                           </span>
@@ -521,7 +518,7 @@ export default function TracerErrorAnalytics({
                       </div>
 
                       <div className="mt-2 flex items-start gap-3">
-                        <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/80', style.icon)}>
+                        <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-cream-50', style.icon)}>
                           {incident.status === 'resolved' ? <RotateCcw size={16} /> : <IconWarning size={16} />}
                         </div>
                         <div className="min-w-0">
@@ -547,7 +544,7 @@ export default function TracerErrorAnalytics({
                             ? 'border-primary-200 bg-primary-50 text-primary-700'
                             : copyState?.target === incident.id && copyState.status === 'error'
                               ? 'border-red-200 bg-red-50 text-red-700'
-                              : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
+                              : 'glass-standard text-warm-700 hover:bg-cream-100'
                         )}
                       >
                         {copyState?.target === incident.id && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
@@ -574,7 +571,7 @@ export default function TracerErrorAnalytics({
                               'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                               investigatingIds.has(incident.id)
                                 ? 'border-amber-300 bg-amber-50 text-amber-800'
-                                : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
+                                : 'glass-standard text-warm-700 hover:bg-cream-100'
                             )}
                           >
                             <IconEye size={16} />
@@ -599,7 +596,7 @@ export default function TracerErrorAnalytics({
                       <Button variant="ghost"
                         type="button"
                         onClick={() => setExpandedId(isExpanded ? null : incident.id)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
+                        className="inline-flex items-center gap-2 rounded-xl glass-standard px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100"
                       >
                         {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
                         {isExpanded ? 'Hide detail' : 'Show detail'}
@@ -629,7 +626,7 @@ export default function TracerErrorAnalytics({
                         <MetaItem label="Resolution" value={incident.resolvedAt ? `${formatTimestamp(incident.resolvedAt)}${incident.resolvedBy ? ` · ${incident.resolvedBy}` : ''}` : null} />
                       </div>
 
-                      <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                      <div className="rounded-xl border border-cream-300/50 bg-cream-50 p-3">
                         <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
                         <p className="mt-1.5 break-words text-sm leading-6 text-warm-800">{incident.sampleMessage}</p>
                       </div>
@@ -651,14 +648,14 @@ export default function TracerErrorAnalytics({
                       )}
 
                       <div className="grid gap-3 lg:grid-cols-2">
-                        <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                        <div className="rounded-xl border border-cream-300/50 bg-cream-50 p-3">
                           <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
                           <pre className="mt-2 max-h-[260px] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-warm-700">
                             {incident.copySummary}
                           </pre>
                         </div>
 
-                        <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                        <div className="rounded-xl border border-cream-300/50 bg-cream-50 p-3">
                           <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Context and stack</p>
                           <div className="mt-2 space-y-3">
                             {incident.sampleContext ? (
@@ -719,13 +716,13 @@ export default function TracerErrorAnalytics({
                 const details = meta?.details as string | undefined;
 
                 return (
-                  <div key={trace.id} className={cn('rounded-xl border bg-white/55 p-3', sevStyle.border)}>
+                  <div key={trace.id} className={cn('rounded-xl border bg-cream-50 p-3', sevStyle.border)}>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', sevStyle.badge)}>
                         {trace.severity}
                       </span>
                       {featureArea && (
-                        <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
+                        <span className="inline-flex items-center rounded-full border border-cream-300/50 bg-cream-50 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
                           {featureArea}
                         </span>
                       )}
@@ -778,7 +775,7 @@ export default function TracerErrorAnalytics({
                   className={cn(
                     'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
                     timeRange === range.label
-                      ? 'bg-white text-warm-900 shadow-sm'
+                      ? 'bg-cream-50 text-warm-900 shadow-sm'
                       : 'text-warm-500 hover:text-warm-700'
                   )}
                 >

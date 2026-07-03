@@ -45,6 +45,7 @@ import {
   type Updater,
 } from '@tanstack/react-table';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { alignClass, densityMetrics } from './density';
 import { DataTableSkeleton } from './data-table-skeleton';
 import { DataTableEmpty, DataTableError } from './data-table-states';
@@ -69,7 +70,7 @@ const TableCheckbox = React.forwardRef<
       ref={innerRef}
       type="checkbox"
       className={cn(
-        'size-[18px] cursor-pointer appearance-none rounded-[5px] border border-border-strong bg-surface',
+        'size-[18px] cursor-pointer appearance-none rounded-sm border border-border-strong bg-surface',
         'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'checked:border-accent-500 checked:bg-accent-500',
         'indeterminate:border-accent-500 indeterminate:bg-accent-500',
@@ -141,9 +142,11 @@ function RowActions<TData>({
       {visible.map((action) => {
         const disabled = action.disabled?.(data) ?? false;
         return (
-          <button
+          <Button
             key={action.id}
             type="button"
+            variant="ghost"
+            haptic="none"
             aria-label={action.label}
             title={action.label}
             disabled={disabled}
@@ -152,7 +155,7 @@ function RowActions<TData>({
               action.onSelect(data, row);
             }}
             className={cn(
-              'inline-flex size-7 items-center justify-center rounded-fw-sm',
+              'inline-flex size-7 min-h-0 p-0 items-center justify-center rounded-fw-sm',
               'text-text-tertiary transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'hover:bg-surface-sunken hover:text-text-secondary',
               action.tone === 'danger' && 'hover:bg-fw-danger-bg hover:text-fw-danger',
@@ -162,7 +165,7 @@ function RowActions<TData>({
             )}
           >
             {action.icon ?? <span className="text-body-sm font-fw-sans">{action.label}</span>}
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -401,11 +404,13 @@ export function DataTable<TData>({
                       )}
                     >
                       {canSort ? (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          haptic="none"
                           onClick={header.column.getToggleSortingHandler()}
                           className={cn(
-                            'group/sort -mx-1.5 inline-flex max-w-full items-center rounded-fw-sm px-1.5 py-1',
+                            'group/sort -mx-1.5 inline-flex max-w-full min-h-0 items-center rounded-fw-sm px-1.5 py-1',
                             'font-fw-sans text-eyebrow uppercase tracking-[0.06em]',
                             'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                             'hover:text-text-secondary',
@@ -419,7 +424,7 @@ export function DataTable<TData>({
                         >
                           <span className="truncate">{headerContent}</span>
                           <SortGlyph dir={sortDir} />
-                        </button>
+                        </Button>
                       ) : (
                         <span className="truncate">{headerContent}</span>
                       )}
@@ -459,11 +464,13 @@ export function DataTable<TData>({
                       description={typeof error === 'string' ? error : undefined}
                       action={
                         onRetry ? (
-                          <button
+                          <Button
                             type="button"
+                            variant="outline"
+                            haptic="none"
                             onClick={onRetry}
                             className={cn(
-                              'inline-flex h-9 items-center rounded-full border border-border-strong bg-surface px-4',
+                              'inline-flex h-9 min-h-0 items-center rounded-full border border-border-strong bg-surface px-4',
                               'text-label text-text-primary',
                               'transition-all [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                               'hover:shadow-soft hover:border-border-strong',
@@ -472,7 +479,7 @@ export function DataTable<TData>({
                             )}
                           >
                             Try again
-                          </button>
+                          </Button>
                         ) : undefined
                       }
                     />

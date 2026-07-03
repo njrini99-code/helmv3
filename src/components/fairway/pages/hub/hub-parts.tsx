@@ -37,7 +37,6 @@ import {
   Bell,
   ClipboardList,
   Upload,
-  CalendarCheck2,
 } from 'lucide-react';
 
 import {
@@ -144,13 +143,15 @@ export function SectionTitle({
         ) : null}
       </div>
       {action ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+    
           onClick={action.onClick}
           className={cn(
-            'group inline-flex shrink-0 items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700',
+            'group h-auto min-h-0 shrink-0 items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700',
             'rounded-full px-1 py-0.5 transition-colors duration-base',
-            'hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+            'hover:bg-transparent hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           )}
         >
           {action.label}
@@ -158,7 +159,7 @@ export function SectionTitle({
             aria-hidden
             className="h-3.5 w-3.5 transition-transform duration-base group-hover:translate-x-0.5"
           />
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -236,16 +237,18 @@ export function TripRow({
   const fmtDate = useFormatDate();
   const status = tripStatus(trip, now);
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+
       onClick={onOpen}
       className={cn(
         // matte Surface look, as a native button (NOT Surface as="button")
-        'group relative flex w-full items-center gap-3 rounded-card bg-surface p-4 text-left',
+        'group relative h-auto min-h-0 w-full items-center gap-3 rounded-card bg-surface p-4 text-left',
         'border border-border-subtle shadow-flat',
         'cursor-pointer transition-[box-shadow,transform,border-color]',
         '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-        'hover:shadow-raise hover:-translate-y-px active:translate-y-[0.5px] active:shadow-flat',
+        'hover:bg-surface hover:shadow-raise hover:-translate-y-px active:translate-y-[0.5px] active:shadow-flat',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
       )}
@@ -270,7 +273,7 @@ export function TripRow({
         </p>
       </div>
       <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
-    </button>
+    </Button>
   );
 }
 
@@ -417,8 +420,10 @@ export function TaskRow({
       padding="sm"
       className={cn('flex items-start gap-3', isCompleted && 'opacity-60')}
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
+  
         onClick={handleComplete}
         disabled={isCompleted || completing}
         aria-label={isCompleted ? 'Task completed' : 'Mark task complete'}
@@ -426,7 +431,7 @@ export function TaskRow({
           // 44×44px tap target (WCAG 2.2 / premium DoD) — the visual checkbox
           // stays 28px via the nested <span>; the button is the padded hit zone.
           // Negative margins keep the 28px glyph aligned with its old mt-0.5 spot.
-          'group -mt-1.5 -ml-1.5 grid h-11 w-11 shrink-0 place-items-center rounded-fw-md',
+          'group -mt-1.5 -ml-1.5 grid h-11 min-h-0 w-11 shrink-0 place-items-center rounded-fw-md p-0 hover:bg-transparent',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         )}
       >
@@ -442,7 +447,7 @@ export function TaskRow({
         >
           <Check aria-hidden className="h-4 w-4" />
         </span>
-      </button>
+      </Button>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -812,18 +817,7 @@ export function NoUpcomingTrips() {
   );
 }
 
-export function NothingToRSVP() {
-  return (
-    <Surface padding="sm">
-      <EmptyState
-        variant="subtle"
-        icon={CalendarCheck2}
-        title="Nothing to RSVP to right now"
-        description="When your coach schedules events, they'll appear here to respond to."
-      />
-    </Surface>
-  );
-}
+
 
 export function NoTasks() {
   return (
@@ -838,28 +832,6 @@ export function NoTasks() {
   );
 }
 
-export function NoEvents() {
-  return (
-    <Surface padding="sm">
-      <EmptyState
-        variant="subtle"
-        icon={CalendarClock}
-        title="No events scheduled"
-        description="Upcoming team events will appear here once your coach adds them."
-      />
-    </Surface>
-  );
-}
 
-export function AllCaughtUp() {
-  return (
-    <Surface padding="sm">
-      <EmptyState
-        variant="subtle"
-        icon={Check}
-        title="You're all caught up"
-        description="No tasks, trips, or RSVPs need your attention right now."
-      />
-    </Surface>
-  );
-}
+
+

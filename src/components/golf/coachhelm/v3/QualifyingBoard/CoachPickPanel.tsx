@@ -11,6 +11,7 @@ import type {
   SelectionCandidate,
 } from '@/lib/coachhelm/v3/qualifying/types';
 import { liftHover, tapPress } from '@/lib/coachhelm/v3/motion';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Props {
   qualifierId: string;
@@ -153,14 +154,14 @@ export function CoachPickPanel({ qualifierId, candidates, slotsCoachPick, state 
                   transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.28, ease: [0.16, 1, 0.3, 1] })}
                   className="ml-12 mt-3 space-y-2.5"
                 >
-                  <textarea
+                  <Textarea
                     value={drafts[c.player_id] ?? ''}
                     onChange={(e) =>
                       setDrafts((d) => ({ ...d, [c.player_id]: e.target.value }))
                     }
                     rows={2}
                     placeholder="Why this player? (visible to coaching staff)"
-                    className="w-full px-3 py-2 text-sm border border-warm-300 rounded-lg focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 focus:outline-none transition"
+                    className="text-sm rounded-lg"
                   />
                   <div className="flex gap-2">
                     <m.button

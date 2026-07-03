@@ -113,7 +113,7 @@ export default function BaseballTravelPage() {
     return (
       <div className="mx-auto max-w-5xl p-4 md:p-6">
         <h1 className="text-2xl font-bold tracking-tight text-warm-900">Travel</h1>
-        <div className="mt-8 rounded-2xl border border-white/20 bg-white/70 p-10 text-center backdrop-blur-xl">
+        <div className="mt-8 glass-standard rounded-2xl p-10 text-center">
           <h2 className="mb-2 text-lg font-semibold text-warm-900">No team found</h2>
           <p className="text-warm-500">You must be on a team to access travel itineraries.</p>
         </div>

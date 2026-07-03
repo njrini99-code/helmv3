@@ -4,6 +4,7 @@ import { RATE_LIMITS } from '@/lib/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
+import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
 import type { Json } from '@/lib/types/database';
 
 export async function POST(request: NextRequest) {
@@ -49,6 +50,19 @@ export async function POST(request: NextRequest) {
     const timestamp = errorReport.timestamp || new Date().toISOString();
     const userAgent = request.headers.get('user-agent');
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
+
+    // Same signature every other write path into admin_events computes
+    // (server-error-logger.ts's writeAdminTables) — without it, repeats of
+    // the same client-side root cause never collapse into one triage
+    // bucket (mergeTriage falls back to a per-row key when fingerprint is
+    // null), so a single network blip can flood the incident queue with
+    // hundreds of individually-fingerprinted "network error" rows.
+    const fingerprint = buildIncidentSignature({
+      severity,
+      errorCode: null,
+      route: url,
+      message,
+    });
 
     // Sanitize context field - limit size to prevent abuse
     let sanitizedContext: Json | null = null;
@@ -103,6 +117,8 @@ export async function POST(request: NextRequest) {
         url,
         stack_trace: stack,
         browser_info: contextWithAnonymity,
+        fingerprint,
+        source: 'client_runtime',
       }),
     ]);
 

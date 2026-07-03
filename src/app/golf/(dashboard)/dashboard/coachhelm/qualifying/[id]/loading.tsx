@@ -4,8 +4,8 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 
 /**
  * P325 — the Suspense fallback for the Qualifying selection workspace must match
- * the LIVE FairwayQualifyingWorkspace, not arbitrary `bg-white/40` glass blocks.
- * The previous skeleton used `bg-white/40` 40%-glass pulses that mismatched the
+ * the LIVE FairwayQualifyingWorkspace, not arbitrary `glass-subtle` glass blocks.
+ * The previous skeleton used `glass-subtle` 40%-glass pulses that mismatched the
  * bg-canvas matte Fairway surfaces it precedes. This reserves the ACTUAL layout:
  * a max-w-[960px] shell with a ViewHeader-shaped title + breadcrumb, then the
  * StateBar / Leaderboard / Coach-picks Surfaces, in Fairway tokens only.
@@ -89,9 +89,9 @@ function FairwayQualifyingWorkspaceLoading() {
 function LegacyQualifyingWorkspaceLoading() {
   return (
     <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">
-      <div className="h-24 bg-white/40 rounded-2xl animate-pulse mb-6" />
-      <div className="h-12 bg-white/40 rounded-2xl animate-pulse mb-4" />
-      <div className="h-80 bg-white/40 rounded-2xl animate-pulse" />
+      <div className="h-24 glass-subtle rounded-2xl animate-pulse mb-6" />
+      <div className="h-12 glass-subtle rounded-2xl animate-pulse mb-4" />
+      <div className="h-80 glass-subtle rounded-2xl animate-pulse" />
     </div>
   );
 }

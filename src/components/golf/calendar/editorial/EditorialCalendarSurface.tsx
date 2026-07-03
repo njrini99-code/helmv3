@@ -357,7 +357,7 @@ export function EditorialCalendarSurface({
                   onClick={() => navigate('today')}
                   className={cn(
                     'inline-flex items-center justify-center rounded-full px-4 h-10 md:h-9',
-                    'text-[12.5px] font-medium tracking-[-0.005em]',
+                    'text-body-sm font-medium tracking-[-0.005em]',
                     // Use `nowRef` instead of date-fns `isToday` (which calls
                     // `Date.now()` internally) so server + first-client agree.
                     isSameDay(focusDate, nowRef)

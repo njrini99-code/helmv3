@@ -374,7 +374,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                             )}>
                                                 <div className="flex items-start justify-between gap-2 mb-1">
                                                     <p className={cn(
-                                                        'text-[12.5px] font-medium tracking-[-0.005em] truncate',
+                                                        'text-body-sm font-medium tracking-[-0.005em] truncate',
                                                         isCurrent ? 'text-warm-900' : 'text-warm-700'
                                                     )}>
                                                         {event.title}

@@ -114,13 +114,13 @@ export function InboxView() {
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-96 rounded-2xl bg-white/60 border border-warm-200/60 skeleton-shimmer" />
+            <div key={i} className="h-96 rounded-2xl glass-standard border-warm-200/60 skeleton-shimmer" />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-4 min-h-[480px]">
           {/* Replies column */}
-          <aside className="rounded-2xl bg-white/70 backdrop-blur-xl border border-warm-200/60 overflow-hidden flex flex-col">
+          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
                 <IconMail size={12} /> Replies
@@ -175,7 +175,7 @@ export function InboxView() {
           </aside>
 
           {/* Detail column */}
-          <section className="rounded-2xl bg-white/40 backdrop-blur-xl border border-warm-200/60 overflow-hidden flex flex-col">
+          <section className="rounded-2xl glass-subtle border-warm-200/60 overflow-hidden flex flex-col">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600">
                 Detail
@@ -196,7 +196,7 @@ export function InboxView() {
                 <ReplyThread reply={selection.reply} onRead={handleReplyRead} />
               )}
               {selection?.kind === 'task' && (
-                <article className="rounded-xl border border-warm-200/60 bg-white/70 px-4 py-3">
+                <article className="rounded-xl border border-warm-200/60 glass-standard px-4 py-3">
                   <header className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
                       <h4 className="text-sm font-semibold text-warm-900">
@@ -225,7 +225,7 @@ export function InboxView() {
           </section>
 
           {/* Tasks column */}
-          <aside className="rounded-2xl bg-white/70 backdrop-blur-xl border border-warm-200/60 overflow-hidden flex flex-col">
+          <aside className="rounded-2xl glass-standard border-warm-200/60 overflow-hidden flex flex-col">
             <header className="px-4 py-3 border-b border-warm-100">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-600 flex items-center gap-1.5">
                 <IconCheckCircle2 size={12} /> Due today

@@ -155,7 +155,7 @@ export function SaveRoundModal({
                   'flex items-center gap-4',
                   confirmingDelete
                     ? 'border-rose-300 bg-rose-50 hover:bg-rose-100'
-                    : 'border-warm-200 bg-white hover:bg-warm-50 active:bg-warm-100',
+                    : 'border-warm-200 bg-cream-50 hover:bg-warm-50 active:bg-warm-100',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >

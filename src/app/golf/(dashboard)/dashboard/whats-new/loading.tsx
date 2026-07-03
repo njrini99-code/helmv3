@@ -68,7 +68,7 @@ export default function Loading() {
   return (
     <div className="min-h-full bg-transparent">
       {/* Header placeholder */}
-      <div className="sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-warm-200/30 pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
+      <div className="sticky top-0 z-20 glass-standard border-b border-warm-200/30 pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
         <div className="max-w-[720px] mx-auto px-4 md:px-6 py-5">
           <Shimmer className="h-7 w-44 rounded-lg" />
           <Shimmer className="h-3 w-72 mt-2" />

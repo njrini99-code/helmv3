@@ -84,36 +84,39 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
           const loc = fmtLoc(c);
           return (
             <li key={c.id} className="flex-shrink-0">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => onTap(c)}
                 aria-label={`Start new round at ${c.courseName}`}
-                className="group flex h-full w-[190px] flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-accent-500 hover:bg-accent-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
+                className="group block h-full min-h-0 w-[190px] rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left font-normal shadow-flat transition-colors hover:border-accent-500 hover:bg-accent-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-surface-sunken text-text-tertiary transition-colors group-hover:bg-accent-100 group-hover:text-accent-700">
-                    <MapPin className="h-3.5 w-3.5" />
-                  </span>
-                  {c.roundCount > 0 && (
-                    <span className="truncate font-fw-mono text-eyebrow tabular-nums text-text-tertiary transition-colors group-hover:text-accent-700">
-                      {c.roundCount} {c.roundCount === 1 ? 'round' : 'rounds'}
+                <span className="flex h-full w-full flex-col gap-2">
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-surface-sunken text-text-tertiary transition-colors group-hover:bg-accent-100 group-hover:text-accent-700">
+                      <MapPin className="h-3.5 w-3.5" />
                     </span>
-                  )}
-                </div>
-                <p className="line-clamp-2 font-fw-sans text-body-sm font-medium leading-tight text-text-primary">
-                  {c.courseName}
-                </p>
-                <span className="mt-auto flex items-center gap-1 truncate font-fw-sans text-caption text-text-tertiary">
-                  {loc ? (
-                    <>
-                      <MapPin className="h-3 w-3 flex-shrink-0" aria-hidden />
-                      <span className="truncate">{loc}</span>
-                    </>
-                  ) : (
-                    <span>{c.teesPlayed ? `${c.teesPlayed} tees` : '—'}</span>
-                  )}
+                    {c.roundCount > 0 && (
+                      <span className="truncate font-fw-mono text-eyebrow tabular-nums text-text-tertiary transition-colors group-hover:text-accent-700">
+                        {c.roundCount} {c.roundCount === 1 ? 'round' : 'rounds'}
+                      </span>
+                    )}
+                  </span>
+                  <span className="line-clamp-2 block font-fw-sans text-body-sm font-medium leading-tight text-text-primary">
+                    {c.courseName}
+                  </span>
+                  <span className="mt-auto flex items-center gap-1 truncate font-fw-sans text-caption text-text-tertiary">
+                    {loc ? (
+                      <>
+                        <MapPin className="h-3 w-3 flex-shrink-0" aria-hidden />
+                        <span className="truncate">{loc}</span>
+                      </>
+                    ) : (
+                      <span>{c.teesPlayed ? `${c.teesPlayed} tees` : '—'}</span>
+                    )}
+                  </span>
                 </span>
-              </button>
+              </Button>
             </li>
           );
         })}

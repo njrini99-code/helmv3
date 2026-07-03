@@ -7,6 +7,7 @@ import { listSegments } from '@/app/golf/actions/crm-foundations';
 import { enrollSegmentInSequence } from '@/app/golf/actions/crm-sequences';
 import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
 import { Button, IconButton } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/select';
 
 // ============================================================================
 // EnrollSegmentDialog — operator picks an existing CrmSegment, dialog enrolls
@@ -96,7 +97,7 @@ export function EnrollSegmentDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="enroll-segment-title"
-          className="w-full max-w-md bg-white rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
+          className="w-full max-w-md bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100">
             <div className="flex items-center gap-2">
@@ -133,20 +134,15 @@ export function EnrollSegmentDialog({
               >
                 Segment
               </label>
-              <select
+              <NativeSelect
                 id="seg-pick"
                 value={selectedSegmentId}
                 onChange={(e) => setSelectedSegmentId(e.target.value)}
                 disabled={loading || submitting}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
-              >
-                <option value="">— Select a segment —</option>
-                {segments.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                className="text-sm rounded-lg bg-cream-50 border-warm-200/80 focus:ring-primary-500/30 focus:border-primary-400"
+                placeholder="— Select a segment —"
+                options={segments.map((s) => ({ value: s.id, label: s.name }))}
+              />
             </div>
 
             {error && (

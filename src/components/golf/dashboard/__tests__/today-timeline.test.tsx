@@ -54,6 +54,19 @@ vi.mock('@/components/icons', () => ({
 import { TodayTimeline } from '../today-timeline';
 
 // ---------------------------------------------------------------------------
+// Render helper
+// ---------------------------------------------------------------------------
+
+// NOTE: `role` here is TodayTimeline's business prop ('coach' | 'player'),
+// not an ARIA role. Passing it via a spread (rather than a literal JSX
+// attribute) keeps jsx-a11y/aria-role from misreading it as an ARIA
+// role value while leaving the rendered props identical.
+function renderTimeline(events: TodayEvent[], role: 'coach' | 'player' = 'coach') {
+  const props = { events, role };
+  return render(<TodayTimeline {...props} />);
+}
+
+// ---------------------------------------------------------------------------
 // Test Data
 // ---------------------------------------------------------------------------
 
@@ -89,18 +102,18 @@ describe('TodayTimeline', () => {
   // ========================================================================
   describe('empty state', () => {
     it('renders empty state message when no events', () => {
-      render(<TodayTimeline events={[]} role="coach" />);
+      renderTimeline([]);
       expect(screen.getByText('Clear schedule today')).toBeInTheDocument();
     });
 
     // TODO(user-wip): un-skip after a11y / design-token sweep. See src/test/SKIPPED.md.
     it.skip('shows suggestion text for empty schedule', () => {
-      render(<TodayTimeline events={[]} role="player" />);
+      renderTimeline([], 'player');
       expect(screen.getByText(/No events scheduled/)).toBeInTheDocument();
     });
 
     it('renders calendar link in empty state', () => {
-      render(<TodayTimeline events={[]} role="coach" />);
+      renderTimeline([]);
       expect(screen.getByText('View Full Calendar')).toBeInTheDocument();
     });
   });
@@ -110,32 +123,32 @@ describe('TodayTimeline', () => {
   // ========================================================================
   describe('single event', () => {
     it('renders event title', () => {
-      render(<TodayTimeline events={[makeEvent()]} role="coach" />);
+      renderTimeline([makeEvent()]);
       expect(screen.getAllByText('Morning Practice').length).toBeGreaterThan(0);
     });
 
     it('renders event type badge', () => {
-      render(<TodayTimeline events={[makeEvent()]} role="coach" />);
+      renderTimeline([makeEvent()]);
       expect(screen.getAllByText('Practice').length).toBeGreaterThan(0);
     });
 
     it('renders event location', () => {
-      render(<TodayTimeline events={[makeEvent()]} role="coach" />);
+      renderTimeline([makeEvent()]);
       expect(screen.getAllByText('Practice Facility').length).toBeGreaterThan(0);
     });
 
     it('shows event count badge', () => {
-      render(<TodayTimeline events={[makeEvent()]} role="coach" />);
+      renderTimeline([makeEvent()]);
       expect(screen.getByText('1')).toBeInTheDocument();
     });
 
     it('renders header with "Today\'s Schedule"', () => {
-      render(<TodayTimeline events={[makeEvent()]} role="coach" />);
+      renderTimeline([makeEvent()]);
       expect(screen.getByText("Today's Schedule")).toBeInTheDocument();
     });
 
     it('renders calendar link in header', () => {
-      render(<TodayTimeline events={[makeEvent()]} role="coach" />);
+      renderTimeline([makeEvent()]);
       expect(screen.getByText('Calendar')).toBeInTheDocument();
     });
   });
@@ -149,7 +162,7 @@ describe('TodayTimeline', () => {
         makeEvent({ id: '1', title: 'Morning Session' }),
         makeEvent({ id: '2', title: 'Afternoon Round', event_type: 'tournament' }),
       ];
-      render(<TodayTimeline events={events} role="coach" />);
+      renderTimeline(events);
       expect(screen.getAllByText('Morning Session').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Afternoon Round').length).toBeGreaterThan(0);
     });
@@ -160,7 +173,7 @@ describe('TodayTimeline', () => {
         makeEvent({ id: '2', title: 'B' }),
         makeEvent({ id: '3', title: 'C' }),
       ];
-      render(<TodayTimeline events={events} role="coach" />);
+      renderTimeline(events);
       expect(screen.getByText('3')).toBeInTheDocument();
     });
 
@@ -175,7 +188,7 @@ describe('TodayTimeline', () => {
         makeEvent({ id: '1', title: 'Event A', start_time: start.toISOString(), end_time: end.toISOString() }),
         makeEvent({ id: '2', title: 'Event B', start_time: start.toISOString(), end_time: end.toISOString() }),
       ];
-      render(<TodayTimeline events={events} role="coach" />);
+      renderTimeline(events);
       expect(screen.getAllByText('Event A').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Event B').length).toBeGreaterThan(0);
     });
@@ -187,13 +200,13 @@ describe('TodayTimeline', () => {
   describe('RSVP display', () => {
     it('shows RSVP count for coach role', () => {
       const event = makeEvent({ rsvp_yes: 8, rsvp_total: 12 });
-      render(<TodayTimeline events={[event]} role="coach" />);
+      renderTimeline([event]);
       expect(screen.getAllByText('8/12 confirmed').length).toBeGreaterThan(0);
     });
 
     it('does not show RSVP count for player role', () => {
       const event = makeEvent({ rsvp_yes: 8, rsvp_total: 12 });
-      render(<TodayTimeline events={[event]} role="player" />);
+      renderTimeline([event], 'player');
       expect(screen.queryByText('8/12 confirmed')).not.toBeInTheDocument();
     });
   });
@@ -203,17 +216,17 @@ describe('TodayTimeline', () => {
   // ========================================================================
   describe('event type labels', () => {
     it('maps tournament event type correctly', () => {
-      render(<TodayTimeline events={[makeEvent({ event_type: 'tournament' })]} role="coach" />);
+      renderTimeline([makeEvent({ event_type: 'tournament' })]);
       expect(screen.getAllByText('Tournament').length).toBeGreaterThan(0);
     });
 
     it('maps qualifier event type correctly', () => {
-      render(<TodayTimeline events={[makeEvent({ event_type: 'qualifier' })]} role="coach" />);
+      renderTimeline([makeEvent({ event_type: 'qualifier' })]);
       expect(screen.getAllByText('Qualifier').length).toBeGreaterThan(0);
     });
 
     it('maps unknown event type to "Event"', () => {
-      render(<TodayTimeline events={[makeEvent({ event_type: 'unknown_type' })]} role="coach" />);
+      renderTimeline([makeEvent({ event_type: 'unknown_type' })]);
       expect(screen.getAllByText('Event').length).toBeGreaterThan(0);
     });
   });
@@ -223,7 +236,7 @@ describe('TodayTimeline', () => {
   // ========================================================================
   describe('null end_time', () => {
     it('renders event with null end_time without crashing', () => {
-      render(<TodayTimeline events={[makeEvent({ end_time: null })]} role="coach" />);
+      renderTimeline([makeEvent({ end_time: null })]);
       expect(screen.getAllByText('Morning Practice').length).toBeGreaterThan(0);
     });
   });
@@ -233,7 +246,7 @@ describe('TodayTimeline', () => {
   // ========================================================================
   describe('null location', () => {
     it('does not render location when null', () => {
-      render(<TodayTimeline events={[makeEvent({ location: null })]} role="coach" />);
+      renderTimeline([makeEvent({ location: null })]);
       expect(screen.queryByText('Practice Facility')).not.toBeInTheDocument();
     });
   });

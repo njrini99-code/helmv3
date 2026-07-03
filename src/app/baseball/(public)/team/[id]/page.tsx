@@ -394,7 +394,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
-      <div className="bg-white border-b border-warm-200">
+      <div className="bg-cream-50 border-b border-warm-200">
         <div className="max-w-[1536px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group">
@@ -456,7 +456,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
               </div>
 
               {(team.description || org?.description) && (
-                <div className="p-6 bg-white">
+                <div className="p-6 bg-cream-50">
                   <h2 className="text-lg font-semibold tracking-tight text-warm-900 mb-3">About</h2>
                   <p className="text-warm-600 leading-relaxed whitespace-pre-line">
                     {team.description || org?.description}
@@ -492,7 +492,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
               </Card>
             ) : canViewRoster ? (
               <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-white">
+                <div className="p-6 border-b border-warm-200 bg-cream-50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <IconUsers size={20} className="text-primary-600" />
@@ -553,7 +553,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
               </Card>
             ) : (
               <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-white">
+                <div className="p-6 border-b border-warm-200 bg-cream-50">
                   <div className="flex items-center gap-2">
                     <IconUsers size={20} className="text-primary-600" />
                     <h2 className="text-lg font-semibold tracking-tight text-warm-900">Roster</h2>
@@ -576,7 +576,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
             {/* Coaching Staff */}
             {staff.length > 0 && (
               <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-white">
+                <div className="p-6 border-b border-warm-200 bg-cream-50">
                   <div className="flex items-center gap-2">
                     <IconUsers size={20} className="text-primary-600" />
                     <h2 className="text-lg font-semibold tracking-tight text-warm-900">Coaching Staff</h2>
@@ -587,7 +587,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                     {staff.map((member) => (
                       <div
                         key={member.id}
-                        className="bg-white rounded-lg border border-warm-200 p-4"
+                        className="bg-cream-50 rounded-lg border border-warm-200 p-4"
                       >
                         <div className="flex items-start gap-4">
                           {member.headshot_url ? (
@@ -628,7 +628,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
             {/* Facilities (College/JUCO only) */}
             {showFacilities && facilities.length > 0 && (
               <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-white">
+                <div className="p-6 border-b border-warm-200 bg-cream-50">
                   <h2 className="text-lg font-semibold tracking-tight text-warm-900">Facilities</h2>
                 </div>
                 <div className="p-6 bg-warm-50">
@@ -636,7 +636,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                     {facilities.map((facility) => (
                       <div
                         key={facility.id}
-                        className="bg-white rounded-lg border border-warm-200 overflow-hidden"
+                        className="bg-cream-50 rounded-lg border border-warm-200 overflow-hidden"
                       >
                         {facility.image_url ? (
                           <Image
@@ -672,7 +672,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
             {/* Team Facilities Image - from organization if available */}
             {showFacilities && facilities.length > 0 && facilities[0]?.image_url && (
               <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-white">
+                <div className="p-6 border-b border-warm-200 bg-cream-50">
                   <h2 className="text-lg font-semibold tracking-tight text-warm-900">Team Facility</h2>
                 </div>
                 <Image

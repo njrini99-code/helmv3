@@ -115,21 +115,7 @@ function AckBar({ acked, total }: { acked: number; total: number }) {
 // Skeleton
 // ---------------------------------------------------------------------------
 
-export function NutritionPlanAssignmentsTableSkeleton() {
-  return (
-    <div className="space-y-3">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="animate-pulse rounded-2xl border border-warm-200 bg-cream-50 p-4">
-          <div className="flex items-center gap-4">
-            <div className="h-4 w-1/3 rounded bg-warm-100" />
-            <div className="h-4 w-16 rounded bg-warm-100" />
-            <div className="ml-auto h-4 w-24 rounded bg-warm-100" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+
 
 // ---------------------------------------------------------------------------
 // Main component

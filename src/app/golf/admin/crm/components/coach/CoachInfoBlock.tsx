@@ -41,7 +41,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
     coach.next_follow_up_at && new Date(coach.next_follow_up_at) < new Date();
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+    <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
       <div className="px-5 py-4 border-b border-warm-100/60">
         <h2 className="text-sm font-semibold text-warm-900">Coach Info</h2>
       </div>

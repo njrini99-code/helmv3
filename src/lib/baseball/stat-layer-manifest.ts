@@ -35,25 +35,7 @@ export const DEPRECATED_STAT_TABLES = [
 
 export type DeprecatedStatTable = (typeof DEPRECATED_STAT_TABLES)[number];
 
-/**
- * The canonical layers every NEW stat surface must consume. Documentation
- * only — not consumed by the contract test, but kept here so the manifest
- * and the architecture note can never drift apart on what "canonical" means.
- */
-export const CANONICAL_STAT_LAYERS = [
-  {
-    name: 'Official box-score / season layer',
-    writePath:
-      "src/app/baseball/actions/games.ts -> baseball_box_score_batting / baseball_box_score_pitching -> recalculate_baseball_season_stats() RPC -> baseball_player_season_stats",
-    readPath: 'src/lib/baseball/read-models/stats-center.ts',
-  },
-  {
-    name: 'Elite event-grain layer',
-    writePath:
-      "src/app/baseball/actions/stat-event-imports.ts -> baseball_pitch_events / baseball_batted_ball_events / baseball_swing_events (+ baseball_stat_sources provenance; baseball_stat_facts is the generic escape-hatch table — schema exists, no importer writes to it yet)",
-    readPath: 'src/lib/baseball/read-models/elite-stat-events.ts',
-  },
-] as const;
+
 
 /**
  * Files the contract test never scans:

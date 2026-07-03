@@ -5,6 +5,8 @@ import { useState, useTransition, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SearchAutocomplete } from '@/components/ui/search-autocomplete';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useSavedSearches } from '@/hooks/use-dashboard';
 import type { Player } from '@/lib/types';
 import { IconUsers, IconBuilding, IconBookmark, IconTrash, IconChevronDown, IconChevronUp } from '@/components/icons';
@@ -199,7 +201,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
             <label htmlFor={`${uid}-search`} className="block text-sm font-medium text-warm-700 mb-2">
               Search
             </label>
-            <input
+            <Input
               id={`${uid}-search`}
               type="text"
               value={search}
@@ -215,9 +217,6 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                 }
               }}
               placeholder="Team name or city..."
-              className="w-full px-4 py-2 rounded-lg border border-warm-200
-                         focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                         text-sm text-warm-900 bg-white"
             />
           </>
         )}
@@ -259,15 +258,13 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                 <div className="mb-3">
                   {showSaveInput ? (
                     <div className="flex gap-2">
-                      <input
+                      <Input
                         type="text"
                         value={saveSearchName}
                         onChange={(e) => setSaveSearchName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveSearch()}
                         placeholder="Search name..."
-                        className="flex-1 px-3 py-2 rounded-lg border border-warm-200
-                                   focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                                   text-sm text-warm-900 bg-white"
+                        className="flex-1"
                         // eslint-disable-next-line jsx-a11y/no-autofocus
                         autoFocus
                       />
@@ -301,12 +298,13 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               {savedSearches.length > 0 ? (
                 <div className="space-y-2">
                   {savedSearches.map((savedSearch) => (
-                    <button
+                    <Button
+                      variant="ghost"
                       key={savedSearch.id}
                       type="button"
                       className="group flex items-start justify-between p-3 rounded-xl bg-cream-100/60
                                  border border-warm-200/50 hover:border-primary-200 hover:bg-primary-50/30
-                                 transition-all duration-200 cursor-pointer w-full text-left"
+                                 transition-all duration-200 cursor-pointer w-full text-left h-auto"
                       onClick={() => handleLoadSearch(savedSearch.filters)}
                     >
                       <div className="flex-1 min-w-0">
@@ -328,7 +326,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                       >
                         <IconTrash size={14} />
                       </IconButton>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               ) : (
@@ -379,19 +377,13 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               <label htmlFor={`${uid}-position`} className="block text-sm font-medium text-warm-700 mb-2">
                 Position
               </label>
-              <select
-                id={`${uid}-position`}
+              <Select
+                options={POSITIONS.map((pos) => ({ value: pos, label: pos }))}
                 value={currentFilters.position || ''}
-                onChange={(e) => updateFilter('position', e.target.value || undefined)}
-                className="w-full px-4 py-2 rounded-lg border border-warm-200
-                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                           text-sm text-warm-900 bg-white"
-              >
-                <option value="">All Positions</option>
-                {POSITIONS.map((pos) => (
-                  <option key={pos} value={pos}>{pos}</option>
-                ))}
-              </select>
+                onChange={(value) => updateFilter('position', value || undefined)}
+                placeholder="All Positions"
+                clearable
+              />
             </div>
 
             {/* State - Multi-select */}
@@ -403,33 +395,24 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   </span>
                 )}
               </label>
-              <select
-                id={`${uid}-state`}
+              <Select
+                options={STATES.map((state) => ({
+                  value: state,
+                  label: `${state} ${currentFilters.states?.includes(state) ? '✓' : ''}`.trim(),
+                }))}
                 value=""
-                onChange={(e) => {
-                  if (!e.target.value) return;
+                onChange={(newState) => {
+                  if (!newState) return;
                   const currentStates = currentFilters.states || [];
-                  const newState = e.target.value;
                   // Toggle state selection
                   const newStates = currentStates.includes(newState)
                     ? currentStates.filter(s => s !== newState)
                     : [...currentStates, newState];
                   updateFilter('state', newStates.length > 0 ? newStates.join(',') : undefined);
                 }}
-                className="w-full px-4 py-2 rounded-lg border border-warm-200
-                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                           text-sm text-warm-900 bg-white"
-              >
-                <option value="">Add a state...</option>
-                {STATES.map((state) => (
-                  <option
-                    key={state}
-                    value={state}
-                  >
-                    {state} {currentFilters.states?.includes(state) ? '✓' : ''}
-                  </option>
-                ))}
-              </select>
+                placeholder="Add a state..."
+                searchable
+              />
               {/* Show selected states as chips */}
               {currentFilters.states && currentFilters.states.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
@@ -461,24 +444,18 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                 Pitch Velocity (mph)
               </p>
               <div className="flex items-center gap-2">
-                <input
+                <Input
                   type="number"
                   placeholder="Min"
                   value={currentFilters.minVelo || ''}
                   onChange={(e) => updateFilter('minVelo', e.target.value || undefined)}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200
-                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                             text-sm text-warm-900"
                 />
                 <span className="text-warm-400">-</span>
-                <input
+                <Input
                   type="number"
                   placeholder="Max"
                   value={currentFilters.maxVelo || ''}
                   onChange={(e) => updateFilter('maxVelo', e.target.value || undefined)}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200
-                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                             text-sm text-warm-900"
                 />
               </div>
             </div>
@@ -489,24 +466,18 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                 Exit Velocity (mph)
               </p>
               <div className="flex items-center gap-2">
-                <input
+                <Input
                   type="number"
                   placeholder="Min"
                   value={currentFilters.minExit || ''}
                   onChange={(e) => updateFilter('minExit', e.target.value || undefined)}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200
-                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                             text-sm text-warm-900"
                 />
                 <span className="text-warm-400">-</span>
-                <input
+                <Input
                   type="number"
                   placeholder="Max"
                   value={currentFilters.maxExit || ''}
                   onChange={(e) => updateFilter('maxExit', e.target.value || undefined)}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-200
-                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                             text-sm text-warm-900"
                 />
               </div>
             </div>
@@ -566,33 +537,24 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   </span>
                 )}
               </label>
-              <select
-                id={`${uid}-team-state`}
+              <Select
+                options={STATES.map((state) => ({
+                  value: state,
+                  label: `${state} ${currentFilters.states?.includes(state) ? '✓' : ''}`.trim(),
+                }))}
                 value=""
-                onChange={(e) => {
-                  if (!e.target.value) return;
+                onChange={(newState) => {
+                  if (!newState) return;
                   const currentStates = currentFilters.states || [];
-                  const newState = e.target.value;
                   // Toggle state selection
                   const newStates = currentStates.includes(newState)
                     ? currentStates.filter(s => s !== newState)
                     : [...currentStates, newState];
                   updateFilter('state', newStates.length > 0 ? newStates.join(',') : undefined);
                 }}
-                className="w-full px-4 py-2 rounded-lg border border-warm-200
-                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                           text-sm text-warm-900 bg-white"
-              >
-                <option value="">Add a state...</option>
-                {STATES.map((state) => (
-                  <option
-                    key={state}
-                    value={state}
-                  >
-                    {state} {currentFilters.states?.includes(state) ? '✓' : ''}
-                  </option>
-                ))}
-              </select>
+                placeholder="Add a state..."
+                searchable
+              />
               {/* Show selected states as chips */}
               {currentFilters.states && currentFilters.states.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">

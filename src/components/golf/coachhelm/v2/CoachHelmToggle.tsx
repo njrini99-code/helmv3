@@ -124,7 +124,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
               initial={false}
               animate={{ x: enabled ? 32 : 4 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
-              className="absolute top-1 h-6 w-6 rounded-full bg-white "
+              className="absolute top-1 h-6 w-6 rounded-full bg-cream-50"
             />
           </IconButton>
         </div>

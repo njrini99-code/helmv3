@@ -82,10 +82,10 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
   ] : [];
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-100 hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
             <IconTrendingUp size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Business Intelligence</h3>
@@ -96,7 +96,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
       <div className="flex items-start gap-5 mb-6">
         <HealthScoreRing score={growth.platformHealthScore} />
         <div className="flex-1 grid grid-cols-2 gap-2.5">
-          <div className="bg-white/50 rounded-xl p-3">
+          <div className="bg-cream-50 rounded-xl p-3">
             <p className="text-xs text-warm-500 mb-0.5">User Growth</p>
             <div className="flex items-center gap-1">
               {growth.userGrowthRate >= 0 ? (
@@ -112,7 +112,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
               </span>
             </div>
           </div>
-          <div className="bg-white/50 rounded-xl p-3">
+          <div className="bg-cream-50 rounded-xl p-3">
             <p className="text-xs text-warm-500 mb-0.5">Round Growth</p>
             <div className="flex items-center gap-1">
               {growth.roundGrowthRate >= 0 ? (
@@ -128,7 +128,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
               </span>
             </div>
           </div>
-          <div className="bg-white/50 rounded-xl p-3">
+          <div className="bg-cream-50 rounded-xl p-3">
             <p className="text-xs text-warm-500 mb-0.5">Churned (30d)</p>
             <div className="flex items-center gap-1">
               {growth.churnedPlayers30d > 0 && <IconWarning size={14} className="text-amber-500" />}
@@ -140,7 +140,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
               </span>
             </div>
           </div>
-          <div className="bg-white/50 rounded-xl p-3">
+          <div className="bg-cream-50 rounded-xl p-3">
             <p className="text-xs text-warm-500 mb-0.5">
               {stickiness ? 'DAU/MAU' : 'Power Users'}
             </p>
@@ -167,15 +167,15 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
         <div className="mb-5">
           <h4 className="text-sm font-medium text-warm-500 mb-2.5">Engagement Stickiness</h4>
           <div className="grid grid-cols-3 gap-2">
-            <div className="bg-white/50 rounded-xl p-2.5 text-center">
+            <div className="bg-cream-50 rounded-xl p-2.5 text-center">
               <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.dau}</p>
               <p className="text-micro text-warm-400">DAU</p>
             </div>
-            <div className="bg-white/50 rounded-xl p-2.5 text-center">
+            <div className="bg-cream-50 rounded-xl p-2.5 text-center">
               <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.wau}</p>
               <p className="text-micro text-warm-400">WAU</p>
             </div>
-            <div className="bg-white/50 rounded-xl p-2.5 text-center">
+            <div className="bg-cream-50 rounded-xl p-2.5 text-center">
               <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.mau}</p>
               <p className="text-micro text-warm-400">MAU</p>
             </div>
@@ -188,7 +188,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
         <p className="text-sm font-medium text-warm-500 mb-2.5">Cohort Retention</p>
         <div className="grid grid-cols-4 gap-2">
           {growth.retentionCohorts.map((c) => (
-            <div key={c.week} className="bg-white/50 rounded-xl p-2.5 text-center">
+            <div key={c.week} className="bg-cream-50 rounded-xl p-2.5 text-center">
               <p className="text-micro text-warm-400 uppercase tracking-wide">Week {c.week}</p>
               <p className={cn(
                 'text-xl font-bold tabular-nums mt-0.5',

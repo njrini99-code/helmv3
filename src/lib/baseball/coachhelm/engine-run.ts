@@ -335,16 +335,22 @@ export async function runBaseballEngineCore(
 
   // V10 facts: readiness, lift compliance/RPE, recent imports.
   //
-  // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
-  // helm_lifting_readiness_checkins now — the legacy baseball_readiness_checkins
-  // table is write-dead. This core is client-agnostic (RLS session client from
-  // the server action OR a service-role admin client from the Inngest cron), so
-  // org/athlete resolution is done inline against the SAME passed `db` client
-  // rather than via resolveBaseballLiftingOrg/resolveBaseballAthleteIds (those
-  // helpers open their own cookie-session client internally and would silently
-  // no-op under the service-role cron path).
+  // W2-G rewire: submitReadinessCheckin (lifting.ts) / createLiftAssignment /
+  // logLiftResult (lifting.ts) write ONLY to the helm_lifting_* unified tables
+  // now — the legacy baseball_readiness_checkins / baseball_lift_sessions /
+  // baseball_lift_set_results tables are write-dead (0 rows for real activity;
+  // the engine was blind to all real lifting data reading them). This core is
+  // client-agnostic (RLS session client from the server action OR a
+  // service-role admin client from the Inngest cron), so org/athlete
+  // resolution is done inline against the SAME passed `db` client rather than
+  // via resolveBaseballLiftingOrg/resolveBaseballAthleteIds (those helpers
+  // open their own cookie-session client internally and would silently no-op
+  // under the service-role cron path). Resolved once and reused for
+  // readiness + lift sessions + lift set results below.
   const readinessSinceIso = new Date(Date.parse(nowIso) - 14 * 86400_000).toISOString().slice(0, 10);
   let readinessRows: ReadinessRow[] = [];
+  let liftSessionRows: LiftSessionRow[] = [];
+  let liftSetResultRows: LiftSetResultRow[] = [];
   {
     const { data: teamRow } = await db
       .from('baseball_teams')
@@ -395,23 +401,57 @@ export async function runBaseballEngineCore(
           });
         }
         readinessRows = mapped;
+
+        // Lift sessions: helm_lifting_sessions.athlete_id -> player_id via the
+        // same athleteToPlayer map. team_id on helm_lifting_sessions is the
+        // SAME baseball_teams.id soft-ref the legacy table used, so the scoping
+        // filter is unchanged.
+        const { data: helmSessions } = await db
+          .from('helm_lifting_sessions')
+          .select('id, athlete_id, scheduled_date, status')
+          .eq('organization_id', organizationId)
+          .eq('team_id', teamId)
+          .in('athlete_id', athleteIds);
+        const mappedSessions: LiftSessionRow[] = [];
+        for (const s of (helmSessions ?? []) as Array<{
+          id: string; athlete_id: string; scheduled_date: string | null; status: string;
+        }>) {
+          const playerId = athleteToPlayer.get(s.athlete_id);
+          if (!playerId) continue;
+          mappedSessions.push({
+            id: s.id,
+            player_id: playerId,
+            scheduled_date: s.scheduled_date,
+            status: s.status,
+          });
+        }
+        liftSessionRows = mappedSessions;
+
+        // Lift set results: helm_lifting_set_results.athlete_id -> player_id.
+        const liftRpeSinceIso = new Date(Date.parse(nowIso) - 14 * 86400_000).toISOString();
+        const { data: helmSetResults } = await db
+          .from('helm_lifting_set_results')
+          .select('id, athlete_id, completed_at, rpe')
+          .eq('organization_id', organizationId)
+          .in('athlete_id', athleteIds)
+          .gte('completed_at', liftRpeSinceIso);
+        const mappedSetResults: LiftSetResultRow[] = [];
+        for (const r of (helmSetResults ?? []) as Array<{
+          id: string; athlete_id: string; completed_at: string | null; rpe: number | null;
+        }>) {
+          const playerId = athleteToPlayer.get(r.athlete_id);
+          if (!playerId) continue;
+          mappedSetResults.push({
+            id: r.id,
+            player_id: playerId,
+            completed_at: r.completed_at,
+            rpe: r.rpe,
+          });
+        }
+        liftSetResultRows = mappedSetResults;
       }
     }
   }
-
-  const { data: liftSessionRows } = await db
-    .from('baseball_lift_sessions')
-    .select('id, player_id, scheduled_date, status')
-    .eq('team_id', teamId)
-    .in('player_id', playerIds);
-
-  const liftRpeSinceIso = new Date(Date.parse(nowIso) - 14 * 86400_000).toISOString();
-  const { data: liftSetResultRows } = await db
-    .from('baseball_lift_set_results')
-    .select('id, player_id, completed_at, rpe')
-    .eq('team_id', teamId)
-    .in('player_id', playerIds)
-    .gte('completed_at', liftRpeSinceIso);
 
   const importSinceIso = new Date(Date.parse(nowIso) - 14 * 86400_000).toISOString();
   const { data: importRunRows } = await db

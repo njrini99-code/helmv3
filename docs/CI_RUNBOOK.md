@@ -39,8 +39,10 @@ Don't treat a check as "stuck" before its normal window has passed:
   `READY` via `.circleci/scripts/wait-for-vercel-preview.sh` before it runs.
 - **CodeRabbit / Greptile** — both re-queue automatically on every new
   commit; expect a short pending window while the new review is generated.
-- **Playwright `e2e` job** — 30-minute job budget, 2 CI retries, 1 worker
-  (serial execution). `picker-screenshots` has a 20-minute budget.
+- **Playwright `e2e` job** (`Playwright (chromium)`, `playwright.yml`) —
+  40-minute job budget, 2 CI retries, 1 worker (serial execution).
+  `picker-screenshots` and the advisory `baseball-smoke` job each have a
+  20-minute budget; `Smoke checks` has a 15-minute budget.
 - **Web server / auth waits** (why Playwright can be slow to even start) —
   120s dev-server startup, 45s auth navigation per spec.
 

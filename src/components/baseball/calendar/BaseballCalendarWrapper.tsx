@@ -106,7 +106,7 @@ const baseballActionHandlers = {
  * Respects prefers-reduced-motion: disables pulse when the user has requested
  * reduced motion.
  */
-export function BaseballCalendarSkeleton() {
+function BaseballCalendarSkeleton() {
   return (
     <div
       className="flex flex-col h-full w-full rounded-2xl glass-standard backdrop-blur-xl border border-white/20 shadow-glass overflow-hidden"
@@ -155,55 +155,11 @@ export function BaseballCalendarSkeleton() {
   );
 }
 
-// ── Game event chip ────────────────────────────────────────────────────────────
 
-/**
- * A distinct "Game" chip rendered alongside the event title on schedule-
- * imported game events. Uses Helm primary green (not emerald/sky/indigo).
- *
- * Schedule-imported events are identified by their `description` starting with
- * `__schedule_import__` (written by the `importSchedule` server action).
- */
-export function GameSourceChip() {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-semibold tracking-wide bg-primary-50 text-primary-700 border border-primary-200"
-      aria-label="Schedule import"
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0"
-        aria-hidden="true"
-      />
-      Game
-    </span>
-  );
-}
 
-/**
- * Return true when a CalendarEvent was created by the `importSchedule` server
- * action. The action encodes its origin in `description` with the prefix
- * `__schedule_import__` so no schema column is needed.
- */
-export function isScheduleImportedEvent(event: CalendarEvent): boolean {
-  return (
-    event.event_type === 'game' &&
-    typeof event.description === 'string' &&
-    event.description.startsWith('__schedule_import__')
-  );
-}
 
-/**
- * Strip the internal schedule-import prefix from a description so it is never
- * shown raw to users.
- */
-export function getDisplayDescription(event: CalendarEvent): string | null {
-  if (!event.description) return null;
-  if (event.description.startsWith('__schedule_import__')) {
-    const rest = event.description.slice('__schedule_import__'.length).trim();
-    return rest || null;
-  }
-  return event.description;
-}
+
+
 
 // ── Wrapper component ──────────────────────────────────────────────────────────
 

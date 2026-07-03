@@ -22,7 +22,7 @@ export default function StatsUploadLoading() {
         </div>
 
         {/* Upload area skeleton */}
-        <div className="bg-white/70 backdrop-blur-xl border-2 border-dashed border-warm-200 rounded-2xl p-12">
+        <div className="glass-standard border-2 border-dashed border-warm-200 rounded-2xl p-12">
           <div className="flex flex-col items-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-200 animate-pulse mb-4" />
             <div className="h-6 w-48 bg-warm-200 rounded animate-pulse mb-2" />
@@ -32,7 +32,7 @@ export default function StatsUploadLoading() {
         </div>
 
         {/* History skeleton */}
-        <div className="mt-8 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+        <div className="mt-8 glass-standard rounded-2xl p-6">
           <div className="h-5 w-32 bg-warm-200 rounded animate-pulse mb-4" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (

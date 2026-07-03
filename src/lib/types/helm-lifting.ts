@@ -193,4 +193,10 @@ export interface HelmLiftingAccessResult {
   canView: boolean;
   coachRow: HelmLiftingCoachRow | null;
   assignments: HelmLiftingCoachAssignmentRow[];
+  /**
+   * The caller's own helm_lifting_athletes.id for this org, when the caller
+   * is an athlete-self (mirrors RLS helper helm_lifting_is_my_athlete()).
+   * Null for coaches/viewers, or when the user has no athlete row in this org.
+   */
+  athleteId: string | null;
 }

@@ -125,7 +125,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
       <div
         className={cn(
           'group relative rounded-2xl overflow-hidden transition-all duration-200',
-          'bg-white border border-warm-200/80 shadow-sm',
+          'bg-cream-50 border border-warm-200/80 shadow-sm',
           'hover:shadow-md hover:border-warm-300/80',
           isRecent && 'ring-1 ring-primary-200/40 bg-primary-50/20'
         )}
@@ -300,7 +300,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                               }}
                               className="flex items-center gap-2 px-3 py-2 bg-warm-50 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 active:scale-[0.98] transition-all"
                             >
-                              <div className="w-7 h-7 rounded-lg bg-white border border-warm-200 flex items-center justify-center">
+                              <div className="w-7 h-7 rounded-lg bg-cream-50 border border-warm-200 flex items-center justify-center">
                                 <IconFile size={13} className="text-warm-400" />
                               </div>
                               <span className="text-xs font-medium text-warm-700">{d.document?.title || 'Document'}</span>

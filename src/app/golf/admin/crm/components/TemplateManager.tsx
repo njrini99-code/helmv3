@@ -14,6 +14,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/sonner';
 import { mergeTags, MERGE_TOKENS, type Recipient } from '@/lib/crm/merge-tags';
 import {
@@ -141,7 +144,7 @@ function TemplateListSkeleton() {
             {[0, 1].map((i) => (
               <div
                 key={i}
-                className="bg-white/60 rounded-2xl border border-white/20 p-4 animate-pulse"
+                className="bg-cream-50 rounded-2xl p-4 animate-pulse"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-24 h-5 bg-warm-100 rounded-full" />
@@ -175,7 +178,7 @@ function PreviewPane({
   const mergedBody = useMemo(() => mergeTags(body, SAMPLE_RECIPIENT), [body]);
 
   return (
-    <div className="rounded-2xl border border-warm-200/60 bg-white/70 overflow-clip">
+    <div className="rounded-2xl border border-warm-200/60 glass-standard overflow-clip">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-warm-200/60 bg-warm-50/40">
         <IconEye size={14} className="text-primary-500" aria-hidden />
         <span className="text-xs font-semibold uppercase tracking-wider text-warm-600">
@@ -198,7 +201,7 @@ function PreviewPane({
               title="HTML email preview"
               sandbox=""
               srcDoc={mergedBody}
-              className="w-full min-h-[16rem] rounded-lg border border-warm-200 bg-white"
+              className="w-full min-h-[16rem] rounded-lg border border-warm-200 bg-cream-50"
             />
           ) : (
             <p className="text-sm text-warm-300 italic">No HTML body yet</p>
@@ -354,11 +357,8 @@ function TemplateEditor({
     }
   };
 
-  const fieldClass =
-    'w-full px-3 py-2.5 bg-white/70 border border-warm-200 rounded-xl text-sm text-warm-900 focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none transition-colors';
-
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-primary-200/70 shadow-glass p-5 space-y-5">
+    <div className="glass-standard rounded-2xl border border-primary-200/70 shadow-glass p-5 space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-base font-bold text-warm-900">
           <IconSparkles size={18} className="text-primary-500" aria-hidden />
@@ -378,35 +378,23 @@ function TemplateEditor({
         {/* Left column — form */}
         <div className="space-y-4">
           <div>
-            <label htmlFor="tpl-name" className="block text-xs font-semibold text-warm-700 mb-1.5">
-              Name
-            </label>
-            <input
+            <Input
               id="tpl-name"
               type="text"
+              label="Name"
               value={state.name}
               onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))}
               placeholder="e.g. Founding 10 — First Touch"
-              className={fieldClass}
             />
           </div>
 
           <div>
-            <label htmlFor="tpl-category" className="block text-xs font-semibold text-warm-700 mb-1.5">
-              Category
-            </label>
-            <select
-              id="tpl-category"
+            <Select
+              options={CATEGORY_ORDER.map((c) => ({ value: c, label: CATEGORY_LABELS[c] }))}
               value={state.category}
-              onChange={(e) => setState((s) => ({ ...s, category: e.target.value as TemplateCategory }))}
-              className={fieldClass}
-            >
-              {CATEGORY_ORDER.map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_LABELS[c]}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setState((s) => ({ ...s, category: v as TemplateCategory }))}
+              label="Category"
+            />
           </div>
 
           {/* Format selector */}
@@ -427,7 +415,7 @@ function TemplateEditor({
                       'flex flex-col items-start gap-0.5 px-3 py-2 rounded-xl border text-left min-h-[44px] transition-all',
                       active
                         ? 'bg-primary-50 border-primary-300 ring-1 ring-primary-200 text-primary-800'
-                        : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-white/80',
+                        : 'glass-standard border-warm-200 text-warm-600 hover:bg-cream-100',
                     )}
                   >
                     <span className="text-xs font-bold">{FORMAT_META[f].label}</span>
@@ -442,16 +430,13 @@ function TemplateEditor({
           </div>
 
           <div>
-            <label htmlFor="tpl-subject" className="block text-xs font-semibold text-warm-700 mb-1.5">
-              Subject
-            </label>
-            <input
+            <Input
               id="tpl-subject"
               type="text"
+              label="Subject"
               value={state.subject}
               onChange={(e) => setState((s) => ({ ...s, subject: e.target.value }))}
               placeholder="Subject line — merge tokens allowed"
-              className={fieldClass}
             />
           </div>
 
@@ -487,11 +472,9 @@ function TemplateEditor({
           </div>
 
           <div>
-            <label htmlFor="tpl-body" className="block text-xs font-semibold text-warm-700 mb-1.5">
-              Body
-            </label>
-            <textarea
+            <Textarea
               id="tpl-body"
+              label="Body"
               ref={setBodyEl}
               value={state.body}
               onChange={(e) => setState((s) => ({ ...s, body: e.target.value }))}
@@ -501,7 +484,7 @@ function TemplateEditor({
                   : 'Email body… include your own greeting + sign-off for plain text.'
               }
               rows={10}
-              className={cn(fieldClass, 'resize-y font-mono leading-relaxed')}
+              className="resize-y font-mono leading-relaxed"
             />
           </div>
 
@@ -579,7 +562,7 @@ function TemplateCard({
   const fmt = FORMAT_META[template.format];
 
   return (
-    <div className="group relative bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass-sm p-4 transition-all duration-200 hover:bg-white/90 hover:shadow-card-hover">
+    <div className="group relative glass-standard rounded-2xl shadow-glass-sm p-4 transition-all duration-200 hover:bg-cream-100 hover:shadow-card-hover">
       <div className="flex items-start gap-2 mb-1.5">
         <span className="font-semibold text-sm text-warm-900 truncate flex-1">{template.name}</span>
         {template.is_default && (
@@ -834,7 +817,7 @@ export function TemplateManager() {
           </Button>
         </div>
       ) : templates.length === 0 && !editor ? (
-        <div className="rounded-2xl border border-dashed border-warm-200/70 bg-white/40 p-10 text-center">
+        <div className="rounded-2xl border border-dashed border-warm-200/70 glass-subtle p-10 text-center">
           <div className="w-12 h-12 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-3">
             <IconFileText size={22} className="text-warm-400" aria-hidden />
           </div>

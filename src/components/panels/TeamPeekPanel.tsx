@@ -477,7 +477,7 @@ function RosterTab({
               <Button variant="ghost"
                 key={player.id}
                 onClick={() => onPlayerClick(player.id)}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-warm-50 hover:bg-white hover:shadow-md hover:border-primary-100 border border-transparent transition-all text-left group"
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-warm-50 hover:bg-cream-100 hover:shadow-md hover:border-primary-100 border border-transparent transition-all text-left group"
               >
                 <Avatar
                   name={`${player.firstName ?? ''} ${player.lastName ?? ''}`}

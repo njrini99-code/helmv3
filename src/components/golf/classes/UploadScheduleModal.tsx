@@ -2,6 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { IconX, IconUpload, IconFileText, IconSparkles } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
 import {
@@ -332,7 +334,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 }
               `}
             >
-              <input
+              <Input
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.txt"
@@ -369,7 +371,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           ) : (
             /* Paste Area */
             <div>
-              <textarea
+              <Textarea
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
                 placeholder={`Paste your schedule here...\n\nExample format:\nBUAD 123 - Business Fundamentals\nMWF 9:30AM - 10:45AM\nHAL 101\nProf. Smith\n\nMATH 201 - Calculus II\nTTh 1:00PM - 2:15PM\nSCI 205`}

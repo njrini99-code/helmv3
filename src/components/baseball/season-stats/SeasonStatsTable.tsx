@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { BaseballPlayerSeasonStats } from '@/lib/types';
 import { IconTrendingUp, IconUser, IconDownload } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/select';
 
 interface SeasonStatsTableProps {
   stats: BaseballPlayerSeasonStats[];
@@ -143,7 +144,7 @@ export function SeasonStatsTable({
           <Button variant="ghost"
             onClick={() => { setActiveTab('batting'); setSortField('avg'); setSortDir('desc'); }}
             className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-              activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+              activeTab === 'batting' ? 'bg-cream-50 text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             <IconUser size={14} />
@@ -153,7 +154,7 @@ export function SeasonStatsTable({
             <Button variant="ghost"
               onClick={() => { setActiveTab('pitching'); setSortField('era'); setSortDir('asc'); }}
               className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+                activeTab === 'pitching' ? 'bg-cream-50 text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
               }`}
             >
               <IconTrendingUp size={14} />
@@ -163,15 +164,12 @@ export function SeasonStatsTable({
         </div>
 
         <div className="flex items-center gap-2">
-          <select
-            value={seasonYear}
+          <NativeSelect
+            value={String(seasonYear)}
             onChange={(e) => onYearChange?.(Number(e.target.value))}
-            className="text-sm border border-warm-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {availableYears.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+            className="min-h-0 text-sm border-warm-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-warm-700 focus:ring-2 focus:ring-primary-500"
+            options={availableYears.map((y) => ({ value: String(y), label: String(y) }))}
+          />
 
           <Button variant="ghost"
             onClick={() => exportToCSV(stats, activeTab)}

@@ -36,6 +36,8 @@ import {
 import { ExpenseForm, ExpenseList, ExpenseSummary } from '@/components/golf/travel';
 import { useToast } from '@/components/ui/sonner';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 interface TravelItinerary {
   id: string;
@@ -490,7 +492,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   className={`relative rounded-xl p-4 cursor-pointer transition-all ${
                     selectedItinerary?.id === itinerary.id
                       ? 'bg-primary-50 border-2 border-primary-500 shadow-md'
-                      : 'bg-white border border-warm-200 hover:border-warm-300 hover:shadow-sm'
+                      : 'bg-cream-50 border border-warm-200 hover:border-warm-300 hover:shadow-sm'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -807,7 +809,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
            `items-start` + `pt-4` + `overflow-y-auto` on the backdrop lets the
            whole modal card scroll into view even when the keyboard is open. */
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-start justify-center z-50 pt-4 pb-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl my-4 mx-4">
+          <div className="glass-prominent rounded-2xl max-w-2xl w-full p-6 shadow-xl my-4 mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em]">
                 {editingId ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
@@ -836,12 +838,11 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               {/* Event Name */}
               <div>
                 <label htmlFor="travel-event-name" className="block text-sm font-medium text-warm-700 mb-2">Event Name *</label>
-                <input
+                <Input
                   id="travel-event-name"
                   type="text"
                   value={formData.event_name}
                   onChange={(e) => setFormData((prev) => ({ ...prev, event_name: e.target.value }))}
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   placeholder="e.g., Spring Invitational"
                 />
               </div>
@@ -849,69 +850,64 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               {/* Destination */}
               <div>
                 <label htmlFor="travel-destination" className="block text-sm font-medium text-warm-700 mb-2">Destination *</label>
-                <input
+                <Input
                   id="travel-destination"
                   type="text"
                   value={formData.destination}
                   onChange={(e) => setFormData((prev) => ({ ...prev, destination: e.target.value }))}
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   placeholder="e.g., Pebble Beach, CA"
                 />
               </div>
 
               {/* Transportation */}
               <div>
-                <label htmlFor="travel-transportation" className="block text-sm font-medium text-warm-700 mb-2">Transportation</label>
-                <select
-                  id="travel-transportation"
+                <Select
+                  label="Transportation"
                   value={formData.transportation_type}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setFormData((prev) => ({
                       ...prev,
-                      transportation_type: e.target.value as TransportationType,
+                      transportation_type: value as TransportationType,
                     }))
                   }
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                >
-                  <option value="bus">Bus</option>
-                  <option value="van">Van</option>
-                  <option value="flight">Flight</option>
-                  <option value="carpool">Carpool</option>
-                </select>
+                  options={[
+                    { value: 'bus', label: 'Bus' },
+                    { value: 'van', label: 'Van' },
+                    { value: 'flight', label: 'Flight' },
+                    { value: 'carpool', label: 'Carpool' },
+                  ]}
+                />
               </div>
 
               {/* Departure Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="travel-departure-date" className="block text-sm font-medium text-warm-700 mb-2">Departure Date *</label>
-                  <input
+                  <Input
                     id="travel-departure-date"
                     type="date"
                     value={formData.departure_date}
                     onChange={(e) => setFormData((prev) => ({ ...prev, departure_date: e.target.value }))}
-                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
                 <div>
                   <label htmlFor="travel-departure-time" className="block text-sm font-medium text-warm-700 mb-2">Departure Time</label>
-                  <input
+                  <Input
                     id="travel-departure-time"
                     type="time"
                     value={formData.departure_time}
                     onChange={(e) => setFormData((prev) => ({ ...prev, departure_time: e.target.value }))}
-                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
               </div>
 
               <div>
                 <label htmlFor="travel-departure-location" className="block text-sm font-medium text-warm-700 mb-2">Departure Location</label>
-                <input
+                <Input
                   id="travel-departure-location"
                   type="text"
                   value={formData.departure_location}
                   onChange={(e) => setFormData((prev) => ({ ...prev, departure_location: e.target.value }))}
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   placeholder="e.g., School parking lot"
                 />
               </div>
@@ -920,22 +916,20 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="travel-return-date" className="block text-sm font-medium text-warm-700 mb-2">Return Date</label>
-                  <input
+                  <Input
                     id="travel-return-date"
                     type="date"
                     value={formData.return_date}
                     onChange={(e) => setFormData((prev) => ({ ...prev, return_date: e.target.value }))}
-                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
                 <div>
                   <label htmlFor="travel-return-time" className="block text-sm font-medium text-warm-700 mb-2">Return Time</label>
-                  <input
+                  <Input
                     id="travel-return-time"
                     type="time"
                     value={formData.return_time}
                     onChange={(e) => setFormData((prev) => ({ ...prev, return_time: e.target.value }))}
-                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -946,43 +940,39 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="travel-hotel-name" className="block text-sm font-medium text-warm-700 mb-2">Hotel Name</label>
-                    <input
+                    <Input
                       id="travel-hotel-name"
                       type="text"
                       value={formData.hotel_name}
                       onChange={(e) => setFormData((prev) => ({ ...prev, hotel_name: e.target.value }))}
-                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                     />
                   </div>
                   <div>
                     <label htmlFor="travel-hotel-address" className="block text-sm font-medium text-warm-700 mb-2">Hotel Address</label>
-                    <input
+                    <Input
                       id="travel-hotel-address"
                       type="text"
                       value={formData.hotel_address}
                       onChange={(e) => setFormData((prev) => ({ ...prev, hotel_address: e.target.value }))}
-                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="travel-hotel-phone" className="block text-sm font-medium text-warm-700 mb-2">Hotel Phone</label>
-                      <input
+                      <Input
                         id="travel-hotel-phone"
                         type="tel"
                         value={formData.hotel_phone}
                         onChange={(e) => setFormData((prev) => ({ ...prev, hotel_phone: e.target.value }))}
-                        className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       />
                     </div>
                     <div>
                       <label htmlFor="travel-hotel-confirmation" className="block text-sm font-medium text-warm-700 mb-2">Confirmation #</label>
-                      <input
+                      <Input
                         id="travel-hotel-confirmation"
                         type="text"
                         value={formData.hotel_confirmation}
                         onChange={(e) => setFormData((prev) => ({ ...prev, hotel_confirmation: e.target.value }))}
-                        className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -995,33 +985,30 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="travel-uniform" className="block text-sm font-medium text-warm-700 mb-2">Uniform Requirements</label>
-                    <input
+                    <Input
                       id="travel-uniform"
                       type="text"
                       value={formData.uniform_requirements}
                       onChange={(e) => setFormData((prev) => ({ ...prev, uniform_requirements: e.target.value }))}
-                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       placeholder="e.g., Team polo, khaki pants"
                     />
                   </div>
                   <div>
                     <label htmlFor="travel-gear-list" className="block text-sm font-medium text-warm-700 mb-2">Gear List</label>
-                    <input
+                    <Input
                       id="travel-gear-list"
                       type="text"
                       value={formData.gear_list}
                       onChange={(e) => setFormData((prev) => ({ ...prev, gear_list: e.target.value }))}
-                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       placeholder="e.g., Clubs, rain gear, extra balls"
                     />
                   </div>
                   <div>
                     <label htmlFor="travel-notes" className="block text-sm font-medium text-warm-700 mb-2">Notes</label>
-                    <textarea
+                    <Textarea
                       id="travel-notes"
                       value={formData.notes}
                       onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       rows={3}
                       placeholder="Any additional information..."
                     />

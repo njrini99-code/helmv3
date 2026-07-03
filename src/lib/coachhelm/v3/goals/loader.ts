@@ -16,7 +16,7 @@ import type { Goal, GoalSuggestion } from './types';
  * Load every goal for a player. Ordered by state (active first), then
  * ends_at ascending so soonest-due bubbles to the top.
  */
-export async function loadPlayerGoals(playerId: string): Promise<Goal[]> {
+async function loadPlayerGoals(playerId: string): Promise<Goal[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('golf_goals')

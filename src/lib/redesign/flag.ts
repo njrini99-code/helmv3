@@ -91,10 +91,7 @@ export function isThemesEnabled(): boolean {
   return isRedesignEnabled();
 }
 
-/** Client hook mirror of {@link isThemesEnabled} (build-time-inlined value). */
-export function useThemesInsights(): boolean {
-  return useMemo(() => isThemesEnabled(), []);
-}
+
 
 /**
  * Compose the Fairway scope class with optional extra classes.

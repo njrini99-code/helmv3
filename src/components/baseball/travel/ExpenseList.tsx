@@ -96,7 +96,7 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
-            className="bg-white rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
+            className="bg-cream-50 rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
           >
             <div
               role="button"

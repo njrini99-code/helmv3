@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconUser, IconCheck } from '@/components/icons';
+import { Input } from '@/components/ui/input';
 
 interface Player {
   id: string;
@@ -128,12 +129,12 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
           >
             <div className="mt-3 border border-warm-200 rounded-xl overflow-hidden">
               <div className="px-3 py-2 border-b border-warm-100">
-                <input
+                <Input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search players..."
-                  className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
+                  className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none border-0 shadow-none focus-visible:ring-0 px-0 h-auto"
                 />
               </div>
               <div className="max-h-48 overflow-y-auto p-1.5 space-y-0.5">

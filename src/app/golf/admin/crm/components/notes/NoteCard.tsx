@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   IconBookmark,
   IconPencil,
@@ -146,7 +149,7 @@ export function NoteCard({
   return (
     <div
       className={cn(
-        'group relative rounded-2xl border bg-white px-4 py-3 transition-colors',
+        'group relative rounded-2xl border bg-cream-50 px-4 py-3 transition-colors',
         note.is_pinned
           ? 'border-amber-200/80 bg-amber-50/30'
           : 'border-warm-200/60 hover:border-warm-300/80',
@@ -166,15 +169,15 @@ export function NoteCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {editing ? (
-            <select
+            <Select
               value={draftKind}
-              onChange={(e) => setDraftKind(e.target.value as NoteKind)}
-              className="text-eyebrow font-medium px-2 py-0.5 rounded-md border border-warm-200 bg-white text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-            >
-              {(Object.keys(KIND_LABEL) as NoteKind[]).map((k) => (
-                <option key={k} value={k}>{KIND_LABEL[k]}</option>
-              ))}
-            </select>
+              onChange={(value) => setDraftKind(value as NoteKind)}
+              options={(Object.keys(KIND_LABEL) as NoteKind[]).map((k) => ({
+                value: k,
+                label: KIND_LABEL[k],
+              }))}
+              className="text-eyebrow font-medium px-2 py-0.5 rounded-md border border-warm-200 bg-cream-50 text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            />
           ) : (
             <span
               className={cn(
@@ -216,24 +219,20 @@ export function NoteCard({
       {/* Body */}
       {editing ? (
         <div className="mt-2 space-y-2">
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={5}
             maxLength={8000}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="w-full px-3 py-2 text-sm rounded-lg bg-cream-50 border border-warm-200/80 text-warm-900 placeholder:text-warm-400 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
           />
           <div className="flex items-center justify-between gap-2">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-warm-700">
-              <input
-                type="checkbox"
-                checked={draftPinned}
-                onChange={(e) => setDraftPinned(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-warm-300 text-primary-600 focus:ring-primary-500/20"
-              />
-              Pin to top
-            </label>
+            <Checkbox
+              label="Pin to top"
+              checked={draftPinned}
+              onChange={(e) => setDraftPinned(e.target.checked)}
+            />
             <div className="flex items-center gap-1.5">
               <Button variant="ghost"
                 type="button"

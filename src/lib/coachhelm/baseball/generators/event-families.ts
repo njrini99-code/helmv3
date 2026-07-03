@@ -141,7 +141,7 @@ function rateGenerator(spec: RateGeneratorSpec) {
 // game-vs-cage EV gap, RISP gap.
 // =============================================================================
 
-export const hitterFirstPitchTakeGenerator = rateGenerator({
+const hitterFirstPitchTakeGenerator = rateGenerator({
   generator: 'hitter_first_pitch_take',
   insightType: 'coachhelm_hitter_first_pitch_take',
   metric: 'hitter_first_pitch_take_rate',
@@ -167,7 +167,7 @@ export const hitterZoneContactGenerator = rateGenerator({
   body: (m) => `Only ${pct(m.value!)} in-zone contact. Whiffing strikes in the zone — timing/path work needed.`,
 });
 
-export const hitterPullRolloverGenerator = rateGenerator({
+const hitterPullRolloverGenerator = rateGenerator({
   generator: 'hitter_pull_rollover',
   insightType: 'coachhelm_hitter_pull_rollover',
   metric: 'hitter_pull_rollover_rate',
@@ -180,7 +180,7 @@ export const hitterPullRolloverGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} pull-side ground balls. Rolling over — oppo-direction work will flatten the spray.`,
 });
 
-export const hitterGameCageEvGapGenerator = rateGenerator({
+const hitterGameCageEvGapGenerator = rateGenerator({
   generator: 'hitter_game_cage_ev_gap',
   insightType: 'coachhelm_hitter_ev_gap',
   metric: 'hitter_game_cage_ev_gap',
@@ -193,7 +193,7 @@ export const hitterGameCageEvGapGenerator = rateGenerator({
   body: (m) => `Game EV ${r2(Math.abs(m.value!))} mph under cage EV. Power isn't transferring — add game-like reps.`,
 });
 
-export const hitterRispGapGenerator = rateGenerator({
+const hitterRispGapGenerator = rateGenerator({
   generator: 'hitter_risp_gap',
   insightType: 'coachhelm_hitter_risp_gap',
   metric: 'hitter_risp_avg_delta',
@@ -211,7 +211,7 @@ export const hitterRispGapGenerator = rateGenerator({
 // handedness split, pitch-mix predictability.
 // =============================================================================
 
-export const pitcherFirstPitchStrikeGenerator = rateGenerator({
+const pitcherFirstPitchStrikeGenerator = rateGenerator({
   generator: 'pitcher_first_pitch_strike',
   insightType: 'coachhelm_pitcher_first_pitch_strike',
   metric: 'pitcher_first_pitch_strike_rate',
@@ -224,7 +224,7 @@ export const pitcherFirstPitchStrikeGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} first-pitch strikes. Getting ahead 0-1 changes every at-bat.`,
 });
 
-export const pitcherTwoStrikePutawayGenerator = rateGenerator({
+const pitcherTwoStrikePutawayGenerator = rateGenerator({
   generator: 'pitcher_two_strike_putaway',
   insightType: 'coachhelm_pitcher_putaway',
   metric: 'pitcher_two_strike_putaway_rate',
@@ -253,7 +253,7 @@ export const pitcherVeloDecayGenerator = rateGenerator({
   body: (m) => `Velo fades ${r2(Math.abs(m.value!))} mph late in outings. Check workload/conditioning first.`,
 });
 
-export const pitcherHandednessSplitGenerator = rateGenerator({
+const pitcherHandednessSplitGenerator = rateGenerator({
   generator: 'pitcher_handedness_split',
   insightType: 'coachhelm_pitcher_handedness_split',
   metric: 'pitcher_handedness_split',
@@ -266,7 +266,7 @@ export const pitcherHandednessSplitGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} whiff-rate gap L vs R. One platoon side is exploitable — add a weapon to that side.`,
 });
 
-export const pitcherPitchMixGenerator = rateGenerator({
+const pitcherPitchMixGenerator = rateGenerator({
   generator: 'pitcher_pitch_mix_predictability',
   insightType: 'coachhelm_pitcher_pitch_mix',
   metric: 'pitcher_pitch_mix_predictability',
@@ -284,7 +284,7 @@ export const pitcherPitchMixGenerator = rateGenerator({
 // workload (innings caught).
 // =============================================================================
 
-export const catcherThrowAccuracyGenerator = rateGenerator({
+const catcherThrowAccuracyGenerator = rateGenerator({
   generator: 'catcher_throw_accuracy',
   insightType: 'coachhelm_catcher_throw_accuracy',
   metric: 'catcher_throw_accuracy',
@@ -310,7 +310,7 @@ export const catcherPopTimeGenerator = rateGenerator({
   body: (m) => `Pop time ${r2(m.value!)}s. Faster exchange will protect against the run game.`,
 });
 
-export const catcherBlockMissGenerator = rateGenerator({
+const catcherBlockMissGenerator = rateGenerator({
   generator: 'catcher_block_miss',
   insightType: 'coachhelm_catcher_block_miss',
   metric: 'catcher_block_miss_rate',
@@ -323,7 +323,7 @@ export const catcherBlockMissGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} block-miss rate. Blocking station on the problem zone.`,
 });
 
-export const catcherRunGameGenerator = rateGenerator({
+const catcherRunGameGenerator = rateGenerator({
   generator: 'catcher_run_game_risk',
   insightType: 'coachhelm_catcher_run_game',
   metric: 'catcher_run_game_risk',
@@ -336,7 +336,7 @@ export const catcherRunGameGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} SB success allowed. Work the battery (pop + pitcher holds) together.`,
 });
 
-export const catcherWorkloadGenerator = rateGenerator({
+const catcherWorkloadGenerator = rateGenerator({
   generator: 'catcher_workload',
   insightType: 'coachhelm_catcher_workload',
   metric: 'catcher_recent_innings_caught',
@@ -366,7 +366,7 @@ export const defenseErrorClusterGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} error rate. Break down by type and rep the dominant failure.`,
 });
 
-export const defenseRoutineReliabilityGenerator = rateGenerator({
+const defenseRoutineReliabilityGenerator = rateGenerator({
   generator: 'defense_routine_reliability',
   insightType: 'coachhelm_defense_routine',
   metric: 'defense_routine_reliability',
@@ -379,7 +379,7 @@ export const defenseRoutineReliabilityGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} routine-play reliability. Lock down the floor with high-rep routine circuits.`,
 });
 
-export const defenseThrowAccuracyGenerator = rateGenerator({
+const defenseThrowAccuracyGenerator = rateGenerator({
   generator: 'defense_throw_accuracy',
   insightType: 'coachhelm_defense_throw_accuracy',
   metric: 'defense_throw_accuracy',
@@ -392,7 +392,7 @@ export const defenseThrowAccuracyGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} throw accuracy. Footwork + arm-slot station will straighten the throws.`,
 });
 
-export const defenseBuntPfpGenerator = rateGenerator({
+const defenseBuntPfpGenerator = rateGenerator({
   generator: 'defense_bunt_pfp',
   insightType: 'coachhelm_defense_bunt_pfp',
   metric: 'defense_bunt_pfp_execution',
@@ -422,7 +422,7 @@ export const baserunningOutRateGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} outs-on-bases. Reads/decisions work will keep the line moving.`,
 });
 
-export const baserunningExtraBaseGenerator = rateGenerator({
+const baserunningExtraBaseGenerator = rateGenerator({
   generator: 'baserunning_extra_base',
   insightType: 'coachhelm_baserunning_extra_base',
   metric: 'baserunning_extra_base_rate',
@@ -435,7 +435,7 @@ export const baserunningExtraBaseGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} extra-base rate. Smarter aggression on turns will add 90 feet.`,
 });
 
-export const baserunningCsDecisionGenerator = rateGenerator({
+const baserunningCsDecisionGenerator = rateGenerator({
   generator: 'baserunning_cs_decision',
   insightType: 'coachhelm_baserunning_cs_decision',
   metric: 'baserunning_cs_decision_risk',
@@ -448,7 +448,7 @@ export const baserunningCsDecisionGenerator = rateGenerator({
   body: (m) => `${pct(m.value!)} poor-decision CS. Tighten green-light rules and rep the jump.`,
 });
 
-export const baserunningFirstToThirdGenerator = rateGenerator({
+const baserunningFirstToThirdGenerator = rateGenerator({
   generator: 'baserunning_first_to_third',
   insightType: 'coachhelm_baserunning_first_to_third',
   metric: 'baserunning_first_to_third_rate',
@@ -466,7 +466,7 @@ export const baserunningFirstToThirdGenerator = rateGenerator({
 // =============================================================================
 
 /** Every per-player event-family generator the engine runs. */
-export const BASEBALL_EVENT_FAMILY_GENERATORS = [
+const BASEBALL_EVENT_FAMILY_GENERATORS = [
   // hitting (deepened)
   hitterFirstPitchTakeGenerator,
   hitterZoneContactGenerator,

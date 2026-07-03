@@ -22,6 +22,7 @@ import { RSVPProgressRing } from './RSVPProgressRing';
 import { Users, Download, Search } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface RSVPParticipant {
   id: string;
@@ -143,7 +144,7 @@ export function RSVPStatusSection({
   }
 
   return (
-    <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
+    <div className={cn('bg-cream-50 rounded-2xl border border-warm-200 shadow-sm', className)}>
       {/* Header */}
       <div className={cn('p-6 border-b border-warm-200', compact && 'p-4')}>
         <div className="flex items-start justify-between gap-4 mb-4">
@@ -184,16 +185,14 @@ export function RSVPStatusSection({
       {/* Filters and search */}
       <div className={cn('p-4 border-b border-warm-200 space-y-3', compact && 'p-3')}>
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
-          <input
-            type="text"
-            placeholder="Search players..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500"
-          />
-        </div>
+        <Input
+          type="text"
+          placeholder="Search players..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          leftIcon={<Search className="w-4 h-4" />}
+          className="w-full text-sm border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500"
+        />
 
         {/* Filter buttons */}
         <div className="flex flex-wrap gap-2">

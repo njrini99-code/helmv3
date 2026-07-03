@@ -15,6 +15,7 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { PLAYER_COLORS, type TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
 
 const MAX_SELECTION = 8;
@@ -72,19 +73,21 @@ export function FairwayCalendarMemberRail({
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5">
         {/* ALL */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => onSelect([])}
           aria-pressed={allSelected}
+          haptic="none"
           className={cn(
-            'flex h-9 flex-shrink-0 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
+            'flex h-9 min-h-0 flex-shrink-0 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
             allSelected
               ? 'bg-accent-500 text-text-on-accent shadow-flat'
               : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
           )}
         >
           All
-        </button>
+        </Button>
 
         <span aria-hidden className="h-6 w-px flex-shrink-0 bg-border-subtle" />
 
@@ -94,15 +97,17 @@ export function FairwayCalendarMemberRail({
           const color = selected ? PLAYER_COLORS[idx % PLAYER_COLORS.length]! : null;
           const tint = tintFor(m.id);
           return (
-            <button
+            <Button
               key={m.id}
               type="button"
+              variant="ghost"
+              haptic="none"
               onClick={() => toggle(m.id)}
               aria-pressed={selected}
               aria-label={selected ? `${fullName(m)} (viewing schedule)` : `View ${fullName(m)}'s schedule`}
               title={fullName(m)}
               className={cn(
-                'relative grid h-9 w-9 flex-shrink-0 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform hover:ring-border-strong',
+                'relative grid h-9 w-9 min-h-0 flex-shrink-0 place-items-center overflow-visible rounded-full p-0 font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform hover:ring-border-strong hover:bg-transparent',
                 selected && 'scale-[1.06] text-white ring-0',
               )}
               style={
@@ -127,7 +132,7 @@ export function FairwayCalendarMemberRail({
                   {idx + 1}
                 </span>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -149,13 +154,15 @@ export function FairwayCalendarMemberRail({
               </span>
             );
           })}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            haptic="none"
             onClick={() => onSelect([])}
-            className="ml-auto font-fw-sans text-caption font-medium text-accent-700 transition-colors hover:text-accent-800"
+            className="ml-auto h-auto min-h-0 w-auto p-0 font-fw-sans text-caption font-medium text-accent-700 transition-colors hover:bg-transparent hover:text-accent-800"
           >
             Clear
-          </button>
+          </Button>
         </div>
       )}
     </div>

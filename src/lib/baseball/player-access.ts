@@ -60,7 +60,6 @@ import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 import {
-  ALL_PLAYER_ACCESS_KEYS,
   ACCESS_DENIED_MESSAGE,
   STAFF_BYPASSABLE_KEYS,
   decidePlayerAccess,
@@ -146,7 +145,7 @@ async function readAccessRow(teamId: string): Promise<Record<string, boolean>> {
  * Never throws — returns false on any miss / config-deny. Use requirePlayerAccess
  * to hard-fail a server action.
  */
-export async function hasPlayerAccess(
+async function hasPlayerAccess(
   teamId: string,
   key: PlayerAccessKey,
   opts: { allowStaffBypass?: boolean } = {},
@@ -186,45 +185,3 @@ export async function requirePlayerAccess(
 /** A fully-resolved player-access map: every key present, boolean value. */
 export type PlayerAccessMap = Record<PlayerAccessKey, boolean>;
 
-const ALL_ACCESS_KEYS = ALL_PLAYER_ACCESS_KEYS;
-
-/**
- * Resolve the full player-access map for a team from a SINGLE settings read.
- * Use this in server components / read paths to decide which player-facing
- * affordances to RENDER (the UI mirror), while the server actions independently
- * ENFORCE via requirePlayerAccess (defense in depth — the render gate is a UX
- * convenience, the action gate is the security boundary).
- *
- * `viewerIsPlayer` toggles whether self-service keys honor the staff bypass:
- * when resolving for a player you want the literal toggle values; when resolving
- * for a coach you want staff-bypass applied. Pass `viewerIsPlayer: true` to get
- * the raw toggle posture regardless of viewer.
- */
-export async function resolvePlayerAccess(
-  teamId: string,
-  opts: { viewerIsPlayer?: boolean } = {},
-): Promise<PlayerAccessMap> {
-  const empty = (): PlayerAccessMap =>
-    ALL_ACCESS_KEYS.reduce((acc, k) => {
-      acc[k] = false;
-      return acc;
-    }, {} as PlayerAccessMap);
-
-  if (!teamId) return empty();
-
-  const row = await readAccessRow(teamId);
-
-  // Staff bypass only matters for self-service keys and only when the viewer is
-  // NOT a player. Resolve staff status once.
-  let isStaff = false;
-  if (!opts.viewerIsPlayer) {
-    const caps = await resolveBaseballCapabilities(teamId);
-    isStaff = Object.values(caps).some(Boolean);
-  }
-
-  const map = empty();
-  for (const key of ALL_ACCESS_KEYS) {
-    map[key] = decidePlayerAccess(row, key, { isStaff });
-  }
-  return map;
-}

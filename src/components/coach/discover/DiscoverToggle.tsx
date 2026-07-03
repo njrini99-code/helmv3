@@ -71,7 +71,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
       >
         {/* Animated Background Indicator */}
         <motion.div
-          className="absolute top-1 bottom-1 rounded-lg bg-white shadow-sm border border-warm-200/80"
+          className="absolute top-1 bottom-1 rounded-lg bg-cream-50 shadow-sm border border-warm-200/80"
           initial={false}
           animate={{
             left: indicatorStyle.left,

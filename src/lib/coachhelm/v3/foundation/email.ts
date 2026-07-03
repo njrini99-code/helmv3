@@ -28,7 +28,7 @@ let cachedClient: Resend | null = null;
  * missing — callers must handle that (in dev / preview environments
  * without a key, email surfaces should fall back to logging only).
  */
-export function getEmailClient(): Resend | null {
+function getEmailClient(): Resend | null {
   if (cachedClient) return cachedClient;
   if (!RESEND_API_KEY) return null;
   cachedClient = new Resend(RESEND_API_KEY);

@@ -141,10 +141,10 @@ export default function PlayerDropoffFunnel({
                   onClick={() => toggleStage(stageGroup.stage)}
                   className={cn(
                     'w-full flex items-center justify-between px-4 py-3',
-                    'text-left hover:bg-white/40 transition-colors duration-200',
+                    'text-left hover:bg-cream-50/40 transition-colors duration-200',
                     expandedStage === stageGroup.stage
-                      ? 'bg-white/50'
-                      : 'bg-white/20'
+                      ? 'bg-cream-50/50'
+                      : 'bg-cream-50/20'
                   )}
                 >
                   <span className="text-sm font-medium text-warm-900">

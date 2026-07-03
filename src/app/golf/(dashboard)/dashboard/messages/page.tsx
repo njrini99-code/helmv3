@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import { Textarea } from '@/components/ui/textarea';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import { useToast } from '@/components/ui/sonner';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
@@ -717,10 +718,10 @@ function LegacyGolfMessagesPage() {
                               'bg-primary-50 border-2 border-primary-300 shadow-sm',
                               'rounded-2xl'
                             )}>
-                              <textarea
+                              <Textarea
                                 value={editContent}
                                 onChange={(e) => setEditContent(e.target.value)}
-                                className="w-full bg-transparent text-sm text-warm-900 resize-none focus:outline-none min-w-[200px]"
+                                className="w-full bg-transparent text-sm text-warm-900 resize-none focus:outline-none focus:ring-0 min-w-[200px] px-0 py-0 border-0 rounded-none"
                                 rows={Math.min(5, editContent.split('\n').length || 1)}
                                 // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: inline edit textarea needs focus when editing starts
                                 autoFocus
@@ -898,7 +899,7 @@ function ReadReceiptIcon({ isRead }: { isRead?: boolean }) {
 // Typing Indicator Component
 function TypingIndicator() {
   return (
-    <div className="bg-white border border-warm-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+    <div className="bg-cream-50 border border-warm-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
       <div className="flex items-center gap-1">
         <span className="w-2 h-2 bg-warm-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
         <span className="w-2 h-2 bg-warm-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1061,7 +1062,7 @@ function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputP
           disabled={sending}
           className="mb-0.5"
         />
-        <textarea
+        <Textarea
           ref={textareaRef}
           value={message}
           onChange={handleChange}
@@ -1069,9 +1070,9 @@ function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputP
           placeholder="Type a message..."
           rows={1}
           className={cn(
-            'flex-1 resize-none bg-transparent px-2 py-2 text-base lg:text-sm',
+            'flex-1 resize-none bg-transparent px-2 py-2 text-base lg:text-sm border-0 rounded-none',
             'placeholder:text-warm-400',
-            'focus:outline-none'
+            'focus:outline-none focus:ring-0'
           )}
           style={{ minHeight: '40px', maxHeight: '120px' }}
         />
@@ -1089,9 +1090,9 @@ function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputP
         >
           {sending ? (
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
             </span>
           ) : (
             <IconSend size={18} />

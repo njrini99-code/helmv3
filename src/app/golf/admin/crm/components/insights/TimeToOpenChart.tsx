@@ -51,14 +51,14 @@ export function TimeToOpenChart({ buckets, loading }: TimeToOpenChartProps) {
 
   if (loading) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+      <div className="glass-standard rounded-2xl shadow-glass p-5">
         <div className="h-[260px] bg-warm-50 rounded-lg animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+    <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
       <div className="px-5 py-4 border-b border-warm-100/60 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">

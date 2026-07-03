@@ -40,6 +40,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import { Input } from '@/components/fairway/forms/Input';
 import type { HoleConfig } from '@/lib/types/golf-course';
 
 interface FairwayHoleConfigProps {
@@ -247,7 +248,7 @@ export function FairwayHoleConfig({
                   })}
                 </div>
                 <div className="flex items-center justify-center px-2 py-2">
-                  <input
+                  <Input
                     type="number"
                     inputMode="numeric"
                     value={hole.yardage}

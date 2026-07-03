@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { RecruitingMinimumStandards } from '@/lib/types';
 import { AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface MinimumStandardsProps {
   values: RecruitingMinimumStandards;
@@ -169,7 +170,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
               className={cn(
                 'p-4 rounded-xl border transition-all',
                 isEnabled
-                  ? 'bg-white border-primary-200'
+                  ? 'bg-cream-50 border-primary-200'
                   : 'bg-warm-50 border-warm-200'
               )}
             >
@@ -202,14 +203,14 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                     {/* Value input */}
                     {isEnabled && (
                       <div className="flex items-center gap-2">
-                        <input
+                        <Input
                           type="number"
                           min={config.min}
                           max={config.max}
                           step={config.step}
                           value={currentValue ?? ''}
                           onChange={(e) => handleValueChange(config.key, e.target.value)}
-                          className="w-24 px-3 py-1.5 text-right text-sm font-medium border border-warm-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
+                          className="w-24 text-right"
                           placeholder={config.placeholder}
                         />
                       </div>

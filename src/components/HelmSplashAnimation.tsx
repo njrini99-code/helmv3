@@ -107,7 +107,7 @@ export default function HelmSplashAnimation() {
                 letterSpacing: "-0.03em",
               }}
             >
-              <span style={{ color: "#16A34A" }}>Helm</span>
+              <span className="text-primary-600">Helm</span>
               <span style={{ color: "rgba(240, 244, 248, 0.45)" }}> Sports Labs</span>
             </div>
 
@@ -115,9 +115,8 @@ export default function HelmSplashAnimation() {
               initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5, duration: 0.5, ease: "easeOut" }}
-              className={`text-sm tracking-widest uppercase ${dmSans.className}`}
+              className={`text-sm tracking-widest uppercase text-primary-600 ${dmSans.className}`}
               style={{
-                color: "#16A34A",
                 letterSpacing: "0.25em",
               }}
             >
@@ -128,7 +127,7 @@ export default function HelmSplashAnimation() {
           // Flip card - SIMPLE VERSION
           <div style={{ perspective: "1200px", maxWidth: "600px" }}>
             <div
-              className="relative bg-gradient-to-b from-[#1a2236] to-[#111827] rounded-[10px] overflow-visible shadow-lg"
+              className="relative bg-gradient-to-b from-[#1a2236] to-[#111827] rounded-md overflow-visible shadow-lg"
               style={{
                 boxShadow: "0 4px 16px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
                 padding: "2.5rem 2rem",
@@ -155,7 +154,7 @@ export default function HelmSplashAnimation() {
                 <SimpleFlipper currentText={currentPrefix} isFlipping={phase === "flip1" || phase === "flip2"} />
 
                 {/* Static "Helm" */}
-                <span style={{ color: "#16A34A" }}>Helm</span>
+                <span className="text-primary-600">Helm</span>
               </div>
             </div>
           </div>
@@ -171,11 +170,7 @@ export default function HelmSplashAnimation() {
             handleReplay();
           }
         }}
-        className={`mt-16 px-8 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-200 font-medium tracking-wide focus:outline-none focus:ring-2 focus:ring-[#16A34A] focus:ring-offset-2 ${dmSans.className}`}
-        style={{
-          backdropFilter: "blur(10px)",
-          border: "1px solid rgba(255,255,255,0.1)",
-        }}
+        className={`mt-16 px-8 py-3 rounded-lg glass-dark hover:bg-warm-900/50 text-white/70 hover:text-white transition-all duration-200 font-medium tracking-wide focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 ${dmSans.className}`}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Replay animation"

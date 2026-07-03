@@ -16,6 +16,7 @@ import { SmartEmptyState } from './SmartEmptyState';
 import { PlayerHoverPreview } from './PlayerHoverPreview';
 import { ViewToggle, ViewMode } from '@/components/ui/view-toggle';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -464,20 +465,12 @@ export function DiscoverView({
               <label htmlFor="sort" className="text-sm text-warm-500">
                 Sort:
               </label>
-              <select
-                id="sort"
+              <Select
+                options={SORT_OPTIONS}
                 value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="text-sm border border-warm-200 rounded-lg px-3 py-1.5
-                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                           focus:outline-none bg-white cursor-pointer"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                onChange={handleSortChange}
+                className="text-sm min-h-0 px-3 py-1.5"
+              />
             </div>
           )}
 

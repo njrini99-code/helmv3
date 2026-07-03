@@ -169,7 +169,7 @@ export function InsightExportModal({
                   'relative flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all',
                   selectedFormat === option.value
                     ? 'border-primary-500 bg-primary-50'
-                    : 'border-warm-200 hover:border-warm-300 bg-white'
+                    : 'border-warm-200 hover:border-warm-300 bg-cream-50'
                 )}
               >
                 {option.icon}

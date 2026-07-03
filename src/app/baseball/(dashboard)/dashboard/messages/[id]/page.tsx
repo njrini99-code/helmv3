@@ -20,6 +20,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { PageLoading } from '@/components/ui/loading';
 import { IconSend, IconChevronLeft } from '@/components/icons';
 import { useMessages, useConversations } from '@/hooks/use-messages';
@@ -143,7 +144,7 @@ export default function ConversationPage() {
 
       <form onSubmit={handleSend} className="shrink-0 border-t border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 sm:px-6 sm:py-5">
         <PaperCard className="mx-auto flex max-w-[720px] items-center gap-2 p-2">
-          <input
+          <Input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}

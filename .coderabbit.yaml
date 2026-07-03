@@ -569,7 +569,6 @@ knowledge_base:
     filePatterns:
       - "CLAUDE.md"
       - "AGENTS.md"
-      - "CLAUDE_CODE_GUIDE.md"
       - "docs/v3-master-plan.md"
       - "docs/v3-wave-sequence.md"
       - "docs/v3-decisions.md"

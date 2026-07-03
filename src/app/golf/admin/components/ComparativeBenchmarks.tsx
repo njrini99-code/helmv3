@@ -175,7 +175,7 @@ export default function ComparativeBenchmarks({
                 {sortedTeams.map((team, idx) => (
                   <tr
                     key={team.id}
-                    className="border-b border-warm-100 last:border-0 hover:bg-white/40 transition-colors"
+                    className="border-b border-warm-100 last:border-0 hover:bg-cream-100 transition-colors"
                   >
                     <td className="py-3 pr-4 font-medium text-warm-900">{team.name}</td>
                     <td className="py-3 pr-4 text-warm-500">{team.playerCount}</td>
@@ -287,7 +287,7 @@ export default function ComparativeBenchmarks({
             {improvedPlayers.map((player, idx) => (
               <div
                 key={player.id}
-                className="flex items-center justify-between py-3 px-4 rounded-xl bg-white/40 hover:bg-white/60 transition-colors"
+                className="flex items-center justify-between py-3 px-4 rounded-xl bg-cream-50 hover:bg-cream-100 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-warm-400 w-6 text-right">
@@ -328,7 +328,7 @@ export default function ComparativeBenchmarks({
         <h2 className="text-xl font-semibold text-warm-900 mb-4">CoachHelm AI Impact</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* With AI */}
-          <div className="rounded-xl bg-white/50 border border-white/30 p-5">
+          <div className="rounded-xl bg-cream-50 border border-warm-200/50 p-5">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-2 w-2 rounded-full bg-primary-500" />
               <h3 className="text-sm font-semibold text-warm-900">With AI</h3>
@@ -371,7 +371,7 @@ export default function ComparativeBenchmarks({
           </div>
 
           {/* Without AI */}
-          <div className="rounded-xl bg-white/50 border border-white/30 p-5">
+          <div className="rounded-xl bg-cream-50 border border-warm-200/50 p-5">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-2 w-2 rounded-full bg-warm-300" />
               <h3 className="text-sm font-semibold text-warm-900">Without AI</h3>
@@ -402,7 +402,7 @@ export default function ComparativeBenchmarks({
 
         {/* Difference summary */}
         {aiScoreDiff !== null && (
-          <div className="mt-4 rounded-xl bg-white/40 border border-white/20 p-4">
+          <div className="mt-4 rounded-xl bg-cream-50 border border-warm-200/40 p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-warm-500">Scoring Difference</span>
               <span

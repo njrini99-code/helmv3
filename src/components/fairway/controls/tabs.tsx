@@ -110,7 +110,7 @@ export const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(funct
       data-slot="fw-tabs-trigger"
       className={cn(
         'group relative -mb-px inline-flex select-none items-center gap-2 whitespace-nowrap',
-        'px-3.5 pb-3 pt-2 font-fw-sans text-[13px] font-medium leading-4',
+        'px-3.5 pb-3 pt-2 font-fw-sans text-body-sm font-medium leading-4',
         'text-text-secondary hover:text-text-primary',
         // active state via Radix data-attr
         'data-[state=active]:text-text-primary',

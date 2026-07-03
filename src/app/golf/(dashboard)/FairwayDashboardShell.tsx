@@ -26,6 +26,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
 
+import { Button } from '@/components/ui/button';
 import { AppShell } from '@/components/fairway/app-shell/AppShell';
 import { useSidebarCollapsed } from '@/components/fairway/app-shell/FairwaySidebar';
 import { FairwayBottomNav } from '@/components/fairway/app-shell/FairwayBottomNav';
@@ -526,7 +527,7 @@ function ShellFooter() {
         />
         {!collapsed && <span className="min-w-0 flex-1 truncate">Settings</span>}
       </Link>
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={handleSignOut}
         disabled={isSigningOut}
@@ -538,7 +539,7 @@ function ShellFooter() {
         {!collapsed && (
           <span className="min-w-0 flex-1 truncate text-left">{isSigningOut ? 'Signing out…' : 'Sign out'}</span>
         )}
-      </button>
+      </Button>
     </div>
   );
 }

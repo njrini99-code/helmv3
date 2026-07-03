@@ -90,7 +90,7 @@ export function TasksDueWidget({
   };
 
   return (
-    <div className="rounded-2xl border border-warm-200/60 bg-white">
+    <div className="rounded-2xl border border-warm-200/60 bg-cream-50">
       <div className="flex items-center justify-between px-4 py-3 border-b border-warm-100">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">

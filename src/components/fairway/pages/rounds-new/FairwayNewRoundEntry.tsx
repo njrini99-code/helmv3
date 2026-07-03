@@ -30,6 +30,9 @@ import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-re
 import { cn } from '@/lib/utils';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
+import { Button as UIButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Chip } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -127,8 +130,16 @@ export interface FairwayNewRoundEntryProps {
  * 2.4.7), gated on `focus-visible:` so it only shows for keyboard users (a bare
  * `focus:` ring fired on mouse-click and the old `/25` alpha ring composited to
  * ~1.3:1, far below the 3:1 floor). */
-const fieldCls =
-  'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5 font-fw-sans text-body text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus-visible:border-border-focus focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas';
+
+/** Override className passed into the canonical <Input>/<Select> wrappers so
+ * they render with the Fairway token recipe above instead of their own
+ * cream/warm defaults. twMerge (via `cn`) resolves same-family conflicts
+ * (rounded-*, border-*, bg-*, text-*, focus:*) in favor of these classes —
+ * the `focus:` overrides explicitly cancel the wrapper's baked-in
+ * mouse-click ring so only `focus-visible:` shows the accent ring, matching
+ * the accessibility intent documented above. */
+const fwInputCls =
+  'rounded-[var(--fw-radius-md)] border-border-subtle bg-surface-sunken px-3.5 py-2.5 min-h-0 font-fw-sans text-body text-text-primary placeholder:text-text-tertiary hover:border-border-subtle focus:border-border-subtle focus:ring-0 focus:bg-surface-sunken focus-visible:border-border-focus focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
 /** Section heading with a green structural spine. */
 const headingCls = 'mb-4 flex items-center gap-2.5 font-fw-display text-body-lg font-semibold text-text-primary';
@@ -176,6 +187,21 @@ function relTime(iso: string | null): string {
   return `${Math.floor(days / 365)}y ago`;
 }
 
+const TEE_OPTIONS = [
+  { value: 'Championship', label: 'Championship' },
+  { value: 'Black', label: 'Black' },
+  { value: 'Blue', label: 'Blue' },
+  { value: 'White', label: 'White' },
+  { value: 'Gold', label: 'Gold' },
+  { value: 'Red', label: 'Red' },
+];
+
+const ROUND_TYPE_OPTIONS = [
+  { value: 'practice', label: 'Practice' },
+  { value: 'tournament', label: 'Tournament' },
+  { value: 'qualifier', label: 'Qualifier' },
+];
+
 const STEP_CONFIG = [
   { key: 'setup', label: 'Course setup', shortLabel: 'Setup' },
   { key: 'holes', label: 'Hole config', shortLabel: 'Holes' },
@@ -198,7 +224,7 @@ function StepSpine({ step }: { step: Step }) {
         const active = i === current;
         return (
           <div key={s.key} className="flex flex-1 flex-col gap-2">
-            <span className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+            <span className="h-1 w-full overflow-hidden rounded-full bg-warm-50/10">
               <span
                 className="block h-full rounded-full bg-accent-400 transition-[width] duration-500 ease-out"
                 style={{ width: done ? '100%' : active ? '60%' : '0%' }}
@@ -240,16 +266,18 @@ function CockpitBand({
   return (
     <div className="on-dark relative overflow-hidden rounded-card bg-nav-bg p-7 text-nav-text shadow-soft md:p-8">
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-warm-50/[0.06]" />
       {onBack && (
-        <button
+        <UIButton
           type="button"
+          variant="ghost"
           onClick={onBack}
-          className="relative -ml-1 mb-3 inline-flex min-h-[44px] items-center gap-1 rounded-fw-sm px-1 font-fw-sans text-body-sm font-medium text-nav-text-dim transition-colors hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
+          haptic="none"
+          className="relative -ml-1 mb-3 min-h-[44px] gap-1 rounded-[var(--fw-radius-sm)] px-1 py-0 font-fw-sans text-body-sm font-medium text-nav-text-dim hover:bg-transparent hover:text-nav-text focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           {backLabel ?? 'Back'}
-        </button>
+        </UIButton>
       )}
       <p className="relative font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
         {eyebrow}
@@ -449,18 +477,16 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               {showSelector && courseMode === 'saved' && (
                 <div className="flex flex-col gap-3">
                   {savedCourses.length >= 4 && (
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-                      <input
-                        type="search"
-                        value={props.courseSearchQuery}
-                        onChange={(e) => props.setCourseSearchQuery(e.target.value)}
-                        placeholder="Search saved courses…"
-                        enterKeyHint="search"
-                        autoComplete="off"
-                        className={`${fieldCls} pl-9`}
-                      />
-                    </div>
+                    <Input
+                      type="search"
+                      value={props.courseSearchQuery}
+                      onChange={(e) => props.setCourseSearchQuery(e.target.value)}
+                      placeholder="Search saved courses…"
+                      enterKeyHint="search"
+                      autoComplete="off"
+                      leftIcon={<Search className="h-4 w-4 text-text-tertiary" />}
+                      className={fwInputCls}
+                    />
                   )}
                   <Inset padding="sm" className="scrollbar-hide flex max-h-[300px] flex-col gap-2 overflow-y-auto">
                     {filteredSavedCourses.length === 0 ? (
@@ -473,14 +499,16 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         const par = course.holeConfigs.length > 0 ? totalPar(course.holeConfigs) : null;
                         const loc = [course.courseCity, course.courseState].filter(Boolean).join(', ');
                         return (
-                          <button
+                          <UIButton
                             key={course.id}
                             type="button"
+                            variant="ghost"
+                            haptic="none"
                             onClick={() => props.onSavedCourseSelect(isSel ? null : course.id)}
                             className={cn(
-                              'relative overflow-hidden rounded-fw-md border p-3.5 text-left shadow-flat transition-colors',
+                              'block h-auto w-full min-h-0 relative overflow-hidden rounded-[var(--fw-radius-md)] border p-3.5 text-left shadow-flat transition-colors hover:-translate-y-0',
                               isSel
-                                ? 'border-accent-500 bg-accent-50'
+                                ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
                                 : 'border-border-subtle bg-surface hover:border-border-strong hover:bg-surface-tint',
                             )}
                           >
@@ -523,7 +551,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                                 {relTime(course.lastUsedAt)}
                               </span>
                             </div>
-                          </button>
+                          </UIButton>
                         );
                       })
                     )}
@@ -594,14 +622,14 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 <div className="flex flex-col gap-4">
                   <div>
                     <label htmlFor="courseName" className={labelCls}>Course name *</label>
-                    <input
+                    <Input
                       id="courseName"
                       type="text"
                       value={setupData.courseName}
                       onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
                       enterKeyHint="next"
                       autoComplete="off"
-                      className={fieldCls}
+                      className={fwInputCls}
                       placeholder="Pebble Beach Golf Links"
                       required
                     />
@@ -609,27 +637,27 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="courseCity" className={labelCls}>City</label>
-                      <input
+                      <Input
                         id="courseCity"
                         type="text"
                         value={setupData.courseCity}
                         onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
                         enterKeyHint="next"
                         autoComplete="off"
-                        className={fieldCls}
+                        className={fwInputCls}
                         placeholder="Pebble Beach"
                       />
                     </div>
                     <div>
                       <label htmlFor="courseState" className={labelCls}>State</label>
-                      <input
+                      <Input
                         id="courseState"
                         type="text"
                         value={setupData.courseState}
                         onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
                         enterKeyHint="next"
                         autoComplete="off"
-                        className={fieldCls}
+                        className={fwInputCls}
                         placeholder="CA"
                         maxLength={2}
                       />
@@ -638,7 +666,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <div>
                       <label htmlFor="courseRating" className={labelCls}>Rating</label>
-                      <input
+                      <Input
                         id="courseRating"
                         type="number"
                         step="0.1"
@@ -647,13 +675,13 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         value={setupData.courseRating}
                         onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        className={fieldCls}
+                        className={fwInputCls}
                         placeholder="72.1"
                       />
                     </div>
                     <div>
                       <label htmlFor="courseSlope" className={labelCls}>Slope</label>
-                      <input
+                      <Input
                         id="courseSlope"
                         type="number"
                         inputMode="numeric"
@@ -661,37 +689,32 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         value={setupData.courseSlope}
                         onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        className={fieldCls}
+                        className={fwInputCls}
                         placeholder="133"
                         aria-label="Course slope rating"
                       />
                     </div>
                     <div className="col-span-2 sm:col-span-1">
-                      <label htmlFor="teesPlayed" className={labelCls}>Tees</label>
-                      <select
-                        id="teesPlayed"
+                      <Select
+                        label="Tees"
+                        options={TEE_OPTIONS}
                         value={setupData.teesPlayed}
-                        onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                        className={fieldCls}
-                      >
-                        <option>Championship</option>
-                        <option>Black</option>
-                        <option>Blue</option>
-                        <option>White</option>
-                        <option>Gold</option>
-                        <option>Red</option>
-                      </select>
+                        onChange={(value) => setSetupData({ ...setupData, teesPlayed: value })}
+                        className={fwInputCls}
+                      />
                     </div>
                   </div>
 
                   {courseMode === 'new' && (
-                    <button
+                    <UIButton
                       type="button"
+                      variant="ghost"
+                      haptic="none"
                       onClick={props.onToggleSaveCourse}
                       className={cn(
-                        'flex items-center gap-3 rounded-fw-md border p-3.5 text-left transition-colors',
+                        'h-auto w-full min-h-0 flex items-center justify-start gap-3 rounded-[var(--fw-radius-md)] border p-3.5 text-left transition-colors',
                         props.saveCourseChecked
-                          ? 'border-accent-500 bg-accent-50'
+                          ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
                           : 'border-border-subtle bg-surface-sunken hover:bg-surface-tint',
                       )}
                     >
@@ -711,7 +734,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                           Remembers hole pars, yardages &amp; course details
                         </span>
                       </span>
-                    </button>
+                    </UIButton>
                   )}
                 </div>
               )}
@@ -730,11 +753,13 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 <p className="font-fw-sans text-caption text-text-tertiary">Tap to start a qualifier round</p>
                 <Inset padding="sm" className="flex max-h-[240px] flex-col gap-2 overflow-y-auto">
                   {allActiveQualifiers.map((q) => (
-                    <button
+                    <UIButton
                       key={q.id}
                       type="button"
+                      variant="ghost"
+                      haptic="none"
                       onClick={() => props.onPickActiveQualifier(q)}
-                      className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-border-strong hover:bg-surface-tint"
+                      className="h-auto min-h-0 w-full flex items-center justify-between gap-3 rounded-[var(--fw-radius-md)] border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-border-strong hover:bg-surface-tint"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">{q.name}</p>
@@ -751,7 +776,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         </div>
                       </div>
                       <StatusPill tone="accent" size="sm">Play</StatusPill>
-                    </button>
+                    </UIButton>
                   ))}
                 </Inset>
               </Surface>
@@ -768,28 +793,24 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               <div className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="roundType" className={labelCls}>Round type</label>
-                    <select
-                      id="roundType"
+                    <Select
+                      label="Round type"
+                      options={ROUND_TYPE_OPTIONS}
                       value={setupData.roundType}
-                      onChange={(e) =>
-                        setSetupData({ ...setupData, roundType: e.target.value as FairwaySetupForm['roundType'] })
+                      onChange={(value) =>
+                        setSetupData({ ...setupData, roundType: value as FairwaySetupForm['roundType'] })
                       }
-                      className={fieldCls}
-                    >
-                      <option value="practice">Practice</option>
-                      <option value="tournament">Tournament</option>
-                      <option value="qualifier">Qualifier</option>
-                    </select>
+                      className={fwInputCls}
+                    />
                   </div>
                   <div>
                     <label htmlFor="roundDate" className={labelCls}>Date</label>
-                    <input
+                    <Input
                       id="roundDate"
                       type="date"
                       value={setupData.roundDate}
                       onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
-                      className={fieldCls}
+                      className={fwInputCls}
                       required
                     />
                   </div>
@@ -864,39 +885,31 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 ) : (
                   <div className="flex flex-col gap-4">
                     <div>
-                      <label htmlFor="qualifier" className={labelCls}>Select qualifier *</label>
-                      <select
-                        id="qualifier"
+                      <Select
+                        label="Select qualifier *"
+                        placeholder="Choose a qualifier…"
                         value={selectedQualifierId || ''}
-                        onChange={(e) => props.setSelectedQualifierId(e.target.value || null)}
-                        className={fieldCls}
-                        required
-                      >
-                        <option value="">Choose a qualifier…</option>
-                        {qualifiers.map((q) => (
-                          <option key={q.id} value={q.id}>
-                            {q.name} ({q.roundsCompleted}/{q.numRounds} rounds completed)
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => props.setSelectedQualifierId(value || null)}
+                        options={qualifiers.map((q) => ({
+                          value: q.id,
+                          label: `${q.name} (${q.roundsCompleted}/${q.numRounds} rounds completed)`,
+                        }))}
+                        className={fwInputCls}
+                      />
                     </div>
                     {selectedQualifierId && availableRounds.length > 0 && (
                       <div>
-                        <label htmlFor="roundNumber" className={labelCls}>Round number *</label>
-                        <select
-                          id="roundNumber"
-                          value={selectedRoundNumber || ''}
-                          onChange={(e) => props.setSelectedRoundNumber(Number(e.target.value) || null)}
-                          className={fieldCls}
-                          required
-                        >
-                          <option value="">Select round…</option>
-                          {availableRounds.map((num) => (
-                            <option key={num} value={num}>
-                              Round {num}
-                            </option>
-                          ))}
-                        </select>
+                        <Select
+                          label="Round number *"
+                          placeholder="Select round…"
+                          value={selectedRoundNumber ? String(selectedRoundNumber) : ''}
+                          onChange={(value) => props.setSelectedRoundNumber(Number(value) || null)}
+                          options={availableRounds.map((num) => ({
+                            value: String(num),
+                            label: `Round ${num}`,
+                          }))}
+                          className={fwInputCls}
+                        />
                       </div>
                     )}
                   </div>

@@ -11,7 +11,7 @@ export function HighlightsSection({ highlights }: HighlightsSectionProps) {
 
   return (
     <div
-      className="rounded-xl border border-warm-200 bg-white p-5"
+      className="rounded-xl border border-warm-200 bg-cream-50 p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.3s both' }}
     >
       <h3 className="text-sm font-medium text-warm-900 mb-4 flex items-center gap-2">

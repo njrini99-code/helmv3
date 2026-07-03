@@ -237,8 +237,7 @@ export const BASEBALL_METRIC_IDS = [
 /** Literal-union of every baseball metric id. */
 export type BaseballMetricId = (typeof BASEBALL_METRIC_IDS)[number];
 
-/** Total count, exported for tests / parity checks. */
-export const BASEBALL_METRIC_COUNT = BASEBALL_METRIC_IDS.length;
+
 
 /** Type-narrowing guard. */
 export function isBaseballMetricId(s: string): s is BaseballMetricId {

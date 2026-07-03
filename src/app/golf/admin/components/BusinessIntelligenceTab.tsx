@@ -122,7 +122,7 @@ function GlassCard({ children, className }: { children: ReactNode; className?: s
   return (
     <div
       className={cn(
-        'bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl p-5 md:p-6',
+        'glass-standard rounded-2xl p-5 md:p-6',
         'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
         className
       )}
@@ -244,7 +244,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* Executive Summary */}
-      <div className="rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] p-5 md:p-6">
+      <div className="rounded-2xl glass-standard p-5 md:p-6">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-warm-900">Platform Intelligence</h3>
@@ -300,7 +300,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
 
       {/* Sub-navigation pills */}
       <div className="sticky top-0 z-10 bg-cream-100/80 backdrop-blur-md py-2">
-      <div className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm border border-white/30 rounded-full w-full sm:w-fit overflow-x-auto">
+      <div className="flex items-center gap-1 p-1 glass-subtle rounded-full w-full sm:w-fit overflow-x-auto">
         {SUB_TABS.map((tab) => (
           <Button variant="ghost"
             key={tab.id}
@@ -308,7 +308,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
             className={cn(
               'flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap',
               activeSubTab === tab.id
-                ? 'bg-white shadow-sm text-warm-900'
+                ? 'bg-cream-50 shadow-sm text-warm-900'
                 : 'text-warm-500 hover:text-warm-700'
             )}
           >
@@ -795,7 +795,7 @@ function UsageSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                 {[...u.featureRetentionCorrelation]
                   .sort((a, b) => b.lift - a.lift)
                   .map((row) => (
-                    <tr key={row.feature} className="border-t border-white/10 hover:bg-white/30 transition-colors">
+                    <tr key={row.feature} className="border-t border-white/10 hover:bg-cream-100 transition-colors">
                       <td className="py-2 px-3 font-medium text-warm-800">{row.feature}</td>
                       <td className="py-2 px-3 text-right tabular-nums text-warm-700">{row.retentionWith}%</td>
                       <td className="py-2 px-3 text-right tabular-nums text-warm-500">{row.retentionWithout}%</td>
@@ -1194,7 +1194,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
               </thead>
               <tbody>
                 {sortedTeams.map((team) => (
-                  <tr key={team.teamId} className="border-t border-white/10 hover:bg-white/30 transition-colors">
+                  <tr key={team.teamId} className="border-t border-white/10 hover:bg-cream-100 transition-colors">
                     <td className="py-2 px-3 font-medium text-warm-800">{team.teamName}</td>
                     <td className="hidden md:table-cell py-2 px-3 text-warm-500 text-xs">{team.orgName || '--'}</td>
                     <td className="py-2 px-3 text-right tabular-nums font-semibold text-warm-900">{team.score}</td>
@@ -1320,7 +1320,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
               </thead>
               <tbody>
                 {h.atRiskAccounts.map((acct) => (
-                  <tr key={`${acct.type}-${acct.id}`} className="border-t border-white/10 hover:bg-white/30 transition-colors">
+                  <tr key={`${acct.type}-${acct.id}`} className="border-t border-white/10 hover:bg-cream-100 transition-colors">
                     <td className="py-2 px-3 font-medium text-warm-800">
                       {acct.name}
                       <span className="md:hidden block text-xs text-warm-400 font-normal mt-0.5">
@@ -1463,7 +1463,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                 {[...h.conversionProxies]
                   .sort((a, b) => b.score - a.score)
                   .map((proxy, i) => (
-                    <tr key={proxy.teamId} className="border-t border-white/10 hover:bg-white/30 transition-colors">
+                    <tr key={proxy.teamId} className="border-t border-white/10 hover:bg-cream-100 transition-colors">
                       <td className="hidden md:table-cell py-2 px-3 text-warm-400 tabular-nums text-xs">{i + 1}</td>
                       <td className="py-2 px-3 font-medium text-warm-800">{proxy.teamName}</td>
                       <td className="py-2 px-3 text-right tabular-nums font-semibold text-warm-900">{proxy.score}</td>

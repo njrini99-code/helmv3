@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { uploadBoxScoreCSV, resolveBoxScoreUpload } from '@/app/baseball/actions/games';
 import type { BaseballGame, BoxScoreBattingInput, BoxScorePitchingInput } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { IconUpload, IconCheck, IconRefresh } from '@/components/icons';
 import { BoxScoreEntry } from './BoxScoreEntry';
 
@@ -159,7 +162,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
             }}
             className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
               activeTab === tab
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-500 hover:text-warm-700'
             }`}
           >
@@ -198,7 +201,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
                       key={t}
                       onClick={() => setCsvType(t)}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${
-                        csvType === t ? 'bg-white text-warm-800 shadow-sm' : 'text-warm-500'
+                        csvType === t ? 'bg-cream-50 text-warm-800 shadow-sm' : 'text-warm-500'
                       }`}
                     >
                       {t}
@@ -230,7 +233,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
 
             {/* File input */}
             <div className="flex items-center gap-3">
-              <input
+              <Input
                 ref={fileInputRef}
                 type="file"
                 accept=".csv,text/csv"
@@ -249,7 +252,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
             </div>
 
             {/* Paste area */}
-            <textarea
+            <Textarea
               value={csvContent}
               onChange={(e) => setCsvContent(e.target.value)}
               placeholder={csvType === 'batting'
@@ -330,18 +333,16 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
                       <div key={u.csvName} className="flex items-center gap-3 bg-amber-50 rounded-lg px-3 py-2">
                         <span className="text-xs text-warm-700 font-mono flex-1 truncate">{u.csvName}</span>
                         <span className="text-warm-400 text-xs">→</span>
-                        <select
+                        <Select
                           value={u.resolvedPlayerId ?? ''}
-                          onChange={(e) => updateUnmatchedResolution(u.csvName, e.target.value)}
-                          className="text-xs border border-amber-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[160px]"
-                        >
-                          <option value="">Select player...</option>
-                          {teamPlayers.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.first_name} {p.last_name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => updateUnmatchedResolution(u.csvName, value)}
+                          placeholder="Select player..."
+                          options={teamPlayers.map((p) => ({
+                            value: p.id,
+                            label: `${p.first_name} ${p.last_name}`,
+                          }))}
+                          className="text-xs min-w-[160px]"
+                        />
                       </div>
                     ))}
                   </div>

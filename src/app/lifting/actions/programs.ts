@@ -23,6 +23,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { withLiftingAction, LiftingActionError } from '@/lib/lifting/with-lifting-action';
+import { logServerError } from '@/lib/server-error-logger';
 import type {
   HelmLiftingProgramInsert,
   HelmLiftingProgramUpdate,
@@ -436,19 +437,72 @@ export const publishProgram = withLiftingAction(
         player_visible_at: new Date().toISOString(),
       };
 
-      const { data: assignment, error: assignErr } = await fromUntyped(
-        supabase,
-        'helm_lifting_program_assignments',
-      )
-        .upsert(assignmentPayload, { onConflict: 'lift_day_id,athlete_id,scheduled_date' })
+      // helm_lifting_program_assignments has NO unique constraint on
+      // (lift_day_id, athlete_id, scheduled_date) — verified via pg_constraint
+      // + pg_indexes: only a PK on `id` and a partial unique index on
+      // `legacy_baseball_id WHERE legacy_baseball_id IS NOT NULL`. A
+      // .upsert({ onConflict: 'lift_day_id,athlete_id,scheduled_date' }) here
+      // matched no constraint and Postgres rejected it with 42P10 on EVERY
+      // call; the old `if (assignErr) continue;` silently swallowed that, so
+      // publishProgram always reported `{ success: true, count: 0 }` without
+      // ever reaching the per-athlete session-materialization loop below.
+      // Do a select-then-write instead of a DB upsert since there's no
+      // constraint to target. `athlete_id` is only non-null for single-player
+      // targets, so team/group assignments are looked up with `.is('athlete_id',
+      // null)` — matching real UNIQUE-NULL semantics (which the old broken
+      // onConflict target would never have honored correctly anyway: NULLs
+      // never conflict with each other under a real Postgres unique index).
+      const assignmentLookup = fromUntyped(supabase, 'helm_lifting_program_assignments')
         .select('id')
-        .single();
+        .eq('lift_day_id', day.id)
+        .eq('scheduled_date', scheduledDate)
+        .eq('organization_id', ctx.orgId);
+      const { data: existingAssignment } = await (
+        targetAthleteId
+          ? assignmentLookup.eq('athlete_id', targetAthleteId)
+          : assignmentLookup.is('athlete_id', null)
+      ).maybeSingle() as { data: { id: string } | null };
 
-      if (assignErr) {
-        // Non-fatal: log and continue.
-        continue;
+      let assignmentId: string;
+      if (existingAssignment) {
+        assignmentId = existingAssignment.id;
+        const { error: updateErr } = await fromUntyped(supabase, 'helm_lifting_program_assignments')
+          .update({
+            assignment_type: assignmentPayload.assignment_type,
+            group_id: assignmentPayload.group_id,
+            assigned_by_coach_id: assignmentPayload.assigned_by_coach_id,
+            status: assignmentPayload.status,
+            player_visible_at: assignmentPayload.player_visible_at,
+          })
+          .eq('id', assignmentId);
+        if (updateErr) {
+          await logServerError('publishProgram: failed to update existing program assignment', {
+            action: 'publishProgram',
+            featureArea: 'lifting-programs',
+            source: 'server_action',
+            handled: true,
+          });
+          continue;
+        }
+      } else {
+        const { data: inserted, error: insertErr } = await fromUntyped(
+          supabase,
+          'helm_lifting_program_assignments',
+        )
+          .insert(assignmentPayload)
+          .select('id')
+          .single() as { data: { id: string } | null; error: unknown };
+        if (insertErr || !inserted) {
+          await logServerError('publishProgram: failed to create program assignment', {
+            action: 'publishProgram',
+            featureArea: 'lifting-programs',
+            source: 'server_action',
+            handled: true,
+          });
+          continue;
+        }
+        assignmentId = inserted.id;
       }
-      const assignmentId = (assignment as { id: string }).id;
 
       // Materialise per-athlete sessions.
       for (const athleteId of athleteIds) {

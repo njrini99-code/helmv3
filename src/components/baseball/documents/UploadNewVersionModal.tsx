@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { IconX, IconUpload, IconFile } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 interface UploadNewVersionModalProps {
   open: boolean;
@@ -92,15 +93,18 @@ export function UploadNewVersionModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <button
+      <Button
+        variant="ghost"
         type="button"
         aria-label="Close modal"
-        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm border-0 p-0 cursor-default"
+        className="absolute inset-0 h-auto min-h-0 w-full rounded-none p-0 bg-warm-900/50 backdrop-blur-sm hover:bg-warm-900/50 active:scale-100 cursor-default"
         onClick={handleClose}
-      />
+      >
+        <span className="sr-only">Close modal</span>
+      </Button>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-clip">
+      <div className="relative bg-cream-50 rounded-2xl shadow-2xl max-w-lg w-full overflow-clip">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <div>
@@ -199,13 +203,12 @@ export function UploadNewVersionModal({
             <label htmlFor="unvm-change-notes" className="block text-sm font-medium text-warm-700 mb-2">
               Change Notes (optional)
             </label>
-            <textarea
+            <Textarea
               id="unvm-change-notes"
               value={changeNotes}
               onChange={(e) => setChangeNotes(e.target.value)}
               placeholder="Describe what changed in this version..."
               rows={3}
-              className="w-full px-4 py-2.5 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-warm-900 placeholder:text-warm-400 resize-none"
             />
           </div>
         </div>

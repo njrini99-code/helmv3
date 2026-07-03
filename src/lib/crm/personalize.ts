@@ -56,31 +56,4 @@ export async function personalizeEmail(
   return response.json();
 }
 
-export async function personalizeEmailBulk(
-  template: string,
-  subject: string,
-  coaches: CoachData[],
-  onProgress?: (current: number, total: number) => void
-): Promise<Map<string, PersonalizeResult>> {
-  const results = new Map<string, PersonalizeResult>();
-  
-  for (let i = 0; i < coaches.length; i++) {
-    const coach = coaches[i]!;
-    try {
-      const result = await personalizeEmail(template, subject, coach);
-      results.set(coach.name, result);
-    } catch (error) {
-      // Fallback: use the original template with merge tags replaced
-      results.set(coach.name, { subject, body: template });
-      console.error(`Personalization failed for ${coach.name}:`, error);
-    }
-    onProgress?.(i + 1, coaches.length);
-    
-    // Small delay between calls to avoid rate limiting
-    if (i < coaches.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-  }
-  
-  return results;
-}
+

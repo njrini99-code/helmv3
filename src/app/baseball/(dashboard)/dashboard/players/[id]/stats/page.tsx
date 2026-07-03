@@ -118,7 +118,7 @@ export default async function PlayerStatsPage({ params }: PageProps) {
           teamId={team.id}
         />
       ) : (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
+        <div className="glass-standard rounded-2xl p-8 text-center">
           <p className="text-sm text-warm-400">No season stats yet. Stats populate automatically from box scores.</p>
         </div>
       )}
@@ -137,7 +137,7 @@ export default async function PlayerStatsPage({ params }: PageProps) {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm text-center">
+    <div className="glass-standard rounded-2xl p-4 shadow-sm text-center">
       <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-1">{label}</p>
       <p className="text-2xl font-black text-warm-900 tabular-nums">{value}</p>
     </div>

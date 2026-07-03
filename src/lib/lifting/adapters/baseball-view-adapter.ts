@@ -17,26 +17,10 @@
 // =============================================================================
 
 import type {
-  BaseballStrengthGroupRow,
-  BaseballStrengthGroupMemberRow,
   BaseballLiftExerciseRow,
-  BaseballLiftExerciseSubstitutionRow,
-  BaseballLiftProgramRow,
-  BaseballLiftWeekRow,
-  BaseballLiftDayRow,
-  BaseballLiftSectionRow,
-  BaseballLiftPrescriptionRow,
-  BaseballLiftProgramAssignmentRow,
   BaseballLiftSessionRow,
   BaseballLiftSessionExerciseRow,
   BaseballLiftSetResultRow,
-  BaseballSorenessMapRow,
-  BaseballBodyweightEntryRow,
-  BaseballAvailabilityStatusRow,
-  BaseballStrengthMaxRow,
-  BaseballStrengthPrRow,
-  BaseballLiftImportRunRow,
-  BaseballLiftImportRowRow,
 } from '@/lib/types/baseball-lifting-v11';
 
 import type {
@@ -46,26 +30,10 @@ import type {
 } from '@/lib/types/baseball-lifting';
 
 import type {
-  HelmLiftingGroupRow,
-  HelmLiftingGroupMemberRow,
   HelmLiftingExerciseRow,
-  HelmLiftingExerciseSubstitutionRow,
-  HelmLiftingProgramRow,
-  HelmLiftingWeekRow,
-  HelmLiftingDayRow,
-  HelmLiftingSectionRow,
-  HelmLiftingPrescriptionRow,
-  HelmLiftingProgramAssignmentRow,
   HelmLiftingSessionRow,
   HelmLiftingSessionExerciseRow,
   HelmLiftingSetResultRow,
-  HelmLiftingSorenessMapRow,
-  HelmLiftingBodyweightEntryRow,
-  HelmLiftingAvailabilityStatusRow,
-  HelmLiftingMaxRow,
-  HelmLiftingPrRow,
-  HelmLiftingImportRunRow,
-  HelmLiftingImportRowRow,
   HelmLiftingReadinessCheckinRow,
 } from '@/lib/types/helm-lifting-data';
 
@@ -84,39 +52,9 @@ export type HelmToBaseballIdMap = Record<string, string>;
 // Groups
 // -----------------------------------------------------------------------------
 
-export function adaptGroup(
-  r: HelmLiftingGroupRow,
-  fallbackTeamId: string,
-): BaseballStrengthGroupRow {
-  return {
-    id: r.id,
-    team_id: r.team_id ?? fallbackTeamId,
-    name: r.name,
-    description: r.description,
-    group_type: r.group_type as BaseballStrengthGroupRow['group_type'],
-    rule_json: r.rule_json,
-    created_by_coach_id: r.created_by_coach_id,
-    is_active: r.is_active,
-    created_at: r.created_at,
-    updated_at: r.updated_at,
-  };
-}
 
-export function adaptGroupMember(
-  r: HelmLiftingGroupMemberRow,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballStrengthGroupMemberRow {
-  return {
-    id: r.id,
-    group_id: r.group_id,
-    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
-    source: r.source as BaseballStrengthGroupMemberRow['source'],
-    added_by_coach_id: r.added_by_coach_id,
-    starts_at: r.starts_at,
-    ends_at: r.ends_at,
-    created_at: r.created_at,
-  };
-}
+
+
 
 // -----------------------------------------------------------------------------
 // Exercises
@@ -159,138 +97,27 @@ export function adaptExercise(
   };
 }
 
-export function adaptExerciseSubstitution(
-  r: HelmLiftingExerciseSubstitutionRow,
-  fallbackTeamId: string,
-): BaseballLiftExerciseSubstitutionRow {
-  // helm_lifting_exercise_substitutions has NO team_id — required team scope
-  // is threaded in from the parent context via `fallbackTeamId`.
-  return {
-    id: r.id,
-    team_id: fallbackTeamId,
-    exercise_id: r.exercise_id,
-    substitute_exercise_id: r.substitute_exercise_id,
-    reason: r.reason,
-    created_by_coach_id: r.created_by_coach_id,
-    created_at: r.created_at,
-  };
-}
+
 
 // -----------------------------------------------------------------------------
 // Programs
 // -----------------------------------------------------------------------------
 
-export function adaptProgram(
-  r: HelmLiftingProgramRow,
-  fallbackTeamId: string,
-): BaseballLiftProgramRow {
-  return {
-    id: r.id,
-    team_id: r.team_id ?? fallbackTeamId,
-    name: r.name,
-    description: r.description,
-    phase: r.phase as BaseballLiftProgramRow['phase'],
-    goal: r.goal as BaseballLiftProgramRow['goal'],
-    created_by_coach_id: r.created_by_coach_id,
-    visibility: r.visibility as BaseballLiftProgramRow['visibility'],
-    status: r.status as BaseballLiftProgramRow['status'],
-    is_template: r.is_template,
-    start_date: r.start_date,
-    end_date: r.end_date,
-    created_at: r.created_at,
-    updated_at: r.updated_at,
-  };
-}
 
-export function adaptWeek(r: HelmLiftingWeekRow): BaseballLiftWeekRow {
-  return {
-    id: r.id,
-    program_id: r.program_id,
-    week_number: r.week_number,
-    name: r.name,
-    theme: r.theme,
-    deload: r.deload,
-    created_at: r.created_at,
-  };
-}
 
-export function adaptDay(r: HelmLiftingDayRow): BaseballLiftDayRow {
-  return {
-    id: r.id,
-    week_id: r.week_id,
-    day_number: r.day_number,
-    name: r.name,
-    day_type: r.day_type as BaseballLiftDayRow['day_type'],
-    baseball_context: r.sport_context as BaseballLiftDayRow['baseball_context'],
-    estimated_minutes: r.estimated_minutes,
-    created_at: r.created_at,
-  };
-}
 
-export function adaptSection(r: HelmLiftingSectionRow): BaseballLiftSectionRow {
-  return {
-    id: r.id,
-    lift_day_id: r.lift_day_id,
-    section_order: r.section_order,
-    name: r.name,
-    section_type: r.section_type as BaseballLiftSectionRow['section_type'],
-    instructions: r.instructions,
-    created_at: r.created_at,
-  };
-}
 
-export function adaptPrescription(r: HelmLiftingPrescriptionRow): BaseballLiftPrescriptionRow {
-  return {
-    id: r.id,
-    section_id: r.section_id,
-    exercise_id: r.exercise_id,
-    order_index: r.order_index,
-    prescription_type: r.prescription_type as BaseballLiftPrescriptionRow['prescription_type'],
-    sets: r.sets,
-    reps: r.reps,
-    load_value: r.load_value,
-    load_unit: r.load_unit,
-    percent_1rm: r.percent_1rm,
-    target_rpe: r.target_rpe,
-    target_rir: r.target_rir,
-    target_velocity_min: r.target_velocity_min,
-    target_velocity_max: r.target_velocity_max,
-    rest_seconds: r.rest_seconds,
-    tempo: r.tempo,
-    coaching_note: r.coaching_note,
-    substitution_group_id: r.substitution_group_id,
-    created_at: r.created_at,
-  };
-}
+
+
+
+
+
 
 // -----------------------------------------------------------------------------
 // Program assignment + materialized sessions
 // -----------------------------------------------------------------------------
 
-export function adaptProgramAssignment(
-  r: HelmLiftingProgramAssignmentRow,
-  fallbackTeamId: string,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballLiftProgramAssignmentRow {
-  return {
-    id: r.id,
-    team_id: r.team_id ?? fallbackTeamId,
-    program_id: r.program_id,
-    lift_day_id: r.lift_day_id,
-    assigned_by_coach_id: r.assigned_by_coach_id,
-    assignment_type: r.assignment_type as BaseballLiftProgramAssignmentRow['assignment_type'],
-    group_id: r.group_id,
-    player_id: r.athlete_id ? (athleteToPlayer[r.athlete_id] ?? r.athlete_id) : null,
-    event_id: null, // Lab assignments don't have a baseball_events FK
-    scheduled_date: r.scheduled_date,
-    scheduled_start: r.scheduled_start,
-    scheduled_end: r.scheduled_end,
-    status: r.status as BaseballLiftProgramAssignmentRow['status'],
-    player_visible_at: r.player_visible_at,
-    created_at: r.created_at,
-    updated_at: r.updated_at,
-  };
-}
+
 
 export function adaptSession(
   r: HelmLiftingSessionRow,
@@ -377,153 +204,27 @@ export function adaptSetResult(
 // Readiness family
 // -----------------------------------------------------------------------------
 
-export function adaptSorenessMap(
-  r: HelmLiftingSorenessMapRow,
-  // soreness maps carry organization_id, not a team scope — fallback unused.
-  _fallbackTeamId: string,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballSorenessMapRow {
-  return {
-    id: r.id,
-    checkin_id: r.checkin_id,
-    team_id: r.organization_id,
-    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
-    body_region: r.body_region,
-    side: r.side as BaseballSorenessMapRow['side'],
-    severity: r.severity,
-    note: r.note,
-    created_at: r.created_at,
-  };
-}
 
-export function adaptBodyweightEntry(
-  r: HelmLiftingBodyweightEntryRow,
-  // bodyweight entries carry organization_id, not a team scope — fallback unused.
-  _fallbackTeamId: string,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballBodyweightEntryRow {
-  return {
-    id: r.id,
-    team_id: r.organization_id,
-    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
-    entry_date: r.entry_date,
-    weight_lbs: r.weight_lbs,
-    source: r.source as BaseballBodyweightEntryRow['source'],
-    created_at: r.created_at,
-  };
-}
 
-export function adaptAvailabilityStatus(
-  r: HelmLiftingAvailabilityStatusRow,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballAvailabilityStatusRow {
-  return {
-    id: r.id,
-    team_id: r.organization_id,
-    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
-    status: r.status as BaseballAvailabilityStatusRow['status'],
-    reason_category: r.reason_category as BaseballAvailabilityStatusRow['reason_category'],
-    note: r.note,
-    visibility: r.visibility as BaseballAvailabilityStatusRow['visibility'],
-    starts_at: r.starts_at,
-    ends_at: r.ends_at,
-    created_by_coach_id: r.created_by_coach_id,
-    created_at: r.created_at,
-  };
-}
+
+
+
 
 // -----------------------------------------------------------------------------
 // Progression
 // -----------------------------------------------------------------------------
 
-export function adaptMax(
-  r: HelmLiftingMaxRow,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballStrengthMaxRow {
-  return {
-    id: r.id,
-    team_id: r.organization_id,
-    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
-    exercise_id: r.exercise_id,
-    max_type: r.max_type as BaseballStrengthMaxRow['max_type'],
-    value: r.value,
-    unit: r.unit,
-    test_date: r.test_date,
-    source: r.source as BaseballStrengthMaxRow['source'],
-    confidence: r.confidence,
-    created_at: r.created_at,
-    updated_at: r.updated_at,
-  };
-}
 
-export function adaptPr(
-  r: HelmLiftingPrRow,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballStrengthPrRow {
-  return {
-    id: r.id,
-    team_id: r.organization_id,
-    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
-    exercise_id: r.exercise_id,
-    pr_type: r.pr_type as BaseballStrengthPrRow['pr_type'],
-    value: r.value,
-    unit: r.unit,
-    achieved_at: r.achieved_at,
-    lift_session_id: r.lift_session_id,
-    verified_by_coach_id: r.verified_by_coach_id,
-    created_at: r.created_at,
-  };
-}
+
+
 
 // -----------------------------------------------------------------------------
 // Imports
 // -----------------------------------------------------------------------------
 
-export function adaptImportRun(
-  r: HelmLiftingImportRunRow,
-  // import runs carry organization_id, not a team scope — fallback unused.
-  _fallbackTeamId: string,
-): BaseballLiftImportRunRow {
-  return {
-    id: r.id,
-    team_id: r.organization_id,
-    created_by_coach_id: r.created_by_coach_id,
-    source: r.source as BaseballLiftImportRunRow['source'],
-    import_kind: r.import_kind as BaseballLiftImportRunRow['import_kind'],
-    file_name: r.file_name,
-    file_hash: r.file_hash,
-    mapping_json: r.mapping_json,
-    units_json: r.units_json,
-    total_rows: r.total_rows,
-    matched_rows: r.matched_rows,
-    unmatched_rows: r.unmatched_rows,
-    status: r.status as BaseballLiftImportRunRow['status'],
-    source_confidence: r.source_confidence as BaseballLiftImportRunRow['source_confidence'],
-    committed_at: r.committed_at,
-    rolled_back_at: r.rolled_back_at,
-    created_at: r.created_at,
-    updated_at: r.updated_at,
-  };
-}
 
-export function adaptImportRow(
-  r: HelmLiftingImportRowRow,
-  athleteToPlayer: HelmToBaseballIdMap,
-): BaseballLiftImportRowRow {
-  return {
-    id: r.id,
-    import_run_id: r.import_run_id,
-    team_id: r.organization_id,
-    row_number: r.row_number,
-    raw_json: r.raw_json,
-    matched_player_id: r.matched_athlete_id
-      ? (athleteToPlayer[r.matched_athlete_id] ?? r.matched_athlete_id)
-      : null,
-    match_status: r.match_status as BaseballLiftImportRowRow['match_status'],
-    validation_error: r.validation_error,
-    created_at: r.created_at,
-  };
-}
+
+
 
 // -----------------------------------------------------------------------------
 // Session → Assignment (used by the performance dashboard's Assignments tab)

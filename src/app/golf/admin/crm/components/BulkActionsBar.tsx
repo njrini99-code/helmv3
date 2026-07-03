@@ -38,8 +38,7 @@ export function BulkActionsBar({
       // Desktop (sm+): centered floating pill on a single row.
       'left-3 right-3 bottom-20 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-6',
       'flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 sm:gap-3 px-4 py-2.5 rounded-2xl',
-      'bg-white/80 backdrop-blur-xl text-warm-800 shadow-2xl',
-      'border border-white/20',
+      'glass-prominent text-warm-800 shadow-2xl',
       'animate-slide-up'
     )}>
       {/* Count */}

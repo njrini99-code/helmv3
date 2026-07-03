@@ -37,7 +37,7 @@ function rateBarColor(rate: number | null, kind: 'open' | 'click'): string {
 export function TemplatePerformanceTable({ rows, loading }: TemplatePerformanceTableProps) {
   if (loading) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+      <div className="glass-standard rounded-2xl shadow-glass p-5">
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-10 bg-warm-50 rounded-lg animate-pulse" />
@@ -49,7 +49,7 @@ export function TemplatePerformanceTable({ rows, loading }: TemplatePerformanceT
 
   if (rows.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-12 text-center">
+      <div className="glass-standard rounded-2xl shadow-glass p-12 text-center">
         <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-3">
           <IconFileText size={22} className="text-blue-400" />
         </div>
@@ -63,7 +63,7 @@ export function TemplatePerformanceTable({ rows, loading }: TemplatePerformanceT
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+    <div className="glass-standard rounded-2xl shadow-glass overflow-hidden">
       <div className="px-5 py-4 border-b border-warm-100/60 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-warm-900">Template Performance</h3>
         <span className="text-xs text-warm-500 tabular-nums">{rows.length} templates</span>

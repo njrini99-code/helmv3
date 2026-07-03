@@ -289,14 +289,6 @@ export function runBaseballComposites(player: LoadedPlayerMetrics): BaseballInsi
   ];
 }
 
-export const BASEBALL_COMPOSITE_GENERATOR_IDS = [
-  'composite_command_decay',
-  'composite_translation_gap',
-  'composite_lift_to_field_risk',
-] as const;
 
-export const BASEBALL_COMPOSITE_INSIGHT_TYPES = [
-  'coachhelm_composite_command_decay',
-  'coachhelm_composite_translation_gap',
-  'coachhelm_composite_lift_to_field_risk',
-] as const;
+
+

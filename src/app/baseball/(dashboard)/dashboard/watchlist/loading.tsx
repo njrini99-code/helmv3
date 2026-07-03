@@ -14,7 +14,7 @@ export default function WatchlistLoading() {
         </div>
         
         {/* Table skeleton */}
-        <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
+        <div className="bg-cream-50 rounded-2xl border border-warm-200 overflow-hidden">
           <div className="border-b border-warm-200 bg-warm-50 px-6 py-4">
             <div className="flex items-center gap-6">
               <div className="h-4 w-4 bg-warm-200 rounded animate-pulse" />

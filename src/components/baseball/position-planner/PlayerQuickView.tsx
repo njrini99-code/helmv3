@@ -80,7 +80,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
               'bg-cream-100/82 backdrop-blur-sm',
               'border border-warm-200/50',
               'text-warm-400 hover:text-warm-600',
-              'hover:bg-white active:bg-cream-100/75 hover:shadow-md',
+              'hover:bg-cream-100 active:bg-cream-100/75 hover:shadow-md',
               'transition-all duration-200'
             )}
           >

@@ -20,7 +20,7 @@ export function QualifierMockup() {
             <p className="text-amber-100 text-sm font-medium">SPRING QUALIFIER</p>
             <h3 className="text-2xl font-bold text-white">Round 2 of 3</h3>
           </div>
-          <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+          <div className="w-14 h-14 glass-standard rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
@@ -34,7 +34,7 @@ export function QualifierMockup() {
       </div>
 
       {/* Leaderboard */}
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-warm-200">
+      <div className="bg-cream-50 rounded-2xl shadow-xl overflow-hidden border border-warm-200">
         <div className="px-4 py-3 border-b border-warm-100 flex items-center justify-between">
           <span className="font-semibold text-warm-900">Leaderboard</span>
           <span className="text-xs text-warm-500">Top 5 qualify</span>
@@ -45,7 +45,7 @@ export function QualifierMockup() {
               key={player.rank}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 transition-colors",
-                i < 5 ? "bg-emerald-50/50" : ""
+                i < 5 ? "bg-primary-50/50" : ""
               )}
             >
               <div className={cn(
@@ -64,11 +64,11 @@ export function QualifierMockup() {
               <div className="text-right">
                 <p className={cn(
                   "font-semibold",
-                  typeof player.score === 'number' && player.score < 0 ? "text-emerald-600" : "text-warm-900"
+                  typeof player.score === 'number' && player.score < 0 ? "text-primary-600" : "text-warm-900"
                 )}>
                   {typeof player.score === 'number' && player.score < 0 ? player.score : player.score}
                 </p>
-                {player.trend === 'up' && <span className="text-xs text-emerald-500">↑</span>}
+                {player.trend === 'up' && <span className="text-xs text-primary-500">↑</span>}
                 {player.trend === 'down' && <span className="text-xs text-red-500">↓</span>}
               </div>
             </div>

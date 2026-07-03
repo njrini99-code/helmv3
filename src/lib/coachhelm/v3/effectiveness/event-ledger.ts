@@ -60,7 +60,7 @@ export interface TrustSignal {
 // ============================================================================
 
 /** A measured outcome "worked" when its improvement is strictly positive. */
-export const OUTCOME_WORKED_THRESHOLD = 0;
+const OUTCOME_WORKED_THRESHOLD = 0;
 
 /** How many of the most-recent measured outcomes feed the recent-trend signal. */
 export const RECENT_TREND_WINDOW = 3;

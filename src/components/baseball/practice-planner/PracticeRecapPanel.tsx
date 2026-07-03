@@ -37,6 +37,8 @@ import { useCallback, useEffect, useState, useTransition } from 'react';
 import { ClipboardCheck, Sparkles, Video, Swords, ListChecks, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   getPracticeObjectives,
   savePracticeRecap,
@@ -51,6 +53,7 @@ import {
 import { getBaseballMetricLabel } from '@/lib/coachhelm/baseball/metrics/registry';
 import type { BaseballObjectiveCompletionStatus } from '@/lib/types/baseball-practice-effectiveness';
 import type { BaseballScrimmageWithDetail } from '@/lib/types/baseball-practice-deep';
+import { NativeSelect } from '@/components/ui/native-select';
 
 interface RecapRosterPlayer {
   id: string;
@@ -305,7 +308,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                                 {o.repsPlanned != null && ` · ${o.repsPlanned} reps planned`}
                               </p>
                             </div>
-                            <select
+                            <NativeSelect
                               value={d.completionStatus}
                               onChange={(e) =>
                                 patch(o.id, {
@@ -313,71 +316,75 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                                 })
                               }
                               aria-label={`Completion status for ${o.focusArea}`}
-                              className="rounded-lg border border-warm-200 bg-white px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 bg-cream-50 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
                             >
                               {STATUS_OPTIONS.map((s) => (
                                 <option key={s.value} value={s.value}>
                                   {s.label}
                                 </option>
                               ))}
-                            </select>
+                            </NativeSelect>
                           </div>
 
                           {/* Reps + grading — only relevant when the block was run. */}
                           {run && (
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                              <label className="block">
+                              <label className="block" htmlFor={`reps-completed-${o.id}`}>
                                 <span className="mb-1 block text-micro font-medium text-warm-600">
                                   Reps done
                                 </span>
-                                <input
+                                <Input
+                                  id={`reps-completed-${o.id}`}
                                   type="number"
                                   min={0}
                                   value={d.repsCompleted}
                                   onChange={(e) => patch(o.id, { repsCompleted: e.target.value })}
-                                  className="w-full rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                                  className="w-full min-h-0 rounded-lg px-2 py-1 text-sm"
                                 />
                               </label>
-                              <label className="block">
+                              <label className="block" htmlFor={`reps-correct-${o.id}`}>
                                 <span className="mb-1 block text-micro font-medium text-warm-600">
                                   Reps correct
                                 </span>
-                                <input
+                                <Input
+                                  id={`reps-correct-${o.id}`}
                                   type="number"
                                   min={0}
                                   value={d.repsGradedCorrect}
                                   onChange={(e) => patch(o.id, { repsGradedCorrect: e.target.value })}
-                                  className="w-full rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                                  className="w-full min-h-0 rounded-lg px-2 py-1 text-sm"
                                 />
                               </label>
-                              <label className="col-span-2 block">
+                              <label className="col-span-2 block" htmlFor={`video-url-${o.id}`}>
                                 <span className="mb-1 block text-micro font-medium text-warm-600">
                                   Video link (optional)
                                 </span>
                                 <div className="flex items-center gap-1.5">
                                   <Video className="h-3.5 w-3.5 shrink-0 text-warm-400" />
-                                  <input
+                                  <Input
+                                    id={`video-url-${o.id}`}
                                     type="url"
                                     value={d.videoUrl}
                                     onChange={(e) => patch(o.id, { videoUrl: e.target.value })}
                                     placeholder="https://…"
-                                    className="w-full rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                                    className="w-full min-h-0 rounded-lg px-2 py-1 text-sm"
                                   />
                                 </div>
                               </label>
                             </div>
                           )}
 
-                          <label className="mt-2 block">
+                          <label className="mt-2 block" htmlFor={`notes-${o.id}`}>
                             <span className="mb-1 block text-micro font-medium text-warm-600">
                               Completion notes (optional)
                             </span>
-                            <textarea
+                            <Textarea
+                              id={`notes-${o.id}`}
                               value={d.notes}
                               onChange={(e) => patch(o.id, { notes: e.target.value })}
                               rows={2}
                               placeholder="What you actually saw — what to repeat or change next time."
-                              className="w-full resize-none rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="w-full rounded-lg px-2 py-1.5 text-sm"
                             />
                           </label>
 
@@ -434,53 +441,57 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                             </div>
                           </div>
                           <div className="grid grid-cols-3 gap-2">
-                            <label className="block">
+                            <label className="block" htmlFor={`blue-score-${s.id}`}>
                               <span className="mb-1 block text-micro font-medium text-warm-600">
                                 Blue / offense
                               </span>
-                              <input
+                              <Input
+                                id={`blue-score-${s.id}`}
                                 type="number"
                                 min={0}
                                 value={d.blueScore}
                                 onChange={(e) => patchScrim(s.id, { blueScore: e.target.value })}
-                                className="w-full rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                                className="w-full min-h-0 rounded-lg px-2 py-1 text-sm"
                               />
                             </label>
-                            <label className="block">
+                            <label className="block" htmlFor={`white-score-${s.id}`}>
                               <span className="mb-1 block text-micro font-medium text-warm-600">
                                 White / defense
                               </span>
-                              <input
+                              <Input
+                                id={`white-score-${s.id}`}
                                 type="number"
                                 min={0}
                                 value={d.whiteScore}
                                 onChange={(e) => patchScrim(s.id, { whiteScore: e.target.value })}
-                                className="w-full rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                                className="w-full min-h-0 rounded-lg px-2 py-1 text-sm"
                               />
                             </label>
-                            <label className="block">
+                            <label className="block" htmlFor={`innings-played-${s.id}`}>
                               <span className="mb-1 block text-micro font-medium text-warm-600">
                                 Innings
                               </span>
-                              <input
+                              <Input
+                                id={`innings-played-${s.id}`}
                                 type="number"
                                 min={0}
                                 value={d.inningsPlayed}
                                 onChange={(e) => patchScrim(s.id, { inningsPlayed: e.target.value })}
-                                className="w-full rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                                className="w-full min-h-0 rounded-lg px-2 py-1 text-sm"
                               />
                             </label>
                           </div>
-                          <label className="mt-2 block">
+                          <label className="mt-2 block" htmlFor={`result-note-${s.id}`}>
                             <span className="mb-1 block text-micro font-medium text-warm-600">
                               Outing note (optional)
                             </span>
-                            <textarea
+                            <Textarea
+                              id={`result-note-${s.id}`}
                               value={d.resultNote}
                               onChange={(e) => patchScrim(s.id, { resultNote: e.target.value })}
                               rows={2}
                               placeholder="Who threw well, situational outcomes, what to carry into the next outing."
-                              className="w-full resize-none rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="w-full rounded-lg px-2 py-1.5 text-sm"
                             />
                           </label>
                           <div className="mt-2 flex items-center gap-2">
@@ -592,23 +603,25 @@ function RecapTaskComposer({
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-warm-200 bg-white/80 p-2.5">
-      <label className="block">
+    <div className="space-y-2 rounded-lg glass-standard p-2.5">
+      <label className="block" htmlFor={`task-title-${objective.id}`}>
         <span className="mb-1 block text-micro font-medium text-warm-600">Task title</span>
-        <input
+        <Input
+          id={`task-title-${objective.id}`}
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+          className="w-full min-h-0 rounded-lg px-2 py-1 text-sm"
         />
       </label>
-      <label className="block">
+      <label className="block" htmlFor={`task-due-${objective.id}`}>
         <span className="mb-1 block text-micro font-medium text-warm-600">Due (optional)</span>
-        <input
+        <Input
+          id={`task-due-${objective.id}`}
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+          className="min-h-0 rounded-lg px-2 py-1 text-sm"
         />
       </label>
 

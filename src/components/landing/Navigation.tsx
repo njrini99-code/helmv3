@@ -46,7 +46,7 @@ export function Navigation() {
             <Link
               key={link.href}
               href={link.href}
-              className="w-24 py-2 rounded-full text-sm font-medium tracking-[-0.01em] text-center text-neutral-900 hover:bg-white/40 transition-colors duration-200"
+              className="w-24 py-2 rounded-full text-sm font-medium tracking-[-0.01em] text-center text-neutral-900 hover:bg-cream-100 transition-colors duration-200"
             >
               {link.name}
             </Link>
@@ -59,7 +59,7 @@ export function Navigation() {
             href="/golf/login"
             onClick={requestLoginTransition}
             className="hidden md:block px-4 py-2 rounded-full text-sm font-medium tracking-[-0.01em]
-                       text-neutral-900 hover:bg-white/40 border border-white/40
+                       text-neutral-900 hover:bg-cream-100 border border-white/40
                        backdrop-blur-xl bg-[rgba(237,232,221,0.55)]
                        transition-colors duration-200 ease-out"
           >

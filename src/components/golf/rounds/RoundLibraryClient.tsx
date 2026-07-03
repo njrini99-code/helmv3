@@ -226,7 +226,7 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
         transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.32, ease: PREMIUM_EASE, delay: staggerIndex * 0.05 })}
         className={cn(
           'group/card relative overflow-clip rounded-2xl',
-          'border border-warm-200/55 bg-white',
+          'border border-warm-200/55 bg-cream-50',
           // shared hover choreography from globals.css
           'surface-tile-hover',
           'shadow-[0_1px_2px_hsl(42_14%_22%/0.04),0_4px_10px_hsl(42_14%_22%/0.05)]',
@@ -593,7 +593,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-200',
                       active
-                        ? 'bg-white text-warm-900 shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]'
+                        ? 'bg-cream-50 text-warm-900 shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]'
                         : 'text-warm-500 hover:text-warm-700',
                     )}
                   >
@@ -617,10 +617,10 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                 onValueChange={(v) => v && setGrouping(v as Grouping)}
                 className="text-eyebrow"
               >
-                <ToggleGroupItem value="month" className="px-3 py-1.5 rounded-full data-[state=on]:bg-white data-[state=on]:text-warm-900 data-[state=on]:shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]">
+                <ToggleGroupItem value="month" className="px-3 py-1.5 rounded-full data-[state=on]:bg-cream-50 data-[state=on]:text-warm-900 data-[state=on]:shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]">
                   Month
                 </ToggleGroupItem>
-                <ToggleGroupItem value="week" className="px-3 py-1.5 rounded-full data-[state=on]:bg-white data-[state=on]:text-warm-900 data-[state=on]:shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]">
+                <ToggleGroupItem value="week" className="px-3 py-1.5 rounded-full data-[state=on]:bg-cream-50 data-[state=on]:text-warm-900 data-[state=on]:shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]">
                   Week
                 </ToggleGroupItem>
               </ToggleGroup>

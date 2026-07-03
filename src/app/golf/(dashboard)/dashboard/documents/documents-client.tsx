@@ -36,6 +36,8 @@ import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
 import { VersionHistory } from '@/components/golf/documents/VersionHistory';
 import { UploadNewVersionModal } from '@/components/golf/documents/UploadNewVersionModal';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 
 interface Document {
   id: string;
@@ -578,7 +580,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {!currentFolder && (
               <Button variant="ghost"
                 onClick={() => setShowNewFolderInput(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-cream-50 border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 <IconFolderPlus size={16} />
                 <span className="hidden sm:inline">New Folder</span>
@@ -619,7 +621,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         )}
 
         {/* Hidden file input */}
-        <input
+        <Input
           ref={fileInputRef}
           type="file"
           multiple
@@ -631,7 +633,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {/* Create Folder Modal */}
         {showNewFolderInput && (
           <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+            <div className="bg-cream-50 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
@@ -648,7 +650,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
               <div className="px-6 py-5">
                 <label htmlFor="docs-new-folder-name" className="block text-xs font-medium text-warm-600 mb-1.5">Folder Name</label>
-                <input
+                <Input
                   id="docs-new-folder-name"
                   type="text"
                   value={newFolderName}
@@ -657,7 +659,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   placeholder="e.g. Practice Plans"
                   enterKeyHint="done"
                   autoComplete="off"
-                  className="w-full px-3 py-2.5 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
                   // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in create-folder dialog
                   autoFocus
                 />
@@ -668,7 +669,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
                 <Button variant="ghost"
                   onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
-                  className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
+                  className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-cream-100 transition-colors text-sm"
                 >
                   Cancel
                 </Button>
@@ -703,7 +704,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <Button variant="ghost"
                     key={folder}
                     onClick={() => { setCurrentFolder(folder); setSearchQuery(''); setCategoryFilter(''); }}
-                    className="group/folder flex items-center gap-3 p-3.5 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
+                    className="group/folder flex items-center gap-3 p-3.5 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-cream-100 hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
                   >
                     <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0 group-hover/folder:bg-primary-100 transition-colors">
                       <IconFolder size={18} className="text-primary-600" />
@@ -724,24 +725,19 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
             {/* Search */}
             <div className="relative flex-1">
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-              <input
+              <Input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={currentFolder && currentFolder !== '' ? `Search in ${currentFolder}...` : 'Search documents...'}
                 enterKeyHint="search"
                 autoComplete="off"
-                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/35 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-cream-100/68 backdrop-blur-sm transition-colors"
+                variant="glass"
+                leftIcon={<IconSearch size={16} />}
+                clearable
+                onClear={() => setSearchQuery('')}
+                className="pl-9"
               />
-              {searchQuery && (
-                <IconButton variant="default" aria-label="Close"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
-                >
-                  <IconX size={14} />
-                </IconButton>
-              )}
             </div>
 
             {/* Category pills — compact inline */}
@@ -760,7 +756,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       'px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
                       categoryFilter === cat
                         ? 'bg-primary-600 text-white shadow-sm'
-                        : 'bg-cream-100/82 text-warm-600 border border-warm-200 hover:bg-white hover:border-warm-300'
+                        : 'bg-cream-100/82 text-warm-600 border border-warm-200 hover:bg-cream-100 hover:border-warm-300'
                     )}
                   >
                     {CATEGORY_LABELS[cat] ?? cat}
@@ -1053,7 +1049,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* ─── Upload Modal (Multi-file) ────────────────────────────── */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden">
+          <div className="bg-cream-50 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <div>
@@ -1076,15 +1072,16 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               )}
 
               {/* Drop zone / Add more files */}
-              <button
+              <Button
+                variant="ghost"
                 type="button"
-                className="border-2 border-dashed border-warm-200 rounded-xl p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-colors cursor-pointer w-full"
+                className="border-2 border-dashed border-warm-200 rounded-xl p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-colors cursor-pointer w-full h-auto flex-col"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <IconPlus size={24} className="mx-auto text-warm-400 mb-2" />
                 <p className="text-sm font-medium text-warm-600">Add more files</p>
                 <p className="text-xs text-warm-400 mt-0.5">Click or drag & drop</p>
-              </button>
+              </Button>
 
               {/* Pending files list */}
               {pendingFiles.length > 0 && (
@@ -1098,11 +1095,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                         {getFileIcon(pf.file.type, 16)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <input
+                        <Input
                           type="text"
                           value={pf.title}
                           onChange={(e) => updatePendingTitle(pf.id, e.target.value)}
-                          className="w-full bg-transparent text-sm font-medium text-warm-900 border-b border-transparent focus:border-primary-500 focus:outline-none px-0 py-0.5"
+                          className="bg-transparent border-0 border-b border-transparent rounded-none min-h-0 px-0 py-0.5 focus:ring-0 focus-visible:ring-0"
                           placeholder="Document title"
                         />
                         <p className="text-xs text-warm-400 mt-0.5">
@@ -1123,31 +1120,29 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               {/* Shared settings */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="upload-category" className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
-                  <select
+                  <NativeSelect
                     id="upload-category"
+                    label="Category"
                     value={uploadCategory}
                     onChange={(e) => setUploadCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">None</option>
                     {CATEGORIES.map(cat => <option key={cat} value={cat}>{CATEGORY_LABELS[cat] ?? cat}</option>)}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div>
-                  <label htmlFor="upload-folder" className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
-                  <select
+                  <NativeSelect
                     id="upload-folder"
+                    label="Folder"
                     value={uploadFolder}
                     onChange={(e) => setUploadFolder(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">No folder</option>
                     {folders.map(f => <option key={f} value={f}>{f}</option>)}
                     {currentFolder && currentFolder !== '' && !folders.includes(currentFolder) && (
                       <option value={currentFolder}>{currentFolder} (new)</option>
                     )}
-                  </select>
+                  </NativeSelect>
                 </div>
               </div>
 
@@ -1192,7 +1187,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
               <Button variant="ghost"
                 onClick={() => { setShowUploadModal(false); setPendingFiles([]); setError(null); }}
-                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-cream-100 transition-colors text-sm"
               >
                 Cancel
               </Button>
@@ -1211,7 +1206,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* ─── Edit Modal ───────────────────────────────────────────── */}
       {showEditModal && editingDocument && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
+          <div className="bg-cream-50 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Edit Document</h2>
               <IconButton variant="default" aria-label="Close" onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
@@ -1225,23 +1220,21 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               )}
 
               <div>
-                <label htmlFor="edit-doc-title" className="block text-xs font-medium text-warm-600 mb-1.5">Title *</label>
-                <input
+                <Input
                   id="edit-doc-title"
+                  label="Title *"
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-base md:text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
                 />
               </div>
 
               <div>
-                <label htmlFor="edit-doc-description" className="block text-xs font-medium text-warm-600 mb-1.5">Description</label>
-                <textarea
+                <Textarea
                   id="edit-doc-description"
+                  label="Description"
                   value={editForm.description}
                   onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
                   rows={3}
                   placeholder="Optional description"
                 />
@@ -1249,44 +1242,46 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="edit-doc-category" className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
-                  <select
+                  <NativeSelect
                     id="edit-doc-category"
+                    label="Category"
                     value={editForm.category}
                     onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">No category</option>
                     {CATEGORIES.map(cat => <option key={cat} value={cat}>{CATEGORY_LABELS[cat] ?? cat}</option>)}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div>
-                  <label htmlFor="edit-doc-folder" className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
-                  <select
+                  <NativeSelect
                     id="edit-doc-folder"
+                    label="Folder"
                     value={editForm.folder}
                     onChange={(e) => setEditForm(prev => ({ ...prev, folder: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">No folder</option>
                     {folders.map(f => <option key={f} value={f}>{f}</option>)}
                     {currentFolder && currentFolder !== '' && !folders.includes(currentFolder) && (
                       <option value={currentFolder}>{currentFolder} (new)</option>
                     )}
-                  </select>
+                  </NativeSelect>
                 </div>
               </div>
 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   role="checkbox"
                   aria-checked={editForm.is_public}
                   onClick={() => setEditForm(prev => ({ ...prev, is_public: !prev.is_public }))}
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer ${editForm.is_public ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}
+                  className={cn(
+                    'w-5 h-5 min-h-0 p-0 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer',
+                    editForm.is_public ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400',
+                  )}
                 >
                   {editForm.is_public && <IconCheck size={12} className="text-white" />}
-                </button>
+                </Button>
                 <span className="text-sm text-warm-700">Visible to players</span>
               </label>
 
@@ -1306,7 +1301,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
               <Button variant="ghost"
                 onClick={() => { setShowEditModal(false); setEditingDocument(null); }}
-                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-cream-100 transition-colors text-sm"
               >
                 Cancel
               </Button>
@@ -1363,7 +1358,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* ─── Version History ──────────────────────────────────────── */}
       {showVersionHistory && versionHistoryDocument && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-cream-50 rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Version History</h2>
               <IconButton variant="default" onClick={closeVersionHistory} aria-label="Close" className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
@@ -1396,7 +1391,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* ─── Move to Folder Modal ──────────────────────────────────── */}
       {showMoveModal && movingDocument && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+          <div className="bg-cream-50 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Move to Folder</h2>
               <IconButton variant="default" aria-label="Close"
@@ -1410,24 +1405,23 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <p className="text-sm text-warm-500 mb-3">
                 Moving &ldquo;{movingDocument.title}&rdquo;
               </p>
-              <label htmlFor="move-doc-folder" className="block text-xs font-medium text-warm-600 mb-1.5">Destination Folder</label>
-              <select
+              <NativeSelect
                 id="move-doc-folder"
+                label="Destination Folder"
                 value={moveTargetFolder}
                 onChange={(e) => setMoveTargetFolder(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
               >
                 <option value="">No folder (unfiled)</option>
                 {folders.map(f => <option key={f} value={f}>{f}</option>)}
                 {currentFolder && currentFolder !== '' && !folders.includes(currentFolder) && (
                   <option value={currentFolder}>{currentFolder} (new)</option>
                 )}
-              </select>
+              </NativeSelect>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
               <Button variant="ghost"
                 onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
-                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-cream-100 transition-colors text-sm"
               >
                 Cancel
               </Button>

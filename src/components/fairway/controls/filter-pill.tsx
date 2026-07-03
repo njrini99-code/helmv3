@@ -80,7 +80,7 @@ export const FilterPill = forwardRef<HTMLButtonElement, FilterPillProps>(functio
       {typeof count === 'number' && (
         <span
           className={cn(
-            'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 tabular-nums font-fw-mono text-[11px]',
+            'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 tabular-nums font-fw-mono text-eyebrow',
             selected ? 'bg-accent-500/15 text-accent-700' : 'bg-surface-sunken text-text-tertiary',
           )}
         >

@@ -185,7 +185,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
         >
           <IconSearch size={16} className="text-warm-400" />
           <span className="flex-1 text-left truncate">Search...</span>
-          <kbd className="hidden sm:inline-flex px-1.5 py-0.5 text-micro font-medium text-warm-400 bg-white rounded border border-warm-200">
+          <kbd className="hidden sm:inline-flex px-1.5 py-0.5 text-micro font-medium text-warm-400 bg-cream-50 rounded border border-warm-200">
             ⌘K
           </kbd>
         </Button>
@@ -248,7 +248,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
             {showUserMenu && (
               <div className="absolute right-0 top-full mt-2 w-64 glass-standard rounded-2xl shadow-xl border border-warm-200/45 overflow-clip z-50 animate-fade-in">
                 {/* User info */}
-                <div className="p-4 border-b border-white/20 bg-white/30">
+                <div className="p-4 border-b border-warm-200/40 glass-subtle">
                   <div className="flex items-center gap-3">
                     <Avatar name={name} size="md" src={avatarUrl} />
                     <div className="min-w-0 flex-1">

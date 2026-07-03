@@ -31,11 +31,11 @@ export function BaseballOps({ baseball }: Props) {
     : 0;
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-100 hover:shadow-card-hover">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg">
+          <div className="p-2 bg-cream-50 rounded-lg">
             <span className="text-lg">&#9918;</span>
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Baseball Operations</h3>
@@ -45,19 +45,19 @@ export function BaseballOps({ baseball }: Props) {
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">{baseball.totalPlayers}</p>
           <p className="text-micro text-warm-400 mt-0.5">Players</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">{baseball.totalCoaches}</p>
           <p className="text-micro text-warm-400 mt-0.5">Coaches</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">{baseball.commitments}</p>
           <p className="text-micro text-warm-400 mt-0.5">Commitments</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className={cn(
             'text-xl font-semibold tabular-nums',
             bbOnboardingRate > 60 ? 'text-primary-700' : 'text-amber-600'
@@ -98,19 +98,19 @@ export function BaseballOps({ baseball }: Props) {
       <div className="pt-4 border-t border-warm-100">
         <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Platform</span>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5">
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Teams</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.totalTeams}</span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Events</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.totalEvents}</span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Camps</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.totalCamps}</span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Recruiting</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.recruitingActivatedPlayers}</span>
           </div>
@@ -121,19 +121,19 @@ export function BaseballOps({ baseball }: Props) {
       <div className="pt-4 border-t border-warm-100">
         <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Activity (30d)</span>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5">
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Videos</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.videos30d}</span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Messages</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.messages30d}</span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Engagement</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.engagementEvents30d}</span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+          <div className="bg-cream-50 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Convos</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.conversations30d}</span>
           </div>

@@ -182,29 +182,9 @@ export function useReducedMotionGuard(): boolean {
 /** Re-export the raw framer-motion hook so consumers have a single import site. */
 export { useReducedMotion };
 
-/**
- * Collapse a transition to an instant settle when reduced motion is on.
- * Preserves the exact transition for normal users; returns a 0-duration
- * transition (no easing travel) for reduced-motion users.
- */
-export function reducedTransition(
-  reduce: boolean,
-  transition: Transition,
-): Transition {
-  return reduce ? { duration: 0 } : transition;
-}
 
-/**
- * Given a target keyframe set, return `false` (skip the entrance) when reduced
- * motion is on, otherwise the keyframes. Mirrors the `Reveal` primitive's
- * `initial={reduce ? false : {...}}` idiom in a single call.
- */
-export function reducedInitial<T extends TargetAndTransition | string>(
-  reduce: boolean,
-  value: T,
-): T | false {
-  return reduce ? false : value;
-}
+
+
 
 // -----------------------------------------------------------------------------
 // 5 motion primitives (W3A) — each ships with reduced-motion built in.
@@ -250,10 +230,7 @@ export const celebrationVariants: Variants = {
   visible: { opacity: 1, scale: 1, y: 0 },
 };
 
-export function celebrationTransition(reduce: boolean): Transition {
-  if (reduce) return { duration: 0 };
-  return { type: 'spring', stiffness: 200, damping: 14 };
-}
+
 
 /**
  * Success checkmark — the SVG path-draw used on submit/save confirmation.
@@ -303,18 +280,7 @@ export function pulseDots(reduce: boolean, delay = 0): {
   };
 }
 
-export function segmentShift(reduce: boolean): {
-  animate: TargetAndTransition;
-  transition: Transition;
-} {
-  if (reduce) {
-    return { animate: { backgroundPositionX: '0%' }, transition: { duration: 0 } };
-  }
-  return {
-    animate: { backgroundPositionX: ['0%', '100%'] },
-    transition: { duration: 1.4, repeat: Infinity, ease: 'linear' },
-  };
-}
+
 
 /**
  * Collapse / expand — the height-auto reveal used by accordions, filter panels,
@@ -326,10 +292,7 @@ export const collapseVariants: Variants = {
   expanded: { height: 'auto', opacity: 1 },
 };
 
-export function collapseTransition(reduce: boolean): Transition {
-  if (reduce) return { duration: 0 };
-  return { duration: DURATION.short, ease: EASE_CINEMATIC };
-}
+
 
 // -----------------------------------------------------------------------------
 // Legacy iOS-spring vocabulary (migrated from the deleted `src/lib/motion.ts`).

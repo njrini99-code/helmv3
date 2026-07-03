@@ -7,6 +7,8 @@ import { signupAction } from '@/app/golf/actions/auth';
 import { Users, GraduationCap, AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 type Role = 'player' | 'coach';
 
@@ -146,11 +148,11 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
             onClick={() => setRole('player')}
             aria-pressed={role === 'player'}
             className={`
-              p-4 rounded-[10px] border-2 transition-colors
+              p-4 rounded-md border-2 transition-colors
               flex flex-col items-center gap-2
               ${role === 'player'
                 ? 'border-primary-600 bg-primary-50'
-                : 'border-warm-200 bg-white hover:border-warm-300'
+                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
               }
             `}
           >
@@ -165,11 +167,11 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
             onClick={() => setRole('coach')}
             aria-pressed={role === 'coach'}
             className={`
-              p-4 rounded-[10px] border-2 transition-colors
+              p-4 rounded-md border-2 transition-colors
               flex flex-col items-center gap-2
               ${role === 'coach'
                 ? 'border-primary-600 bg-primary-50'
-                : 'border-warm-200 bg-white hover:border-warm-300'
+                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
               }
             `}
           >
@@ -187,7 +189,7 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
           <label htmlFor="golf-signup-firstname" className="text-sm font-medium text-warm-700">
             First name
           </label>
-          <input
+          <Input
             id="golf-signup-firstname"
             type="text"
             value={formData.firstName}
@@ -195,20 +197,13 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
             placeholder="John"
             required
             autoComplete="given-name"
-            className="
-              w-full px-4 py-3
-              bg-white border border-warm-200 rounded-[10px]
-              text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-              transition-colors duration-200
-              focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-            "
           />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="golf-signup-lastname" className="text-sm font-medium text-warm-700">
             Last name
           </label>
-          <input
+          <Input
             id="golf-signup-lastname"
             type="text"
             value={formData.lastName}
@@ -216,13 +211,6 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
             placeholder="Doe"
             required
             autoComplete="family-name"
-            className="
-              w-full px-4 py-3
-              bg-white border border-warm-200 rounded-[10px]
-              text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-              transition-colors duration-200
-              focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-            "
           />
         </div>
       </div>
@@ -230,28 +218,13 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       {/* Graduation Year (players only) */}
       {role === 'player' && (
         <div className="space-y-1.5">
-          <label htmlFor="golf-signup-gradyear" className="text-sm font-medium text-warm-700">
-            Expected graduation year
-          </label>
-          <select
-            id="golf-signup-gradyear"
+          <Select
+            label="Expected graduation year"
+            options={graduationYearOptions.map((year) => ({ value: String(year), label: String(year) }))}
             value={formData.graduationYear}
-            onChange={(e) => setFormData({ ...formData, graduationYear: e.target.value })}
-            required
-            className="
-              w-full px-4 py-3
-              bg-white border border-warm-200 rounded-[10px]
-              text-warm-900 text-base lg:text-sm
-              transition-colors duration-200
-              focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-              appearance-none
-            "
-          >
-            <option value="">Select year</option>
-            {graduationYearOptions.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+            onChange={(value) => setFormData({ ...formData, graduationYear: value })}
+            placeholder="Select year"
+          />
           {formData.graduationYear && (() => {
             const approxAge = currentYear - (Number(formData.graduationYear) - 18);
             return approxAge >= 13 && approxAge <= 17 ? (
@@ -269,7 +242,7 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
         <label htmlFor="golf-signup-email" className="text-sm font-medium text-warm-700">
           Email
         </label>
-        <input
+        <Input
           id="golf-signup-email"
           type="email"
           value={formData.email}
@@ -277,13 +250,6 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
           placeholder="you@example.com"
           required
           autoComplete="email"
-          className="
-            w-full px-4 py-3
-            bg-white border border-warm-200 rounded-[10px]
-            text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-            transition-colors duration-200
-            focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-          "
         />
       </div>
 
@@ -292,7 +258,7 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
         <label htmlFor="golf-signup-password" className="text-sm font-medium text-warm-700">
           Password
         </label>
-        <input
+        <Input
           id="golf-signup-password"
           type="password"
           value={formData.password}
@@ -301,13 +267,6 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
           required
           minLength={8}
           autoComplete="new-password"
-          className="
-            w-full px-4 py-3
-            bg-white border border-warm-200 rounded-[10px]
-            text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-            transition-colors duration-200
-            focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-          "
         />
         <PasswordStrengthIndicator password={formData.password} />
       </div>
@@ -330,9 +289,9 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       >
         {isLoading ? (
           <div className="flex items-center gap-1" role="status" aria-label="Creating account">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             <span className="sr-only">Creating account...</span>
           </div>
         ) : (

@@ -156,7 +156,7 @@ export function FairwayRoundSubmitOverlay({
                         ? { duration: 0 }
                         : { delay: 0.15, duration: 0.5, type: 'spring', stiffness: 200, damping: 14 }
                     }
-                    className="relative mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-white/20 backdrop-blur-sm"
+                    className="relative mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-text-on-accent/20 backdrop-blur-sm"
                   >
                     <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden />
                   </m.div>

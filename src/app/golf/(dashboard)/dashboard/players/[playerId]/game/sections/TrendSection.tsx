@@ -122,7 +122,7 @@ function TrendTooltip({ active, payload }: Partial<TooltipContentProps<number, s
   const p = payload[0]!.payload as Point;
   if (typeof p.score_to_par !== 'number') return null;
   return (
-    <div className="rounded-lg bg-white shadow-md border border-warm-200 px-3 py-2">
+    <div className="rounded-lg bg-cream-50 shadow-md border border-warm-200 px-3 py-2">
       <p className="text-eyebrow text-warm-500 uppercase tracking-wide">{p.round_date}</p>
       <p className="text-sm font-medium text-warm-900 tabular-nums">
         {p.score_to_par === 0

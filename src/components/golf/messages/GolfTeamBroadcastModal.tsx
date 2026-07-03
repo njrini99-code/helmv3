@@ -189,9 +189,9 @@ export function GolfTeamBroadcastModal({
             {creating ? (
               <>
                 <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                 </span>
                 Creating...
               </>
@@ -362,7 +362,7 @@ export function GolfTeamBroadcastModal({
                 .map(player => (
                   <div
                     key={player.id}
-                    className="flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-full border border-warm-200"
+                    className="flex items-center gap-2 px-2.5 py-1.5 bg-cream-50 rounded-full border border-warm-200"
                   >
                     <Avatar name={player.name} src={player.avatarUrl} size="xs" />
                     <span className="text-xs font-medium text-warm-700">{player.name.split(' ')[0]}</span>

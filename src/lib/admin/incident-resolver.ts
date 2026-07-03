@@ -116,6 +116,15 @@ export async function archiveIncidentsByCriteria(
       .from('admin_events')
       .update({
         severity: 'info',
+        // The live incident feed (fetchErrorsTab/fetchTriageQueue) filters
+        // on `.eq('resolved', false)`, not on severity — the same column the
+        // real super-admin resolve path (resolve_admin_event RPC) sets. Without
+        // this, an "archived" row keeps `resolved = false` and stays in the
+        // Bridge feed until the window's 30-day cap ages it out. `resolved_by`
+        // is deliberately left untouched: it's a FK to public.users(id), and
+        // this path has no invoking admin user to attribute it to.
+        resolved: true,
+        resolved_at: resolvedAt,
         metadata: nextMetadata as unknown as Json,
       })
       .eq('id', row.id);

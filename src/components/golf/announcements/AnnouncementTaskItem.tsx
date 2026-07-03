@@ -59,7 +59,7 @@ export function AnnouncementTaskItem({
         'w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all',
         isCompleted
           ? 'bg-primary-50/50 border border-primary-200/60'
-          : 'bg-white border border-warm-200 hover:border-warm-300 hover:shadow-sm cursor-pointer'
+          : 'bg-cream-50 border border-warm-200 hover:border-warm-300 hover:shadow-sm cursor-pointer'
       )}
     >
       {/* Checkbox */}

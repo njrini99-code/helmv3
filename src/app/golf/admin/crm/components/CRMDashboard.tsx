@@ -205,7 +205,7 @@ export function CRMDashboard({
       </div>
 
       {/* ── Today's Focus ── */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+      <div className="glass-standard rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
             <IconTarget size={16} className="text-primary-600" />
@@ -232,7 +232,7 @@ export function CRMDashboard({
 
       {/* ── Getting Started (only when all new leads) ── */}
       {allNewLeads && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-sm text-center">
+        <div className="glass-standard rounded-2xl p-8 shadow-sm text-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-5">
             <IconRocket size={28} className="text-primary-600" />
           </div>
@@ -255,7 +255,7 @@ export function CRMDashboard({
             <Button variant="ghost"
               onClick={() => handleResearchNext(25)}
               disabled={processing === 'research'}
-              className="w-full sm:w-auto px-5 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2.5 bg-cream-100 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <IconArrowRight size={16} />
@@ -275,7 +275,7 @@ export function CRMDashboard({
       {/* ── Pipeline Funnel + Conference Breakdown ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pipeline Funnel — 2 cols */}
-        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+        <div className="lg:col-span-2 glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -321,7 +321,7 @@ export function CRMDashboard({
                     </div>
                     <div className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                       {widthPct <= 15 && stage.count > 0 && (
-                        <span className="text-label font-semibold text-warm-600 bg-white/80 rounded px-1.5 py-0.5">{stage.pct}%</span>
+                        <span className="text-label font-semibold text-warm-600 bg-cream-50 rounded px-1.5 py-0.5">{stage.pct}%</span>
                       )}
                     </div>
                   </div>
@@ -335,7 +335,7 @@ export function CRMDashboard({
         </div>
 
         {/* Conference Breakdown — 1 col */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+        <div className="glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
@@ -376,7 +376,7 @@ export function CRMDashboard({
       {/* ── Three-column: Follow-ups + Stale Leads + Activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Today's Follow-ups */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+        <div className="glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
               <IconClock size={16} className="text-amber-600" />
@@ -411,7 +411,7 @@ export function CRMDashboard({
         </div>
 
         {/* Stale Leads */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+        <div className="glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
               <IconWarning size={16} className="text-red-600" />
@@ -446,7 +446,7 @@ export function CRMDashboard({
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+        <div className="glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
               <IconZap size={16} className="text-primary-600" />
@@ -475,7 +475,7 @@ export function CRMDashboard({
 
       {/* ── Email Performance ── */}
       {emailStats && emailStats.total_sent > 0 && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+        <div className="glass-standard rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
               <IconMail size={16} className="text-blue-600" />
@@ -518,7 +518,7 @@ export function CRMDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Quick Actions — cleaner callout */}
         {!allNewLeads && (
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5">
+          <div className="glass-standard rounded-2xl shadow-sm p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
@@ -541,7 +541,7 @@ export function CRMDashboard({
                 </Button>
                 <Button variant="ghost"
                   onClick={() => onNavigate('pipeline')}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cream-100 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
                   <IconChartBar size={16} /> Open Pipeline
                 </Button>
@@ -552,7 +552,7 @@ export function CRMDashboard({
 
         {/* Division Breakdown */}
         <div className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm',
+          'glass-standard rounded-2xl p-5 shadow-sm',
           allNewLeads && 'lg:col-span-2'
         )}>
           <div className="flex items-center gap-2.5 mb-4">
@@ -593,8 +593,7 @@ function KPICard({
   return (
     <div className={cn(
       'relative overflow-hidden',
-      'bg-white/70 backdrop-blur-xl',
-      'border border-white/20 rounded-2xl',
+      'glass-standard rounded-2xl',
       'shadow-sm',
       'p-5',
       'transition-[transform,box-shadow] duration-200 group',

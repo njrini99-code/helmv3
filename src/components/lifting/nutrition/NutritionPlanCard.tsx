@@ -266,26 +266,4 @@ export function NutritionPlanCard({ card, orgId, onAcknowledged }: Props) {
 // Skeleton export for loading states
 // ---------------------------------------------------------------------------
 
-export function NutritionPlanCardSkeleton() {
-  return (
-    <div className="animate-pulse overflow-hidden rounded-2xl border border-warm-200 bg-cream-50">
-      <div className="h-0.5 w-full bg-warm-100" />
-      <div className="p-5">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 h-4.5 w-4.5 rounded bg-warm-100" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-24 rounded bg-warm-100" />
-            <div className="h-4 w-48 rounded bg-warm-100" />
-            <div className="h-3 w-64 rounded bg-warm-100" />
-          </div>
-        </div>
-        <div className="mt-4 pl-7">
-          <div className="h-9 w-36 rounded-xl bg-warm-100" />
-        </div>
-        <div className="mt-4 pl-7">
-          <div className="h-8 w-28 rounded-xl bg-warm-100" />
-        </div>
-      </div>
-    </div>
-  );
-}
+

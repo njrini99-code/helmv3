@@ -1,6 +1,7 @@
 'use client'
 
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { m, LazyMotion, domAnimation, AnimatePresence, useReducedMotion } from 'framer-motion'
@@ -96,7 +97,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
         onClick={() => setIsOpen(!isOpen)}
         className={`md:hidden relative z-toast w-10 h-10 flex items-center justify-center
                    rounded-xl transition-all duration-200 active:scale-90
-                   ${isOpen ? 'bg-transparent' : isDarkBg ? 'bg-white/10' : 'bg-warm-900/5'}`}
+                   ${isOpen ? 'bg-transparent' : isDarkBg ? 'glass-nav' : 'bg-warm-900/5'}`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
       >
         <div className="w-[18px] h-3.5 relative flex flex-col justify-center items-center">
@@ -104,21 +105,21 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 rotate-45 w-full'
-                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} -translate-y-[5px] w-full`
+                : `${isDarkBg ? 'bg-cream-50' : 'bg-warm-800'} -translate-y-[5px] w-full`
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-200 ease-out
               ${isOpen
                 ? 'bg-warm-700 opacity-0 scale-x-0'
-                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} opacity-100 w-3/4 -translate-x-[2px]`
+                : `${isDarkBg ? 'bg-cream-50' : 'bg-warm-800'} opacity-100 w-3/4 -translate-x-[2px]`
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 -rotate-45 w-full'
-                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} translate-y-[5px] w-full`
+                : `${isDarkBg ? 'bg-cream-50' : 'bg-warm-800'} translate-y-[5px] w-full`
               }`}
           />
         </div>
@@ -287,7 +288,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           <label htmlFor="mobile-email" className="block text-body-sm font-medium text-warm-600 mb-2">
                             Email address
                           </label>
-                          <input
+                          <Input
                             ref={emailInputRef}
                             id="mobile-email"
                             type="email"

@@ -24,6 +24,7 @@
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { IconMenu, IconSearch } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import type { Breadcrumb, ShellLinkComponent } from './types';
 
 const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
@@ -145,18 +146,19 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
       <div className="flex h-16 items-center gap-3 px-6 lg:px-8">
         {/* Mobile menu affordance */}
         {onMenuOpen && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={onMenuOpen}
             aria-label="Open navigation"
             className={cn(
-              'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md md:hidden',
+              'flex h-10 w-10 min-h-0 flex-shrink-0 items-center justify-center rounded-fw-md p-0 md:hidden',
               'text-text-secondary transition-colors [transition-duration:var(--fw-dur-fast)]',
               'hover:bg-surface-sunken hover:text-text-primary active:translate-y-[0.5px]',
             )}
           >
             <IconMenu size={20} aria-hidden />
-          </button>
+          </Button>
         )}
 
         {/* Location indicator.
@@ -184,13 +186,14 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
         <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-3 md:flex-none md:basis-[340px]">
           {searchSlot ??
             (onSearchOpen && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={onSearchOpen}
                 aria-label="Open command menu"
                 aria-keyshortcuts="Meta+K Control+K"
                 className={cn(
-                  'group flex h-10 w-full max-w-[340px] items-center gap-2.5 rounded-fw-sm px-3',
+                  'group flex h-10 min-h-0 w-full max-w-[340px] items-center justify-start gap-2.5 rounded-fw-sm px-3',
                   'bg-surface-sunken/80 text-text-tertiary',
                   'border border-border-subtle',
                   'transition-[color,background-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
@@ -207,7 +210,7 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
                 >
                   ⌘K
                 </kbd>
-              </button>
+              </Button>
             ))}
         </div>
 

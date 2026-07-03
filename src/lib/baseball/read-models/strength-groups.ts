@@ -197,20 +197,23 @@ export async function getStrengthGroupsBoard(
     }
   }
 
+  // ---- Helm Lifting Lab org + athlete-id map (resolved once, reused below) --
+  // W2-G rewire: submitReadinessCheckin / createLiftAssignment / logLiftResult
+  // (lifting.ts) write ONLY to the unified helm_lifting_* tables now — the
+  // legacy baseball_readiness_checkins / baseball_lift_sessions tables are
+  // write-dead. Resolved once here and reused for both the soreness section
+  // and the lift-history section below.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const athleteMap = liftCtx && playerIds.length
+    ? await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds)
+    : {};
+  const athleteToPlayer = new Map<string, string>();
+  for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+  const teamAthleteIds = Object.values(athleteMap);
+
   // ---- Soreness: max severity on each player's latest check-in -------------
   const sorenessByPlayer = new Map<string, number>();
   {
-    // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
-    // helm_lifting_readiness_checkins now — the legacy baseball_readiness_
-    // checkins table is write-dead.
-    const liftCtx = await resolveBaseballLiftingOrg(teamId);
-    const athleteMap = liftCtx && playerIds.length
-      ? await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds)
-      : {};
-    const athleteToPlayer = new Map<string, string>();
-    for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
-    const teamAthleteIds = Object.values(athleteMap);
-
     const latestCheckin = new Map<string, string>();
     if (liftCtx && teamAthleteIds.length) {
       const { data: checkins } = await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
@@ -259,15 +262,17 @@ export async function getStrengthGroupsBoard(
   // ---- Lift history in window: completed vs incomplete ----------------------
   const completedLift = new Set<string>();
   const incompleteLift = new Set<string>();
-  {
-    const { data: sessions } = await supabase
-      .from('baseball_lift_sessions')
-      .select('player_id, status, scheduled_date')
-      .eq('team_id', teamId)
-      .gte('scheduled_date', sinceYmd);
-    for (const s of (sessions ?? []) as Array<{ player_id: string; status: string }>) {
-      if (s.status === 'completed') completedLift.add(s.player_id);
-      else if (s.status === 'assigned' || s.status === 'missed') incompleteLift.add(s.player_id);
+  if (liftCtx && teamAthleteIds.length) {
+    const { data: sessions } = await fromUntyped(supabase, 'helm_lifting_sessions')
+      .select('athlete_id, status, scheduled_date')
+      .eq('organization_id', liftCtx.organizationId)
+      .in('athlete_id', teamAthleteIds)
+      .gte('scheduled_date', sinceYmd) as { data: Array<{ athlete_id: string; status: string }> | null };
+    for (const s of sessions ?? []) {
+      const pid = athleteToPlayer.get(s.athlete_id);
+      if (!pid) continue;
+      if (s.status === 'completed') completedLift.add(pid);
+      else if (s.status === 'assigned' || s.status === 'missed') incompleteLift.add(pid);
     }
   }
 

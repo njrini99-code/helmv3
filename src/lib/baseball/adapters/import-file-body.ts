@@ -19,7 +19,7 @@
 // FileReader); `decodeImportBody` runs server-side in the parse path.
 // =============================================================================
 
-export const BINARY_BODY_PREFIX = 'baseballhelm:b64:';
+const BINARY_BODY_PREFIX = 'baseballhelm:b64:';
 
 export type DecodedImportBody =
   | { kind: 'text'; text: string }

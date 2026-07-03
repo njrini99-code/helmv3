@@ -3,6 +3,8 @@
 import { useState, useId } from 'react';
 import { IconX, IconUpload, IconFile } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Drawer,
   DrawerContent,
@@ -162,7 +164,7 @@ export function UploadNewVersionModal({
               }
             `}
           >
-            <input
+            <Input
               type="file"
               onChange={handleFileSelect}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -211,7 +213,7 @@ export function UploadNewVersionModal({
             <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-text-secondary mb-2">
               Change Notes (optional)
             </label>
-            <textarea
+            <Textarea
               id={`${uid}-notes`}
               value={changeNotes}
               onChange={(e) => setChangeNotes(e.target.value)}

@@ -225,7 +225,7 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'all'
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
             )}
           >
@@ -237,7 +237,7 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'by-player'
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
             )}
           >
@@ -249,7 +249,7 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'by-type'
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
             )}
           >
@@ -261,7 +261,7 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'timeline'
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
             )}
           >

@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils';
 import type { Coach, CoachStatus } from '../crm-config';
 import { IconX, IconMail, IconPhone, IconCalendar, IconPlus, IconVideo, IconUsers, IconNote } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ContactLogModalProps {
   coach: Coach;
@@ -43,7 +46,11 @@ const STATUS_OPTIONS: { value: CoachStatus; label: string }[] = [
   { value: 'nurture', label: 'Nurture' },
 ];
 
-const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const inputClass = 'w-full bg-cream-50 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const STATUS_UPDATE_OPTIONS = [
+  { value: '', label: 'Keep current status' },
+  ...STATUS_OPTIONS,
+];
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalProps) {
@@ -153,7 +160,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="glass-prominent rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div>
@@ -226,7 +233,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                         'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm transition-colors',
                         newLog.contact_type === type.value
                           ? 'bg-primary-500 text-white'
-                          : 'bg-white border border-warm-200 hover:bg-warm-50 text-warm-700'
+                          : 'bg-cream-50 border border-warm-200 hover:bg-warm-50 text-warm-700'
                       )}
                     >
                       <TypeIcon size={14} />
@@ -236,7 +243,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 })}
               </div>
 
-              <textarea
+              <Textarea
                 placeholder="Notes about this contact..."
                 value={newLog.notes}
                 onChange={(e) => setNewLog({ ...newLog, notes: e.target.value })}
@@ -247,7 +254,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor={`${uid}-next-action`} className={labelClass}>Next Action</label>
-                  <input
+                  <Input
                     id={`${uid}-next-action`}
                     type="text"
                     placeholder="Follow up with demo offer..."
@@ -258,7 +265,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 </div>
                 <div>
                   <label htmlFor={`${uid}-followup-date`} className={labelClass}>Follow-up Date</label>
-                  <input
+                  <Input
                     id={`${uid}-followup-date`}
                     type="date"
                     value={newLog.next_action_date}
@@ -270,24 +277,20 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
 
               <div>
                 <label htmlFor={`${uid}-update-status`} className={labelClass}>Update Status (optional)</label>
-                <select
-                  id={`${uid}-update-status`}
+                <Select
+                  options={STATUS_UPDATE_OPTIONS}
                   value={newLog.update_status}
-                  onChange={(e) => setNewLog({ ...newLog, update_status: e.target.value as CoachStatus | '' })}
-                  className={`${inputClass} bg-white/60`}
-                >
-                  <option value="">Keep current status</option>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setNewLog({ ...newLog, update_status: value as CoachStatus | '' })}
+                  placeholder="Keep current status"
+                  className={inputClass}
+                />
               </div>
 
               <div className="flex justify-end gap-3">
                 <Button variant="ghost"
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="bg-cream-50 border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-100 transition-colors"
                 >
                   Cancel
                 </Button>

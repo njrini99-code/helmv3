@@ -127,15 +127,19 @@ export function PlayerStatusBadge({
 
       {isOpen && (
         <>
-          <button
+          <Button
             type="button"
-            className="fixed inset-0 z-40 cursor-default border-none bg-transparent"
+            variant="ghost"
+            haptic="none"
+            className="fixed inset-0 z-40 cursor-default border-none bg-transparent p-0 min-h-0 rounded-none"
             aria-label="Close"
             onClick={() => setIsOpen(false)}
-          />
+          >
+            <span className="sr-only">Close</span>
+          </Button>
           <div className={cn(
             'absolute left-0 mt-2 w-40 z-50',
-            'bg-white rounded-2xl',
+            'bg-cream-50 rounded-2xl',
             'border border-warm-200 shadow-lg shadow-warm-200/50',
             'overflow-hidden',
             'animate-in fade-in-0 zoom-in-95 duration-150'

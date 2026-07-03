@@ -424,17 +424,18 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
-                  className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] cursor-pointer hover:text-primary-700 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] text-left"
+                  className="p-0 h-auto rounded-none font-medium text-warm-900 text-body tracking-[-0.005em] cursor-pointer hover:bg-transparent hover:text-primary-700 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] text-left"
                   onClick={() => onClick?.(insight.id)}
                 >
                   {title}
-                </button>
+                </Button>
                 <WhyPopover insight={insight} />
               </div>
 
-              <p className="text-[12.5px] text-warm-600 mt-1.5 line-clamp-2 leading-relaxed">{content}</p>
+              <p className="text-body-sm text-warm-600 mt-1.5 line-clamp-2 leading-relaxed">{content}</p>
 
               <MovementPill insight={insight} className="mt-2" />
 
@@ -595,7 +596,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
               <MovementPill insight={insight} />
               <OutcomeBadge insight={insight} />
             </div>
-            <p className="mt-4 text-[14.5px] text-warm-700 leading-relaxed">{content}</p>
+            <p className="mt-4 text-body text-warm-700 leading-relaxed">{content}</p>
           </div>
 
           <EvidencePanel evidence={insight.evidence} compact={false} />

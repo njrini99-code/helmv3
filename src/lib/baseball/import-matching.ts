@@ -99,7 +99,7 @@ export const AUTO_MATCH_THRESHOLD = 0.7;
  * jersey/class-corroborated name beats a bare fuzzy name but never outranks a
  * deterministic id or a clean exact match.
  */
-export const NAME_JERSEY_CLASS_CONFIDENCE = 0.92;
+const NAME_JERSEY_CLASS_CONFIDENCE = 0.92;
 
 /**
  * The per-signal boost applied when a fuzzy/exact name candidate is corroborated

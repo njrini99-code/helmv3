@@ -22,6 +22,7 @@ import {
 import type { Coach, CoachStatus } from '../crm-config';
 import { format, addDays, addHours } from 'date-fns';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
 
 // ============================================================================
 // TYPES
@@ -195,7 +196,7 @@ export function QuickActionsPanel({
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
-        className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="glass-prominent rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -216,7 +217,7 @@ export function QuickActionsPanel({
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+              className="p-2 rounded-xl hover:bg-cream-50/10 transition-colors"
             >
               <IconX size={18} className="text-white/70" aria-hidden="true" />
             </IconButton>
@@ -420,24 +421,24 @@ export function QuickActionsPanel({
                   <label htmlFor={`${uid}-sched-date`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Date
                   </label>
-                  <input
+                  <Input
                     id={`${uid}-sched-date`}
                     type="date"
                     value={scheduleForm.date}
                     onChange={(e) => setScheduleForm(f => ({ ...f, date: e.target.value }))}
-                    className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                    className="bg-cream-50/60"
                   />
                 </div>
                 <div>
                   <label htmlFor={`${uid}-sched-time`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Time
                   </label>
-                  <input
+                  <Input
                     id={`${uid}-sched-time`}
                     type="time"
                     value={scheduleForm.time}
                     onChange={(e) => setScheduleForm(f => ({ ...f, time: e.target.value }))}
-                    className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                    className="bg-cream-50/60"
                   />
                 </div>
               </div>
@@ -470,12 +471,12 @@ export function QuickActionsPanel({
                 <label htmlFor={`${uid}-sched-title`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                   Title
                 </label>
-                <input
+                <Input
                   id={`${uid}-sched-title`}
                   type="text"
                   value={scheduleForm.title}
                   onChange={(e) => setScheduleForm(f => ({ ...f, title: e.target.value }))}
-                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                  className="bg-cream-50/60"
                   placeholder="Event title"
                 />
               </div>
@@ -485,12 +486,12 @@ export function QuickActionsPanel({
                 <label htmlFor={`${uid}-sched-url`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                   Meeting Link <span className="text-warm-400 font-normal">(optional)</span>
                 </label>
-                <input
+                <Input
                   id={`${uid}-sched-url`}
                   type="url"
                   value={scheduleForm.meetingUrl}
                   onChange={(e) => setScheduleForm(f => ({ ...f, meetingUrl: e.target.value }))}
-                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                  className="bg-cream-50/60"
                   placeholder="https://zoom.us/j/..."
                 />
               </div>
@@ -547,11 +548,11 @@ export function QuickActionsPanel({
                 <label htmlFor={`${uid}-log-notes`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                   Notes
                 </label>
-                <textarea
+                <Textarea
                   id={`${uid}-log-notes`}
                   value={logForm.notes}
                   onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
-                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 resize-none"
+                  className="bg-cream-50/60"
                   rows={3}
                   placeholder="What happened during this contact?"
                 />
@@ -563,12 +564,12 @@ export function QuickActionsPanel({
                   <label htmlFor={`${uid}-log-next-action`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Next Action
                   </label>
-                  <input
+                  <Input
                     id={`${uid}-log-next-action`}
                     type="text"
                     value={logForm.nextAction}
                     onChange={(e) => setLogForm(f => ({ ...f, nextAction: e.target.value }))}
-                    className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                    className="bg-cream-50/60"
                     placeholder="e.g., Follow up call"
                   />
                 </div>
@@ -576,12 +577,12 @@ export function QuickActionsPanel({
                   <label htmlFor={`${uid}-log-followup`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Follow-up Date
                   </label>
-                  <input
+                  <Input
                     id={`${uid}-log-followup`}
                     type="date"
                     value={logForm.nextActionDate}
                     onChange={(e) => setLogForm(f => ({ ...f, nextActionDate: e.target.value }))}
-                    className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                    className="bg-cream-50/60"
                   />
                 </div>
               </div>
@@ -612,10 +613,10 @@ export function QuickActionsPanel({
               </h3>
 
               {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-              <textarea autoFocus
+              <Textarea autoFocus
                 value={noteForm}
                 onChange={(e) => setNoteForm(e.target.value)}
-                className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 resize-none"
+                className="bg-cream-50/60"
                 rows={6}
                 placeholder="Add notes about this coach..."
               />

@@ -117,7 +117,7 @@ export default async function MyStandingPage() {
         <div className="mx-auto w-full max-w-[860px] px-4 py-2 md:px-6">
           <CoachHelmShell
             active="standing"
-            role="player"
+            {...{ role: 'player' as const }}
             eyebrow="My Standing"
             title="Where you stack up"
             description={
@@ -288,7 +288,7 @@ function EmptyState() {
     <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
       <div
         aria-hidden="true"
-        className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 border border-white/30 shadow-glass"
+        className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl glass-standard shadow-glass"
       >
         <BarChart3 className="h-6 w-6 text-warm-400" strokeWidth={1.5} />
       </div>

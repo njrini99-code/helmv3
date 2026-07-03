@@ -168,13 +168,13 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
               {auditLog.totalEvents7d} events (7d)
             </span>
           </div>
-          <div className="flex gap-1 bg-white/50 rounded-lg p-0.5">
+          <div className="flex gap-1 glass-subtle rounded-lg p-0.5">
             <Button variant="ghost"
               onClick={() => setFilter('all')}
               className={cn(
                 'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
                 filter === 'all'
-                  ? 'bg-white shadow-sm text-warm-800'
+                  ? 'bg-cream-50 shadow-sm text-warm-800'
                   : 'text-warm-400 hover:text-warm-600'
               )}
             >
@@ -185,7 +185,7 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
               className={cn(
                 'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
                 filter === 'admin'
-                  ? 'bg-white shadow-sm text-warm-800'
+                  ? 'bg-cream-50 shadow-sm text-warm-800'
                   : 'text-warm-400 hover:text-warm-600'
               )}
             >

@@ -63,7 +63,7 @@ function DroppableTimeSlot({
         'h-16 relative transition-all duration-200',
         'border-b border-warm-200/[0.12]',
         // Subtle alternating row tint instead of hard borders
-        isEvenHour ? 'bg-white/30' : 'bg-warm-50/20',
+        isEvenHour ? 'bg-cream-50/40' : 'bg-warm-50/20',
         isCurrentDay && 'bg-primary-50/25',
         'hover:bg-cream-100/60 active:bg-cream-100/75',
         isOver && 'bg-primary-100/50'
@@ -478,7 +478,7 @@ export function WeekView({
                           'h-16 relative',
                           'transition-colors duration-150',
                           'border-b border-warm-200/[0.12]',
-                          isEvenHour ? 'bg-white/30' : 'bg-warm-50/20',
+                          isEvenHour ? 'bg-cream-50/40' : 'bg-warm-50/20',
                           isCurrentDay && 'bg-primary-50/25',
                           'hover:bg-cream-100/60 active:bg-cream-100/75',
                         )}

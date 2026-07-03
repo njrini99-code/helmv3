@@ -157,40 +157,43 @@ export function CauseRow({
       data-cause-id={cause.insight_id}
     >
       {/* Disclosure header — matches the cockpit ComprehensiveDetail toggle. */}
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="group flex w-full items-center justify-between gap-3 rounded-card border border-border-subtle bg-surface px-4 py-3 text-left outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group block h-auto min-h-0 w-full rounded-card border border-border-subtle bg-surface px-4 py-3 text-left font-normal outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
-        <span className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
-            {cause.title}
+        <span className="flex w-full items-center justify-between gap-3">
+          <span className="flex min-w-0 flex-1 items-center gap-3">
+            <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+              {cause.title}
+            </span>
+            {showStrokesPill ? (
+              <span className="inline-flex w-fit flex-shrink-0 items-center gap-1 rounded-full bg-fw-warning-bg px-2 py-0.5 font-fw-mono text-eyebrow font-medium tabular-nums text-fw-warning">
+                ≈{strokes.toFixed(1)}/rd {primaryLabel}
+                {showTourCeiling && tourGap != null ? (
+                  <span className="font-normal text-fw-warning/70">
+                    ({tourGap.toFixed(1)} to Tour)
+                  </span>
+                ) : null}
+              </span>
+            ) : (
+              <span className="inline-flex w-fit flex-shrink-0 items-center rounded-full bg-inset px-2 py-0.5 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                Tendency
+              </span>
+            )}
           </span>
-          {showStrokesPill ? (
-            <span className="inline-flex w-fit flex-shrink-0 items-center gap-1 rounded-full bg-fw-warning-bg px-2 py-0.5 font-fw-mono text-eyebrow font-medium tabular-nums text-fw-warning">
-              ≈{strokes.toFixed(1)}/rd {primaryLabel}
-              {showTourCeiling && tourGap != null ? (
-                <span className="font-normal text-fw-warning/70">
-                  ({tourGap.toFixed(1)} to Tour)
-                </span>
-              ) : null}
-            </span>
-          ) : (
-            <span className="inline-flex w-fit flex-shrink-0 items-center rounded-full bg-inset px-2 py-0.5 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
-              Tendency
-            </span>
-          )}
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
+              open && 'rotate-180',
+            )}
+            aria-hidden
+          />
         </span>
-        <ChevronDown
-          className={cn(
-            'h-4 w-4 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
-            open && 'rotate-180',
-          )}
-          aria-hidden
-        />
-      </button>
+      </Button>
 
       {open ? (
         <div id={panelId} className="flex flex-col gap-4 px-1 pb-1">

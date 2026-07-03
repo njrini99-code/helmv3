@@ -341,7 +341,7 @@ export default function CampDetailPage() {
                   className={cn(
                     'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
                     filter === f
-                      ? 'bg-white text-warm-900 shadow-sm'
+                      ? 'bg-cream-50 text-warm-900 shadow-sm'
                       : 'text-warm-600 hover:text-warm-900'
                   )}
                 >

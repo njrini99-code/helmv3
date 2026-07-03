@@ -190,9 +190,20 @@ export async function sendPushNotification(
 
         if (!response.ok) {
           const errorText = await response.text();
+          // send-apns-push returns { success: false, error, shouldDeactivateToken? }
+          // on 410 (Unregistered) / 400 (BadDeviceToken) — Apple's own "this token
+          // is dead" signal. Parse it so a permanently-dead token stops being
+          // retried on every cron sweep instead of accumulating failed_count
+          // forever with zero corrective action.
+          let shouldDeactivateToken = false;
+          try {
+            const parsed = JSON.parse(errorText) as { shouldDeactivateToken?: boolean };
+            shouldDeactivateToken = parsed.shouldDeactivateToken === true;
+          } catch {
+            /* not JSON — fall through, treated as a transient failure */
+          }
           console.error(`Push failed for token ${deviceToken.token.slice(0, 8)}...:`, errorText);
 
-          // Increment failed count
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: currentToken } = await (supabase as any)
             .from('device_tokens')
@@ -205,6 +216,7 @@ export async function sendPushNotification(
             .from('device_tokens')
             .update({
               failed_count: (currentToken?.failed_count || 0) + 1,
+              ...(shouldDeactivateToken ? { active: false } : {}),
             })
             .eq('token', deviceToken.token);
         } else {

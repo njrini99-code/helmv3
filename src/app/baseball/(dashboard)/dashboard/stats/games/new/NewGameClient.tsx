@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createGame } from '@/app/baseball/actions/games';
 import type { BaseballGameType, BaseballHomeAway } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface NewGameClientProps {
   teamId: string;
@@ -60,7 +62,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
         <p className="text-warm-500 mt-1 text-sm">{teamName}</p>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm">
+      <div className="glass-standard rounded-2xl p-6 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Game type */}
           <div>
@@ -76,7 +78,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                       ? t === 'scrimmage'
                         ? 'bg-purple-600 text-white border-purple-600'
                         : 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
+                      : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300'
                   }`}
                 >
                   {t}
@@ -88,13 +90,12 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
           {/* Date */}
           <div>
             <label htmlFor="new-game-date" className="text-sm font-medium text-warm-700 block mb-1.5">Date</label>
-            <input
+            <Input
               id="new-game-date"
               type="date"
               value={gameDate}
               onChange={(e) => setGameDate(e.target.value)}
               required
-              className="w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm text-warm-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -104,13 +105,12 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
               Opponent Name
               <span className="ml-1 text-warm-400 font-normal">(optional)</span>
             </label>
-            <input
+            <Input
               id="new-game-opponent"
               type="text"
               value={opponentName}
               onChange={(e) => setOpponentName(e.target.value)}
               placeholder="e.g. State University"
-              className="w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm text-warm-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-warm-300"
             />
           </div>
 
@@ -126,7 +126,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                   className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all capitalize ${
                     homeAway === ha
                       ? 'bg-warm-800 text-white border-warm-800'
-                      : 'bg-white text-warm-500 border-warm-200 hover:border-warm-300'
+                      : 'bg-cream-50 text-warm-500 border-warm-200 hover:border-warm-300'
                   }`}
                 >
                   {ha}
@@ -141,34 +141,31 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
               Venue / Field
               <span className="ml-1 text-warm-400 font-normal">(optional)</span>
             </label>
-            <input
+            <Input
               id="new-game-venue"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Alumni Field"
-              className="w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm text-warm-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-warm-300"
             />
           </div>
 
           {/* Calendar event option */}
           <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl">
-            <input
-              type="checkbox"
-              id="createCalendar"
-              checked={createCalendarEvent}
-              onChange={(e) => setCreateCalendarEvent(e.target.checked)}
-              className="w-4 h-4 rounded text-primary-600 border-warm-300 focus:ring-primary-500"
-            />
-            <label htmlFor="createCalendar" className="text-sm text-warm-600 cursor-pointer flex-1">
-              Also add to team calendar
-            </label>
+            <div className="flex-1">
+              <Checkbox
+                id="createCalendar"
+                checked={createCalendarEvent}
+                onChange={(e) => setCreateCalendarEvent(e.target.checked)}
+                label="Also add to team calendar"
+              />
+            </div>
             {createCalendarEvent && (
-              <input
+              <Input
                 type="time"
                 value={eventTime}
                 onChange={(e) => setEventTime(e.target.value)}
-                className="text-sm border border-warm-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-auto min-h-0 py-1.5"
                 placeholder="Start time"
               />
             )}

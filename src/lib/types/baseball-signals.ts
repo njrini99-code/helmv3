@@ -429,11 +429,7 @@ export interface BaseballDecisionLogInsert {
   decided_by: string;
 }
 
-/** Open meeting-item statuses (still on the Decision Room agenda). */
-export const OPEN_MEETING_ITEM_STATUSES: readonly BaseballMeetingItemStatus[] = [
-  'open',
-  'discussed',
-] as const;
+
 
 // -----------------------------------------------------------------------------
 // Helpers shared by read model + UI (pure; safe on server + client)
@@ -489,9 +485,4 @@ export const OPEN_SIGNAL_DISPOSITIONS: readonly BaseballSignalDisposition[] = [
   'sample_too_small',
 ] as const;
 
-/** Statuses that count as "active" (still actionable work). */
-export const ACTIVE_ACTION_STATUSES: readonly BaseballActionStatus[] = [
-  'open',
-  'in_progress',
-  'blocked',
-] as const;
+

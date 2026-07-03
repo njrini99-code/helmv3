@@ -145,14 +145,14 @@ export function AutomationsList() {
       {loading && (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-white/70 border border-warm-200/60 skeleton-shimmer" />
+            <div key={i} className="h-16 rounded-xl bg-cream-50 border border-warm-200/60 skeleton-shimmer" />
           ))}
         </div>
       )}
 
       {/* Empty state */}
       {!loading && automations.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-warm-300 bg-white/40 px-6 py-10 text-center">
+        <div className="rounded-2xl border border-dashed border-warm-300 glass-subtle px-6 py-10 text-center">
           <span className="inline-flex w-10 h-10 rounded-full bg-warm-100 items-center justify-center mb-3">
             <IconZap size={18} className="text-warm-500" />
           </span>
@@ -177,7 +177,7 @@ export function AutomationsList() {
                   </h3>
                   <span className="text-eyebrow text-warm-400">{rows.length}</span>
                 </div>
-                <div className="rounded-2xl bg-white/70 backdrop-blur-xl border border-warm-200/60 overflow-hidden">
+                <div className="rounded-2xl glass-standard overflow-hidden">
                   <ul className="divide-y divide-warm-100">
                     {rows.map((a) => {
                       const seeded = isSeededAutomation(a.name);
@@ -202,7 +202,7 @@ export function AutomationsList() {
                           >
                             <span
                               className={cn(
-                                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                                'inline-block h-4 w-4 transform rounded-full bg-cream-50 transition-transform',
                                 a.is_active ? 'translate-x-4' : 'translate-x-0.5',
                               )}
                             />

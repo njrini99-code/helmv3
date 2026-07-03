@@ -171,7 +171,7 @@ function AdminBrand({ compact = false }: { compact?: boolean }) {
         <div className="text-xl font-bold leading-none tracking-tight text-white">
           Golf<span className="text-primary-400">Helm</span>
         </div>
-        <div className="mt-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
+        <div className="mt-1 inline-flex items-center rounded-full border border-white/10 bg-warm-50/5 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
           Admin
         </div>
       </div>
@@ -451,12 +451,16 @@ function AdminDashboardContent() {
     <div className="min-h-dvh bg-[#FFFEF8] flex overflow-x-hidden">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           aria-label="Close menu"
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+          haptic="none"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 rounded-none p-0 hover:bg-black/20 active:scale-100 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
-        />
+        >
+          <span className="sr-only">Close menu</span>
+        </Button>
       )}
 
       {/* Sidebar - Fixed position */}
@@ -524,8 +528,8 @@ function AdminDashboardContent() {
                     'group relative flex items-center gap-3 w-full rounded-md transition-colors duration-200',
                     sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
                     isActive
-                      ? 'bg-white/10 text-white'
-                      : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-warm-50/10 text-white'
+                      : 'text-warm-400 hover:bg-warm-50/5 hover:text-white'
                   )}
                 >
                   {isActive && (
@@ -558,7 +562,7 @@ function AdminDashboardContent() {
                     <span
                       className={cn(
                         'text-micro px-1.5 py-0.5 rounded font-mono',
-                        isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500'
+                        isActive ? 'bg-warm-50/10 text-warm-300' : 'bg-warm-50/5 text-warm-500'
                       )}
                     >
                       {tab.shortcut}
@@ -591,7 +595,7 @@ function AdminDashboardContent() {
               className={cn(
                 'group relative flex items-center gap-3 w-full rounded-md transition-colors duration-200',
                 sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
-                'text-primary-400 hover:bg-white/5 hover:text-primary-300'
+                'text-primary-400 hover:bg-warm-50/5 hover:text-primary-300'
               )}
             >
               <IconTarget size={20} className="flex-shrink-0" />
@@ -656,7 +660,7 @@ function AdminDashboardContent() {
                 <div
                   key={stat.key}
                   className={cn(
-                    'rounded-md border px-3 py-2.5 bg-white/5',
+                    'rounded-md border px-3 py-2.5 bg-warm-50/5',
                     stat.tone === 'critical'
                       ? 'border-red-500/20 bg-red-500/5'
                       : stat.tone === 'warning'
@@ -695,7 +699,7 @@ function AdminDashboardContent() {
             </div>
 
             {/* Connection Status */}
-            <div className="rounded-md p-2.5 bg-white/5 border border-white/5">
+            <div className="rounded-md p-2.5 bg-warm-50/5 border border-white/5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div
@@ -761,8 +765,8 @@ function AdminDashboardContent() {
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-3 rounded-md transition-colors',
                   isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                    ? 'bg-warm-50/10 text-white'
+                    : 'text-warm-400 hover:bg-warm-50/5 hover:text-white'
                 )}
               >
                 <TabIcon size={20} className={cn(isActive && 'text-primary-400')} />
@@ -772,7 +776,7 @@ function AdminDashboardContent() {
           })}
           <Link
             href="/golf/admin/crm"
-            className="flex items-center gap-3 px-3 py-3 rounded-md text-primary-400 hover:bg-white/5 transition-colors mt-4 pt-4 border-t border-white/10"
+            className="flex items-center gap-3 px-3 py-3 rounded-md text-primary-400 hover:bg-warm-50/5 transition-colors mt-4 pt-4 border-t border-white/10"
           >
             <IconTarget size={20} />
             <span className="text-sm font-medium">Coach CRM</span>
@@ -790,7 +794,7 @@ function AdminDashboardContent() {
                 <div
                   key={stat.key}
                   className={cn(
-                    'rounded-md border px-2.5 py-2 bg-white/5',
+                    'rounded-md border px-2.5 py-2 bg-warm-50/5',
                     stat.tone === 'critical'
                       ? 'border-red-500/20 bg-red-500/5'
                       : stat.tone === 'warning'
@@ -835,7 +839,7 @@ function AdminDashboardContent() {
         <header
           className={cn(
             'sticky top-0 z-30',
-            'bg-white/70 backdrop-blur-xl',
+            'glass-standard',
             'border-b border-warm-200/40',
             'px-4 sm:px-6 py-3'
           )}
@@ -895,7 +899,7 @@ function AdminDashboardContent() {
           {sessionExpired ? (
             <div
               className={cn(
-                'bg-white/70 backdrop-blur-xl border border-amber-200/50 rounded-2xl shadow-glass p-8 text-center max-w-md mx-auto mt-12'
+                'glass-standard border border-amber-200/50 rounded-2xl shadow-glass p-8 text-center max-w-md mx-auto mt-12'
               )}
             >
               <div className="text-amber-600 mb-2">
@@ -915,7 +919,7 @@ function AdminDashboardContent() {
           ) : error ? (
             <div
               className={cn(
-                'bg-white/70 backdrop-blur-xl border border-red-200/50 rounded-2xl shadow-glass p-6 text-center'
+                'glass-standard border border-red-200/50 rounded-2xl shadow-glass p-6 text-center'
               )}
             >
               <p className="text-red-600 font-medium">{error}</p>

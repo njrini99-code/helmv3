@@ -130,12 +130,13 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
-            className="bg-white rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
+            className="bg-cream-50 rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
           >
             {/* Main Row */}
-            <button
+            <Button
+              variant="ghost"
               type="button"
-              className="p-4 flex items-center gap-4 cursor-pointer w-full text-left"
+              className="p-4 rounded-none h-auto flex items-center gap-4 justify-start cursor-pointer w-full text-left hover:bg-transparent"
               onClick={() => setExpandedId(isExpanded ? null : expense.id)}
             >
               {/* Category Icon */}
@@ -178,7 +179,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
               <div className="text-warm-400">
                 {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
               </div>
-            </button>
+            </Button>
 
             {/* Expanded Details */}
             <AnimatePresence>
@@ -281,16 +282,17 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
 
       {/* Receipt Viewer Modal */}
       {viewingReceipt && (
-        <button
+        <Button
+          variant="ghost"
           type="button"
           aria-label="Close receipt viewer"
-          className="fixed inset-0 bg-warm-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 w-full border-none cursor-default"
+          className="fixed inset-0 bg-warm-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 w-full h-full rounded-none border-none cursor-default hover:bg-warm-900/70"
           onClick={() => setViewingReceipt(null)}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            className="bg-cream-50 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-warm-200 flex items-center justify-between">
@@ -349,7 +351,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
               )}
             </div>
           </motion.div>
-        </button>
+        </Button>
       )}
     </div>
   );

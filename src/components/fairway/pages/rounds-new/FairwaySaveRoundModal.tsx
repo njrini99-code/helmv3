@@ -109,11 +109,12 @@ export function FairwaySaveRoundModal({
 
         <div className="flex flex-col gap-3">
           {/* Save for later */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleSaveForLater}
             disabled={saving}
-            className="flex items-center gap-4 rounded-fw-md border border-accent-200 bg-accent-50 p-4 text-left transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-auto min-h-0 w-full items-center justify-start gap-4 rounded-fw-md border border-accent-200 bg-accent-50 p-4 text-left transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-accent-500 text-text-on-accent">
               <Clock className="h-5 w-5" aria-hidden />
@@ -126,15 +127,16 @@ export function FairwaySaveRoundModal({
                 Resume this round anytime from the Rounds tab
               </span>
             </span>
-          </button>
+          </Button>
 
           {/* Delete (two-tap confirm — destructive) */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleDelete}
             disabled={saving}
             className={cn(
-              'flex items-center gap-4 rounded-fw-md border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+              'h-auto min-h-0 w-full items-center justify-start gap-4 rounded-fw-md border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50',
               confirmingDelete
                 ? 'border-fw-danger/30 bg-fw-danger-bg hover:bg-fw-danger/10'
                 : 'border-border-subtle bg-surface hover:bg-surface-tint',
@@ -166,7 +168,7 @@ export function FairwaySaveRoundModal({
                 {confirmingDelete ? 'This cannot be undone' : 'Discard this round completely'}
               </span>
             </span>
-          </button>
+          </Button>
 
           {confirmingDelete && (
             <Button

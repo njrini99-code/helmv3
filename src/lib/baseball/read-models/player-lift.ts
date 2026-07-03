@@ -98,7 +98,7 @@ export interface AthleteContext {
   athleteToPlayer: Record<string, string>;
 }
 
-export async function resolveAthleteContext(
+async function resolveAthleteContext(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
 ): Promise<AthleteContext | null> {

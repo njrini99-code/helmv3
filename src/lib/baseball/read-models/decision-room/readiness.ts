@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { Database } from '@/lib/types/database';
 import type {
   DecisionRoomAttendanceSummary,
   DecisionRoomAvailabilityConcern,
@@ -70,7 +71,7 @@ const ATTENDANCE_LOOKBACK_DAYS = 30;
 /** Hard ceiling on rows pulled per query (stays well under the PostgREST 1000 cap). */
 const MAX_ROWS = 500;
 
-type AnySupabase = SupabaseClient<any, any, any>;
+type AnySupabase = SupabaseClient<Database>;
 
 interface EmbeddedPlayer {
   id: string;
@@ -281,13 +282,18 @@ export async function loadAvailabilityConcerns(
   }
 
   // Highest severity first, then most recent.
+  // NOTE: `severity` / `recordedAt` are not fields on DecisionRoomAvailabilityConcern
+  // (the concern objects pushed above never set them), so these lookups are
+  // always undefined today — preserved as-is to avoid a behavior change here.
   const severityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
   concerns.sort((a, b) => {
-    const sa = severityRank[(a as any).severity] ?? 3;
-    const sb = severityRank[(b as any).severity] ?? 3;
+    const extraA = a as unknown as { severity?: string; recordedAt?: string };
+    const extraB = b as unknown as { severity?: string; recordedAt?: string };
+    const sa = severityRank[extraA.severity ?? ''] ?? 3;
+    const sb = severityRank[extraB.severity ?? ''] ?? 3;
     if (sa !== sb) return sa - sb;
-    const ta = (a as any).recordedAt ? Date.parse((a as any).recordedAt) : 0;
-    const tb = (b as any).recordedAt ? Date.parse((b as any).recordedAt) : 0;
+    const ta = extraA.recordedAt ? Date.parse(extraA.recordedAt) : 0;
+    const tb = extraB.recordedAt ? Date.parse(extraB.recordedAt) : 0;
     return tb - ta;
   });
 

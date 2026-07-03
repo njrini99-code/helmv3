@@ -165,7 +165,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                   ? 'border-primary-200/70 bg-gradient-to-br from-primary-50/40 via-white to-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)]'
                   : isAcked
                     ? 'border-warm-200/60 bg-warm-50/40'
-                    : 'border-warm-200/70 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]',
+                    : 'border-warm-200/70 bg-cream-50 shadow-[0_1px_2px_rgba(16,24,40,0.03)]',
               )}
             >
               {/* Urgency accent bar — soft, narrow, matches brand semantic color */}

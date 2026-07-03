@@ -13,13 +13,14 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { describe, it, expect, vi } from 'vitest';
+import { Button } from '@/components/ui/button';
 
 vi.mock('@/components/ui/sonner', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
 // Stub CourseCard as a real tap target wired to onSelect, so the click→tee-stage
 // transition is exercised by the test (that's the user-reported bug).
 vi.mock('@/components/golf/courses/CourseCard', () => ({
   CourseCard: ({ course, onSelect }: { course: { id: string; name: string }; onSelect?: (id: string) => void }) => (
-    <button type="button" data-testid="course-card" onClick={() => onSelect?.(course.id)}>{course.name}</button>
+    <Button type="button" data-testid="course-card" onClick={() => onSelect?.(course.id)}>{course.name}</Button>
   ),
 }));
 vi.mock('@/app/golf/actions/course-library', () => ({

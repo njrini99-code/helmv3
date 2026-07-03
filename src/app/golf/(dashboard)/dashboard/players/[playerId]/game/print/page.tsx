@@ -143,7 +143,7 @@ export default async function PlayerGamePrintPage({
                             key={insight.id}
                             className={cn(
                               'rounded-md border border-warm-200 p-3 text-sm leading-relaxed',
-                              'bg-white',
+                              'bg-cream-50',
                             )}
                           >
                             <p className="font-medium text-warm-900">{insight.title}</p>

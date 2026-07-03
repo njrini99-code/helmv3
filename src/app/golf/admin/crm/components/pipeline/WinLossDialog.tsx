@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { IconX, IconTrophy, IconXCircle, IconActivity as Sprout } from '@/components/icons';
 import type { Coach, CoachStatus } from '../../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 // ============================================================================
 // WinLossDialog — modal prompt shown when a coach card is dropped into one of
@@ -145,7 +147,7 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
 
       <form
         onSubmit={handleSubmit}
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl border border-warm-100"
+        className="relative w-full max-w-md rounded-2xl bg-cream-50 shadow-2xl border border-warm-100"
       >
         <div className="px-5 pt-5 pb-3 flex items-start gap-3">
           <span
@@ -176,25 +178,13 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
 
         <div className="px-5 py-3 space-y-4">
           <div>
-            <label
-              htmlFor="winloss-reason"
-              className="block text-xs font-semibold text-warm-700 mb-1.5"
-            >
-              Reason
-            </label>
-            <select
-              id="winloss-reason"
+            <Select
+              label="Reason"
+              options={reasons.map((r) => ({ value: r.value, label: r.label }))}
               value={reason}
-              onChange={(e) => setReason(e.target.value as WinLossReason)}
+              onChange={(v) => setReason(v as WinLossReason)}
               disabled={submitting}
-              className="w-full bg-white border border-warm-200 rounded-lg px-3 py-2 text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-            >
-              {reasons.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>
@@ -204,7 +194,7 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
             >
               Notes <span className="text-warm-400 font-normal">(optional)</span>
             </label>
-            <textarea
+            <Textarea
               id="winloss-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -212,7 +202,7 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
               maxLength={2000}
               disabled={submitting}
               placeholder="What happened? Anything we should remember next time?"
-              className="w-full bg-white border border-warm-200 rounded-lg px-3 py-2 text-sm text-warm-900 placeholder:text-warm-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+              className="text-sm bg-cream-50"
             />
           </div>
 

@@ -55,7 +55,7 @@ export function PlayerRosterView({ players, teamName }: PlayerRosterViewProps) {
                 <IconUsers size={32} className="text-primary-700" />
               </div>
               <h3 className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-warm-900 mb-3">No teammates yet</h3>
-              <p className="text-[13.5px] text-warm-500 max-w-md mx-auto leading-relaxed">
+              <p className="text-body-sm text-warm-500 max-w-md mx-auto leading-relaxed">
                 Your team roster is empty. Your coach will add players to the team.
               </p>
             </div>

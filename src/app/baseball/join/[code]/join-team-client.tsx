@@ -170,7 +170,7 @@ export function JoinTeamClient({
       <>
         <Confetti active={true} />
         <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-6">
-          <div className="max-w-lg w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 overflow-clip shadow-sm animate-in zoom-in-95 duration-300">
+          <div className="max-w-lg w-full glass-standard rounded-2xl overflow-clip shadow-sm animate-in zoom-in-95 duration-300">
             <div className="p-12 text-center">
               {/* Success animation */}
               <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in-50 duration-500">
@@ -196,7 +196,7 @@ export function JoinTeamClient({
 
   return (
     <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
-      <div className="max-w-lg w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 overflow-clip shadow-sm">
+      <div className="max-w-lg w-full glass-standard rounded-2xl overflow-clip shadow-sm">
         {/* Header */}
         <div className="bg-gradient-to-br from-primary-50/80 to-white/60 border-b border-white/30 p-6 sm:p-8 text-center">
           {team.organization?.logoUrl ? (
@@ -293,7 +293,7 @@ export function JoinTeamClient({
             <Button variant="ghost"
               onClick={() => router.push('/baseball/player/today')}
               disabled={state === 'loading'}
-              className="w-full px-6 py-3 bg-white text-warm-700 font-medium rounded-lg border border-warm-200 hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 bg-cream-50 text-warm-700 font-medium rounded-lg border border-warm-200 hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <IconArrowLeft size={18} />
               <span>Cancel</span>

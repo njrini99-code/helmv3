@@ -42,10 +42,10 @@ vi.mock('@/components/fairway', () => ({
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     placeholder?: string;
     // Test double for the Fairway Input primitive.
-    // eslint-disable-next-line helm/no-raw-input
+     
   }) => <input value={value} onChange={onChange} placeholder={placeholder} />,
   // Test double for the Fairway Select primitive.
-  // eslint-disable-next-line helm/no-raw-input
+   
   Select: () => <select />,
   Switch: () => <div />,
   Avatar: () => <div />,

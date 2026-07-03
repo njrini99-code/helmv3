@@ -24,6 +24,7 @@ import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
 import {
   IconLink,
@@ -270,18 +271,19 @@ export function ScoutPacketManager({
             onKeyDown={(e) => { if (e.key === 'Enter' && canMint && !pending) onMint(); }}
           />
           {/* Expiry selector — styled to match Input primitive (bg-cream-50/92, warm border, primary ring) */}
-          <select
+          <NativeSelect
             value={expiresInDays}
             onChange={(e) => setExpiresInDays(e.target.value)}
             disabled={!canMint || pending}
             aria-label="Link expiry"
-            className="h-10 rounded-xl border border-warm-200 bg-cream-50/92 px-3 py-2 text-sm text-warm-700 transition-all duration-200 hover:border-warm-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <option value="7">7 days</option>
-            <option value="30">30 days</option>
-            <option value="90">90 days</option>
-            <option value="0">No expiry</option>
-          </select>
+            options={[
+              { value: '7', label: '7 days' },
+              { value: '30', label: '30 days' },
+              { value: '90', label: '90 days' },
+              { value: '0', label: 'No expiry' },
+            ]}
+            className="h-10 min-h-0 rounded-xl"
+          />
           <Button type="button" onClick={onMint} disabled={!canMint || pending} isLoading={pending}>
             <IconPlus size={15} />
             Create link

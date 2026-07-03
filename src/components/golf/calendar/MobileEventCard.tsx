@@ -106,7 +106,7 @@ export function MobileEventCard({
   return (
     <div
       className={cn(
-        'relative bg-white rounded-2xl overflow-hidden',
+        'relative bg-cream-50 rounded-2xl overflow-hidden',
         'shadow-sm shadow-warm-200/50',
         'border border-warm-100',
         'transition-all duration-200 ease-out',

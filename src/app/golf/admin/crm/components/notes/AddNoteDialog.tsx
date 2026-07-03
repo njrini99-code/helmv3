@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { IconNote, IconX } from '@/components/icons';
 import { createCoachNote } from '@/app/golf/actions/crm-foundations';
 import { Button, IconButton } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import type {
   CrmNote,
   NoteKind,
@@ -106,7 +108,7 @@ export function AddNoteDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-note-title"
-          className="w-full max-w-md bg-white rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
+          className="w-full max-w-md bg-cream-50 rounded-2xl border border-warm-200/60 shadow-2xl pointer-events-auto"
         >
           <form onSubmit={handleSubmit}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100">
@@ -143,7 +145,7 @@ export function AddNoteDialog({
                         'flex flex-col items-start text-left px-3 py-2 rounded-lg border transition-all',
                         kind === opt.value
                           ? 'border-primary-400 bg-primary-50/60 text-warm-900'
-                          : 'border-warm-200/80 bg-white text-warm-700 hover:border-warm-300',
+                          : 'border-warm-200/80 bg-cream-50 text-warm-700 hover:border-warm-300',
                       )}
                     >
                       <span className="text-xs font-semibold">{opt.label}</span>
@@ -163,7 +165,7 @@ export function AddNoteDialog({
                   </span>
                 </div>
                 {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-                <textarea autoFocus
+                <Textarea autoFocus
                   id="note-body"
                   rows={6}
                   required
@@ -171,19 +173,15 @@ export function AddNoteDialog({
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   placeholder="What did you learn? Call summary, talking points, internal context..."
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                  className="text-sm bg-cream-50 resize-y"
                 />
               </div>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={pinned}
-                  onChange={(e) => setPinned(e.target.checked)}
-                  className="w-4 h-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500/20"
-                />
-                <span className="text-sm text-warm-700">Pin to top</span>
-              </label>
+              <Checkbox
+                checked={pinned}
+                onChange={(e) => setPinned(e.target.checked)}
+                label="Pin to top"
+              />
 
               {error && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">

@@ -148,7 +148,7 @@ function ErrorFallback({
         onClick={onReset}
         className={cn(
           'flex items-center gap-2 px-4 py-2 rounded-lg',
-          'bg-white hover:bg-warm-50 active:bg-warm-100 border border-warm-200',
+          'bg-cream-50 hover:bg-warm-50 active:bg-warm-100 border border-warm-200',
           'text-warm-700 font-medium transition-colors',
           textSizes[size]
         )}

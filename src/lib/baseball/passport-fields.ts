@@ -88,13 +88,7 @@ export const PASSPORT_FIELD_KEYS: ReadonlySet<string> = new Set(
 export const PASSPORT_FIELD_BASE: Readonly<Record<string, PassportFieldVisibility>> =
   Object.fromEntries(PASSPORT_FIELD_DEFS.map((d) => [d.key, d.base]));
 
-/** All valid per-field visibility levels. */
-export const PASSPORT_FIELD_VISIBILITY_LEVELS: readonly PassportFieldVisibility[] = [
-  'staff_only',
-  'player_visible',
-  'public',
-  'scout',
-];
+
 
 /** Rank used to compare visibility breadth (higher = more exposed). */
 export const PASSPORT_VISIBILITY_RANK: Readonly<Record<PassportFieldVisibility, number>> = {

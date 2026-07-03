@@ -22,8 +22,7 @@
  */
 export const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
 
-/** Public route that hosts the "Try the live demo" identity gate. */
-export const DEMO_GATE_PATH = '/golf/demo';
+
 
 /** Where a visitor lands after the gate auto-signs them in. */
 export const DEMO_LANDING_PATH = '/golf/dashboard';

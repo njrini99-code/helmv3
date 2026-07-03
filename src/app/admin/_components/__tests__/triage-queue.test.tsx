@@ -60,4 +60,21 @@ describe('TriageQueue', () => {
       expect(screen.queryByText('savePartialRound failed')).not.toBeInTheDocument(),
     );
   });
+  it('restores the row and surfaces the error when resolveTriageEvents rejects', async () => {
+    const onResolve = vi.fn(async () => {
+      throw new Error('Unauthorized');
+    });
+    render(<TriageQueue items={[appItem]} onResolve={onResolve} />);
+    fireEvent.click(screen.getByRole('button', { name: /resolve/i }));
+    // Optimistically hidden immediately after the click...
+    await waitFor(() => expect(onResolve).toHaveBeenCalled());
+    // ...but reconciled back once the rejection is observed.
+    await waitFor(() =>
+      expect(screen.getByText('savePartialRound failed')).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/resolve failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/unauthorized/i)).toBeInTheDocument();
+    // The Resolve button must still be usable for a retry.
+    expect(screen.getByRole('button', { name: /resolve/i })).toBeInTheDocument();
+  });
 });

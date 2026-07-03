@@ -18,7 +18,7 @@ export default function Loading() {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl border border-warm-200 p-6 animate-pulse"
+              className="bg-cream-50 rounded-2xl border border-warm-200 p-6 animate-pulse"
               style={{ animationDelay: `${i * 50}ms` }}
             >
               {/* Header */}

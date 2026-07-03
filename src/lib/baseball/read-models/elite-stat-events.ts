@@ -185,7 +185,7 @@ export interface EliteStatEventsOptions {
 const DEFAULT_CONTEXTS: BaseballDataContext[] = ['official_game', 'scrimmage'];
 
 // Development contexts used for the game-vs-cage gap denominator.
-export const DEV_CONTEXTS: BaseballDataContext[] = ['practice', 'cage', 'bullpen', 'sensor'];
+const DEV_CONTEXTS: BaseballDataContext[] = ['practice', 'cage', 'bullpen', 'sensor'];
 
 // -----------------------------------------------------------------------------
 // Trust-tier ordering — to pick the DOMINANT (lowest/most-honest) tier of a set

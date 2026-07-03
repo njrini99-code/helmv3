@@ -36,6 +36,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withLiftingAction, LiftingActionError } from '@/lib/lifting/with-lifting-action';
 import { materializeWindow } from '@/lib/lifting/checkin-scheduling';
 import { missedCheckins } from '@/lib/lifting/overuse-rules';
@@ -69,6 +70,31 @@ function revalidateAll(): void {
   revalidatePath(WEIGHT_PLAYER_PATH);
   revalidatePath(BASEBALL_COACH_PATH);
   revalidatePath(BASEBALL_PLAYER_PATH);
+}
+
+// -----------------------------------------------------------------------------
+// Overdue sweep: pending -> missed
+//
+// materializeWeightCheckInRequests only ever inserts 'pending' rows and never
+// revisits existing ones (its upsert uses ignoreDuplicates). Nothing else in
+// the codebase — no trigger, no pg_cron job, no Inngest function — flips a
+// request to 'missed' once its due_date passes, so the coach dashboard's
+// Missed tile and the Rule 6 overuse flag (missedCheckins, 2+ missed in 7
+// days) can never fire without this. Run at the top of every coach-dashboard
+// read; a pure column-flip UPDATE scoped by org/status/due_date, never a
+// delete-then-reinsert.
+// -----------------------------------------------------------------------------
+async function sweepOverdueWeightCheckInRequests(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  orgId: string,
+): Promise<void> {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  await fromUntyped(supabase, 'helm_lifting_weight_checkin_requests')
+    .update({ status: 'missed' satisfies WeightCheckinStatus, updated_at: new Date().toISOString() })
+    .eq('organization_id', orgId)
+    .eq('status', 'pending')
+    .lt('due_date', todayIso);
 }
 
 // -----------------------------------------------------------------------------
@@ -389,13 +415,19 @@ export const materializeWeightCheckInRequests = withLiftingAction(
       }
     }
 
-    // Batch insert in chunks of 500 (PostgREST limit safety).
+    // Batch upsert in chunks of 500 (PostgREST limit safety). `ignoreDuplicates`
+    // is only honored by .upsert() — it is silently dropped by .insert(), which
+    // sends no Prefer/on_conflict header and performs a plain INSERT. Since
+    // (schedule_id, athlete_id, due_date) has a real unique constraint
+    // (uq_helm_lifting_weight_request), that plain INSERT throws 23505 on any
+    // re-materialize of an overlapping window and aborts the whole chunk.
+    // Mirrors materializeSorenessCheckRequests's upsert in soreness.ts.
     let totalInserted = 0;
     const CHUNK = 500;
     for (let i = 0; i < rows.length; i += CHUNK) {
       const chunk = rows.slice(i, i + CHUNK);
       const { error, count } = await fromUntyped(supabase, 'helm_lifting_weight_checkin_requests')
-        .insert(chunk, { count: 'exact', ignoreDuplicates: true }) as {
+        .upsert(chunk, { onConflict: 'schedule_id,athlete_id,due_date', ignoreDuplicates: true, count: 'exact' }) as {
           error: unknown;
           count: number | null;
         };
@@ -703,29 +735,36 @@ export const getCoachWeightDashboard = withLiftingAction(
     const lookBack = input.lookBackDays ?? 7;
     const supabase = await createClient();
 
+    // Age any overdue 'pending' requests into 'missed' before reading counts.
+    await sweepOverdueWeightCheckInRequests(supabase, ctx.orgId);
+
     // Compute the lookback window start date.
     const windowStart = new Date(date);
     windowStart.setDate(windowStart.getDate() - lookBack + 1);
     const windowStartIso = windowStart.toISOString().slice(0, 10);
 
     // 1. Load today's requests with joined bodyweight entry amounts.
-    const requestQuery = fromUntyped(supabase, 'helm_lifting_weight_checkin_requests')
-      .select('id, athlete_id, due_date, status, bodyweight_entry_id, completed_at, schedule_id, organization_id')
-      .eq('organization_id', ctx.orgId)
-      .eq('due_date', date)
-      .limit(1000);
-
-    const { data: requests } = await requestQuery as {
-      data: Array<{
-        id: string;
-        athlete_id: string;
-        due_date: string;
-        status: WeightCheckinStatus;
-        bodyweight_entry_id: string | null;
-        completed_at: string | null;
-        schedule_id: string | null;
-      }> | null
-    };
+    // Paginated via fetchAllRowsResult — a single `.limit(1000)` caps at
+    // PostgREST's confirmed max-rows ceiling (this codebase's documented golf
+    // PostgREST-cap gotcha) and would silently truncate/undercount once an
+    // org's daily due-count crosses 1000.
+    interface WeightRequestQueryRow {
+      id: string;
+      athlete_id: string;
+      due_date: string;
+      status: WeightCheckinStatus;
+      bodyweight_entry_id: string | null;
+      completed_at: string | null;
+      schedule_id: string | null;
+    }
+    const { data: requests } = await fetchAllRowsResult<WeightRequestQueryRow>((from, to) =>
+      fromUntyped(supabase, 'helm_lifting_weight_checkin_requests')
+        .select('id, athlete_id, due_date, status, bodyweight_entry_id, completed_at, schedule_id, organization_id')
+        .eq('organization_id', ctx.orgId)
+        .eq('due_date', date)
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
 
     if (!requests || requests.length === 0) {
       return {

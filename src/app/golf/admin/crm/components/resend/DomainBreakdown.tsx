@@ -165,7 +165,7 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.02, duration: 0.2 })}
-                  className="hover:bg-white/70 transition-colors"
+                  className="hover:bg-cream-100 transition-colors"
                 >
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">

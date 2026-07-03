@@ -6,7 +6,7 @@ import { IconX, IconMail, IconCalendar, IconTarget, IconSparkles, IconUser, Icon
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { ActivityDot } from './ActivityDot';
 import { timeAgo, formatDate } from './admin-utils';
-import { IconButton } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 
 type TeamMember = AdminDashboardData['userActivity']['teams'][0]['members'][0];
 
@@ -85,12 +85,14 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Overlay */}
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         aria-label="Close panel"
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
         onClick={onClose}
-      />
+        className="absolute inset-0 h-full w-full min-h-0 p-0 rounded-none justify-start items-start bg-black/20 hover:bg-black/20 backdrop-blur-sm"
+      >
+        <span className="sr-only">Close panel</span>
+      </Button>
 
       {/* Panel */}
       <div className={cn(
@@ -101,7 +103,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
         'animate-in slide-in-from-right duration-300'
       )}>
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-warm-200/40 px-4 sm:px-6 py-4">
+        <div className="sticky top-0 z-10 glass-prominent border-b border-warm-200/40 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-warm-900">User Profile</h2>
             <IconButton variant="default"
@@ -149,7 +151,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
 
           {/* Engagement ring */}
           {member && (
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/70 border border-white/20 shadow-glass mb-6">
+            <div className="flex items-center gap-4 p-4 rounded-2xl glass-standard shadow-glass mb-6">
               <div className="relative w-16 h-16 flex-shrink-0">
                 <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                   <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className="text-warm-100" />
@@ -179,14 +181,14 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="p-3 rounded-xl bg-white/50 border border-white/30">
+            <div className="p-3 rounded-xl bg-cream-50 border border-warm-100/60">
               <div className="flex items-center gap-1.5 mb-1">
                 <IconClock size={12} className="text-warm-400" />
                 <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Last Active</span>
               </div>
               <p className="text-sm font-semibold text-warm-900">{timeAgo(lastSeen)}</p>
             </div>
-            <div className="p-3 rounded-xl bg-white/50 border border-white/30">
+            <div className="p-3 rounded-xl bg-cream-50 border border-warm-100/60">
               <div className="flex items-center gap-1.5 mb-1">
                 <IconCalendar size={12} className="text-warm-400" />
                 <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Signed Up</span>
@@ -195,7 +197,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
             </div>
             {member && (
               <>
-                <div className="p-3 rounded-xl bg-white/50 border border-white/30">
+                <div className="p-3 rounded-xl bg-cream-50 border border-warm-100/60">
                   <div className="flex items-center gap-1.5 mb-1">
                     <IconTarget size={12} className="text-warm-400" />
                     <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Rounds</span>
@@ -205,7 +207,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
                     <p className="text-micro text-warm-400 mt-0.5">Last: {timeAgo(member.lastRoundDate)}</p>
                   )}
                 </div>
-                <div className="p-3 rounded-xl bg-white/50 border border-white/30">
+                <div className="p-3 rounded-xl bg-cream-50 border border-warm-100/60">
                   <div className="flex items-center gap-1.5 mb-1">
                     <IconSparkles size={12} className="text-warm-400" />
                     <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">AI Insights</span>
@@ -223,7 +225,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
           {member && member.avgScore !== null && (
             <div className="mb-6">
               <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-3">Performance</h4>
-              <div className="p-4 rounded-xl bg-white/50 border border-white/30">
+              <div className="p-4 rounded-xl bg-cream-50 border border-warm-100/60">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-warm-600">Scoring Average</span>
                   <span className="text-lg font-bold text-warm-900 tabular-nums">{Number(member.avgScore).toFixed(1)}</span>

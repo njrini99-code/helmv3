@@ -130,7 +130,7 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
           <div
             key={`${chip.key}-${chip.removeValue || index}`}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg
-                       bg-white border border-warm-200 text-sm
+                       bg-cream-50 border border-warm-200 text-sm
                        animate-scale-in shadow-sm"
             style={{ animationDelay: `${index * 50}ms` }}
           >

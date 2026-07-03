@@ -11,7 +11,7 @@ export default function NewGameLoading() {
         <Skeleton className="h-4 w-32" />
       </div>
 
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm space-y-5">
+      <div className="glass-standard rounded-2xl p-6 shadow-sm space-y-5">
         {/* Type row */}
         <div className="space-y-2">
           <Skeleton className="h-4 w-8" />

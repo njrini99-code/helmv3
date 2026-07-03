@@ -244,7 +244,7 @@ export function twoStrikeChaseGenerator(player: LoadedPlayerMetrics): BaseballIn
 
 const GAP_THRESHOLD = -0.05; // game avg ≥ 50 points below practice = a real gap
 
-export function gameVsPracticeGapGenerator(player: LoadedPlayerMetrics): BaseballInsightCandidate[] {
+function gameVsPracticeGapGenerator(player: LoadedPlayerMetrics): BaseballInsightCandidate[] {
   const m = player.metrics.game_practice_avg_delta;
   if (!m || m.value == null) return [];
   if (m.value > GAP_THRESHOLD) return []; // gap not negative enough
@@ -295,7 +295,7 @@ export function gameVsPracticeGapGenerator(player: LoadedPlayerMetrics): Basebal
 const WALKS_PER_INNING_THRESHOLD = 0.6; // ~5.4 BB/9 — clearly fraying command
 const STRIKE_PCT_FLOOR = 0.58; // below ~58% strikes = command concern
 
-export function veloCommandDecayGenerator(player: LoadedPlayerMetrics): BaseballInsightCandidate[] {
+function veloCommandDecayGenerator(player: LoadedPlayerMetrics): BaseballInsightCandidate[] {
   const out: BaseballInsightCandidate[] = [];
 
   const wpi = player.metrics.walks_per_inning;
@@ -517,7 +517,7 @@ export function runBaseballGenerators(inputs: BaseballEngineInputs): BaseballIns
 }
 
 /** All generator ids — useful for the action's stale-row reconciliation. */
-export const BASEBALL_GENERATOR_IDS = [
+const _BASEBALL_GENERATOR_IDS = [
   'two_strike_chase',
   'game_vs_practice_gap',
   'velo_command_decay',
@@ -525,13 +525,6 @@ export const BASEBALL_GENERATOR_IDS = [
   'schedule_conflict',
 ] as const;
 
-export type BaseballGeneratorId = (typeof BASEBALL_GENERATOR_IDS)[number];
+export type BaseballGeneratorId = (typeof _BASEBALL_GENERATOR_IDS)[number];
 
-/** The full set of insight_type strings the engine emits (all AI-flaggable). */
-export const BASEBALL_ENGINE_INSIGHT_TYPES = [
-  'coachhelm_two_strike_chase',
-  'coachhelm_game_practice_gap',
-  'coachhelm_command_decay',
-  'coachhelm_workload',
-  'coachhelm_schedule_conflict',
-] as const;
+

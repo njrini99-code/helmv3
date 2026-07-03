@@ -445,7 +445,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
             'absolute -right-5 top-6 z-50',
             'w-10 h-10 rounded-full bg-[#1C1917] border border-white/20',
             'flex items-center justify-center',
-            'shadow-lg hover:bg-white/10 active:bg-white/15 hover:border-white/30',
+            'shadow-lg hover:bg-warm-50/10 active:bg-warm-50/15 hover:border-warm-50/30',
             'transition-colors duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/40'
           )}
@@ -569,12 +569,12 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
+                    'flex items-center gap-3 py-3 rounded-md text-body-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
-                      ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
-                      : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
+                      ? 'bg-warm-50/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
+                      : 'text-white/60 hover:bg-warm-50/5 active:bg-warm-50/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
@@ -634,11 +634,11 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                       onClick={handleNavClick}
                       title={isCollapsed ? item.name : undefined}
                       className={cn(
-                        'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
+                        'flex items-center gap-3 py-3 rounded-md text-body-sm font-medium min-h-[44px]',
                         'transition-colors duration-150 ease-out',
                         isActive
-                          ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
-                          : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
+                          ? 'bg-warm-50/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
+                          : 'text-white/60 hover:bg-warm-50/5 active:bg-warm-50/10 hover:text-white/90',
                         isCollapsed ? 'justify-center px-2' : 'px-3'
                       )}
                     >
@@ -685,11 +685,11 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
+                    'flex items-center gap-3 py-3 rounded-md text-body-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out',
                     isActive
-                      ? 'bg-white/10 text-primary-400 nav-item-active'
-                      : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
+                      ? 'bg-warm-50/10 text-primary-400 nav-item-active'
+                      : 'text-white/60 hover:bg-warm-50/5 active:bg-warm-50/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
@@ -722,7 +722,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
         {/* Pro badge (only when expanded) */}
         <div
           className={cn(
-            'rounded-xl bg-white/5 border border-white/10 overflow-hidden',
+            'rounded-xl bg-warm-50/5 border border-warm-50/10 overflow-hidden',
             'transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
             isCollapsed ? 'h-0 opacity-0 p-0 mb-0 border-0' : 'h-auto opacity-100 p-3 mb-3'
           )}
@@ -737,7 +737,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
         {/* User info */}
         <div
           className={cn(
-            'rounded-xl bg-white/5 overflow-hidden transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
+            'rounded-xl bg-warm-50/5 overflow-hidden transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
             isCollapsed ? 'h-0 opacity-0 p-0 mb-0' : 'h-auto opacity-100 px-3 py-2.5 mb-2'
           )}
         >
@@ -751,7 +751,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
           aria-label="Sign out"
           title={isCollapsed ? 'Sign out' : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
+            'w-full flex items-center gap-3 py-3 rounded-md text-body-sm font-medium min-h-[44px]',
             'text-white/60 hover:bg-red-500/10 hover:text-red-400',
             'transition-colors duration-150 ease-out active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'

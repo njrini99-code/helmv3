@@ -7,7 +7,7 @@ export default function Loading() {
         <Shimmer className="h-8 w-48" />
         <Shimmer variant="line" className="w-72" />
       </div>
-      <ShimmerCard className="bg-white rounded-2xl border border-warm-200 p-6">
+      <ShimmerCard className="bg-cream-50 rounded-2xl border border-warm-200 p-6">
         <Shimmer className="h-6 w-1/3 mb-4" />
         <div className="grid grid-cols-9 gap-2 mb-4">
           {Array.from({ length: 9 }).map((_, i) => (

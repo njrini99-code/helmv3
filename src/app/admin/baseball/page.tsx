@@ -14,12 +14,12 @@ export const dynamic = 'force-dynamic';
 export default async function BaseballTabPage() {
   await requireSuperAdmin();
   return (
-    <main className="space-y-6 p-6">
+    <div className="space-y-6">
       <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Baseball</h2>
       <PanelNoData
         label="Baseball tab is held"
         description="Instrumentation for BaseballHelm is deferred until the golf + CoachHelm rollout is verified in prod. Baseball users and errors still surface in Overview, Errors, and Users & Teams."
       />
-    </main>
+    </div>
   );
 }

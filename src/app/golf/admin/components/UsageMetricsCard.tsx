@@ -20,7 +20,7 @@ interface Props {
 
 function QualityGauge({ label, percentage, color }: { label: string; percentage: number; color: string }) {
   return (
-    <div className="bg-white/50 rounded-xl p-3">
+    <div className="bg-cream-50 rounded-xl p-3">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-warm-600">{label}</span>
         <span className="text-sm font-semibold tabular-nums" style={{ color }}>
@@ -60,9 +60,9 @@ export function UsageMetricsCard({ usage, dataQuality, funnel }: Props) {
   ] : [];
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-50 active:bg-cream-100 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
-        <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+        <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
           <IconChartBar size={18} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">Usage Metrics</h3>
@@ -70,13 +70,13 @@ export function UsageMetricsCard({ usage, dataQuality, funnel }: Props) {
 
       {/* Shot stats */}
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-2xl font-semibold text-warm-900 tabular-nums">
             {usage.totalShots.toLocaleString()}
           </p>
           <p className="text-xs text-warm-500 mt-0.5">Total Shots Tracked</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-3 text-center">
           <p className="text-2xl font-semibold text-warm-900 tabular-nums">
             {usage.totalRounds.toLocaleString()}
           </p>

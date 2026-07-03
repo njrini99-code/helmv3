@@ -84,7 +84,7 @@ export function PlayerHoverPreview({
       ref={panelRef}
       className={cn(
         'fixed z-50 w-72 pointer-events-auto',
-        'bg-white rounded-2xl shadow-2xl shadow-black/15',
+        'bg-cream-50 rounded-2xl shadow-2xl shadow-black/15',
         'border border-warm-200',
         'animate-scale-in origin-top-left',
         'overflow-hidden'
@@ -157,9 +157,10 @@ export function PlayerHoverPreview({
       {/* Video Preview (if available) */}
       {player.hasVideo && (
         <div className="p-4 pt-3 border-b border-warm-100">
-          <button
+          <Button
             type="button"
-            className="relative rounded-lg overflow-hidden bg-warm-100 aspect-video group cursor-pointer w-full"
+            variant="ghost"
+            className="relative rounded-lg overflow-hidden bg-warm-100 aspect-video group cursor-pointer w-full h-auto min-h-0 p-0 block"
             onClick={onView}
             aria-label={`Watch ${player.firstName} ${player.lastName} video`}
           >
@@ -186,7 +187,7 @@ export function PlayerHoverPreview({
             <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/70 text-white text-xs">
               Video Available
             </div>
-          </button>
+          </Button>
         </div>
       )}
 

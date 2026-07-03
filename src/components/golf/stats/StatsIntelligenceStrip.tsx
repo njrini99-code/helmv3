@@ -91,7 +91,7 @@ function TrendBadge({ trend }: { trend: PlayerStatsIntelligence['trend'] }) {
     >
       <Icon size={12} />
       {meta.label}
-      {deltaLabel && <span className="text-[10px] opacity-80">{deltaLabel}</span>}
+      {deltaLabel && <span className="text-eyebrow opacity-80">{deltaLabel}</span>}
     </span>
   );
 }
@@ -220,7 +220,7 @@ export function StatsIntelligenceStrip({
               )}
             >
               {compositeDisplay}
-              <span className="text-[10px] font-medium text-warm-400">/100</span>
+              <span className="text-eyebrow font-medium text-warm-400">/100</span>
             </span>
           )}
           <TrendBadge trend={data?.trend ?? null} />
@@ -248,7 +248,7 @@ export function StatsIntelligenceStrip({
             );
           })}
           {sampleTooSmall && (
-            <p className="text-[11px] text-warm-400 pt-1">
+            <p className="text-eyebrow text-warm-400 pt-1">
               Ratings are more reliable when the team has 3+ players with cached stats.
             </p>
           )}
@@ -259,7 +259,7 @@ export function StatsIntelligenceStrip({
       {hasInsights && topInsightRow && (
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500">
+            <p className="text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500">
               Top insight
             </p>
             <Link
@@ -267,7 +267,7 @@ export function StatsIntelligenceStrip({
               // coaches a "Player Dashboard Only" dead-end). Coaches go to the
               // Brief (/intelligence), the coach CoachHelm home.
               href={audience === 'coach' ? '/golf/dashboard/intelligence' : '/golf/dashboard/coachhelm'}
-              className="inline-flex items-center gap-0.5 text-[11px] font-medium text-primary-600 hover:text-primary-700"
+              className="inline-flex items-center gap-0.5 text-eyebrow font-medium text-primary-600 hover:text-primary-700"
             >
               View all in CoachHelm
               <IconChevronRight size={12} />

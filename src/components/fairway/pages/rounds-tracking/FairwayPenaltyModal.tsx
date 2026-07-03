@@ -46,20 +46,21 @@ export function FairwayPenaltyModal({ open, penaltyType, dispatch, onConfirm }: 
         <h2 className="mb-6 font-fw-display text-body-lg font-medium tracking-[-0.012em] text-text-primary">Add Penalty Stroke</h2>
         <div className="mb-6 space-y-2">
           {PENALTY_OPTIONS.map((p) => (
-            <button
+            <Button
               key={p.v}
               type="button"
+              variant="ghost"
               onClick={() => dispatch({ type: 'SET_PENALTY_TYPE', payload: p.v })}
               className={cn(
-                'min-h-[44px] w-full rounded-fw-md px-4 py-3 text-left font-fw-sans text-sm font-medium transition-colors',
+                'block h-auto min-h-[44px] w-full rounded-fw-md border-0 px-4 py-3 text-left font-fw-sans text-sm font-medium transition-colors',
                 'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                 penaltyType === p.v
-                  ? 'bg-fw-danger text-text-on-accent shadow-flat'
+                  ? 'bg-fw-danger text-text-on-accent shadow-flat hover:bg-fw-danger'
                   : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:bg-fw-danger-bg hover:ring-fw-danger/25',
               )}
             >
               {p.l}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex gap-3">

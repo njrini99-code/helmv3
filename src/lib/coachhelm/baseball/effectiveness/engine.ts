@@ -2,7 +2,7 @@
  * CoachHelm BASEBALL — Practice Effectiveness Engine (pure measurement core).
  *
  * Controlling spec:
- *   docs/baseballhelm_revolution_plan_v2/22_deeper_workflows_research_v7/
+ *   docs/archive/2026-06/baseballhelm_revolution_plan_v2/22_deeper_workflows_research_v7/
  *     v7_coachhelm_practice_effectiveness_engine.md
  *
  * THE V7 CORE QUESTION

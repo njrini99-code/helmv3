@@ -258,7 +258,7 @@ export function CourseDetailDrawer({
                   </button>
                 )}
               </div>
-              {/* eslint-disable-next-line helm/no-raw-input -- hidden native file picker (no design-system equivalent) */}
+              { }
               <input
                 ref={fileRef}
                 type="file"

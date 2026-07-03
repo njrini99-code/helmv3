@@ -36,7 +36,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
     <div
       className={cn(
         'border-b border-warm-50/80 transition-colors',
-        issue.severity === 'critical' ? 'bg-red-50/5 hover:bg-red-50/10' : 'hover:bg-white/40'
+        issue.severity === 'critical' ? 'bg-red-50/5 hover:bg-red-50/10' : 'hover:bg-cream-100'
       )}
     >
       {/* Main row */}
@@ -116,7 +116,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
                 <>
                   <span className="text-warm-300">|</span>
                   <span className="text-warm-400">Expected:</span>
-                  <span className="font-mono text-green-600 font-medium">{String(issue.expected_value)}</span>
+                  <span className="font-mono text-primary-600 font-medium">{String(issue.expected_value)}</span>
                 </>
               )}
             </div>

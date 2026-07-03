@@ -18,6 +18,8 @@ import { IconFilter as Filter, IconStethoscope as Stethoscope, IconArrowUpDown a
 import { timeAgo, formatDate } from '../admin-utils';
 import type { FlatRound, TracerIncident } from './tracer-types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 
 // ============================================================================
 // TYPES
@@ -204,15 +206,15 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Search */}
         <div className="relative w-full sm:w-auto sm:flex-1 min-w-0 sm:min-w-[200px]">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input
+          <Input
             type="text"
             placeholder="Search player or course..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            leftIcon={<IconSearch size={16} />}
             className={cn(
-              'w-full pl-9 pr-4 py-2.5 rounded-xl text-sm',
-              'bg-white/60 border border-white/30 text-warm-900 placeholder:text-warm-400',
+              'min-h-0 pl-9 pr-4 py-2.5 rounded-xl text-sm',
+              'glass-subtle text-warm-900 placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
               'transition-all duration-200'
             )}
@@ -221,12 +223,12 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
 
         {/* Status dropdown */}
         <div className="relative">
-          <select
+          <NativeSelect
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             className={cn(
-              'appearance-none pl-3 pr-8 py-2.5 rounded-xl text-sm font-medium',
-              'bg-white/60 border border-white/30 text-warm-700',
+              'min-h-0 pl-3 py-2.5 rounded-xl text-sm font-medium',
+              'glass-subtle text-warm-700',
               'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
               'transition-all duration-200 cursor-pointer'
             )}
@@ -235,8 +237,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             <option value="completed">Completed</option>
             <option value="in_progress">In Progress</option>
             <option value="draft">Draft</option>
-          </select>
-          <IconChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none" />
+          </NativeSelect>
         </div>
 
         {/* Stuck only toggle */}
@@ -246,7 +247,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             'flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200',
             stuckOnly
               ? 'bg-amber-100 border border-amber-300 text-amber-800'
-              : 'bg-white/60 border border-white/30 text-warm-500 hover:bg-white/80 hover:text-warm-700'
+              : 'glass-subtle text-warm-500 hover:bg-cream-100 hover:text-warm-700'
           )}
         >
           <IconClock size={14} />
@@ -268,7 +269,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             'flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200',
             hasErrorsOnly
               ? 'bg-red-100 border border-red-300 text-red-800'
-              : 'bg-white/60 border border-white/30 text-warm-500 hover:bg-white/80 hover:text-warm-700'
+              : 'glass-subtle text-warm-500 hover:bg-cream-100 hover:text-warm-700'
           )}
         >
           <IconWarning size={14} />
@@ -303,7 +304,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
       </p>
 
       {/* Table */}
-      <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-hidden min-w-0">
+      <div className="glass-standard rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-hidden min-w-0">
         <div className="overflow-x-auto -mx-px">
           <table className="w-full text-sm min-w-[640px] sm:min-w-0">
             <thead>
@@ -417,7 +418,7 @@ function RoundRow({
         className={cn(
           'border-b border-warm-50/80 cursor-pointer transition-colors',
           stuck && 'border-l-[3px] border-l-red-400 bg-red-50/20',
-          isExpanded ? 'bg-warm-50/40' : 'hover:bg-white/50'
+          isExpanded ? 'bg-warm-50/40' : 'hover:bg-cream-100'
         )}
         onClick={onToggle}
       >
@@ -542,7 +543,7 @@ function RoundRow({
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
               'border border-warm-200/60 text-warm-600',
-              'hover:bg-white/80 hover:border-warm-300 hover:text-warm-800 hover:shadow-sm'
+              'hover:bg-cream-100 hover:border-warm-300 hover:text-warm-800 hover:shadow-sm'
             )}
           >
             <Stethoscope size={12} />
@@ -717,7 +718,7 @@ function InlineError({ error }: { error: TracerIncident }) {
       )}>
         {error.severity}
       </span>
-      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-white/70 text-red-500">
+      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-cream-50 text-red-500">
         <IconShieldAlert size={11} />
       </span>
       <div className="min-w-0 flex-1">

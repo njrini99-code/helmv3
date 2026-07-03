@@ -7,7 +7,7 @@ import json, glob, os, re, time, csv
 
 REPO="/Users/ricknini/Downloads/helmv3"
 WF_PARENT="/Users/ricknini/.claude/projects/-Users-ricknini/f091ec6b-b133-4061-91a2-2e5a2aff285f/subagents/workflows"
-CSVP=f"{REPO}/docs/audits/_premium_scrub_2026-06-21/FINDINGS_CALIBRATED.csv"
+CSVP=f"{REPO}/docs/archive/2026-06/audits/_premium_scrub_2026-06-21/FINDINGS_CALIBRATED.csv"
 HQ="/tmp/helm_hq"; os.makedirs(HQ,exist_ok=True)
 STATE=f"{HQ}/state.json"; STATUS=f"{HQ}/status.json"
 

@@ -38,12 +38,10 @@ import {
 } from './generators/v10';
 import {
   runBaseballEventFamilyGenerators,
-  BASEBALL_EVENT_FAMILY_GENERATOR_IDS,
   BASEBALL_EVENT_FAMILY_INSIGHT_TYPES,
 } from './generators/event-families';
 import {
   runBaseballClassOpsGenerators,
-  BASEBALL_CLASS_OPS_GENERATOR_IDS,
   BASEBALL_CLASS_OPS_INSIGHT_TYPES,
   type ClassOpsInputs,
 } from './generators/class-ops';
@@ -144,33 +142,7 @@ export function runBaseballEngineV10(
 // Re-export the helper that the action still needs directly.
 export { scheduleConflictGenerator };
 
-/**
- * Every generator id the V10 engine can emit (base + V10 + composites). The
- * action uses this for stale-row reconciliation across the full surface.
- */
-export const BASEBALL_ALL_GENERATOR_IDS = [
-  // base
-  'two_strike_chase',
-  'game_vs_practice_gap',
-  'velo_command_decay',
-  'workload',
-  'schedule_conflict',
-  // V10 families
-  'readiness',
-  'lift_compliance',
-  'lift_rpe_spike',
-  'practice_effectiveness',
-  'import_quality',
-  'video_evidence',
-  // composites
-  'composite_command_decay',
-  'composite_translation_gap',
-  'composite_lift_to_field_risk',
-  // deepened event families (catching/defense/baserunning + hitting/pitching)
-  ...BASEBALL_EVENT_FAMILY_GENERATOR_IDS,
-  // class / operations
-  ...BASEBALL_CLASS_OPS_GENERATOR_IDS,
-] as const;
+
 
 /** Every insight_type the V10 engine emits (all AI-flaggable in the read model). */
 export const BASEBALL_ALL_INSIGHT_TYPES = [

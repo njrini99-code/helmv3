@@ -91,7 +91,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
             <Button variant="ghost"
               onClick={() => setActiveTab('batting')}
               className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500'
+                activeTab === 'batting' ? 'bg-cream-50 text-warm-900 shadow-sm' : 'text-warm-500'
               }`}
             >
               Batting
@@ -101,7 +101,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
             <Button variant="ghost"
               onClick={() => setActiveTab('pitching')}
               className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500'
+                activeTab === 'pitching' ? 'bg-cream-50 text-warm-900 shadow-sm' : 'text-warm-500'
               }`}
             >
               Pitching
@@ -115,7 +115,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               key={f}
               onClick={() => setGameTypeFilter(f)}
               className={`px-3 py-1 text-xs font-medium rounded-lg transition-all capitalize ${
-                gameTypeFilter === f ? 'bg-white text-warm-800 shadow-sm' : 'text-warm-400'
+                gameTypeFilter === f ? 'bg-cream-50 text-warm-800 shadow-sm' : 'text-warm-400'
               }`}
             >
               {f === 'all' ? 'All' : f === 'scrimmage' ? 'Scrimmages' : 'Games'}

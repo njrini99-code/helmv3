@@ -33,6 +33,7 @@
 
 import { useTransition } from 'react';
 import { Inset, Badge } from '@/components/fairway';
+import { Button } from '@/components/fairway/controls/button';
 import { cn } from '@/lib/utils';
 import {
   IconTarget,
@@ -170,24 +171,25 @@ function PracticeRxRow({ drill, onView }: PracticeRxRowProps) {
     }
   };
 
-  // A native <button> (not <Surface as="button">) so the button-only `type`
-  // and `disabled` attributes type-check — Surface's props are
-  // HTMLAttributes<HTMLDivElement>, which the polymorphic `as` does not widen.
+  // A Fairway <Button variant="ghost"> (not <Surface as="button">) so the
+  // button-only `type` and `disabled` attributes type-check — Surface's props
+  // are HTMLAttributes<HTMLDivElement>, which the polymorphic `as` does not widen.
   // Classes replicate Surface's matte `elevation="border" interactive` recipe
   // verbatim so the tile is visually identical to a clickable Surface.
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={handleClick}
       disabled={pending}
       data-slot="surface"
       data-testid="practice-rx-drill"
       className={cn(
-        'group relative block w-full rounded-card bg-surface px-4 py-3 text-left text-text-primary',
-        'border border-border-subtle shadow-flat',
+        'group relative block h-auto min-h-0 w-full rounded-card border bg-surface px-4 py-3 text-left font-normal text-text-primary',
+        'border-border-subtle shadow-flat',
         'cursor-pointer transition-[box-shadow,transform,border-color]',
         '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-        'hover:shadow-raise hover:-translate-y-px',
+        'hover:bg-surface hover:shadow-raise hover:-translate-y-px',
         'active:translate-y-[0.5px] active:shadow-flat',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
@@ -240,7 +242,7 @@ function PracticeRxRow({ drill, onView }: PracticeRxRowProps) {
           </div>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 

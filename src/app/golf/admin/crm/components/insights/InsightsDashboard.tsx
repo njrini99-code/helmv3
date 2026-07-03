@@ -86,7 +86,7 @@ export function InsightsDashboard() {
           <div
             role="tablist"
             aria-label="Insights time window"
-            className="inline-flex items-center bg-white/70 backdrop-blur-xl border border-white/20 rounded-full p-1 shadow-glass-sm"
+            className="inline-flex items-center glass-standard rounded-full p-1 shadow-glass-sm"
           >
             {WINDOWS.map((w) => {
               const isActive = w.id === window;
@@ -115,8 +115,8 @@ export function InsightsDashboard() {
             aria-label="Refresh insights"
             className={cn(
               'inline-flex items-center justify-center w-9 h-9 rounded-full',
-              'bg-white/70 border border-white/30 backdrop-blur-xl shadow-glass-sm',
-              'text-warm-600 hover:text-warm-900 hover:bg-white/90 transition-colors',
+              'glass-standard shadow-glass-sm',
+              'text-warm-600 hover:text-warm-900 hover:bg-cream-100 transition-colors',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >

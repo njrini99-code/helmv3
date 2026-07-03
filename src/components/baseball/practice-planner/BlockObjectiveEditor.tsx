@@ -29,10 +29,12 @@
 // does (an attached metric is what makes the focus MEASURABLE later).
 // =============================================================================
 
-import { useMemo, useState, useTransition } from 'react';
+import { useId, useMemo, useState, useTransition } from 'react';
 import { Target, Plus, Trash2, Check, X, Ruler, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   saveObjective,
   deleteObjective,
@@ -95,7 +97,7 @@ const DOMAIN_LABEL: Record<BaseballMetricDomain, string> = {
   operations: 'Operations',
 };
 
-/** Registry metric ids grouped by domain, label-sorted — for the <select>. */
+/** Registry metric ids grouped by domain, label-sorted — for the <NativeSelect>. */
 function useGroupedMetrics() {
   return useMemo(() => {
     const byDomain = new Map<BaseballMetricDomain, { id: string; label: string }[]>();
@@ -124,6 +126,8 @@ export function BlockObjectiveEditor({
   ensurePersisted,
 }: Props) {
   const grouped = useGroupedMetrics();
+  const focusAreaId = useId();
+  const repsPlannedId = useId();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -229,7 +233,7 @@ export function BlockObjectiveEditor({
           {blockObjectives.map((o) => (
             <li
               key={o.id}
-              className="flex items-start justify-between gap-2 rounded-lg border border-warm-100 bg-white/70 px-2.5 py-1.5"
+              className="flex items-start justify-between gap-2 rounded-lg border border-warm-100 bg-cream-50 px-2.5 py-1.5"
             >
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-warm-800">{o.focusArea}</p>
@@ -273,15 +277,16 @@ export function BlockObjectiveEditor({
 
       {/* Add form */}
       {adding && (
-        <div className="space-y-2 rounded-lg border border-warm-200 bg-white/80 p-2.5">
-          <label className="block">
+        <div className="space-y-2 rounded-lg border border-warm-200 bg-cream-50 p-2.5">
+          <label className="block" htmlFor={focusAreaId}>
             <span className="mb-1 block text-micro font-medium text-warm-600">Focus area</span>
-            <input
+            <Input
+              id={focusAreaId}
               type="text"
               value={focusArea}
               onChange={(e) => setFocusArea(e.target.value)}
               placeholder="Two-strike approach"
-              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none min-h-0"
             />
           </label>
 
@@ -290,7 +295,7 @@ export function BlockObjectiveEditor({
               <span className="mb-1 block text-micro font-medium text-warm-600">
                 Target metric (optional)
               </span>
-              <select
+              <NativeSelect
                 value={targetMetric}
                 onChange={(e) => setTargetMetric(e.target.value)}
                 className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
@@ -306,17 +311,18 @@ export function BlockObjectiveEditor({
                     ))}
                   </optgroup>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
-            <label className="block">
+            <label className="block" htmlFor={repsPlannedId}>
               <span className="mb-1 block text-micro font-medium text-warm-600">Reps planned</span>
-              <input
+              <Input
+                id={repsPlannedId}
                 type="number"
                 min={0}
                 value={repsPlanned}
                 onChange={(e) => setRepsPlanned(e.target.value)}
                 placeholder="e.g. 30"
-                className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none min-h-0"
               />
             </label>
           </div>
@@ -340,7 +346,7 @@ export function BlockObjectiveEditor({
                       className={`min-h-0 rounded-full border px-2 py-0.5 text-micro font-medium ${
                         on
                           ? 'border-primary-500 bg-primary-600 text-white hover:bg-primary-600'
-                          : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'
+                          : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-300'
                       }`}
                     >
                       {p.name}

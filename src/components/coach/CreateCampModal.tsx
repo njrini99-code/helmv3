@@ -3,6 +3,8 @@
 import { useState, useEffect, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
@@ -139,13 +141,12 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
             <label htmlFor={`${uid}-name`} className="block text-sm font-medium text-warm-700 mb-1">
               Camp Name *
             </label>
-            <input
+            <Input
               id={`${uid}-name`}
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
               placeholder="Summer Prospect Camp"
             />
           </div>
@@ -154,12 +155,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
             <label htmlFor={`${uid}-desc`} className="block text-sm font-medium text-warm-700 mb-1">
               Description
             </label>
-            <textarea
+            <Textarea
               id={`${uid}-desc`}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 resize-none"
               placeholder="Tell players what to expect..."
             />
           </div>
@@ -168,12 +168,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
             <label htmlFor={`${uid}-location`} className="block text-sm font-medium text-warm-700 mb-1">
               Location
             </label>
-            <input
+            <Input
               id={`${uid}-location`}
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
               placeholder="University Stadium, City, State"
             />
           </div>
@@ -183,25 +182,23 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
               <label htmlFor={`${uid}-start`} className="block text-sm font-medium text-warm-700 mb-1">
                 Start Date *
               </label>
-              <input
+              <Input
                 id={`${uid}-start`}
                 type="date"
                 required
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
               />
             </div>
             <div>
               <label htmlFor={`${uid}-end`} className="block text-sm font-medium text-warm-700 mb-1">
                 End Date
               </label>
-              <input
+              <Input
                 id={`${uid}-end`}
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
               />
             </div>
           </div>
@@ -211,13 +208,12 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
               <label htmlFor={`${uid}-capacity`} className="block text-sm font-medium text-warm-700 mb-1">
                 Capacity
               </label>
-              <input
+              <Input
                 id={`${uid}-capacity`}
                 type="number"
                 min="1"
                 value={formData.capacity}
                 onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
                 placeholder="50"
               />
             </div>
@@ -225,14 +221,13 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
               <label htmlFor={`${uid}-price`} className="block text-sm font-medium text-warm-700 mb-1">
                 Price ($)
               </label>
-              <input
+              <Input
                 id={`${uid}-price`}
                 type="number"
                 min="0"
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
                 placeholder="150.00"
               />
             </div>

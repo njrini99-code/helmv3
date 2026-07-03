@@ -183,13 +183,14 @@ export function FairwayAgendaView({
           {isCoach && onCreateEvent ? (
             <>
               {' '}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={onCreateEvent}
-                className="font-medium text-accent-600 underline-offset-4 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                className="inline h-auto min-h-0 w-auto border-0 p-0 font-medium text-accent-600 underline-offset-4 outline-none hover:bg-transparent hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 Schedule something
-              </button>
+              </Button>
               .
             </>
           ) : null}

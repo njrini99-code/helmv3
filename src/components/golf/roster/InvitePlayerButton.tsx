@@ -86,25 +86,15 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
 
   // Modal content
   const modalContent = (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      haptic="none"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 w-full h-full min-h-0 rounded-none cursor-default"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         backgroundColor: 'rgba(15, 23, 42, 0.5)',
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        cursor: 'default',
-        border: 'none',
-        width: '100%',
       }}
       aria-label="Close"
       onClick={(e) => {
@@ -183,7 +173,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
 
               <div className="bg-warm-50 rounded-lg p-4 border border-warm-200">
                 <p className="text-xs font-medium text-warm-500 mb-2">Invite Link</p>
-                <div className="text-sm text-warm-700 break-all font-mono select-all bg-white p-2 rounded border border-warm-100">
+                <div className="text-sm text-warm-700 break-all font-mono select-all bg-cream-50 p-2 rounded border border-warm-100">
                   {inviteLink}
                 </div>
               </div>
@@ -234,7 +224,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
           </Button>
         </div>
       </div>
-    </button>
+    </Button>
   );
 
   return (

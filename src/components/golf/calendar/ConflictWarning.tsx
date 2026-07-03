@@ -144,7 +144,7 @@ export function ConflictWarning({
                   <Button variant="ghost"
                     key={i}
                     onClick={() => onSelectTime(time)}
-                    className="px-3 py-2 bg-white hover:bg-amber-50 text-left rounded-lg text-sm border border-amber-200 hover:border-amber-400 transition-all shadow-sm hover:shadow group"
+                    className="px-3 py-2 bg-cream-50 hover:bg-amber-50 text-left rounded-lg text-sm border border-amber-200 hover:border-amber-400 transition-all shadow-sm hover:shadow group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-warm-700 group-hover:text-amber-900 font-medium">

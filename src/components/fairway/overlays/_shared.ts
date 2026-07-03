@@ -49,10 +49,10 @@ export const EASE_GLIDE: Transition['ease'] = [0.16, 1, 0.3, 1];
 export const EASE_SOFT: Transition['ease'] = [0.22, 0.61, 0.36, 1];
 
 /* ── Durations (seconds, mirror --fw-dur-* tokens) ────────────────────────── */
-export const DUR_FAST = 0.18;
-export const DUR_BASE = 0.28;
-export const DUR_MEDIUM = 0.38;
-export const DUR_SLOW = 0.52;
+const DUR_FAST = 0.18;
+const DUR_BASE = 0.28;
+const DUR_MEDIUM = 0.38;
+const DUR_SLOW = 0.52;
 
 /**
  * The dim scrim shared by ModalShell. Per §4.3 a full-viewport modal backdrop

@@ -246,7 +246,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         Day 1
                                     </span>
 
-                                    <h2 className="text-[38px] md:text-[56px] leading-[1.02] font-light tracking-[-0.035em] text-warm-900 mb-5">
+                                    <h2 className="text-display leading-[1.02] font-light tracking-[-0.035em] text-warm-900 mb-5">
                                         Submit your first round.
                                     </h2>
                                     <p className="text-sm md:text-base text-warm-500 max-w-lg mx-auto mb-7 leading-relaxed">

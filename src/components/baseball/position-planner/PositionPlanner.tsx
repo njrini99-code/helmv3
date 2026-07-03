@@ -225,10 +225,10 @@ export function PositionPlanner({
                     'shadow-md shadow-primary-500/10'
                   ]
                 : [
-                    'bg-gradient-to-br from-white/90 to-warm-50/70',
+                    'bg-gradient-to-br from-cream-50 to-warm-50/70',
                     'text-warm-600',
                     'border-warm-200/55',
-                    'hover:bg-white active:bg-cream-100/75 hover:shadow-md'
+                    'hover:bg-cream-100 active:bg-cream-100/75 hover:shadow-md'
                   ]
             )}
           >
@@ -450,7 +450,7 @@ function PositionEmptyMarker({
               'shadow-md'
             ]
           : [
-              'bg-white/40 backdrop-blur-sm',
+              'glass-subtle',
               'text-warm-400',
               'border-warm-200/60',
               'hover:bg-cream-100/68',

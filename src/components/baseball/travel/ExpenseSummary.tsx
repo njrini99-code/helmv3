@@ -59,7 +59,7 @@ export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
       </div>
 
       {/* Category Breakdown */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6">
         <h3 className="font-semibold text-warm-900 mb-4">By Category</h3>
         <div className="space-y-4">
           {ALL_CATEGORIES.map((category) => {
@@ -97,7 +97,7 @@ export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
       </div>
 
       {/* Payment Status */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6">
+      <div className="bg-cream-50 rounded-2xl border border-warm-200 p-6">
         <h3 className="font-semibold text-warm-900 mb-4">Payment Status</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-primary-50 rounded-xl">

@@ -12,6 +12,8 @@ import {
 } from '@/app/golf/actions/crm-sequences';
 import { SequenceCard } from './SequenceCard';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface SequencesListProps {
   selectedId: string | null;
@@ -117,7 +119,7 @@ export function SequencesList({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-16 rounded-xl bg-white/40 border border-white/20 skeleton-shimmer"
+              className="h-16 rounded-xl glass-subtle skeleton-shimmer"
             />
           ))}
         </div>
@@ -130,7 +132,7 @@ export function SequencesList({
       )}
 
       {!loading && !error && sequences.length === 0 && !showCreateForm && (
-        <div className="py-12 text-center bg-white/50 backdrop-blur-xl rounded-2xl border border-white/20">
+        <div className="py-12 text-center glass-standard rounded-2xl">
           <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
             <IconRocket size={24} className="text-warm-400" />
           </div>
@@ -203,7 +205,7 @@ function CreateSequenceForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white/70 backdrop-blur-xl border border-primary-200 rounded-2xl p-4 space-y-3 shadow-glass"
+      className="glass-standard border-primary-200 rounded-2xl p-4 space-y-3 shadow-glass"
     >
       <div>
         <label
@@ -213,7 +215,7 @@ function CreateSequenceForm({
           Name <span className="text-red-500">*</span>
         </label>
         {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-        <input autoFocus
+        <Input autoFocus
           id="seq-name"
           type="text"
           required
@@ -221,7 +223,7 @@ function CreateSequenceForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Cold outreach — D2 women's golf"
-          className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+          className="text-sm min-h-0 py-2 rounded-lg"
         />
       </div>
       <div>
@@ -232,13 +234,13 @@ function CreateSequenceForm({
           Description{' '}
           <span className="text-warm-400 font-normal">(optional)</span>
         </label>
-        <textarea
+        <Textarea
           id="seq-desc"
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What is this sequence for?"
-          className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+          className="text-sm py-2 rounded-lg"
         />
       </div>
 

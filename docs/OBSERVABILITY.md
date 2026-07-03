@@ -76,7 +76,7 @@ it's safe to detach.
 ## Client-side errors
 
 Client components can't import `server-only` modules. Use the existing
-`src/lib/error-monitoring.ts` `logError` helper or Sentry's
+`src/lib/error-logging.ts` `logError` helper or Sentry's
 `@sentry/nextjs` `captureException` directly. For error boundaries, let
 the existing `global-error.tsx` and per-route `error.tsx` components
 handle it — they're already wired to Sentry.

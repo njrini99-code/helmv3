@@ -92,7 +92,7 @@ export function HealthCheckGrid({ health, errorLogs, loginSecurity, dataQuality:
       {/* Header with overall status badge — no duplicate summary tiles */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-white/60 p-2 text-warm-500">
+          <div className="rounded-lg glass-subtle p-2 text-warm-500">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
             </svg>
@@ -139,7 +139,7 @@ export function HealthCheckGrid({ health, errorLogs, loginSecurity, dataQuality:
                 <p className="mt-1 text-sm leading-6 text-warm-600">{check.detail}</p>
               </div>
               {check.value ? (
-                <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-right">
+                <div className="rounded-xl glass-standard px-3 py-2 text-right">
                   <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Signal</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums text-warm-900">{check.value}</p>
                 </div>
@@ -151,7 +151,7 @@ export function HealthCheckGrid({ health, errorLogs, loginSecurity, dataQuality:
 
       {/* Storage breakdown — retained for quick storage insight */}
       {health.largestTables.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-white/35 bg-white/55 p-4">
+        <div className="mt-4 rounded-2xl glass-subtle p-4">
           <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">Storage Breakdown</p>
           <div className="mt-3 space-y-2">
             {health.largestTables.slice(0, 5).map((table) => {

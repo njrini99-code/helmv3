@@ -90,7 +90,7 @@ export const TeamCard = memo(function TeamCard({
   return (
     <motion.div
       className={cn(
-        'group relative rounded-2xl bg-white border border-warm-200/80 overflow-hidden',
+        'group relative rounded-2xl bg-cream-50 border border-warm-200/80 overflow-hidden',
         'transition-all duration-300 ease-out cursor-pointer',
         'hover:border-warm-300 hover:shadow-lg hover:shadow-warm-200/50',
         className
@@ -317,7 +317,7 @@ export function TeamCardGrid({
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl bg-white border border-warm-200/80 p-4 animate-pulse"
+            className="rounded-2xl bg-cream-50 border border-warm-200/80 p-4 animate-pulse"
           >
             <div className="flex items-start gap-3">
               <div className="w-11 h-11 rounded-lg bg-warm-200" />

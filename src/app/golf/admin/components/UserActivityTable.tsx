@@ -7,6 +7,7 @@ import { IconUsers, IconSearch } from '@/components/icons';
 import { DataExportButton } from './DataExportButton';
 import { timeAgo, formatDate } from './admin-utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface Props {
   users: AdminDashboardData['userDirectory'];
@@ -143,10 +144,10 @@ export function UserActivityTable({ users }: Props) {
   }, [filtered]);
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-200 hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
             <IconUsers size={18} />
           </div>
           <div>
@@ -163,13 +164,13 @@ export function UserActivityTable({ users }: Props) {
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">
-          <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input
+          <Input
             type="text"
             placeholder="Search name, email, team..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            className="w-full pl-9 pr-3 py-2 text-sm bg-white/60 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 text-warm-700 placeholder-warm-400"
+            leftIcon={<IconSearch size={14} />}
+            className="py-2 text-sm"
           />
         </div>
         <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
@@ -177,7 +178,7 @@ export function UserActivityTable({ users }: Props) {
             onClick={() => { setRoleFilter('all'); setPage(0); }}
             className={cn(
               'shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-              roleFilter === 'all' ? 'bg-warm-900 text-white' : 'bg-white/50 text-warm-500 hover:bg-white/70'
+              roleFilter === 'all' ? 'bg-warm-900 text-white' : 'bg-cream-50 text-warm-500 hover:bg-cream-100'
             )}
           >
             All ({users.length})
@@ -188,7 +189,7 @@ export function UserActivityTable({ users }: Props) {
               onClick={() => { setRoleFilter(role); setPage(0); }}
               className={cn(
                 'shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize',
-                roleFilter === role ? 'bg-warm-900 text-white' : 'bg-white/50 text-warm-500 hover:bg-white/70'
+                roleFilter === role ? 'bg-warm-900 text-white' : 'bg-cream-50 text-warm-500 hover:bg-cream-100'
               )}
             >
               {role}s ({count})
@@ -228,7 +229,7 @@ export function UserActivityTable({ users }: Props) {
               const engagement = getEngagementLevel(u);
               const rowHighlight = getRowHighlight(u);
               return (
-                <tr key={u.id} className={cn('border-b border-warm-50 hover:bg-white/40 transition-colors', rowHighlight)}>
+                <tr key={u.id} className={cn('border-b border-warm-50 hover:bg-cream-100 transition-colors', rowHighlight)}>
                   <td className="py-2.5 px-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
@@ -313,14 +314,14 @@ export function UserActivityTable({ users }: Props) {
             <Button variant="ghost"
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs rounded-lg bg-cream-50 text-warm-600 hover:bg-cream-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Prev
             </Button>
             <Button variant="ghost"
               onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
               disabled={page >= pageCount - 1}
-              className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs rounded-lg bg-cream-50 text-warm-600 hover:bg-cream-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
             </Button>

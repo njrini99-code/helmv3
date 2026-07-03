@@ -20,12 +20,7 @@ export const GENOME_CATEGORIES = [
 ] as const;
 export type GenomeCategory = (typeof GENOME_CATEGORIES)[number];
 
-/**
- * Per Part XIII: each dimension requires ≥8 rounds. Below that the
- * orchestrator records `null` for the dimension (UI shows "needs more
- * rounds" in that slot).
- */
-export const MIN_ROUNDS_PER_DIMENSION = 8;
+
 
 /**
  * Result of one dimension computation. value=null means "insufficient

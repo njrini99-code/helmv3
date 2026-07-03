@@ -10,7 +10,6 @@
 
 export {
   FairwayDocuments,
-  default as FairwayDocumentsDefault,
   type FairwayDocumentsProps,
   type FairwayDocument,
 } from './FairwayDocuments';

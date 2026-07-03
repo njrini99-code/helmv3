@@ -941,21 +941,21 @@ export function PlayerInsightClient({
                 </Link>
                 <Link
                   href={`/golf/dashboard/development?player=${player.id}`}
-                  className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex-shrink-0"
+                  className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex-shrink-0"
                 >
                   <IconTarget size={16} />
                   Create Focus Area
                 </Link>
                 <Link
                   href={`/golf/dashboard/stats?player=${player.id}`}
-                  className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex-shrink-0"
+                  className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex-shrink-0"
                 >
                   <IconChartBar size={16} />
                   View Full Stats
                 </Link>
                 <Link
                   href={`/golf/dashboard/calendar`}
-                  className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex-shrink-0"
+                  className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-cream-50 border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex-shrink-0"
                 >
                   <IconEye size={16} />
                   Schedule Practice

@@ -128,7 +128,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
   return (
     <div
       className={cn(
-        'bg-white rounded-xl border border-warm-200 overflow-hidden',
+        'bg-cream-50 rounded-xl border border-warm-200 overflow-hidden',
         'hover:border-warm-300 transition-all',
         className
       )}
@@ -239,7 +239,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium
-                         bg-white text-warm-700 border border-warm-200
+                         bg-cream-50 text-warm-700 border border-warm-200
                          hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 Cancel

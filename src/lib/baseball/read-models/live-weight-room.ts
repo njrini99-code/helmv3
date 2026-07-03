@@ -7,8 +7,10 @@
 // logger drawer — without opening individual profiles.
 //
 // Source -> signal -> action wiring:
-//   source : today's materialized baseball_lift_sessions + session_exercises +
-//            set_results, plus readiness bands + availability + soreness.
+//   source : today's materialized helm_lifting_sessions + session_exercises +
+//            set_results (the unified Helm Lifting Lab tables — see the
+//            W2-G rewire note below), plus readiness bands + availability +
+//            soreness.
 //   signal : the right-rail queues (needs-coach / readiness flags / load changes /
 //            missing check-ins) are DERIVED here from those sources — they are not
 //            stored, so they can never drift from the truth.
@@ -95,16 +97,52 @@ export async function getLiveWeightRoomData(
     .filter((p: RosterRow | null): p is RosterRow => Boolean(p?.id));
   const rosterById = new Map(roster.map((p) => [p.id, p]));
 
+  // ---- Helm Lifting Lab org + athlete-id map (resolved once, reused below) --
+  // W2-G rewire: createLiftAssignment / publishLiftDay / logLiftResult write
+  // sessions + session_exercises + set_results ONLY to the unified
+  // helm_lifting_* tables now — the legacy baseball_lift_sessions /
+  // _session_exercises / _set_results tables are write-dead (this flagship
+  // staff screen rendered empty for real activity while reading them).
+  // helm_lifting_athletes.id is the join key; player_id-shaped downstream code
+  // is preserved by mapping athlete_id -> player_id immediately on read.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const rosterPlayerIds = roster.map((p) => p.id);
+  const athleteMap = liftCtx && rosterPlayerIds.length
+    ? await resolveBaseballAthleteIds(liftCtx.organizationId, rosterPlayerIds)
+    : {};
+  const athleteToPlayer = new Map<string, string>();
+  for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
+  const teamAthleteIds = Object.values(athleteMap);
+
   // ---- Today's materialized sessions --------------------------------------
-  const { data: sessionRows } = await supabase
-    .from('baseball_lift_sessions')
-    .select('id, player_id, status, scheduled_date, title')
-    .eq('team_id', teamId)
-    .eq('scheduled_date', today);
-  let sessions = (sessionRows ?? []) as Array<{
+  let sessions: Array<{
     id: string; player_id: string; status: BaseballLiftSessionStatus;
     scheduled_date: string; title: string | null;
-  }>;
+  }> = [];
+  if (liftCtx && teamAthleteIds.length) {
+    const { data: helmSessionRows } = await fromUntyped(supabase, 'helm_lifting_sessions')
+      .select('id, athlete_id, status, scheduled_date, title')
+      .eq('organization_id', liftCtx.organizationId)
+      .eq('team_id', teamId)
+      .eq('scheduled_date', today)
+      .in('athlete_id', teamAthleteIds) as {
+      data: Array<{
+        id: string; athlete_id: string; status: BaseballLiftSessionStatus;
+        scheduled_date: string; title: string | null;
+      }> | null;
+    };
+    for (const s of helmSessionRows ?? []) {
+      const playerId = athleteToPlayer.get(s.athlete_id);
+      if (!playerId) continue; // athlete not on this team's resolved roster — skip.
+      sessions.push({
+        id: s.id,
+        player_id: playerId,
+        status: s.status,
+        scheduled_date: s.scheduled_date,
+        title: s.title,
+      });
+    }
+  }
 
   // ---- Strength-group names per player + the group filter ------------------
   const { data: groupRows } = await supabase
@@ -143,8 +181,9 @@ export async function getLiveWeightRoomData(
   const exercisesBySession = new Map<string, BaseballLiveExerciseRow[]>();
   const seToSession = new Map<string, string>();
   if (sessionIds.length) {
-    const { data: seRows } = await supabase
-      .from('baseball_lift_session_exercises')
+    // helm_lifting_session_exercises mirrors the legacy column vocabulary
+    // exactly, so the select list + downstream mapping is unchanged.
+    const { data: seRows } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
       .select('id, session_id, exercise_id, exercise_name_snapshot, section_name_snapshot, section_type_snapshot, order_index, prescribed_sets, prescribed_reps, prescribed_load, prescribed_load_unit, prescribed_rpe, modification_reason, status')
       .in('session_id', sessionIds)
       .order('order_index', { ascending: true });
@@ -186,8 +225,7 @@ export async function getLiveWeightRoomData(
   const seIds = Array.from(seToSession.keys());
   const setsBySe = new Map<string, BaseballLiveSetRow[]>();
   if (seIds.length) {
-    const { data: setRows } = await supabase
-      .from('baseball_lift_set_results')
+    const { data: setRows } = await fromUntyped(supabase, 'helm_lifting_set_results')
       .select('session_exercise_id, set_number, prescribed_reps, actual_reps, prescribed_load, actual_load, load_unit, rpe, velocity, coach_observed, completed_at, player_note')
       .in('session_exercise_id', seIds)
       .order('set_number', { ascending: true });
@@ -230,19 +268,10 @@ export async function getLiveWeightRoomData(
 
     // W2-G rewire: submitReadinessCheckin (lifting.ts) writes ONLY to
     // helm_lifting_readiness_checkins now — the legacy baseball_readiness_
-    // checkins table is write-dead. Resolve org + athlete-id map for the
-    // roster, then read helm and remap results back into the SAME
+    // checkins table is write-dead. Reuse the org + athlete-id map resolved
+    // above (sessions section) and remap results back into the SAME
     // Record<string, unknown> shape (keyed with legacy field names) the
     // computeReadiness() call below already expects.
-    const liftCtx = await resolveBaseballLiftingOrg(teamId);
-    const rosterPlayerIds = roster.map((p) => p.id);
-    const athleteMap = liftCtx && rosterPlayerIds.length
-      ? await resolveBaseballAthleteIds(liftCtx.organizationId, rosterPlayerIds)
-      : {};
-    const athleteToPlayer = new Map<string, string>();
-    for (const [pid, aid] of Object.entries(athleteMap)) athleteToPlayer.set(aid, pid);
-    const teamAthleteIds = Object.values(athleteMap);
-
     const latestCheckin = new Map<string, Record<string, unknown>>();
     const checkinIds: string[] = [];
     if (liftCtx && teamAthleteIds.length) {

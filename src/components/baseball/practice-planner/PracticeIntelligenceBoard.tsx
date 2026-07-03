@@ -126,7 +126,7 @@ export function PracticeIntelligenceBoard({
             <li
               key={signal.insightId}
               className={cn(
-                'rounded-xl border bg-white/85 p-3',
+                'rounded-xl border glass-standard p-3',
                 converted ? 'border-primary-200 bg-primary-50/50' : 'border-warm-200',
               )}
             >

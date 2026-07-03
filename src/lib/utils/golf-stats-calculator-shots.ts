@@ -1469,7 +1469,6 @@ function aggregateRoundStats(rounds: Array<{
   };
 
   // Accumulators
-  let totalScore = 0;
   let totalScore18 = 0;
   let totalScore9 = 0;
   let totalScoreToPar18 = 0; // strictly-18-hole rounds only (canonical scoring_average_vs_par)
@@ -1647,8 +1646,6 @@ function aggregateRoundStats(rounds: Array<{
     const is9Hole = holesInRound <= 9; // for round-type (practice/qual/tourney) gating below
 
     if (hasCompleteScores) {
-      totalScore += round.totalScore;
-
       // Best/worst (overall) is normalized to an 18-hole equivalent across ALL
       // rounds, mirroring the cache best_round_normalized = MIN(total_score * 18
       // / holes_played).

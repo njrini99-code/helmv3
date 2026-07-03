@@ -1,6 +1,6 @@
 # Playwright Setup Guide for GolfHelm
 **Purpose:** End-to-end testing with real browser automation
-**Framework:** Next.js 14 + TypeScript + Supabase
+**Framework:** Next.js 16 + TypeScript + Supabase
 
 ---
 

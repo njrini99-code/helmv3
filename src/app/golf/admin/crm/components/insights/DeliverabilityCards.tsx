@@ -35,7 +35,7 @@ export function DeliverabilityCards({ summary, loading }: DeliverabilityCardsPro
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5"
+            className="glass-standard rounded-2xl shadow-glass p-5"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 space-y-2">
@@ -141,7 +141,7 @@ function KpiCard({
   return (
     <div
       className={cn(
-        'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5',
+        'glass-standard rounded-2xl p-5',
         'shadow-glass transition-[transform,box-shadow] duration-200 group',
         'hover:-translate-y-0.5 hover:shadow-lg',
       )}

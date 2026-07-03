@@ -120,7 +120,7 @@ export function MatchScoreBadge({
 
       {/* Breakdown dropdown */}
       {isExpanded && breakdown && (
-        <div className="absolute top-full left-0 right-0 z-10 bg-white rounded-b-xl border border-t-0 border-warm-200 shadow-lg overflow-hidden">
+        <div className="absolute top-full left-0 right-0 z-10 glass-prominent rounded-b-xl border-t-0 shadow-lg overflow-hidden">
           {/* Score bar */}
           <div className="p-3 bg-warm-50">
             <div className="h-3 bg-warm-200 rounded-full overflow-hidden">
@@ -191,7 +191,7 @@ export function MatchScoreInline({
         className={cn(
           'w-2 h-2 rounded-full',
           tier.tier === 'excellent' && 'bg-primary-500',
-          tier.tier === 'good' && 'bg-emerald-500',
+          tier.tier === 'good' && 'bg-primary-400',
           tier.tier === 'average' && 'bg-amber-500',
           tier.tier === 'below_average' && 'bg-orange-500',
           tier.tier === 'poor' && 'bg-red-500'

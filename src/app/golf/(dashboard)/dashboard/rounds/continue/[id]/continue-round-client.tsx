@@ -991,7 +991,7 @@ export default function ContinueRoundClient({
             <p className="text-sm font-medium">All holes completed — ready to submit!</p>
             <Button variant="primary"
               onClick={() => setShowFinishConfirm(true)}
-              className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+              className="px-4 py-2 rounded-lg bg-cream-50 text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
             >
               Submit Round
             </Button>
@@ -1190,7 +1190,7 @@ export default function ContinueRoundClient({
                       transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 })}
                       className="relative"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
+                      <div className="w-12 h-12 rounded-xl glass-subtle flex items-center justify-center mx-auto mb-3">
                         <IconFlag size={24} className="text-white" />
                       </div>
                       <h3 className="text-lg font-medium text-white/90 mb-1">Round Complete</h3>
@@ -1256,7 +1256,7 @@ export default function ContinueRoundClient({
                         </div>
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                           {fs.slice(0, 9).map((h, i) => (
-                            <div key={`p${i}`} className="bg-white text-center py-1">
+                            <div key={`p${i}`} className="bg-cream-50 text-center py-1">
                               <span className="text-eyebrow text-warm-400">{h?.par}</span>
                             </div>
                           ))}
@@ -1278,7 +1278,7 @@ export default function ContinueRoundClient({
                             </div>
                             <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                               {fs.slice(9, 18).map((h, i) => (
-                                <div key={`p2${i}`} className="bg-white text-center py-1">
+                                <div key={`p2${i}`} className="bg-cream-50 text-center py-1">
                                   <span className="text-eyebrow text-warm-400">{h?.par}</span>
                                 </div>
                               ))}

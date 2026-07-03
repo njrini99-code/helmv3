@@ -86,7 +86,7 @@ function GoalCard({
         'rounded-2xl border p-4 transition-all',
         isCompleted
           ? 'bg-primary-50/50 border-primary-200 backdrop-blur-xl'
-          : 'bg-white/70 backdrop-blur-xl border-white/20 shadow-glass hover:bg-white/80 hover:shadow-card-hover'
+          : 'glass-standard shadow-glass hover:bg-cream-100 hover:shadow-card-hover'
       )}
     >
       <div className="flex items-start gap-3">
@@ -259,7 +259,7 @@ function DevPlanSkeleton() {
       {/* Goals skeleton */}
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="rounded-xl border border-warm-200 p-4 bg-white">
+          <div key={i} className="rounded-xl border border-warm-200 p-4 bg-cream-50">
             <div className="flex items-start gap-3">
               <Skeleton className="w-6 h-6 rounded-full flex-shrink-0" />
               <div className="flex-1 space-y-3">

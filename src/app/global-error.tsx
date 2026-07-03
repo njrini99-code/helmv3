@@ -56,7 +56,7 @@ export default function GlobalError({
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button variant="ghost"
                 onClick={reset}
-                className="px-4 py-2 bg-white hover:bg-warm-50 text-warm-700 border border-warm-200 hover:border-warm-300 rounded-lg font-medium transition-colors"
+                className="px-4 py-2 bg-cream-50 hover:bg-warm-50 text-warm-700 border border-warm-200 hover:border-warm-300 rounded-lg font-medium transition-colors"
               >
                 Try again
               </Button>

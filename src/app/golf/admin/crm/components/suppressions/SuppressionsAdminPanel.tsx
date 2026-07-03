@@ -18,6 +18,8 @@ import type {
 } from '@/app/golf/admin/crm/types/foundations';
 import { SuppressionRow } from './SuppressionRow';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 // ============================================================================
 // SuppressionsAdminPanel — full-page admin surface for managing the
@@ -142,7 +144,7 @@ export function SuppressionsAdminPanel() {
       </header>
 
       {/* Add form */}
-      <section className="rounded-2xl border border-warm-200/60 bg-white p-4">
+      <section className="rounded-2xl border border-warm-200/60 bg-cream-50 p-4">
         <h2 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
           <IconPlus size={14} className="text-primary-600" />
           Add suppression
@@ -151,28 +153,22 @@ export function SuppressionsAdminPanel() {
           <div className="relative">
             <IconMail
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none z-10"
             />
-            <input
+            <Input
               type="email"
               required
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               placeholder="email@example.com"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+              className="pl-9 pr-3 py-2 text-sm min-h-0"
             />
           </div>
-          <select
+          <Select
+            options={ADD_REASON_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
             value={newReason}
-            onChange={(e) => setNewReason(e.target.value as SuppressionReason)}
-            className="px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
-          >
-            {ADD_REASON_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setNewReason(value as SuppressionReason)}
+          />
           <Button variant="primary"
             type="submit"
             disabled={adding || !newEmail.trim()}
@@ -193,7 +189,7 @@ export function SuppressionsAdminPanel() {
       </section>
 
       {/* Filter row */}
-      <section className="rounded-2xl border border-warm-200/60 bg-white">
+      <section className="rounded-2xl border border-warm-200/60 bg-cream-50">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-warm-100">
           <div className="flex items-center gap-1.5 flex-wrap">
             {REASON_FILTERS.map((opt) => {
@@ -208,7 +204,7 @@ export function SuppressionsAdminPanel() {
                     'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors',
                     isActive
                       ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-warm-700 border-warm-200/80 hover:border-warm-300',
+                      : 'bg-cream-50 text-warm-700 border-warm-200/80 hover:border-warm-300',
                   )}
                 >
                   {opt.label}
@@ -224,12 +220,12 @@ export function SuppressionsAdminPanel() {
               );
             })}
           </div>
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search emails..."
-            className="px-3 py-1.5 text-xs rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 w-56"
+            className="px-3 py-1.5 text-xs min-h-0 w-56"
           />
         </div>
 

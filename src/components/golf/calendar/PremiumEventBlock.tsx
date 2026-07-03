@@ -13,6 +13,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { getEventClasses, formatTime } from '@/lib/calendar/premium-utils';
 import {
   Calendar,
@@ -55,12 +56,13 @@ export function PremiumEventBlock({
   const hasRSVP = event.requires_rsvp && (event.rsvp_total_count ?? 0) > 0;
 
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       onClick={onClick}
       className={cn(
         // Base glass styles
-        'relative pl-2.5 pr-2 cursor-pointer text-left w-full',
+        'relative pl-2.5 pr-2 cursor-pointer text-left w-full h-auto min-h-0 justify-start',
         'border-l-[3px] rounded-lg',
         // Glass treatment
         'backdrop-blur-sm',
@@ -81,7 +83,7 @@ export function PremiumEventBlock({
       }}
     >
       {/* Main content */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 w-full">
         <div className="flex-1 min-w-0">
           {/* Title */}
           <div className="flex items-center gap-2">
@@ -144,7 +146,7 @@ export function PremiumEventBlock({
           <EventStatusBadge status={event.status} compact={compact} />
         </div>
       )}
-    </button>
+    </Button>
   );
 }
 

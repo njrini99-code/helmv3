@@ -12,6 +12,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { validateAccessCode } from '@/app/golf/actions/access-code';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // Component to render sign-in link with returnTo param preserved
 function SignInLink() {
@@ -145,7 +146,7 @@ export default function SignupPage() {
 
               <form onSubmit={handleCodeSubmit} className="space-y-4">
                 <div>
-                  <input
+                  <Input
                     type="text"
                     inputMode="text"
                     pattern="[A-Za-z0-9]*"

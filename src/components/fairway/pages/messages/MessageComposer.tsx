@@ -29,6 +29,8 @@ import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
 import type { PendingAttachment } from '@/lib/storage/attachments';
+import { Textarea } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 /* ─── Length limit — mirrors sendMessageSchema (action-schemas.ts:42,
  *     content.max(5000)) so the field hard-prevents overflow (maxLength) and the
@@ -206,7 +208,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           className="mb-0.5 text-text-tertiary"
         />
 
-        <textarea
+        <Textarea
           ref={textareaRef}
           value={message}
           onChange={handleChange}
@@ -215,21 +217,22 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           rows={1}
           maxLength={MESSAGE_MAX}
           className={cn(
-            'flex-1 resize-none bg-transparent px-2 py-2',
+            'flex-1 resize-none rounded-none border-0 bg-transparent px-2 py-2 min-h-0',
             'font-fw-sans text-base text-text-primary lg:text-body',
-            'placeholder:text-text-tertiary focus:outline-none',
+            'placeholder:text-text-tertiary focus:outline-none focus:ring-0',
           )}
           style={{ minHeight: '40px', maxHeight: '120px' }}
         />
 
         {/* GOTCHA §a: the send button is a NATIVE <button> with matte token
             classes — NOT a Surface as="button". ONE primary action. */}
-        <button
+        <Button
           type="submit"
+          variant="ghost"
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-fw-md md:h-10 md:w-10',
+            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-fw-md p-0 md:h-10 md:w-10',
             'outline-none transition-all duration-200',
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
             'active:scale-95 motion-reduce:active:scale-100',
@@ -247,7 +250,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           ) : (
             <Send size={18} aria-hidden="true" />
           )}
-        </button>
+        </Button>
       </div>
 
       <div className="mt-1.5 flex items-center justify-between gap-2 px-2">

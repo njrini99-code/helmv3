@@ -123,7 +123,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
 
   if (loading) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center gap-2 text-sm text-warm-500">
           <IconLoader size={14} className="animate-spin" />
           Loading sequence…
@@ -134,14 +134,14 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
 
   if (error || !sequence) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-red-200 rounded-2xl p-6">
+      <div className="bg-cream-50 backdrop-blur-xl border border-red-200 rounded-2xl p-6">
         <p className="text-sm text-red-700">{error ?? 'Sequence not found'}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-6">
+    <div className="glass-standard rounded-2xl shadow-glass p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -157,7 +157,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
           onClick={() => setEnrollDialogOpen(true)}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-white border border-warm-200/60 text-warm-700',
+            'bg-cream-50 border border-warm-200/60 text-warm-700',
             'hover:bg-warm-50 active:bg-warm-100 transition-colors',
           )}
         >
@@ -244,8 +244,8 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                     }}
                     className={cn(
                       'group w-full text-left flex items-center gap-3 p-4',
-                      'bg-white/80 border border-warm-200/60 rounded-xl',
-                      'hover:bg-white hover:shadow-sm transition-all',
+                      'bg-cream-50 border border-warm-200/60 rounded-xl',
+                      'hover:bg-cream-100 hover:shadow-sm transition-all',
                     )}
                   >
                     <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-bold text-sm flex items-center justify-center">

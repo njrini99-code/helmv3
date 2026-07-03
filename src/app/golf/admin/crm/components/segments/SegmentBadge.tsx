@@ -56,8 +56,8 @@ export function SegmentBadge({
         'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md',
         'text-sm font-medium transition-all duration-200',
         isActive
-          ? 'bg-white/15 text-white'
-          : 'text-warm-400 hover:bg-white/5 hover:text-white',
+          ? 'bg-cream-50/15 text-white'
+          : 'text-warm-400 hover:bg-cream-50/5 hover:text-white',
         className,
       )}
     >
@@ -71,7 +71,7 @@ export function SegmentBadge({
             'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
             isActive
               ? 'bg-primary-500/20 text-primary-200'
-              : 'bg-white/5 text-warm-500',
+              : 'bg-cream-50/5 text-warm-500',
           )}
         >
           {count}

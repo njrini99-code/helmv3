@@ -6,6 +6,8 @@ import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp,
 import type { CoachStatus } from '../crm-config';
 import { SaveSegmentDialog } from './segments/SaveSegmentDialog';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 export interface Filters {
   status: CoachStatus | 'all';
@@ -69,8 +71,9 @@ function FacetChip({
   children: React.ReactNode;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
@@ -81,7 +84,7 @@ function FacetChip({
       )}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -205,11 +208,28 @@ export function CoachFilters({
   if (filters.noContact30Days) activeChips.push({ key: 'noContact30Days', label: 'No Contact 30d', onRemove: () => setFilters(f => ({ ...f, noContact30Days: false })) });
   if (filters.primaryOnly) activeChips.push({ key: 'primaryOnly', label: 'Primary Only', onRemove: () => setFilters(f => ({ ...f, primaryOnly: false })) });
 
-  const selectClass = cn(
-    'w-full px-3 min-h-[44px] rounded-lg text-xs font-medium cursor-pointer transition-all duration-200',
-    'bg-white/60 border text-warm-700',
-    'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400',
+  const selectClass = (active: boolean) => cn(
+    'w-full min-h-[44px] rounded-lg text-xs font-medium',
+    'bg-cream-50 text-warm-700',
+    active ? 'border-primary-300 bg-primary-50/70 text-primary-700' : 'border-warm-200/60',
   );
+
+  const statusOptions = [
+    { value: 'all', label: 'Any status' },
+    ...(Object.keys(statusConfig) as CoachStatus[]).map(s => ({ value: s, label: statusConfig[s].label })),
+  ];
+  const conferenceOptions = [
+    { value: 'all', label: 'Any conference' },
+    ...conferences.map(conf => ({ value: conf, label: conf })),
+  ];
+  const priorityOptions = [
+    { value: 'all', label: 'Any priority' },
+    ...PRIORITY_OPTIONS,
+  ];
+  const queueOptions = [
+    { value: 'all', label: 'Any queue status' },
+    ...QUEUE_OPTIONS,
+  ];
 
   return (
     <div className="glass-standard rounded-2xl p-4 space-y-3">
@@ -217,40 +237,32 @@ export function CoachFilters({
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          {isDebouncing ? (
-            <IconLoader size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400 animate-spin pointer-events-none" />
-          ) : (
-            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none" />
-          )}
-          <input
+          <Input
             type="text"
             placeholder="Search coaches, schools, conferences..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
+            clearable
+            onClear={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }}
+            leftIcon={isDebouncing ? (
+              <IconLoader size={16} className="animate-spin" />
+            ) : (
+              <IconSearch size={16} />
+            )}
             className={cn(
-              'w-full pl-9 pr-9 min-h-[44px] rounded-lg text-sm',
-              'bg-white/60 border border-warm-200/60',
+              'min-h-[44px] rounded-lg text-sm',
+              'bg-cream-50 border border-warm-200/60',
               'text-warm-900 placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400',
               'transition-all duration-200',
             )}
           />
-          {localSearch && (
-            <IconButton
-              variant="ghost"
-              size="sm"
-              aria-label="Clear search"
-              onClick={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 min-h-0 text-warm-400 hover:text-warm-600"
-            >
-              <IconX size={14} />
-            </IconButton>
-          )}
         </div>
 
         {/* Single Filters (n) trigger — opens the facet popover */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
           aria-expanded={showMore}
           aria-haspopup="dialog"
           onClick={() => setShowMore(s => !s)}
@@ -264,12 +276,12 @@ export function CoachFilters({
           <IconFilter size={14} />
           Filters
           {activeFilterCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-primary-600 text-white text-[11px] font-bold rounded-full leading-none">
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-primary-600 text-white text-caption font-bold rounded-full leading-none">
               {activeFilterCount}
             </span>
           )}
           {showMore ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
-        </button>
+        </Button>
 
         {/* Spacer pushes the action group to the right when present */}
         {activeFilterCount > 0 && <div className="flex-1" />}
@@ -324,11 +336,11 @@ export function CoachFilters({
           ref={popoverRef}
           role="dialog"
           aria-label="Filter coaches"
-          className="rounded-xl border border-warm-200/60 bg-white/70 backdrop-blur-xl p-4 space-y-4"
+          className="rounded-xl glass-prominent p-4 space-y-4"
         >
           {/* Division — soft chips, no "All" */}
           <fieldset className="space-y-1.5">
-            <legend className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">Division</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Division</legend>
             <div className="flex flex-wrap gap-1.5">
               {DIVISION_OPTIONS.map(div => {
                 const selected = filters.division === div;
@@ -347,7 +359,7 @@ export function CoachFilters({
 
           {/* Program — soft chips, no "All" */}
           <fieldset className="space-y-1.5">
-            <legend className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">Program</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Program</legend>
             <div className="flex flex-wrap gap-1.5">
               {PROGRAM_OPTIONS.map(opt => {
                 const selected = filters.program === opt.value;
@@ -366,58 +378,50 @@ export function CoachFilters({
 
           {/* Compact labeled dropdowns: Status / Conference / Priority / Queue */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Status</span>
-              <select
+            <div className="space-y-1.5">
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Status</span>
+              <Select
+                options={statusOptions}
                 value={filters.status}
-                onChange={(e) => setFilters(f => ({ ...f, status: e.target.value as Filters['status'] }))}
-                className={cn(selectClass, filters.status !== 'all' ? 'border-primary-300 bg-primary-50/70 text-primary-700' : 'border-warm-200/60')}
-              >
-                <option value="all">Any status</option>
-                {(Object.keys(statusConfig) as CoachStatus[]).map(s => <option key={s} value={s}>{statusConfig[s].label}</option>)}
-              </select>
-            </label>
+                onChange={(value) => setFilters(f => ({ ...f, status: value as Filters['status'] }))}
+                className={selectClass(filters.status !== 'all')}
+              />
+            </div>
 
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Conference</span>
-              <select
+            <div className="space-y-1.5">
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Conference</span>
+              <Select
+                options={conferenceOptions}
                 value={filters.conference}
-                onChange={(e) => setFilters(f => ({ ...f, conference: e.target.value }))}
-                className={cn(selectClass, filters.conference !== 'all' ? 'border-primary-300 bg-primary-50/70 text-primary-700' : 'border-warm-200/60')}
-              >
-                <option value="all">Any conference</option>
-                {conferences.map(conf => <option key={conf} value={conf}>{conf}</option>)}
-              </select>
-            </label>
+                onChange={(value) => setFilters(f => ({ ...f, conference: value }))}
+                className={selectClass(filters.conference !== 'all')}
+              />
+            </div>
 
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Priority</span>
-              <select
+            <div className="space-y-1.5">
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Priority</span>
+              <Select
+                options={priorityOptions}
                 value={filters.priority}
-                onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
-                className={cn(selectClass, filters.priority !== 'all' ? 'border-primary-300 bg-primary-50/70 text-primary-700' : 'border-warm-200/60')}
-              >
-                <option value="all">Any priority</option>
-                {PRIORITY_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-              </select>
-            </label>
+                onChange={(value) => setFilters(f => ({ ...f, priority: value }))}
+                className={selectClass(filters.priority !== 'all')}
+              />
+            </div>
 
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Queue status</span>
-              <select
+            <div className="space-y-1.5">
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Queue status</span>
+              <Select
+                options={queueOptions}
                 value={filters.queueStatus ?? 'all'}
-                onChange={(e) => setFilters(f => ({ ...f, queueStatus: e.target.value as Filters['queueStatus'] }))}
-                className={cn(selectClass, queueActive ? 'border-primary-300 bg-primary-50/70 text-primary-700' : 'border-warm-200/60')}
-              >
-                <option value="all">Any queue status</option>
-                {QUEUE_OPTIONS.map(q => <option key={q.value} value={q.value}>{q.label}</option>)}
-              </select>
-            </label>
+                onChange={(value) => setFilters(f => ({ ...f, queueStatus: value as Filters['queueStatus'] }))}
+                className={selectClass(queueActive)}
+              />
+            </div>
           </div>
 
           {/* Boolean toggles — soft chips with leading icons */}
           <fieldset className="space-y-1.5">
-            <legend className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">Quick filters</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Quick filters</legend>
             <div className="flex flex-wrap gap-1.5">
               <FacetChip selected={filters.followUpDue} onClick={() => setFilters(f => ({ ...f, followUpDue: !f.followUpDue }))}>
                 <IconClock size={12} /> Follow-ups Due

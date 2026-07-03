@@ -385,7 +385,7 @@ export function OfflineSyncStatus({
               align="end"
               side="top"
               sideOffset={8}
-              className="w-72 bg-white border border-warm-200 p-4 space-y-3"
+              className="w-72 bg-cream-50 border border-warm-200 p-4 space-y-3"
             >
               {/* Header */}
               <div className="flex items-center justify-between">

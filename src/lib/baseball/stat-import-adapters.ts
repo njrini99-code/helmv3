@@ -292,7 +292,7 @@ const C = {
   official: ['manual_upload', 'email_inbox', 'sftp_drop', 'https_push', 'local_agent', 'feed_watcher'] as BaseballReceiveMethod[],
 };
 
-export const BASEBALL_SOURCE_REGISTRY: readonly SourceRegistryEntry[] = [
+const BASEBALL_SOURCE_REGISTRY: readonly SourceRegistryEntry[] = [
   // ----- Manual -----
   {
     sourceKey: 'manual',
@@ -763,11 +763,7 @@ export function getSourceRegistryEntry(
   return BASEBALL_SOURCE_REGISTRY.find((s) => s.sourceKey === sourceKey);
 }
 
-/** All source keys whose data may NEVER be marked official (sensors/dev/video/generic). */
-export function isOfficialEligible(sourceKey: BaseballSourceKey): boolean {
-  const entry = getSourceRegistryEntry(sourceKey);
-  return entry?.trustCeiling === 'official';
-}
+
 
 /**
  * Clamp a requested trust tier to the source's ceiling — the one place metric
@@ -795,16 +791,4 @@ export function clampTrustToCeiling(
   return requestedIdx < ceilingIdx ? entry.trustCeiling : requested;
 }
 
-/**
- * HARD INVARIANT for the whole module: no source ships with direct sync enabled
- * in Phase 1. Exposed so a test/CI guard can assert it.
- */
-export function assertNoDirectSync(): true {
-  for (const s of BASEBALL_SOURCE_REGISTRY) {
-    // `directSyncEnabled` is typed `false`; this also guards data drift.
-    if ((s as { directSyncEnabled: boolean }).directSyncEnabled) {
-      throw new Error(`Source ${s.sourceKey} must not enable direct sync in Phase 1`);
-    }
-  }
-  return true;
-}
+

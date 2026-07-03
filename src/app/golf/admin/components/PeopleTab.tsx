@@ -250,8 +250,8 @@ export function PeopleTab({ data }: Props) {
             className={cn(
               'px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
               viewMode === tab.value
-                ? 'bg-white shadow text-warm-900'
-                : 'text-warm-500 hover:text-warm-700 hover:bg-white/40',
+                ? 'bg-cream-50 shadow text-warm-900'
+                : 'text-warm-500 hover:text-warm-700 hover:bg-cream-100',
               tab.value === 'at_risk' && atRiskCount > 0 && viewMode !== 'at_risk' && 'text-red-500'
             )}
           >
@@ -284,7 +284,7 @@ export function PeopleTab({ data }: Props) {
               onClick={handleSelectAll}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
-                'bg-white/80 text-warm-700 hover:bg-white border border-warm-200/50'
+                'bg-cream-50/92 text-warm-700 hover:bg-cream-50 border border-warm-200/50'
               )}
             >
               {selectedAtRiskIds.size === allAtRiskIds.length ? 'Deselect All' : 'Select All'}
@@ -304,7 +304,7 @@ export function PeopleTab({ data }: Props) {
               onClick={handleExportCsv}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
-                'bg-white/80 text-warm-700 hover:bg-white border border-warm-200/50',
+                'bg-cream-50/92 text-warm-700 hover:bg-cream-50 border border-warm-200/50',
                 'flex items-center gap-1.5'
               )}
             >

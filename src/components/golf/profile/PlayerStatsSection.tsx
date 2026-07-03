@@ -481,7 +481,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost"
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors data-[state=open]:bg-warm-50"
+                className="flex items-center gap-2 px-4 py-2 bg-cream-50 border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors data-[state=open]:bg-warm-50"
                 aria-label="Select round"
               >
                 {selectedRoundId === 'overall' ? 'Overall' : 'Single Round'}

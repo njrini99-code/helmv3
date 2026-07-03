@@ -10,7 +10,7 @@
 
 - Repo: `~/Downloads/helmv3`. Base every branch off `origin/main` (currently `5d30130f` — #421 is merged).
 - **Validated ledger:** `docs/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md` — per-issue root cause + evidence.
-- **Intended behavior (SPEC-FIRST):** `docs/baseballhelm_revolution_plan/` — coach tabs `05_tab_specs_coach_account/NN_*`, player tabs `06_tab_specs_player_account/NN_*`. Read the matching tab's `permissions.md`, `acceptance_criteria.md`, `edge_cases.md`, `data_visible_to_player.md` **before** writing code.
+- **Intended behavior (SPEC-FIRST):** `docs/archive/2026-06/baseballhelm_revolution_plan/` — coach tabs `05_tab_specs_coach_account/NN_*`, player tabs `06_tab_specs_player_account/NN_*`. Read the matching tab's `permissions.md`, `acceptance_criteria.md`, `edge_cases.md`, `data_visible_to_player.md` **before** writing code.
 - Product rules: `CLAUDE.md`. Post-mortem (why the last build drifted): `docs/audits/BASEBALLHELM_SHELL_ROUTE_POSTMORTEM_2026-06-30.md`.
 
 ## Standing rules (the contract — non-negotiable)

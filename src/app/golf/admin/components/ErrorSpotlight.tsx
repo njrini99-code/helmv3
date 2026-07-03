@@ -78,7 +78,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
 
       {/* Stats grid — 2-col on mobile, 4-col on xl */}
       <div className="mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-white/30 bg-white/55 p-3">
+        <div className="rounded-xl glass-subtle p-3">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             Open
           </p>
@@ -92,7 +92,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             unresolved
           </p>
         </div>
-        <div className="rounded-xl border border-white/30 bg-white/55 p-3">
+        <div className="rounded-xl glass-subtle p-3">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             Active
           </p>
@@ -106,7 +106,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             recurring
           </p>
         </div>
-        <div className="rounded-xl border border-white/30 bg-white/55 p-3">
+        <div className="rounded-xl glass-subtle p-3">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             Resolved
           </p>
@@ -120,7 +120,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             in 24h
           </p>
         </div>
-        <div className="rounded-xl border border-white/30 bg-white/55 p-3">
+        <div className="rounded-xl glass-subtle p-3">
           <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             24h Volume
           </p>
@@ -144,7 +144,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             ? 'border-red-100 bg-red-50/45'
             : leadIncident.status === 'active'
               ? 'border-amber-100 bg-amber-50/45'
-              : 'border-white/35 bg-white/55'
+              : 'glass-subtle'
         )}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -171,13 +171,13 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           </div>
 
           <div className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2">
+            <div className="rounded-xl glass-standard px-3 py-2">
               <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
                 Root Cause
               </p>
               <p className="mt-1 text-xs leading-5 text-warm-700 break-words line-clamp-3">{leadIncident.diagnosisBasis}</p>
             </div>
-            <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2">
+            <div className="rounded-xl glass-standard px-3 py-2">
               <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
                 Last seen
               </p>
@@ -191,7 +191,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           </div>
         </div>
       ) : (
-        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50/60 via-primary-50/30 to-white/50 px-6 py-8 text-center">
+        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50/60 via-primary-50/30 to-cream-50/50 px-6 py-8 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 shadow-[0_2px_8px_rgba(22,163,74,0.12)]">
             <IconCheckCircle2 size={26} className="text-primary-600" />
           </div>
@@ -234,7 +234,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                   </span>
                 </div>
               )) : (
-                <div className="rounded-lg bg-white/55 px-2.5 py-2.5 text-xs text-warm-500">
+                <div className="rounded-lg glass-subtle px-2.5 py-2.5 text-xs text-warm-500">
                   No user-facing impact detected
                 </div>
               )}
@@ -249,7 +249,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
               {routeHotspots.length > 0 ? routeHotspots.map((route) => (
                 <div
                   key={route.route}
-                  className="flex items-center gap-2 rounded-lg bg-white/55 px-2.5 py-2.5"
+                  className="flex items-center gap-2 rounded-lg glass-subtle px-2.5 py-2.5"
                 >
                   <IconRoute size={12} className="text-warm-400 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
@@ -262,7 +262,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                   </span>
                 </div>
               )) : (
-                <div className="rounded-lg bg-white/55 px-2.5 py-2.5 text-xs text-warm-500">
+                <div className="rounded-lg glass-subtle px-2.5 py-2.5 text-xs text-warm-500">
                   No route hotspots detected
                 </div>
               )}

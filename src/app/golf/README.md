@@ -1,7 +1,9 @@
 # Golf Platform — Helm Sports Labs
 
 > College golf team management + CoachHelm AI intelligence
-> Last updated: 2026-02-13
+> Last updated: 2026-07-03 (spot-checked against the tree; counts below
+> that used to be hardcoded now point at the auto-regenerated source —
+> see `memory/glossary.md` / `memory/projects/golfhelm.md`)
 
 ---
 
@@ -59,12 +61,19 @@ src/app/golf/
 │   ├── my-insights/             # Personal AI insights (player)
 │   ├── my-qualifiers/           # Qualifier history (player)
 │   ├── intelligence/            # CoachHelm intelligence hub
-│   ├── analytics/coachhelm      # CoachHelm analytics
+│   ├── analytics/, analytics/coachhelm  # CoachHelm analytics
 │   ├── patterns/                # Pattern analysis
 │   ├── insights/                # Team insights
 │   ├── alerts/                  # Performance alerts
-│   └── coachhelm/               # CoachHelm main hub
-├── actions/                     # 41 server action files
+│   ├── coachhelm/               # CoachHelm main hub
+│   ├── courses/                 # Course library
+│   ├── players/, players/[playerId]  # Player directory (coach view)
+│   ├── recruiting/              # Recruiting HQ
+│   ├── team/, team-hub/         # Team info
+│   ├── my-game-profile/         # Player game profile
+│   ├── my-standing/             # Player standing/rankings
+│   └── whats-new/               # CoachHelm changelog
+├── actions/                     # Server action files (see memory/projects/golfhelm.md for the current list)
 ├── join/[code]/                 # Team join via invite
 └── admin/                       # Admin panel
 
@@ -81,8 +90,8 @@ src/components/golf/             # 256+ components
 ├── settings/, profile/, player-hub/
 └── announcements/
 
-src/hooks/golf/                  # 13 hooks
-src/stores/golf-auth-store.ts    # Auth state (Zustand)
+src/hooks/golf/                  # Hooks (see memory/projects/golfhelm.md for the current list)
+src/stores/auth-store.ts         # Auth state (Zustand) — shared with baseball, NOT golf-specific
 src/lib/types/golf.ts            # All golf types
 src/lib/types/golf-course.ts     # Course types
 src/lib/coachhelm/               # CoachHelm AI engine (V1 + V2)
@@ -92,57 +101,65 @@ src/lib/coachhelm/               # CoachHelm AI engine (V1 + V2)
 
 ## Database Schema
 
-**74 golf_ tables** in production. Key table groups:
+`golf_` tables in production (current count and full alphabetical list
+auto-regenerate into `memory/glossary.md` — don't hand-copy a number
+here, it drifts). Key table groups:
 
 | Group | Tables | Purpose |
 |-------|--------|---------|
 | Core | golf_coaches, golf_players, golf_teams, golf_team_members, golf_team_settings | User and team entities |
 | Rounds | golf_rounds, golf_holes, golf_shots | Round and shot tracking |
 | Courses | golf_courses, golf_course_holes, golf_player_courses | Course management |
-| Events | golf_events, golf_event_attendance, golf_availability_polls, golf_recurring_events + 8 more | Calendar and scheduling |
+| Events | golf_events, golf_event_attendance, golf_event_documents, golf_calendar_feeds, golf_calendar_notifications + more | Calendar and scheduling |
 | Qualifiers | golf_qualifiers, golf_qualifier_entries | Competition |
 | Communication | golf_announcements (+ acknowledgements, documents, recipients, tasks), golf_conversations, golf_messages | Team communication |
 | Tasks | golf_tasks, golf_task_assignments, golf_task_templates, golf_task_reminders | Task management |
 | Documents | golf_documents, golf_document_versions | Document library |
-| Travel | golf_travel_itineraries, golf_travel_budgets, golf_travel_expenses, golf_travel_expense_splits | Travel logistics |
+| Travel | golf_travel_itineraries, golf_travel_budgets, golf_travel_expenses | Travel logistics |
 | Academics | golf_player_classes, golf_academic_exclusions | Class schedules |
-| Calendar Sync | golf_calendar_feeds, golf_calendar_sync_state, golf_external_calendars + 2 more | Calendar integration |
-| Stats Cache | golf_player_stats_cache, golf_round_stats_cache, golf_putting_tendencies | Performance metrics |
-| CoachHelm | golf_coach_philosophy, golf_coach_insights, golf_patterns_v2, golf_predictions, golf_round_reviews + 13 more | AI intelligence |
+| Stats Cache | golf_player_stats_cache, golf_round_stats_cache, golf_percentile_cache, golf_player_attendance_stats | Performance metrics |
+| CoachHelm | golf_coach_philosophy, golf_coach_insights, golf_patterns_v2, golf_predictions, golf_round_reviews, golf_insight_* (effectiveness, exposure, outcome, action, feedback, ...) + more | AI intelligence |
 
 Full schema: `memory/context/golfhelm-database.md`
 
 ---
 
-## Server Actions (41 files)
+## Server Actions
 
-Located in `src/app/golf/actions/`:
+Located in `src/app/golf/actions/` (file count grows continuously —
+see `memory/projects/golfhelm.md` for the current auto-generated list;
+don't hardcode a count here). Selected categories:
 
 | Category | Files |
 |----------|-------|
 | Auth & Setup | auth.ts, onboarding.ts, golf.ts, teams.ts, roster.ts |
-| Rounds | round-drafts.ts, round-reviews.ts, round-review-system.ts, shot-analytics.ts |
+| Rounds | round-drafts.ts, round-reviews.ts, round-review-system.ts, shot-analytics.ts, round-recap.ts |
 | Communication | messages.ts, message-attachments.ts, communication.ts, announcements.ts |
-| Events | event-lifecycle.ts, recurring-events.ts, attendance.ts, availability-polling.ts, availability-locking.ts |
-| Calendar | calendar-sync.ts, calendar-feeds.ts, caldav-sync.ts |
+| Events | recurring-events.ts, attendance.ts, event-documents.ts |
+| Calendar | calendar-sync.ts, calendar-feeds.ts |
 | Tasks | tasks.ts, task-templates.ts, task-reminders.ts |
-| Documents | documents.ts |
-| Analytics | stats.ts, stats-v2.ts, stats-data.ts, player-profile-stats.ts, dashboard-data.ts |
-| CoachHelm | coachhelm-analytics.ts, intelligence-dashboard.ts, pattern-management.ts, insight-management.ts, insight-evidence.ts |
-| Other | courses.ts, travel.ts, development.ts, alerts.ts, admin-data.ts |
+| Documents | documents.ts, recruit-documents.ts, recruit-documents-categories.ts |
+| Analytics | stats.ts, stats-data.ts, stats-intelligence.ts, stats-leak-maps.ts, player-profile-stats.ts, dashboard-data.ts |
+| CoachHelm | coachhelm-analytics.ts, coachhelm-data.ts, intelligence-dashboard.ts, pattern-management.ts, insight-management.ts, insight-evidence.ts |
+| CRM (outreach) | crm-sequences.ts, crm-templates.ts, crm-automations.ts, crm-engagement.ts, crm-gmail-send.ts, crm-replies.ts, crm-timeline.ts + more (`crm-*.ts`) |
+| Recruiting | recruiting.ts, player-fingerprint.ts, player-effectiveness.ts |
+| Admin | admin-data.ts, admin-bi-data.ts, admin-people-data.ts, admin-system-data.ts, admin-tracer-data.ts |
+| Other | courses.ts, travel.ts, development.ts, alerts.ts, drills.ts |
 
 ---
 
 ## Separation from Baseball
 
-GolfHelm is fully independent from BaseballHelm:
+GolfHelm is mostly independent from BaseballHelm:
 - Separate routes (`/golf/*`)
 - Separate database tables (`golf_*` prefix)
 - Separate components (`/components/golf/*`)
 - Separate types (`golf.ts`, `golf-course.ts`)
-- Separate auth store (`golf-auth-store.ts`)
 
-**Shared:** UI components, Supabase client, Tailwind config, utilities
+**Shared:** UI components, Supabase client, Tailwind config, utilities,
+and — as of the `golf-auth-store.ts` → `src/stores/auth-store.ts`
+consolidation — the client-side auth store. Auth state is no longer
+sport-specific.
 
 ---
 
@@ -151,7 +168,7 @@ GolfHelm is fully independent from BaseballHelm:
 | File | Purpose |
 |------|---------|
 | `memory/projects/golfhelm.md` | Full project context |
-| `memory/glossary.md` | All 74 tables, terms, enums |
+| `memory/glossary.md` | All tables, terms, enums (auto-regenerated — current count lives there) |
 | `memory/context/golfhelm-database.md` | Complete DB schema with all columns |
 | `memory/context/coachhelm-ai.md` | CoachHelm AI engine reference |
 | `docs/features/coachhelm/` | CoachHelm specs and blueprints |

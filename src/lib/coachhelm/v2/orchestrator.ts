@@ -167,7 +167,7 @@ export interface AlertTypeToggleFlags {
  * Defaults to enabled when a switch is unset (null/undefined) so coaches without
  * a saved philosophy are unaffected (F060).
  */
-export function isPatternAlertEnabled(
+function isPatternAlertEnabled(
   pattern: { patternType?: string; outcome?: { metric?: string } | null; strokeImpact?: number },
   toggles: AlertTypeToggleFlags,
 ): boolean {
@@ -188,7 +188,7 @@ export function isPatternAlertEnabled(
  * (declining) forecast routes to `alertScoringDecline`; an improving forecast
  * routes to `alertSurgePlayer`. Defaults to enabled when unset (F060).
  */
-export function isPredictionAlertEnabled(
+function isPredictionAlertEnabled(
   prediction: { trend?: string },
   toggles: AlertTypeToggleFlags,
 ): boolean {

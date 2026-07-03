@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { StatCard } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { Button, IconButton } from '@/components/ui/button';
 import {
   IconSparkles,
@@ -798,27 +799,18 @@ function TriageFilterStrip({
     <div className="space-y-3">
       {/* Player select + clear pill */}
       <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-warm-600">Player</span>
-          <select
+          <Select
+            options={[
+              { value: '', label: 'All players' },
+              ...players.map((player) => ({ value: player.id, label: player.name })),
+            ]}
             value={selectedPlayerId || ''}
-            onChange={(e) => onSelectPlayer(e.target.value || undefined)}
-            className={cn(
-              'min-h-[36px] px-3 py-1.5 text-sm',
-              'bg-cream-100/82 backdrop-blur-sm border border-warm-200 rounded-lg',
-              'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
-              'transition-colors duration-200',
-            )}
-          >
-            <option value="">All players</option>
-            {players.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(value) => onSelectPlayer(value || undefined)}
+            className="min-w-[160px]"
+          />
+        </div>
 
         {activeCount > 0 && (
           <Button variant="primary"
@@ -907,7 +899,7 @@ function ChipGroup<T extends string>({ label, options, selected, onToggle }: Chi
                 'min-h-[32px]',
                 isSelected
                   ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700 active:bg-primary-800'
-                  : 'bg-cream-100/75 text-warm-700 border-warm-200 hover:bg-white hover:border-warm-300 active:bg-warm-50',
+                  : 'bg-cream-100/75 text-warm-700 border-warm-200 hover:bg-cream-100 hover:border-warm-300 active:bg-warm-50',
               )}
             >
               {isSelected && <IconCheck size={12} />}

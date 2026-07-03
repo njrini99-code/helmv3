@@ -55,6 +55,8 @@ import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, type SelectOption } from '@/components/ui/select';
 import {
   emergencySave,
   loadEmergencySave,
@@ -82,6 +84,20 @@ interface RoundSetupForm {
   roundDate: string;
 }
 
+const ROUND_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'practice', label: 'Practice' },
+  { value: 'tournament', label: 'Tournament' },
+  { value: 'qualifier', label: 'Qualifier' },
+];
+
+const TEES_PLAYED_OPTIONS: SelectOption[] = [
+  { value: 'Championship', label: 'Championship' },
+  { value: 'Black', label: 'Black' },
+  { value: 'Blue', label: 'Blue' },
+  { value: 'White', label: 'White' },
+  { value: 'Gold', label: 'Gold' },
+  { value: 'Red', label: 'Red' },
+];
 
 export default function NewRoundClient() {
   const prefersReducedMotion = useReducedMotion();
@@ -1878,14 +1894,14 @@ export default function NewRoundClient() {
                       {savedCourses.length >= 4 && (
                         <div className="relative">
                           <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                          <input
+                          <Input
                             type="search"
                             value={courseSearchQuery}
                             onChange={(e) => setCourseSearchQuery(e.target.value)}
                             placeholder="Search saved courses..."
                             enterKeyHint="search"
                             autoComplete="off"
-                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-warm-200/70 bg-cream-100/82 text-base md:text-sm text-warm-700 placeholder:text-warm-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-colors"
+                            className="pl-9 pr-4 py-2 text-base md:text-sm text-warm-700 placeholder:text-warm-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
                           />
                         </div>
                       )}
@@ -2040,14 +2056,14 @@ export default function NewRoundClient() {
                       <label htmlFor="courseName" className="text-sm font-medium text-warm-700 block mb-2">
                         Course Name *
                       </label>
-                      <input
+                      <Input
                         id="courseName"
                         type="text"
                         value={setupData.courseName}
                         onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
                         enterKeyHint="next"
                         autoComplete="off"
-                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                        className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                         placeholder="Pebble Beach Golf Links"
                         required
                       />
@@ -2058,14 +2074,14 @@ export default function NewRoundClient() {
                         <label htmlFor="courseCity" className="text-sm font-medium text-warm-700 block mb-2">
                           City
                         </label>
-                        <input
+                        <Input
                           id="courseCity"
                           type="text"
                           value={setupData.courseCity}
                           onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
                           enterKeyHint="next"
                           autoComplete="off"
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                           placeholder="Pebble Beach"
                         />
                       </div>
@@ -2073,14 +2089,14 @@ export default function NewRoundClient() {
                         <label htmlFor="courseState" className="text-sm font-medium text-warm-700 block mb-2">
                           State
                         </label>
-                        <input
+                        <Input
                           id="courseState"
                           type="text"
                           value={setupData.courseState}
                           onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
                           enterKeyHint="next"
                           autoComplete="off"
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                           placeholder="CA"
                           maxLength={2}
                         />
@@ -2092,7 +2108,7 @@ export default function NewRoundClient() {
                         <label htmlFor="courseRating" className="text-sm font-medium text-warm-700 block mb-2">
                           Rating
                         </label>
-                        <input
+                        <Input
                           id="courseRating"
                           type="number"
                           step="0.1"
@@ -2101,7 +2117,7 @@ export default function NewRoundClient() {
                           value={setupData.courseRating}
                           onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
                           onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                           placeholder="72.1"
                         />
                       </div>
@@ -2109,7 +2125,7 @@ export default function NewRoundClient() {
                         <label htmlFor="courseSlope" className="text-sm font-medium text-warm-700 block mb-2">
                           Slope
                         </label>
-                        <input
+                        <Input
                           id="courseSlope"
                           type="number"
                           inputMode="numeric"
@@ -2117,7 +2133,7 @@ export default function NewRoundClient() {
                           value={setupData.courseSlope}
                           onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
                           onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                           placeholder="133"
                           aria-label="Course slope rating"
                         />
@@ -2126,19 +2142,12 @@ export default function NewRoundClient() {
                         <label htmlFor="teesPlayed" className="text-sm font-medium text-warm-700 block mb-2">
                           Tees
                         </label>
-                        <select
-                          id="teesPlayed"
+                        <Select
+                          options={TEES_PLAYED_OPTIONS}
                           value={setupData.teesPlayed}
-                          onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
-                        >
-                          <option>Championship</option>
-                          <option>Black</option>
-                          <option>Blue</option>
-                          <option>White</option>
-                          <option>Gold</option>
-                          <option>Red</option>
-                        </select>
+                          onChange={(value) => setSetupData({ ...setupData, teesPlayed: value })}
+                          className="focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                        />
                       </div>
                     </div>
 
@@ -2191,7 +2200,7 @@ export default function NewRoundClient() {
                           setSetupData(prev => ({ ...prev, roundType: 'qualifier' }));
                           setSelectedQualifierId(q.id);
                         }}
-                        className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-purple-200/60 bg-cream-100/82 hover:bg-white hover:shadow-sm active:scale-[0.98] transition-all duration-150 text-left"
+                        className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-purple-200/60 bg-cream-100/82 hover:bg-cream-50 hover:shadow-sm active:scale-[0.98] transition-all duration-150 text-left"
                       >
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-warm-900 truncate">{q.name}</p>
@@ -2225,27 +2234,23 @@ export default function NewRoundClient() {
                       <label htmlFor="roundType" className="text-sm font-medium text-warm-700 block mb-2">
                         Round Type
                       </label>
-                      <select
-                        id="roundType"
+                      <Select
+                        options={ROUND_TYPE_OPTIONS}
                         value={setupData.roundType}
-                        onChange={(e) => setSetupData({ ...setupData, roundType: e.target.value as 'practice' | 'tournament' | 'qualifier' })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
-                      >
-                        <option value="practice">Practice</option>
-                        <option value="tournament">Tournament</option>
-                        <option value="qualifier">Qualifier</option>
-                      </select>
+                        onChange={(value) => setSetupData({ ...setupData, roundType: value as 'practice' | 'tournament' | 'qualifier' })}
+                        className="focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                      />
                     </div>
                     <div>
                       <label htmlFor="roundDate" className="text-sm font-medium text-warm-700 block mb-2">
                         Date
                       </label>
-                      <input
+                      <Input
                         id="roundDate"
                         type="date"
                         value={setupData.roundDate}
                         onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
+                        className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                         required
                       />
                     </div>
@@ -2316,20 +2321,16 @@ export default function NewRoundClient() {
                         <label htmlFor="qualifier" className="text-sm font-medium text-amber-800 block mb-2">
                           Select Qualifier *
                         </label>
-                        <select
-                          id="qualifier"
+                        <Select
+                          options={qualifiers.map(q => ({
+                            value: q.id,
+                            label: `${q.name} (${q.roundsCompleted}/${q.numRounds} rounds completed)`,
+                          }))}
                           value={selectedQualifierId || ''}
-                          onChange={(e) => setSelectedQualifierId(e.target.value || null)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                          required
-                        >
-                          <option value="">Choose a qualifier...</option>
-                          {qualifiers.map(q => (
-                            <option key={q.id} value={q.id}>
-                              {q.name} ({q.roundsCompleted}/{q.numRounds} rounds completed)
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => setSelectedQualifierId(value || null)}
+                          placeholder="Choose a qualifier..."
+                          className="border-amber-300 bg-cream-50 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        />
                       </div>
 
                       {/* Round Number Selection */}
@@ -2338,20 +2339,16 @@ export default function NewRoundClient() {
                           <label htmlFor="roundNumber" className="text-sm font-medium text-amber-800 block mb-2">
                             Round Number *
                           </label>
-                          <select
-                            id="roundNumber"
-                            value={selectedRoundNumber || ''}
-                            onChange={(e) => setSelectedRoundNumber(Number(e.target.value) || null)}
-                            className="w-full px-4 py-2.5 rounded-lg border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                            required
-                          >
-                            <option value="">Select round...</option>
-                            {availableRounds.map(num => (
-                              <option key={num} value={num}>
-                                Round {num}
-                              </option>
-                            ))}
-                          </select>
+                          <Select
+                            options={availableRounds.map(num => ({
+                              value: String(num),
+                              label: `Round ${num}`,
+                            }))}
+                            value={selectedRoundNumber ? String(selectedRoundNumber) : ''}
+                            onChange={(value) => setSelectedRoundNumber(Number(value) || null)}
+                            placeholder="Select round..."
+                            className="border-amber-300 bg-cream-50 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          />
                           <p className="text-xs text-amber-600 mt-1">
                             This is round {selectedRoundNumber} of {qualifiers.find(q => q.id === selectedQualifierId)?.numRounds || '?'}
                           </p>
@@ -2423,9 +2420,9 @@ export default function NewRoundClient() {
                   {isStartingRound ? (
                     <>
                       <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                       </span>
                       Starting...
                     </>
@@ -2537,7 +2534,7 @@ export default function NewRoundClient() {
             <p className="text-sm font-medium">All holes completed — ready to submit!</p>
             <Button variant="primary"
               onClick={() => setShowFinishConfirm(true)}
-              className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+              className="px-4 py-2 rounded-lg bg-cream-50 text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
             >
               Submit Round
             </Button>
@@ -2614,7 +2611,7 @@ export default function NewRoundClient() {
                 activeProgressHoleRef.current = 0;
               }
             }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white transition-colors shadow-sm"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-cream-50 transition-colors shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -2856,7 +2853,7 @@ export default function NewRoundClient() {
                       transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 })}
                       className="relative"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
+                      <div className="w-12 h-12 rounded-xl glass-standard flex items-center justify-center mx-auto mb-3">
                         <IconFlag size={24} className="text-white" />
                       </div>
                       <h3 className="text-lg font-medium text-white/90 mb-1">Round Complete</h3>
@@ -2865,7 +2862,7 @@ export default function NewRoundClient() {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: 0.3 })}
-                          className="text-[44px] md:text-[52px] font-light tracking-[-0.025em] text-white tabular-nums"
+                          className="text-display font-light tracking-[-0.025em] text-white tabular-nums"
                         >
                           {totalScore}
                         </m.span>
@@ -2923,7 +2920,7 @@ export default function NewRoundClient() {
                         </div>
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                           {fs.slice(0, 9).map((h, i) => (
-                            <div key={`p${i}`} className="bg-white text-center py-1">
+                            <div key={`p${i}`} className="bg-cream-50 text-center py-1">
                               <span className="text-eyebrow text-warm-400">{h?.par}</span>
                             </div>
                           ))}
@@ -2947,7 +2944,7 @@ export default function NewRoundClient() {
                             </div>
                             <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                               {fs.slice(9, 18).map((h, i) => (
-                                <div key={`p2${i}`} className="bg-white text-center py-1">
+                                <div key={`p2${i}`} className="bg-cream-50 text-center py-1">
                                   <span className="text-eyebrow text-warm-400">{h?.par}</span>
                                 </div>
                               ))}

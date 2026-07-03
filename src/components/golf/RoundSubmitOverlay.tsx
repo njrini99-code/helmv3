@@ -160,7 +160,7 @@ export function RoundSubmitOverlay({
                     initial={{ scale: 0, rotate: -45 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.5, type: 'spring', stiffness: 200, damping: 14 })}
-                    className="relative w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4"
+                    className="relative w-16 h-16 rounded-2xl bg-text-on-accent/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4"
                   >
                     <m.svg
                       initial={{ pathLength: 0, opacity: 0 }}

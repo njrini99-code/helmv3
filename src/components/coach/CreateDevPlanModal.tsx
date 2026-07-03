@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar } from '@/components/ui/avatar';
 import { IconX, IconPlus, IconTrash } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
@@ -246,13 +248,12 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
             <label htmlFor={`${uid}-title`} className="block text-sm font-medium text-warm-700 mb-1">
               Plan Title *
             </label>
-            <input
+            <Input
               id={`${uid}-title`}
               type="text"
               required
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
               placeholder="Off-Season Hitting Development"
             />
           </div>
@@ -261,12 +262,11 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
             <label htmlFor={`${uid}-desc`} className="block text-sm font-medium text-warm-700 mb-1">
               Description
             </label>
-            <textarea
+            <Textarea
               id={`${uid}-desc`}
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               rows={2}
-              className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 resize-none"
               placeholder="Describe the focus areas and expectations..."
             />
           </div>
@@ -276,24 +276,22 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
               <label htmlFor={`${uid}-start`} className="block text-sm font-medium text-warm-700 mb-1">
                 Start Date
               </label>
-              <input
+              <Input
                 id={`${uid}-start`}
                 type="date"
                 value={formData.start_date}
                 onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
               />
             </div>
             <div>
               <label htmlFor={`${uid}-end`} className="block text-sm font-medium text-warm-700 mb-1">
                 End Date
               </label>
-              <input
+              <Input
                 id={`${uid}-end`}
                 type="date"
                 value={formData.end_date}
                 onChange={e => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
               />
             </div>
           </div>
@@ -337,26 +335,24 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                         <IconTrash size={14} />
                       </IconButton>
                     </div>
-                    <input
+                    <Input
                       type="text"
                       value={goal.title}
                       onChange={e => updateGoal(goal.id, 'title', e.target.value)}
                       placeholder="Goal title (e.g., Increase bat speed)"
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                     />
                     <div className="flex gap-2">
-                      <input
+                      <Input
                         type="text"
                         value={goal.description}
                         onChange={e => updateGoal(goal.id, 'description', e.target.value)}
                         placeholder="Description (optional)"
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        className="flex-1"
                       />
-                      <input
+                      <Input
                         type="date"
                         value={goal.target_date}
                         onChange={e => updateGoal(goal.id, 'target_date', e.target.value)}
-                        className="px-3 py-2 text-sm rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       />
                     </div>
                   </div>

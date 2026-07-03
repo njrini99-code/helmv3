@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { IconLoader, IconTrash } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   upsertSequenceStep,
   deleteSequenceStep,
@@ -143,100 +146,68 @@ export function SequenceStepEditor({
   return (
     <form
       onSubmit={handleSave}
-      className="bg-white/80 backdrop-blur-xl border border-warm-200/60 rounded-xl p-4 space-y-3"
+      className="glass-standard border border-warm-200/60 rounded-xl p-4 space-y-3"
     >
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label
-            htmlFor="step-order"
-            className="block text-xs font-medium text-warm-700 mb-1"
-          >
-            Step #
-          </label>
-          <input
+          <Input
             id="step-order"
             type="number"
+            label="Step #"
             min={1}
             value={stepOrder}
             onChange={(e) => setStepOrder(Number.parseInt(e.target.value, 10) || 1)}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="px-3 py-2 text-sm rounded-lg"
           />
         </div>
         <div>
-          <label
-            htmlFor="step-delay"
-            className="block text-xs font-medium text-warm-700 mb-1"
-          >
-            Delay (hours)
-          </label>
-          <input
+          <Input
             id="step-delay"
             type="number"
+            label="Delay (hours)"
             min={0}
             value={delayHours}
             onChange={(e) =>
               setDelayHours(Math.max(0, Number.parseInt(e.target.value, 10) || 0))
             }
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+            className="px-3 py-2 text-sm rounded-lg"
           />
         </div>
       </div>
 
       <div>
-        <label
-          htmlFor="step-template"
-          className="block text-xs font-medium text-warm-700 mb-1"
-        >
-          Template
-        </label>
-        <select
-          id="step-template"
+        <Select
+          options={[
+            { value: '', label: '— No template (use overrides below) —' },
+            ...templates.map((t) => ({ value: t.id, label: `[${t.category}] ${t.name}` })),
+          ]}
           value={templateId}
-          onChange={(e) => setTemplateId(e.target.value)}
-          className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
-        >
-          <option value="">— No template (use overrides below) —</option>
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>
-              [{t.category}] {t.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label
-          htmlFor="step-subject"
-          className="block text-xs font-medium text-warm-700 mb-1"
-        >
-          Subject override{' '}
-          <span className="text-warm-400 font-normal">(optional)</span>
-        </label>
-        <input
-          id="step-subject"
-          type="text"
-          value={subjectOverride}
-          onChange={(e) => setSubjectOverride(e.target.value)}
-          placeholder="Leave blank to use template subject"
-          className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+          onChange={(v) => setTemplateId(v)}
+          label="Template"
         />
       </div>
 
       <div>
-        <label
-          htmlFor="step-body"
-          className="block text-xs font-medium text-warm-700 mb-1"
-        >
-          Body override{' '}
-          <span className="text-warm-400 font-normal">(optional)</span>
-        </label>
-        <textarea
+        <Input
+          id="step-subject"
+          type="text"
+          label="Subject override (optional)"
+          value={subjectOverride}
+          onChange={(e) => setSubjectOverride(e.target.value)}
+          placeholder="Leave blank to use template subject"
+          className="px-3 py-2 text-sm rounded-lg"
+        />
+      </div>
+
+      <div>
+        <Textarea
           id="step-body"
+          label="Body override (optional)"
           rows={4}
           value={bodyOverride}
           onChange={(e) => setBodyOverride(e.target.value)}
           placeholder="Leave blank to use template body"
-          className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+          className="px-3 py-2 text-sm rounded-lg resize-none"
         />
       </div>
 

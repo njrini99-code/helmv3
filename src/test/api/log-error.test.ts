@@ -11,6 +11,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 import { POST } from '@/app/api/log-error/route';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
 
 const createClientMock = vi.mocked(createClient);
 const createAdminMock = vi.mocked(createAdminClient);
@@ -68,6 +69,74 @@ describe('POST /api/log-error', () => {
     expect(adminEvent?.payload.user_email).toBeNull();
     expect(adminEvent?.payload.severity).toBe('error');
     expect((errorLog?.payload.context as Record<string, unknown> | null)?.anonymous).toBe(true);
+  });
+
+  it('computes an incident-grouping fingerprint on the admin_events row so repeats collapse', async () => {
+    createClientMock.mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
+      },
+    } as never);
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    const res = await POST(request(JSON.stringify({
+      message: 'network error',
+      severity: 'medium',
+      url: '/golf/dashboard',
+    })));
+
+    expect(res.status).toBe(200);
+    const adminEvent = inserts.find((i) => i.table === 'admin_events');
+    const expectedFingerprint = buildIncidentSignature({
+      severity: 'warning',
+      errorCode: null,
+      route: '/golf/dashboard',
+      message: 'network error',
+    });
+    expect(adminEvent?.payload.fingerprint).toBe(expectedFingerprint);
+    expect(adminEvent?.payload.source).toBe('client_runtime');
+  });
+
+  it('gives repeated client errors for the same route+message the same fingerprint', async () => {
+    createClientMock.mockResolvedValue({
+      auth: {
+        getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
+      },
+    } as never);
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValue({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    const body = JSON.stringify({
+      message: 'network error',
+      severity: 'medium',
+      url: '/golf/dashboard',
+    });
+    await POST(request(body));
+    await POST(request(body));
+
+    const fingerprints = inserts
+      .filter((i) => i.table === 'admin_events')
+      .map((i) => i.payload.fingerprint);
+    expect(fingerprints).toHaveLength(2);
+    expect(fingerprints[0]).toBe(fingerprints[1]);
+    expect(fingerprints[0]).toBeTruthy();
   });
 
   it('binds telemetry rows to the authenticated user rather than trusting the body', async () => {

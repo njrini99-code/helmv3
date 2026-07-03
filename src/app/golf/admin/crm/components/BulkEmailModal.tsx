@@ -19,6 +19,8 @@ import {
 import type { Coach } from '../crm-config';
 import { TemplatePicker } from './TemplatePicker';
 import { Button, IconButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 type PrefilledRecipient = {
   email: string;
@@ -593,11 +595,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
       <div className="fixed inset-0 z-50 flex items-stretch justify-center md:items-center md:p-4">
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing while interacting with modal content */}
         <div
-          className="bg-white/95 backdrop-blur-2xl shadow-2xl border-white/20 w-full h-[100dvh] flex flex-col overflow-hidden md:h-auto md:rounded-2xl md:border md:max-w-[1024px] md:max-h-[90vh]"
+          className="glass-prominent shadow-2xl w-full h-[100dvh] flex flex-col overflow-hidden md:h-auto md:rounded-2xl md:max-w-[1024px] md:max-h-[90vh]"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-warm-100 bg-white/80 shrink-0">
+          <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-warm-100 glass-standard shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
                 <IconMail size={18} className="text-primary-600" />
@@ -775,12 +777,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   {mode === 'gmail' && <span className="text-warm-400 normal-case font-normal">(optional)</span>}
                 </label>
                 {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
-                <input autoFocus
+                <Input autoFocus
                   type="text"
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
                   placeholder={mode === 'gmail' ? 'Pre-fill subject line...' : 'Email subject line...'}
-                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-base sm:text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all"
+                  className="px-4 py-2.5 text-base sm:text-sm"
                 />
               </div>
 
@@ -813,7 +815,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   Message {mode === 'helm' && <span className="text-red-400">*</span>}
                   {mode === 'gmail' && <span className="text-warm-400 normal-case font-normal">(optional)</span>}
                 </label>
-                <textarea
+                <Textarea
                   ref={bodyRef}
                   value={body}
                   onChange={handleBodyChange}
@@ -825,7 +827,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       ? 'Hi {name},\n\nWrite your email message here...\n\nBest,\nHelm Sports Labs'
                       : 'Pre-fill message body (you can edit everything in Gmail)...'
                   }
-                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-base sm:text-sm font-mono min-h-[40vh] sm:min-h-[200px] resize-none outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all leading-relaxed"
+                  className="px-4 py-2.5 text-base sm:text-sm font-mono min-h-[40vh] sm:min-h-[200px] leading-relaxed"
                 />
               </div>
 
@@ -900,7 +902,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               {/* Helm Result Card */}
               {mode === 'helm' && helmResult && (
                 <div className="rounded-xl border border-warm-200/50 overflow-hidden">
-                  <div className="px-4 py-3 bg-white/60 flex items-center gap-4">
+                  <div className="px-4 py-3 glass-standard flex items-center gap-4">
                     {helmResult.sent > 0 && (
                       <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-primary-500" />
@@ -966,11 +968,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
             <div className="shrink-0 lg:shrink lg:w-[40%] lg:flex-none border-t lg:border-t-0 lg:border-l border-warm-100 bg-warm-50/50 overflow-y-auto">
               {/* Mobile-only disclosure toggle — keeps the preview from eating the
                   screen on a phone. Hidden on md+ where the preview is always shown. */}
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setPreviewOpenMobile(o => !o)}
                 aria-expanded={previewOpenMobile}
-                className="md:hidden w-full min-h-[44px] flex items-center gap-2 px-5 py-3 text-left"
+                className="md:hidden w-full min-h-[44px] flex items-center gap-2 px-5 py-3 text-left justify-start"
               >
                 <IconEye size={16} className="text-warm-400 shrink-0" />
                 <span className="text-xs font-medium text-warm-600 uppercase tracking-wider">Preview</span>
@@ -981,7 +983,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   size={16}
                   className={cn('ml-auto shrink-0 text-warm-400 transition-transform', previewOpenMobile && 'rotate-180')}
                 />
-              </button>
+              </Button>
               <div className={cn('px-5 py-4 md:block', !previewOpenMobile && 'hidden')}>
                 {/* Preview Header — hidden below md (the mobile disclosure toggle
                     above already carries this label); unchanged on md+. */}
@@ -1015,11 +1017,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                         // are inert in preview, but layout/CSS/images render.
                         sandbox=""
                         srcDoc={mode === 'helm' ? replaceMergeTags(body) : body}
-                        className="w-full bg-white rounded-lg shadow-sm border-0"
+                        className="w-full bg-cream-50 rounded-lg shadow-sm border-0"
                         style={{ minHeight: 720, height: '70vh' }}
                       />
                     ) : (
-                      <div className="bg-white rounded-lg py-12 text-center">
+                      <div className="bg-cream-50 rounded-lg py-12 text-center">
                         <p className="text-sm text-warm-300 italic">
                           Paste HTML or pick an HTML template to preview...
                         </p>
@@ -1028,7 +1030,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   </div>
                 ) : (
                   <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
-                    <div className="bg-white rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: 600 }}>
+                    <div className="bg-cream-50 rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: 600 }}>
                       {/* Greeting */}
                       <div className="px-5 pt-5">
                         {firstCoach ? (
@@ -1105,7 +1107,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
           {/* Footer — sticky bottom of the flex column. On mobile it holds the
               primary Send button above the keyboard/home-indicator via safe-area
               inset padding. */}
-          <div className="shrink-0 border-t border-warm-100 bg-white/80 pb-[env(safe-area-inset-bottom)]">
+          <div className="shrink-0 border-t border-warm-100 glass-standard pb-[env(safe-area-inset-bottom)]">
             {/* Error banner — always visible in footer */}
             {error && (
               <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 text-sm font-medium bg-red-50 text-red-700 border-b border-red-200/50">

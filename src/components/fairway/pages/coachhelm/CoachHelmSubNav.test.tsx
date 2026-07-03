@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { createElement } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
@@ -26,7 +27,7 @@ import { CoachHelmSubNav } from './CoachHelmSubNav';
 
 describe('CoachHelmSubNav — player consolidation', () => {
   it('renders the four consolidated player tabs with their canonical routes', () => {
-    render(<CoachHelmSubNav active="brief" role="player" />);
+    render(createElement(CoachHelmSubNav, { active: 'brief', role: 'player' }));
 
     const overview = screen.getByRole('link', { name: 'Overview' });
     const development = screen.getByRole('link', { name: 'Development' });
@@ -49,7 +50,7 @@ describe('CoachHelmSubNav — player consolidation', () => {
   });
 
   it('paints the Standing tab as active from the SSR `active` prop', () => {
-    render(<CoachHelmSubNav active="standing" role="player" />);
+    render(createElement(CoachHelmSubNav, { active: 'standing', role: 'player' }));
 
     const standing = screen.getByRole('link', { name: 'Standing' });
     expect(standing.getAttribute('aria-current')).toBe('page');
@@ -64,7 +65,7 @@ describe('CoachHelmSubNav — player consolidation', () => {
   });
 
   it('keeps the coach tab set intact (Standing is player-only)', () => {
-    render(<CoachHelmSubNav active="brief" role="coach" />);
+    render(createElement(CoachHelmSubNav, { active: 'brief', role: 'coach' }));
 
     const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
     const labels = within(nav)

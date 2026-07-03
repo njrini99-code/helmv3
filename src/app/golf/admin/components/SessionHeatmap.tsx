@@ -24,7 +24,7 @@ interface SessionHeatmapProps {
 
 function StatBox({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white/50 border border-white/20 rounded-xl p-4 text-center">
+    <div className="glass-subtle rounded-xl p-4 text-center">
       <p className="text-2xl font-semibold text-warm-900">{value}</p>
       <p className="text-sm text-warm-500 mt-1">{label}</p>
     </div>
@@ -53,7 +53,7 @@ function HeatmapBar({
           {label}
         </p>
       </div>
-      <div className="flex-1 relative h-8 bg-white/30 rounded-lg overflow-hidden">
+      <div className="flex-1 relative h-8 glass-subtle rounded-lg overflow-hidden">
         <div
           className="absolute inset-y-0 left-0 rounded-lg transition-all duration-500 ease-out"
           style={{

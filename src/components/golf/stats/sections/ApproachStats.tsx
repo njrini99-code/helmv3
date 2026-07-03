@@ -193,7 +193,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.55 + idx * 0.04, duration: DURATION.short, ease: EASE_CINEMATIC })}
               >
-                <div className={`text-[20px] font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
+                <div className={`text-h3 font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
                 <div className="text-xs text-warm-500">{item.label}</div>
               </motion.div>
             ))}
@@ -216,7 +216,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6 + idx * 0.04 })}
                 >
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-700 tabular-nums">
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-700 tabular-nums">
                     <span className="text-warm-400 mr-1">{item.icon}</span>
                     {formatStat(item.value, '%', 0)}
                   </div>

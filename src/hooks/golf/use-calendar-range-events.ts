@@ -28,7 +28,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 /** Columns fetched for calendar rendering — keep in sync with the page select. */
-export const CALENDAR_EVENT_COLUMNS =
+const CALENDAR_EVENT_COLUMNS =
   'id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees, parent_event_id, recurrence_rule';
 
 interface GolfEventRangeRow {

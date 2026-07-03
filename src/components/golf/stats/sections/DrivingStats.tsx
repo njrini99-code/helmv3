@@ -80,7 +80,7 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
             animate={{ opacity: 1, x: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: DURATION.short, ease: EASE_CINEMATIC })}
           >
-            <div className="text-[32px] md:text-[36px] font-light text-blue-700 tabular-nums tracking-[-0.025em]">{formatStat(stats.missLeftPct, '%')}</div>
+            <div className="text-h1 md:text-display font-light text-blue-700 tabular-nums tracking-[-0.025em]">{formatStat(stats.missLeftPct, '%')}</div>
             <div className="text-sm text-warm-500">← Left</div>
           </motion.div>
           <motion.div
@@ -95,7 +95,7 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
             animate={{ opacity: 1, x: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: DURATION.short, ease: EASE_CINEMATIC })}
           >
-            <div className="text-[32px] md:text-[36px] font-light tracking-[-0.025em] text-orange-600 tabular-nums">{formatStat(stats.missRightPct, '%')}</div>
+            <div className="text-h1 md:text-display font-light tracking-[-0.025em] text-orange-600 tabular-nums">{formatStat(stats.missRightPct, '%')}</div>
             <div className="text-sm text-warm-500">Right →</div>
           </motion.div>
         </div>

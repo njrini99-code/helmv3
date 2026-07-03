@@ -25,6 +25,7 @@ import { createContext, forwardRef, useCallback, useContext } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
 
 /**
@@ -206,12 +207,13 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
     >
       {/* Collapse affordance (desktop only) */}
       {!isMobile && onToggleCollapsed && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={onToggleCollapsed}
           aria-label={isCollapsed ? 'Expand navigation' : 'Collapse navigation'}
           className={cn(
-            'absolute -right-3 top-7 z-10 flex h-6 w-6 items-center justify-center',
+            'absolute -right-3 top-7 z-10 flex h-6 w-6 min-h-0 items-center justify-center p-0',
             'rounded-full bg-nav-surface text-nav-text-dim ring-1 ring-white/10',
             'shadow-soft transition-colors [transition-duration:var(--fw-dur-fast)]',
             'hover:bg-nav-surface hover:text-nav-text',
@@ -219,7 +221,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
           )}
         >
           {isCollapsed ? <IconChevronRight size={14} aria-hidden /> : <IconChevronLeft size={14} aria-hidden />}
-        </button>
+        </Button>
       )}
 
       {/* Brand */}
@@ -283,7 +285,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
       >
         {sections.map((section, sIdx) => (
           <div key={section.heading ?? `section-${sIdx}`} className={cn(sIdx > 0 && 'mt-5')}>
-            {sIdx > 0 && <div className="mx-3 mb-5 h-px bg-white/[0.05]" aria-hidden />}
+            {sIdx > 0 && <div className="mx-3 mb-5 border-t border-white/[0.05]" aria-hidden />}
             {section.heading && !isCollapsed && (
               <p className="px-4 pb-3 pt-1 font-fw-sans text-eyebrow uppercase text-nav-text-dim">
                 {section.heading}

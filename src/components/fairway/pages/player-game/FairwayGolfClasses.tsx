@@ -301,11 +301,12 @@ export function FairwayGolfClasses({
                             const { code, name } = parseClassName(cls.class_name);
                             const location = getLocationDisplay(cls);
                             return (
-                              <button
+                              <Button
                                 key={`${cls.id}-${day}`}
                                 type="button"
+                                variant="ghost"
                                 onClick={() => onClassClick(cls)}
-                                className="flex w-full flex-col items-start gap-0.5 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                                className="flex h-auto min-h-0 w-full flex-col items-start gap-0.5 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                                 style={{
                                   borderLeftColor: cls.color || undefined,
                                   borderLeftWidth: cls.color ? '3px' : undefined,
@@ -330,7 +331,7 @@ export function FairwayGolfClasses({
                                     {location}
                                   </span>
                                 ) : null}
-                              </button>
+                              </Button>
                             );
                           })
                         ) : (
@@ -358,10 +359,11 @@ export function FairwayGolfClasses({
                   const location = getLocationDisplay(cls);
                   return (
                     <Surface key={cls.id} elevation="border" padding="none">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => onClassClick(cls)}
-                        className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                        className="h-auto min-h-0 w-full items-center justify-start gap-4 rounded-none px-4 py-3.5 text-left transition-colors hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                       >
                         <span
                           aria-hidden
@@ -404,7 +406,7 @@ export function FairwayGolfClasses({
                             {cls.instructor ? <span>{cls.instructor}</span> : null}
                           </span>
                         </span>
-                      </button>
+                      </Button>
                     </Surface>
                   );
                 })}

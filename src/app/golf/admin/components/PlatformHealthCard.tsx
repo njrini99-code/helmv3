@@ -66,11 +66,11 @@ export function PlatformHealthCard({
       : 'text-warm-700';
 
   return (
-    <div className="glass-standard rounded-2xl p-4 sm:p-5 md:p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-4 sm:p-5 md:p-6 transition-all duration-200 hover:bg-cream-100 active:bg-cream-200 hover:shadow-card-hover">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+          <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
             <IconActivity size={18} />
           </div>
           <h3 className="text-base sm:text-lg font-semibold text-warm-900">Platform Health</h3>
@@ -116,19 +116,19 @@ export function PlatformHealthCard({
           <span className="text-xs font-medium text-warm-500">Active Users (Real-Time)</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div className="bg-white/50 rounded-xl p-2.5 text-center">
+          <div className="bg-cream-50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers1h}</p>
             <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">Now</p>
           </div>
-          <div className="bg-white/50 rounded-xl p-2.5 text-center">
+          <div className="bg-cream-50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers24h}</p>
             <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">24h</p>
           </div>
-          <div className="bg-white/50 rounded-xl p-2.5 text-center">
+          <div className="bg-cream-50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers7d}</p>
             <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">7d</p>
           </div>
-          <div className="bg-white/50 rounded-xl p-2.5 text-center">
+          <div className="bg-cream-50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers30d}</p>
             <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">30d</p>
           </div>
@@ -166,7 +166,7 @@ export function PlatformHealthCard({
 
       {/* Quick stats — 3 equal cols, responsive text */}
       <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mb-5">
-        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-2.5 sm:p-3 text-center">
           <p className="text-lg sm:text-xl font-semibold text-warm-900 tabular-nums">
             {health.roundsToday}
           </p>
@@ -174,7 +174,7 @@ export function PlatformHealthCard({
             Rounds Today
           </p>
         </div>
-        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center">
+        <div className="bg-cream-50 rounded-xl p-2.5 sm:p-3 text-center">
           <p className={cn(
             'text-lg sm:text-xl font-semibold tabular-nums',
             health.systemErrors7d > 0 ? 'text-red-600' : 'text-warm-900'
@@ -185,7 +185,7 @@ export function PlatformHealthCard({
             Errors (7d)
           </p>
         </div>
-        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center overflow-hidden">
+        <div className="bg-cream-50 rounded-xl p-2.5 sm:p-3 text-center overflow-hidden">
           <p className="text-base sm:text-xl font-semibold text-warm-900 tabular-nums truncate">
             {Math.round(infraHealth?.totals?.avgResponseMs ?? 0)}ms
           </p>
@@ -202,25 +202,25 @@ export function PlatformHealthCard({
           <span className="text-xs font-medium text-warm-500">Infrastructure</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="bg-white/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
+          <div className="bg-cream-50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
             <span className="text-xs text-warm-500">Database</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums">
               {formatBytes(health.dbSizeBytes)}
             </span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
+          <div className="bg-cream-50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
             <span className="text-xs text-warm-500 shrink-0">Connections</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums text-right">
               {health.activeConnections} active · {health.idleConnections} idle
             </span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
+          <div className="bg-cream-50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
             <span className="text-xs text-warm-500 shrink-0">Sessions</span>
             <span className="text-xs font-medium text-warm-700 tabular-nums text-right">
               {health.activeSessions} active / {health.totalSessions}
             </span>
           </div>
-          <div className="bg-white/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
+          <div className="bg-cream-50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
             <span className="text-xs text-warm-500">Dormant Users</span>
             <span className={cn(
               'text-xs font-medium tabular-nums text-right',

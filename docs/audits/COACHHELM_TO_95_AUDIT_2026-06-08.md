@@ -67,7 +67,7 @@ Recommendation: add the same v3/lifecycle/status predicate to the cron candidate
 
 ### P1: 95-grade live causality proof is still missing
 
-File: `docs/superpowers/plans/2026-06-07-coachhelm-to-90.md`
+File: `docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md`
 
 Task H5 explicitly requires a post-deploy smoke proving:
 
@@ -85,7 +85,7 @@ Recommendation: after deployment, run the H5 curl and Supabase SQL exactly as do
 
 Files:
 
-- `docs/audits/COACHHELM_VALIDITY_REMEDIATION_2026-06-07.md`
+- `docs/archive/2026-06/audits/COACHHELM_VALIDITY_REMEDIATION_2026-06-07.md`
 - `src/lib/coachhelm/v3/generators/pressure-gap.ts`
 
 The remediation doc states that regen refreshes emitted signatures but does not archive active rows that current generators no longer emit. The pressure-gap generator comment repeats the dependency: stale stored HIGH pressure rows are retracted by lifecycle/cleanup, not by the generator.

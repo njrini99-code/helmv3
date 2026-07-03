@@ -52,7 +52,7 @@ export function PipelineColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex-shrink-0 w-[280px] rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 overflow-hidden',
+        'flex-shrink-0 w-[280px] rounded-2xl glass-subtle overflow-hidden',
         'flex flex-col transition-all duration-200 min-h-[400px]',
         isOver && 'ring-2 ring-primary-500 ring-offset-2 bg-primary-50/40',
       )}

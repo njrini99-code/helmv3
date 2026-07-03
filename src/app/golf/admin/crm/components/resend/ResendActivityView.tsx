@@ -12,6 +12,7 @@ import {
   IconExternalLink,
 } from '@/components/icons';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type {
   ActivityWindow,
@@ -394,10 +395,10 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
 
             return (
               <li key={row.resend_message_id}>
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => onSelect(row.resend_message_id)}
-                  className="w-full px-6 py-3 cursor-pointer hover:bg-white/70 transition-colors text-left"
+                  className="w-full px-6 py-3 cursor-pointer hover:bg-cream-100 transition-colors text-left justify-start rounded-none"
                 >
                   <div className="flex items-center gap-3">
                     <span
@@ -427,7 +428,7 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
                       {formatRelative(failedAt)}
                     </span>
                   </div>
-                </button>
+                </Button>
               </li>
             );
           })}

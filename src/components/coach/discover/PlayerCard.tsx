@@ -88,11 +88,12 @@ const PlayerCardComponent = function PlayerCard({
 
   if (variant === 'compact') {
     return (
-      <button
+      <Button
+        variant="ghost"
         type="button"
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative text-left",
+          "flex items-center gap-3 p-3 rounded-xl cursor-pointer relative text-left h-auto min-h-0 justify-start font-normal",
           "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
           "transition-[transform,box-shadow,border-color] duration-200",
           "hover:-translate-y-0.5 hover:shadow-md hover:border-warm-200/55",
@@ -110,7 +111,7 @@ const PlayerCardComponent = function PlayerCard({
               'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200 flex-shrink-0',
               isSelected
                 ? 'bg-primary-600 border-primary-600 text-white scale-110'
-                : 'border-warm-300 hover:border-primary-500 bg-white'
+                : 'border-warm-300 hover:border-primary-500 bg-cream-50'
             )}
           >
             {isSelected && <IconCheck size={12} />}
@@ -134,14 +135,14 @@ const PlayerCardComponent = function PlayerCard({
         {player.status && (
           <StatusDot variant={getStatusVariant(player.status)} />
         )}
-      </button>
+      </Button>
     );
   }
 
   if (variant === 'featured') {
     return (
       <div className={cn(
-        "relative overflow-hidden rounded-[20px]",
+        "relative overflow-hidden rounded-2xl",
         "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
         "transition-[transform,box-shadow,border-color] duration-200",
         "hover:-translate-y-1 hover:shadow-xl hover:border-warm-200/55",
@@ -210,14 +211,19 @@ const PlayerCardComponent = function PlayerCard({
             <PlayerAvatar player={player} size="lg" border />
           </div>
 
-          <button type="button" onClick={handleClick} className="group cursor-pointer w-full text-left">
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={handleClick}
+            className="group cursor-pointer w-full text-left h-auto min-h-0 p-0 justify-start font-normal hover:bg-transparent"
+          >
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold text-lg text-warm-900 group-hover:text-primary-600 transition-colors">
                 {player.firstName} {player.lastName}
               </h3>
               {player.verified && <VerifiedBadge />}
             </div>
-          </button>
+          </Button>
 
           <div className="flex items-center gap-3 text-sm text-warm-500 mb-4">
             <span className="font-medium text-warm-700">{player.position}</span>
@@ -262,7 +268,7 @@ const PlayerCardComponent = function PlayerCard({
   // Default variant
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-[20px]",
+      "relative overflow-hidden rounded-2xl",
       "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
       "transition-[transform,box-shadow,border-color] duration-200",
       "hover:-translate-y-1 hover:shadow-lg hover:border-warm-200/55",
@@ -311,7 +317,12 @@ const PlayerCardComponent = function PlayerCard({
           <PlayerAvatar player={player} size="md" />
 
           <div className="flex-1 min-w-0">
-            <button type="button" onClick={handleClick} className="cursor-pointer w-full text-left">
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={handleClick}
+              className="cursor-pointer w-full text-left h-auto min-h-0 p-0 justify-start font-normal hover:bg-transparent"
+            >
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-warm-900 group-hover:text-primary-600 transition-colors truncate">
                   {player.firstName} {player.lastName}
@@ -323,7 +334,7 @@ const PlayerCardComponent = function PlayerCard({
                   </span>
                 )}
               </div>
-            </button>
+            </Button>
 
             <div className="text-sm leading-relaxed text-warm-500 mb-2">
               {player.position} • Class of {player.graduationYear}
@@ -494,7 +505,7 @@ const ActionButton = memo(function ActionButton({
       }}
       className={cn(
         "rounded-lg bg-cream-50/92 backdrop-blur-sm text-warm-600",
-        "hover:bg-white active:bg-cream-100/75 hover:text-warm-900",
+        "hover:bg-cream-100 active:bg-cream-100/75 hover:text-warm-900",
         "transition-[color,background-color,transform] duration-200",
         "active:scale-95",
         sizeClasses[size],

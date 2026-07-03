@@ -9,6 +9,8 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { IconCheck } from '@/components/icons';
@@ -138,40 +140,24 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           required
         />
 
-        <div>
-          <label htmlFor="ctm-description" className="text-sm font-medium text-warm-700 block mb-1">
-            Description (Optional)
-          </label>
-          <textarea
-            id="ctm-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add more details about this task..."
-            rows={3}
-            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                     text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
-          />
-        </div>
+        <Textarea
+          id="ctm-description"
+          label="Description (Optional)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Add more details about this task..."
+          rows={3}
+        />
 
         {/* Category & Priority */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="ctm-category" className="text-sm font-medium text-warm-700 block mb-1">
-              Category
-            </label>
-            <select
-              id="ctm-category"
+            <Select
+              label="Category"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                       text-warm-900 bg-white transition-colors"
-            >
-              {CATEGORIES.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
-              ))}
-            </select>
+              onChange={(v) => setCategory(v)}
+              options={CATEGORIES}
+            />
           </div>
 
           <div>
@@ -191,7 +177,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                     'rounded-full border font-medium',
                     priority === p.value
                       ? p.color + ' border-transparent hover:bg-transparent'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 active:bg-warm-50'
+                      : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300 active:bg-warm-50'
                   )}
                 >
                   {p.label}

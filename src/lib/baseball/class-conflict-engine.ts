@@ -135,7 +135,7 @@ export interface DerivedConflict {
 // -----------------------------------------------------------------------------
 
 /** Parse "HH:MM[:SS]" to minutes-since-midnight; null on bad input. */
-export function parseClockToMinutes(t: string | null | undefined): number | null {
+function parseClockToMinutes(t: string | null | undefined): number | null {
   if (!t) return null;
   const m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(t.trim());
   if (!m) return null;
@@ -153,7 +153,7 @@ function minutesToClock(mins: number): string {
 
 /** Normalize a stored day token to canonical weekdays. Handles 'MWF', 'TR',
  * 'Monday', 'Mon', 'M', etc. Returns [] on anything unrecognized. */
-export function normalizeDays(raw: string[]): Weekday[] {
+function normalizeDays(raw: string[]): Weekday[] {
   const out = new Set<Weekday>();
   const add = (d: Weekday) => out.add(d);
   for (const tok of raw ?? []) {
@@ -188,7 +188,7 @@ export function normalizeDays(raw: string[]): Weekday[] {
 }
 
 /** Weekday of an ISO timestamp in a given IANA tz (defaults to local). */
-export function weekdayOf(iso: string, timeZone?: string): Weekday | null {
+function weekdayOf(iso: string, timeZone?: string): Weekday | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   let idx: number;

@@ -19,6 +19,7 @@
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StatusPill } from '@/components/fairway';
+import { Button } from '@/components/fairway/controls/button';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
@@ -105,17 +106,18 @@ export function FairwayEventCard({
   const rsvp = showRsvp && rsvpStatus ? RSVP_PILL[rsvpStatus] : null;
 
   return (
-    // GOTCHA (a): a real native <button>, NOT `Surface as="button"`.
-    <button
+    // GOTCHA (a): a real Fairway <Button variant="ghost">, NOT `Surface as="button"`.
+    <Button
       type="button"
+      variant="ghost"
       onClick={onClick ? () => onClick(event) : undefined}
       aria-label={`${event.title} — ${timeAria(event)}${event.location ? `, ${event.location}` : ''}`}
       className={cn(
-        'group relative flex w-full items-stretch gap-4 text-left',
-        'rounded-card bg-surface border border-border-subtle shadow-flat',
-        'p-4 min-h-[64px]',
+        'group relative block h-auto min-h-[64px] w-full border text-left font-normal',
+        'rounded-card bg-surface border-border-subtle shadow-flat',
+        'p-4',
         'transition-[box-shadow,transform,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-        'hover:-translate-y-px hover:shadow-soft hover:border-border-strong',
+        'hover:-translate-y-px hover:bg-surface hover:shadow-soft hover:border-border-strong',
         'active:translate-y-[0.5px] active:shadow-flat',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
@@ -123,50 +125,52 @@ export function FairwayEventCard({
         className,
       )}
     >
-      {/* Time block — Fragment-Mono tabular-nums, fixed width for column alignment. */}
-      <div className="flex w-[68px] flex-shrink-0 flex-col items-start justify-center md:w-[84px]">
-        <span
-          className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary"
-          suppressHydrationWarning
-        >
-          {start}
-        </span>
-        {end ? (
+      <span className="flex w-full items-stretch gap-4">
+        {/* Time block — Fragment-Mono tabular-nums, fixed width for column alignment. */}
+        <span className="flex w-[68px] flex-shrink-0 flex-col items-start justify-center md:w-[84px]">
           <span
-            className="font-fw-mono text-caption tabular-nums text-text-tertiary"
+            className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary"
             suppressHydrationWarning
           >
-            {end}
+            {start}
           </span>
-        ) : null}
-      </div>
-
-      {/* Title + location. */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-        <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-          {event.title}
-        </p>
-        <div className="flex min-w-0 items-center gap-2">
-          <StatusPill tone={typeTone} size="sm" dot={false}>
-            {typeLabel}
-          </StatusPill>
-          {event.location ? (
-            <span className="truncate font-fw-sans text-caption text-text-tertiary">
-              {event.location}
+          {end ? (
+            <span
+              className="font-fw-mono text-caption tabular-nums text-text-tertiary"
+              suppressHydrationWarning
+            >
+              {end}
             </span>
           ) : null}
-        </div>
-      </div>
+        </span>
 
-      {/* RSVP pill — player view only. */}
-      {rsvp ? (
-        <div className="flex flex-shrink-0 items-center">
-          <StatusPill tone={rsvp.tone} size="sm">
-            {rsvp.label}
-          </StatusPill>
-        </div>
-      ) : null}
-    </button>
+        {/* Title + location. */}
+        <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+          <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+            {event.title}
+          </p>
+          <span className="flex min-w-0 items-center gap-2">
+            <StatusPill tone={typeTone} size="sm" dot={false}>
+              {typeLabel}
+            </StatusPill>
+            {event.location ? (
+              <span className="truncate font-fw-sans text-caption text-text-tertiary">
+                {event.location}
+              </span>
+            ) : null}
+          </span>
+        </span>
+
+        {/* RSVP pill — player view only. */}
+        {rsvp ? (
+          <span className="flex flex-shrink-0 items-center">
+            <StatusPill tone={rsvp.tone} size="sm">
+              {rsvp.label}
+            </StatusPill>
+          </span>
+        ) : null}
+      </span>
+    </Button>
   );
 }
 

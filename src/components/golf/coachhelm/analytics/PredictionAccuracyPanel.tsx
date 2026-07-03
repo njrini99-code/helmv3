@@ -403,7 +403,7 @@ export function PredictionAccuracyPanel({
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-amber-800">Overconfidence Rate</span>
-                <span className="text-[17px] font-medium tracking-[-0.005em] text-amber-700">
+                <span className="text-body-lg font-medium tracking-[-0.005em] text-amber-700">
                   {Math.round(data.summary.overconfidenceRate * 100)}%
                 </span>
               </div>
@@ -416,7 +416,7 @@ export function PredictionAccuracyPanel({
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-blue-800">Underconfidence Rate</span>
-                <span className="text-[17px] font-medium tracking-[-0.005em] text-blue-700">
+                <span className="text-body-lg font-medium tracking-[-0.005em] text-blue-700">
                   {Math.round(data.summary.underconfidenceRate * 100)}%
                 </span>
               </div>
@@ -467,7 +467,7 @@ function StatCard({
         {icon}
         <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{value}</span>
+      <span className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{value}</span>
     </div>
   );
 }
@@ -488,7 +488,7 @@ function StatCardLarge({
       <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">{label}</p>
       <p
         className={cn(
-          'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+          'text-h2 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
           color === 'green' && 'text-primary-600',
           color === 'amber' && 'text-amber-600',
           color === 'slate' && 'text-warm-900'
@@ -523,7 +523,7 @@ function ConfidenceIndicator({
       <p className="text-xs text-warm-500">{label}</p>
       <p
         className={cn(
-          'text-[13px] font-medium',
+          'text-body-sm font-medium',
           isHigh ? 'text-red-600' : type === 'over' ? 'text-amber-600' : 'text-blue-600'
         )}
       >

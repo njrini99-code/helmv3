@@ -37,7 +37,7 @@ function DailyAreaChartCard({
   const chartHeight = Math.max(160, Math.min(280, 180 + variance * 2));
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200/50 shadow-sm p-4 sm:p-5 md:p-6">
+    <div className="bg-cream-50 rounded-2xl border border-warm-200/50 shadow-sm p-4 sm:p-5 md:p-6">
       {/* Header: icon+title left, stats right — wraps on mobile */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">

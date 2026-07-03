@@ -2,13 +2,23 @@
  * Decision Room — Lift Summary read-model.
  *
  * Aggregates recent team lifting volume, compliance, and trend from the
- * EXISTING prod tables `baseball_lift_sessions` (+ `baseball_lift_set_results`
- * for tonnage/volume) for the Staff Decision Room.
+ * unified Helm Lifting Lab tables (`helm_lifting_sessions`) for the Staff
+ * Decision Room.
+ *
+ * W2-G rewire: createLiftAssignment / publishLiftDay / logLiftResult
+ * (src/app/baseball/actions/lifting.ts + lifting-v11.ts) write sessions ONLY
+ * to helm_lifting_sessions now — the legacy baseball_lift_sessions table is
+ * write-dead (this summary read 0 rows for real activity). helm_lifting_
+ * sessions is keyed by (organization_id, athlete_id), not (team_id,
+ * player_id), so this module resolves the team's organization + athlete-id
+ * map first (via resolveBaseballLiftingOrg / resolveBaseballAthleteIds) and
+ * maps every row's athlete_id back to a baseball_players.id before returning
+ * — the DecisionRoomSummaryPlayer.playerId contract is unchanged.
  *
  * RLS SAFETY: callers MUST pass the AUTHENTICATED server client
- * (`await createClient()` from '@/lib/supabase/server'). Every query below is
- * additionally `.eq('team_id', teamId)` so reads are scoped to the caller's
- * team and never leak cross-team rows. Do NOT pass a service-role client here.
+ * (`await createClient()` from '@/lib/supabase/server'). Reads are scoped to
+ * the caller's org + team-resolved athlete set so results never leak
+ * cross-team rows. Do NOT pass a service-role client here.
  *
  * HONESTY: returns real aggregates or honest zeros/empty windows. No fabricated
  * data. Concepts without a backing column are omitted (see followups in the
@@ -19,6 +29,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { fromUntyped } from '@/lib/supabase/untyped';
+import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
 import type {
   DecisionRoomLiftSummary,
   DecisionRoomSummaryPlayer,
@@ -32,8 +44,9 @@ import type {
 const RECENT_WINDOW_DAYS = 14;
 
 /**
- * Real `baseball_lift_sessions.status` vocabulary (verified against the prod
- * CHECK constraint): assigned | started | completed | missed | excused | modified.
+ * `helm_lifting_sessions.status` vocabulary (mirrors the legacy
+ * `baseball_lift_sessions` CHECK constraint it was cloned from):
+ * assigned | started | completed | missed | excused | modified.
  *
  *  - completed / modified -> attended (counts as compliant)
  *  - missed               -> non-compliant (counts against)
@@ -45,8 +58,7 @@ const NONCOMPLIANT_STATUSES = ['missed'] as const;
 
 type LiftSessionRow = {
   id: string;
-  team_id: string;
-  player_id: string;
+  athlete_id: string;
   scheduled_date: string | null;
   status: string | null;
   completed_at: string | null;
@@ -81,14 +93,45 @@ export async function loadLiftSummary(
 ): Promise<DecisionRoomLiftSummary> {
   const windowStart = isoDateNDaysAgo(RECENT_WINDOW_DAYS);
 
+  // --- Resolve the team's Helm Lifting org + its athlete-id map -------------
+  // helm_lifting_athletes.team_id is the SAME soft-ref baseball_teams.id the
+  // legacy table used, so filtering by it (+ organization_id) is the direct
+  // equivalent of the old `.eq('team_id', teamId)` scoping.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  if (!liftCtx) {
+    // No Helm Lifting organization configured for this team yet — honest empty.
+    return emptySummary(teamId, windowStart);
+  }
+
+  const { data: athleteRows } = await fromUntyped(supabase, 'helm_lifting_athletes')
+    .select('id, sport_player_id')
+    .eq('organization_id', liftCtx.organizationId)
+    .eq('sport', 'baseball')
+    .eq('team_id', teamId) as {
+    data: Array<{ id: string; sport_player_id: string | null }> | null;
+  };
+  const athleteToPlayer = new Map<string, string>();
+  const athleteIds: string[] = [];
+  for (const row of athleteRows ?? []) {
+    if (!row.sport_player_id) continue;
+    athleteToPlayer.set(row.id, row.sport_player_id);
+    athleteIds.push(row.id);
+  }
+  if (!athleteIds.length) {
+    return emptySummary(teamId, windowStart);
+  }
+
   // --- Sessions: compliance + scheduling within the recent window ----------
-  const { data: sessionData, error: sessionError } = await supabase
-    .from('baseball_lift_sessions')
-    .select('id, team_id, player_id, scheduled_date, status, completed_at')
-    .eq('team_id', teamId)
+  const { data: sessionData, error: sessionError } = await fromUntyped(supabase, 'helm_lifting_sessions')
+    .select('id, athlete_id, scheduled_date, status, completed_at')
+    .eq('organization_id', liftCtx.organizationId)
+    .in('athlete_id', athleteIds)
     .gte('scheduled_date', windowStart)
     .order('scheduled_date', { ascending: false })
-    .limit(1000);
+    .limit(1000) as {
+    data: LiftSessionRow[] | null;
+    error: { message: string } | null;
+  };
 
   if (sessionError) {
     // Fail honest: surface an empty summary rather than throwing into the UI.
@@ -100,11 +143,14 @@ export async function loadLiftSummary(
   const scheduledCount = sessions.length;
   const completedCount = sessions.filter((s) => isCompliant(s.status)).length;
 
-  // Build non-compliant player list: group missed sessions by player_id.
+  // Build non-compliant player list: group missed sessions by player_id
+  // (mapped back from athlete_id via the roster resolved above).
   const missedByPlayer = new Map<string, number>();
   for (const s of sessions) {
+    const playerId = athleteToPlayer.get(s.athlete_id);
+    if (!playerId) continue; // athlete not resolved to a roster player — skip.
     if (isNonCompliant(s.status)) {
-      missedByPlayer.set(s.player_id, (missedByPlayer.get(s.player_id) ?? 0) + 1);
+      missedByPlayer.set(playerId, (missedByPlayer.get(playerId) ?? 0) + 1);
     }
   }
   const nonCompliantPlayers: DecisionRoomSummaryPlayer[] = Array.from(
