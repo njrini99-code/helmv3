@@ -58,6 +58,38 @@ function sanitizeHandedness(value: string | null | undefined, allowed: string[])
 }
 
 /**
+ * Ensure the public.users row exists with the requested self-service role,
+ * WITHOUT demoting an existing 'admin'. A plain upsert here runs as
+ * service_role (bypasses the self-escalation trigger) and clobbered
+ * admin@helmsportslabs.com down to 'coach' on 2026-07-03, locking the only
+ * admin out of /golf/admin. player<->coach conversion stays allowed.
+ */
+async function ensureUserRowPreservingAdmin(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  email: string,
+  role: 'coach' | 'player',
+): Promise<{ error: unknown }> {
+  const { data: existing, error: readError } = await admin
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle();
+  if (readError) return { error: readError };
+
+  if (!existing) {
+    const { error } = await admin
+      .from('users')
+      .upsert({ id: userId, email, role }, { onConflict: 'id', ignoreDuplicates: true });
+    return { error };
+  }
+  if (existing.role === 'admin' || existing.role === role) return { error: null };
+
+  const { error } = await admin.from('users').update({ role }).eq('id', userId);
+  return { error };
+}
+
+/**
  * Supabase PostgrestError objects are plain objects, not Error instances, so
  * `String(err)` / `err instanceof Error` produced the useless "[object Object]"
  * in our logs — which is exactly what hid the real cause of the silent
@@ -135,9 +167,9 @@ async function runCompleteCoachOnboardingCore(
     };
   }
 
-  const { error: userError } = await admin
-    .from('users')
-    .upsert({ id: user.id, email: user.email || '', role: 'coach' }, { onConflict: 'id' });
+  const { error: userError } = await ensureUserRowPreservingAdmin(
+    admin, user.id, user.email || '', 'coach',
+  );
 
   if (userError) {
     await logServerError(`[Onboarding] Failed to upsert user: ${describeDbError(userError)}`, { action: 'onboarding.completeCoachOnboarding' });
@@ -451,10 +483,10 @@ export async function completeBaseballSignup(data: {
     return { success: true, redirectTo: '/baseball/player/today' };
   }
 
-  // Upsert user record
-  await admin
-    .from('users')
-    .upsert({ id: user.id, email: userEmail, role: data.role }, { onConflict: 'id' });
+  // Ensure user record exists (never demotes an existing admin)
+  await ensureUserRowPreservingAdmin(
+    admin, user.id, userEmail, data.role === 'coach' ? 'coach' : 'player',
+  );
 
   if (data.role === 'coach') {
     try {
