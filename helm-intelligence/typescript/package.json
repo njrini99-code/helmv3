@@ -26,7 +26,7 @@
   "author": "Helm Sports Labs",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.105.0"
+    "@anthropic-ai/sdk": "^0.106.0"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
