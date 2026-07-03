@@ -647,22 +647,9 @@ issue_enrichment:
     auto_planning:
       enabled: true
       labels:
-        - "feature"
-        - "enhancement"
-        - "bug"
-        - "tech-debt"
-        - "high-risk"
-        - "security"
-        - "auth"
-        - "rls"
-        - "database"
-        - "stats"
-        - "import"
-        - "coachhelm"
-        - "golf"
-        - "baseball"
-        - "dashboard"
-        - "mobile"
+        # CodeRabbit auto-planning is label-event driven. A dedicated trigger
+        # label avoids races when issues are created with their final labels.
+        - "plan-me"
         - "!wip"
         - "!no-plan"
 
@@ -707,3 +694,5 @@ issue_enrichment:
         instructions: "Tiny chore or doc change where CodeRabbit Plan would be overkill."
       - label: "wip"
         instructions: "Work in progress; do not auto-plan yet."
+      - label: "plan-me"
+        instructions: "Internal automation label that triggers CodeRabbit automatic issue planning."
