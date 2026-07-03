@@ -179,8 +179,10 @@ async function GolfBody() {
           </div>
         </Surface>
 
-        {/* Demo & leads */}
-        <Surface padding="sm">
+        {/* Demo & leads — id="demo" is a real anchor: the V2 activity feed
+            (src/lib/admin/data/activity.ts) links demo_session items here
+            via `/admin/golf#demo`. */}
+        <Surface padding="sm" id="demo">
           <SectionLabel>Demo & leads</SectionLabel>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <StatTile label="Demo sessions 30d" value={tab.demos.demoSessions30d} tone="neutral" mono />
