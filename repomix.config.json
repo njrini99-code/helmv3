@@ -1,0 +1,48 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "output": {
+    "filePath": ".repomix/helmv3-full.xml",
+    "style": "xml",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": true,
+    "topFilesLength": 30
+  },
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      ".repomix/",
+      ".claude/",
+      ".helm/",
+      ".production-team/",
+      "src/.helmdev/",
+      "docs/archive/",
+      "docs/operations/generated/",
+      "playwright/.auth/",
+      "test-results/",
+      "playwright-report/",
+      "ui-intelligence/",
+      "routes/",
+      "supabase/migrations_archive/",
+      "tools/baseballhelm-command-center/vendor/",
+      "tools/ultra-agent-audit/data/",
+      "tools/ux-flow-auditor/dashboard*/",
+      "tools/ux-flow-auditor/src/knowledge/scanned-knowledge.json",
+      "docs/setup/RUN_ON_YOUR_MACHINE.md",
+      "scripts/apply-crm-migration.mjs",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.pdf",
+      "*.pptx",
+      "*.zip"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}

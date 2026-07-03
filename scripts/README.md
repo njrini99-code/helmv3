@@ -22,9 +22,9 @@ step:
 1. **Manual regeneration**: Run `npm run db:types` after applying a
    migration.
 
-2. **Manual Check**: Run `npm run db:types:check` to verify types are
-   current without regenerating (fails with a reminder message if
-   `database.ts` is stale).
+2. **Manual Check**: Run `npm run db:types:check` in a clean worktree to
+   regenerate types and then fail if `src/lib/types/database.ts` differs
+   from the committed file.
 
 If you want this automated, wire `npm run db:types:check` into
 `.github/workflows/ci.yml` and/or add a Husky pre-commit hook — neither
@@ -36,7 +36,8 @@ exists today.
 # Regenerate types manually
 SUPABASE_PROJECT_ID=your-id npm run db:types
 
-# Check if types are up to date (useful in CI/local)
+# Regenerate and check if types are up to date (useful in CI/local only
+# when a generated-file diff is acceptable)
 npm run db:types:check
 ```
 

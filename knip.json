@@ -2,8 +2,19 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "src/app/**/!(*.test|*.spec).{ts,tsx}",
-    "next.config.mjs"
+    "scripts/apply-crm-migration.mjs",
+    "scripts/run-crm-migration.mjs"
   ],
   "project": ["src/**/*.{ts,tsx}"],
-  "ignore": ["src/components/ui/**/*.tsx"]
+  "ignore": [
+    "src/components/ui/**/*.tsx",
+    "src/lib/admin/__tests__/fixtures/*.fixture.ts"
+  ],
+  "ignoreDependencies": [
+    "@capacitor/app",
+    "@capacitor/ios",
+    "@capacitor/local-notifications",
+    "@capacitor/network",
+    "@capacitor/share"
+  ]
 }

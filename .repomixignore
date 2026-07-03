@@ -1,0 +1,98 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+context7.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+
+# Dependencies and package-manager caches
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+.npm/
+
+# Framework/build outputs
+.next/
+out/
+build/
+dist/
+coverage/
+.turbo/
+.vercel/
+*.tsbuildinfo
+
+# Test/browser artifacts
+test-results/
+playwright-report/
+playwright/.auth/
+e2e-screenshots/
+.bugtest-screens/
+ui-intelligence/
+routes/
+
+# Local agent/tooling state
+.agents/
+.codex/
+.claude/
+.claude/scheduled_tasks.lock
+.cleanup/
+.repomix/
+.worktrees/
+.full-review/
+.full-review-archive-*/
+.full-stack-feature/
+.full-stack-feature-archived-*/
+.playwright-mcp/
+
+# Large generated or binary artifacts
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.avif
+*.pdf
+*.pptx
+*.zip
+*.gz
+*.tgz
+*.mp4
+*.mov
+*.sqlite
+*.sqlite3
+*.db
+
+# Generated docs and bundles
+docs/operations/generated/
+docs/archive/
+helm-docs-bundle/
+helm-cli-complete.zip
+next-shadcn-dashboard-starter/
+
+# Machine-specific design/screenshot scratch
+.design-sync/
+.ds-sync/
+ds-bundle/
+docs/redesign/
+helm-vid/
+
+# Legacy/large local knowledge and generated tool bundles
+.helm/
+.production-team/
+src/.helmdev/
+supabase/migrations_archive/
+tools/baseballhelm-command-center/vendor/
+tools/ultra-agent-audit/data/
+tools/ux-flow-auditor/dashboard*/
+tools/ux-flow-auditor/src/knowledge/scanned-knowledge.json
+
+# Files Repomix flags as potentially sensitive; keep out of broad AI packs.
+docs/setup/RUN_ON_YOUR_MACHINE.md
+scripts/apply-crm-migration.mjs

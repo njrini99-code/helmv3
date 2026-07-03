@@ -435,6 +435,12 @@ shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint) so merges
 are blocked even if either AI reviewer is offline. Aggregate status
 check: `Review Gate / all`.
 
+**Repomix context packs** — on-demand AI review bundles are wired through
+`scripts/context/repomix.sh` and the `ctx:*` npm scripts. Outputs are
+written to `.repomix/` and ignored. Start with
+`docs/operations/REPOMIX_CONTEXT_PACKS.md`; Helm Bridge/admin context is
+`npm run ctx:admin`.
+
 **CI split — GitHub Actions vs CircleCI**
 
 GitHub Actions owns the per-PR fast path: typecheck, lint, vitest,
