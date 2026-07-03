@@ -144,7 +144,16 @@ async function generateRoundRecapImpl(
 
 const observedGenerateRoundRecap = withAdminObserved(
   'generateRoundRecap',
-  { sport: 'golf', feature: 'round_review_ai' },
+  {
+    sport: 'golf',
+    feature: 'round_review_ai',
+    // The round detail page already knows the round it's rendering — wire
+    // that into admin_events on failure instead of relying solely on the
+    // authenticated user id (which is null for any unauthenticated/expired
+    // session edge case, and never carries which round/player was involved
+    // either way).
+    contextFrom: ([roundId]) => ({ roundId }),
+  },
   generateRoundRecapImpl,
 );
 
