@@ -110,26 +110,33 @@ export function InboundLeadsView() {
       });
     }
 
+    // 'completed' is the CHECK-allowed terminal status ('converted' would
+    // violate demo_requests_status_check and silently fail).
     await supabase.from('demo_requests').update({
-      status: 'converted',
+      status: 'completed',
     }).eq('id', request.id);
 
     await fetchRequests();
     setProcessing(null);
   };
 
+  // demo_requests.status CHECK domain: pending | contacted | scheduled |
+  // completed | declined — the landing form inserts 'pending' and the CHECK
+  // rejects 'new'/'converted', so the filters map onto the real domain.
+  const isNew = (r: DemoRequest) => !r.status || r.status === 'pending';
+  const isConverted = (r: DemoRequest) => r.status === 'completed';
+
   const allStats = useMemo(() => ({
     total: allRequests.length,
-    new: allRequests.filter(r => !r.status || r.status === 'new').length,
+    new: allRequests.filter(isNew).length,
     contacted: allRequests.filter(r => r.status === 'contacted').length,
-    converted: allRequests.filter(r => r.status === 'converted').length,
+    converted: allRequests.filter(isConverted).length,
   }), [allRequests]);
 
   const requests = useMemo(() => {
     if (filter === 'all') return allRequests;
-    if (filter === 'new') {
-      return allRequests.filter(r => !r.status || r.status === 'new');
-    }
+    if (filter === 'new') return allRequests.filter(isNew);
+    if (filter === 'converted') return allRequests.filter(isConverted);
     return allRequests.filter(r => r.status === filter);
   }, [allRequests, filter]);
 
@@ -306,9 +313,9 @@ export function InboundLeadsView() {
         ) : (
           <ul className="divide-y divide-warm-100/60">
             {requests.map((request) => {
-              const isNew = !request.status || request.status === 'new';
-              const isContacted = request.status === 'contacted';
-              const isConverted = request.status === 'converted';
+              const rowIsNew = isNew(request);
+              const rowIsContacted = request.status === 'contacted';
+              const rowIsConverted = isConverted(request);
               const isProcessing = processing === request.id;
               const coachRow = request.email
                 ? coachByEmail.get(request.email.toLowerCase())
@@ -319,22 +326,22 @@ export function InboundLeadsView() {
                   key={request.id}
                   className={cn(
                     'flex items-center gap-4 px-6 py-4 transition-colors',
-                    isNew && 'bg-amber-50/30',
+                    rowIsNew && 'bg-amber-50/30',
                   )}
                 >
                   {/* Status indicator */}
                   <div
                     className={cn(
                       'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                      isNew && 'bg-amber-100',
-                      isContacted && 'bg-violet-100',
-                      isConverted && 'bg-primary-100',
+                      rowIsNew && 'bg-amber-100',
+                      rowIsContacted && 'bg-violet-100',
+                      rowIsConverted && 'bg-primary-100',
                     )}
                     aria-hidden="true"
                   >
-                    {isNew && <IconMail size={18} className="text-amber-600" />}
-                    {isContacted && <IconCheckCircle2 size={18} className="text-violet-600" />}
-                    {isConverted && <IconUserPlus size={18} className="text-primary-600" />}
+                    {rowIsNew && <IconMail size={18} className="text-amber-600" />}
+                    {rowIsContacted && <IconCheckCircle2 size={18} className="text-violet-600" />}
+                    {rowIsConverted && <IconUserPlus size={18} className="text-primary-600" />}
                   </div>
 
                   {/* Info */}
@@ -343,7 +350,7 @@ export function InboundLeadsView() {
                       <p className="text-sm font-medium text-warm-900 truncate">
                         {request.email}
                       </p>
-                      {isNew && (
+                      {rowIsNew && (
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-eyebrow font-semibold uppercase tracking-wide">
                           New
                         </span>
@@ -388,7 +395,7 @@ export function InboundLeadsView() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {isNew && (
+                    {rowIsNew && (
                       <Button variant="ghost"
                         type="button"
                         onClick={() => markContacted(request.id)}
@@ -399,7 +406,7 @@ export function InboundLeadsView() {
                         Mark Contacted
                       </Button>
                     )}
-                    {(isNew || isContacted) && (
+                    {(rowIsNew || rowIsContacted) && (
                       <Button variant="primary"
                         type="button"
                         onClick={() => addToCRM(request)}
@@ -411,7 +418,7 @@ export function InboundLeadsView() {
                         Add to CRM
                       </Button>
                     )}
-                    {isConverted && (
+                    {rowIsConverted && (
                       <span
                         className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium"
                         aria-label="Already in CRM"
