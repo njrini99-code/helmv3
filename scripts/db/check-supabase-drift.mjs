@@ -20,20 +20,30 @@
  * Exit 2: could not connect (missing/invalid credentials).
  */
 import postgres from 'postgres';
+import { config as loadEnv } from 'dotenv';
 
 const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';
+
+loadEnv({ path: '.env.local', quiet: true });
 
 function buildConnectionString() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
   const projectId = process.env.SUPABASE_PROJECT_ID;
   const password = process.env.SUPABASE_DB_PASSWORD;
   if (projectId && password) {
-    return `postgresql://postgres.${projectId}:${password}@${POOLER_HOST}:6543/postgres`;
+    return `postgresql://postgres.${projectId}:${encodeURIComponent(password)}@${POOLER_HOST}:6543/postgres`;
   }
   return null;
 }
 
 /** @typedef {{ name: string, run: (sql: import('postgres').Sql) => Promise<{ ok: boolean, detail: string }> }} Check */
+
+function stripLineComments(sqlText) {
+  return sqlText
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('--'))
+    .join('\n');
+}
 
 // #651 — Baseball schema drift (issue #651). Each of these columns was
 // found missing in production despite being expected by application code.
@@ -159,10 +169,8 @@ const CHECKS = [
       // Comments referencing the graveyarded table are fine (they document
       // history); only flag it if it appears in executable SQL, i.e.
       // outside a `-- ` line comment.
-      const executableLines = rows[0].def
-        .split('\n')
-        .filter((line) => !line.trim().startsWith('--'));
-      const stale = executableLines.some((line) => line.includes('baseball_strength_groups'));
+      const executableSql = stripLineComments(rows[0].def);
+      const stale = executableSql.includes('baseball_strength_groups');
       return stale
         ? { ok: false, detail: 'live function body references baseball_strength_groups outside a comment' }
         : { ok: true, detail: 'no executable reference to baseball_strength_groups' };
@@ -243,7 +251,7 @@ const CHECKS = [
           and (proname = any(${ADMIN_ROLLUP_FUNCTIONS}) or proname = '__admin_rollup_b_gate')
       `;
       const inconsistent = rows
-        .filter((r) => !r.def.includes('is_super_admin'))
+        .filter((r) => !stripLineComments(r.def).includes('is_super_admin'))
         .map((r) => r.proname);
       return inconsistent.length === 0
         ? { ok: true, detail: 'every rollup gate (directly or via __admin_rollup_b_gate) checks is_super_admin()' }
@@ -309,7 +317,7 @@ async function main() {
     process.exit(2);
   }
 
-  const sql = postgres(connectionString, { ssl: 'require', max: 1 });
+  const sql = postgres(connectionString, { ssl: 'require', max: 1, prepare: false });
   let failures = 0;
 
   console.log('Supabase drift guard — read-only checks\n' + '='.repeat(60));
