@@ -24,6 +24,14 @@ function request(body: string) {
   }) as never;
 }
 
+function mockAnonymousUser() {
+  createClientMock.mockResolvedValueOnce({
+    auth: {
+      getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
+    },
+  } as never);
+}
+
 describe('POST /api/log-error', () => {
   beforeEach(() => {
     createClientMock.mockReset();
@@ -170,5 +178,43 @@ describe('POST /api/log-error', () => {
     expect(inserts.find((i) => i.table === 'error_logs')?.payload.user_id).toBe('real-user');
     expect(inserts.find((i) => i.table === 'admin_events')?.payload.user_id).toBe('real-user');
     expect(inserts.find((i) => i.table === 'admin_events')?.payload.user_email).toBe('real@example.com');
+  });
+
+  it('returns 204 for an empty/aborted-beacon body instead of a 500', async () => {
+    // Aborted sendBeacon flushes (tab close, navigation) can arrive with an
+    // empty body. request.json() throws "Unexpected end of JSON input" on
+    // that, which used to fall through to the bare catch and return a
+    // generic 500 for what is really a client-side no-op.
+    mockAnonymousUser();
+    createAdminMock.mockReset();
+
+    const res = await POST(request(''));
+
+    expect(res.status).toBe(204);
+    expect(createAdminMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for malformed JSON without a 500', async () => {
+    mockAnonymousUser();
+    createAdminMock.mockReset();
+
+    const res = await POST(request('{not valid json'));
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe('Invalid JSON');
+    expect(createAdminMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for well-formed JSON that is not an object', async () => {
+    mockAnonymousUser();
+    createAdminMock.mockReset();
+
+    const res = await POST(request(JSON.stringify(['not', 'an', 'object'])));
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe('Invalid payload');
+    expect(createAdminMock).not.toHaveBeenCalled();
   });
 });

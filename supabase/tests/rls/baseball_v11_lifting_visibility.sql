@@ -1,35 +1,44 @@
--- pgTAP contracts for BaseballHelm V11 Premium Lifting visibility gating
--- (migration 20260624000063_baseball_v11_premium_lifting.sql).
+-- pgTAP contracts for the Helm Lifting Lab visibility gating that supersedes
+-- BaseballHelm's V11 Premium Lifting packet (originally migration
+-- 20260624000063_baseball_v11_premium_lifting.sql).
 --
--- Security-critical invariants (as originally scoped by the V11 packet — the
--- set-results/soreness-maps invariants are now the helm_lifting_* successor's
--- responsibility; see the 2026-07-04 note further down):
---   * RLS is ENABLED and anon is locked out on every remaining V11 table.
---   * Player-owned health-adjacent rows (sessions / bodyweight / maxes / PRs)
---     bind the player branch to the player's OWN identity; staff reads of
---     readiness-class rows require can_view_readiness (the corrected V11 gate,
---     NOT can_view_medical).
---   * Program/group/exercise/assignment WRITES are gated on can_manage_lifting.
---   * Materialized sessions expose NO broad team-member read path (a teammate
---     can never read another player's loads).
+-- Security-critical invariants (unchanged in spirit from the original V11
+-- packet, now asserted against the live helm_lifting_* successor tables —
+-- see the 2026-07 program-builder→helm unification note below):
+--   * RLS is ENABLED and anon is locked out on every helm_lifting_* table.
+--   * An athlete reads only their OWN session/bodyweight/availability/max
+--     rows (helm_lifting_is_my_athlete); staff reads gate on
+--     helm_lifting_can_view_org — the single org-membership check that
+--     replaces the V11-era can_view_readiness / can_manage_baseball_lift_group
+--     capability functions.
+--   * Program/group/exercise WRITES are gated on helm_lifting_can_edit_org
+--     (the DB-layer counterpart of the app-layer can_manage_lifting
+--     capability enforced in withBaseballAction).
+--   * Materialized sessions expose NO broad team-member read path (a
+--     teammate can never read another athlete's loads) and cannot be
+--     self-inserted by an athlete — only staff (can_edit_org) materialize
+--     (publish) a session.
 --
--- Schema-light: asserts over pg_policy / pg_class without seeding integration
--- data (matches the deferral note in _helpers.sql).
+-- Schema-light: asserts over pg_policy / pg_class / pg_constraint without
+-- seeding integration data (matches the deferral note in _helpers.sql).
 --
--- Source: V11 premium-lifting packet (BaseballHelm).
+-- Source: Helm Lifting Lab identity + data migrations (20260625000000
+-- _helm_lifting_identity.sql, 20260625000010_helm_lifting_data_library_
+-- programs.sql, 20260625000020_helm_lifting_data_sessions_readiness.sql).
 --
--- 2026-07-04 graveyard update: baseball_lift_exercise_substitutions,
--- baseball_lift_set_results, baseball_soreness_maps, baseball_lift_import_runs,
--- and baseball_lift_import_rows moved out of public into the graveyard schema
--- (20260704060000_graveyard_dead_tables_phase1.sql /
--- 20260704070000_graveyard_dead_liftlab_tables_phase2.sql — zero readers /
--- never wired; helm_lifting_* is the live canonical successor for the
--- lifting-data tables, not yet covered by a dedicated RLS suite). All
--- assertions referencing these five tables were removed below. The remaining
--- 15 V11 tables (programs/weeks/days/sections/prescriptions/assignments/
--- sessions/session_exercises/strength-groups/bodyweight/availability/maxes/prs)
--- are still live in public and unchanged. See
--- docs/audits/DB_TABLE_AUDIT_2026-07-04.md.
+-- 2026-07 program-builder→helm unification: lifting-v11.ts (publishLiftDay,
+-- the program builder, strength groups, PR detection) and every read model
+-- were rewired to write/read helm_lifting_* directly and exclusively — the
+-- 16 legacy V11 tables this suite used to cover (baseball_lift_programs/
+-- _weeks/_days/_sections/_prescriptions/_program_assignments/_sessions/
+-- _session_exercises, baseball_lift_exercises, baseball_strength_groups/
+-- _group_members/_group_audit, baseball_strength_maxes/_prs,
+-- baseball_bodyweight_entries, baseball_availability_statuses) are 0 rows in
+-- prod and are being moved to a graveyard schema now that nothing in src/
+-- references them. baseball_strength_group_audit's helm successor
+-- (helm_lifting_group_audit) has its own dedicated suite —
+-- see baseball_strength_group_audit.sql (retargeted alongside this file).
+-- See docs/audits/DB_TABLE_AUDIT_2026-07-04.md.
 
 BEGIN;
 \ir _helpers.sql
@@ -37,53 +46,50 @@ BEGIN;
 SELECT plan(30);
 
 -- ============================================================================
--- 1. RLS enabled + anon locked out on every new V11 table.
+-- 1. RLS enabled + anon locked out on every helm_lifting_* Lift Lab table.
 -- ============================================================================
 CREATE OR REPLACE FUNCTION pg_temp.rls_on(tbl text) RETURNS boolean AS $$
   SELECT relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relname = tbl;
 $$ LANGUAGE sql STABLE;
 
-SELECT ok(pg_temp.rls_on('baseball_strength_groups'),            'RLS on baseball_strength_groups');
-SELECT ok(pg_temp.rls_on('baseball_strength_group_members'),     'RLS on baseball_strength_group_members');
-SELECT ok(pg_temp.rls_on('baseball_lift_exercises'),             'RLS on baseball_lift_exercises');
-SELECT ok(pg_temp.rls_on('baseball_lift_programs'),              'RLS on baseball_lift_programs');
-SELECT ok(pg_temp.rls_on('baseball_lift_weeks'),                 'RLS on baseball_lift_weeks');
-SELECT ok(pg_temp.rls_on('baseball_lift_days'),                  'RLS on baseball_lift_days');
-SELECT ok(pg_temp.rls_on('baseball_lift_sections'),             'RLS on baseball_lift_sections');
-SELECT ok(pg_temp.rls_on('baseball_lift_prescriptions'),        'RLS on baseball_lift_prescriptions');
-SELECT ok(pg_temp.rls_on('baseball_lift_program_assignments'),  'RLS on baseball_lift_program_assignments');
-SELECT ok(pg_temp.rls_on('baseball_lift_sessions'),             'RLS on baseball_lift_sessions');
-SELECT ok(pg_temp.rls_on('baseball_lift_session_exercises'),    'RLS on baseball_lift_session_exercises');
-SELECT ok(pg_temp.rls_on('baseball_bodyweight_entries'),        'RLS on baseball_bodyweight_entries');
-SELECT ok(pg_temp.rls_on('baseball_availability_statuses'),     'RLS on baseball_availability_statuses');
-SELECT ok(pg_temp.rls_on('baseball_strength_maxes'),            'RLS on baseball_strength_maxes');
-SELECT ok(pg_temp.rls_on('baseball_strength_prs'),              'RLS on baseball_strength_prs');
+SELECT ok(pg_temp.rls_on('helm_lifting_groups'),               'RLS on helm_lifting_groups');
+SELECT ok(pg_temp.rls_on('helm_lifting_group_members'),        'RLS on helm_lifting_group_members');
+SELECT ok(pg_temp.rls_on('helm_lifting_exercises'),             'RLS on helm_lifting_exercises');
+SELECT ok(pg_temp.rls_on('helm_lifting_programs'),              'RLS on helm_lifting_programs');
+SELECT ok(pg_temp.rls_on('helm_lifting_weeks'),                 'RLS on helm_lifting_weeks');
+SELECT ok(pg_temp.rls_on('helm_lifting_days'),                  'RLS on helm_lifting_days');
+SELECT ok(pg_temp.rls_on('helm_lifting_sections'),              'RLS on helm_lifting_sections');
+SELECT ok(pg_temp.rls_on('helm_lifting_prescriptions'),         'RLS on helm_lifting_prescriptions');
+SELECT ok(pg_temp.rls_on('helm_lifting_program_assignments'),   'RLS on helm_lifting_program_assignments');
+SELECT ok(pg_temp.rls_on('helm_lifting_sessions'),               'RLS on helm_lifting_sessions');
+SELECT ok(pg_temp.rls_on('helm_lifting_session_exercises'),     'RLS on helm_lifting_session_exercises');
+SELECT ok(pg_temp.rls_on('helm_lifting_bodyweight_entries'),    'RLS on helm_lifting_bodyweight_entries');
+SELECT ok(pg_temp.rls_on('helm_lifting_availability_statuses'), 'RLS on helm_lifting_availability_statuses');
+SELECT ok(pg_temp.rls_on('helm_lifting_maxes'),                 'RLS on helm_lifting_maxes');
+SELECT ok(pg_temp.rls_on('helm_lifting_prs'),                   'RLS on helm_lifting_prs');
 
--- No V11 policy targets anon; anon has no SELECT on the sensitive session table.
--- (baseball_lift_exercise_substitutions / baseball_lift_set_results /
--- baseball_soreness_maps / baseball_lift_import_runs / baseball_lift_import_rows
--- graveyarded 2026-07-04 — removed from this list; see header.)
+-- No Lift Lab policy targets anon; anon has no SELECT on the sensitive session table.
 SELECT is(
   (SELECT COUNT(*)::int FROM pg_policies
      WHERE schemaname = 'public'
        AND tablename IN (
-         'baseball_strength_groups','baseball_strength_group_members',
-         'baseball_lift_exercises',
-         'baseball_lift_programs','baseball_lift_weeks','baseball_lift_days',
-         'baseball_lift_sections','baseball_lift_prescriptions',
-         'baseball_lift_program_assignments','baseball_lift_sessions',
-         'baseball_lift_session_exercises',
-         'baseball_bodyweight_entries',
-         'baseball_availability_statuses','baseball_strength_maxes',
-         'baseball_strength_prs')
+         'helm_lifting_groups','helm_lifting_group_members',
+         'helm_lifting_exercises',
+         'helm_lifting_programs','helm_lifting_weeks','helm_lifting_days',
+         'helm_lifting_sections','helm_lifting_prescriptions',
+         'helm_lifting_program_assignments','helm_lifting_sessions',
+         'helm_lifting_session_exercises',
+         'helm_lifting_bodyweight_entries',
+         'helm_lifting_availability_statuses','helm_lifting_maxes',
+         'helm_lifting_prs')
        AND 'anon' = ANY(roles)),
-  0, 'no V11 lifting policy targets the anon role'
+  0, 'no helm_lifting_* Lift Lab policy targets the anon role'
 );
-SELECT isnt(has_table_privilege('anon','public.baseball_lift_sessions','SELECT'), true, 'anon cannot SELECT baseball_lift_sessions');
+SELECT isnt(has_table_privilege('anon','public.helm_lifting_sessions','SELECT'), true, 'anon cannot SELECT helm_lifting_sessions');
 
 -- ============================================================================
--- 2. Sessions — player reads OWN; teammates cannot read loads.
+-- 2. Sessions — athlete reads OWN; teammates cannot read loads.
 -- ============================================================================
 CREATE OR REPLACE FUNCTION pg_temp.polqual(tbl text, pol text) RETURNS text AS $$
   SELECT COALESCE(pg_get_expr(p.polqual, p.polrelid), '')
@@ -92,80 +98,81 @@ CREATE OR REPLACE FUNCTION pg_temp.polqual(tbl text, pol text) RETURNS text AS $
    WHERE n.nspname = 'public' AND c.relname = tbl AND p.polname = pol;
 $$ LANGUAGE sql STABLE;
 
-SELECT ok(pg_temp.polqual('baseball_lift_sessions','blsess_select') ~ 'get_my_baseball_player_id',
-  'sessions SELECT binds player branch to own identity');
-SELECT ok(pg_temp.polqual('baseball_lift_sessions','blsess_select') ~ 'can_manage_baseball_lift_group',
-  'sessions SELECT non-owner path is staff-only (can_manage_baseball_lift_group)');
-SELECT ok(pg_temp.polqual('baseball_lift_sessions','blsess_select') !~ 'is_baseball_team_member',
-  'sessions SELECT has NO broad team-member read path');
+SELECT ok(pg_temp.polqual('helm_lifting_sessions','hlsess_select') ~ 'helm_lifting_is_my_athlete',
+  'sessions SELECT binds athlete branch to own identity (helm_lifting_is_my_athlete)');
+SELECT ok(pg_temp.polqual('helm_lifting_sessions','hlsess_select') ~ 'helm_lifting_can_view_org',
+  'sessions SELECT staff path is org-gated (helm_lifting_can_view_org)');
+SELECT ok(pg_temp.polqual('helm_lifting_sessions','hlsess_select') !~ '(is_baseball_team_member|get_my_baseball_player_id)',
+  'sessions SELECT has NO leftover V11 team-member/player-identity read path');
 SELECT is(
   (SELECT COUNT(*)::int FROM pg_policies WHERE schemaname='public'
-     AND tablename='baseball_lift_sessions' AND cmd='SELECT'),
-  1, 'baseball_lift_sessions has exactly one SELECT policy');
-
--- (Section 3 formerly tested baseball_lift_set_results — graveyarded
--- 2026-07-04. Removed; see header.)
+     AND tablename='helm_lifting_sessions' AND cmd='SELECT'),
+  1, 'helm_lifting_sessions has exactly one SELECT policy');
 
 -- ============================================================================
--- 4. Bodyweight / availability — staff need can_view_readiness (V11 corrected
---    gate, NOT can_view_medical). (baseball_soreness_maps graveyarded
---    2026-07-04 — its two assertions removed; see header.)
+-- 4. Bodyweight / availability — staff path is org-gated
+--    (helm_lifting_can_view_org — the successor to the V11-era dedicated
+--    can_view_readiness capability, now folded into the single org-viewer
+--    check); the owning athlete may always read their own row.
 -- ============================================================================
-SELECT ok(pg_temp.polqual('baseball_bodyweight_entries','bbw_select') ~ 'can_view_readiness',
-  'bodyweight SELECT staff path requires can_view_readiness');
-SELECT ok(pg_temp.polqual('baseball_availability_statuses','bas_select') ~ 'can_view_readiness',
-  'availability SELECT staff path requires can_view_readiness');
-SELECT ok(pg_temp.polqual('baseball_availability_statuses','bas_select') ~ 'get_my_baseball_player_id',
-  'availability is readable by the owning player');
+SELECT ok(pg_temp.polqual('helm_lifting_bodyweight_entries','hlbw_select') ~ 'helm_lifting_can_view_org',
+  'bodyweight SELECT staff path is org-gated (helm_lifting_can_view_org)');
+SELECT ok(pg_temp.polqual('helm_lifting_availability_statuses','hlas_select') ~ 'helm_lifting_can_view_org',
+  'availability SELECT staff path is org-gated (helm_lifting_can_view_org)');
+SELECT ok(pg_temp.polqual('helm_lifting_availability_statuses','hlas_select') ~ 'helm_lifting_is_my_athlete',
+  'availability is readable by the owning athlete');
 
 -- ============================================================================
--- 5. Program/group/exercise WRITES gated on can_manage_lifting.
+-- 5. Program/group/exercise WRITES gated on helm_lifting_can_edit_org (the
+--    DB-layer counterpart of the app-layer can_manage_lifting capability).
 -- ============================================================================
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
           JOIN pg_namespace n ON n.oid=c.relnamespace
-          WHERE n.nspname='public' AND c.relname='baseball_lift_programs'
+          WHERE n.nspname='public' AND c.relname='helm_lifting_programs'
             AND p.polcmd='a'
-            AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'can_manage_lifting'),
-  'lift_programs INSERT gated on can_manage_lifting');
+            AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'helm_lifting_can_edit_org'),
+  'helm_lifting_programs INSERT gated on helm_lifting_can_edit_org');
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
           JOIN pg_namespace n ON n.oid=c.relnamespace
-          WHERE n.nspname='public' AND c.relname='baseball_strength_groups'
+          WHERE n.nspname='public' AND c.relname='helm_lifting_groups'
             AND p.polcmd='a'
-            AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'can_manage_lifting'),
-  'strength_groups INSERT gated on can_manage_lifting');
+            AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'helm_lifting_can_edit_org'),
+  'helm_lifting_groups INSERT gated on helm_lifting_can_edit_org');
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
           JOIN pg_namespace n ON n.oid=c.relnamespace
-          WHERE n.nspname='public' AND c.relname='baseball_lift_exercises'
+          WHERE n.nspname='public' AND c.relname='helm_lifting_exercises'
             AND p.polcmd='a'
-            AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'can_manage_lifting'),
-  'lift_exercises INSERT gated on can_manage_lifting');
+            AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'helm_lifting_can_edit_org'),
+  'helm_lifting_exercises INSERT gated on helm_lifting_can_edit_org');
 
--- A player may read a team exercise (so an assigned exercise name resolves).
-SELECT ok(pg_temp.polqual('baseball_lift_exercises','ble_select') ~ 'is_baseball_team_member',
-  'lift_exercises SELECT lets a team player read their team''s exercises');
+-- An athlete may read their own resolved-org's exercise library (so an
+-- assigned exercise name resolves on their surface) via helm_lifting_is_my_athlete.
+SELECT ok(pg_temp.polqual('helm_lifting_exercises','hle_select') ~ 'helm_lifting_is_my_athlete',
+  'helm_lifting_exercises SELECT lets the resolved athlete read their org''s exercises');
 
 -- ============================================================================
--- 6. Sessions are staff-materialized: players cannot self-insert a session.
+-- 6. Sessions are staff-materialized: an athlete cannot self-insert a session.
 -- ============================================================================
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
               JOIN pg_namespace n ON n.oid=c.relnamespace
-              WHERE n.nspname='public' AND c.relname='baseball_lift_sessions'
+              WHERE n.nspname='public' AND c.relname='helm_lifting_sessions'
                 AND p.polcmd='a'
-                AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'get_my_baseball_player_id'),
-  'no INSERT policy lets a player self-create a lift session');
+                AND pg_get_expr(p.polwithcheck,p.polrelid) ~ 'helm_lifting_is_my_athlete'),
+  'no INSERT policy lets an athlete self-create a helm_lifting_sessions row');
 
--- Unique (program_assignment_id, player_id) supports idempotent re-publish.
+-- Unique (program_assignment_id, athlete_id) supports idempotent re-publish
+-- (publishLiftDay upserts on this exact conflict target).
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_constraint con JOIN pg_class c ON c.oid=con.conrelid
           JOIN pg_namespace n ON n.oid=c.relnamespace
-          WHERE n.nspname='public' AND c.relname='baseball_lift_sessions'
+          WHERE n.nspname='public' AND c.relname='helm_lifting_sessions'
             AND con.contype='u'
-            AND pg_get_constraintdef(con.oid) ILIKE '%program_assignment_id%player_id%'),
-  'sessions have UNIQUE (program_assignment_id, player_id) for safe re-publish');
+            AND pg_get_constraintdef(con.oid) ILIKE '%program_assignment_id%athlete_id%'),
+  'helm_lifting_sessions have UNIQUE (program_assignment_id, athlete_id) for safe re-publish');
 
 SELECT * FROM finish();
 ROLLBACK;

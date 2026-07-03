@@ -158,3 +158,51 @@ describe('generateRoundRecap — 9-hole vs 18-hole average comparisons', () => {
     expect(prompt).toContain("Player's season scoring average: 74.2");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Prod incident (Sentry fingerprint d0a9265f): "/golf/dashboard/rounds/[id]
+// used revalidatePath during render, which is unsupported." The round detail
+// page calls generateRoundRecap(roundId) with no options directly inside its
+// Server Component render function on first view of a completed round.
+// revalidatePath must never fire on that call chain — it's now gated behind
+// an explicit { revalidate: true } reserved for a real action entrypoint
+// invoked outside render.
+// ---------------------------------------------------------------------------
+describe('generateRoundRecap — revalidatePath gating (prod incident d0a9265f)', () => {
+  beforeEach(() => {
+    mockRound = { ...baseRound };
+    mockStats = { scoring_average: 74.2, best_round: 70, rounds_played: 12 };
+    persistedUpdate = null;
+    composeMock.mockClear();
+    mockFrom.mockClear();
+    revalidatePathMock.mockClear();
+  });
+
+  it('never calls revalidatePath on the default (render-safe) call — the page.tsx call shape', async () => {
+    await generateRoundRecap('round-1');
+
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('never calls revalidatePath when explicitly passed { revalidate: false }', async () => {
+    await generateRoundRecap('round-1', { revalidate: false });
+
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('calls revalidatePath only when a caller explicitly opts in with { revalidate: true }', async () => {
+    await generateRoundRecap('round-1', { revalidate: true });
+
+    expect(revalidatePathMock).toHaveBeenCalledTimes(1);
+    expect(revalidatePathMock).toHaveBeenCalledWith('/golf/dashboard/rounds/round-1');
+  });
+
+  it('never calls revalidatePath on a cache hit, even with revalidate: true', async () => {
+    mockRound = { ...baseRound, ai_recap: 'Already generated.' };
+
+    const result = await generateRoundRecap('round-1', { revalidate: true });
+
+    expect(result.cached).toBe(true);
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+});

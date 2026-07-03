@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { headers } from 'next/headers';
 import { logServerError } from '@/lib/server-error-logger';
-import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
+import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================
@@ -293,7 +293,10 @@ export async function POST(request: NextRequest) {
         title: sanitized.title,
         severity: (sanitized.severity ?? 'info') as 'info' | 'warning' | 'error' | 'critical',
         message: sanitized.message ?? null,
-        metadata: (sanitized.metadata ?? {}) as Json,
+        // Only reached when shouldPersistAdminTables() is true, so this is
+        // always 'production' in practice — tagged explicitly so a future
+        // gate regression is visible in the row itself.
+        metadata: { ...(sanitized.metadata ?? {}), runtimeEnv: getRuntimeEnv() } as Json,
         url: sanitized.url ?? null,
         stack_trace: sanitized.stackTrace ?? null,
         browser_info: (sanitized.browserInfo ?? null) as Json,

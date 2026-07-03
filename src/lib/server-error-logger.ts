@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { shouldPersistAdminTables } from '@/lib/telemetry-gate';
+import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
@@ -104,6 +104,11 @@ function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
     extra: context.extra ?? {},
     sport: context.sport ?? null,
     teamId: context.teamId ?? null,
+    // Only reached when shouldPersistAdminTables() is true (writeAdminTables
+    // is called after that gate), so this is always 'production' in practice
+    // today — tagged explicitly so a future gate regression is visible in
+    // the row itself, not just inferred from the gate having passed.
+    runtimeEnv: getRuntimeEnv(),
   }));
 }
 
