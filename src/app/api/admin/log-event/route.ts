@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { headers } from 'next/headers';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, shouldPersistAdminTables } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================
@@ -201,6 +201,12 @@ function sanitizePayload(payload: LogEventPayload): LogEventPayload {
 // ============================================
 
 export async function POST(request: NextRequest) {
+  // Off-prod runtimes (CI dev servers, local dev, previews) hold prod
+  // Supabase creds — gate so their events never enter the prod incident feed.
+  if (!shouldPersistAdminTables()) {
+    return NextResponse.json({ success: true, persisted: false });
+  }
+
   try {
     // Get client IP for rate limiting
     const headersList = await headers();

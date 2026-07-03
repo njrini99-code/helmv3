@@ -1917,6 +1917,7 @@ export type Database = {
           caught_stealing: boolean
           created_at: string
           data_context: string
+          event_type: string | null
           framing_result: string | null
           framing_value: number | null
           game_id: string | null
@@ -1940,6 +1941,7 @@ export type Database = {
           caught_stealing?: boolean
           created_at?: string
           data_context?: string
+          event_type?: string | null
           framing_result?: string | null
           framing_value?: number | null
           game_id?: string | null
@@ -1963,6 +1965,7 @@ export type Database = {
           caught_stealing?: boolean
           created_at?: string
           data_context?: string
+          event_type?: string | null
           framing_result?: string | null
           framing_value?: number | null
           game_id?: string | null
@@ -3799,36 +3802,74 @@ export type Database = {
       }
       baseball_integration_configs: {
         Row: {
+          config: Json
           config_json: Json
           created_at: string
+          created_by: string | null
+          display_name: string | null
           id: string
-          integration_key: string
+          integration_key: string | null
+          integration_level: number
           is_active: boolean
           last_sync_at: string | null
+          last_sync_status: string | null
+          last_synced_at: string | null
+          provider_key: string | null
+          status: string
           team_id: string
           updated_at: string
         }
         Insert: {
+          config?: Json
           config_json?: Json
           created_at?: string
+          created_by?: string | null
+          display_name?: string | null
           id?: string
-          integration_key: string
+          integration_key?: string | null
+          integration_level?: number
           is_active?: boolean
           last_sync_at?: string | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          provider_key?: string | null
+          status?: string
           team_id: string
           updated_at?: string
         }
         Update: {
+          config?: Json
           config_json?: Json
           created_at?: string
+          created_by?: string | null
+          display_name?: string | null
           id?: string
-          integration_key?: string
+          integration_key?: string | null
+          integration_level?: number
           is_active?: boolean
           last_sync_at?: string | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          provider_key?: string | null
+          status?: string
           team_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "baseball_integration_configs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_integration_configs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "baseball_integration_configs_team_id_fkey"
             columns: ["team_id"]
@@ -7664,58 +7705,169 @@ export type Database = {
       }
       baseball_program_settings: {
         Row: {
+          academics_module_enabled: boolean
+          ai_academic_privacy_guardrail: boolean
+          ai_confidence_threshold: number
           ai_enabled: boolean
+          ai_medical_guardrail: boolean
+          ai_player_visible_enabled: boolean
+          ai_require_source_refs: boolean
+          ai_require_staff_approval: boolean
+          ai_staff_enabled: boolean
           ai_stale_after_days: number
           announcement_tone: string
+          appearance_theme: string
+          audit_retention_days: number
+          brand_accent: string | null
           created_at: string
           default_task_priority: string
+          default_visibility: string
+          demo_mode_enabled: boolean
+          guardian_access_enabled: boolean
+          guardian_can_view_announcements: boolean
+          guardian_can_view_schedule: boolean
+          guardian_can_view_travel: boolean
           id: string
+          import_retention_days: number | null
           max_roster_size: number | null
           notification_defaults: Json
+          performance_module_depth: string
           player_visible_ai_enabled: boolean
+          players_can_edit_profile: boolean
+          players_can_edit_public_profile: boolean
+          players_can_see_ai_summaries: boolean
+          players_can_self_join: boolean
+          players_can_self_log_lift: boolean
+          players_can_self_report_availability: boolean
+          players_can_upload_video: boolean
+          players_can_view_team_stats: boolean
+          players_require_invite: boolean
+          public_profiles_enabled: boolean
           quiet_hours_end: string | null
           quiet_hours_start: string | null
           recruiting_active: boolean
+          recruiting_exposure_enabled: boolean
           require_coach_review: boolean
           required_document_categories: string[]
+          scout_access_enabled: boolean
+          scout_can_export: boolean
+          scout_packet_visibility: string
+          scout_show_unverified_metrics: boolean
+          season_archive_policy: string
           team_id: string
+          travel_module_enabled: boolean
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
+          academics_module_enabled?: boolean
+          ai_academic_privacy_guardrail?: boolean
+          ai_confidence_threshold?: number
           ai_enabled?: boolean
+          ai_medical_guardrail?: boolean
+          ai_player_visible_enabled?: boolean
+          ai_require_source_refs?: boolean
+          ai_require_staff_approval?: boolean
+          ai_staff_enabled?: boolean
           ai_stale_after_days?: number
           announcement_tone?: string
+          appearance_theme?: string
+          audit_retention_days?: number
+          brand_accent?: string | null
           created_at?: string
           default_task_priority?: string
+          default_visibility?: string
+          demo_mode_enabled?: boolean
+          guardian_access_enabled?: boolean
+          guardian_can_view_announcements?: boolean
+          guardian_can_view_schedule?: boolean
+          guardian_can_view_travel?: boolean
           id?: string
+          import_retention_days?: number | null
           max_roster_size?: number | null
           notification_defaults?: Json
+          performance_module_depth?: string
           player_visible_ai_enabled?: boolean
+          players_can_edit_profile?: boolean
+          players_can_edit_public_profile?: boolean
+          players_can_see_ai_summaries?: boolean
+          players_can_self_join?: boolean
+          players_can_self_log_lift?: boolean
+          players_can_self_report_availability?: boolean
+          players_can_upload_video?: boolean
+          players_can_view_team_stats?: boolean
+          players_require_invite?: boolean
+          public_profiles_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
           recruiting_active?: boolean
+          recruiting_exposure_enabled?: boolean
           require_coach_review?: boolean
           required_document_categories?: string[]
+          scout_access_enabled?: boolean
+          scout_can_export?: boolean
+          scout_packet_visibility?: string
+          scout_show_unverified_metrics?: boolean
+          season_archive_policy?: string
           team_id: string
+          travel_module_enabled?: boolean
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
+          academics_module_enabled?: boolean
+          ai_academic_privacy_guardrail?: boolean
+          ai_confidence_threshold?: number
           ai_enabled?: boolean
+          ai_medical_guardrail?: boolean
+          ai_player_visible_enabled?: boolean
+          ai_require_source_refs?: boolean
+          ai_require_staff_approval?: boolean
+          ai_staff_enabled?: boolean
           ai_stale_after_days?: number
           announcement_tone?: string
+          appearance_theme?: string
+          audit_retention_days?: number
+          brand_accent?: string | null
           created_at?: string
           default_task_priority?: string
+          default_visibility?: string
+          demo_mode_enabled?: boolean
+          guardian_access_enabled?: boolean
+          guardian_can_view_announcements?: boolean
+          guardian_can_view_schedule?: boolean
+          guardian_can_view_travel?: boolean
           id?: string
+          import_retention_days?: number | null
           max_roster_size?: number | null
           notification_defaults?: Json
+          performance_module_depth?: string
           player_visible_ai_enabled?: boolean
+          players_can_edit_profile?: boolean
+          players_can_edit_public_profile?: boolean
+          players_can_see_ai_summaries?: boolean
+          players_can_self_join?: boolean
+          players_can_self_log_lift?: boolean
+          players_can_self_report_availability?: boolean
+          players_can_upload_video?: boolean
+          players_can_view_team_stats?: boolean
+          players_require_invite?: boolean
+          public_profiles_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
           recruiting_active?: boolean
+          recruiting_exposure_enabled?: boolean
           require_coach_review?: boolean
           required_document_categories?: string[]
+          scout_access_enabled?: boolean
+          scout_can_export?: boolean
+          scout_packet_visibility?: string
+          scout_show_unverified_metrics?: boolean
+          season_archive_policy?: string
           team_id?: string
+          travel_module_enabled?: boolean
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -7730,6 +7882,20 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: true
             referencedRelation: "baseball_teams_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_program_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_program_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
         ]

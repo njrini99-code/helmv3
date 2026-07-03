@@ -3,12 +3,20 @@ import { withRateLimit } from '@/lib/middleware/rate-limit';
 import { RATE_LIMITS } from '@/lib/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { shouldPersistAdminTables } from '@/lib/server-error-logger';
 import type { Json } from '@/lib/types/database';
 
 export async function POST(request: NextRequest) {
   const rateLimitResult = withRateLimit(request, RATE_LIMITS.API_WRITE);
   if (rateLimitResult) {
     return rateLimitResult;
+  }
+
+  // Off-prod runtimes (CI dev servers, local dev/next start, previews) hold
+  // prod Supabase creds — without this gate their client errors land in the
+  // prod incident feed with /home/runner and /Users/... stack traces.
+  if (!shouldPersistAdminTables()) {
+    return NextResponse.json({ success: true, persisted: false });
   }
 
   try {
