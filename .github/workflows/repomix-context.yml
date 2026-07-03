@@ -48,9 +48,11 @@ jobs:
 
       - name: Generate changed-files context
         if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch origin "${{ github.base_ref }}" --depth=50
-          git diff --name-only "origin/${{ github.base_ref }}...HEAD" |
+          git fetch origin "$BASE_REF" --depth=50
+          git diff --name-only "origin/${BASE_REF}...HEAD" |
             bash scripts/context/repomix.sh --stdin --include-diffs \
               --include-logs --include-logs-count 15 \
               --output .repomix/changed-files-context.xml \
@@ -67,3 +69,4 @@ jobs:
           path: .repomix/
           if-no-files-found: error
           retention-days: 7
+          include-hidden-files: true
