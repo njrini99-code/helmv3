@@ -257,7 +257,16 @@ const STATS_PERFORMANCE_ORDER = [
   'import-center',
 ];
 const DEVELOPMENT_ORDER = ['dev-plans', 'videos'];
-const RECRUITING_ORDER = ['pipeline', 'discover', 'watchlist', 'compare', 'comparisons', 'scout-packets', 'camps'];
+const RECRUITING_ORDER = [
+  'pipeline',
+  'college-interest',
+  'discover',
+  'watchlist',
+  'compare',
+  'comparisons',
+  'scout-packets',
+  'camps',
+];
 const ACADEMICS_ORDER = ['academics'];
 const MANAGEMENT_ORDER = [
   'staff-decision-room',
@@ -306,8 +315,9 @@ export const COACH_DEVELOPMENT_TABS: readonly HubSubNavTab[] = orderTabs(
  * RECRUITING hub — pipeline, discovery, comparisons, scout packets, camps.
  * Gated to RECRUITING_PROGRAM_TYPES by the sidebar/resolve-active-hub, hidden
  * entirely for High School. Fixed by this pass: `import` (misplaced here
- * previously) moved to Stats & Performance; `college-interest` (a player-only
- * page) removed; `comparisons` and `camps` (previously unreachable) added.
+ * previously) moved to Stats & Performance; `college-interest` (a coach-facing
+ * interest dashboard) stays out of player nav; `comparisons` and `camps`
+ * (previously unreachable) added.
  */
 export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = orderTabs(
   hubEntries('recruiting'),
@@ -430,7 +440,6 @@ export const PLAYER_TEAM_TABS: readonly HubSubNavTab[] = [
 /** Player RECRUITING hub — player-owned exposure and college discovery surfaces. */
 export const PLAYER_RECRUITING_TABS: readonly HubSubNavTab[] = [
   { id: 'journey', label: 'Journey', href: '/baseball/dashboard/journey', icon: IconStar },
-  { id: 'interest', label: 'Interest', href: '/baseball/dashboard/college-interest', icon: IconTarget },
   { id: 'colleges', label: 'Colleges', href: '/baseball/dashboard/colleges', icon: IconGraduationCap },
   { id: 'analytics', label: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconTrendingUp },
   { id: 'activate', label: 'Activate', href: '/baseball/dashboard/activate', icon: IconShieldCheck },

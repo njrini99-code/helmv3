@@ -56,7 +56,7 @@ export function ConversationList({
       return [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Player';
     }
 
-    return otherUser.email || 'Unknown';
+    return otherUser.display_name || otherUser.email || 'Unknown';
   };
 
   const getParticipantAvatar = (conversation: ConversationWithMeta): string | null => {

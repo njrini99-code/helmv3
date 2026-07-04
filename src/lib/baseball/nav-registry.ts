@@ -122,6 +122,7 @@ export type BaseballNavId =
   | 'analytics'
   | 'announcements'
   | 'pipeline'
+  | 'college-interest'
   | 'discover'
   | 'documents'
   | 'travel'
@@ -554,6 +555,19 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // Recruiting pipeline — server-gated for recruiting program modes. We
     // surface it to coaches here because program variants control ordering
     // and the page guard performs the real route decision.
+    role: 'coach',
+    requiredCapability: null,
+    section: 'primary',
+    hub: 'recruiting',
+  },
+  {
+    id: 'college-interest',
+    label: 'Interest',
+    href: '/baseball/dashboard/college-interest',
+    icon: IconTrendingUp,
+    // Coach-facing player-interest dashboard. This was incorrectly surfaced as
+    // a player Fairway tab; players either see a gate state or are routed back
+    // to their own recruiting journey. Coaches own the actual data surface.
     role: 'coach',
     requiredCapability: null,
     section: 'primary',

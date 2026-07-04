@@ -280,6 +280,9 @@ export function useConversations() {
     }) => {
       // Find the other user in this conversation
       const otherUserId = conv.participant_ids?.find((id: string) => id !== user.id);
+      const otherUserIndex = otherUserId ? conv.participant_ids?.indexOf(otherUserId) ?? -1 : -1;
+      const otherUserDisplayName =
+        otherUserIndex >= 0 ? conv.participant_names?.[otherUserIndex] ?? null : null;
       const otherUser = otherUserId ? userDetailsMap.get(otherUserId) : null;
 
       return {
@@ -298,11 +301,12 @@ export function useConversations() {
           sender_id: conv.last_message_sender_id || '',
         } : null,
         unread_count: conv.unread_count || 0,
-        other_user: otherUser ? {
-          id: otherUser.id,
-          email: otherUser.email,
-          coach: otherUser.baseball_coaches,
-          player: otherUser.baseball_players,
+        other_user: otherUserId ? {
+          id: otherUser?.id ?? otherUserId,
+          email: otherUser?.email ?? null,
+          display_name: otherUserDisplayName,
+          coach: otherUser?.baseball_coaches ?? null,
+          player: otherUser?.baseball_players ?? null,
         } : null,
       };
     });

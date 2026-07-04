@@ -46,10 +46,11 @@ interface EngagementEvent {
   coach_id: string | null;
   coaches: {
     id: string;
-    first_name: string | null;
-    last_name: string | null;
-    school_name: string | null;
-    division: string | null;
+    full_name: string | null;
+    organization: {
+      name: string | null;
+      division: string | null;
+    } | null;
   } | null;
   players: {
     id: string;
@@ -255,10 +256,11 @@ export default function CollegeInterestClient() {
         coach_id,
         coaches:baseball_coaches!coach_id (
           id,
-          first_name,
-          last_name,
-          school_name,
-          division
+          full_name,
+          organization:organizations (
+            name,
+            division
+          )
         ),
         players:baseball_players!player_id (
           id,
@@ -321,9 +323,9 @@ export default function CollegeInterestClient() {
           created_at: event.created_at,
           coach_name: isAnonymous
             ? null
-            : getFullName(event.coaches?.first_name, event.coaches?.last_name),
-          coach_school: isAnonymous ? null : (event.coaches?.school_name ?? null),
-          coach_division: isAnonymous ? null : (event.coaches?.division ?? null),
+            : (event.coaches?.full_name ?? 'Coach'),
+          coach_school: isAnonymous ? null : (event.coaches?.organization?.name ?? null),
+          coach_division: isAnonymous ? null : (event.coaches?.organization?.division ?? null),
         });
       }
     });

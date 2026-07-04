@@ -108,7 +108,7 @@ const COACH_REDIRECT_NOTES = {
 };
 
 const PLAYER_REDIRECT_NOTES = {
-  '/baseball/dashboard/college-interest': 'Middleware RECRUITING_ROUTES requires coach record → player/today. Nav tab still visible for college players — should gate or hide.',
+  '/baseball/dashboard/college-interest': 'Coach-facing interest surface. Player nav should not include this route.',
   '/baseball/dashboard/dev-plan': 'Hard navigation can bounce to today (navContext race in dashboard layout). In-app sidebar link works.',
   '/baseball/dashboard/settings/notifications': 'Coach-only settings alias → program#notifications; player lands on today.',
 };

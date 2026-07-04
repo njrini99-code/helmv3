@@ -10,15 +10,19 @@ docs/qa/baseball-fairway-visual-audit-2026-07-04/
 ├── README.md          ← this file
 ├── coach/
 │   ├── INDEX.md       ← human index (routes, code, DB, notes)
+│   ├── ERRORS.md      ← redirects, failures, console errors only
 │   ├── manifest.json  ← machine-readable metadata
 │   ├── desktop/       ← labeled PNGs (01-coach-…)
 │   └── mobile/
 └── player/
     ├── INDEX.md
+    ├── ERRORS.md
     ├── manifest.json
     ├── desktop/
     └── mobile/
 ```
+
+See [NAV_ISSUES.md](NAV_ISSUES.md) for the continual routing/nav issue registry derived from this pack.
 
 ## Accounts (demo seed)
 
@@ -30,7 +34,7 @@ docs/qa/baseball-fairway-visual-audit-2026-07-04/
 ## Summary
 
 - **Coach:** 72 desktop routes + 7 mobile spot-checks. Fairway shell renders correctly on all coach-intended routes. Several player-only or showcase-only routes redirect as designed.
-- **Player:** 22 desktop routes + 7 mobile spot-checks. Player Today hub, stats, profile, development, team, and recruiting surfaces render correctly. College-player gates on Activate; Interest tab + cold dev-plan URL need follow-up.
+- **Player:** 22 desktop routes + 7 mobile spot-checks. Player Today hub, stats, profile, development, team, and recruiting surfaces render correctly. College-player gates on Activate; the coach-only Interest surface has been moved out of player nav.
 
 ## Known issues (both roles)
 
@@ -40,8 +44,7 @@ docs/qa/baseball-fairway-visual-audit-2026-07-04/
 
 ## Player-specific follow-ups
 
-1. `/dashboard/college-interest` — middleware redirects college players to Today; nav still shows Interest tab.
-2. `/dashboard/dev-plan` — cold URL can bounce before navContext resolves; sidebar navigation works.
+1. `/dashboard/dev-plan` — cold URL can bounce before navContext resolves; sidebar navigation works.
 
 ## Regenerate
 

@@ -51,7 +51,7 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
 
   it('activates the player recruiting hub on exposure routes', () => {
     const hub = resolveActiveHub({
-      pathname: '/baseball/dashboard/college-interest',
+      pathname: '/baseball/dashboard/analytics',
       role: 'player',
       programType: 'high_school',
     });

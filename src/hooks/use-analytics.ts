@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -57,7 +57,8 @@ export function useAnalytics() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const { user } = useAuthStore();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     async function fetchAnalytics() {
@@ -87,10 +88,16 @@ export function useAnalytics() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       // Fetch all engagement events from last 30 days
-      const { data: events } = await supabase
+      const { data: events, error: eventsError } = await supabase
         .from('baseball_player_engagement_events')
         .select(`
-          *,
+          id,
+          player_id,
+          coach_id,
+          engagement_type,
+          metadata,
+          created_at,
+          engagement_date,
           baseball_coaches (
             id,
             full_name,
@@ -107,7 +114,7 @@ export function useAnalytics() {
         .gte('created_at', thirtyDaysAgo.toISOString())
         .order('created_at', { ascending: false });
 
-      if (!events) {
+      if (eventsError || !events) {
         setData({
           stats: { profileViews: 0, watchlistAdds: 0, videoViews: 0, messagesSent: 0 },
           viewsOverTime: [],
@@ -215,7 +222,8 @@ export function useAnalytics() {
     }
 
     fetchAnalytics();
-  }, [user, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef above).
+  }, [user]);
 
   return { data, loading };
 }
