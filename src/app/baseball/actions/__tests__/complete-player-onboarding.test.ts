@@ -58,7 +58,7 @@ describe('completePlayerOnboarding', () => {
     const res = await completePlayerOnboarding(BASE_INPUT);
 
     expect(res.success).toBe(true);
-    expect(res.redirectTo).toBe('/baseball/dashboard');
+    expect(res.redirectTo).toBe('/baseball/player/today');
     expect(from).toHaveBeenCalledWith('baseball_players');
 
     const [row, opts] = upsert.mock.calls[0]!;

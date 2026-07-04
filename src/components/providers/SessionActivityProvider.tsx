@@ -7,7 +7,10 @@ import { useSessionActivity } from '@/lib/auth/session-activity';
  *
  * Wrap authenticated layouts with this component to enable:
  * - Automatic logout after the idle window (SESSION_IDLE_TIMEOUT_MS — 5 minutes)
+ *   when the tab is hidden or the user is genuinely away
  * - Activity tracking (mouse, keyboard, touch events)
+ * - Visible-tab heartbeat so reading a dashboard without moving the mouse
+ *   does not trip the idle window
  * - Idle checks every minute + on tab re-show (visibilitychange / pageshow)
  *
  * Usage:

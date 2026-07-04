@@ -2,7 +2,9 @@
  * Session Activity Tracking
  *
  * Enforces an idle-session timeout: after SESSION_IDLE_TIMEOUT_MS (5 minutes) of
- * no user activity, the user is signed out and must log in again. Shares the
+ * no user activity while the tab is hidden, the user is signed out and must log
+ * in again. While the tab is visible, a heartbeat keeps the session alive so
+ * reading a dashboard without mouse/keyboard does not log the user out. Shares the
  * `sb_last_activity` cookie with the server middleware, which enforces the same
  * window on navigations/reopens — this hook covers the "app stays open but idle"
  * and "mobile reopen from background (bfcache — no network request)" cases the
@@ -17,6 +19,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   SESSION_IDLE_COOKIE,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
+  SESSION_VISIBLE_HEARTBEAT_MS,
   isSessionIdleExpired,
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
@@ -88,6 +91,11 @@ export function useSessionActivity() {
     }
 
     const path = window.location.pathname;
+    if (path.startsWith('/admin')) {
+      const params = new URLSearchParams({ message: 'session_expired', returnTo: path });
+      router.replace(`/golf/login?${params.toString()}`);
+      return;
+    }
     const sport = path.startsWith('/golf')
       ? 'golf'
       : path.startsWith('/lifting')
@@ -115,7 +123,44 @@ export function useSessionActivity() {
     // Fresh/bootstrap: record activity now.
     updateLastActivity();
 
-    // Periodic check catches "app open but idle" (no interaction, no requests).
+    let visibleHeartbeatRef: ReturnType<typeof setInterval> | null = null;
+
+    const stopVisibleHeartbeat = () => {
+      if (visibleHeartbeatRef) {
+        clearInterval(visibleHeartbeatRef);
+        visibleHeartbeatRef = null;
+      }
+    };
+
+    const startVisibleHeartbeat = () => {
+      if (visibleHeartbeatRef || document.visibilityState !== 'visible') return;
+      visibleHeartbeatRef = setInterval(() => {
+        if (document.visibilityState !== 'visible') {
+          stopVisibleHeartbeat();
+          return;
+        }
+        if (isSessionTimedOut()) {
+          void handleLogout();
+          return;
+        }
+        updateLastActivity();
+      }, SESSION_VISIBLE_HEARTBEAT_MS);
+    };
+
+    const syncTabVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        if (isSessionTimedOut()) {
+          void handleLogout();
+          return;
+        }
+        updateLastActivity();
+        startVisibleHeartbeat();
+      } else {
+        stopVisibleHeartbeat();
+      }
+    };
+
+    // Periodic check catches hidden-tab idle (heartbeat is paused while hidden).
     checkIntervalRef.current = setInterval(() => {
       void checkSessionTimeout();
     }, ACTIVITY_CHECK_INTERVAL_MS);
@@ -147,25 +192,22 @@ export function useSessionActivity() {
     });
 
     // Mobile Safari / PWA reopen restores from bfcache WITHOUT a network request,
-    // so the server middleware never sees it. Re-check the moment the tab becomes
-    // visible again (visibilitychange) or is restored (pageshow).
-    const handleReshow = () => {
-      if (document.visibilityState === 'visible') {
-        void checkSessionTimeout();
-      }
-    };
-    document.addEventListener('visibilitychange', handleReshow);
-    window.addEventListener('pageshow', handleReshow);
+    // so the server middleware never sees it. Re-check when the tab becomes visible
+    // again (visibilitychange) or is restored (pageshow).
+    syncTabVisibility();
+    document.addEventListener('visibilitychange', syncTabVisibility);
+    window.addEventListener('pageshow', syncTabVisibility);
 
     return () => {
+      stopVisibleHeartbeat();
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
       }
       activityEvents.forEach((event) => {
         window.removeEventListener(event, handleActivity);
       });
-      document.removeEventListener('visibilitychange', handleReshow);
-      window.removeEventListener('pageshow', handleReshow);
+      document.removeEventListener('visibilitychange', syncTabVisibility);
+      window.removeEventListener('pageshow', syncTabVisibility);
     };
   }, [handleLogout, checkSessionTimeout]);
 

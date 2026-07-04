@@ -1,8 +1,10 @@
-import { GitPullRequest, ImageUp, Link2, MessageSquarePlus } from 'lucide-react';
+import { GitPullRequest, ImageUp, Link2, MessageSquarePlus, Tags } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { Eyebrow, Surface, StatusPill } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { AutoRefresh } from '../_components/AutoRefresh';
 import { BenLeahForm } from './BenLeahForm';
+import { BenLeahIssueBoard } from './BenLeahIssueBoard';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +67,27 @@ export default async function BenLeahPage() {
           </Surface>
 
           <Surface padding="sm">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Status labels (GitHub)</h2>
+            <ul className="mt-3 space-y-2 text-sm text-warm-700">
+              <li className="flex gap-2">
+                <Tags size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
+                <span><code className="text-xs">status:in-progress</code> or <code className="text-xs">status:triaged</code> — work started</span>
+              </li>
+              <li className="flex gap-2">
+                <Tags size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
+                <span><code className="text-xs">status:in-production</code> — confirmed live (manual)</span>
+              </li>
+              <li className="flex gap-2">
+                <Tags size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
+                <span><code className="text-xs">status:wontfix</code> — closed without shipping</span>
+              </li>
+            </ul>
+            <p className="mt-3 text-xs text-warm-500">
+              New submissions start as <code className="text-xs">status:triaged</code>. Use the tracker dropdown to move issues through the workflow — labels are created automatically in GitHub.
+            </p>
+          </Surface>
+
+          <Surface padding="sm">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Best submission shape</h2>
             <p className="mt-3 text-sm text-warm-700">
               One issue per request. Include the account, team, player, browser, page, and what decision or workflow is blocked.
@@ -72,6 +95,12 @@ export default async function BenLeahPage() {
           </Surface>
         </aside>
       </div>
+
+      <PanelBoundary title="Issue tracker">
+        <BenLeahIssueBoard />
+      </PanelBoundary>
+
+      <AutoRefresh intervalMs={60_000} />
     </div>
   );
 }

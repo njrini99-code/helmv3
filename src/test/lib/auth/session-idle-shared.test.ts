@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
+  SESSION_VISIBLE_HEARTBEAT_MS,
   parseLastActivity,
   isSessionIdleExpired,
 } from '@/lib/auth/session-idle-shared';
@@ -9,6 +10,10 @@ import {
 describe('session-idle-shared', () => {
   it('idle window is 5 minutes', () => {
     expect(SESSION_IDLE_TIMEOUT_MS).toBe(5 * 60 * 1000);
+  });
+
+  it('visible heartbeat is shorter than the idle window', () => {
+    expect(SESSION_VISIBLE_HEARTBEAT_MS).toBeLessThan(SESSION_IDLE_TIMEOUT_MS);
   });
 
   it('cookie lifetime is much longer than the timeout (so a stale marker survives to be detected)', () => {

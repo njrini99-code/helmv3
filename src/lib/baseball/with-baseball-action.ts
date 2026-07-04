@@ -62,6 +62,7 @@ import type { User } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerException } from '@/lib/server-error-logger';
+import { observeActionSoftFailure } from '@/lib/admin/observe-action-result';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import type { ActiveBaseballContext } from '@/lib/baseball/active-context-shared';
 import {
@@ -452,6 +453,7 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         };
 
         const result = await fn(ctx, ...args);
+        observeActionSoftFailure(result, buildTraceContext(true));
         scope.addBreadcrumb({
           category: 'baseball.action',
           message: `done ${name}`,

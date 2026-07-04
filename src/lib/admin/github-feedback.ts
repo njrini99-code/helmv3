@@ -1,5 +1,10 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { githubIssuesHeaders, githubIssuesRepo, githubIssuesToken } from '@/lib/admin/github-issues-config';
+import {
+  BEN_LEAH_INITIAL_WORKFLOW_LABEL,
+  ensureBenLeahGitHubLabels,
+} from '@/lib/admin/github-issues-workflow';
 
 export type FeedbackKind = 'bug' | 'change' | 'addition';
 export type FeedbackPriority = 'normal' | 'high' | 'urgent';
@@ -113,13 +118,11 @@ export function buildFeedbackIssueBody(input: FeedbackIssueInput): string {
 }
 
 function issueToken(): string | null {
-  return process.env.GITHUB_ISSUES_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim() || null;
+  return githubIssuesToken();
 }
 
 function issueRepo(): { owner: string; repo: string } {
-  const raw = process.env.GITHUB_ISSUES_REPO?.trim() || process.env.GITHUB_REPOSITORY?.trim() || 'njrini99-code/helmv3';
-  const [owner, repo] = raw.split('/');
-  if (!owner || !repo) return { owner: 'njrini99-code', repo: 'helmv3' };
+  const { owner, repo } = githubIssuesRepo();
   return { owner, repo };
 }
 
@@ -159,34 +162,39 @@ export async function createGitHubFeedbackIssue(input: FeedbackIssueInput): Prom
   if (!token) {
     throw new Error('GitHub issue token is not configured. Set GITHUB_ISSUES_TOKEN or GITHUB_TOKEN.');
   }
+  await ensureBenLeahGitHubLabels();
+
   const { owner, repo } = issueRepo();
+  const headers = {
+    ...githubIssuesHeaders(token),
+    'content-type': 'application/json',
+  };
+  const payload = {
+    title: `[Ben + Leah] ${KIND_LABEL[input.kind]}: ${input.title}`,
+    body: buildFeedbackIssueBody(input),
+    labels: [
+      'ben-leah',
+      BEN_LEAH_INITIAL_WORKFLOW_LABEL,
+      `kind:${input.kind}`,
+      `priority:${input.priority}`,
+      `category:${input.category}`,
+    ],
+  };
+
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`, {
     method: 'POST',
-    headers: {
-      accept: 'application/vnd.github+json',
-      authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
-      'x-github-api-version': '2022-11-28',
-    },
-    body: JSON.stringify({
-      title: `[Ben + Leah] ${KIND_LABEL[input.kind]}: ${input.title}`,
-      body: buildFeedbackIssueBody(input),
-      labels: ['ben-leah', `kind:${input.kind}`, `priority:${input.priority}`, `category:${input.category}`],
-    }),
+    headers,
+    body: JSON.stringify(payload),
   });
 
   if (res.status === 422) {
     const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`, {
       method: 'POST',
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-        'x-github-api-version': '2022-11-28',
-      },
+      headers,
       body: JSON.stringify({
-        title: `[Ben + Leah] ${KIND_LABEL[input.kind]}: ${input.title}`,
-        body: buildFeedbackIssueBody(input),
+        title: payload.title,
+        body: payload.body,
+        labels: ['ben-leah', BEN_LEAH_INITIAL_WORKFLOW_LABEL],
       }),
     });
     if (!retry.ok) {

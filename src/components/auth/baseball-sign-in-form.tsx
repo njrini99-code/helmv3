@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/baseball/actions/auth';
+import { invalidateAuthCache } from '@/hooks/use-baseball-auth';
 import { Input } from '@/components/ui/input';
 import { AlertCircle } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -63,12 +64,8 @@ export function BaseballSignInForm() {
 
       void triggerHaptic('success');
 
-      // CRITICAL: After login, refresh first to ensure the session cookies
-      // are recognized by the Next.js router cache before navigating.
+      invalidateAuthCache();
       router.refresh();
-
-      // Wait for cookies to propagate and cache to invalidate
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('baseball_login_returnTo');
@@ -85,11 +82,11 @@ export function BaseballSignInForm() {
 
       if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
         sessionStorage.removeItem('baseball_login_returnTo');
-        router.push(storedReturnTo);
+        router.replace(storedReturnTo);
       } else {
         // Clear stale returnTo if present — onboarding takes priority
         if (storedReturnTo) sessionStorage.removeItem('baseball_login_returnTo');
-        router.push(result.redirectTo || '/baseball/dashboard');
+        router.replace(result.redirectTo || '/baseball/dashboard');
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');
