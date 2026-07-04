@@ -166,7 +166,15 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     await page.goto('/baseball/dashboard/stats/games');
     await waitForPageLoad(page);
     await expect(page.getByText('No games yet')).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Box Score' }).first()).toBeVisible({ timeout: 10000 });
+
+    const seededGameLink = page.getByRole('link', {
+      name: new RegExp(`Open game vs ${BASEBALL_SEED_MANIFEST.completedGame.opponentName}`, 'i'),
+    });
+    await expect(seededGameLink).toBeVisible({ timeout: 10000 });
+    await seededGameLink.click();
+    await expect(page).toHaveURL(new RegExp(`/baseball/dashboard/stats/games/${BASEBALL_SEED_MANIFEST.completedGame.id}$`));
+    await expect(page.getByText('No stats recorded for this game yet')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Batting' })).toBeVisible({ timeout: 10000 });
 
     // Deep-link to the manifest's known completed game rather than depending
     // on games-list click-through ordering.

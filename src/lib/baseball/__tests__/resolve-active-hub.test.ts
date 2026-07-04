@@ -38,6 +38,28 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     expect(hub?.tabs.some((t) => t.id === 'performance-programs')).toBe(false);
   });
 
+  it('keeps dynamic box-score details inside the coach stats hub', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/stats/games/demo-game-id',
+      role: 'coach',
+      programType: 'college',
+      capabilities: { can_manage_stats: true },
+    });
+    expect(hub?.id).toBe('stats');
+    expect(hub?.tabs.some((t) => t.id === 'games')).toBe(true);
+  });
+
+  it('keeps coach dev-plan details inside the development hub', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/dev-plans/demo-plan-id',
+      role: 'coach',
+      programType: 'college',
+      capabilities: {},
+    });
+    expect(hub?.id).toBe('development');
+    expect(hub?.tabs.some((t) => t.id === 'dev-plans')).toBe(true);
+  });
+
   it('activates the management hub on nested settings routes', () => {
     const hub = resolveActiveHub({
       pathname: '/baseball/dashboard/settings/imports',
@@ -51,7 +73,7 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
 
   it('activates the player recruiting hub on exposure routes', () => {
     const hub = resolveActiveHub({
-      pathname: '/baseball/dashboard/college-interest',
+      pathname: '/baseball/dashboard/analytics',
       role: 'player',
       programType: 'high_school',
     });
@@ -67,6 +89,17 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     });
     expect(hub?.id).toBe('management');
     expect(hub?.tabs.some((t) => t.id === 'settings-home')).toBe(true);
+  });
+
+  it('activates academics for college coaches with the academics capability', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/academics',
+      role: 'coach',
+      programType: 'college',
+      capabilities: { can_view_academics: true },
+    });
+    expect(hub?.id).toBe('academics');
+    expect(hub?.tabs.map((t) => t.id)).toEqual(['academics']);
   });
 });
 

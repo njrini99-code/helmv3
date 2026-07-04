@@ -22,11 +22,13 @@ import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 
-// Must match scripts/seed-baseball-demo.ts exactly.
+// Must match scripts/seed-baseball-demo.ts and scripts/seed-rini-baseball-demo.ts exactly.
 const NS_P1 = 'baseballhelm-demo-phase1';
+const NS_RINI = 'rini-baseball-demo-v1';
+const PROFILE = process.env.BASEBALL_DEMO_COVERAGE_PROFILE === 'rini' ? 'rini' : 'phase1';
 
-function p1Id(key: string): string {
-  const h = createHash('sha1').update(`${NS_P1}:${key}`).digest('hex');
+function detId(namespace: string, key: string): string {
+  const h = createHash('sha1').update(`${namespace}:${key}`).digest('hex');
   const b = h.slice(0, 32).split('');
   b[12] = '5';
   b[16] = ((parseInt(b[16], 16) & 0x3) | 0x8).toString(16);
@@ -34,8 +36,10 @@ function p1Id(key: string): string {
   return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20, 32)}`;
 }
 
-const TEAM_ID = p1Id('team');
-const COACH_ID = p1Id('coach');
+const TEAM_ID = detId(PROFILE === 'rini' ? NS_RINI : NS_P1, 'team');
+const COACH_ID = PROFILE === 'rini'
+  ? '5080d69c-4bd0-41fc-a02a-714062f2e74b'
+  : detId(NS_P1, 'coach');
 
 /**
  * One entry per row in the "Per-table contract" section of
@@ -51,7 +55,7 @@ interface CoverageEntry {
   note?: string;
 }
 
-export const SURFACE_COVERAGE: readonly CoverageEntry[] = [
+const PHASE1_SURFACE_COVERAGE: readonly CoverageEntry[] = [
   { table: 'baseball_conversations', route: '/baseball/dashboard/messages', scopeColumn: 'team_id', required: true },
   { table: 'baseball_messages', route: '/baseball/dashboard/messages', scopeColumn: 'none', required: true, note: 'scoped via conversation_id; counted globally since the table has no team_id column' },
   { table: 'baseball_videos', route: '/baseball/dashboard/videos', scopeColumn: 'team_id', required: true },
@@ -67,6 +71,34 @@ export const SURFACE_COVERAGE: readonly CoverageEntry[] = [
   { table: 'baseball_player_stats', route: '/baseball/dashboard/stats', scopeColumn: 'team_id', required: true },
   { table: 'baseball_player_aggregates', route: '/baseball/dashboard/stats', scopeColumn: 'team_id', required: true },
 ] as const;
+
+const RINI_EXTRA_SURFACE_COVERAGE: readonly CoverageEntry[] = [
+  { table: 'baseball_team_members', route: '/baseball/dashboard/roster', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_events', route: '/baseball/dashboard/calendar', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_games', route: '/baseball/dashboard/stats/games', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_box_score_batting', route: '/baseball/dashboard/stats/games/[gameId]', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_box_score_pitching', route: '/baseball/dashboard/stats/games/[gameId]', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_practices', route: '/baseball/dashboard/practice', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_player_timeline_events', route: '/baseball/player/timeline', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_announcements', route: '/baseball/dashboard/announcements', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_travel_itineraries', route: '/baseball/dashboard/travel', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_travel_expenses', route: '/baseball/dashboard/travel', scopeColumn: 'team_id', required: true },
+] as const;
+
+const RINI_SHARED_SURFACE_COVERAGE: readonly CoverageEntry[] = [
+  { table: 'baseball_conversations', route: '/baseball/dashboard/messages', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_messages', route: '/baseball/dashboard/messages', scopeColumn: 'none', required: true, note: 'scoped via conversation_id; counted globally since the table has no team_id column' },
+  { table: 'baseball_tasks', route: '/baseball/dashboard/tasks', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_task_assignments', route: '/baseball/dashboard/tasks', scopeColumn: 'none', required: true, note: 'scoped via task_id; counted globally since the table has no team_id column' },
+  { table: 'baseball_developmental_plans', route: '/baseball/dashboard/dev-plans', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_player_stats', route: '/baseball/dashboard/stats', scopeColumn: 'team_id', required: true },
+  { table: 'baseball_player_aggregates', route: '/baseball/dashboard/stats', scopeColumn: 'team_id', required: true },
+] as const;
+
+export const SURFACE_COVERAGE: readonly CoverageEntry[] =
+  PROFILE === 'rini'
+    ? [...RINI_EXTRA_SURFACE_COVERAGE, ...RINI_SHARED_SURFACE_COVERAGE]
+    : PHASE1_SURFACE_COVERAGE;
 
 /**
  * Surfaces deliberately left empty for the demo team (see contract doc
@@ -138,6 +170,7 @@ async function main() {
 
   console.log('='.repeat(78));
   console.log('BASEBALLHELM DEMO SURFACE COVERAGE REPORT');
+  console.log(`Profile: ${PROFILE}`);
   console.log(`Demo team: ${TEAM_ID}`);
   console.log('='.repeat(78));
 

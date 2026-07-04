@@ -528,7 +528,7 @@ async function main() {
     accommodation: 'Marriott Courtyard',
     transportation: 'Charter bus',
     notes: 'Rooming list posted in locker room.',
-    created_by: COACH_USER_ID,
+    created_by: COACH_ID,
   }]);
   await upsert('baseball_travel_expenses', [{
     id: detId('travel-exp:bus'),

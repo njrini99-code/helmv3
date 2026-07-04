@@ -16,6 +16,7 @@ export interface ParticipantDetails {
 export interface OtherUser {
   id: string;
   email?: string | null;
+  display_name?: string | null;
   coach?: Coach | null;
   coaches?: Coach | null;
   player?: Player | null;
@@ -77,9 +78,8 @@ export function getParticipantDetails(
   // Fallback
   return {
     id: otherUser.id,
-    name: otherUser.email || 'Unknown',
+    name: otherUser.display_name || otherUser.email || 'Unknown',
     avatar: null,
     role: 'player',
   };
 }
-

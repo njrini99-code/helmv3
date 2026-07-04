@@ -31,11 +31,13 @@ import {
   COACH_DEVELOPMENT_TABS,
   COACH_MANAGEMENT_TABS,
   COACH_ACADEMICS_TABS,
+  COACH_RECRUITING_TABS,
   COACH_HUB_ORDER,
   COACH_HUB_DEFS,
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
+  PLAYER_RECRUITING_TABS,
 } from '@/app/baseball/(dashboard)/_components/hub-definitions';
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
@@ -45,9 +47,14 @@ import { useSidebar } from '@/contexts/sidebar-context';
 import { Button } from '@/components/ui/button';
 import {
   getVisibleBaseballNav,
+  getBaseballTerminology,
   BASEBALL_MESSAGES_NAV,
   type BaseballNavContext,
 } from '@/lib/baseball/nav-registry';
+import {
+  filterHubTabsByCapabilities,
+  filterHubTabsByProgramType,
+} from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
 
 // =============================================================================
 // GROUPED-HUBS NAVIGATION (approved 2026-06-24)
@@ -110,6 +117,12 @@ const COACH_ACADEMICS_HUB: SidebarHubItem = {
   icon: IconGraduationCap,
   hubPrefixes: hubPrefixesFrom(COACH_ACADEMICS_TABS),
 };
+const COACH_RECRUITING_HUB: SidebarHubItem = {
+  name: 'Recruiting',
+  href: COACH_RECRUITING_TABS[0]!.href,
+  icon: COACH_HUB_DEFS.recruiting.icon,
+  hubPrefixes: hubPrefixesFrom(COACH_RECRUITING_TABS),
+};
 // Messages — persistent cross-cutting slot (golf-style), never a hub sub-tab.
 // Deliberately outside BASEBALL_NAV_REGISTRY (see nav-registry.ts), so every
 // nav consumer injects it explicitly; this is the shared literal both the
@@ -121,30 +134,37 @@ const COACH_MESSAGES_ITEM: SidebarHubItem = {
   badge: true,
 };
 
-// College Coach — grouped hubs (Dashboard, Team, Stats, Development, Management).
+// College Coach — grouped hubs. This fallback must mirror the navContext-driven
+// condensed builder closely enough that the shell never flashes the old IA while
+// navContext is resolving.
 const collegeTeamNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
+  COACH_MESSAGES_ITEM,
   COACH_TEAM_HUB,
   COACH_STATS_HUB,
   COACH_DEVELOPMENT_HUB,
+  COACH_RECRUITING_HUB,
   COACH_MANAGEMENT_HUB,
 ];
 
 // HS Coach — same hubs, HS-specific dashboard landing.
 const hsCoachTeamNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
+  COACH_MESSAGES_ITEM,
   COACH_TEAM_HUB,
   COACH_STATS_HUB,
   COACH_DEVELOPMENT_HUB,
   COACH_MANAGEMENT_HUB,
 ];
 
-// JUCO Coach — adds the Academics hub (JUCO-only).
+// JUCO Coach — includes Recruiting + Academics.
 const jucoTeamNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
+  COACH_MESSAGES_ITEM,
   COACH_TEAM_HUB,
   COACH_STATS_HUB,
   COACH_DEVELOPMENT_HUB,
+  COACH_RECRUITING_HUB,
   COACH_ACADEMICS_HUB,
   COACH_MANAGEMENT_HUB,
 ];
@@ -161,6 +181,8 @@ const showcaseOrgNav: SidebarHubItem[] = [
 
 // Showcase Coach - Team-specific hubs (shown when a team is selected).
 const showcaseTeamNav: SidebarHubItem[] = [
+  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
+  COACH_MESSAGES_ITEM,
   COACH_TEAM_HUB,
   COACH_STATS_HUB,
   COACH_DEVELOPMENT_HUB,
@@ -190,6 +212,12 @@ const playerTeamNav: SidebarHubItem[] = [
     href: PLAYER_TEAM_TABS[0]!.href,
     icon: IconUsers,
     hubPrefixes: hubPrefixesFrom(PLAYER_TEAM_TABS),
+  },
+  {
+    name: 'Recruiting',
+    href: PLAYER_RECRUITING_TABS[0]!.href,
+    icon: COACH_HUB_DEFS.recruiting.icon,
+    hubPrefixes: hubPrefixesFrom(PLAYER_RECRUITING_TABS),
   },
 ];
 
@@ -232,14 +260,6 @@ const EXACT_MATCH_HREFS = new Set<string>([
 
 const RECRUITING_PROGRAM_TYPES = new Set(['college', 'juco', 'showcase', 'academy', 'club']);
 
-function visibleIdSet(ctx: BaseballNavContext) {
-  return new Set(getVisibleBaseballNav(ctx).map((entry) => entry.id));
-}
-
-function hasAnyVisible(ids: Set<string>, candidates: string[]) {
-  return candidates.some((id) => ids.has(id));
-}
-
 /**
  * The condensed 8-tab coach nav (COACH_NAV_8TAB_PROPOSAL.md, approved
  * 2026-07-01): Dashboard, Team, Messages, Stats & Performance, Development,
@@ -250,8 +270,6 @@ function hasAnyVisible(ids: Set<string>, candidates: string[]) {
  * automatically, with no risk of re-orphaning a feature from the sidebar.
  */
 function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubItem[] {
-  const ids = visibleIdSet(ctx);
-
   if (ctx.role === 'player') {
     return [
       { name: 'Today', href: '/baseball/player/today', icon: IconHome },
@@ -274,6 +292,12 @@ function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubIt
         icon: IconUsers,
         hubPrefixes: hubPrefixesFrom(PLAYER_TEAM_TABS),
       },
+      {
+        name: getBaseballTerminology(ctx).exposureNoun,
+        href: PLAYER_RECRUITING_TABS[0]!.href,
+        icon: COACH_HUB_DEFS.recruiting.icon,
+        hubPrefixes: hubPrefixesFrom(PLAYER_RECRUITING_TABS),
+      },
       { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
       { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
     ];
@@ -291,22 +315,20 @@ function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubIt
     if (hubId === 'recruiting' && !(ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType))) {
       continue;
     }
-    if (hubId === 'academics' && !ids.has('academics')) continue;
 
-    // Every other hub (including Management) hides itself when NO member is
-    // visible for this coach — Command Center/Signals (Dashboard) are always
-    // capability-free, so Dashboard is never actually hidden by this in
-    // practice; Management legitimately can be for a narrow staff role with
-    // none of can_manage_settings/can_invite_staff. This mirrors
-    // resolveActiveHub's own "empty hub → null, no strip" precedent and keeps
-    // this shell and BaseballFairwayShell.tsx's section builder in lockstep.
-    if (!hasAnyVisible(ids, def.tabs.map((t) => t.id))) continue;
+    // Every hub hides itself when NO tab is visible for this coach. Use the
+    // same filters as the shell-level HubSubNav resolver, not just registry
+    // ids: several important sub-tabs (Games, Season, settings supplements)
+    // are intentionally not registry entries but still own real routes.
+    const capFiltered = filterHubTabsByCapabilities(def.tabs, 'coach', ctx.capabilities);
+    const visibleTabs = filterHubTabsByProgramType(capFiltered, ctx.programType);
+    if (visibleTabs.length === 0) continue;
 
     items.push({
-      name: def.label,
-      href: def.tabs[0]!.href,
+      name: hubId === 'recruiting' ? getBaseballTerminology(ctx).exposureNoun : def.label,
+      href: visibleTabs[0]!.href,
       icon: def.icon,
-      hubPrefixes: def.tabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
+      hubPrefixes: visibleTabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
     });
 
     // Messages: persistent cross-cutting slot (golf-style), injected right

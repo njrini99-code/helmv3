@@ -9,6 +9,11 @@ const SCAN_ROOTS = [
   join(REPO_ROOT, 'e2e'),
 ];
 const ALLOWLIST = new Set([
+  // Compatibility tombstone only: middleware redirects old bookmarks to
+  // /stats/games/create, but no app/e2e UI should link here.
+  join(REPO_ROOT, 'src/lib/supabase/middleware.ts'),
+  // Route-contract alias manifest documents the same tombstone for coverage.
+  join(REPO_ROOT, 'src/test/helpers/baseball-route-inventory.ts'),
 ]);
 
 const STALE_HREF = /\/baseball\/dashboard\/stats\/games\/new(?![\w-])/;
