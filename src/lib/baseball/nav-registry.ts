@@ -757,15 +757,14 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     id: 'team',
     label: 'Dashboard',
     href: '/baseball/dashboard/command-center',
-    playerHref: '/baseball/player/today',
     icon: IconUsers,
     // Backward-compatible secondary landing. The old team dashboard route now
-    // redirects here for coaches and to Player Today for players. Classified
+    // redirects here for coaches. Classified
     // 'dashboard' for the hub-required-field invariant, but hub-definitions.ts
     // deliberately EXCLUDES this id from the Dashboard hub's rendered sub-tabs
     // (its href is an exact duplicate of 'command-center' for coaches — it is a
     // legacy alias, never a distinct destination worth its own tab).
-    role: 'both',
+    role: 'coach',
     requiredCapability: null,
     section: 'secondary',
     hub: 'dashboard',

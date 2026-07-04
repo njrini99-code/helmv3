@@ -34,4 +34,24 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     expect(hub?.id).toBe('stats');
     expect(hub?.tabs.some((t) => t.id === 'performance-programs')).toBe(false);
   });
+
+  it('activates the management hub on nested settings routes', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/settings/imports',
+      role: 'coach',
+      programType: 'college',
+      capabilities: { can_manage_settings: true, can_manage_imports: true },
+    });
+    expect(hub?.id).toBe('management');
+    expect(hub?.tabs.some((t) => t.id === 'settings-imports')).toBe(true);
+  });
+
+  it('activates the player recruiting hub on exposure routes', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/college-interest',
+      role: 'player',
+      programType: 'high_school',
+    });
+    expect(hub?.id).toBe('recruiting');
+  });
 });

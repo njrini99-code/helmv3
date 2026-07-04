@@ -129,6 +129,28 @@ const COACH_HOME = '/baseball/dashboard/command-center';
 const PLAYER_HOME = '/baseball/player/today';
 
 /**
+ * Bookmark-compat redirects for legacy per-type landing stubs removed once the
+ * canonical Fairway dashboard routes shipped. Checked before auth so old links
+ * never 404.
+ */
+const LEGACY_BASEBALL_ROUTE_REDIRECTS: Readonly<Record<string, string>> = {
+  '/baseball/coach/college': COACH_HOME,
+  '/baseball/coach/high-school': COACH_HOME,
+  '/baseball/coach/juco': COACH_HOME,
+  '/baseball/coach/showcase': COACH_HOME,
+  '/baseball/player/college': PLAYER_HOME,
+  '/baseball/player/high-school': PLAYER_HOME,
+  '/baseball/player/juco': PLAYER_HOME,
+  '/baseball/player/showcase': PLAYER_HOME,
+  '/baseball/dashboard/team/high-school': COACH_HOME,
+  '/baseball/dashboard/stats/games/new': '/baseball/dashboard/stats/games/create',
+};
+
+function legacyBaseballRedirectTarget(pathname: string): string | null {
+  return LEGACY_BASEBALL_ROUTE_REDIRECTS[pathname] ?? null;
+}
+
+/**
  * Check if user is authorized to access the requested route based on their role
  */
 interface SupabaseClient {
@@ -308,6 +330,13 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const sport = getSportFromPath(pathname);
   const onAdminPath = isAdminPath(pathname);
+
+  if (sport === 'baseball') {
+    const legacyTarget = legacyBaseballRedirectTarget(pathname);
+    if (legacyTarget) {
+      return NextResponse.redirect(new URL(legacyTarget, request.url));
+    }
+  }
 
   if (isNativeUserAgent(request) && isMarketingRoute(pathname)) {
     return NextResponse.redirect(new URL('/golf/login', request.url));

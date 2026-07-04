@@ -6,7 +6,6 @@ import { IconCalendar, IconMapPin, IconTrendingUp } from '@/components/icons';
 
 interface GameCardProps {
   game: BaseballGame;
-  onDelete?: (gameId: string) => void;
 }
 
 function getResultInfo(game: BaseballGame) {
@@ -42,11 +41,15 @@ export function GameCard({ game }: GameCardProps) {
     month: 'short',
     day: 'numeric',
   });
+  const detailHref = `/baseball/dashboard/stats/games/${game.id}`;
+  const opponentLabel = game.opponent_name ? `vs ${game.opponent_name}` : 'TBD Opponent';
 
   return (
-    <div
+    <Link
+      href={detailHref}
       data-testid="game-card"
-      className="bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-glass hover:shadow-glass-hover transition-all duration-200 group"
+      aria-label={`Open ${game.game_type === 'scrimmage' ? 'scrimmage' : 'game'} ${opponentLabel}`}
+      className="block bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-glass hover:shadow-glass-hover transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-100"
     >
       <div className="flex items-start justify-between gap-3">
         {/* Left: game info */}
@@ -70,9 +73,7 @@ export function GameCard({ game }: GameCardProps) {
             )}
           </div>
 
-          <h3 className="text-base font-semibold text-warm-900 truncate">
-            {game.opponent_name ? `vs ${game.opponent_name}` : 'TBD Opponent'}
-          </h3>
+          <h3 className="text-base font-semibold text-warm-900 truncate">{opponentLabel}</h3>
 
           <div className="flex items-center gap-3 mt-1.5 text-xs text-warm-500">
             <span className="flex items-center gap-1">
@@ -112,20 +113,14 @@ export function GameCard({ game }: GameCardProps) {
           {/* Stats links */}
           <div className="flex items-center gap-1.5">
             {game.status === 'completed' && (Number(game.batting_count) > 0 || Number(game.pitching_count) > 0) ? (
-              <Link
-                href={`/baseball/dashboard/stats/games/${game.id}`}
-                className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
-              >
+              <span className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium">
                 <IconTrendingUp size={12} />
                 Box Score
-              </Link>
+              </span>
             ) : game.status !== 'cancelled' ? (
-              <Link
-                href={`/baseball/dashboard/stats/games/${game.id}`}
-                className="inline-flex items-center gap-1 text-xs text-warm-400 hover:text-primary-600 font-medium transition-colors"
-              >
+              <span className="inline-flex items-center gap-1 text-xs text-warm-400 group-hover:text-primary-600 font-medium transition-colors">
                 Enter Results
-              </Link>
+              </span>
             ) : null}
           </div>
         </div>
@@ -145,6 +140,6 @@ export function GameCard({ game }: GameCardProps) {
           )}
         </div>
       )}
-    </div>
+    </Link>
   );
 }

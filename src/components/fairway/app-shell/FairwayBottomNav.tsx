@@ -74,8 +74,9 @@ export function FairwayBottomNav({
         {items.map((item) => {
           const active =
             item.active ||
-            (item.activeMatch && pathname ? item.activeMatch(pathname) : false) ||
-            matchActive(item.href, pathname);
+            (item.activeMatch && pathname
+              ? item.activeMatch(pathname)
+              : matchActive(item.href, pathname));
           const Icon = item.icon;
           return (
             <li key={item.href} className="flex-1">

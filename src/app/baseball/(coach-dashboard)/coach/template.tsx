@@ -1,20 +1,12 @@
 'use client';
 
 /**
- * Coach-HOME route template — fires on every route segment change under
- * /baseball/coach/*.
+ * Coach route template — retained for the coach route group shell boundary.
  *
- * The (coach-dashboard)/coach group renders the four coach-home verticals —
- * College (/baseball/coach/college), High School (/high-school), JUCO (/juco)
- * and Showcase (/showcase) — all through the SAME BaseballDashboardShell mounted
- * in coach/layout.tsx. Before this template existed, the (dashboard) and
- * (player-dashboard) groups each had a template.tsx that crossfaded on nav, but
- * this group had none — so navigating INTO or BETWEEN the four coach homes was an
- * abrupt content snap while every other dashboard tab faded. That is exactly the
- * "transitions present but not everywhere" inconsistency the owner flagged. This
- * 1-file port closes it and satisfies the V10 shell requirement "Route transitions
- * with reduced-motion respect."
- * (docs/.../25_premium_ui_coachhelm_v10/v10_premium_ui_system_by_tab.md line 33).
+ * The legacy per-coach-type pages under /baseball/coach/* were removed once the
+ * canonical Fairway dashboard routes were wired. This template stays with the
+ * group so any future coach-owned subroutes inherit the same reduced-motion
+ * route reveal as the dashboard and player groups.
  *
  * Ported VERBATIM in spirit from the sibling templates
  * ((dashboard)/dashboard/template.tsx, (player-dashboard)/player/template.tsx),

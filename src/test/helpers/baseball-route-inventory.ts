@@ -109,6 +109,66 @@ export const REDIRECT_ALIAS_MANIFEST: RedirectAlias[] = [
       'short-circuits it before the page even renders.',
     implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_TEAM_ROUTES, COACH_HOME)',
   },
+  {
+    from: '/baseball/coach/college',
+    to: '/baseball/dashboard/command-center',
+    reason: 'Legacy per-coach-type bookmark; stub page removed in favor of canonical Command Center.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/coach/high-school',
+    to: '/baseball/dashboard/command-center',
+    reason: 'Legacy per-coach-type bookmark; stub page removed in favor of canonical Command Center.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/coach/juco',
+    to: '/baseball/dashboard/command-center',
+    reason: 'Legacy per-coach-type bookmark; stub page removed in favor of canonical Command Center.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/coach/showcase',
+    to: '/baseball/dashboard/command-center',
+    reason: 'Legacy per-coach-type bookmark; stub page removed in favor of canonical Command Center.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/player/college',
+    to: '/baseball/player/today',
+    reason: 'Legacy per-program-type bookmark; stub page removed in favor of canonical Player Today.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/player/high-school',
+    to: '/baseball/player/today',
+    reason: 'Legacy per-program-type bookmark; stub page removed in favor of canonical Player Today.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/player/juco',
+    to: '/baseball/player/today',
+    reason: 'Legacy per-program-type bookmark; stub page removed in favor of canonical Player Today.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/player/showcase',
+    to: '/baseball/player/today',
+    reason: 'Legacy per-program-type bookmark; stub page removed in favor of canonical Player Today.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/dashboard/team/high-school',
+    to: '/baseball/dashboard/command-center',
+    reason: 'Legacy HS team dashboard bookmark; stub page removed in favor of Command Center.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
+  {
+    from: '/baseball/dashboard/stats/games/new',
+    to: '/baseball/dashboard/stats/games/create',
+    reason: 'Legacy game-create alias; canonical path is /stats/games/create.',
+    implementedAt: 'src/lib/supabase/middleware.ts (LEGACY_BASEBALL_ROUTE_REDIRECTS)',
+  },
 ];
 
 // -----------------------------------------------------------------------------

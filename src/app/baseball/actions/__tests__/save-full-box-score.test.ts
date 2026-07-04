@@ -142,6 +142,37 @@ describe('saveFullBoxScore', () => {
     expect(result.error).toBeTruthy();
   });
 
+  it('computes pitching rates from true innings for partial-inning notation', async () => {
+    rpc.mockResolvedValue({ data: { success: true }, error: null });
+
+    const partialInningLine = {
+      ...PITCHING_LINE,
+      ip: 6.1,
+      er: 2,
+      h: 4,
+      bb: 2,
+      k: 7,
+    };
+
+    const result = await saveFullBoxScore('game-1', [], [partialInningLine], 2, 1);
+
+    expect(result.success).toBe(true);
+    expect(rpc).toHaveBeenCalledWith(
+      'save_baseball_full_box_score',
+      expect.objectContaining({
+        p_pitching: [
+          expect.objectContaining({
+            ip: 6.1,
+            era: 2.84,
+            whip: 0.947,
+            k9: 9.95,
+            bb9: 2.84,
+          }),
+        ],
+      }),
+    );
+  });
+
   // #433 — the manual edit form previously opened blank on an existing box
   // score, so a re-save could silently drop rows. These cases prove that
   // re-supplying the full existing set (as the preloaded form now does) is

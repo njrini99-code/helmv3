@@ -57,6 +57,9 @@ import {
   IconHome,
   IconUser,
   IconGraduationCap,
+  IconSettings,
+  IconLock,
+  IconDatabase,
 } from '@/components/icons';
 import type { HubSubNavTab } from './hub-sub-nav';
 import {
@@ -73,7 +76,7 @@ import {
 
 /** Registry entry → HubSubNavTab, copying every gating field VERBATIM. */
 function toHubTab(entry: BaseballNavEntry): HubSubNavTab {
-  return {
+  const tab: HubSubNavTab = {
     id: entry.id,
     label: entry.label,
     href: entry.href,
@@ -82,6 +85,13 @@ function toHubTab(entry: BaseballNavEntry): HubSubNavTab {
     requiredAnyCapabilities: entry.requiredAnyCapabilities,
     allowedProgramTypes: entry.allowedProgramTypes,
   };
+
+  if (entry.id === 'roster') tab.matchPrefixes = ['/baseball/dashboard/players'];
+  if (entry.id === 'performance') tab.matchPrefixes = ['/baseball/dashboard/performance'];
+  if (entry.id === 'dev-plans') tab.matchPrefixes = ['/baseball/dashboard/dev-plans'];
+  if (entry.id === 'camps') tab.matchPrefixes = ['/baseball/dashboard/camps'];
+
+  return tab;
 }
 
 /**
@@ -131,6 +141,7 @@ const STATS_GAMES_TAB: HubSubNavTab = {
   label: 'Games',
   href: '/baseball/dashboard/stats/games',
   icon: IconClipboardList,
+  matchPrefixes: ['/baseball/dashboard/stats/games'],
 };
 const STATS_SEASON_TAB: HubSubNavTab = {
   id: 'season',
@@ -172,6 +183,69 @@ const PERFORMANCE_BUILDER_TAB: HubSubNavTab = {
   href: '/baseball/dashboard/performance/builder',
   icon: IconGauge,
   requiredCapability: 'can_manage_lifting',
+};
+const SETTINGS_HOME_TAB: HubSubNavTab = {
+  id: 'settings-home',
+  label: 'Settings',
+  href: '/baseball/dashboard/settings',
+  icon: IconSettings,
+  matchPrefixes: ['/baseball/dashboard/settings'],
+};
+const SETTINGS_SEASON_TAB: HubSubNavTab = {
+  id: 'settings-season',
+  label: 'Season',
+  href: '/baseball/dashboard/settings/season',
+  icon: IconCalendar,
+  requiredCapability: 'can_manage_settings',
+};
+const SETTINGS_PHILOSOPHY_TAB: HubSubNavTab = {
+  id: 'settings-philosophy',
+  label: 'Philosophy',
+  href: '/baseball/dashboard/settings/philosophy',
+  icon: IconTarget,
+  requiredCapability: 'can_manage_settings',
+};
+const SETTINGS_ROLES_TAB: HubSubNavTab = {
+  id: 'settings-roles',
+  label: 'Roles',
+  href: '/baseball/dashboard/settings/roles',
+  icon: IconLock,
+  requiredCapability: 'can_manage_settings',
+};
+const SETTINGS_PERMISSIONS_TAB: HubSubNavTab = {
+  id: 'settings-permissions',
+  label: 'Permissions',
+  href: '/baseball/dashboard/settings/permissions',
+  icon: IconShieldCheck,
+  requiredCapability: 'can_manage_settings',
+};
+const SETTINGS_TEAMS_TAB: HubSubNavTab = {
+  id: 'settings-teams',
+  label: 'Team Settings',
+  href: '/baseball/dashboard/settings/teams',
+  icon: IconUsers,
+  requiredCapability: 'can_manage_settings',
+};
+const SETTINGS_IMPORTS_TAB: HubSubNavTab = {
+  id: 'settings-imports',
+  label: 'Imports',
+  href: '/baseball/dashboard/settings/imports',
+  icon: IconUpload,
+  requiredCapability: 'can_manage_imports',
+};
+const SETTINGS_INTEGRATIONS_TAB: HubSubNavTab = {
+  id: 'settings-integrations',
+  label: 'Integrations',
+  href: '/baseball/dashboard/settings/integrations',
+  icon: IconBuilding,
+  requiredCapability: 'can_manage_settings',
+};
+const SETTINGS_AUDIT_TAB: HubSubNavTab = {
+  id: 'settings-audit',
+  label: 'Audit',
+  href: '/baseball/dashboard/settings/audit',
+  icon: IconDatabase,
+  requiredCapability: 'can_manage_settings',
 };
 
 // -----------------------------------------------------------------------------
@@ -261,9 +335,21 @@ export const COACH_ACADEMICS_TABS: readonly HubSubNavTab[] = orderTabs(hubEntrie
  * "Decision Room" vs "Staff Room" label drift (the registry's label always
  * wins now — it is read, not re-declared).
  */
-export const COACH_MANAGEMENT_TABS: readonly HubSubNavTab[] = orderTabs(
-  hubEntries('management'),
-  MANAGEMENT_ORDER,
+export const COACH_MANAGEMENT_TABS: readonly HubSubNavTab[] = withSupplements(
+  orderTabs(hubEntries('management'), MANAGEMENT_ORDER),
+  {
+    'program-settings': [
+      SETTINGS_HOME_TAB,
+      SETTINGS_SEASON_TAB,
+      SETTINGS_PHILOSOPHY_TAB,
+      SETTINGS_ROLES_TAB,
+      SETTINGS_PERMISSIONS_TAB,
+      SETTINGS_TEAMS_TAB,
+      SETTINGS_IMPORTS_TAB,
+      SETTINGS_INTEGRATIONS_TAB,
+      SETTINGS_AUDIT_TAB,
+    ],
+  },
 );
 
 // -----------------------------------------------------------------------------
@@ -333,6 +419,15 @@ export const PLAYER_TEAM_TABS: readonly HubSubNavTab[] = [
   { id: 'documents', label: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
 ];
 
+/** Player RECRUITING hub — player-owned exposure and college discovery surfaces. */
+export const PLAYER_RECRUITING_TABS: readonly HubSubNavTab[] = [
+  { id: 'journey', label: 'Journey', href: '/baseball/dashboard/journey', icon: IconStar },
+  { id: 'interest', label: 'Interest', href: '/baseball/dashboard/college-interest', icon: IconTarget },
+  { id: 'colleges', label: 'Colleges', href: '/baseball/dashboard/colleges', icon: IconGraduationCap },
+  { id: 'analytics', label: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconTrendingUp },
+  { id: 'activate', label: 'Activate', href: '/baseball/dashboard/activate', icon: IconShieldCheck },
+];
+
 // -----------------------------------------------------------------------------
 // SHARED REFERENCES — non-hub leaf routes the sidebar links directly (no sub-nav).
 // Kept here only so the sidebar and any future hub share one href string.
@@ -350,6 +445,7 @@ export const HUB_LANDING = {
   playerProfile: '/baseball/dashboard/profile',
   playerStats: PLAYER_STATS_TABS[0]!.href,
   playerDevelopment: PLAYER_DEVELOPMENT_TABS[0]!.href,
+  playerRecruiting: PLAYER_RECRUITING_TABS[0]!.href,
   playerCalendar: '/baseball/dashboard/calendar',
   playerMessages: '/baseball/dashboard/messages',
   playerTeam: PLAYER_TEAM_TABS[0]!.href,

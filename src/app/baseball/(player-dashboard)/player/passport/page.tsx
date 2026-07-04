@@ -21,13 +21,9 @@
 // Fairway component's own empty state) rather than redirect-looping or
 // fabricating a passport.
 //
-// SCOPE: `/baseball/player/*` (the `(player-dashboard)` route group) has no
-// Fairway shell equivalent to `(dashboard)/BaseballFairwayShell.tsx` yet — that
-// shell is explicitly frozen to its own route group this migration (§6). This
-// page therefore carries BOTH the `.fairway-ds` token scope and the
-// `.living-annual` cream override itself (mirroring what the legacy
-// `bg-cream-100` wrapper did), same as the page-local pattern documented in
-// §1 for a surface no ancestor shell already scopes.
+// SCOPE: this page keeps the `.living-annual` cream override locally because it
+// is the full editorial passport surface, while the route-group layout owns the
+// shared Fairway shell frame.
 // =============================================================================
 
 import { redirect } from 'next/navigation';

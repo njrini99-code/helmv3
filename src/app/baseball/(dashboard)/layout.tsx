@@ -90,7 +90,13 @@ function DashboardSessionGuard({ children }: { children: React.ReactNode }) {
     return <PageLoading />;
   }
 
-  return <>{children}</>;
+  const shell = isRedesignEnabled() ? (
+    <BaseballFairwayShell authVerified>{children}</BaseballFairwayShell>
+  ) : (
+    <BaseballShellLayout requiredRole={null}>{children}</BaseballShellLayout>
+  );
+
+  return shell;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,13 +119,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <DashboardSessionGuard>
-      {isRedesignEnabled() ? (
-        <BaseballFairwayShell>{children}</BaseballFairwayShell>
-      ) : (
-        <BaseballShellLayout requiredRole={null}>{children}</BaseballShellLayout>
-      )}
-    </DashboardSessionGuard>
-  );
+  return <DashboardSessionGuard>{children}</DashboardSessionGuard>;
 }
