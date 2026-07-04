@@ -6,6 +6,8 @@ import {
   classifyKpiTone,
   ERRORS_24H_RED_AT,
   AUTH_FAILURES_24H_RED_AT,
+  type OverviewKpis,
+  type WatcherSignal,
 } from '@/lib/admin/data/overview';
 import { fetchTriageQueue } from '@/lib/admin/data/triage';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
@@ -123,21 +125,85 @@ async function BannerAndKpis() {
           goodDirection="down"
         />
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {watcher.map((w) => (
-          <span
-            key={w.label}
-            className={
-              w.stale
-                ? 'rounded-full bg-fw-warning-bg px-2.5 py-1 text-xs text-warm-800'
-                : 'rounded-full bg-fw-success-bg px-2.5 py-1 text-xs text-accent-700'
-            }
-          >
-            {w.label}: {w.stale ? 'STALE' : 'flowing'}
-          </span>
-        ))}
-      </div>
+      <SignalBoard kpis={kpis} watcher={watcher} />
     </>
+  );
+}
+
+function formatWatcherAge(lastSeenAt: string | null): string {
+  if (!lastSeenAt) return 'no signal';
+  const ageMinutes = Math.max(0, Math.round((Date.now() - new Date(lastSeenAt).getTime()) / 60_000));
+  if (ageMinutes < 60) return `${ageMinutes}m ago`;
+  const hours = Math.round(ageMinutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+function SignalBoard({
+  kpis,
+  watcher,
+}: {
+  kpis: OverviewKpis;
+  watcher: Array<WatcherSignal & { stale: boolean }>;
+}) {
+  const activity = [
+    ['Golf', kpis.activityToday.golf],
+    ['Baseball', kpis.activityToday.baseball],
+    ['Lifting', kpis.activityToday.lifting],
+  ] as const;
+  const totalActivity = activity.reduce((sum, [, value]) => sum + value, 0);
+
+  return (
+    <Surface as="section" padding="sm" className="mt-4">
+      <div className="grid divide-y divide-warm-200 md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.8fr)] md:divide-x md:divide-y-0">
+        <div className="pb-3 md:pb-0 md:pr-4">
+          <h2 className="text-eyebrow uppercase text-warm-500">Feed visibility</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {watcher.map((signal) => (
+              <div key={signal.label} className="min-w-0">
+                <StatusPill tone={signal.stale ? 'warning' : 'success'} dot size="sm">
+                  {signal.stale ? 'stale' : 'flowing'}
+                </StatusPill>
+                <p className="mt-1 truncate text-body-sm font-medium text-warm-900">{signal.label}</p>
+                <p className="font-fw-mono text-caption tabular-nums text-warm-500">
+                  {formatWatcherAge(signal.lastSeenAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="py-3 md:px-4 md:py-0">
+          <h2 className="text-eyebrow uppercase text-warm-500">Product activity</h2>
+          <div className="mt-3 space-y-2">
+            {activity.map(([label, value]) => {
+              const pct = totalActivity > 0 ? Math.round((value / totalActivity) * 100) : 0;
+              return (
+                <div key={label} className="grid grid-cols-[72px_1fr_44px] items-center gap-2">
+                  <span className="text-caption text-warm-600">{label}</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-warm-100">
+                    <span
+                      className="block h-full rounded-full bg-accent-500"
+                      style={{ width: `${pct}%` }}
+                      aria-hidden
+                    />
+                  </span>
+                  <span className="text-right font-fw-mono text-caption tabular-nums text-warm-900">{value}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="pt-3 md:pl-4 md:pt-0">
+          <h2 className="text-eyebrow uppercase text-warm-500">Deploy clock</h2>
+          <p className="mt-3 font-fw-mono text-2xl tabular-nums text-warm-900">
+            {kpis.lastDeploy?.ageMinutes ?? 'n/a'}
+          </p>
+          <p className="text-caption text-warm-500">
+            {kpis.lastDeploy ? `${kpis.lastDeploy.state.toLowerCase()} deployment age, minutes` : 'No Vercel deployment feed'}
+          </p>
+        </div>
+      </div>
+    </Surface>
   );
 }
 

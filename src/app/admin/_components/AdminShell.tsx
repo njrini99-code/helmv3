@@ -140,16 +140,22 @@ export function AdminShell({
   }, [router]);
 
   const commandGroups: CommandGroup[] = useMemo(
-    () => [
-      {
-        heading: 'Tabs',
-        items: ADMIN_NAV.map((entry) => ({
-          id: entry.href,
-          label: entry.label,
-          shortcut: entry.key,
-        })),
-      },
-    ],
+    () =>
+      (['Operations', 'Apps', 'Platform'] as const).map((section) => ({
+        heading: section,
+        items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => {
+          const Icon = NAV_ICON_BY_HREF[entry.href];
+          return {
+            id: entry.href,
+            label: entry.label,
+            description: entry.description,
+            shortcut: entry.key,
+            keywords: [section, entry.meta ?? '', 'helm bridge', 'command center'],
+            tone: entry.meta === 'trace' ? 'danger' : entry.meta ? 'accent' : 'default',
+            icon: <Icon size={16} aria-hidden />,
+          };
+        }),
+      })),
     [],
   );
 
