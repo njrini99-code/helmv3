@@ -63,6 +63,51 @@ function clearParamHref(current: URLSearchParams, param: string): string {
   return qs ? `/admin/errors?${qs}` : '/admin/errors';
 }
 
+function ErrorTraceabilityStrip({ incidents }: { incidents: Awaited<ReturnType<typeof fetchErrorsTab>>['incidents'] }) {
+  const appIncidents = incidents.filter((incident) => incident.origin === 'app');
+  const withFeature = appIncidents.filter((incident) => incident.feature).length;
+  const withRoute = appIncidents.filter((incident) => incident.route).length;
+  const withAction = appIncidents.filter((incident) => incident.actionName).length;
+  const unknownUsers = appIncidents.filter((incident) => incident.affectedUsers === 0 && incident.occurrences > 0).length;
+  const noisyLooking = appIncidents.filter(
+    (incident) =>
+      incident.source === 'auth' ||
+      incident.source === 'client' ||
+      (incident.affectedUsers === 0 && incident.occurrences <= 1),
+  ).length;
+  const coverageBase = Math.max(1, appIncidents.length);
+  const rows = [
+    ['Feature tags', withFeature, `${Math.round((withFeature / coverageBase) * 100)}% mapped`],
+    ['Route traces', withRoute, `${Math.round((withRoute / coverageBase) * 100)}% mapped`],
+    ['Action names', withAction, `${Math.round((withAction / coverageBase) * 100)}% mapped`],
+    ['Unknown users', unknownUsers, 'identity gap'],
+    ['Noise candidates', noisyLooking, 'review before paging'],
+  ] as const;
+
+  return (
+    <Surface padding="sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warm-200 pb-2">
+        <h2 className="text-eyebrow uppercase text-warm-500">Error traceability</h2>
+        <StatusPill tone={unknownUsers > 0 || noisyLooking > 0 ? 'warning' : 'success'} dot size="sm">
+          {unknownUsers > 0 || noisyLooking > 0 ? 'needs mapping' : 'mapped'}
+        </StatusPill>
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-5">
+        {rows.map(([label, value, caption]) => (
+          <div key={label} className="rounded-fw-md bg-surface-sunken px-3 py-2">
+            <p className="text-caption uppercase tracking-widest text-warm-500">{label}</p>
+            <p className="font-fw-mono text-xl font-semibold tabular-nums text-warm-900">{value}</p>
+            <p className="text-caption text-warm-500">{caption}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-caption text-warm-500">
+        Goal: every app incident should carry feature, route or action, and identity when auth exists. Unknown does not mean unaffected.
+      </p>
+    </Surface>
+  );
+}
+
 const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
   FEATURE_REGISTRY.map((f) => [f.key, f.label]),
 );
@@ -174,6 +219,8 @@ export default async function ErrorsPage({
             goodDirection="down"
           />
         </section>
+
+        <ErrorTraceabilityStrip incidents={tab.incidents} />
 
         <Surface as="section" padding="sm">
           <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Sentry unresolved</h2>

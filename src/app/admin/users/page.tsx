@@ -150,8 +150,28 @@ function TeamRosterPanel({ team }: { team: TeamRosterInsight }) {
   );
 }
 
-function RosterIntelligence({ teams }: { teams: TeamRosterInsight[] }) {
-  const players = teams.flatMap((team) => team.players);
+function RosterIntelligence({
+  teams,
+  sport,
+  attention,
+}: {
+  teams: TeamRosterInsight[];
+  sport?: 'golf' | 'baseball';
+  attention?: 'watch' | 'profile' | 'quiet' | 'demo';
+}) {
+  const filteredTeams = teams
+    .filter((team) => !sport || team.sport === sport)
+    .filter((team) => {
+      if (attention === 'watch') return team.attentionPlayers > 0 || team.errors7d > 0;
+      if (attention === 'profile') return team.profileGaps > 0;
+      if (attention === 'quiet') return team.players.some((player) => player.activity30d === 0);
+      if (attention === 'demo') {
+        const teamText = team.name.toLowerCase();
+        return teamText.includes('demo') || team.players.some((player) => `${player.name} ${player.email ?? ''}`.toLowerCase().includes('demo'));
+      }
+      return true;
+    });
+  const players = filteredTeams.flatMap((team) => team.players);
   const watchlist = players
     .filter((player) => player.errors7d > 0 || player.activity30d === 0 || player.profileQuality === 'missing')
     .sort((a, b) => {
@@ -160,9 +180,9 @@ function RosterIntelligence({ teams }: { teams: TeamRosterInsight[] }) {
       return a.activity30d - b.activity30d;
     })
     .slice(0, 8);
-  const golfTeams = teams.filter((team) => team.sport === 'golf').length;
-  const baseballTeams = teams.filter((team) => team.sport === 'baseball').length;
-  const teamsWithErrors = teams.filter((team) => team.errors7d > 0).length;
+  const golfTeams = filteredTeams.filter((team) => team.sport === 'golf').length;
+  const baseballTeams = filteredTeams.filter((team) => team.sport === 'baseball').length;
+  const teamsWithErrors = filteredTeams.filter((team) => team.errors7d > 0).length;
   const inactivePlayers = players.filter((player) => player.activity30d === 0).length;
   const profileGaps = players.filter((player) => player.profileQuality !== 'complete').length;
 
@@ -178,6 +198,21 @@ function RosterIntelligence({ teams }: { teams: TeamRosterInsight[] }) {
 
       <Surface padding="sm">
         <SectionLabel>Roster command map</SectionLabel>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {([
+            ['/admin/users', 'All rosters'],
+            ['/admin/users?sport=baseball', 'Baseball'],
+            ['/admin/users?sport=golf', 'Golf'],
+            ['/admin/users?attention=watch', 'Watch items'],
+            ['/admin/users?attention=profile', 'Profile gaps'],
+            ['/admin/users?attention=quiet', 'Quiet players'],
+            ['/admin/users?attention=demo', 'Demo readiness'],
+          ] as const).map(([href, label]) => (
+            <Button key={href} asChild variant="secondary" size="sm">
+              <Link href={href}>{label}</Link>
+            </Button>
+          ))}
+        </div>
         <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div>
             <div className="mb-3 flex flex-wrap gap-2 text-xs text-warm-600">
@@ -186,10 +221,10 @@ function RosterIntelligence({ teams }: { teams: TeamRosterInsight[] }) {
               <StatusPill tone="neutral" size="sm">sorted by team attention</StatusPill>
             </div>
             <div className="divide-y divide-warm-200/70">
-              {teams.length === 0 ? (
-                <PanelNoData label="No teams yet" description="Teams appear here once a coach creates one." />
+              {filteredTeams.length === 0 ? (
+                <PanelNoData label="No matching teams" description="Clear the roster filters or choose another command view." />
               ) : (
-                [...teams]
+                [...filteredTeams]
                   .sort((a, b) => {
                     if (a.attentionPlayers !== b.attentionPlayers) return b.attentionPlayers - a.attentionPlayers;
                     if (a.errors7d !== b.errors7d) return b.errors7d - a.errors7d;
@@ -258,6 +293,14 @@ export default async function UsersPage({
   const q = typeof params.q === 'string' ? params.q : undefined;
   const role = typeof params.role === 'string' ? params.role : undefined;
   const team = typeof params.team === 'string' ? params.team : undefined;
+  const sport = params.sport === 'golf' || params.sport === 'baseball' ? params.sport : undefined;
+  const attention =
+    params.attention === 'watch' ||
+    params.attention === 'profile' ||
+    params.attention === 'quiet' ||
+    params.attention === 'demo'
+      ? params.attention
+      : undefined;
 
   async function Body() {
     const tab = await fetchUsersTab({ q, role, team });
@@ -277,13 +320,19 @@ export default async function UsersPage({
           <Button type="submit" variant="secondary" size="sm">
             Search
           </Button>
-          {q || role || team ? (
+          {q || role || team || sport || attention ? (
             <Button asChild variant="ghost" size="sm">
               <Link href="/admin/users">Clear filters</Link>
             </Button>
           ) : null}
           {team ? (
             <span className="font-fw-mono text-xs text-warm-500">filtered to team {team}</span>
+          ) : null}
+          {sport ? (
+            <span className="font-fw-mono text-xs text-warm-500">sport {sport}</span>
+          ) : null}
+          {attention ? (
+            <span className="font-fw-mono text-xs text-warm-500">view {attention}</span>
           ) : null}
         </form>
 
@@ -294,7 +343,7 @@ export default async function UsersPage({
           <StatTile label="At-risk" value={tab.atRisk.length} tone="neutral" mono goodDirection="down" />
         </section>
 
-        <RosterIntelligence teams={tab.teams} />
+        <RosterIntelligence teams={tab.teams} sport={sport} attention={attention} />
 
         <Surface padding="sm">
           <SectionLabel>Users ({tab.users.length})</SectionLabel>

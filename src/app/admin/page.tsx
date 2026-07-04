@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CheckCircle2, Activity, GitBranch, RadioTower, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Activity, GitBranch, RadioTower, ShieldCheck, Users, AlertTriangle, Gauge, SearchCheck } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchOverviewSnapshot,
@@ -126,6 +126,8 @@ async function BannerAndKpis() {
         />
       </div>
       <SignalBoard kpis={kpis} watcher={watcher} />
+      <MetricTruthPanel kpis={kpis} watcher={watcher} />
+      <SavedCommandViews kpis={kpis} />
     </>
   );
 }
@@ -202,6 +204,135 @@ function SignalBoard({
             {kpis.lastDeploy ? `${kpis.lastDeploy.state.toLowerCase()} deployment age, minutes` : 'No Vercel deployment feed'}
           </p>
         </div>
+      </div>
+    </Surface>
+  );
+}
+
+function MetricTruthPanel({
+  kpis,
+  watcher,
+}: {
+  kpis: OverviewKpis;
+  watcher: Array<WatcherSignal & { stale: boolean }>;
+}) {
+  const sources = [
+    {
+      label: 'Error groups',
+      value: kpis.eventErrors24h,
+      source: 'admin_events grouped by mergeTriage',
+      freshness: watcher.find((w) => w.label === 'Error pipeline'),
+      href: '/admin/errors',
+    },
+    {
+      label: 'Sentry unresolved',
+      value: kpis.sentryUnresolved ?? 'n/a',
+      source: 'Sentry issues API, unresolved only',
+      freshness: null,
+      href: '/admin/errors',
+    },
+    {
+      label: 'Roster posture',
+      value: kpis.activeUsersToday,
+      source: 'users.last_seen since UTC midnight',
+      freshness: watcher.find((w) => w.label === 'Login events'),
+      href: '/admin/users',
+    },
+    {
+      label: 'Deploy state',
+      value: kpis.lastDeploy?.state ?? 'n/a',
+      source: 'Vercel deployments API',
+      freshness: null,
+      href: '/admin/deploys',
+    },
+  ];
+
+  return (
+    <Surface as="section" padding="sm" className="mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warm-200 pb-2">
+        <h2 className="text-eyebrow uppercase text-warm-500">Metric truth layer</h2>
+        <StatusPill tone="accent" size="sm" dot={false}>
+          source mapped
+        </StatusPill>
+      </div>
+      <div className="mt-3 grid gap-2 lg:grid-cols-4">
+        {sources.map((source) => (
+          <Link
+            key={source.label}
+            href={source.href}
+            className="rounded-fw-md border border-warm-200 bg-surface-sunken p-3 transition-colors hover:bg-surface"
+          >
+            <p className="text-caption uppercase tracking-widest text-warm-500">{source.label}</p>
+            <p className="mt-1 font-fw-mono text-xl font-semibold tabular-nums text-warm-900">{source.value}</p>
+            <p className="mt-1 min-h-8 text-caption leading-4 text-warm-600">{source.source}</p>
+            <p className="mt-2 font-fw-mono text-caption tabular-nums text-warm-500">
+              {source.freshness ? `${source.freshness.stale ? 'stale' : 'fresh'} · ${formatWatcherAge(source.freshness.lastSeenAt)}` : 'API freshness via detail'}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </Surface>
+  );
+}
+
+function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
+  const views = [
+    {
+      href: '/admin/errors?window=24&severity=error',
+      label: 'Production Health',
+      icon: Gauge,
+      metric: `${kpis.eventErrors24h} groups`,
+      detail: 'Real incidents, source mapped, grouped like Errors tab',
+    },
+    {
+      href: '/admin/users?sport=baseball&attention=watch',
+      label: 'Baseball Launch',
+      icon: SearchCheck,
+      metric: `${kpis.activityToday.baseball} today`,
+      detail: 'Team and player watchlist, quiet players, profile gaps',
+    },
+    {
+      href: '/admin/users?attention=demo',
+      label: 'Demo Readiness',
+      icon: Users,
+      metric: `${kpis.activeUsersToday} active`,
+      detail: 'Accounts, team filters, roster status for walkthroughs',
+    },
+    {
+      href: '/admin/errors?source=rls_denial&window=168',
+      label: 'Error Forensics',
+      icon: AlertTriangle,
+      metric: 'trace',
+      detail: 'RLS, route/action, feature tags, deploy correlation',
+    },
+  ];
+
+  return (
+    <Surface as="section" padding="sm" className="mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warm-200 pb-2">
+        <h2 className="text-eyebrow uppercase text-warm-500">Saved command views</h2>
+        <span className="font-fw-mono text-caption text-warm-500">operator presets</span>
+      </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {views.map((view) => {
+          const Icon = view.icon;
+          return (
+            <Link
+              key={view.label}
+              href={view.href}
+              className="group rounded-fw-md border border-warm-200 bg-surface-sunken p-3 transition-colors hover:bg-surface"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <Icon size={18} className="mt-0.5 text-accent-600" aria-hidden />
+                <span className="rounded-full bg-warm-100 px-2 py-0.5 font-fw-mono text-caption text-warm-700">
+                  {view.metric}
+                </span>
+              </div>
+              <p className="mt-3 font-semibold text-warm-900 group-hover:underline">{view.label}</p>
+              <p className="mt-1 text-caption leading-4 text-warm-600">{view.detail}</p>
+            </Link>
+          );
+        })}
       </div>
     </Surface>
   );

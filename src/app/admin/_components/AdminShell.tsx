@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
-  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus,
+  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck,
 } from 'lucide-react';
 import {
   AppShell,
@@ -142,21 +142,64 @@ export function AdminShell({
 
   const commandGroups: CommandGroup[] = useMemo(
     () =>
-      (['Operations', 'Apps', 'Platform'] as const).map((section) => ({
-        heading: section,
-        items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => {
-          const Icon = NAV_ICON_BY_HREF[entry.href];
-          return {
-            id: entry.href,
-            label: entry.label,
-            description: entry.description,
-            shortcut: entry.key,
-            keywords: [section, entry.meta ?? '', 'helm bridge', 'command center'],
-            tone: entry.meta === 'trace' ? 'danger' : entry.meta ? 'accent' : 'default',
-            icon: <Icon size={16} aria-hidden />,
-          };
-        }),
-      })),
+      [
+        {
+          heading: 'Saved Views',
+          items: [
+            {
+              id: '/admin/errors?window=24&severity=error',
+              label: 'Production Health',
+              description: 'Grouped incidents, high-signal errors, live posture',
+              shortcut: 'P',
+              keywords: ['prod', 'health', 'errors', 'truth layer'],
+              tone: 'danger',
+              icon: <Gauge size={16} aria-hidden />,
+            },
+            {
+              id: '/admin/users?sport=baseball&attention=watch',
+              label: 'Baseball Launch',
+              description: 'Baseball teams, player watchlist, profile gaps',
+              shortcut: 'L',
+              keywords: ['baseball', 'players', 'teams', 'launch'],
+              tone: 'accent',
+              icon: <SearchCheck size={16} aria-hidden />,
+            },
+            {
+              id: '/admin/users?attention=demo',
+              label: 'Demo Readiness',
+              description: 'Demo accounts, rosters, activity signals',
+              shortcut: 'D',
+              keywords: ['demo', 'accounts', 'roster'],
+              tone: 'accent',
+              icon: <Users size={16} aria-hidden />,
+            },
+            {
+              id: '/admin/errors?source=rls_denial&window=168',
+              label: 'Error Forensics',
+              description: 'RLS, route, action, feature traceability',
+              shortcut: 'F',
+              keywords: ['forensics', 'rls', 'trace', 'source'],
+              tone: 'danger',
+              icon: <AlertTriangle size={16} aria-hidden />,
+            },
+          ],
+        },
+        ...(['Operations', 'Apps', 'Platform'] as const).map((section) => ({
+          heading: section,
+          items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => {
+            const Icon = NAV_ICON_BY_HREF[entry.href];
+            return {
+              id: entry.href,
+              label: entry.label,
+              description: entry.description,
+              shortcut: entry.key,
+              keywords: [section, entry.meta ?? '', 'helm bridge', 'command center'],
+              tone: (entry.meta === 'trace' ? 'danger' : entry.meta ? 'accent' : 'default') as CommandItem['tone'],
+              icon: <Icon size={16} aria-hidden />,
+            };
+          }),
+        })),
+      ],
     [],
   );
 
