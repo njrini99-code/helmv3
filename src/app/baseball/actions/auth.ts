@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -34,7 +35,7 @@ export type LoginResult = {
  * - IP-based rate limiting
  * - Security event logging
  */
-export async function loginAction(
+async function loginActionImpl(
   email: string,
   password: string
 ): Promise<LoginResult> {
@@ -244,7 +245,7 @@ export type SignupResult = {
  * - Email validation and normalization
  * - Security event logging
  */
-export async function signupAction(
+async function signupActionImpl(
   email: string,
   password: string,
   role: 'player' | 'coach',
@@ -393,7 +394,7 @@ export type PasswordResetResult = {
  * - Generic response to prevent email enumeration
  * - Security event logging
  */
-export async function requestPasswordResetAction(
+async function requestPasswordResetActionImpl(
   email: string
 ): Promise<PasswordResetResult> {
   const normalizedEmail = email.toLowerCase().trim();
@@ -467,7 +468,7 @@ export type ChangePasswordResult = {
  * - Rate limited per user id
  * - Auth errors sanitized before returning to the client
  */
-export async function changePasswordAction(
+async function changePasswordActionImpl(
   currentPassword: string,
   newPassword: string,
 ): Promise<ChangePasswordResult> {
@@ -549,3 +550,27 @@ export async function changePasswordAction(
 
   return { success: true };
 }
+
+export const loginAction = withAdminObserved(
+  'loginAction',
+  { sport: 'baseball', feature: 'baseball_auth', featureArea: 'baseball-auth' },
+  loginActionImpl,
+);
+
+export const signupAction = withAdminObserved(
+  'signupAction',
+  { sport: 'baseball', feature: 'baseball_auth', featureArea: 'baseball-auth' },
+  signupActionImpl,
+);
+
+export const requestPasswordResetAction = withAdminObserved(
+  'requestPasswordResetAction',
+  { sport: 'baseball', feature: 'baseball_auth', featureArea: 'baseball-auth' },
+  requestPasswordResetActionImpl,
+);
+
+export const changePasswordAction = withAdminObserved(
+  'changePasswordAction',
+  { sport: 'baseball', feature: 'baseball_auth', featureArea: 'baseball-auth' },
+  changePasswordActionImpl,
+);

@@ -1,4 +1,5 @@
 'use server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { fromUntyped } from '@/lib/supabase/untyped';
 
 // =============================================================================
@@ -342,7 +343,7 @@ export interface AcceptStaffInviteResult {
   needsCoachProfile?: boolean;
 }
 
-export async function acceptStaffInvite(
+async function acceptStaffInviteImpl(
   token: string,
 ): Promise<AcceptStaffInviteResult> {
   if (!token || typeof token !== 'string') {
@@ -568,4 +569,10 @@ export const removeStaff = withBaseballAction(
     revalidatePath('/baseball/dashboard/settings/staff');
     return { success: true };
   },
+);
+
+export const acceptStaffInvite = withAdminObserved(
+  'acceptStaffInvite',
+  { sport: 'baseball', feature: 'baseball_staff', featureArea: 'baseball-staff' },
+  acceptStaffInviteImpl,
 );

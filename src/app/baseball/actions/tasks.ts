@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 /**
  * Server Actions for Baseball Task Management
  *
@@ -227,7 +228,7 @@ export async function createTask(
 // GET TEAM TASKS (Coach view)
 // ============================================================================
 
-export async function getTeamTasks(
+async function getTeamTasksImpl(
   teamId: string
 ): Promise<ActionResult<BaseballTask[]>> {
   try {
@@ -261,7 +262,7 @@ export async function getTeamTasks(
 // GET PLAYER TASKS (Player view)
 // ============================================================================
 
-export async function getPlayerTasks(
+async function getPlayerTasksImpl(
   playerId: string
 ): Promise<ActionResult<TaskWithAssignment[]>> {
   try {
@@ -346,7 +347,7 @@ export async function getPlayerTasks(
 // COMPLETE TASK (Player)
 // ============================================================================
 
-export async function completeTask(
+async function completeTaskImpl(
   taskId: string,
   playerId: string,
   notes?: string
@@ -403,7 +404,7 @@ export async function completeTask(
 // UNCOMPLETE TASK (Mark as Pending)
 // ============================================================================
 
-export async function uncompleteTask(
+async function uncompleteTaskImpl(
   taskId: string,
   playerId: string
 ): Promise<ActionResult> {
@@ -497,7 +498,7 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
 // GET TASK ASSIGNMENTS (for a specific task)
 // ============================================================================
 
-export async function getTaskAssignments(
+async function getTaskAssignmentsImpl(
   taskId: string
 ): Promise<ActionResult<Array<{
   id: string;
@@ -562,7 +563,7 @@ export async function getTaskAssignments(
 // TASK REMINDERS
 // ============================================================================
 
-export async function setTaskReminder(
+async function setTaskReminderImpl(
   taskId: string,
   reminderAt: string
 ): Promise<ActionResult> {
@@ -601,7 +602,7 @@ export async function setTaskReminder(
 // TASK TEMPLATES
 // ============================================================================
 
-export async function getTaskTemplates(
+async function getTaskTemplatesImpl(
   teamId: string
 ): Promise<ActionResult<BaseballTaskTemplate[]>> {
   try {
@@ -1081,3 +1082,45 @@ export async function seedDefaultTemplates(
     return mapTaskActionError(error);
   }
 }
+
+export const getTeamTasks = withAdminObserved(
+  'getTeamTasks',
+  { sport: 'baseball', feature: 'baseball_tasks', featureArea: 'baseball-tasks' },
+  getTeamTasksImpl,
+);
+
+export const getPlayerTasks = withAdminObserved(
+  'getPlayerTasks',
+  { sport: 'baseball', feature: 'baseball_tasks', featureArea: 'baseball-tasks' },
+  getPlayerTasksImpl,
+);
+
+export const completeTask = withAdminObserved(
+  'completeTask',
+  { sport: 'baseball', feature: 'baseball_tasks', featureArea: 'baseball-tasks' },
+  completeTaskImpl,
+);
+
+export const uncompleteTask = withAdminObserved(
+  'uncompleteTask',
+  { sport: 'baseball', feature: 'baseball_tasks', featureArea: 'baseball-tasks' },
+  uncompleteTaskImpl,
+);
+
+export const getTaskAssignments = withAdminObserved(
+  'getTaskAssignments',
+  { sport: 'baseball', feature: 'baseball_tasks', featureArea: 'baseball-tasks' },
+  getTaskAssignmentsImpl,
+);
+
+export const setTaskReminder = withAdminObserved(
+  'setTaskReminder',
+  { sport: 'baseball', feature: 'baseball_tasks', featureArea: 'baseball-tasks' },
+  setTaskReminderImpl,
+);
+
+export const getTaskTemplates = withAdminObserved(
+  'getTaskTemplates',
+  { sport: 'baseball', feature: 'baseball_tasks', featureArea: 'baseball-tasks' },
+  getTaskTemplatesImpl,
+);

@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { sanitizeDbError } from '@/lib/db-error';
@@ -368,7 +369,7 @@ export async function deleteBaseballEvent(eventId: string): Promise<ActionResult
 // RSVP Actions
 // ============================================================================
 
-export async function rsvpToBaseballEvent(
+async function rsvpToBaseballEventImpl(
   eventId: string,
   status: 'going' | 'maybe' | 'not_going',
 ): Promise<ActionResult> {
@@ -405,7 +406,7 @@ export async function rsvpToBaseballEvent(
 // Attendance / Check-in Actions
 // ============================================================================
 
-export async function getBaseballEventAttendance(eventId: string): Promise<ActionResult> {
+async function getBaseballEventAttendanceImpl(eventId: string): Promise<ActionResult> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -437,7 +438,7 @@ export async function getBaseballEventAttendance(eventId: string): Promise<Actio
   return { success: true, data };
 }
 
-export async function checkInBaseballPlayer(
+async function checkInBaseballPlayerImpl(
   eventId: string,
   playerId: string,
 ): Promise<ActionResult> {
@@ -478,7 +479,7 @@ export async function checkInBaseballPlayer(
   return { success: true, data };
 }
 
-export async function uncheckInBaseballPlayer(
+async function uncheckInBaseballPlayerImpl(
   eventId: string,
   playerId: string,
 ): Promise<ActionResult> {
@@ -535,7 +536,7 @@ interface AttachPracticeInput {
  * `{ success, data: { eventId } }` matching the publishPractice call site,
  * which treats a failed attach as a soft, non-rolling-back warning.
  */
-export async function attachPracticeToCalendar(
+async function attachPracticeToCalendarImpl(
   input: AttachPracticeInput,
 ): Promise<ActionResult<{ eventId: string }>> {
   const result = await createBaseballEvent({
@@ -559,7 +560,7 @@ export async function attachPracticeToCalendar(
   return { success: true, data: { eventId } };
 }
 
-export async function getTeamEvents(teamId: string): Promise<ActionResult> {
+async function getTeamEventsImpl(teamId: string): Promise<ActionResult> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -599,3 +600,39 @@ export async function getTeamEvents(teamId: string): Promise<ActionResult> {
 
   return { success: true, data: eventsWithCounts };
 }
+
+export const rsvpToBaseballEvent = withAdminObserved(
+  'rsvpToBaseballEvent',
+  { sport: 'baseball', feature: 'baseball_calendar', featureArea: 'baseball-calendar' },
+  rsvpToBaseballEventImpl,
+);
+
+export const getBaseballEventAttendance = withAdminObserved(
+  'getBaseballEventAttendance',
+  { sport: 'baseball', feature: 'baseball_calendar', featureArea: 'baseball-calendar' },
+  getBaseballEventAttendanceImpl,
+);
+
+export const checkInBaseballPlayer = withAdminObserved(
+  'checkInBaseballPlayer',
+  { sport: 'baseball', feature: 'baseball_calendar', featureArea: 'baseball-calendar' },
+  checkInBaseballPlayerImpl,
+);
+
+export const uncheckInBaseballPlayer = withAdminObserved(
+  'uncheckInBaseballPlayer',
+  { sport: 'baseball', feature: 'baseball_calendar', featureArea: 'baseball-calendar' },
+  uncheckInBaseballPlayerImpl,
+);
+
+export const attachPracticeToCalendar = withAdminObserved(
+  'attachPracticeToCalendar',
+  { sport: 'baseball', feature: 'baseball_calendar', featureArea: 'baseball-calendar' },
+  attachPracticeToCalendarImpl,
+);
+
+export const getTeamEvents = withAdminObserved(
+  'getTeamEvents',
+  { sport: 'baseball', feature: 'baseball_calendar', featureArea: 'baseball-calendar' },
+  getTeamEventsImpl,
+);

@@ -220,7 +220,7 @@ export async function enterBaseballDemo(
  * any session, and `withBaseballAction` would 401 a not-yet-signed-in visitor.
  * It performs no DB write, so it carries no read-only-guard risk.
  */
-export async function isBaseballDemoSession(): Promise<{ isDemo: boolean }> {
+async function isBaseballDemoSessionImpl(): Promise<{ isDemo: boolean }> {
   // nosemgrep: helmv3-server-action-missing-auth-check -- read-only session check for the public demo gate; see JSDoc above.
   const isDemo = await isCurrentSessionBaseballDemo();
   return { isDemo };
@@ -232,7 +232,19 @@ export async function isBaseballDemoSession(): Promise<{ isDemo: boolean }> {
  * fills out the form and submits. INTENTIONALLY PUBLIC for the same reason as
  * `enterBaseballDemo`; reads an env flag only, no DB access.
  */
-export async function isBaseballDemoAvailable(): Promise<{ enabled: boolean }> {
+async function isBaseballDemoAvailableImpl(): Promise<{ enabled: boolean }> {
   // nosemgrep: helmv3-server-action-missing-auth-check -- read-only env flag for the public demo gate; see JSDoc above.
   return { enabled: isBaseballDemoEnabled() };
 }
+
+export const isBaseballDemoSession = withAdminObserved(
+  'isBaseballDemoSession',
+  { sport: 'baseball', feature: 'baseball_demo_access', featureArea: 'baseball-demo-access' },
+  isBaseballDemoSessionImpl,
+);
+
+export const isBaseballDemoAvailable = withAdminObserved(
+  'isBaseballDemoAvailable',
+  { sport: 'baseball', feature: 'baseball_demo_access', featureArea: 'baseball-demo-access' },
+  isBaseballDemoAvailableImpl,
+);

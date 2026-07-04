@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 /**
  * Demo session tracking — admin-only server actions.
  *
@@ -34,7 +35,7 @@ export interface GetBaseballDemoSessionsResult {
  * Return the most-recent demo session rows (limit 200), ordered newest first.
  * Throws 'Unauthorized' / 'Forbidden' if the caller is not a signed-in admin.
  */
-export async function getBaseballDemoSessions(): Promise<GetBaseballDemoSessionsResult> {
+async function getBaseballDemoSessionsImpl(): Promise<GetBaseballDemoSessionsResult> {
   // 1. Verify caller is authenticated and has admin role
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -68,3 +69,9 @@ export async function getBaseballDemoSessions(): Promise<GetBaseballDemoSessions
     total: count ?? 0,
   };
 }
+
+export const getBaseballDemoSessions = withAdminObserved(
+  'getBaseballDemoSessions',
+  { sport: 'baseball', feature: 'baseball_demo_tracking', featureArea: 'baseball-demo-tracking' },
+  getBaseballDemoSessionsImpl,
+);

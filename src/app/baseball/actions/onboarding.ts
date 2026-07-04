@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
@@ -298,7 +299,7 @@ const completeCoachOnboardingAction = withBaseballAction(
 
 // ─── Signup + Complete Coach Onboarding (unauthenticated users) ─────────────
 
-export async function signupAndCompleteCoachOnboarding(data: {
+async function signupAndCompleteCoachOnboardingImpl(data: {
   email: string;
   password: string;
   fullName: string;
@@ -616,7 +617,7 @@ export type PlayerOnboardingInput = {
  * opts in later. Identity is verified via the SSR client (getUser); all writes
  * use the admin client so RLS never blocks first-write onboarding.
  */
-export async function completePlayerOnboarding(
+async function completePlayerOnboardingImpl(
   input: PlayerOnboardingInput,
 ): Promise<OnboardingResult> {
   // Verify identity via the SSR client (reads session cookies).
@@ -711,3 +712,15 @@ export async function completePlayerOnboarding(
 
   return { success: true, redirectTo: '/baseball/dashboard' };
 }
+
+export const signupAndCompleteCoachOnboarding = withAdminObserved(
+  'signupAndCompleteCoachOnboarding',
+  { sport: 'baseball', feature: 'baseball_onboarding', featureArea: 'baseball-onboarding' },
+  signupAndCompleteCoachOnboardingImpl,
+);
+
+export const completePlayerOnboarding = withAdminObserved(
+  'completePlayerOnboarding',
+  { sport: 'baseball', feature: 'baseball_onboarding', featureArea: 'baseball-onboarding' },
+  completePlayerOnboardingImpl,
+);

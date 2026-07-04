@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyProfileView } from '@/lib/notifications';
@@ -41,7 +42,7 @@ export interface PlayerPeekData {
  * Returns essential info for quick view without full profile load.
  * SEMGREP-ALLOW: read endpoint; engagement-event insert is fire-and-forget telemetry, no UI cache to invalidate
  */
-export async function getPlayerPeekData(playerId: string): Promise<{
+async function getPlayerPeekDataImpl(playerId: string): Promise<{
   success: boolean;
   data?: PlayerPeekData;
   error?: string;
@@ -193,3 +194,9 @@ export async function getPlayerPeekData(playerId: string): Promise<{
     return { success: false, error: 'Failed to load player data' };
   }
 }
+
+export const getPlayerPeekData = withAdminObserved(
+  'getPlayerPeekData',
+  { sport: 'baseball', feature: 'baseball_player_peek', featureArea: 'baseball-player-peek' },
+  getPlayerPeekDataImpl,
+);

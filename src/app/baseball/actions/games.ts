@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sanitizeDbError } from '@/lib/db-error';
@@ -331,7 +332,7 @@ export interface GetTeamGamesResult {
   error?: string;
 }
 
-export async function getTeamGames(
+async function getTeamGamesImpl(
   teamId: string,
   filters?: {
     seasonYear?: number;
@@ -413,7 +414,7 @@ export interface GetTeamSeasonRecordResult {
  * why a limit-5 "Recent Games" list read "3 played · 3W-0L" while the full
  * Games page read "6 played · 5W-0L-1T".
  */
-export async function getTeamSeasonRecord(
+async function getTeamSeasonRecordImpl(
   teamId: string,
   seasonYear?: number,
   gameType?: BaseballGameType,
@@ -470,7 +471,7 @@ export interface GetGameBoxScoreResult {
   error?: string;
 }
 
-export async function getGameBoxScore(gameId: string): Promise<GetGameBoxScoreResult> {
+async function getGameBoxScoreImpl(gameId: string): Promise<GetGameBoxScoreResult> {
   const authResult = await requireCoachAuth();
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
@@ -926,7 +927,7 @@ export interface CSVUploadResult {
   completionError?: string;
 }
 
-export async function uploadBoxScoreCSV(
+async function uploadBoxScoreCSVImpl(
   teamId: string,
   gameId: string,
   csvContent: string,
@@ -1162,7 +1163,7 @@ function parseCSVPitchingRow(
   };
 }
 
-export async function resolveBoxScoreUpload(
+async function resolveBoxScoreUploadImpl(
   uploadId: string,
   gameId: string,
   resolvedMappings: Array<{ csvName: string; playerId: string }>,
@@ -1239,7 +1240,7 @@ export interface GetSeasonStatsResult {
   error?: string;
 }
 
-export async function getTeamSeasonStats(
+async function getTeamSeasonStatsImpl(
   teamId: string,
   seasonYear?: number
 ): Promise<GetSeasonStatsResult> {
@@ -1280,7 +1281,7 @@ export interface GetPlayerSeasonStatsResult {
   error?: string;
 }
 
-export async function getPlayerSeasonStats(
+async function getPlayerSeasonStatsImpl(
   playerId: string,
   teamId: string,
   seasonYear?: number
@@ -1380,7 +1381,7 @@ export async function getPlayerSeasonStats(
 }
 
 // Player self-service — get own season stats
-export async function getMySeasonStats(
+async function getMySeasonStatsImpl(
   seasonYear?: number
 ): Promise<{ success: boolean; data?: BaseballPlayerSeasonStats; error?: string }> {
   const supabase = await createClient();
@@ -1428,7 +1429,7 @@ export async function getMySeasonStats(
  * we return an honest unauthorized envelope rather than throwing, so the client
  * shows a recoverable state instead of a hard error.
  */
-export async function loadStatsCenter(
+async function loadStatsCenterImpl(
   options: StatsCenterOptions = {},
 ): Promise<StatsCenterReadModel> {
   const context = await getActiveBaseballContext();
@@ -1454,7 +1455,7 @@ export async function loadStatsCenter(
   return getStatsCenter(context.activeTeamId, options);
 }
 
-export async function recalculateAllSeasonStats(
+async function recalculateAllSeasonStatsImpl(
   teamId: string,
   seasonYear?: number
 ): Promise<{ success: boolean; error?: string }> {
@@ -1527,7 +1528,7 @@ export interface ImportScheduleResult {
  * Security: requires the caller to be a staff member with `can_manage_practice`
  * on the target team (same capability gate as event creation).
  */
-export async function importSchedule(
+async function importScheduleImpl(
   teamId: string,
   rows: ScheduleImportRow[],
 ): Promise<ImportScheduleResult> {
@@ -1730,3 +1731,69 @@ function addHours(timeStr: string, hours: number): string {
   const m = clampedMinutes % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
 }
+
+export const getTeamGames = withAdminObserved(
+  'getTeamGames',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  getTeamGamesImpl,
+);
+
+export const getTeamSeasonRecord = withAdminObserved(
+  'getTeamSeasonRecord',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  getTeamSeasonRecordImpl,
+);
+
+export const getGameBoxScore = withAdminObserved(
+  'getGameBoxScore',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  getGameBoxScoreImpl,
+);
+
+export const uploadBoxScoreCSV = withAdminObserved(
+  'uploadBoxScoreCSV',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  uploadBoxScoreCSVImpl,
+);
+
+export const resolveBoxScoreUpload = withAdminObserved(
+  'resolveBoxScoreUpload',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  resolveBoxScoreUploadImpl,
+);
+
+export const getTeamSeasonStats = withAdminObserved(
+  'getTeamSeasonStats',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  getTeamSeasonStatsImpl,
+);
+
+export const getPlayerSeasonStats = withAdminObserved(
+  'getPlayerSeasonStats',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  getPlayerSeasonStatsImpl,
+);
+
+export const getMySeasonStats = withAdminObserved(
+  'getMySeasonStats',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  getMySeasonStatsImpl,
+);
+
+export const loadStatsCenter = withAdminObserved(
+  'loadStatsCenter',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  loadStatsCenterImpl,
+);
+
+export const recalculateAllSeasonStats = withAdminObserved(
+  'recalculateAllSeasonStats',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  recalculateAllSeasonStatsImpl,
+);
+
+export const importSchedule = withAdminObserved(
+  'importSchedule',
+  { sport: 'baseball', feature: 'baseball_games', featureArea: 'baseball-games' },
+  importScheduleImpl,
+);

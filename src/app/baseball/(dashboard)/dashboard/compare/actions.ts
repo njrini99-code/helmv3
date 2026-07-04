@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -9,7 +10,7 @@ interface SaveComparisonParams {
   playerIds: string[];
 }
 
-export async function saveComparison(params: SaveComparisonParams) {
+async function saveComparisonImpl(params: SaveComparisonParams) {
   const supabase = await createClient();
 
   // Get current user
@@ -68,7 +69,7 @@ export async function saveComparison(params: SaveComparisonParams) {
   return { success: true, comparison };
 }
 
-export async function deleteComparison(comparisonId: string) {
+async function deleteComparisonImpl(comparisonId: string) {
   const supabase = await createClient();
 
   // Get current user
@@ -117,7 +118,7 @@ interface SavedComparison {
   updated_at: string | null;
 }
 
-export async function getSavedComparisons() {
+async function getSavedComparisonsImpl() {
   const supabase = await createClient();
 
   // Get current user
@@ -151,3 +152,21 @@ export async function getSavedComparisons() {
 
   return { comparisons: (comparisons || []) as SavedComparison[] };
 }
+
+export const saveComparison = withAdminObserved(
+  'saveComparison',
+  { sport: 'baseball', feature: 'baseball_compare', featureArea: 'baseball-compare' },
+  saveComparisonImpl,
+);
+
+export const deleteComparison = withAdminObserved(
+  'deleteComparison',
+  { sport: 'baseball', feature: 'baseball_compare', featureArea: 'baseball-compare' },
+  deleteComparisonImpl,
+);
+
+export const getSavedComparisons = withAdminObserved(
+  'getSavedComparisons',
+  { sport: 'baseball', feature: 'baseball_compare', featureArea: 'baseball-compare' },
+  getSavedComparisonsImpl,
+);

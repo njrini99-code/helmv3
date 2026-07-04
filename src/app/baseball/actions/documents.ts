@@ -3,6 +3,7 @@
 // includes baseball_documents + baseball_document_versions (regen via npm run db:types).
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -187,7 +188,7 @@ async function withFreshDocumentUrls(
   );
 }
 
-export async function getTeamDocuments(
+async function getTeamDocumentsImpl(
   teamId: string,
   isCoach: boolean
 ): Promise<{ data: BaseballDocument[] | null; error: string | null }> {
@@ -232,7 +233,7 @@ export async function getTeamDocuments(
   }
 }
 
-export async function getDocument(
+async function getDocumentImpl(
   documentId: string
 ): Promise<{ data: BaseballDocument | null; error: string | null }> {
   try {
@@ -638,7 +639,7 @@ const uploadNewVersionAction = withBaseballAction(
   },
 );
 
-export async function getVersionHistory(
+async function getVersionHistoryImpl(
   documentId: string
 ): Promise<{ success: boolean; versions?: BaseballDocumentVersion[]; error?: string }> {
   try {
@@ -677,7 +678,7 @@ export async function getVersionHistory(
   }
 }
 
-export async function revertToVersion(
+async function revertToVersionImpl(
   documentId: string,
   versionId: string
 ): Promise<{ success: boolean; error: string | null }> {
@@ -757,7 +758,7 @@ export async function revertToVersion(
 // PREVIEW URL GENERATION
 // ============================================
 
-export async function getPreviewUrl(
+async function getPreviewUrlImpl(
   documentId: string,
   versionNumber?: number
 ): Promise<{ data: { url: string; mimeType: string } | null; error: string | null }> {
@@ -819,7 +820,7 @@ export async function getPreviewUrl(
   }
 }
 
-export async function getTextFileContent(
+async function getTextFileContentImpl(
   documentId: string,
   versionNumber?: number
 ): Promise<{ data: string | null; error: string | null }> {
@@ -882,3 +883,39 @@ export async function getTextFileContent(
     return { data: null, error: handleError(error) };
   }
 }
+
+export const getTeamDocuments = withAdminObserved(
+  'getTeamDocuments',
+  { sport: 'baseball', feature: 'baseball_documents', featureArea: 'baseball-documents' },
+  getTeamDocumentsImpl,
+);
+
+export const getDocument = withAdminObserved(
+  'getDocument',
+  { sport: 'baseball', feature: 'baseball_documents', featureArea: 'baseball-documents' },
+  getDocumentImpl,
+);
+
+export const getVersionHistory = withAdminObserved(
+  'getVersionHistory',
+  { sport: 'baseball', feature: 'baseball_documents', featureArea: 'baseball-documents' },
+  getVersionHistoryImpl,
+);
+
+export const revertToVersion = withAdminObserved(
+  'revertToVersion',
+  { sport: 'baseball', feature: 'baseball_documents', featureArea: 'baseball-documents' },
+  revertToVersionImpl,
+);
+
+export const getPreviewUrl = withAdminObserved(
+  'getPreviewUrl',
+  { sport: 'baseball', feature: 'baseball_documents', featureArea: 'baseball-documents' },
+  getPreviewUrlImpl,
+);
+
+export const getTextFileContent = withAdminObserved(
+  'getTextFileContent',
+  { sport: 'baseball', feature: 'baseball_documents', featureArea: 'baseball-documents' },
+  getTextFileContentImpl,
+);

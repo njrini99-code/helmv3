@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import type { Organization, Player } from '@/lib/types';
 import { logServerError } from '@/lib/server-error-logger';
@@ -144,7 +145,7 @@ async function getCoachRosterPlayerIds(
  * 2. Players must have is_on_college_team = false (not on a college roster)
  * 3. Players on the coach's own team are excluded (they're in roster)
  */
-export async function getDiscoverPlayers(
+async function getDiscoverPlayersImpl(
   filters: DiscoverFilters
 ): Promise<DiscoverPlayersResult> {
   const supabase = await createClient();
@@ -328,7 +329,7 @@ async function getOrgIdsWithNamedHeadCoach(
 /**
  * Fetch teams/organizations for discover page with filters and pagination
  */
-export async function getDiscoverTeams(
+async function getDiscoverTeamsImpl(
   filters: DiscoverFilters
 ): Promise<DiscoverTeamsResult> {
   const supabase = await createClient();
@@ -603,7 +604,7 @@ export async function getDiscoverTeams(
  * Get watchlist player IDs for the authenticated coach
  * SECURITY: No coachId parameter - derives from authenticated user to prevent IDOR
  */
-export async function getWatchlistIds(): Promise<string[]> {
+async function getWatchlistIdsImpl(): Promise<string[]> {
   const supabase = await createClient();
 
   // SECURITY: Get coach ID from authenticated user
@@ -645,7 +646,7 @@ export async function getWatchlistIds(): Promise<string[]> {
  *
  * SECURITY: Coach identity and type are derived from the authenticated session.
  */
-export async function getStateCounts(
+async function getStateCountsImpl(
   mode: 'players' | 'teams',
 ): Promise<Record<string, number>> {
   const supabase = await createClient();
@@ -731,3 +732,27 @@ export async function getStateCounts(
     return counts;
   }
 }
+
+export const getDiscoverPlayers = withAdminObserved(
+  'getDiscoverPlayers',
+  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
+  getDiscoverPlayersImpl,
+);
+
+export const getDiscoverTeams = withAdminObserved(
+  'getDiscoverTeams',
+  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
+  getDiscoverTeamsImpl,
+);
+
+export const getWatchlistIds = withAdminObserved(
+  'getWatchlistIds',
+  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
+  getWatchlistIdsImpl,
+);
+
+export const getStateCounts = withAdminObserved(
+  'getStateCounts',
+  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
+  getStateCountsImpl,
+);

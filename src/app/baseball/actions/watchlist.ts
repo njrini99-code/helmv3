@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
@@ -536,7 +537,7 @@ const toggleWatchlistPlayerAction = withBaseballAction(
   },
 );
 
-export async function checkWatchlistStatus(playerId: string): Promise<{
+async function checkWatchlistStatusImpl(playerId: string): Promise<{
   isInWatchlist: boolean;
   watchlistId?: string;
 }> {
@@ -573,3 +574,9 @@ export async function checkWatchlistStatus(playerId: string): Promise<{
     return { isInWatchlist: false };
   }
 }
+
+export const checkWatchlistStatus = withAdminObserved(
+  'checkWatchlistStatus',
+  { sport: 'baseball', feature: 'baseball_watchlist', featureArea: 'baseball-watchlist' },
+  checkWatchlistStatusImpl,
+);

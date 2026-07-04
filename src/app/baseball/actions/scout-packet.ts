@@ -1,4 +1,5 @@
 'use server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { fromUntyped } from '@/lib/supabase/untyped';
 
 // =============================================================================
@@ -385,7 +386,7 @@ export const getScoutPacketPreview = withBaseballAction(
  * Side effect: a successful, live resolution bumps the token's view telemetry
  * (best-effort; never blocks the packet).
  */
-export async function resolveScoutPacketByToken(
+async function resolveScoutPacketByTokenImpl(
   token: string,
   options: { trackView?: boolean } = {},
 ): Promise<ScoutPacketModel> {
@@ -461,3 +462,9 @@ export async function resolveScoutPacketByToken(
 
   return packet;
 }
+
+export const resolveScoutPacketByToken = withAdminObserved(
+  'resolveScoutPacketByToken',
+  { sport: 'baseball', feature: 'baseball_scout_packet', featureArea: 'baseball-scout-packet' },
+  resolveScoutPacketByTokenImpl,
+);

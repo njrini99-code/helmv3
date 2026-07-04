@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 // =============================================================================
 // src/app/baseball/actions/decision-room.ts
 //
@@ -867,7 +868,7 @@ export interface StaffSettingsData {
  * Returns an honest empty result when the user is unauthenticated or has no
  * active baseball context — never fabricated rows.
  */
-export async function getStaffSettingsData(): Promise<StaffSettingsData> {
+async function getStaffSettingsDataImpl(): Promise<StaffSettingsData> {
   const supabase = await createClient();
   const context = await getActiveBaseballContext();
   if (!context) {
@@ -875,3 +876,9 @@ export async function getStaffSettingsData(): Promise<StaffSettingsData> {
   }
   return loadStaffSettings(supabase, context.activeTeamId);
 }
+
+export const getStaffSettingsData = withAdminObserved(
+  'getStaffSettingsData',
+  { sport: 'baseball', feature: 'baseball_decision_room', featureArea: 'baseball-decision-room' },
+  getStaffSettingsDataImpl,
+);

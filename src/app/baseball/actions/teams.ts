@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -43,7 +44,7 @@ export interface TeamValidationResult {
  * - JUCO Player: 1 JUCO team only
  * - College Player: 1 College team only
  */
-export async function validatePlayerCanJoinTeam(
+async function validatePlayerCanJoinTeamImpl(
   playerId: string,
   teamId: string
 ): Promise<TeamValidationResult> {
@@ -238,7 +239,7 @@ export async function validatePlayerCanJoinTeam(
  * Add a player to a team with validation
  * JUCO teams automatically enable recruiting for players
  */
-export async function joinTeam(playerId: string, teamId: string) {
+async function joinTeamImpl(playerId: string, teamId: string) {
   const supabase = await createClient();
 
   // SECURITY: Verify authentication
@@ -415,7 +416,7 @@ export async function joinTeam(playerId: string, teamId: string) {
 /**
  * Process a team invitation code
  */
-export async function processTeamInvitation(inviteCode: string, playerId: string) {
+async function processTeamInvitationImpl(inviteCode: string, playerId: string) {
   try {
     const supabase = await createClient();
 
@@ -829,7 +830,7 @@ export const getCoachTeamForManagement = withBaseballAction(
  * Process team join via direct invite code (for baseball)
  * This is for the simpler code-based join (like golf) vs the invitation table
  */
-export async function joinTeamByCode(inviteCode: string, playerId: string) {
+async function joinTeamByCodeImpl(inviteCode: string, playerId: string) {
   const supabase = await createClient();
 
   type TeamByCode = { id: string; name: string; team_type: string };
@@ -1413,3 +1414,27 @@ export const revokeTeamInvitation = withBaseballAction(
 // types) live in the sibling './decision-room' module. Consumers import them
 // from '@/app/baseball/actions/decision-room' DIRECTLY — a 'use server' file
 // cannot re-export values (Next.js: only inline `export async function`).
+
+export const validatePlayerCanJoinTeam = withAdminObserved(
+  'validatePlayerCanJoinTeam',
+  { sport: 'baseball', feature: 'baseball_teams', featureArea: 'baseball-teams' },
+  validatePlayerCanJoinTeamImpl,
+);
+
+export const joinTeam = withAdminObserved(
+  'joinTeam',
+  { sport: 'baseball', feature: 'baseball_teams', featureArea: 'baseball-teams' },
+  joinTeamImpl,
+);
+
+export const processTeamInvitation = withAdminObserved(
+  'processTeamInvitation',
+  { sport: 'baseball', feature: 'baseball_teams', featureArea: 'baseball-teams' },
+  processTeamInvitationImpl,
+);
+
+export const joinTeamByCode = withAdminObserved(
+  'joinTeamByCode',
+  { sport: 'baseball', feature: 'baseball_teams', featureArea: 'baseball-teams' },
+  joinTeamByCodeImpl,
+);

@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -245,7 +246,7 @@ export async function deleteLineup(lineupId: string) {
 /**
  * Get all lineups for a team
  */
-export async function getTeamLineups(teamId: string) {
+async function getTeamLineupsImpl(teamId: string) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -276,3 +277,9 @@ export async function getTeamLineups(teamId: string) {
 
   return lineups || [];
 }
+
+export const getTeamLineups = withAdminObserved(
+  'getTeamLineups',
+  { sport: 'baseball', feature: 'baseball_lineups', featureArea: 'baseball-lineups' },
+  getTeamLineupsImpl,
+);

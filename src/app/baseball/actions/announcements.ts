@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 /**
  * Server Actions for Baseball Announcements
  *
@@ -176,7 +177,7 @@ const createAnnouncementAction = withBaseballAction(
 // GET ANNOUNCEMENTS WITH META (list view)
 // ============================================================================
 
-export async function getAnnouncementsWithMeta(
+async function getAnnouncementsWithMetaImpl(
   teamId: string,
   _userId: string,
   isCoach: boolean,
@@ -273,7 +274,7 @@ export async function getAnnouncementsWithMeta(
 // ACKNOWLEDGE ANNOUNCEMENT (player action)
 // ============================================================================
 
-export async function acknowledgeAnnouncement(
+async function acknowledgeAnnouncementImpl(
   announcementId: string
 ): Promise<ActionResult> {
   try {
@@ -397,4 +398,16 @@ const deleteAnnouncementAction = withBaseballAction(
     revalidatePath(ANNOUNCEMENTS_PATH);
     return { success: true };
   },
+);
+
+export const getAnnouncementsWithMeta = withAdminObserved(
+  'getAnnouncementsWithMeta',
+  { sport: 'baseball', feature: 'baseball_announcements', featureArea: 'baseball-announcements' },
+  getAnnouncementsWithMetaImpl,
+);
+
+export const acknowledgeAnnouncement = withAdminObserved(
+  'acknowledgeAnnouncement',
+  { sport: 'baseball', feature: 'baseball_announcements', featureArea: 'baseball-announcements' },
+  acknowledgeAnnouncementImpl,
 );

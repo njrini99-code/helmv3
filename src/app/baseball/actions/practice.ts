@@ -1,4 +1,5 @@
 'use server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { fromUntyped } from '@/lib/supabase/untyped';
 
 // =============================================================================
@@ -120,7 +121,7 @@ export interface AttendanceEntryInput {
  * RLS decides visibility (staff: all; player: published only), so this is a
  * plain authed read — no capability gate (players legitimately read published).
  */
-export async function getTeamPractices(): Promise<ActionResult<BaseballPracticeWithDetail[]>> {
+async function getTeamPracticesImpl(): Promise<ActionResult<BaseballPracticeWithDetail[]>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -272,7 +273,7 @@ export interface MaterializeBlockFromSignalInput {
  * Returns the created block id + the practice id it landed in. NON-destructive:
  * only inserts; never deletes/replaces existing backlog blocks.
  */
-export async function materializePracticeBlockFromSignal(
+async function materializePracticeBlockFromSignalImpl(
   supabase: Awaited<ReturnType<typeof createClient>>,
   input: MaterializeBlockFromSignalInput,
 ): Promise<{ ok: true; blockId: string; practiceId: string } | { ok: false; error: string }> {
@@ -630,7 +631,7 @@ function isoToDate(iso: string | null): string | null {
  * from input). Players only ever see their own attendance + their own class
  * conflicts. A coach calling this action sees the plan without a conflict layer.
  */
-export async function getPlayerPractices(): Promise<
+async function getPlayerPracticesImpl(): Promise<
   ActionResult<PlayerPracticeView[]>
 > {
   const supabase = await createClient();
@@ -868,4 +869,22 @@ export const getClassConflictsForPractice = withBaseballAction(
 
     return { success: true, data: { byPlayer } };
   },
+);
+
+export const getTeamPractices = withAdminObserved(
+  'getTeamPractices',
+  { sport: 'baseball', feature: 'baseball_practice', featureArea: 'baseball-practice' },
+  getTeamPracticesImpl,
+);
+
+export const materializePracticeBlockFromSignal = withAdminObserved(
+  'materializePracticeBlockFromSignal',
+  { sport: 'baseball', feature: 'baseball_practice', featureArea: 'baseball-practice' },
+  materializePracticeBlockFromSignalImpl,
+);
+
+export const getPlayerPractices = withAdminObserved(
+  'getPlayerPractices',
+  { sport: 'baseball', feature: 'baseball_practice', featureArea: 'baseball-practice' },
+  getPlayerPracticesImpl,
 );

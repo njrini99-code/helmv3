@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { 
@@ -40,7 +41,7 @@ interface PlayerWithStats {
 /**
  * Generate insights for all players on a team
  */
-export async function generateTeamInsights(
+async function generateTeamInsightsImpl(
   teamId: string,
   coachId: string
 ): Promise<InsightGenerationResult> {
@@ -515,7 +516,7 @@ function analyzeTeam(
  * `supabase.auth.getUser()` check, e.g. `dismissInsight` below). Exported
  * only so insight-lifecycle.test.ts can unit-test it directly.
  */
-export async function resolveCallerCoachId(
+async function resolveCallerCoachIdImpl(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   userId: string,
@@ -553,7 +554,7 @@ function getDefaultPhilosophy(): BaseballCoachPhilosophy {
 /**
  * Dismiss an insight
  */
-export async function dismissInsight(insightId: string): Promise<{ success: boolean; error?: string }> {
+async function dismissInsightImpl(insightId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 
   // Auth check: verify user is authenticated
@@ -597,7 +598,7 @@ export async function dismissInsight(insightId: string): Promise<{ success: bool
 /**
  * Mark an insight as addressed
  */
-export async function markInsightAddressed(insightId: string): Promise<{ success: boolean; error?: string }> {
+async function markInsightAddressedImpl(insightId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 
   // Auth check: verify user is authenticated
@@ -641,7 +642,7 @@ export async function markInsightAddressed(insightId: string): Promise<{ success
 /**
  * Submit feedback on an insight (helpful/not helpful)
  */
-export async function submitInsightFeedback(
+async function submitInsightFeedbackImpl(
   insightId: string,
   feedback: BaseballInsightFeedback
 ): Promise<{ success: boolean; error?: string }> {
@@ -696,7 +697,7 @@ export async function submitInsightFeedback(
 /**
  * Get insights for a team (for fetching in command center)
  */
-export async function getTeamInsights(teamId: string): Promise<{
+async function getTeamInsightsImpl(teamId: string): Promise<{
   success: boolean;
   insights?: BaseballCoachInsight[];
   error?: string;
@@ -724,3 +725,39 @@ export async function getTeamInsights(teamId: string): Promise<{
 
   return { success: true, insights: insights || [] };
 }
+
+export const generateTeamInsights = withAdminObserved(
+  'generateTeamInsights',
+  { sport: 'baseball', feature: 'baseball_insights', featureArea: 'baseball-insights' },
+  generateTeamInsightsImpl,
+);
+
+export const resolveCallerCoachId = withAdminObserved(
+  'resolveCallerCoachId',
+  { sport: 'baseball', feature: 'baseball_insights', featureArea: 'baseball-insights' },
+  resolveCallerCoachIdImpl,
+);
+
+export const dismissInsight = withAdminObserved(
+  'dismissInsight',
+  { sport: 'baseball', feature: 'baseball_insights', featureArea: 'baseball-insights' },
+  dismissInsightImpl,
+);
+
+export const markInsightAddressed = withAdminObserved(
+  'markInsightAddressed',
+  { sport: 'baseball', feature: 'baseball_insights', featureArea: 'baseball-insights' },
+  markInsightAddressedImpl,
+);
+
+export const submitInsightFeedback = withAdminObserved(
+  'submitInsightFeedback',
+  { sport: 'baseball', feature: 'baseball_insights', featureArea: 'baseball-insights' },
+  submitInsightFeedbackImpl,
+);
+
+export const getTeamInsights = withAdminObserved(
+  'getTeamInsights',
+  { sport: 'baseball', feature: 'baseball_insights', featureArea: 'baseball-insights' },
+  getTeamInsightsImpl,
+);

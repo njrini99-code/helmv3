@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Json } from '@/lib/types/database';
@@ -45,7 +46,7 @@ function mapDevPlanCoachError(error: unknown): never {
 /**
  * Get a player's developmental plan(s)
  */
-export async function getPlayerDevPlans(playerId: string): Promise<DevelopmentalPlanWithGoals[]> {
+async function getPlayerDevPlansImpl(playerId: string): Promise<DevelopmentalPlanWithGoals[]> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +80,7 @@ export async function getPlayerDevPlans(playerId: string): Promise<Developmental
 /**
  * Get a player's active developmental plan
  */
-export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalPlanWithGoals | null> {
+async function getActiveDevPlanImpl(playerId: string): Promise<DevelopmentalPlanWithGoals | null> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -252,7 +253,7 @@ async function saveDevPlanGoals(
 /**
  * Update a goal's progress (player can update their own goals)
  */
-export async function updateGoalProgress(
+async function updateGoalProgressImpl(
   planId: string,
   goalId: string,
   progress: number
@@ -289,7 +290,7 @@ export async function updateGoalProgress(
  * their own development-plan goal complete). Verifies the authenticated
  * user is the player who owns this plan before mutating.
  */
-export async function completeGoalAsPlayer(
+async function completeGoalAsPlayerImpl(
   planId: string,
   goalId: string
 ): Promise<void> {
@@ -323,7 +324,7 @@ export async function completeGoalAsPlayer(
  * operation). Verifies the authenticated user is the player who owns
  * this plan before mutating.
  */
-export async function uncompleteGoalAsPlayer(
+async function uncompleteGoalAsPlayerImpl(
   planId: string,
   goalId: string
 ): Promise<void> {
@@ -609,3 +610,33 @@ function validateGoalStatus(status: unknown): GoalStatus {
   }
   return 'not_started';
 }
+
+export const getPlayerDevPlans = withAdminObserved(
+  'getPlayerDevPlans',
+  { sport: 'baseball', feature: 'baseball_dev_plans', featureArea: 'baseball-dev-plans' },
+  getPlayerDevPlansImpl,
+);
+
+export const getActiveDevPlan = withAdminObserved(
+  'getActiveDevPlan',
+  { sport: 'baseball', feature: 'baseball_dev_plans', featureArea: 'baseball-dev-plans' },
+  getActiveDevPlanImpl,
+);
+
+export const updateGoalProgress = withAdminObserved(
+  'updateGoalProgress',
+  { sport: 'baseball', feature: 'baseball_dev_plans', featureArea: 'baseball-dev-plans' },
+  updateGoalProgressImpl,
+);
+
+export const completeGoalAsPlayer = withAdminObserved(
+  'completeGoalAsPlayer',
+  { sport: 'baseball', feature: 'baseball_dev_plans', featureArea: 'baseball-dev-plans' },
+  completeGoalAsPlayerImpl,
+);
+
+export const uncompleteGoalAsPlayer = withAdminObserved(
+  'uncompleteGoalAsPlayer',
+  { sport: 'baseball', feature: 'baseball_dev_plans', featureArea: 'baseball-dev-plans' },
+  uncompleteGoalAsPlayerImpl,
+);

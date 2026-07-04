@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -112,7 +113,7 @@ const savePhilosophySettingsAction = withBaseballAction(
   },
 );
 
-export async function getPhilosophySettings(coachId: string) {
+async function getPhilosophySettingsImpl(coachId: string) {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,3 +129,9 @@ export async function getPhilosophySettings(coachId: string) {
 
   return data;
 }
+
+export const getPhilosophySettings = withAdminObserved(
+  'getPhilosophySettings',
+  { sport: 'baseball', feature: 'baseball_philosophy', featureArea: 'baseball-philosophy' },
+  getPhilosophySettingsImpl,
+);

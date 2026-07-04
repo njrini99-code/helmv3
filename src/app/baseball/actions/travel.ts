@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -127,7 +128,7 @@ const createExpenseSchema = z.object({
 // ITINERARY ACTIONS
 // ============================================================================
 
-export async function getTeamItineraries(teamId: string) {
+async function getTeamItinerariesImpl(teamId: string) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -414,7 +415,7 @@ const addExpenseAction = withBaseballAction(
   },
 );
 
-export async function getItineraryExpenses(itineraryId: string) {
+async function getItineraryExpensesImpl(itineraryId: string) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -477,7 +478,7 @@ const deleteExpenseAction = withBaseballAction(
   },
 );
 
-export async function getExpenseSummary(itineraryId: string): Promise<{ success: boolean; data?: BaseballExpenseSummary; error?: string }> {
+async function getExpenseSummaryImpl(itineraryId: string): Promise<{ success: boolean; data?: BaseballExpenseSummary; error?: string }> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -519,3 +520,21 @@ export async function getExpenseSummary(itineraryId: string): Promise<{ success:
 
   return { success: true, data: summary };
 }
+
+export const getTeamItineraries = withAdminObserved(
+  'getTeamItineraries',
+  { sport: 'baseball', feature: 'baseball_travel', featureArea: 'baseball-travel' },
+  getTeamItinerariesImpl,
+);
+
+export const getItineraryExpenses = withAdminObserved(
+  'getItineraryExpenses',
+  { sport: 'baseball', feature: 'baseball_travel', featureArea: 'baseball-travel' },
+  getItineraryExpensesImpl,
+);
+
+export const getExpenseSummary = withAdminObserved(
+  'getExpenseSummary',
+  { sport: 'baseball', feature: 'baseball_travel', featureArea: 'baseball-travel' },
+  getExpenseSummaryImpl,
+);

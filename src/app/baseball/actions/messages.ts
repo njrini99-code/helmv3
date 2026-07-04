@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 /**
  * Baseball Messaging Actions
  *
@@ -22,15 +23,15 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { withBaseballAction, BaseballActionError } from '@/lib/baseball/with-baseball-action';
 
-export async function sendMessage(conversationId: string, content: string) {
+async function sendMessageImpl(conversationId: string, content: string) {
   return sendBaseballMessage(conversationId, content);
 }
 
-export async function createConversation(participantUserIds: string[]) {
+async function createConversationImpl(participantUserIds: string[]) {
   return createBaseballConversation(participantUserIds);
 }
 
-export async function markMessagesAsRead(conversationId: string) {
+async function markMessagesAsReadImpl(conversationId: string) {
   return markBaseballMessagesAsRead(conversationId);
 }
 
@@ -38,7 +39,7 @@ export async function markMessagesAsRead(conversationId: string) {
  * Resolve the auth user_id for a baseball player by their player_id.
  * Coach-only: used when starting a conversation from the Discover peek panel.
  */
-export async function getPlayerUserId(playerId: string): Promise<string | null> {
+async function getPlayerUserIdImpl(playerId: string): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -95,4 +96,28 @@ export const createPlayerProfileConversation = withBaseballAction(
 
     return createBaseballConversation([player.user_id]);
   },
+);
+
+export const sendMessage = withAdminObserved(
+  'sendMessage',
+  { sport: 'baseball', feature: 'baseball_messages', featureArea: 'baseball-messages' },
+  sendMessageImpl,
+);
+
+export const createConversation = withAdminObserved(
+  'createConversation',
+  { sport: 'baseball', feature: 'baseball_messages', featureArea: 'baseball-messages' },
+  createConversationImpl,
+);
+
+export const markMessagesAsRead = withAdminObserved(
+  'markMessagesAsRead',
+  { sport: 'baseball', feature: 'baseball_messages', featureArea: 'baseball-messages' },
+  markMessagesAsReadImpl,
+);
+
+export const getPlayerUserId = withAdminObserved(
+  'getPlayerUserId',
+  { sport: 'baseball', feature: 'baseball_messages', featureArea: 'baseball-messages' },
+  getPlayerUserIdImpl,
 );

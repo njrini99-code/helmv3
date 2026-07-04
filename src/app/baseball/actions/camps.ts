@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
@@ -431,7 +432,7 @@ const markCampNoShowAction = withBaseballAction(
  * Register a player for a camp.
  * Verifies the caller is the authenticated player.
  */
-export async function registerForCamp(
+async function registerForCampImpl(
   campId: string
 ): Promise<{ success: boolean; error?: string }> {
   // The atomic RPC below resolves the player from auth.uid() itself and can
@@ -482,7 +483,7 @@ export async function registerForCamp(
  * Unregister (cancel) a player's camp registration.
  * Verifies the caller is the authenticated player.
  */
-export async function unregisterFromCamp(
+async function unregisterFromCampImpl(
   campId: string
 ): Promise<{ success: boolean; error?: string }> {
   const { supabase, player, error: authError } = await requireAuthPlayer();
@@ -503,3 +504,15 @@ export async function unregisterFromCamp(
   revalidatePath(CAMPS_PATH);
   return { success: true };
 }
+
+export const registerForCamp = withAdminObserved(
+  'registerForCamp',
+  { sport: 'baseball', feature: 'baseball_camps', featureArea: 'baseball-camps' },
+  registerForCampImpl,
+);
+
+export const unregisterFromCamp = withAdminObserved(
+  'unregisterFromCamp',
+  { sport: 'baseball', feature: 'baseball_camps', featureArea: 'baseball-camps' },
+  unregisterFromCampImpl,
+);

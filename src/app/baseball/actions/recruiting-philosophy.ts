@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
@@ -62,7 +63,7 @@ function mapRecruitingPhilosophyActionError(
 /**
  * Get the current coach's recruiting philosophy.
  */
-export async function getRecruitingPhilosophy(): Promise<{
+async function getRecruitingPhilosophyImpl(): Promise<{
   data: CoachRecruitingPhilosophy | null;
   error: string | null;
 }> {
@@ -170,7 +171,7 @@ const saveRecruitingPhilosophyAction = withBaseballAction(
 /**
  * Update specific weights in the philosophy.
  */
-export async function updateRecruitingWeights(weights: {
+async function updateRecruitingWeightsImpl(weights: {
   weight_exit_velocity?: number;
   weight_pitch_velocity?: number;
   weight_sixty_time?: number;
@@ -185,7 +186,7 @@ export async function updateRecruitingWeights(weights: {
 /**
  * Update position priorities.
  */
-export async function updatePositionPriorities(
+async function updatePositionPrioritiesImpl(
   positions: string[],
 ): Promise<{ success: boolean; error: string | null }> {
   return saveRecruitingPhilosophy({ position_priorities: positions });
@@ -194,7 +195,7 @@ export async function updatePositionPriorities(
 /**
  * Update minimum standards.
  */
-export async function updateMinimumStandards(standards: {
+async function updateMinimumStandardsImpl(standards: {
   min_gpa?: number | null;
   min_exit_velocity?: number | null;
   min_pitch_velocity?: number | null;
@@ -206,7 +207,7 @@ export async function updateMinimumStandards(standards: {
 /**
  * Update geographic preferences.
  */
-export async function updateGeographicPreferences(prefs: {
+async function updateGeographicPreferencesImpl(prefs: {
   preferred_states?: string[];
   max_distance_miles?: number | null;
 }): Promise<{ success: boolean; error: string | null }> {
@@ -216,7 +217,7 @@ export async function updateGeographicPreferences(prefs: {
 /**
  * Update target grad years.
  */
-export async function updateTargetGradYears(
+async function updateTargetGradYearsImpl(
   gradYears: number[],
 ): Promise<{ success: boolean; error: string | null }> {
   return saveRecruitingPhilosophy({ target_grad_years: gradYears });
@@ -272,7 +273,7 @@ const resetRecruitingPhilosophyAction = withBaseballAction(
 /**
  * Get percentiles for a list of players.
  */
-export async function getPlayerPercentiles(
+async function getPlayerPercentilesImpl(
   playerIds: string[],
 ): Promise<{ data: PlayerPercentiles[]; error: string | null }> {
   if (playerIds.length === 0) {
@@ -296,7 +297,7 @@ export async function getPlayerPercentiles(
 /**
  * Get percentiles for a single player.
  */
-export async function getPlayerPercentile(
+async function getPlayerPercentileImpl(
   playerId: string,
 ): Promise<{ data: PlayerPercentiles | null; error: string | null }> {
   const supabase = await createClient();
@@ -359,7 +360,7 @@ const recalculatePercentilesAction = withBaseballAction(
  * Calculate match scores for players in a discover query.
  * This is called server-side to enrich player data with match scores.
  */
-export async function calculateMatchScoresForPlayers(
+async function calculateMatchScoresForPlayersImpl(
   playerIds: string[],
 ): Promise<{
   scores: Map<string, { match_score: number; breakdown: Record<string, unknown> }>;
@@ -409,3 +410,57 @@ export async function calculateMatchScoresForPlayers(
 
   return { scores, error: null };
 }
+
+export const getRecruitingPhilosophy = withAdminObserved(
+  'getRecruitingPhilosophy',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  getRecruitingPhilosophyImpl,
+);
+
+export const updateRecruitingWeights = withAdminObserved(
+  'updateRecruitingWeights',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  updateRecruitingWeightsImpl,
+);
+
+export const updatePositionPriorities = withAdminObserved(
+  'updatePositionPriorities',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  updatePositionPrioritiesImpl,
+);
+
+export const updateMinimumStandards = withAdminObserved(
+  'updateMinimumStandards',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  updateMinimumStandardsImpl,
+);
+
+export const updateGeographicPreferences = withAdminObserved(
+  'updateGeographicPreferences',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  updateGeographicPreferencesImpl,
+);
+
+export const updateTargetGradYears = withAdminObserved(
+  'updateTargetGradYears',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  updateTargetGradYearsImpl,
+);
+
+export const getPlayerPercentiles = withAdminObserved(
+  'getPlayerPercentiles',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  getPlayerPercentilesImpl,
+);
+
+export const getPlayerPercentile = withAdminObserved(
+  'getPlayerPercentile',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  getPlayerPercentileImpl,
+);
+
+export const calculateMatchScoresForPlayers = withAdminObserved(
+  'calculateMatchScoresForPlayers',
+  { sport: 'baseball', feature: 'baseball_recruiting_philosophy', featureArea: 'baseball-recruiting-philosophy' },
+  calculateMatchScoresForPlayersImpl,
+);

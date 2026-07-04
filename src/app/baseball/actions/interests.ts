@@ -1,5 +1,6 @@
 'use server';
 
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
@@ -276,7 +277,7 @@ const updateInterestStatusAction = withBaseballAction(
   },
 );
 
-export async function getPlayerInterests() {
+async function getPlayerInterestsImpl() {
   const supabase = await createClient();
 
   const {
@@ -303,3 +304,9 @@ export async function getPlayerInterests() {
 
   return { interests: interests || [] };
 }
+
+export const getPlayerInterests = withAdminObserved(
+  'getPlayerInterests',
+  { sport: 'baseball', feature: 'baseball_interests', featureArea: 'baseball-interests' },
+  getPlayerInterestsImpl,
+);
