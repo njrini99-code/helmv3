@@ -209,7 +209,7 @@ jobs:
         # Scoped to --project=chromium: the BaseballHelm mandatory smoke
         # (setup/baseball-coach/baseball-player projects, run above) is
         # intentionally excluded from this soft-fail path.
-        run: npx playwright test --project=chromium || echo "Playwright suite has failures — see report artifact"
+        run: timeout 45m npx playwright test --project=chromium || echo "Playwright suite has failures or timed out — see report artifact"
 
       - name: Upload Playwright report
         if: always()
