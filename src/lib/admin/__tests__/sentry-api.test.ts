@@ -18,7 +18,7 @@ function issuePayload(id: string) {
 
 describe('fetchSentryIssues', () => {
   beforeEach(() => {
-    vi.stubEnv('SENTRY_READ_TOKEN', 'tok');
+    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();
@@ -35,25 +35,33 @@ describe('fetchSentryIssues', () => {
 
   it('falls back to SENTRY_AUTH_TOKEN when SENTRY_READ_TOKEN is absent', async () => {
     vi.stubEnv('SENTRY_READ_TOKEN', '');
-    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token-long');
     fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
       status: 200, headers: { 'content-type': 'application/json' },
     }));
     const res = await fetchSentryIssues();
     expect(res.status).toBe('ok');
     const headers = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
-    expect(headers.headers.Authorization).toBe('Bearer ci-token');
+    expect(headers.headers.Authorization).toBe('Bearer ci-token-long');
   });
 
   it('prefers SENTRY_READ_TOKEN over SENTRY_AUTH_TOKEN when both are set', async () => {
-    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token-long');
     fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
       status: 200, headers: { 'content-type': 'application/json' },
     }));
     const res = await fetchSentryIssues();
     expect(res.status).toBe('ok');
     const headers = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
-    expect(headers.headers.Authorization).toBe('Bearer tok');
+    expect(headers.headers.Authorization).toBe('Bearer sentry-read-token');
+  });
+
+  it('treats placeholder or too-short tokens as unconfigured', async () => {
+    vi.stubEnv('SENTRY_READ_TOKEN', 'your-auth-token-here');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', 'tok');
+    const res = await fetchSentryIssues();
+    expect(res.status).toBe('unconfigured');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('maps issues and coerces string counts to numbers', async () => {
@@ -102,7 +110,7 @@ describe('fetchSentryIssues', () => {
 
 describe('fetchSentryFeatureCounts', () => {
   beforeEach(() => {
-    vi.stubEnv('SENTRY_READ_TOKEN', 'tok');
+    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();

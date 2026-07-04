@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Activity, GitBranch, RadioTower, ShieldCheck } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchOverviewSnapshot,
@@ -178,12 +178,9 @@ async function FeatureHealthPanel() {
   const raw = await fetchFeatureHealth();
   const summary = summarizeFeatureHealth(raw, new Date());
   return (
-    // Key panel: the one place the whole platform's health rolls up to a
-    // single glance — a 2px green left edge marks it as a signal panel worth
-    // a second look, distinct from the plain-bordered cards around it.
-    <Surface elevation="border" padding="sm" className="border-l-2 border-l-accent-500">
+    <Surface elevation="border" padding="sm">
       <Eyebrow as="h2" tone="tertiary" className="mb-2">
-        Feature health
+        Feature command map
       </Eyebrow>
       <FeatureHealthRollup summary={summary} />
     </Surface>
@@ -212,24 +209,91 @@ async function DeployRail() {
   );
 }
 
+function CommandHeader() {
+  const nav = [
+    { href: '/admin/errors', label: 'Errors', icon: Activity },
+    { href: '/admin/health', label: 'Feature Map', icon: RadioTower },
+    { href: '/admin/deploys', label: 'Deploys', icon: GitBranch },
+    { href: '/admin/audit', label: 'Audit', icon: ShieldCheck },
+  ];
+
+  return (
+    <section className="rounded-2xl border border-warm-200 bg-[var(--fw-color-nav-bg)] px-5 py-4 text-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/55">Helm Bridge</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-normal text-white sm:text-3xl">
+            Command Center
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm text-white/65">
+            Production posture across GolfHelm, CoachHelm, BaseballHelm, Sentry, and Vercel.
+          </p>
+        </div>
+        <nav aria-label="Command center shortcuts" className="flex flex-wrap gap-2">
+          {nav.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="glass-subtle inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-white transition-colors hover:border-white/30"
+              >
+                <Icon size={14} aria-hidden />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </section>
+  );
+}
+
 export default async function AdminOverviewPage() {
   await requireSuperAdmin();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <AutoRefresh />
-      <PanelBoundary title="Status" skeleton={<SkeletonStat />}>
-        <BannerAndKpis />
-      </PanelBoundary>
-      <PanelBoundary title="Triage" skeleton={<SkeletonList />}>
-        <TriagePanel />
-      </PanelBoundary>
-      <PanelBoundary title="Feature health" skeleton={<SkeletonStat />}>
-        <FeatureHealthPanel />
-      </PanelBoundary>
-      <PanelBoundary title="Deploys" skeleton={<SkeletonStat />}>
-        <DeployRail />
-      </PanelBoundary>
+      <CommandHeader />
+
+      <section aria-label="Live posture" className="space-y-4">
+        <div>
+          <Eyebrow as="h2" tone="secondary">Live posture</Eyebrow>
+          <p className="mt-1 text-sm text-warm-500">Signals refresh server-side and degrade per panel.</p>
+        </div>
+        <PanelBoundary title="Live posture" skeleton={<SkeletonStat />}>
+          <BannerAndKpis />
+        </PanelBoundary>
+      </section>
+
+      <section aria-label="Incident operations" className="space-y-4">
+        <div>
+          <Eyebrow as="h2" tone="secondary">Incident operations</Eyebrow>
+          <p className="mt-1 text-sm text-warm-500">Sentry and in-app events are coalesced into one triage lane.</p>
+        </div>
+        <PanelBoundary title="Incident operations" skeleton={<SkeletonList />}>
+          <TriagePanel />
+        </PanelBoundary>
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
+        <section aria-label="Feature command map">
+          <PanelBoundary title="Feature command map" skeleton={<SkeletonStat />}>
+            <FeatureHealthPanel />
+          </PanelBoundary>
+        </section>
+        <section aria-label="Deploy control">
+          <Surface elevation="border" padding="sm" className="min-h-full">
+            <Eyebrow as="h2" tone="tertiary" className="mb-2">
+              Deploy control
+            </Eyebrow>
+            <PanelBoundary title="Deploy control" skeleton={<SkeletonStat />}>
+              <DeployRail />
+            </PanelBoundary>
+          </Surface>
+        </section>
+      </div>
     </div>
   );
 }

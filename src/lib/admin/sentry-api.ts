@@ -22,6 +22,16 @@ const API = 'https://sentry.io/api/0';
 const REVALIDATE_SECONDS = 60;
 const MAX_PAGES = 3;
 
+function isPlaceholderSecret(value: string): boolean {
+  return /^(your-|replace-|changeme|todo|example)/i.test(value.trim());
+}
+
+function usableSecret(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed.length < 10 || isPlaceholderSecret(trimmed)) return null;
+  return trimmed;
+}
+
 function config(): { token: string; org: string; project: string } | null {
   // Fall back to the CI sourcemap-upload token when the dedicated read token
   // isn't provisioned yet (`||`, not `??` — an unset OR blank-string env var
@@ -29,9 +39,9 @@ function config(): { token: string; org: string; project: string } | null {
   // fail-soft: if SENTRY_AUTH_TOKEN lacks event:read the calls below
   // 404/403 and every panel degrades to its existing not-configured/stale
   // state, never a crash.
-  const token = process.env.SENTRY_READ_TOKEN || process.env.SENTRY_AUTH_TOKEN;
-  const org = process.env.SENTRY_ORG;
-  const project = process.env.SENTRY_PROJECT;
+  const token = usableSecret(process.env.SENTRY_READ_TOKEN) ?? usableSecret(process.env.SENTRY_AUTH_TOKEN);
+  const org = process.env.SENTRY_ORG?.trim();
+  const project = process.env.SENTRY_PROJECT?.trim();
   if (!token || !org || !project) return null;
   return { token, org, project };
 }

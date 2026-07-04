@@ -16,6 +16,24 @@ import {
 
 const REVALIDATE_SECONDS = 60;
 
+function isPlaceholderSecret(value: string): boolean {
+  return /^(your-|replace-|changeme|todo|example)/i.test(value.trim());
+}
+
+function usableSecret(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed.length < 10 || isPlaceholderSecret(trimmed)) return null;
+  return trimmed;
+}
+
+function vercelConfig(): { token: string; projectId: string; teamId: string | null } | null {
+  const token = usableSecret(process.env.VERCEL_API_TOKEN);
+  const projectId = process.env.VERCEL_PROJECT_ID?.trim();
+  if (!token || !projectId || isPlaceholderSecret(projectId)) return null;
+  const teamId = process.env.VERCEL_TEAM_ID?.trim();
+  return { token, projectId, teamId: teamId && !isPlaceholderSecret(teamId) ? teamId : null };
+}
+
 export type VercelDeployState =
   | 'BUILDING' | 'READY' | 'ERROR' | 'CANCELED' | 'QUEUED' | 'INITIALIZING';
 
@@ -64,17 +82,15 @@ export function formatDeployAge(createdAt: number, now: number = Date.now()): st
 export async function fetchVercelDeployments(
   limit = 20,
 ): Promise<AdminFetchResult<VercelDeployment[]>> {
-  const token = process.env.VERCEL_API_TOKEN;
-  const projectId = process.env.VERCEL_PROJECT_ID;
-  if (!token || !projectId) return unconfigured('Vercel API');
+  const cfg = vercelConfig();
+  if (!cfg) return unconfigured('Vercel API');
 
   try {
-    const params = new URLSearchParams({ projectId, limit: String(limit) });
-    const teamId = process.env.VERCEL_TEAM_ID;
-    if (teamId) params.set('teamId', teamId);
+    const params = new URLSearchParams({ projectId: cfg.projectId, limit: String(limit) });
+    if (cfg.teamId) params.set('teamId', cfg.teamId);
 
     const res = await fetch(`https://api.vercel.com/v6/deployments?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${cfg.token}` },
       next: { revalidate: REVALIDATE_SECONDS },
     });
     if (!res.ok) return failed(`Vercel deployments fetch failed: ${res.status}`);
@@ -107,12 +123,10 @@ export interface VercelWebInsights {
 /** Port of the legacy fetchVercelAnalytics (admin-data.ts:1562) with the
  *  bridge fail-soft contract instead of bare null. */
 export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelWebInsights>> {
-  const token = process.env.VERCEL_API_TOKEN;
-  const projectId = process.env.VERCEL_PROJECT_ID;
-  if (!token || !projectId) return unconfigured('Vercel API');
+  const cfg = vercelConfig();
+  if (!cfg) return unconfigured('Vercel API');
 
   try {
-    const teamId = process.env.VERCEL_TEAM_ID;
     const baseUrl = 'https://api.vercel.com/v1/web/insights/stats';
     const daysAgo = (d: number) => new Date(Date.now() - d * 86400_000).toISOString();
     const now = new Date().toISOString();
@@ -124,10 +138,10 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
     // config-warning panel) instead of silently returning 0.
     let httpFailureStatus: number | null = null;
     const fetchPeriod = async (from: string): Promise<number> => {
-      const params = new URLSearchParams({ projectId, from, to: now });
-      if (teamId) params.set('teamId', teamId);
+      const params = new URLSearchParams({ projectId: cfg.projectId, from, to: now });
+      if (cfg.teamId) params.set('teamId', cfg.teamId);
       const res = await fetch(`${baseUrl}?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${cfg.token}` },
         next: { revalidate: 900 },
       });
       if (!res.ok) {

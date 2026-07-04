@@ -20,13 +20,19 @@ function relTime(iso: string): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+const APP_LABEL: Record<FeatureHealth['app'], string> = {
+  golfhelm: 'GolfHelm',
+  coachhelm: 'CoachHelm',
+  baseballhelm: 'BaseballHelm',
+};
+
 export function FeatureHealthCard({ feature }: { feature: FeatureHealth }) {
   return (
     <Surface elevation="border" padding="md" className="mt-3" aria-label={`${feature.label} detail`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <Eyebrow as="h3" tone="secondary">
-            {feature.app === 'golfhelm' ? 'GolfHelm' : 'CoachHelm'} · {feature.label}
+            {APP_LABEL[feature.app]} · {feature.label}
           </Eyebrow>
           <p className="mt-1 text-sm text-warm-700">{feature.healthSignal}</p>
         </div>

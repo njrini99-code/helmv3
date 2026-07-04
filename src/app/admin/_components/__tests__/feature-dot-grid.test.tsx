@@ -46,6 +46,7 @@ const FEATURES: FeatureHealth[] = [
       { fingerprint: 'fp1', title: 'timeout on fan-out', count: 4, firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-02T10:00:00Z', severity: 'error' },
     ],
   }),
+  fh({ key: 'baseball_roster', app: 'baseballhelm', label: 'Baseball Roster', status: 'amber', reason: '1 warning event.' }),
 ];
 
 describe('FeatureDotGrid', () => {
@@ -64,10 +65,11 @@ describe('FeatureDotGrid', () => {
     expect(neutralChip.getAttribute('aria-label')).not.toMatch(/: red/i);
   });
 
-  it('renders GolfHelm before CoachHelm', () => {
+  it('renders GolfHelm, CoachHelm, and BaseballHelm lanes in command order', () => {
     render(<FeatureDotGrid features={FEATURES} />);
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(headings.indexOf('GolfHelm')).toBeLessThan(headings.indexOf('CoachHelm'));
+    expect(headings.indexOf('CoachHelm')).toBeLessThan(headings.indexOf('BaseballHelm'));
   });
 
   it('sorts red first within a group, regardless of input order', () => {
@@ -77,12 +79,10 @@ describe('FeatureDotGrid', () => {
     expect(buttons[0]?.getAttribute('aria-label')).toMatch(/Round Tracking: red/i);
   });
 
-  it('shows a Baseball paused note with zero StatusPill dots and no data fetch', () => {
+  it('renders BaseballHelm as live feature chips, not a paused note', () => {
     const { container } = render(<FeatureDotGrid features={FEATURES} />);
-    expect(screen.getByText(/Baseball — paused/i)).toBeInTheDocument();
-    const note = screen.getByText(/Baseball — paused/i).closest('div');
-    expect(note?.querySelectorAll('[data-slot="fw-status-pill"]').length).toBe(0);
-    // Sanity: the only status pills in the whole tree belong to the 5 feature chips.
+    expect(screen.queryByText(/Baseball — paused/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Baseball Roster: needs attention/i })).toBeInTheDocument();
     expect(container.querySelectorAll('[data-slot="fw-status-pill"]').length).toBe(FEATURES.length);
   });
 

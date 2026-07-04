@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "check:env": "node scripts/check-required-env.mjs",
+    "check:helm-bridge-env": "node scripts/check-helm-bridge-env.mjs",
     "check:ledger": "node scripts/check-migration-ledger.mjs",
     "check:types-drift": "bash scripts/check-types-drift.sh",
     "check:readiness-matrix": "tsx scripts/baseball/check-readiness-matrix.ts",

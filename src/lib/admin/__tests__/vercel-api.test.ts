@@ -7,7 +7,7 @@ import { fetchVercelDeployments, fetchVercelWebInsights } from '@/lib/admin/verc
 
 describe('fetchVercelDeployments', () => {
   beforeEach(() => {
-    vi.stubEnv('VERCEL_API_TOKEN', 'tok');
+    vi.stubEnv('VERCEL_API_TOKEN', 'vercel-api-token');
     vi.stubEnv('VERCEL_PROJECT_ID', 'prj_1');
     vi.stubEnv('VERCEL_TEAM_ID', 'team_1');
     fetchMock.mockReset();
@@ -16,6 +16,13 @@ describe('fetchVercelDeployments', () => {
 
   it('returns unconfigured when the token trio is absent', async () => {
     vi.stubEnv('VERCEL_API_TOKEN', '');
+    const res = await fetchVercelDeployments();
+    expect(res.status).toBe('unconfigured');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('treats placeholder or too-short tokens as unconfigured', async () => {
+    vi.stubEnv('VERCEL_API_TOKEN', 'your-vercel-api-token-here');
     const res = await fetchVercelDeployments();
     expect(res.status).toBe('unconfigured');
     expect(fetchMock).not.toHaveBeenCalled();
@@ -52,7 +59,7 @@ describe('fetchVercelDeployments', () => {
 
 describe('fetchVercelWebInsights', () => {
   beforeEach(() => {
-    vi.stubEnv('VERCEL_API_TOKEN', 'tok');
+    vi.stubEnv('VERCEL_API_TOKEN', 'vercel-api-token');
     vi.stubEnv('VERCEL_PROJECT_ID', 'prj_1');
     vi.stubEnv('VERCEL_TEAM_ID', 'team_1');
     fetchMock.mockReset();

@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+
+import fs from 'node:fs';
+import path from 'node:path';
+import dotenv from 'dotenv';
+
+const ROOT = process.cwd();
+const ENV_FILES = [
+  '.env.local',
+  '.env.production.local',
+  path.join('.vercel', '.env.production.local'),
+];
+
+for (const file of ENV_FILES) {
+  const fullPath = path.join(ROOT, file);
+  if (fs.existsSync(fullPath)) {
+    dotenv.config({ path: fullPath, override: false, quiet: true });
+  }
+}
+
+function isPlaceholder(value) {
+  return /^(your-|replace-|changeme|todo|example)/i.test(String(value).trim());
+}
+
+function hasUsableSecret(name) {
+  const value = process.env[name]?.trim();
+  return Boolean(value && value.length >= 10 && !isPlaceholder(value));
+}
+
+function hasUsableValue(name) {
+  const value = process.env[name]?.trim();
+  return Boolean(value && !isPlaceholder(value));
+}
+
+const checks = [
+  {
+    label: 'Sentry read token',
+    ok: hasUsableSecret('SENTRY_READ_TOKEN') || hasUsableSecret('SENTRY_AUTH_TOKEN'),
+    required: 'SENTRY_READ_TOKEN preferred, SENTRY_AUTH_TOKEN fallback',
+  },
+  { label: 'Sentry org', ok: hasUsableValue('SENTRY_ORG'), required: 'SENTRY_ORG' },
+  { label: 'Sentry project', ok: hasUsableValue('SENTRY_PROJECT'), required: 'SENTRY_PROJECT' },
+  { label: 'Vercel API token', ok: hasUsableSecret('VERCEL_API_TOKEN'), required: 'VERCEL_API_TOKEN' },
+  { label: 'Vercel project id', ok: hasUsableValue('VERCEL_PROJECT_ID'), required: 'VERCEL_PROJECT_ID' },
+];
+
+const failures = checks.filter((check) => !check.ok);
+
+for (const check of checks) {
+  console.log(`${check.ok ? 'ok' : 'missing'} ${check.label} (${check.required})`);
+}
+
+if (!hasUsableValue('VERCEL_TEAM_ID')) {
+  console.log('warn Vercel team id is not set; team deployments may be incomplete (VERCEL_TEAM_ID)');
+}
+
+if (failures.length > 0) {
+  console.error(`Helm Bridge env check failed: ${failures.length} required value(s) missing or placeholder.`);
+  process.exit(1);
+}
+
+console.log('Helm Bridge env check passed.');
