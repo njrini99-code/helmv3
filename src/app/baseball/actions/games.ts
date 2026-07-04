@@ -21,6 +21,7 @@ import {
 } from '@/lib/baseball/with-baseball-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { mapBattingToInput, mapPitchingToInput } from '@/components/baseball/box-score/mappers';
+import { ipToInnings } from '@/lib/baseball/innings';
 import {
   getStatsCenter,
   type StatsCenterOptions,
@@ -44,6 +45,7 @@ const STATS_PATHS = [
   '/baseball/dashboard/stats-center',
   '/baseball/dashboard/stats/games',
   '/baseball/dashboard/stats/season',
+  '/baseball/dashboard/my-stats',
   '/baseball/dashboard/calendar',
 ];
 
@@ -556,12 +558,14 @@ function computePitchingRates(line: BoxScorePitchingInput): {
 } {
   const { ip, er, h, bb, k } = line;
   if (ip === 0) return { era: null, whip: null, k9: null, bb9: null };
+  const innings = ipToInnings(ip);
+  if (innings === 0) return { era: null, whip: null, k9: null, bb9: null };
 
   return {
-    era: parseFloat((9 * er / ip).toFixed(2)),
-    whip: parseFloat(((bb + h) / ip).toFixed(3)),
-    k9: parseFloat((9 * k / ip).toFixed(2)),
-    bb9: parseFloat((9 * bb / ip).toFixed(2)),
+    era: parseFloat((9 * er / innings).toFixed(2)),
+    whip: parseFloat(((bb + h) / innings).toFixed(3)),
+    k9: parseFloat((9 * k / innings).toFixed(2)),
+    bb9: parseFloat((9 * bb / innings).toFixed(2)),
   };
 }
 

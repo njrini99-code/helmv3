@@ -3,7 +3,10 @@ import {
   filterHubTabsByCapabilities,
   resolveActiveHub,
 } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
-import { COACH_STATS_TABS } from '@/app/baseball/(dashboard)/_components/hub-definitions';
+import {
+  COACH_MANAGEMENT_TABS,
+  COACH_STATS_TABS,
+} from '@/app/baseball/(dashboard)/_components/hub-definitions';
 
 describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
   it('hides performance hub tabs when coach lacks lifting and readiness caps', () => {
@@ -33,5 +36,43 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     });
     expect(hub?.id).toBe('stats');
     expect(hub?.tabs.some((t) => t.id === 'performance-programs')).toBe(false);
+  });
+
+  it('activates the management hub on nested settings routes', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/settings/imports',
+      role: 'coach',
+      programType: 'college',
+      capabilities: { can_manage_settings: true, can_manage_imports: true },
+    });
+    expect(hub?.id).toBe('management');
+    expect(hub?.tabs.some((t) => t.id === 'settings-imports')).toBe(true);
+  });
+
+  it('activates the player recruiting hub on exposure routes', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/college-interest',
+      role: 'player',
+      programType: 'high_school',
+    });
+    expect(hub?.id).toBe('recruiting');
+  });
+
+  it('includes settings home via program-settings href (ownedPrefixes, not duplicate matchPrefixes)', () => {
+    const hub = resolveActiveHub({
+      pathname: '/baseball/dashboard/settings',
+      role: 'coach',
+      programType: 'college',
+      capabilities: { can_manage_settings: true },
+    });
+    expect(hub?.id).toBe('management');
+    expect(hub?.tabs.some((t) => t.id === 'settings-home')).toBe(true);
+  });
+});
+
+describe('COACH_MANAGEMENT_TABS — settings supplement anchor', () => {
+  it('includes the program-settings registry tab before settings supplements', () => {
+    expect(COACH_MANAGEMENT_TABS.some((t) => t.id === 'program-settings')).toBe(true);
+    expect(COACH_MANAGEMENT_TABS.some((t) => t.id === 'settings-home')).toBe(true);
   });
 });

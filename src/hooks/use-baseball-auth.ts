@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 
+import type { User } from '@/lib/types';
+
 type Role = 'coach' | 'player';
 
 type BaseballProfile = {
@@ -21,7 +23,7 @@ type AuthResult = {
 };
 
 type VerifyResult =
-  | { ok: true; role: Role; coachProfile: BaseballProfile | null; playerProfile: BaseballProfile | null }
+  | { ok: true; role: Role; coachProfile: BaseballProfile | null; playerProfile: BaseballProfile | null; user: User | null }
   | { ok: false; redirectTo: string };
 
 // ---------------------------------------------------------------------------
@@ -56,6 +58,15 @@ function invalidateAuthCache() {
   inflightByKey.clear();
 }
 
+export { invalidateAuthCache };
+
+function peekCachedAuthResult(requiredRole: Role | null): VerifyResult | null {
+  const cached = resultCache.get(CACHE_KEY(requiredRole));
+  if (!cached) return null;
+  if (Date.now() - cached.resolvedAt >= CACHE_TTL_MS) return null;
+  return cached.result;
+}
+
 function verifyServerSession(
   supabase: ReturnType<typeof createClient>,
   requiredRole: Role | null,
@@ -69,12 +80,13 @@ function verifyServerSession(
       }
 
       const [userResult, coachResult, playerResult] = await Promise.all([
-        supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
+        supabase.from('users').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('baseball_coaches').select('id, onboarding_completed, coach_type').eq('user_id', user.id).maybeSingle(),
         supabase.from('baseball_players').select('id, onboarding_completed, player_type').eq('user_id', user.id).maybeSingle(),
       ]);
 
-      const userRole = userResult.data?.role;
+      const userRecord = userResult.data as User | null;
+      const userRole = userRecord?.role;
       const coachProfile = coachResult.data as BaseballProfile | null;
       const playerProfile = playerResult.data as BaseballProfile | null;
 
@@ -110,7 +122,13 @@ function verifyServerSession(
         }
       }
 
-      return { ok: true, role: resolvedRole as Role, coachProfile, playerProfile } as const;
+      return {
+        ok: true,
+        role: resolvedRole as Role,
+        coachProfile,
+        playerProfile,
+        user: userRecord,
+      } as const;
     } catch (error) {
       // Any unexpected throw (network blip, aborted fetch, SDK error) must
       // never strand `loading` at true forever — treat it the same as "could
@@ -164,15 +182,17 @@ function resolveWithCache(
 export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
   const router = useRouter();
   const supabaseRef = useRef(createClient());
+  const cached = peekCachedAuthResult(requiredRole);
 
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
-  const [role, setRole] = useState<Role | null>(null);
+  const [loading, setLoading] = useState(() => cached?.ok !== true);
+  const [authorized, setAuthorized] = useState(() => cached?.ok === true);
+  const [role, setRole] = useState<Role | null>(() => (cached?.ok ? cached.role : null));
 
   useEffect(() => {
     let cancelled = false;
 
     function reconcileStore(
+      user: User | null,
       coachProfile: BaseballProfile | null,
       playerProfile: BaseballProfile | null,
     ) {
@@ -184,6 +204,10 @@ export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
 
       if (cachedCoachId !== freshCoachId || cachedPlayerId !== freshPlayerId) {
         store.clear();
+      }
+
+      if (user) {
+        store.setUser(user);
       }
 
       if (coachProfile) {
@@ -209,7 +233,20 @@ export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
       }
     }
 
+    function applySuccess(result: Extract<VerifyResult, { ok: true }>) {
+      reconcileStore(result.user, result.coachProfile, result.playerProfile);
+      setRole(result.role);
+      setAuthorized(true);
+      setLoading(false);
+    }
+
     async function run() {
+      const warm = peekCachedAuthResult(requiredRole);
+      if (warm?.ok) {
+        applySuccess(warm);
+        return;
+      }
+
       setLoading(true);
       try {
         const result = await resolveWithCache(supabaseRef.current, requiredRole);
@@ -218,17 +255,12 @@ export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
         if (!result.ok) {
           useAuthStore.getState().clear();
           invalidateAuthCache();
-          router.push(result.redirectTo);
+          router.replace(result.redirectTo);
           return;
         }
 
-        reconcileStore(result.coachProfile, result.playerProfile);
-        setRole(result.role);
-        setAuthorized(true);
+        applySuccess(result);
       } finally {
-        // ALWAYS resolve loading, even on an unexpected error above — a
-        // stranded `true` here is exactly the eternal-skeleton bug this hook
-        // exists to avoid.
         if (!cancelled) setLoading(false);
       }
     }

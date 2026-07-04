@@ -25,6 +25,7 @@ import {
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
+  PLAYER_RECRUITING_TABS,
 } from './hub-definitions';
 import type { HubSubNavTab } from './hub-sub-nav';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
@@ -38,6 +39,8 @@ const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'academy',
   'club',
 ]);
+
+export { RECRUITING_PROGRAM_TYPES };
 
 /**
  * Stable short ids for telemetry/tests, decoupled from the hub's display label
@@ -107,6 +110,12 @@ function playerHubs(): HubDef[] {
       ariaLabel: 'Team sections',
       tabs: PLAYER_TEAM_TABS,
       ownedPrefixes: PLAYER_TEAM_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
+    },
+    {
+      id: 'recruiting',
+      ariaLabel: 'Recruiting sections',
+      tabs: PLAYER_RECRUITING_TABS,
+      ownedPrefixes: PLAYER_RECRUITING_TABS.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
     },
   ];
 }

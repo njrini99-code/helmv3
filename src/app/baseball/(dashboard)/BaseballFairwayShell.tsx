@@ -13,8 +13,8 @@
  *
  * PRESENTATION ONLY. No server actions, no RLS, no new reads beyond what the
  * existing baseball auth/nav hooks already resolve:
- *   - useBaseballAuth(null)        — the SAME session/onboarding gate
- *     BaseballShellLayout uses for this route group.
+ *   - useBaseballAuth(requiredRole) — the SAME session/onboarding gate
+ *     BaseballShellLayout uses for each mounted route group.
  *   - useBaseballNavContext()      — the SAME server-resolved capability map
  *     (nav-context.ts), so capability-gated verticals never fail-closed here
  *     when they wouldn't in the legacy shell.
@@ -29,13 +29,11 @@
  * PeekPanelProvider nesting, unchanged. BaseballShellLayout.tsx itself is not
  * imported or edited — this file is a parallel, full duplicate of that
  * composition (same reason GolfHelm's FairwayDashboardShell duplicates
- * GolfDashboardShell's stack rather than wrapping it), so the two OTHER
- * baseball shell route groups ((coach-dashboard), (player-dashboard)) are
- * completely unaffected by this migration step.
+ * GolfDashboardShell's stack rather than wrapping it).
  *
- * Mounted ONLY behind isRedesignEnabled() in `(dashboard)/layout.tsx`. Flag
- * OFF renders the legacy `BaseballShellLayout` → `BaseballDashboardShell`,
- * byte-for-byte unchanged.
+ * Mounted ONLY behind isRedesignEnabled() in the Baseball dashboard/player
+ * route-group layouts. Flag OFF renders the legacy `BaseballShellLayout` →
+ * `BaseballDashboardShell`, byte-for-byte unchanged.
  *
  * The AppShell drawer (`mobileOpen`) is BRIDGED to the SAME SidebarContext
  * every legacy baseball page's own menu button already calls `setMobileOpen`
@@ -43,7 +41,7 @@
  * no dead buttons, no double drawers.
  * ========================================================================== */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -75,13 +73,21 @@ import {
 import {
   COACH_HUB_ORDER,
   COACH_HUB_DEFS,
+  HUB_ICONS,
+  HUB_LANDING,
+  PLAYER_DEVELOPMENT_TABS,
+  PLAYER_RECRUITING_TABS,
+  PLAYER_STATS_TABS,
+  PLAYER_TEAM_TABS,
 } from '@/app/baseball/(dashboard)/_components/hub-definitions';
 import {
   filterHubTabsByCapabilities,
   filterHubTabsByProgramType,
+  resolveActiveHub,
+  RECRUITING_PROGRAM_TYPES,
 } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
+import { HubSubNav } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
-import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -96,25 +102,23 @@ const CommandPalette = dynamic(
 type Role = 'coach' | 'player';
 
 /**
- * P413-equivalent: the 3 highest-frequency destinations for the persistent
- * MOBILE bottom-tab bar, matching the legacy `MobileBottomNav`'s preferred ids
- * exactly (dashboard-shell.tsx's `buildMobileNavFromContext`) — the drawer
- * (opened by AppShell's own hamburger) keeps the long tail, so the 4th "Menu"
- * slot the legacy bar shows is redundant here rather than dropped.
+ * P413-equivalent: mobile bottom-tab destinations derived from the SAME hub
+ * sections as the desktop rail so active states agree across breakpoints.
+ * Golf FairwayDashboardShell uses the same pattern (5 tabs, hub activeMatch).
  */
-function buildBottomNavItems(ctx: BaseballNavContext, unreadCount: number): NavItem[] {
-  const primary = getVisibleBaseballNav(ctx).filter((e) => e.section === 'primary');
-  const preferredIds =
-    ctx.role === 'coach'
-      ? ['command-center', 'calendar', 'roster']
-      : ['player-today', 'calendar', 'player-profile'];
-  const top3 = preferredIds
-    .map((id) => primary.find((e) => e.id === id))
-    .filter((e): e is NonNullable<typeof e> => Boolean(e));
-  const fill = primary.filter((e) => !top3.some((selected) => selected.id === e.id));
-  return [...top3, ...fill].slice(0, 3).map((e) =>
-    toNavItem(e, e.showUnreadBadge && unreadCount > 0 ? unreadCount : undefined),
-  );
+function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem[] {
+  const items = sections.flatMap((section) => section.items);
+  const preferredLabels =
+    role === 'coach'
+      ? (['Dashboard', 'Team', 'Stats & Performance', 'Messages'] as const)
+      : (['Today', 'Stats', 'Development', 'Team', 'Messages'] as const);
+
+  const picked = preferredLabels
+    .map((label) => items.find((item) => item.label === label))
+    .filter((item): item is NavItem => Boolean(item));
+
+  if (picked.length >= 3) return picked.slice(0, 5);
+  return items.slice(0, 5);
 }
 
 /** Next <Link> adapter for the shell's link contract (module scope = stable identity). */
@@ -124,60 +128,110 @@ const ShellLink: ShellLinkComponent = ({ href, children, ...rest }) => (
   </Link>
 );
 
-/** entry.icon carries a wider SVG prop contract than FairwayIcon's minimal
- *  `{size, className}` — both are drawn from the same `@/components/icons`
- *  set, so this narrows structurally without behavior change. */
-function toNavItem(entry: Pick<BaseballNavEntry, 'href' | 'label' | 'icon'>, badge?: number): NavItem {
-  return { label: entry.label, href: entry.href, icon: entry.icon as unknown as NavItem['icon'], badge };
+/** Segment-boundary route match — shared by rail items and hub cluster rows. */
+function matchesRoutePrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
-/** Same structural narrowing as toNavItem, for a hub sub-tab (whose `icon` is
- *  optional in HubSubNavTab — every tab this shell renders always sets one). */
-function hubTabToNavItem(tab: HubSubNavTab, badge?: number): NavItem {
-  return { label: tab.label, href: tab.href, icon: tab.icon as unknown as NavItem['icon'], badge };
+function toNavItem(
+  entry: Pick<BaseballNavEntry, 'href' | 'label' | 'icon'>,
+  badge?: number,
+  matchPrefixes: readonly string[] = [],
+): NavItem {
+  return {
+    label: entry.label,
+    href: entry.href,
+    icon: entry.icon as unknown as NavItem['icon'],
+    badge,
+    activeMatch: (pathname) =>
+      matchesRoutePrefix(pathname, entry.href) ||
+      matchPrefixes.some((prefix) => matchesRoutePrefix(pathname, prefix)),
+  };
 }
 
-const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>(['college', 'juco', 'showcase', 'academy', 'club']);
+function playerHubToNavItem({
+  label,
+  href,
+  icon,
+  tabs,
+  badge,
+}: {
+  label: string;
+  href: string;
+  icon: NavItem['icon'];
+  tabs?: readonly HubSubNavTab[];
+  badge?: number;
+}): NavItem {
+  return {
+    label,
+    href,
+    icon,
+    badge,
+    activeMatch: (pathname) =>
+      matchesRoutePrefix(pathname, href) ||
+      Boolean(
+        tabs?.some(
+          (tab) =>
+            matchesRoutePrefix(pathname, tab.href) ||
+            tab.matchPrefixes?.some((prefix) => matchesRoutePrefix(pathname, prefix)),
+        ),
+      ),
+  };
+}
 
-/**
- * Player rail sections — UNCHANGED by the coach-nav-8tab consolidation
- * (COACH_NAV_8TAB_PROPOSAL.md is scoped to the coach nav). Derived straight
- * from `getVisibleBaseballNav()`, exactly as before.
- */
 function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
   const visible = getVisibleBaseballNav(ctx);
-  const primary: NavItem[] = visible.filter((e) => e.section === 'primary').map((e) => toNavItem(e));
-  const secondary: NavItem[] = visible.filter((e) => e.section === 'secondary').map((e) => toNavItem(e));
+  const byId = new Map(visible.map((entry) => [entry.id, entry]));
+  const today = byId.get('player-today');
+  const schedule = byId.get('calendar');
+  const profile = byId.get('player-profile');
 
-  primary.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined));
+  const primary: NavItem[] = [
+    ...(today ? [toNavItem(today)] : []),
+    ...(schedule ? [toNavItem(schedule)] : []),
+    ...(profile ? [toNavItem(profile)] : []),
+    playerHubToNavItem({
+      label: 'Stats',
+      href: HUB_LANDING.playerStats,
+      icon: HUB_ICONS.stats as unknown as NavItem['icon'],
+      tabs: PLAYER_STATS_TABS,
+    }),
+    playerHubToNavItem({
+      label: 'Development',
+      href: HUB_LANDING.playerDevelopment,
+      icon: HUB_ICONS.development as unknown as NavItem['icon'],
+      tabs: PLAYER_DEVELOPMENT_TABS,
+    }),
+    playerHubToNavItem({
+      label: 'Team',
+      href: HUB_LANDING.playerTeam,
+      icon: HUB_ICONS.team as unknown as NavItem['icon'],
+      tabs: PLAYER_TEAM_TABS,
+    }),
+    toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]),
+  ];
+
+  const secondary: NavItem[] = [
+    playerHubToNavItem({
+      label: getBaseballTerminology(ctx).exposureNoun,
+      href: HUB_LANDING.playerRecruiting,
+      icon: HUB_ICONS.recruiting as unknown as NavItem['icon'],
+      tabs: PLAYER_RECRUITING_TABS,
+    }),
+    toNavItem(
+      { href: '/baseball/dashboard/settings', label: 'Settings', icon: IconSettings },
+      undefined,
+      ['/baseball/dashboard/settings'],
+    ),
+  ];
 
   const sections: NavSection[] = [{ heading: 'My Baseball', items: primary }];
   if (secondary.length) sections.push({ heading: 'More', items: secondary });
   return sections;
 }
 
-/**
- * Coach rail sections — GROUPED BY `entry.hub` (COACH_HUB_ORDER / COACH_HUB_DEFS
- * in hub-definitions.ts, itself derived from BASEBALL_NAV_REGISTRY), the same
- * single source of truth src/components/layout/sidebar.tsx's
- * buildCondensedBaseballNavigation groups by. One NavSection per visible hub
- * (heading = hub label, items = the hub's capability/program-type-filtered
- * tabs) — the Fairway rail shows every tab inline (no separate landing-item +
- * sub-nav-strip split the legacy shell needs), so "hub label > sub-items" is
- * literally the section heading over its item list.
- *
- * A hub section is omitted entirely once its tabs filter down to zero (mirrors
- * resolveActiveHub's own "empty hub → no strip" precedent), so this shell and
- * the legacy sidebar can never show a dead-end top-level item for a coach
- * missing every capability a hub's members require.
- *
- * Messages is injected into the DASHBOARD section (golf-style: FairwayDashboard
- * Shell.tsx puts Messages inside its first/primary section, never a section of
- * its own) — it is deliberately excluded from BASEBALL_NAV_REGISTRY (see
- * nav-registry.ts), so every nav consumer must add it explicitly.
- */
 function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
-  const sections: NavSection[] = [];
+  const items: NavItem[] = [];
 
   for (const hubId of COACH_HUB_ORDER) {
     const def = COACH_HUB_DEFS[hubId];
@@ -192,21 +246,27 @@ function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): Na
 
     const capFiltered = filterHubTabsByCapabilities(def.tabs, 'coach', ctx.capabilities);
     const visibleTabs = filterHubTabsByProgramType(capFiltered, ctx.programType);
-    const items = visibleTabs.map((t) => hubTabToNavItem(t));
-
-    if (hubId === 'dashboard') {
-      items.push(hubTabToNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined));
-    }
-    if (items.length === 0) continue;
+    if (visibleTabs.length === 0) continue;
 
     // Recruiting reframed per mode (JUCO → "Transfer Exposure") using the SAME
     // terminology engine program-type-variants.ts already provides — never a
     // second hand-maintained label map.
-    const heading = hubId === 'recruiting' ? getBaseballTerminology(ctx).exposureNoun : def.label;
-    sections.push({ heading, items });
+    items.push(
+      playerHubToNavItem({
+        label: hubId === 'recruiting' ? getBaseballTerminology(ctx).exposureNoun : def.label,
+        href: visibleTabs[0]!.href,
+        icon: def.icon as unknown as NavItem['icon'],
+        tabs: visibleTabs,
+      }),
+    );
+
+    // Messages is the persistent cross-cutting slot, outside the hub registry.
+    if (hubId === 'dashboard') {
+      items.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]));
+    }
   }
 
-  return sections;
+  return [{ heading: 'Baseball', items }];
 }
 
 /**
@@ -223,7 +283,7 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
         { label: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
         { label: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
         { label: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
-        hubTabToNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined),
+        toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]),
       ],
     },
   ];
@@ -237,23 +297,34 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
  * rail is never just three orphaned sections with no way back to Today.
  */
 function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
-  const sections: NavSection[] = [];
+  const items: NavItem[] = [];
   const dashboardTabs = filterHubTabsByCapabilities(COACH_HUB_DEFS.dashboard.tabs, 'coach', ctx.capabilities);
-  sections.push({
-    heading: COACH_HUB_DEFS.dashboard.label,
-    items: [
-      ...dashboardTabs.map((t) => hubTabToNavItem(t)),
-      hubTabToNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined),
-    ],
-  });
+  if (dashboardTabs.length) {
+    items.push(
+      playerHubToNavItem({
+        label: COACH_HUB_DEFS.dashboard.label,
+        href: dashboardTabs[0]!.href,
+        icon: COACH_HUB_DEFS.dashboard.icon as unknown as NavItem['icon'],
+        tabs: dashboardTabs,
+      }),
+    );
+    items.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]));
+  }
   for (const hubId of ['team', 'stats-performance', 'development'] as const) {
     const def = COACH_HUB_DEFS[hubId];
     const capFiltered = filterHubTabsByCapabilities(def.tabs, 'coach', ctx.capabilities);
     const visibleTabs = filterHubTabsByProgramType(capFiltered, ctx.programType);
     if (visibleTabs.length === 0) continue;
-    sections.push({ heading: def.label, items: visibleTabs.map((t) => hubTabToNavItem(t)) });
+    items.push(
+      playerHubToNavItem({
+        label: def.label,
+        href: visibleTabs[0]!.href,
+        icon: def.icon as unknown as NavItem['icon'],
+        tabs: visibleTabs,
+      }),
+    );
   }
-  return sections;
+  return [{ heading: 'Baseball', items }];
 }
 
 function toTitle(seg: string): string {
@@ -407,8 +478,21 @@ function BaseballFairwayContent({
     return buildCoachHubSections(ctx, unreadCount);
   }, [ctx, unreadCount, role, isShowcaseCoach, selectedTeam]);
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname, ctx, homeHref), [pathname, ctx, homeHref]);
+  const activeHub = resolveActiveHub({
+    pathname,
+    role,
+    programType: ctx.programType ?? null,
+    capabilities: ctx.capabilities,
+  });
   // P413-equivalent: persistent mobile bottom-tab bar (subset of the rail).
-  const bottomNavItems = useMemo(() => buildBottomNavItems(ctx, unreadCount), [ctx, unreadCount]);
+  const bottomNavItems = useMemo(
+    () => buildBottomNavFromSections(sections, role),
+    [sections, role],
+  );
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
 
   const name = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
   const avatarUrl = coach?.avatar_url || player?.avatar_url || undefined;
@@ -467,6 +551,14 @@ function BaseballFairwayContent({
         constrainContent={false}
       >
         <div id="main-content" tabIndex={-1} className="outline-none">
+          {activeHub && (
+            <HubSubNav
+              key={activeHub.id}
+              tabs={activeHub.tabs}
+              ariaLabel={activeHub.ariaLabel}
+              className="hidden md:block md:top-16"
+            />
+          )}
           {children}
         </div>
       </AppShell>
@@ -481,19 +573,26 @@ function BaseballFairwayContent({
  * Exported shell — full standalone replacement for BaseballShellLayout (auth
  * gate + provider stack + shell), rendering the Fairway AppShell frame.
  */
-export function BaseballFairwayShell({ children }: { children: React.ReactNode }) {
-  // SAME auth gate BaseballShellLayout uses for this route group (accepts
-  // both roles; requiredRole=null).
-  const { loading, authorized, role } = useBaseballAuth(null);
+export function BaseballFairwayShell({
+  children,
+  authVerified = false,
+  requiredRole = null,
+}: {
+  children: React.ReactNode;
+  authVerified?: boolean;
+  requiredRole?: Role | null;
+}) {
+  // SAME auth gate BaseballShellLayout uses for the mounted route group.
+  const { loading, authorized, role } = useBaseballAuth(requiredRole);
   // SAME server-resolved capability map (nav-context.ts) BaseballShellLayout
   // passes into BaseballDashboardShell.
   const { navContext } = useBaseballNavContext();
 
-  if (loading || !authorized) {
+  if (!authVerified && (loading || !authorized)) {
     return <PageLoading />;
   }
 
-  const resolvedRole: Role = role ?? 'coach';
+  const resolvedRole: Role = requiredRole ?? navContext?.role ?? role ?? 'coach';
 
   return (
     <SidebarProvider>

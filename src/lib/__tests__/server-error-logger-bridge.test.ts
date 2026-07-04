@@ -62,6 +62,17 @@ describe('server-error-logger bridge columns', () => {
     expect(rows[0]!.row.fingerprint).toEqual(rows[1]!.row.fingerprint);
   });
 
+  it('infers baseball sport from legacy emitters that only mention Baseball in the message', async () => {
+    await logServerError('Baseball document action error: permission denied', {
+      action: 'documents.handleError',
+    });
+    const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');
+    expect(adminEvent?.row).toMatchObject({
+      sport: 'baseball',
+      feature: 'baseball_documents',
+    });
+  });
+
   it('stays backward-compatible: legacy context without new fields still writes', async () => {
     await logServerError('legacy', { action: 'legacy.caller' });
     const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');

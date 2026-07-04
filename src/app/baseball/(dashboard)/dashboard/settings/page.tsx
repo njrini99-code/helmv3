@@ -9,8 +9,123 @@ import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { changePasswordAction } from '@/app/baseball/actions/auth';
-import { IconChevronRight, IconShield, IconBuilding, IconBell, IconMail } from '@/components/icons';
+import {
+  IconBell,
+  IconBuilding,
+  IconCalendar,
+  IconChevronRight,
+  IconDatabase,
+  IconLink,
+  IconLock,
+  IconMail,
+  IconPalette,
+  IconSchool,
+  IconSettings,
+  IconShield,
+  IconTarget,
+  IconUpload,
+  IconUsers,
+} from '@/components/icons';
 import Link from 'next/link';
+
+const COACH_SETTINGS_LINKS = [
+  {
+    href: '/baseball/dashboard/settings/program',
+    label: 'Program Settings',
+    description: 'Identity, public profile, notifications, AI, and access defaults',
+    icon: IconBuilding,
+  },
+  {
+    href: '/baseball/dashboard/settings/staff',
+    label: 'Staff Settings',
+    description: 'Staff seats, assignments, and coaching responsibilities',
+    icon: IconUsers,
+  },
+  {
+    href: '/baseball/dashboard/settings/teams',
+    label: 'Team Settings',
+    description: 'Team records, roster configuration, and season ownership',
+    icon: IconUsers,
+  },
+  {
+    href: '/baseball/dashboard/settings/season',
+    label: 'Season Settings',
+    description: 'Season dates, opponent naming, and competition context',
+    icon: IconCalendar,
+  },
+  {
+    href: '/baseball/dashboard/settings/philosophy',
+    label: 'Coaching Philosophy',
+    description: 'Development model, evaluation priorities, and program language',
+    icon: IconTarget,
+  },
+  {
+    href: '/baseball/dashboard/settings/roles',
+    label: 'Role Templates',
+    description: 'Default role packs for staff and program collaborators',
+    icon: IconLock,
+  },
+  {
+    href: '/baseball/dashboard/settings/permissions',
+    label: 'Permissions Matrix',
+    description: 'Capability-level access across staff roles',
+    icon: IconShield,
+  },
+  {
+    href: '/baseball/dashboard/settings/imports',
+    label: 'Import Sources',
+    description: 'Trust levels, review rules, and player matching for imported data',
+    icon: IconUpload,
+  },
+  {
+    href: '/baseball/dashboard/settings/integrations',
+    label: 'Integrations',
+    description: 'Adapter levels for stat feeds, devices, and partner systems',
+    icon: IconLink,
+  },
+  {
+    href: '/baseball/dashboard/settings/audit',
+    label: 'Audit Log',
+    description: 'Append-only history of sensitive settings changes',
+    icon: IconDatabase,
+  },
+] as const;
+
+const PLAYER_SETTINGS_LINKS = [
+  {
+    href: '/baseball/dashboard/settings/privacy',
+    label: 'Privacy Settings',
+    description: 'Control what appears on your public profile',
+    icon: IconShield,
+  },
+  {
+    href: '/baseball/dashboard/settings/recruiting-preferences',
+    label: 'Recruiting Preferences',
+    description: 'Manage exposure preferences and college fit signals',
+    icon: IconSchool,
+  },
+] as const;
+
+const CONSOLIDATED_SETTINGS_LINKS = [
+  {
+    href: '/baseball/dashboard/settings/program#appearance',
+    label: 'Appearance',
+    description: 'Team branding and public profile presentation',
+    icon: IconPalette,
+  },
+  {
+    href: '/baseball/dashboard/settings/program#notifications',
+    label: 'Notifications',
+    description: 'Quiet hours and program notification defaults',
+    icon: IconBell,
+  },
+  {
+    href: '/baseball/dashboard/settings/program#data-retention',
+    label: 'Data Retention',
+    description: 'Retention defaults, export posture, and audit policy',
+    icon: IconDatabase,
+  },
+] as const;
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -106,7 +221,63 @@ export default function SettingsPage() {
   return (
     <>
       <Header title="Settings" subtitle="Manage your account settings" />
-      <div className="p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
+      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+        <section className="grid gap-3 sm:grid-cols-2">
+          {(user?.role === 'coach' ? COACH_SETTINGS_LINKS : PLAYER_SETTINGS_LINKS).map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href}>
+                <Card variant="interactive" className="h-full cursor-pointer transition-all hover:border-primary-200">
+                  <CardContent className="p-5">
+                    <div className="flex h-full items-start justify-between gap-4">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100">
+                          <Icon size={20} className="text-primary-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-warm-900">{item.label}</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-warm-500">{item.description}</p>
+                        </div>
+                      </div>
+                      <IconChevronRight size={18} className="mt-2 shrink-0 text-warm-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+        </section>
+
+        {user?.role === 'coach' && (
+          <Card variant="glass">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <IconSettings size={20} className="text-warm-600" />
+                <h2 className="font-semibold text-warm-900">Consolidated Program Sections</h2>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              {CONSOLIDATED_SETTINGS_LINKS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="glass-subtle rounded-lg border border-warm-200/70 p-4 transition-colors hover:border-primary-200 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <Icon size={18} className="text-warm-600" />
+                      <IconChevronRight size={16} className="text-warm-400" />
+                    </div>
+                    <h3 className="font-medium text-warm-900">{item.label}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-warm-500">{item.description}</p>
+                  </Link>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Program Profile Link (Coaches Only) */}
         {user?.role === 'coach' && (
           <Link href="/baseball/dashboard/program">
@@ -120,57 +291,6 @@ export default function SettingsPage() {
                     <div>
                       <h3 className="font-semibold text-warm-900 mb-1">Program Profile</h3>
                       <p className="text-sm leading-relaxed text-warm-500">Customize your public program page for recruits</p>
-                    </div>
-                  </div>
-                  <IconChevronRight size={20} className="text-warm-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-
-        {/* Privacy Settings Link (Players Only) */}
-        {user?.role === 'player' && (
-          <Link href="/baseball/dashboard/settings/privacy">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                      <IconShield size={24} className="text-primary-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-warm-900 mb-1">Privacy Settings</h3>
-                      <p className="text-sm leading-relaxed text-warm-500">Control what appears on your public profile</p>
-                    </div>
-                  </div>
-                  <IconChevronRight size={20} className="text-warm-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-
-        {/* Notification Preferences (Coaches) — the real, persisted store lives on
-            Program Settings (baseball_program_settings.notification_defaults via
-            ProgramSettingsClient + updateProgramSettings). This used to be a
-            second, disconnected card that only updated local React state and
-            toasted "success" with no server call (#454, #466) — removed in
-            favor of a single link to the real surface so there is exactly one
-            place to configure notifications and no fake toggle to drift out of
-            sync with what's actually saved. */}
-        {user?.role === 'coach' && (
-          <Link href="/baseball/dashboard/settings/program#notifications">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                      <IconBell size={24} className="text-primary-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-warm-900 mb-1">Notification Preferences</h3>
-                      <p className="text-sm leading-relaxed text-warm-500">Manage quiet hours and per-type notification defaults for your program</p>
                     </div>
                   </div>
                   <IconChevronRight size={20} className="text-warm-400" />

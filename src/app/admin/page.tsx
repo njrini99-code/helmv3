@@ -21,6 +21,7 @@ import { PanelBoundary } from './_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from './_components/PanelStates';
 import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
 import { SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill } from '@/components/fairway';
+import { ADMIN_COMMAND_SHORTCUTS } from './_components/admin-nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,11 +99,11 @@ async function BannerAndKpis() {
       <div className="mt-4 grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 xl:grid-cols-6">
         <KpiTile label="Sentry unresolved" value={kpis.sentryUnresolved} href="/admin/errors" tone={kpis.sentryUnresolved ? 'danger' : 'neutral'} goodDirection="down" />
         <KpiTile
-          label="Error groups 24h"
-          value={kpis.eventErrors24h}
+          label="Incident groups 24h"
+          value={kpis.incidentGroups24h}
           href="/admin/errors"
           goodDirection="down"
-          tone={classifyKpiTone(kpis.eventErrors24h, ERRORS_24H_RED_AT)}
+          tone={classifyKpiTone(kpis.incidentGroups24h, ERRORS_24H_RED_AT)}
         />
         <KpiTile
           label="Auth failures 24h"
@@ -218,9 +219,9 @@ function MetricTruthPanel({
 }) {
   const sources = [
     {
-      label: 'Error groups',
-      value: kpis.eventErrors24h,
-      source: 'admin_events grouped by mergeTriage',
+      label: 'Incident groups',
+      value: kpis.incidentGroups24h,
+      source: '24h feed — admin_events + Sentry (lastSeen), grouped',
       freshness: watcher.find((w) => w.label === 'Error pipeline'),
       href: '/admin/errors',
     },
@@ -281,7 +282,7 @@ function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
       href: '/admin/errors?window=24&severity=error',
       label: 'Production Health',
       icon: Gauge,
-      metric: `${kpis.eventErrors24h} groups`,
+      metric: `${kpis.incidentGroups24h} groups`,
       detail: 'Real incidents, source mapped, grouped like Errors tab',
     },
     {
@@ -339,11 +340,8 @@ function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
 }
 
 async function TriagePanel() {
-  const { items, sentry } = await fetchTriageQueue();
+  const { items, sentry, counts } = await fetchTriageQueue();
   const regressed = items.filter((i) => i.substatus === 'regressed');
-  const highSeverity = items.filter((i) => i.severity === 'critical' || i.severity === 'error');
-  const appItems = items.filter((i) => i.origin === 'app');
-  const sentryItems = items.filter((i) => i.origin === 'sentry');
   const sportCounts = [
     ['Golf', items.filter((i) => i.sport === 'golf').length],
     ['Baseball', items.filter((i) => i.sport === 'baseball').length],
@@ -363,12 +361,15 @@ async function TriagePanel() {
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Action lanes
         </h2>
+        <p className="mt-1 text-caption text-warm-500">
+          Last 24h · same incident feed as the Errors tab (unresolved app events + Sentry with activity in window)
+        </p>
         <div className="mt-3 grid divide-y divide-warm-200 overflow-hidden rounded-lg border border-warm-200 md:grid-cols-4 md:divide-x md:divide-y-0">
           {[
-            ['Total groups', items.length, 'coalesced incidents'],
-            ['High severity', highSeverity.length, 'critical and error'],
-            ['App groups', appItems.length, 'Supabase admin_events'],
-            ['Sentry groups', sentryItems.length, sentry.status === 'ok' ? 'live pull' : sentry.status],
+            ['Total groups', counts.totalGroups, 'coalesced incidents'],
+            ['High severity', counts.highSeverityGroups, 'critical and error'],
+            ['App groups', counts.appGroups, 'Supabase admin_events'],
+            ['Sentry groups', counts.sentryGroups, sentry.status === 'ok' ? 'active in 24h' : sentry.status],
           ].map(([label, value, caption]) => (
             <div key={label} className="bg-surface-sunken px-3 py-2">
               <p className="text-eyebrow uppercase text-warm-500">{label}</p>
@@ -457,12 +458,12 @@ async function DeployRail() {
 }
 
 function CommandHeader() {
-  const nav = [
-    { href: '/admin/errors', label: 'Errors', icon: Activity },
-    { href: '/admin/health', label: 'Feature Map', icon: RadioTower },
-    { href: '/admin/deploys', label: 'Deploys', icon: GitBranch },
-    { href: '/admin/audit', label: 'Audit', icon: ShieldCheck },
-  ];
+  const iconByHref = {
+    '/admin/errors': Activity,
+    '/admin/health': RadioTower,
+    '/admin/deploys': GitBranch,
+    '/admin/auth': ShieldCheck,
+  } as const;
 
   return (
     <section className="rounded-2xl border border-warm-200 bg-[var(--fw-color-nav-bg)] px-5 py-4 text-white shadow-sm">
@@ -477,8 +478,8 @@ function CommandHeader() {
           </p>
         </div>
         <nav aria-label="Command center shortcuts" className="flex flex-wrap gap-2">
-          {nav.map((item) => {
-            const Icon = item.icon;
+          {ADMIN_COMMAND_SHORTCUTS.map((item) => {
+            const Icon = iconByHref[item.href];
             return (
               <Link
                 key={item.href}

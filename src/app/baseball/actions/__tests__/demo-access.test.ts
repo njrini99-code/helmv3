@@ -89,7 +89,10 @@ vi.mock('@sentry/nextjs', () => ({
   withScope: (fn: (scope: unknown) => unknown) =>
     fn({ setTag: vi.fn(), setUser: vi.fn(), addBreadcrumb: vi.fn() }),
 }));
-vi.mock('@/lib/server-error-logger', () => ({ logServerException: vi.fn(async () => undefined) }));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerException: vi.fn(async () => undefined),
+  logServerError: vi.fn(async () => undefined),
+}));
 
 import { enterBaseballDemo } from '@/app/baseball/actions/demo-access';
 import { withBaseballAction, BaseballDemoReadOnlyError } from '@/lib/baseball/with-baseball-action';

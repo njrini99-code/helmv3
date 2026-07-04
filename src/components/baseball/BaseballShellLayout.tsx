@@ -39,11 +39,14 @@ interface BaseballShellLayoutProps {
    * derived from the auth response when this is `null`.
    */
   requiredRole: ActiveBaseballRole | null;
+  /** Parent layout already verified auth — skip the second full-page skeleton. */
+  authVerified?: boolean;
 }
 
 export function BaseballShellLayout({
   children,
   requiredRole,
+  authVerified = false,
 }: BaseballShellLayoutProps) {
   // For the generic (dashboard) group, `requiredRole` is null and the hook
   // accepts both roles + returns the real role from the session. For the
@@ -55,7 +58,7 @@ export function BaseballShellLayout({
   // empty capability map and fail-closes every gated entry.
   const { navContext } = useBaseballNavContext();
 
-  if (loading || !authorized) {
+  if (!authVerified && (loading || !authorized)) {
     return <PageLoading />;
   }
 

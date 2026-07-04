@@ -48,15 +48,37 @@ interface NavContextResult {
 
 // Module-scope cache so dashboard route changes don't re-resolve capabilities.
 // Keyed by auth user id so a different signed-in user never reads stale caps.
+const NAV_CACHE_TTL_MS = 5000;
 let cacheUserId: string | null = null;
 let cachedContext: BaseballNavContext | null = null;
+let cacheResolvedAt = 0;
 let inflight: Promise<BaseballNavContext | null> | null = null;
 
+function clearNavContextCache() {
+  cacheUserId = null;
+  cachedContext = null;
+  cacheResolvedAt = 0;
+  inflight = null;
+}
+
+function hasWarmNavCache(userId: string | null): boolean {
+  return (
+    userId !== null &&
+    userId === cacheUserId &&
+    cachedContext !== null &&
+    Date.now() - cacheResolvedAt < NAV_CACHE_TTL_MS
+  );
+}
+
 function resolveForUser(userId: string | null): Promise<BaseballNavContext | null> {
-  // Same user + already resolved → serve from cache.
-  if (userId === cacheUserId && cachedContext !== null) {
+  if (hasWarmNavCache(userId)) {
     return Promise.resolve(cachedContext);
   }
+
+  if (userId === null) {
+    return Promise.resolve(null);
+  }
+
   // Same user + a resolve already in flight → share it (dedupe concurrent mounts).
   if (userId === cacheUserId && inflight) {
     return inflight;
@@ -65,10 +87,14 @@ function resolveForUser(userId: string | null): Promise<BaseballNavContext | nul
   // New user (or first resolve): reset cache and start a fresh server hop.
   cacheUserId = userId;
   cachedContext = null;
+  cacheResolvedAt = 0;
   inflight = getBaseballNavContext()
     .then((ctx) => {
       // Only commit if the user hasn't changed underneath us.
-      if (cacheUserId === userId) cachedContext = ctx;
+      if (cacheUserId === userId) {
+        cachedContext = ctx;
+        cacheResolvedAt = Date.now();
+      }
       return ctx;
     })
     .catch(() => null)
@@ -89,17 +115,24 @@ export function useBaseballNavContext(): NavContextResult {
   const userId = useAuthStore((s) => s.user?.id ?? null);
 
   const [navContext, setNavContext] = useState<BaseballNavContext | null>(() =>
-    userId === cacheUserId ? cachedContext : null,
+    hasWarmNavCache(userId) ? cachedContext : null,
   );
-  const [loading, setLoading] = useState<boolean>(
-    () => !(userId === cacheUserId && cachedContext !== null),
-  );
+  const [loading, setLoading] = useState<boolean>(() => !hasWarmNavCache(userId));
 
   useEffect(() => {
     let alive = true;
 
-    // Serve cache synchronously when available (no spinner on warm navigations).
-    if (userId === cacheUserId && cachedContext !== null) {
+    if (userId === null && cacheUserId !== null) {
+      clearNavContextCache();
+    }
+
+    if (userId === null) {
+      setNavContext(null);
+      setLoading(true);
+      return;
+    }
+
+    if (hasWarmNavCache(userId)) {
       setNavContext(cachedContext);
       setLoading(false);
       return;

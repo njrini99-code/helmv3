@@ -74,7 +74,7 @@ type SidebarHubItem = {
 
 /** Collect every route a hub owns (each tab's href + matchPrefixes). */
 function hubPrefixesFrom(
-  tabs: readonly { href: string; matchPrefixes?: string[] }[],
+  tabs: readonly { href: string; matchPrefixes?: readonly string[] }[],
 ): string[] {
   return tabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]);
 }

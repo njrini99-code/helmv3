@@ -5,6 +5,7 @@ import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
+import { classifyTraceSurface } from '@/lib/error-trace-classification';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -78,7 +79,7 @@ const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
   critical: 'fatal',
 };
 
-function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
+function normalizeContext(context: RoundErrorContext, traceMessage?: string): Record<string, unknown> {
   return JSON.parse(JSON.stringify({
     action: context.action,
     route: context.route ?? null,
@@ -104,6 +105,7 @@ function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
     extra: context.extra ?? {},
     sport: context.sport ?? null,
     teamId: context.teamId ?? null,
+    ...(traceMessage ? { trace_message: traceMessage.slice(0, 2000) } : {}),
     // Only reached when shouldPersistAdminTables() is true (writeAdminTables
     // is called after that gate), so this is always 'production' in practice
     // today — tagged explicitly so a future gate regression is visible in
@@ -147,16 +149,40 @@ function buildFingerprint(context: RoundErrorContext, severity: ServerTraceSever
   ];
 }
 
+/** Infer sport when legacy emitters omit context.sport (most baseball actions pre-withBaseballAction). */
+function inferSport(message: string, context: RoundErrorContext): NonNullable<RoundErrorContext['sport']> | null {
+  if (context.sport) return context.sport;
+  const probe = `${context.route ?? ''} ${context.url ?? ''} ${context.action ?? ''}`;
+  const classified = classifyTraceSurface(probe, context.action ?? null);
+  if (classified.sport) return classified.sport;
+  if (/baseball/i.test(message)) return 'baseball';
+  if (/\bgolf\b|coachhelm/i.test(message)) return 'golf';
+  return null;
+}
+
+function enrichTraceContext(message: string, context: RoundErrorContext): RoundErrorContext {
+  const sport = inferSport(message, context);
+  if (!sport) return context;
+  const probe = `${context.route ?? ''} ${context.url ?? ''} ${context.action ?? ''} ${message}`;
+  const classified = classifyTraceSurface(probe, context.action ?? null);
+  return {
+    ...context,
+    sport,
+    feature: context.feature ?? classified.feature ?? context.featureArea ?? null,
+  };
+}
+
 async function writeAdminTables(
   message: string,
   error: Error | null,
   context: RoundErrorContext,
   severity: ServerTraceSeverity
 ) {
+  const enriched = enrichTraceContext(message, context);
   const admin = createAdminClient();
-  const normalizedContext = normalizeContext(context);
-  const url = buildUrl(context);
-  const title = buildAdminTitle(message, context, severity);
+  const normalizedContext = normalizeContext(enriched);
+  const url = buildUrl(enriched);
+  const title = buildAdminTitle(message, enriched, severity);
   const stack = error?.stack?.slice(0, 8000) ?? null;
   const timestamp = new Date().toISOString();
 
@@ -185,19 +211,33 @@ async function writeAdminTables(
     severity,
     message: message.slice(0, 10000),
     metadata: normalizedContext as Json,
-    user_id: context.userId ?? null,
-    user_email: context.userEmail ?? null,
+    user_id: enriched.userId ?? null,
+    user_email: enriched.userEmail ?? null,
     url,
     stack_trace: stack,
     browser_info: null,
-    sport: context.sport ?? null,
-    team_id: context.teamId ?? null,
+    sport: enriched.sport ?? null,
+    team_id: enriched.teamId ?? null,
     fingerprint: dbFingerprint,
-    source: context.source ?? 'server_action',
-    feature: context.feature ?? context.featureArea ?? null,
+    source: enriched.source ?? 'server_action',
+    feature: enriched.feature ?? enriched.featureArea ?? null,
   });
 
   await Promise.allSettled([errorLogInsert, adminEventInsert]);
+}
+
+/** Static Sentry title — user/error copy lives in scope context, not the format string. */
+function sentryCaptureTitle(context: RoundErrorContext): string {
+  if (context.title?.trim()) {
+    return context.title.trim().slice(0, 200);
+  }
+  return `[${context.action}] server trace`;
+}
+
+function syntheticTraceError(message: string): Error {
+  const err = new Error('Server trace error');
+  err.cause = message;
+  return err;
 }
 
 function captureSentryTrace(
@@ -213,6 +253,7 @@ function captureSentryTrace(
     scope.setTag('error_source', context.source ?? 'server_action');
     scope.setTag('feature_area', context.featureArea ?? 'unknown');
     scope.setTag('feature', context.feature ?? context.featureArea ?? 'unknown');
+    if (context.sport) scope.setTag('sport', context.sport);
     scope.setTag('handled', String(context.handled ?? true));
     if (context.errorCode) scope.setTag('pg_error_code', context.errorCode);
     if (context.statusCode) scope.setTag('http_status', String(context.statusCode));
@@ -233,7 +274,7 @@ function captureSentryTrace(
       });
     }
 
-    scope.setContext('server_trace', normalizeContext(context));
+    scope.setContext('server_trace', normalizeContext(context, message));
     scope.setFingerprint(buildFingerprint(context, severity));
 
     // Route by severity: info/warning are messages (control-flow signals,
@@ -244,10 +285,11 @@ function captureSentryTrace(
     // logServerException callers who explicitly handed us an Error.
     const isMessage =
       !forceException && (severity === 'info' || severity === 'warning');
+    const sentryTitle = sentryCaptureTitle(context);
     if (isMessage) {
-      Sentry.captureMessage(message, SENTRY_SEVERITY_MAP[severity] ?? 'warning');
+      Sentry.captureMessage(sentryTitle, SENTRY_SEVERITY_MAP[severity] ?? 'warning');
     } else {
-      Sentry.captureException(error ?? new Error(message));
+      Sentry.captureException(error ?? syntheticTraceError(message));
     }
   });
 }
@@ -264,7 +306,8 @@ function isNextControlFlowError(message: string, error: Error | null): boolean {
   if (typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))) {
     return true;
   }
-  return message.includes('Dynamic server usage:');
+  const controlFlowMarker = 'Dynamic server usage:';
+  return message.indexOf(controlFlowMarker) !== -1;
 }
 
 async function captureServerTrace(
@@ -274,29 +317,37 @@ async function captureServerTrace(
   error?: Error | null,
   forceException = false,
 ): Promise<void> {
-  const normalizedError = error ?? new Error(message);
+  const enriched = enrichTraceContext(message, context);
+  const normalizedError = error ?? syntheticTraceError(message);
 
   // Skip, don't rethrow: callers already decide how the original error
   // propagates; our only job is to not record framework signals as incidents.
   if (isNextControlFlowError(message, error ?? null)) return;
 
-  if (!context.skipSentry) {
+  if (!enriched.skipSentry) {
     try {
-      captureSentryTrace(message, normalizedError, context, severity, forceException);
+      captureSentryTrace(message, normalizedError, enriched, severity, forceException);
     } catch {
       // Sentry should never block request handling.
     }
   }
 
   if (!shouldPersistAdminTables()) {
-    console.error(`[ServerErrorLogger] (${severity}, not persisted off-prod)`, message, context.action ?? '');
+    console.error('[ServerErrorLogger] not persisted off-prod', {
+      severity,
+      traceMessage: message,
+      action: enriched.action ?? '',
+    });
     return;
   }
 
   try {
-    await writeAdminTables(message, normalizedError, context, severity);
+    await writeAdminTables(message, normalizedError, enriched, severity);
   } catch {
-    console.error('[ServerErrorLogger] Failed to persist trace:', message, context);
+    console.error('[ServerErrorLogger] Failed to persist trace', {
+      traceMessage: message,
+      context: enriched,
+    });
   }
 }
 

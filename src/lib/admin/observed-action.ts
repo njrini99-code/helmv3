@@ -1,5 +1,6 @@
 import { logServerException } from '@/lib/server-error-logger';
 import { shouldEmit, drainCollapsedCount } from '@/lib/admin/emit-throttle';
+import { observeActionSoftFailure } from '@/lib/admin/observe-action-result';
 import { createClient } from '@/lib/supabase/server';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
@@ -74,7 +75,29 @@ export function withAdminObserved<Args extends unknown[], R>(
 ): (...args: Args) => Promise<R> {
   return async (...args: Args): Promise<R> => {
     try {
-      return await fn(...args);
+      const result = await fn(...args);
+      const observedUser = await resolveObservedUser();
+      let extraContext: ObservedActionContext = {};
+      try {
+        extraContext = opts.contextFrom?.(args) ?? {};
+      } catch {
+        extraContext = {};
+      }
+      observeActionSoftFailure(result, {
+        action: name,
+        source: 'server_action',
+        feature: opts.feature ?? null,
+        featureArea: opts.featureArea ?? opts.feature ?? null,
+        sport: opts.sport,
+        userId: observedUser.userId,
+        userEmail: observedUser.userEmail,
+        roundId: extraContext.roundId ?? null,
+        playerId: extraContext.playerId ?? null,
+        teamId: extraContext.teamId ?? null,
+        route: extraContext.route ?? null,
+        handled: true,
+      });
+      return result;
     } catch (err) {
       if (!isNextControlFlowError(err)) {
         try {

@@ -229,6 +229,12 @@ export interface BaseballNavEntry {
    * role: 'player' entries, which never appear in a coach hub.
    */
   hub?: BaseballNavHub;
+  /**
+   * Optional nested-route ownership prefixes for hub sub-nav active matching.
+   * When set, hub-definitions copies this onto HubSubNavTab.matchPrefixes so
+   * detail routes (e.g. /players/[id]) highlight the parent registry tab.
+   */
+  matchPrefixes?: readonly string[];
 }
 
 /**
@@ -331,6 +337,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'team',
+    matchPrefixes: ['/baseball/dashboard/players'],
   },
   {
     id: 'calendar',
@@ -489,6 +496,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredAnyCapabilities: ['can_manage_lifting', 'can_view_readiness'],
     section: 'primary',
     hub: 'stats-performance',
+    matchPrefixes: ['/baseball/dashboard/performance'],
   },
   {
     id: 'staff-decision-room',
@@ -622,6 +630,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'development',
+    matchPrefixes: ['/baseball/dashboard/dev-plans'],
   },
   {
     id: 'academics',
@@ -647,6 +656,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'recruiting',
+    matchPrefixes: ['/baseball/dashboard/camps'],
   },
   {
     id: 'organization',
@@ -757,15 +767,14 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     id: 'team',
     label: 'Dashboard',
     href: '/baseball/dashboard/command-center',
-    playerHref: '/baseball/player/today',
     icon: IconUsers,
     // Backward-compatible secondary landing. The old team dashboard route now
-    // redirects here for coaches and to Player Today for players. Classified
+    // redirects here for coaches. Classified
     // 'dashboard' for the hub-required-field invariant, but hub-definitions.ts
     // deliberately EXCLUDES this id from the Dashboard hub's rendered sub-tabs
     // (its href is an exact duplicate of 'command-center' for coaches — it is a
     // legacy alias, never a distinct destination worth its own tab).
-    role: 'both',
+    role: 'coach',
     requiredCapability: null,
     section: 'secondary',
     hub: 'dashboard',

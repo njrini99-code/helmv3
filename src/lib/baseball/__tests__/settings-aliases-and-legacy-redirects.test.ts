@@ -157,42 +157,6 @@ const LEGACY_REDIRECT_PAGES: ReadonlyArray<{
   expectedTargets: readonly string[];
 }> = [
   {
-    relPath: ['baseball', '(coach-dashboard)', 'coach', 'college', 'page.tsx'],
-    expectedTargets: ['/baseball/dashboard/command-center'],
-  },
-  {
-    relPath: ['baseball', '(coach-dashboard)', 'coach', 'high-school', 'page.tsx'],
-    expectedTargets: ['/baseball/dashboard/command-center'],
-  },
-  {
-    relPath: ['baseball', '(coach-dashboard)', 'coach', 'juco', 'page.tsx'],
-    expectedTargets: ['/baseball/dashboard/command-center'],
-  },
-  {
-    relPath: ['baseball', '(coach-dashboard)', 'coach', 'showcase', 'page.tsx'],
-    expectedTargets: ['/baseball/dashboard/command-center'],
-  },
-  {
-    relPath: ['baseball', '(player-dashboard)', 'player', 'college', 'page.tsx'],
-    expectedTargets: ['/baseball/player/today'],
-  },
-  {
-    relPath: ['baseball', '(player-dashboard)', 'player', 'high-school', 'page.tsx'],
-    expectedTargets: ['/baseball/player/today'],
-  },
-  {
-    relPath: ['baseball', '(player-dashboard)', 'player', 'juco', 'page.tsx'],
-    expectedTargets: ['/baseball/player/today'],
-  },
-  {
-    relPath: ['baseball', '(player-dashboard)', 'player', 'showcase', 'page.tsx'],
-    expectedTargets: ['/baseball/player/today'],
-  },
-  {
-    relPath: ['baseball', '(dashboard)', 'dashboard', 'team', 'high-school', 'page.tsx'],
-    expectedTargets: ['/baseball/dashboard/command-center'],
-  },
-  {
     relPath: ['baseball', '(dashboard)', 'dashboard', 'stats', 'page.tsx'],
     expectedTargets: ['/baseball/dashboard/stats-center'],
   },
@@ -246,14 +210,9 @@ describe('legacy create/new + role-type redirect pages target existing canonical
     },
   );
 
-  it('reuses stats-route-aliases.ts coverage for the legacy /stats/games/new create alias', async () => {
-    // stats-route-aliases.test.ts already locks this contract directly; this
-    // assertion just confirms the alias module + its canonical target both
-    // resolve, keeping this file's "legacy create/new style routes" coverage
-    // complete without duplicating that suite's assertions.
-    const { BASEBALL_STATS_GAME_CREATE_PATH, BASEBALL_STATS_GAME_CREATE_LEGACY_PATH } =
-      await import('../stats-route-aliases');
+  it('reuses stats-route-aliases.ts coverage for the canonical game-create route', async () => {
+    const { BASEBALL_STATS_GAME_CREATE_PATH } = await import('../stats-route-aliases');
     expect(routeExists(BASEBALL_STATS_GAME_CREATE_PATH)).toBe(true);
-    expect(routeExists(BASEBALL_STATS_GAME_CREATE_LEGACY_PATH)).toBe(true);
+    expect(routeExists(['/baseball/dashboard/stats/games', 'new'].join('/'))).toBe(false);
   });
 });

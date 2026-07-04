@@ -14,14 +14,11 @@
 // see also innings.test.ts) before any rate divides by it. This file pins that
 // corrected behavior.
 //
-// NEEDS-DECISION (documented in
-// docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md): the box-score
-// SAVE path (`games.ts`'s `computePitchingRates` + CSV `getFloat('innings_pitched')`)
-// is a SEPARATE, still-unconverted code path — it still divides by the raw
-// notation value with no thirds conversion. That gap is unaffected by #434 and
-// is pinned as-is by the second describe block below (games.ts mirrors its own,
-// still-raw formula) — do not "fix" that block to match `ipToInnings`; it is
-// pinning actual, unchanged behavior.
+// The box-score SAVE path (`games.ts`'s `computePitchingRates`, including CSV
+// imports that read `innings_pitched` as the same notation value) must use the
+// same `ipToInnings` conversion before calculating rates. Otherwise a saved
+// game can persist different ERA/WHIP/K9 than the Stats Center read model later
+// derives from the same IP/counting stats.
 // =============================================================================
 
 import { readFileSync } from 'node:fs';
@@ -99,14 +96,16 @@ describe('Pitching invariants (#377) — games.ts box-score save mirrors the sam
   });
 
   it('computePitchingRates uses the identical ERA/WHIP/K9/BB9 formulas', () => {
-    expect(src).toContain('era: parseFloat((9 * er / ip).toFixed(2)),');
-    expect(src).toContain('whip: parseFloat(((bb + h) / ip).toFixed(3)),');
-    expect(src).toContain('k9: parseFloat((9 * k / ip).toFixed(2)),');
-    expect(src).toContain('bb9: parseFloat((9 * bb / ip).toFixed(2)),');
+    expect(src).toContain("import { ipToInnings } from '@/lib/baseball/innings';");
+    expect(src).toContain('const innings = ipToInnings(ip);');
+    expect(src).toContain('era: parseFloat((9 * er / innings).toFixed(2)),');
+    expect(src).toContain('whip: parseFloat(((bb + h) / innings).toFixed(3)),');
+    expect(src).toContain('k9: parseFloat((9 * k / innings).toFixed(2)),');
+    expect(src).toContain('bb9: parseFloat((9 * bb / innings).toFixed(2)),');
   });
 
-  it('the CSV parser reads innings_pitched as a raw float with no thirds-notation conversion', () => {
+  it('the CSV parser reads innings_pitched as box-score notation and the shared save helper converts it for rates', () => {
     expect(src).toMatch(/ip:\s*getFloat\('innings_pitched'\)/);
-    expect(src).not.toMatch(/innings.*thirds|thirds.*innings|normalizeInnings/i);
+    expect(src).toContain('const innings = ipToInnings(ip);');
   });
 });

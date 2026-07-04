@@ -710,7 +710,7 @@ async function completePlayerOnboardingImpl(
   revalidatePath('/baseball');
   revalidatePath('/baseball/player');
 
-  return { success: true, redirectTo: '/baseball/dashboard' };
+  return { success: true, redirectTo: '/baseball/player/today' };
 }
 
 export const signupAndCompleteCoachOnboarding = withAdminObserved(

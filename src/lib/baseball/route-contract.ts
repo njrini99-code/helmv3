@@ -41,6 +41,7 @@ import {
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
+  PLAYER_RECRUITING_TABS,
 } from '@/app/baseball/(dashboard)/_components/hub-definitions';
 import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 
@@ -58,7 +59,8 @@ export type HubName =
   | 'coach-academics'
   | 'player-stats'
   | 'player-development'
-  | 'player-team';
+  | 'player-team'
+  | 'player-recruiting';
 
 export type DeclaredHrefOrigin =
   | { kind: 'nav-registry'; id: string; variant: 'href' | 'playerHref' }
@@ -96,6 +98,7 @@ const HUB_TAB_SOURCES: ReadonlyArray<{
   { hub: 'player-stats', role: 'player', tabs: PLAYER_STATS_TABS },
   { hub: 'player-development', role: 'player', tabs: PLAYER_DEVELOPMENT_TABS },
   { hub: 'player-team', role: 'player', tabs: PLAYER_TEAM_TABS },
+  { hub: 'player-recruiting', role: 'player', tabs: PLAYER_RECRUITING_TABS },
 ];
 
 /**
@@ -134,7 +137,8 @@ export function collectDeclaredHrefs(): DeclaredHref[] {
     role: 'both',
     requiredCapability: null,
     requiredAnyCapabilities: [],
-    matchPrefixes: [],
+    // Thread detail pages (/messages/[id]) are owned by the inbox list route.
+    matchPrefixes: [BASEBALL_MESSAGES_NAV.href],
   });
 
   for (const source of HUB_TAB_SOURCES) {

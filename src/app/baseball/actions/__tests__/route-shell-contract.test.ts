@@ -42,7 +42,12 @@ import {
   DYNAMIC_ROUTE_SAMPLES,
   REDIRECT_ALIAS_MANIFEST,
 } from '@/test/helpers/baseball-route-inventory';
-import { BASEBALL_NAV_REGISTRY, BASEBALL_MESSAGES_NAV } from '@/lib/baseball/nav-registry';
+import {
+  BASEBALL_NAV_REGISTRY,
+  BASEBALL_MESSAGES_NAV,
+  getVisibleBaseballNav,
+  type BaseballNavContext,
+} from '@/lib/baseball/nav-registry';
 import {
   COACH_TEAM_TABS,
   COACH_STATS_TABS,
@@ -84,23 +89,12 @@ const ADVISORY_ALLOWLIST: readonly AllowlistEntry[] = [
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]/scout-packet/preview', reason: 'deep-link print preview reached from the scout packet' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]/stats', reason: 'deep-link sub-view reached from the player profile' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/camps/[id]', reason: 'deep-link detail page reached from the Camps list' },
-  { bucket: 'orphanRoutes', href: '/baseball/dashboard/messages/[id]', reason: 'deep-link thread page reached from the Messages inbox' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/stats/games/[gameId]', reason: 'deep-link box score reached from the Games list' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/stats/games/create', reason: 'sub-action reached from the Games list' },
-  { bucket: 'orphanRoutes', href: '/baseball/dashboard/stats/games/new', reason: 'sub-action reached from the Games list' },
 
   // --- orphanRoutes: backward-compatible redirect-only landing stubs. ---
   { bucket: 'orphanRoutes', href: '/baseball/dashboard', reason: 'backward-compatible bookmark dispatcher; server-redirects by role' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/stats', reason: 'legacy redirect-only stub -> /dashboard/stats-center' },
-  { bucket: 'orphanRoutes', href: '/baseball/dashboard/team/high-school', reason: 'legacy redirect-only stub -> command-center' },
-  { bucket: 'orphanRoutes', href: '/baseball/coach/college', reason: 'legacy per-coach-type stub; redirects to command-center' },
-  { bucket: 'orphanRoutes', href: '/baseball/coach/high-school', reason: 'legacy per-coach-type stub; redirects to command-center' },
-  { bucket: 'orphanRoutes', href: '/baseball/coach/juco', reason: 'legacy per-coach-type stub; redirects to command-center' },
-  { bucket: 'orphanRoutes', href: '/baseball/coach/showcase', reason: 'legacy per-coach-type stub; redirects to command-center' },
-  { bucket: 'orphanRoutes', href: '/baseball/player/college', reason: 'legacy per-program-type stub; redirects to player today' },
-  { bucket: 'orphanRoutes', href: '/baseball/player/high-school', reason: 'legacy per-program-type stub; redirects to player today' },
-  { bucket: 'orphanRoutes', href: '/baseball/player/juco', reason: 'legacy per-program-type stub; redirects to player today' },
-  { bucket: 'orphanRoutes', href: '/baseball/player/showcase', reason: 'legacy per-program-type stub; redirects to player today' },
 
   // --- orphanRoutes: public marketing / auth / onboarding / join entry
   // points — pre-login surfaces that are intentionally outside the
@@ -122,6 +116,7 @@ const ADVISORY_ALLOWLIST: readonly AllowlistEntry[] = [
   { bucket: 'orphanRoutes', href: '/baseball/player/[id]', reason: 'public player share page, no app nav' },
   { bucket: 'orphanRoutes', href: '/baseball/program/[id]', reason: 'public program share page, no app nav' },
   { bucket: 'orphanRoutes', href: '/baseball/team/[id]', reason: 'public team share page, no app nav' },
+  { bucket: 'orphanRoutes', href: '/baseball/admin/demo-sessions', reason: 'platform admin surface outside dashboard nav shell' },
 ];
 
 function allowlistedHrefs(bucket: GapBucket): Set<string> {
@@ -244,6 +239,14 @@ describe('BaseballHelm route/shell contract (#374)', () => {
       expect(REDIRECT_ALIAS_MANIFEST.some((a) => a.from === '/baseball/dashboard/staff' || a.to === '/baseball/dashboard/staff')).toBe(
         false,
       );
+    });
+
+    it('player nav does not expose the legacy coach dashboard alias as a duplicate Today route', () => {
+      const player: BaseballNavContext = { role: 'player', capabilities: {}, programType: 'college' };
+      const visible = getVisibleBaseballNav(player);
+
+      expect(visible.some((entry) => entry.id === 'team')).toBe(false);
+      expect(visible.filter((entry) => entry.href === '/baseball/player/today').map((entry) => entry.id)).toEqual(['player-today']);
     });
 
     it('guardWithoutNavGating is empty for the known (capability-guarded) set', () => {

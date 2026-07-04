@@ -32,6 +32,7 @@ import type { User } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerEvent, logServerException } from '@/lib/server-error-logger';
+import { observeActionSoftFailure } from '@/lib/admin/observe-action-result';
 import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import type { HelmLiftingAccessResult } from '@/lib/types/helm-lifting';
@@ -177,6 +178,18 @@ export function withLiftingAction<TArgs extends unknown[], TResult>(
         // 4. RUN
         const ctx: LiftingActionContext = { user, orgId, access };
         const result = await fn(ctx, ...args);
+        observeActionSoftFailure(result, {
+          action: name,
+          featureArea,
+          feature: featureArea.replaceAll('-', '_'),
+          source: 'server_action',
+          sport: 'shared',
+          userId: user.id,
+          userEmail: user.email ?? null,
+          teamId: orgId,
+          handled: true,
+          tags: { sport: 'lifting', feature: featureArea, lifting_org: orgId },
+        });
         scope.addBreadcrumb({ category: 'lifting.action', message: `done ${name}`, level: 'info' });
         return result;
       } catch (error) {

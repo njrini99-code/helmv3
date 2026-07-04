@@ -61,6 +61,7 @@ import {
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
+  PLAYER_RECRUITING_TABS,
 } from '@/app/baseball/(dashboard)/_components/hub-definitions';
 import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 
@@ -148,6 +149,7 @@ const ALL_HUB_TAB_ARRAYS: readonly (readonly HubSubNavTab[])[] = [
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
+  PLAYER_RECRUITING_TABS,
 ];
 
 const hubTabEntries: NavManifestEntry[] = ALL_HUB_TAB_ARRAYS.flatMap((tabs) =>
@@ -186,54 +188,6 @@ const settingsAliasEntries: NavManifestEntry[] = Object.values(
 
 const legacyRedirectEntries: NavManifestEntry[] = [
   {
-    href: '/baseball/coach/college',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/dashboard/command-center',
-  },
-  {
-    href: '/baseball/coach/high-school',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/dashboard/command-center',
-  },
-  {
-    href: '/baseball/coach/juco',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/dashboard/command-center',
-  },
-  {
-    href: '/baseball/coach/showcase',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/dashboard/command-center',
-  },
-  {
-    href: '/baseball/player/college',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/player/today',
-  },
-  {
-    href: '/baseball/player/high-school',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/player/today',
-  },
-  {
-    href: '/baseball/player/juco',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/player/today',
-  },
-  {
-    href: '/baseball/player/showcase',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/player/today',
-  },
-  {
     href: '/baseball/dashboard/team',
     source: 'legacy-redirect',
     status: 'deprecated',
@@ -242,12 +196,6 @@ const legacyRedirectEntries: NavManifestEntry[] = [
     // canonical entries above).
     target: '/baseball/dashboard/command-center',
     note: 'Branches to /baseball/player/today for players at runtime — both arms are canonical.',
-  },
-  {
-    href: '/baseball/dashboard/team/high-school',
-    source: 'legacy-redirect',
-    status: 'deprecated',
-    target: '/baseball/dashboard/command-center',
   },
   {
     href: '/baseball/dashboard/stats',

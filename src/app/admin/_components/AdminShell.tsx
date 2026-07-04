@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
-  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck,
+  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
 } from 'lucide-react';
 import {
   AppShell,
@@ -16,6 +16,7 @@ import {
   type CommandGroup,
   type CommandItem,
 } from '@/components/fairway';
+import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { ADMIN_NAV, hrefForShortcut } from './admin-nav';
 
 /** Sub-route leaf labels the Breadcrumb trail can't derive from ADMIN_NAV
@@ -58,6 +59,7 @@ const NAV_ICON_BY_HREF = {
   '/admin/golf': Flag,
   '/admin/baseball': CircleDot,
   '/admin/ben-leah': MessageSquarePlus,
+  '/admin/work': ScrollText,
   '/admin/users': Users,
   '/admin/jobs': Timer,
   '/admin/deploys': Rocket,
@@ -204,6 +206,7 @@ export function AdminShell({
   );
 
   return (
+    <SessionActivityProvider>
     <div className="fairway-ds min-h-screen bg-canvas-gradient">
       <AppShell
         sections={sections}
@@ -253,5 +256,6 @@ export function AdminShell({
         placeholder="Jump to…"
       />
     </div>
+    </SessionActivityProvider>
   );
 }

@@ -9,15 +9,6 @@ const SCAN_ROOTS = [
   join(REPO_ROOT, 'e2e'),
 ];
 const ALLOWLIST = new Set([
-  join(REPO_ROOT, 'src/lib/baseball/stats-route-aliases.ts'),
-  join(
-    REPO_ROOT,
-    'src/app/baseball/(dashboard)/dashboard/stats/games/new/page.tsx',
-  ),
-  join(
-    REPO_ROOT,
-    'src/app/baseball/(dashboard)/dashboard/stats/games/new/error.tsx',
-  ),
 ]);
 
 const STALE_HREF = /\/baseball\/dashboard\/stats\/games\/new(?![\w-])/;

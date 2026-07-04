@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   })),
   isCurrentSessionBaseballDemo: vi.fn(async () => false),
   logServerException: vi.fn(async (..._args: unknown[]) => undefined),
+  logServerError: vi.fn(async (..._args: unknown[]) => undefined),
   scope: {
     setTag: vi.fn(),
     setUser: vi.fn(),
@@ -37,6 +38,7 @@ vi.mock('@/lib/demo/baseball-config.server', () => ({
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerException: mocks.logServerException,
+  logServerError: mocks.logServerError,
 }));
 
 vi.mock('@sentry/nextjs', () => ({
@@ -151,6 +153,32 @@ describe('withBaseballAction observability', () => {
         feature: 'baseball_dashboard',
         feature_area: 'baseball-dashboard',
       },
+    });
+  });
+
+  it('logs { success: false } soft failures to Helm Bridge without throwing', async () => {
+    const action = withBaseballAction(
+      'uploadBaseballDocument',
+      { featureArea: 'baseball-documents', feature: 'baseball_documents' },
+      async () => ({ success: false as const, error: 'Storage bucket unavailable' }),
+    );
+
+    const result = await action();
+    expect(result).toEqual({ success: false, error: 'Storage bucket unavailable' });
+    expect(mocks.logServerException).not.toHaveBeenCalled();
+    expect(mocks.logServerError).toHaveBeenCalledTimes(1);
+
+    const softCall = mocks.logServerError.mock.calls[0] as
+      | [string, Record<string, unknown> | undefined, 'warning' | 'error' | 'critical']
+      | undefined;
+    expect(softCall?.[0]).toBe('Storage bucket unavailable');
+    expect(softCall?.[2]).toBe('error');
+    expect(softCall?.[1]).toMatchObject({
+      action: 'uploadBaseballDocument',
+      sport: 'baseball',
+      feature: 'baseball_documents',
+      source: 'server_action',
+      handled: true,
     });
   });
 });

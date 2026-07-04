@@ -48,6 +48,8 @@ export const STAT_LAYER_SCAN_EXCLUDED_FILES = [
   'src/lib/types/database.ts',
   'src/lib/baseball/stat-layer-manifest.ts',
   'src/lib/baseball/__tests__/stat-layer-contract.test.ts',
+  // Helm Bridge metadata — lists primaryTable/heartbeatTable names, not a DB consumer.
+  'src/lib/admin/feature-registry.ts',
 ] as const;
 
 export type StatLayerConsumerGroup =

@@ -1,8 +1,12 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
-import { groupAppErrorEvents, type AppTriageEventRow, type TriageItem } from '@/lib/admin/data/triage';
+import type { AppTriageEventRow, TriageItem } from '@/lib/admin/data/triage';
+import {
+  fetchIncidentFeed,
+  DEFAULT_INCIDENT_WINDOW_HOURS,
+  buildIncidentFeedFromSources,
+} from '@/lib/admin/data/incident-feed';
 import {
   fetchFeatureHealth,
   summarizeFeatureHealth,
@@ -11,8 +15,10 @@ import {
 } from '@/lib/admin/data/feature-health';
 
 export interface OverviewKpis {
+  /** Unresolved Sentry issues (org-wide; not windowed). */
   sentryUnresolved: number | null;
-  eventErrors24h: number;
+  /** Coalesced incident groups in the last 24h — same feed as Overview triage + Errors tab default. */
+  incidentGroups24h: number;
   authFailures24h: number;
   activeUsersToday: number;
   activityToday: { golf: number; baseball: number; lifting: number };
@@ -82,7 +88,7 @@ export function isoStartOfToday(now: Date = new Date()): string {
 }
 
 export function activeAppErrorGroups(rows: AppTriageEventRow[]): TriageItem[] {
-  return groupAppErrorEvents(rows);
+  return buildIncidentFeedFromSources(rows, [], DEFAULT_INCIDENT_WINDOW_HOURS).incidents;
 }
 
 /** CALLER must have passed requireSuperAdmin() (service-role reads). */
@@ -92,9 +98,8 @@ export async function fetchOverviewSnapshot() {
   const today = isoStartOfToday();
 
   const [
-    sentry,
     deploys,
-    appErrors24h,
+    incidentFeed24h,
     security24h,
     activeToday,
     golfToday,
@@ -105,19 +110,8 @@ export async function fetchOverviewSnapshot() {
     lastCron,
     featureHealthRaw,
   ] = await Promise.all([
-    fetchSentryIssues({ limit: 50 }),
     fetchVercelDeployments(5),
-    admin
-      .from('admin_events')
-      .select(
-        'id, title, message, severity, sport, fingerprint, user_id, user_email, url, created_at, source, feature, stack_trace, metadata',
-      )
-      .eq('event_type', 'error')
-      .eq('resolved', false)
-      .gte('created_at', ago24h)
-      .neq('severity', 'info')
-      .order('created_at', { ascending: false })
-      .limit(500),
+    fetchIncidentFeed({ windowHours: DEFAULT_INCIDENT_WINDOW_HOURS }),
     admin.from('admin_events').select('id', { count: 'exact', head: true })
       .eq('event_type', 'security').gte('created_at', ago24h),
     admin.from('users').select('id', { count: 'exact', head: true })
@@ -142,10 +136,10 @@ export async function fetchOverviewSnapshot() {
   ]);
 
   const lastDeployRow = deploys.data?.[0] ?? null;
-  const appErrorGroups24h = activeAppErrorGroups((appErrors24h.data ?? []) as unknown as AppTriageEventRow[]);
   const kpis: OverviewKpis = {
-    sentryUnresolved: sentry.status === 'ok' ? (sentry.data?.length ?? 0) : null,
-    eventErrors24h: appErrorGroups24h.length,
+    sentryUnresolved:
+      incidentFeed24h.sentry.status === 'ok' ? (incidentFeed24h.sentry.data?.length ?? 0) : null,
+    incidentGroups24h: incidentFeed24h.counts.totalGroups,
     authFailures24h: security24h.count ?? 0,
     activeUsersToday: activeToday.count ?? 0,
     activityToday: {
@@ -181,13 +175,15 @@ export async function fetchOverviewSnapshot() {
   const featureHealthCriticalCount = featureHealth.red;
   const featureHealthAttentionCount = featureHealth.red === 0 && featureHealth.newFingerprints24h > 0 ? 1 : 0;
 
-  const criticalAppErrorGroups24h = appErrorGroups24h.filter((item) => item.severity === 'critical').length;
+  const criticalIncidentGroups24h = incidentFeed24h.incidents.filter(
+    (item) => item.severity === 'critical',
+  ).length;
   const attentionFromDeploy = kpis.lastDeploy?.state === 'ERROR' ? 1 : 0;
   const banner = {
     ...computeBannerState({
-      criticalCount: criticalAppErrorGroups24h + featureHealthCriticalCount,
+      criticalCount: criticalIncidentGroups24h + featureHealthCriticalCount,
       attentionCount: attentionFromDeploy + featureHealthAttentionCount,
-      anyFeedStale: sentry.status === 'error' || watcher.some((w) => w.stale) || featureHealth.degraded,
+      anyFeedStale: incidentFeed24h.sentry.status === 'error' || watcher.some((w) => w.stale) || featureHealth.degraded,
     }),
     checkedAt: now.toISOString(),
     // Single-line banner detail per N6 (never a wall of routine noise) —

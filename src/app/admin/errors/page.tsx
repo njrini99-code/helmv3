@@ -126,9 +126,11 @@ export default async function ErrorsPage({
 
   async function Body() {
     const tab = await fetchErrorsTab(filters);
-    const highSeverity = tab.incidents.filter((i) => i.severity === 'critical' || i.severity === 'error').length;
-    const affectedUsers = tab.incidents.reduce((sum, i) => sum + i.affectedUsers, 0);
-    const appGroups = tab.incidents.filter((i) => i.origin === 'app').length;
+    const { counts } = tab;
+    const showWiderWindowHint =
+      tab.incidents.length === 0 &&
+      filters.windowHours < 168 &&
+      ((tab.widerWindowUnresolved ?? 0) > 0 || (tab.widerWindowUntagged ?? 0) > 0);
     const sourceBreakdown = Array.from(
       tab.incidents.reduce((map, incident) => {
         const key = incident.source ?? incident.origin;
@@ -141,22 +143,63 @@ export default async function ErrorsPage({
 
     return (
       <div className="space-y-6">
+        {showWiderWindowHint ? (
+          <Surface padding="sm" className="border border-warning/30 bg-warning/5">
+            <p className="text-body-sm text-warm-800">
+              Nothing in the last {filters.windowHours}h
+              {filters.sport ? ` for sport=${filters.sport}` : ''}, but there are unresolved incidents in the last 7 days
+              {(tab.widerWindowUnresolved ?? 0) > 0 ? (
+                <>
+                  {' '}
+                  (<span className="font-fw-mono tabular-nums">{tab.widerWindowUnresolved}</span>
+                  {filters.sport ? ` tagged ${filters.sport}` : ''})
+                </>
+              ) : null}
+              {(tab.widerWindowUntagged ?? 0) > 0 ? (
+                <>
+                  {' '}
+                  plus{' '}
+                  <span className="font-fw-mono tabular-nums">{tab.widerWindowUntagged}</span> legacy rows with no sport tag
+                </>
+              ) : null}
+              .{' '}
+              <Link
+                href={filters.sport ? '/admin/errors?window=168' : '/admin/errors?window=168'}
+                className="text-accent-700 underline"
+              >
+                Open 7-day view
+              </Link>
+              {filters.sport ? (
+                <>
+                  {' '}
+                  or{' '}
+                  <Link href="/admin/errors?window=168" className="text-accent-700 underline">
+                    drop the sport filter
+                  </Link>{' '}
+                  to include untagged baseball errors.
+                </>
+              ) : null}
+            </p>
+          </Surface>
+        ) : null}
         <section className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
           <Surface padding="sm" className="min-w-0">
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <p className="text-eyebrow uppercase text-warm-500">active groups</p>
-                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{tab.incidents.length}</p>
-                <p className="text-caption text-warm-500">{appGroups} app · {tab.sentry.data?.length ?? 0} sentry</p>
+                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.totalGroups}</p>
+                <p className="text-caption text-warm-500">
+                  {counts.appGroups} app · {counts.sentryGroups} sentry · {filters.windowHours}h window
+                </p>
               </div>
               <div>
                 <p className="text-eyebrow uppercase text-warm-500">high severity</p>
-                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{highSeverity}</p>
+                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.highSeverityGroups}</p>
                 <p className="text-caption text-warm-500">critical and error groups</p>
               </div>
               <div>
                 <p className="text-eyebrow uppercase text-warm-500">affected users</p>
-                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{affectedUsers}</p>
+                <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.affectedUsers}</p>
                 <p className="text-caption text-warm-500">deduped per incident group</p>
               </div>
             </div>
@@ -223,7 +266,12 @@ export default async function ErrorsPage({
         <ErrorTraceabilityStrip incidents={tab.incidents} />
 
         <Surface as="section" padding="sm">
-          <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Sentry unresolved</h2>
+          <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+            Sentry unresolved (org-wide)
+          </h2>
+          <p className="mt-1 text-caption text-warm-500">
+            All open Sentry issues — not windowed. Active groups above only count Sentry issues with activity in the selected window.
+          </p>
           {tab.sentry.status === 'ok' && tab.sentry.data ? (
             tab.sentry.data.length === 0 ? (
               <PanelAllClear label="No unresolved Sentry issues" checkedAt={tab.sentry.fetchedAt ?? new Date().toISOString()} />
