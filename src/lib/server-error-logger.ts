@@ -79,7 +79,7 @@ const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
   critical: 'fatal',
 };
 
-function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
+function normalizeContext(context: RoundErrorContext, traceMessage?: string): Record<string, unknown> {
   return JSON.parse(JSON.stringify({
     action: context.action,
     route: context.route ?? null,
@@ -105,6 +105,7 @@ function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
     extra: context.extra ?? {},
     sport: context.sport ?? null,
     teamId: context.teamId ?? null,
+    ...(traceMessage ? { trace_message: traceMessage.slice(0, 2000) } : {}),
     // Only reached when shouldPersistAdminTables() is true (writeAdminTables
     // is called after that gate), so this is always 'production' in practice
     // today — tagged explicitly so a future gate regression is visible in
@@ -225,6 +226,20 @@ async function writeAdminTables(
   await Promise.allSettled([errorLogInsert, adminEventInsert]);
 }
 
+/** Static Sentry title — user/error copy lives in scope context, not the format string. */
+function sentryCaptureTitle(context: RoundErrorContext): string {
+  if (context.title?.trim()) {
+    return context.title.trim().slice(0, 200);
+  }
+  return `[${context.action}] server trace`;
+}
+
+function syntheticTraceError(message: string): Error {
+  const err = new Error('Server trace error');
+  err.cause = message;
+  return err;
+}
+
 function captureSentryTrace(
   message: string,
   error: Error | null,
@@ -259,7 +274,7 @@ function captureSentryTrace(
       });
     }
 
-    scope.setContext('server_trace', normalizeContext(context));
+    scope.setContext('server_trace', normalizeContext(context, message));
     scope.setFingerprint(buildFingerprint(context, severity));
 
     // Route by severity: info/warning are messages (control-flow signals,
@@ -270,10 +285,11 @@ function captureSentryTrace(
     // logServerException callers who explicitly handed us an Error.
     const isMessage =
       !forceException && (severity === 'info' || severity === 'warning');
+    const sentryTitle = sentryCaptureTitle(context);
     if (isMessage) {
-      Sentry.captureMessage(message, SENTRY_SEVERITY_MAP[severity] ?? 'warning');
+      Sentry.captureMessage(sentryTitle, SENTRY_SEVERITY_MAP[severity] ?? 'warning');
     } else {
-      Sentry.captureException(error ?? new Error(message));
+      Sentry.captureException(error ?? syntheticTraceError(message));
     }
   });
 }
@@ -290,7 +306,8 @@ function isNextControlFlowError(message: string, error: Error | null): boolean {
   if (typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))) {
     return true;
   }
-  return message.includes('Dynamic server usage:');
+  const controlFlowMarker = 'Dynamic server usage:';
+  return message.indexOf(controlFlowMarker) !== -1;
 }
 
 async function captureServerTrace(
@@ -301,7 +318,7 @@ async function captureServerTrace(
   forceException = false,
 ): Promise<void> {
   const enriched = enrichTraceContext(message, context);
-  const normalizedError = error ?? new Error(message);
+  const normalizedError = error ?? syntheticTraceError(message);
 
   // Skip, don't rethrow: callers already decide how the original error
   // propagates; our only job is to not record framework signals as incidents.
@@ -318,7 +335,7 @@ async function captureServerTrace(
   if (!shouldPersistAdminTables()) {
     console.error('[ServerErrorLogger] not persisted off-prod', {
       severity,
-      message,
+      traceMessage: message,
       action: enriched.action ?? '',
     });
     return;
@@ -327,7 +344,10 @@ async function captureServerTrace(
   try {
     await writeAdminTables(message, normalizedError, enriched, severity);
   } catch {
-    console.error('[ServerErrorLogger] Failed to persist trace', { message, context: enriched });
+    console.error('[ServerErrorLogger] Failed to persist trace', {
+      traceMessage: message,
+      context: enriched,
+    });
   }
 }
 
