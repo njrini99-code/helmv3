@@ -50,7 +50,7 @@ export function BenLeahForm() {
   const [state, formAction] = useActionState(submitBenLeahFeedback, initialState);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} encType="multipart/form-data" className="space-y-5">
       <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)_220px]">
         <Field label="Request type">
           <NativeSelect name="kind" required className={fieldClass} defaultValue="bug">

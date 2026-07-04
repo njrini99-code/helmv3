@@ -1,9 +1,11 @@
 import * as Sentry from '@sentry/nextjs';
 
 const isDev = process.env.NODE_ENV === 'development';
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
+const environment = process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV || process.env.NODE_ENV || 'development';
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn,
 
   release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA,
 
@@ -44,7 +46,7 @@ Sentry.init({
     // @sentry-internal/feedback directly if we want the widget back.
   ] : [],
 
-  environment: process.env.NODE_ENV || 'development',
+  environment,
 
   // Scrub PII from error payloads + auto-tag every event with the sport
   // derived from URL path. Helm handles recruiting + roster data, so we drop

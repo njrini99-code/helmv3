@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import {
   createGitHubFeedbackIssue,
   parseFeedbackForm,
@@ -35,7 +34,16 @@ export async function submitBenLeahFeedback(
   _prev: BenLeahSubmitState,
   formData: FormData,
 ): Promise<BenLeahSubmitState> {
-  await requireSuperAdmin();
+  try {
+    await requireSuperAdmin();
+  } catch (err) {
+    return {
+      ok: false,
+      message: describeError(err) === 'Unauthorized'
+        ? 'Your session expired. Sign in again and retry.'
+        : 'You do not have permission to submit from Helm Bridge.',
+    };
+  }
 
   const parsed = parseFeedbackForm(formData);
   const validationError = validateFeedback(parsed);
@@ -46,8 +54,11 @@ export async function submitBenLeahFeedback(
 
   try {
     const attachments = await uploadFeedbackAttachments(images.files);
-    const issue = await createGitHubFeedbackIssue({ ...parsed, attachments });
-    revalidatePath('/admin/ben-leah');
+    const created = await createGitHubFeedbackIssue({ ...parsed, attachments });
+    // No revalidatePath — this page has no server-fetched data to refresh, and
+    // revalidating during the action response races the client (see golf.ts
+    // save-round comment on "unexpected response from the server").
+    const issue: GitHubIssueResult = { number: created.number, html_url: created.html_url };
     return { ok: true, message: `Submitted to GitHub issue #${issue.number}.`, issue };
   } catch (err) {
     return {

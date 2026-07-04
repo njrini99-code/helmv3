@@ -53,6 +53,11 @@ const nextConfig = {
     } : false,
   },
 
+  // Expose deployment target to the browser bundle (preview vs production).
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+  },
+
   // Allow images from Supabase storage
   images: {
     remotePatterns: [

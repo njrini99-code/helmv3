@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/nextjs';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
+const environment = process.env.VERCEL_ENV || process.env.NODE_ENV || 'development';
 
 const sharedIgnoreErrors = [
   'NEXT_NOT_FOUND',
@@ -48,9 +50,9 @@ export async function register() {
     }
 
     Sentry.init({
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      dsn,
       release,
-      environment: process.env.NODE_ENV || 'development',
+      environment,
       debug: false,
 
       integrations: [
@@ -85,7 +87,7 @@ export async function register() {
 
     console.log('[Sentry] Node runtime initialized', {
       release: release ?? 'none',
-      hasDsn: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
+      hasDsn: Boolean(dsn),
     });
 
     // Helm Bridge: record a deploy marker once per production sha (idempotent).
@@ -96,9 +98,9 @@ export async function register() {
 
   if (process.env.NEXT_RUNTIME === 'edge') {
     Sentry.init({
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      dsn,
       release,
-      environment: process.env.NODE_ENV || 'development',
+      environment,
       debug: false,
       integrations: [
         Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] }),
@@ -112,7 +114,7 @@ export async function register() {
 
     console.log('[Sentry] Edge runtime initialized', {
       release: release ?? 'none',
-      hasDsn: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
+      hasDsn: Boolean(dsn),
     });
   }
 }
