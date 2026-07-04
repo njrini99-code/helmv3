@@ -52,7 +52,7 @@ export interface HubSubNavTab {
    * Longest-prefix wins across every tab so the deepest leaf still resolves to
    * its parent tab.
    */
-  matchPrefixes?: string[];
+  matchPrefixes?: readonly string[];
   /** Staff capability required to show this tab (coaches only). */
   requiredCapability?: BaseballCapability;
   /** Staff must hold at least one of these capabilities (#370 / #408). */

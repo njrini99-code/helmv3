@@ -40,6 +40,8 @@ const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'club',
 ]);
 
+export { RECRUITING_PROGRAM_TYPES };
+
 /**
  * Stable short ids for telemetry/tests, decoupled from the hub's display label
  * (BaseballNavHub / COACH_HUB_DEFS id) so relabeling a hub in the sidebar can

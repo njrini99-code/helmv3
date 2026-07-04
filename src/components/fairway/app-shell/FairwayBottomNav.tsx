@@ -73,7 +73,7 @@ export function FairwayBottomNav({
       <ul className="flex items-stretch justify-around">
         {items.map((item) => {
           const active =
-            item.active ||
+            item.active ??
             (item.activeMatch && pathname
               ? item.activeMatch(pathname)
               : matchActive(item.href, pathname));

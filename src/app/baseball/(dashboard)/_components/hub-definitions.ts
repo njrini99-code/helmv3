@@ -76,7 +76,7 @@ import {
 
 /** Registry entry → HubSubNavTab, copying every gating field VERBATIM. */
 function toHubTab(entry: BaseballNavEntry): HubSubNavTab {
-  const tab: HubSubNavTab = {
+  return {
     id: entry.id,
     label: entry.label,
     href: entry.href,
@@ -84,14 +84,8 @@ function toHubTab(entry: BaseballNavEntry): HubSubNavTab {
     requiredCapability: entry.requiredCapability ?? undefined,
     requiredAnyCapabilities: entry.requiredAnyCapabilities,
     allowedProgramTypes: entry.allowedProgramTypes,
+    matchPrefixes: entry.matchPrefixes,
   };
-
-  if (entry.id === 'roster') tab.matchPrefixes = ['/baseball/dashboard/players'];
-  if (entry.id === 'performance') tab.matchPrefixes = ['/baseball/dashboard/performance'];
-  if (entry.id === 'dev-plans') tab.matchPrefixes = ['/baseball/dashboard/dev-plans'];
-  if (entry.id === 'camps') tab.matchPrefixes = ['/baseball/dashboard/camps'];
-
-  return tab;
 }
 
 /**
@@ -189,7 +183,6 @@ const SETTINGS_HOME_TAB: HubSubNavTab = {
   label: 'Settings',
   href: '/baseball/dashboard/settings',
   icon: IconSettings,
-  matchPrefixes: ['/baseball/dashboard/settings'],
 };
 const SETTINGS_SEASON_TAB: HubSubNavTab = {
   id: 'settings-season',
@@ -328,6 +321,18 @@ export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = orderTabs(
  */
 export const COACH_ACADEMICS_TABS: readonly HubSubNavTab[] = orderTabs(hubEntries('academics'), ACADEMICS_ORDER);
 
+const MANAGEMENT_SETTINGS_SUPPLEMENT_ID = 'program-settings';
+
+/** Dev-only guard: settings supplement tabs must attach to a real registry row. */
+function assertManagementSettingsSupplement(tabs: readonly HubSubNavTab[]): void {
+  if (process.env.NODE_ENV === 'production') return;
+  if (!tabs.some((tab) => tab.id === MANAGEMENT_SETTINGS_SUPPLEMENT_ID)) {
+    throw new Error(
+      `COACH_MANAGEMENT_TABS settings supplement requires registry tab "${MANAGEMENT_SETTINGS_SUPPLEMENT_ID}".`,
+    );
+  }
+}
+
 /**
  * MANAGEMENT hub — staff coordination, program settings, and (Showcase/Academy/
  * Club only, via allowedProgramTypes carried through verbatim from the
@@ -335,10 +340,13 @@ export const COACH_ACADEMICS_TABS: readonly HubSubNavTab[] = orderTabs(hubEntrie
  * "Decision Room" vs "Staff Room" label drift (the registry's label always
  * wins now — it is read, not re-declared).
  */
+const managementHubTabs = orderTabs(hubEntries('management'), MANAGEMENT_ORDER);
+assertManagementSettingsSupplement(managementHubTabs);
+
 export const COACH_MANAGEMENT_TABS: readonly HubSubNavTab[] = withSupplements(
-  orderTabs(hubEntries('management'), MANAGEMENT_ORDER),
+  managementHubTabs,
   {
-    'program-settings': [
+    [MANAGEMENT_SETTINGS_SUPPLEMENT_ID]: [
       SETTINGS_HOME_TAB,
       SETTINGS_SEASON_TAB,
       SETTINGS_PHILOSOPHY_TAB,

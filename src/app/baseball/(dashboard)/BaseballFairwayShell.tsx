@@ -84,10 +84,10 @@ import {
   filterHubTabsByCapabilities,
   filterHubTabsByProgramType,
   resolveActiveHub,
+  RECRUITING_PROGRAM_TYPES,
 } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
 import { HubSubNav } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
-import type { BaseballProgramType } from '@/lib/types/baseball-settings';
 import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -128,9 +128,11 @@ const ShellLink: ShellLinkComponent = ({ href, children, ...rest }) => (
   </Link>
 );
 
-/** entry.icon carries a wider SVG prop contract than FairwayIcon's minimal
- *  `{size, className}` — both are drawn from the same `@/components/icons`
- *  set, so this narrows structurally without behavior change. */
+/** Segment-boundary route match — shared by rail items and hub cluster rows. */
+function matchesRoutePrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 function toNavItem(
   entry: Pick<BaseballNavEntry, 'href' | 'label' | 'icon'>,
   badge?: number,
@@ -142,8 +144,8 @@ function toNavItem(
     icon: entry.icon as unknown as NavItem['icon'],
     badge,
     activeMatch: (pathname) =>
-      pathname === entry.href ||
-      matchPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)),
+      matchesRoutePrefix(pathname, entry.href) ||
+      matchPrefixes.some((prefix) => matchesRoutePrefix(pathname, prefix)),
   };
 }
 
@@ -166,16 +168,16 @@ function playerHubToNavItem({
     icon,
     badge,
     activeMatch: (pathname) =>
-      pathname === href ||
+      matchesRoutePrefix(pathname, href) ||
       Boolean(
         tabs?.some(
-          (tab) => pathname === tab.href || tab.matchPrefixes?.some((prefix) => pathname.startsWith(prefix)),
+          (tab) =>
+            matchesRoutePrefix(pathname, tab.href) ||
+            tab.matchPrefixes?.some((prefix) => matchesRoutePrefix(pathname, prefix)),
         ),
       ),
   };
 }
-
-const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>(['college', 'juco', 'showcase', 'academy', 'club']);
 
 function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
   const visible = getVisibleBaseballNav(ctx);
@@ -590,7 +592,7 @@ export function BaseballFairwayShell({
     return <PageLoading />;
   }
 
-  const resolvedRole: Role = requiredRole ?? role ?? 'coach';
+  const resolvedRole: Role = requiredRole ?? navContext?.role ?? role ?? 'coach';
 
   return (
     <SidebarProvider>

@@ -263,7 +263,7 @@ export default function SettingsPage() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="glass-subtle rounded-lg border border-warm-200/70 p-4 transition-colors hover:border-primary-200 hover:shadow-card-hover"
+                    className="glass-subtle rounded-lg border border-warm-200/70 p-4 transition-colors hover:border-primary-200 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
                   >
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <Icon size={18} className="text-warm-600" />
@@ -291,57 +291,6 @@ export default function SettingsPage() {
                     <div>
                       <h3 className="font-semibold text-warm-900 mb-1">Program Profile</h3>
                       <p className="text-sm leading-relaxed text-warm-500">Customize your public program page for recruits</p>
-                    </div>
-                  </div>
-                  <IconChevronRight size={20} className="text-warm-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-
-        {/* Privacy Settings Link (Players Only) */}
-        {user?.role === 'player' && (
-          <Link href="/baseball/dashboard/settings/privacy">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                      <IconShield size={24} className="text-primary-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-warm-900 mb-1">Privacy Settings</h3>
-                      <p className="text-sm leading-relaxed text-warm-500">Control what appears on your public profile</p>
-                    </div>
-                  </div>
-                  <IconChevronRight size={20} className="text-warm-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-
-        {/* Notification Preferences (Coaches) — the real, persisted store lives on
-            Program Settings (baseball_program_settings.notification_defaults via
-            ProgramSettingsClient + updateProgramSettings). This used to be a
-            second, disconnected card that only updated local React state and
-            toasted "success" with no server call (#454, #466) — removed in
-            favor of a single link to the real surface so there is exactly one
-            place to configure notifications and no fake toggle to drift out of
-            sync with what's actually saved. */}
-        {user?.role === 'coach' && (
-          <Link href="/baseball/dashboard/settings/program#notifications">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                      <IconBell size={24} className="text-primary-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-warm-900 mb-1">Notification Preferences</h3>
-                      <p className="text-sm leading-relaxed text-warm-500">Manage quiet hours and per-type notification defaults for your program</p>
                     </div>
                   </div>
                   <IconChevronRight size={20} className="text-warm-400" />
