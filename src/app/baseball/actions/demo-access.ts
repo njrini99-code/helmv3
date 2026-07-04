@@ -12,6 +12,7 @@ import {
   isBaseballDemoEnabled,
   isCurrentSessionBaseballDemo,
 } from '@/lib/demo/baseball-config.server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ---------------------------------------------------------------------------
 // Input / result types
@@ -87,7 +88,7 @@ function validateInput(input: EnterBaseballDemoInput): string | null {
  * below; abuse is bounded by the per-IP rate limit (RATE_LIMITS.DEMO_GATE) and
  * by the `BASEBALL_DEMO_ENABLED` kill-switch for incident response.
  */
-export async function enterBaseballDemo(
+async function enterBaseballDemoImpl(
   input: EnterBaseballDemoInput,
 ): Promise<EnterBaseballDemoResult> {
   // --- 1. Validate input ---------------------------------------------------
@@ -185,6 +186,18 @@ export async function enterBaseballDemo(
 
   // --- 8. Redirect with ?demo=1 so the client can fire its PostHog event ---
   redirect(`${BASEBALL_DEMO_LANDING_PATH}?demo=1`);
+}
+
+const observedEnterBaseballDemo = withAdminObserved(
+  'enterBaseballDemo',
+  { sport: 'baseball', feature: 'auth_onboarding' },
+  enterBaseballDemoImpl,
+);
+
+export async function enterBaseballDemo(
+  input: EnterBaseballDemoInput,
+): Promise<EnterBaseballDemoResult> {
+  return observedEnterBaseballDemo(input);
 }
 
 // ---------------------------------------------------------------------------

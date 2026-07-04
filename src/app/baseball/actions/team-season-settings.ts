@@ -184,23 +184,25 @@ export interface SeasonSettingsData {
 function mapSeasonRow(row: Record<string, unknown>): BaseballSeason {
   const b = (v: unknown, d = false): boolean => (typeof v === 'boolean' ? v : d);
   const s = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+  const seasonYear = typeof row.season_year === 'number' ? row.season_year : null;
+  const status = s(row.status) ?? 'active';
   return {
     id: String(row.id ?? ''),
     team_id: String(row.team_id ?? ''),
-    label: String(row.label ?? ''),
+    label: String(row.label ?? row.season_name ?? seasonYear ?? ''),
     phase: ((s(row.phase) ?? 'preseason') as BaseballSeason['phase']),
-    starts_on: s(row.starts_on),
-    ends_on: s(row.ends_on),
-    status: ((s(row.status) ?? 'active') as BaseballSeason['status']),
-    is_current: b(row.is_current),
+    starts_on: s(row.starts_on) ?? s(row.start_date),
+    ends_on: s(row.ends_on) ?? s(row.end_date),
+    status: (status as BaseballSeason['status']),
+    is_current: b(row.is_current, status === 'active'),
     roster_enabled: b(row.roster_enabled, true),
     schedule_enabled: b(row.schedule_enabled, true),
     stats_enabled: b(row.stats_enabled, true),
     practice_templates_enabled: b(row.practice_templates_enabled, true),
-    lift_groups_enabled: b(row.lift_groups_enabled, true),
+    lift_groups_enabled: b(row.lift_groups_enabled, b(row.lifting_enabled, true)),
     performance_baselines_enabled: b(row.performance_baselines_enabled, true),
     player_status_tracking_enabled: b(row.player_status_tracking_enabled, true),
-    created_by: s(row.created_by),
+    created_by: s(row.created_by) ?? s(row.created_by_coach_id),
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at: String(row.updated_at ?? new Date().toISOString()),
   };
@@ -217,7 +219,7 @@ export const listSeasons = withBaseballAction(
     const { data } = await fromUntyped(supabase, 'baseball_seasons')
       .select('*')
       .eq('team_id', teamId)
-      .order('is_current', { ascending: false })
+      .order('status', { ascending: true })
       .order('created_at', { ascending: false });
 
     return {
@@ -256,13 +258,15 @@ export const createSeason = withBaseballAction(
     const { data } = await fromUntyped(supabase, 'baseball_seasons')
       .insert({
         team_id: teamId,
-        label,
+        season_name: label,
+        season_year:
+          input.starts_on ? Number(input.starts_on.slice(0, 4)) : new Date().getFullYear(),
         phase: input.phase ?? 'preseason',
-        starts_on: input.starts_on ?? null,
-        ends_on: input.ends_on ?? null,
+        start_date: input.starts_on ?? null,
+        end_date: input.ends_on ?? null,
         status: input.status ?? 'active',
-        is_current: makeCurrent,
-        created_by: ctx.activeCoachId,
+        lifting_enabled: true,
+        created_by_coach_id: ctx.activeCoachId,
       })
       .select('id')
       .maybeSingle();
@@ -296,7 +300,7 @@ export const updateSeason = withBaseballAction(
     if (patch.label !== undefined) {
       const label = patch.label.trim();
       if (!label) throw new Error('A season name is required.');
-      update.label = label;
+      update.season_name = label;
     }
     if (patch.phase !== undefined) {
       if (!BASEBALL_SEASON_PHASES.includes(patch.phase)) throw new Error('Invalid season phase.');
@@ -306,8 +310,11 @@ export const updateSeason = withBaseballAction(
       if (!BASEBALL_SEASON_STATUSES.includes(patch.status)) throw new Error('Invalid season status.');
       update.status = patch.status;
     }
-    if (patch.starts_on !== undefined) update.starts_on = patch.starts_on || null;
-    if (patch.ends_on !== undefined) update.ends_on = patch.ends_on || null;
+    if (patch.starts_on !== undefined) {
+      update.start_date = patch.starts_on || null;
+      if (patch.starts_on) update.season_year = Number(patch.starts_on.slice(0, 4));
+    }
+    if (patch.ends_on !== undefined) update.end_date = patch.ends_on || null;
 
     // Season-specific module toggles.
     const TOGGLE_KEYS = [
@@ -320,7 +327,9 @@ export const updateSeason = withBaseballAction(
       'player_status_tracking_enabled',
     ] as const;
     for (const k of TOGGLE_KEYS) {
-      if (patch[k] !== undefined) update[k] = patch[k] === true;
+      if (patch[k] !== undefined && k === 'lift_groups_enabled') {
+        update.lifting_enabled = patch[k] === true;
+      }
     }
 
     // is_current is handled via setCurrentSeason to keep the single-current
@@ -362,12 +371,12 @@ export const setCurrentSeason = withBaseballAction(
     // Clear-then-set, both scoped to the team (the partial unique index allows
     // exactly one current season). Non-destructive (UPDATE only).
     await fromUntyped(supabase, 'baseball_seasons')
-      .update({ is_current: false })
+      .update({ status: 'archived', updated_at: new Date().toISOString() })
       .eq('team_id', teamId)
-      .eq('is_current', true);
+      .eq('status', 'active');
 
     await fromUntyped(supabase, 'baseball_seasons')
-      .update({ is_current: true, status: 'active', updated_at: new Date().toISOString() })
+      .update({ status: 'active', updated_at: new Date().toISOString() })
       .eq('id', seasonId)
       .eq('team_id', teamId);
 
@@ -396,7 +405,7 @@ export const archiveSeason = withBaseballAction(
 
     // Archive is a lifecycle flip (never a delete). Archiving clears current.
     await fromUntyped(supabase, 'baseball_seasons')
-      .update({ status: 'archived', is_current: false, updated_at: new Date().toISOString() })
+      .update({ status: 'archived', updated_at: new Date().toISOString() })
       .eq('id', seasonId)
       .eq('team_id', teamId);
 

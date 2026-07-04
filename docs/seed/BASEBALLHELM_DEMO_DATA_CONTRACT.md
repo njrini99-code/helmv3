@@ -43,6 +43,9 @@ DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-sur
 
 # Verify coverage (any time, read-only, no --confirm flag needed)
 DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts
+
+# Same alignment flow as one npm script
+DOTENV_CONFIG_PATH=.env.local npm run seed:baseball:demo
 ```
 
 ## Safety guarantees (all three seed scripts)
@@ -77,27 +80,17 @@ comments, and hand-authored TypeScript types exist specifically because
 `src/lib/types/database.ts` (auto-generated from a live `supabase gen types`
 run) cannot be regenerated against a schema that hasn't landed yet:
 
-- **`baseball_seasons`** — use `label` / `phase` / `starts_on` / `ends_on` /
-  `status` / `is_current` / `created_by` (per
-  `supabase/migrations/20260624000095_baseball_team_and_season_settings.sql`
-  and `src/lib/types/baseball-team-season-settings.ts`). **Not**
-  `season_name` / `season_year` / `start_date` / `end_date` /
-  `created_by_coach_id` — that shape lives in `database.ts` but does not
-  match any committed migration; it's the pre-existing/legacy shape the
-  migration's `CREATE TABLE IF NOT EXISTS` will no-op against if applied to
-  a database that already has it. The graceful schema-skip means whichever
-  shape is actually live, the seed either succeeds or skips cleanly — it
-  never crashes.
-- **`baseball_import_sources`** — use `source_name` / `source_type` /
-  `trust_level` / `dedupe_strictness` / `player_match_strategy` /
-  `external_id_namespace` / `default_visibility` / `required_review` /
-  `enabled` / `created_by` (per
-  `supabase/migrations/20260624000090_baseball_settings_os.sql` and
-  `src/lib/types/baseball-settings.ts`'s `BaseballImportSourceConfig` — this
-  is also the exact shape `src/lib/baseball/import-source-enabled.ts`
-  queries today). **Not** `adapter_key` / `config_json` / `is_active` —
-  same legacy-vs-migration ambiguity as `baseball_seasons` above, same
-  graceful-skip safety net.
+- **`baseball_seasons`** — production currently exposes the generated-type
+  shape: `season_name` / `season_year` / `start_date` / `end_date` /
+  `created_by_coach_id` / `lifting_enabled`. The app normalizes this back to
+  the UI contract (`label`, `starts_on`, `ends_on`, `created_by`,
+  `lift_groups_enabled`) at the action boundary.
+- **`baseball_import_sources`** — production currently exposes
+  `adapter_key` / `config_json` / `is_active`, with legacy CHECK constraints
+  (`dedupe_strictness` accepts `strict|loose`; `player_match_strategy`
+  accepts `name_fuzzy`). The app normalizes reads back to
+  `source_type` / `enabled` / `name_then_external_id`, and writes the live
+  accepted values.
 - **`baseball_import_runs`** — link a run to its registry row via
   `source_config_id` (added by
   `20260624000460_baseball_import_registry_load_bearing.sql`, confirmed

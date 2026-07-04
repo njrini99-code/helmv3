@@ -2,7 +2,7 @@
 // src/lib/baseball/import-source-enabled.ts
 //
 // Shared helpers for the per-team import-source registry (baseball_import_sources).
-// Unregistered adapter keys remain available; a registered row with enabled=false
+// Unregistered adapter keys remain available; a registered row with is_active=false
 // is blocked from preview/commit and hidden from the import picker merge.
 // =============================================================================
 
@@ -26,7 +26,8 @@ export type ImportSourceRegistration = Pick<
 >;
 
 type ImportSourceRow = ImportSourceRegistration & {
-  source_type?: string | null;
+  adapter_key?: string | null;
+  is_active?: boolean | null;
 };
 
 /**
@@ -64,7 +65,7 @@ type ImportSourceLookupClient = {
 /**
  * Deterministically resolve a registry row for `sourceKey`:
  * 1. Any disabled match wins (block preview/commit).
- * 2. Else prefer exact `source_type` match.
+ * 2. Else prefer exact `adapter_key` match.
  * 3. Else prefer exact `source_name` match.
  */
 export async function loadImportSourceRegistration(
@@ -74,18 +75,22 @@ export async function loadImportSourceRegistration(
 ): Promise<ImportSourceRegistration | null> {
   const { data } = await db
     .from('baseball_import_sources')
-    .select('source_name, enabled, source_type')
+    .select('source_name, is_active, adapter_key')
     .eq('team_id', teamId);
 
-  const rows = ((data ?? []) as ImportSourceRow[]).filter(
-    (row) => row.source_type === sourceKey || row.source_name === sourceKey,
-  );
+  const rows = ((data ?? []) as ImportSourceRow[])
+    .map((row) => ({
+      source_name: row.source_name,
+      enabled: row.is_active !== false,
+      adapter_key: row.adapter_key,
+    }))
+    .filter((row) => row.adapter_key === sourceKey || row.source_name === sourceKey);
   if (rows.length === 0) return null;
 
   const disabled = rows.find((row) => row.enabled === false);
   if (disabled) return disabled;
 
-  const byType = rows.find((row) => row.source_type === sourceKey);
+  const byType = rows.find((row) => row.adapter_key === sourceKey);
   if (byType) return byType;
 
   const byName = rows.find((row) => row.source_name === sourceKey);

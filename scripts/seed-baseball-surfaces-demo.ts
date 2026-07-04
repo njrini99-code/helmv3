@@ -653,54 +653,46 @@ async function main() {
   ]);
 
   // -------------------------------------------------------------------------
-  // 6. baseball_seasons — see contract doc for the column-name caveat
-  //    (label/phase/starts_on/ends_on/status/is_current/created_by). Honors
-  //    the partial unique index on (team_id) WHERE is_current.
+  // 6. baseball_seasons — production currently uses the legacy generated-type
+  //    shape (season_name/season_year/start_date/end_date/created_by_coach_id).
+  //    The app normalizes this back to the UI's label/starts_on/ends_on shape.
   // -------------------------------------------------------------------------
   await upsert('baseball_seasons', [
     {
       id: detId('season:current'),
       team_id: TEAM_ID,
-      label: 'Spring 2026',
+      season_name: 'Spring 2026',
+      season_year: 2026,
       phase: 'in_season',
-      starts_on: dateDaysAgo(60),
-      ends_on: dateDaysFromNow(45),
+      start_date: dateDaysAgo(60),
+      end_date: dateDaysFromNow(45),
       status: 'active',
-      is_current: true,
-      roster_enabled: true,
-      schedule_enabled: true,
-      stats_enabled: true,
-      practice_templates_enabled: true,
-      lift_groups_enabled: true,
-      performance_baselines_enabled: true,
-      player_status_tracking_enabled: true,
-      created_by: COACH_ID,
+      lifting_enabled: true,
+      recruiting_enabled: false,
+      public_profiles_enabled: true,
+      created_by_coach_id: COACH_ID,
       created_at: isoDaysAgo(60),
     },
     {
       id: detId('season:archived_fall'),
       team_id: TEAM_ID,
-      label: 'Fall 2025',
+      season_name: 'Fall 2025',
+      season_year: 2025,
       phase: 'fall',
-      starts_on: dateDaysAgo(240),
-      ends_on: dateDaysAgo(150),
+      start_date: dateDaysAgo(240),
+      end_date: dateDaysAgo(150),
       status: 'archived',
-      is_current: false,
-      roster_enabled: true,
-      schedule_enabled: true,
-      stats_enabled: true,
-      practice_templates_enabled: true,
-      lift_groups_enabled: false,
-      performance_baselines_enabled: true,
-      player_status_tracking_enabled: true,
-      created_by: COACH_ID,
+      lifting_enabled: false,
+      recruiting_enabled: false,
+      public_profiles_enabled: false,
+      created_by_coach_id: COACH_ID,
       created_at: isoDaysAgo(240),
     },
   ]);
 
   // -------------------------------------------------------------------------
   // 7. baseball_import_sources + an additional baseball_import_runs row
-  //    + baseball_stat_uploads. See contract doc for the column-name caveat.
+  //    + baseball_stat_uploads. Production uses adapter_key/is_active/config_json.
   // -------------------------------------------------------------------------
   const SOURCE_TRACKMAN = detId('importsource:trackman');
   const SOURCE_GAMECHANGER = detId('importsource:gamechanger');
@@ -710,30 +702,30 @@ async function main() {
       id: SOURCE_TRACKMAN,
       team_id: TEAM_ID,
       source_name: 'TrackMan',
-      source_type: 'trackman_csv',
+      adapter_key: 'trackman',
       trust_level: 'device_export',
       default_visibility: 'player_visible',
       required_review: false,
-      dedupe_strictness: 'standard',
-      player_match_strategy: 'name_then_external_id',
+      dedupe_strictness: 'strict',
+      player_match_strategy: 'name_fuzzy',
       external_id_namespace: 'trackman',
-      enabled: true,
-      created_by: COACH_ID,
+      is_active: true,
+      config_json: { source_type: 'trackman_csv' },
       created_at: isoDaysAgo(45),
     },
     {
       id: SOURCE_GAMECHANGER,
       team_id: TEAM_ID,
       source_name: 'GameChanger',
-      source_type: 'gamechanger_xml',
+      adapter_key: 'gamechanger',
       trust_level: 'staff_entered',
       default_visibility: 'staff_only',
       required_review: true,
       dedupe_strictness: 'strict',
-      player_match_strategy: 'manual_only',
+      player_match_strategy: 'name_fuzzy',
       external_id_namespace: 'gamechanger',
-      enabled: true,
-      created_by: COACH_ID,
+      is_active: true,
+      config_json: { source_type: 'gamechanger_xml' },
       created_at: isoDaysAgo(20),
     },
   ]);

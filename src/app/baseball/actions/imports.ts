@@ -404,8 +404,8 @@ const ADAPTER_DEFAULT_POLICY: Omit<ResolvedSourcePolicy, 'configId'> = {
 
 /**
  * Load the team's registry policy for the chosen source. The wizard's sourceId
- * is the adapter key (e.g. 'trackman'); registry rows store it as `source_type`,
- * so we match on source_type first, then source_name as a secondary key (a coach
+ * is the adapter key (e.g. 'trackman'); production registry rows store it as
+ * `adapter_key`, so we match on adapter_key first, then source_name as a secondary key (a coach
  * may register a source under a friendly name with the same type). RLS scopes the
  * read to the staff member's team; we additionally filter by team_id.
  */
@@ -418,10 +418,10 @@ async function loadSourcePolicy(
   const { data } = await db
     .from('baseball_import_sources')
     .select(
-      'id, source_type, source_name, trust_level, default_visibility, required_review, dedupe_strictness, player_match_strategy, external_id_namespace, enabled'
+      'id, adapter_key, source_name, trust_level, default_visibility, required_review, dedupe_strictness, player_match_strategy, external_id_namespace, is_active'
     )
     .eq('team_id', teamId)
-    .or(`source_type.eq.${sourceId},source_name.eq.${sourceId}`)
+    .or(`adapter_key.eq.${sourceId},source_name.eq.${sourceId}`)
     .limit(1);
 
   const row = (data ?? [])[0] as
@@ -432,16 +432,16 @@ async function loadSourcePolicy(
         default_visibility: BaseballDefaultVisibility;
         required_review: boolean;
         dedupe_strictness: BaseballDedupeStrictness;
-        player_match_strategy: BaseballPlayerMatchStrategy;
+        player_match_strategy: BaseballPlayerMatchStrategy | 'name_fuzzy';
         external_id_namespace: string | null;
-        enabled: boolean;
+        is_active: boolean;
       }
     | undefined;
 
   if (!row) return { configId: null, ...ADAPTER_DEFAULT_POLICY };
 
   assertImportSourceEnabled(
-    { source_name: row.source_name, enabled: row.enabled },
+    { source_name: row.source_name, enabled: row.is_active },
     sourceId,
   );
 
@@ -450,8 +450,11 @@ async function loadSourcePolicy(
     trustLevel: row.trust_level,
     defaultVisibility: row.default_visibility,
     requiredReview: row.required_review,
-    dedupeStrictness: row.dedupe_strictness,
-    playerMatchStrategy: row.player_match_strategy,
+    dedupeStrictness: row.dedupe_strictness === 'loose' ? 'loose' : 'strict',
+    playerMatchStrategy:
+      row.player_match_strategy === 'name_fuzzy'
+        ? 'name_then_external_id'
+        : row.player_match_strategy,
     externalIdNamespace: row.external_id_namespace,
   };
 }

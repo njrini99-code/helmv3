@@ -506,7 +506,22 @@ export const listImportSources = withBaseballAction(
       .select('*')
       .eq('team_id', ctx.targetTeamId)
       .order('source_name', { ascending: true });
-    return (data ?? []) as BaseballImportSourceConfig[];
+    return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id ?? ''),
+      team_id: String(row.team_id ?? ctx.targetTeamId),
+      source_name: String(row.source_name ?? row.adapter_key ?? ''),
+      source_type: String(row.source_type ?? row.adapter_key ?? ''),
+      trust_level: (row.trust_level ?? 'unreviewed') as BaseballImportSourceConfig['trust_level'],
+      default_visibility: (row.default_visibility ?? 'staff_only') as BaseballImportSourceConfig['default_visibility'],
+      required_review: row.required_review === true,
+      dedupe_strictness: (row.dedupe_strictness === 'loose' ? 'loose' : 'strict') as BaseballImportSourceConfig['dedupe_strictness'],
+      player_match_strategy: (row.player_match_strategy === 'name_fuzzy' ? 'name_then_external_id' : row.player_match_strategy ?? 'name_then_external_id') as BaseballImportSourceConfig['player_match_strategy'],
+      external_id_namespace: typeof row.external_id_namespace === 'string' ? row.external_id_namespace : null,
+      enabled: typeof row.enabled === 'boolean' ? row.enabled : row.is_active !== false,
+      created_by: typeof row.created_by === 'string' ? row.created_by : null,
+      created_at: String(row.created_at ?? new Date().toISOString()),
+      updated_at: String(row.updated_at ?? new Date().toISOString()),
+    }));
   },
 );
 
@@ -526,18 +541,21 @@ export const upsertImportSource = withBaseballAction(
     const payload: Record<string, unknown> = {
       team_id: teamId,
       source_name: input.source_name.trim(),
-      source_type: input.source_type.trim(),
+      adapter_key: input.source_type.trim(),
       trust_level: input.trust_level ?? 'unreviewed',
       default_visibility: input.default_visibility ?? 'staff_only',
       required_review: input.required_review ?? true,
-      dedupe_strictness: input.dedupe_strictness ?? 'standard',
-      player_match_strategy: input.player_match_strategy ?? 'name_then_external_id',
+      dedupe_strictness: input.dedupe_strictness === 'loose' ? 'loose' : 'strict',
+      // Production's current CHECK constraint accepts only name_fuzzy. The
+      // application-level semantics still expose the newer strategy enum and
+      // normalize reads back to name_then_external_id above.
+      player_match_strategy: 'name_fuzzy',
       external_id_namespace: input.external_id_namespace ?? null,
-      enabled: input.enabled ?? true,
+      is_active: input.enabled ?? true,
+      config_json: {},
       updated_at: new Date().toISOString(),
     };
     if (input.id) payload.id = input.id;
-    else payload.created_by = ctx.activeCoachId;
 
     // UPSERT on (team_id, source_name) — non-destructive, idempotent.
     await fromUntyped(supabase, 'baseball_import_sources').upsert(payload, {
