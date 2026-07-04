@@ -105,8 +105,9 @@ export function isExpectedAuthNoise(
 
 /**
  * Chain onto any admin_events PostgREST query (builder) to exclude expected
- * auth noise from a count/select. Keeps overview.ts + admin-digest's
- * route.ts "Errors 24h" counts in sync with the same noise semantics.
+ * auth noise from a count/select. The admin digest still uses this for raw
+ * 24h row counts; overview.ts now uses mergeTriage() directly so it matches
+ * the grouped /admin/errors incident count.
  */
 export function excludeAuthNoise<T extends { not(column: string, operator: string, value: unknown): T }>(
   query: T,

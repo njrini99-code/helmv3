@@ -2,7 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
-import { excludeAuthNoise } from '@/lib/admin/data/triage';
+import { mergeTriage, type AppTriageEventRow, type TriageItem } from '@/lib/admin/data/triage';
 import {
   fetchFeatureHealth,
   summarizeFeatureHealth,
@@ -81,6 +81,10 @@ export function isoStartOfToday(now: Date = new Date()): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
 }
 
+export function activeAppErrorGroups(rows: AppTriageEventRow[]): TriageItem[] {
+  return mergeTriage({ sentryIssues: [], appEvents: rows });
+}
+
 /** CALLER must have passed requireSuperAdmin() (service-role reads). */
 export async function fetchOverviewSnapshot() {
   const admin = createAdminClient();
@@ -90,8 +94,7 @@ export async function fetchOverviewSnapshot() {
   const [
     sentry,
     deploys,
-    errors24h,
-    criticals24h,
+    appErrors24h,
     security24h,
     activeToday,
     golfToday,
@@ -102,14 +105,19 @@ export async function fetchOverviewSnapshot() {
     lastCron,
     featureHealthRaw,
   ] = await Promise.all([
-    fetchSentryIssues({ limit: 1 }),
+    fetchSentryIssues({ limit: 50 }),
     fetchVercelDeployments(5),
-    excludeAuthNoise(
-      admin.from('admin_events').select('id', { count: 'exact', head: true })
-        .eq('event_type', 'error').gte('created_at', ago24h),
-    ),
-    admin.from('admin_events').select('id', { count: 'exact', head: true })
-      .eq('event_type', 'error').eq('severity', 'critical').eq('resolved', false),
+    admin
+      .from('admin_events')
+      .select(
+        'id, title, message, severity, sport, fingerprint, user_id, user_email, url, created_at, source, feature, stack_trace, metadata',
+      )
+      .eq('event_type', 'error')
+      .eq('resolved', false)
+      .gte('created_at', ago24h)
+      .neq('severity', 'info')
+      .order('created_at', { ascending: false })
+      .limit(500),
     admin.from('admin_events').select('id', { count: 'exact', head: true })
       .eq('event_type', 'security').gte('created_at', ago24h),
     admin.from('users').select('id', { count: 'exact', head: true })
@@ -134,9 +142,10 @@ export async function fetchOverviewSnapshot() {
   ]);
 
   const lastDeployRow = deploys.data?.[0] ?? null;
+  const appErrorGroups24h = activeAppErrorGroups((appErrors24h.data ?? []) as unknown as AppTriageEventRow[]);
   const kpis: OverviewKpis = {
     sentryUnresolved: sentry.status === 'ok' ? (sentry.data?.length ?? 0) : null,
-    eventErrors24h: errors24h.count ?? 0,
+    eventErrors24h: appErrorGroups24h.length,
     authFailures24h: security24h.count ?? 0,
     activeUsersToday: activeToday.count ?? 0,
     activityToday: {
@@ -172,10 +181,11 @@ export async function fetchOverviewSnapshot() {
   const featureHealthCriticalCount = featureHealth.red;
   const featureHealthAttentionCount = featureHealth.red === 0 && featureHealth.newFingerprints24h > 0 ? 1 : 0;
 
+  const criticalAppErrorGroups24h = appErrorGroups24h.filter((item) => item.severity === 'critical').length;
   const attentionFromDeploy = kpis.lastDeploy?.state === 'ERROR' ? 1 : 0;
   const banner = {
     ...computeBannerState({
-      criticalCount: (criticals24h.count ?? 0) + featureHealthCriticalCount,
+      criticalCount: criticalAppErrorGroups24h + featureHealthCriticalCount,
       attentionCount: attentionFromDeploy + featureHealthAttentionCount,
       anyFeedStale: sentry.status === 'error' || watcher.some((w) => w.stale) || featureHealth.degraded,
     }),

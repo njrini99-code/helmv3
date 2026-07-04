@@ -1,5 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { computeBannerState, isSignalStale, classifyKpiTone, isoStartOfToday } from '@/lib/admin/data/overview';
+import {
+  computeBannerState,
+  isSignalStale,
+  classifyKpiTone,
+  isoStartOfToday,
+  activeAppErrorGroups,
+} from '@/lib/admin/data/overview';
+import type { AppTriageEventRow } from '@/lib/admin/data/triage';
+
+const appEvent = (overrides: Partial<AppTriageEventRow>): AppTriageEventRow => ({
+  id: 'e1',
+  title: 'save failed',
+  message: 'insert failed',
+  severity: 'error',
+  sport: 'baseball',
+  fingerprint: 'fp-1',
+  user_id: 'u1',
+  user_email: null,
+  url: '/baseball/dashboard',
+  created_at: '2026-07-04T12:00:00.000Z',
+  source: 'server_action',
+  feature: 'baseball_roster',
+  stack_trace: null,
+  metadata: null,
+  ...overrides,
+});
 
 describe('computeBannerState', () => {
   it('critical wins over everything', () => {
@@ -73,5 +98,29 @@ describe('classifyKpiTone', () => {
   it('at or past the red line is danger', () => {
     expect(classifyKpiTone(10, 10)).toBe('danger');
     expect(classifyKpiTone(50, 10)).toBe('danger');
+  });
+});
+
+describe('activeAppErrorGroups', () => {
+  it('matches the Errors tab grouping semantics instead of raw row counts', () => {
+    const groups = activeAppErrorGroups([
+      appEvent({ id: 'e1', user_id: 'u1', fingerprint: 'fp-1' }),
+      appEvent({ id: 'e2', user_id: 'u2', fingerprint: 'fp-1' }),
+      appEvent({ id: 'e3', user_id: 'u2', fingerprint: 'fp-1' }),
+      appEvent({ id: 'e4', user_id: 'u3', fingerprint: 'fp-2', severity: 'critical' }),
+      appEvent({
+        id: 'noise',
+        fingerprint: null,
+        title: '[poll] You must be signed in.',
+        message: 'You must be signed in.',
+      }),
+    ]);
+
+    expect(groups.map((group) => group.key).sort()).toEqual(['app:fp-1', 'app:fp-2']);
+    expect(groups.find((group) => group.key === 'app:fp-1')).toMatchObject({
+      occurrences: 3,
+      affectedUsers: 2,
+    });
+    expect(groups.filter((group) => group.severity === 'critical')).toHaveLength(1);
   });
 });

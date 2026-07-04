@@ -96,7 +96,7 @@ async function BannerAndKpis() {
       <div className="mt-4 grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 xl:grid-cols-6">
         <KpiTile label="Sentry unresolved" value={kpis.sentryUnresolved} href="/admin/errors" tone={kpis.sentryUnresolved ? 'danger' : 'neutral'} goodDirection="down" />
         <KpiTile
-          label="Errors 24h"
+          label="Error groups 24h"
           value={kpis.eventErrors24h}
           href="/admin/errors"
           goodDirection="down"
