@@ -185,8 +185,12 @@ jobs:
         # the job. Secretless Dependabot/fork PRs skip this step explicitly.
         if: ${{ steps.baseball-auth-ready.outputs.ready == 'true' }}
         run: |
-          npx playwright test --project=baseball-coach --project=baseball-player
-          npx playwright test --project=chromium e2e/baseball-onboarding-smoke.spec.ts
+          npx playwright test \
+            --project=chromium \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/baseball-onboarding-smoke.spec.ts \
+            e2e/baseball-smoke.spec.ts
 
       - name: Explain skipped BaseballHelm mandatory smoke
         if: ${{ steps.baseball-auth-ready.outputs.ready != 'true' }}
