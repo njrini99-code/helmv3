@@ -16,12 +16,8 @@ export interface TeamHealthEntry {
   lastActivity: string | null;
   health: TeamHealth;
   errors7d: number;
-  /**
-   * @deprecated Ignored — every row now links to the team's own
-   * `/admin/teams/[id]` page (Bridge V2 owner directive, 2026-07-02). Kept
-   * on the interface so existing callers (`/admin/golf`, `/admin/users`)
-   * that still pass a computed `href` don't need to change.
-   */
+  /** Optional row target. Golf defaults to `/admin/teams/[id]`; callers with
+   *  cross-sport rows can pass a route that understands their team model. */
   href?: string;
 }
 
@@ -62,7 +58,7 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
               <tr key={t.teamId} className={cn(isLeader && 'border-l-2 border-l-accent-500 bg-accent-50')}>
                 <td className={cn('sticky left-0 z-10 py-2 pr-3', isLeader ? 'bg-accent-50' : 'bg-surface')}>
                   <Link
-                    href={`/admin/teams/${t.teamId}`}
+                    href={t.href ?? `/admin/teams/${t.teamId}`}
                     className="font-medium text-warm-900 underline-offset-2 hover:underline"
                   >
                     {t.name}

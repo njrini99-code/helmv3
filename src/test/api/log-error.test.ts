@@ -111,7 +111,7 @@ describe('POST /api/log-error', () => {
       message: 'network error',
     });
     expect(adminEvent?.payload.fingerprint).toBe(expectedFingerprint);
-    expect(adminEvent?.payload.source).toBe('client_runtime');
+    expect(adminEvent?.payload.source).toBe('client');
   });
 
   it('gives repeated client errors for the same route+message the same fingerprint', async () => {

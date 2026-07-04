@@ -129,13 +129,16 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   if (filters.source) query = query.eq('source', filters.source);
   if (filters.feature) query = query.eq('feature', filters.feature);
 
+  let rlsQuery = admin.from('admin_events').select('id', { count: 'exact', head: true })
+    .eq('source', 'rls_denial').gte('created_at', ago24h);
+  if (filters.sport) rlsQuery = rlsQuery.eq('sport', filters.sport);
+
   const [sentry, hourly, deploys, appRes, rlsRes] = await Promise.all([
     fetchSentryIssues({ limit: 50 }),
     fetchSentryHourlyStats(),
     fetchVercelDeployments(20),
     query,
-    admin.from('admin_events').select('id', { count: 'exact', head: true })
-      .eq('source', 'rls_denial').gte('created_at', ago24h),
+    rlsQuery,
   ]);
 
   const windowStart = Date.now() - filters.windowHours * 3600_000;

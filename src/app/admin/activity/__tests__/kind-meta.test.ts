@@ -4,7 +4,7 @@ import { ACTIVITY_KIND_META, isActivityKind, kindMeta } from '../kind-meta';
 describe('ACTIVITY_KIND_META', () => {
   it('declares all 9 kinds in the owner-specified chip order', () => {
     expect(ACTIVITY_KIND_META.map((m) => m.chipLabel)).toEqual([
-      'Rounds',
+      'Rounds/Games',
       'Sign-ups',
       'Sign-ins',
       'Insights',

@@ -3,6 +3,7 @@
  */
 
 import * as Sentry from '@sentry/nextjs';
+import { classifyTraceSurface } from '@/lib/error-trace-classification';
 
 const SEVERITY_TO_SENTRY_LEVEL: Record<'low' | 'medium' | 'high' | 'critical', Sentry.SeverityLevel> = {
   low: 'info',
@@ -108,8 +109,21 @@ function getBrowserDiagnostics(): ErrorContext {
 
 function enrichErrorContext(error: Error, context?: ErrorContext): ErrorContext | undefined {
   const browserDiagnostics = getBrowserDiagnostics();
+  const contextRoute = typeof context?.route === 'string' ? context.route : null;
+  const locationRoute =
+    typeof browserDiagnostics.location === 'object' &&
+    browserDiagnostics.location !== null &&
+    'pathname' in browserDiagnostics.location &&
+    typeof browserDiagnostics.location.pathname === 'string'
+      ? browserDiagnostics.location.pathname
+      : null;
+  const component = typeof context?.component === 'string' ? context.component : null;
+  const trace = classifyTraceSurface(contextRoute ?? locationRoute, component);
   const mergedContext = {
     ...browserDiagnostics,
+    sport: context?.sport ?? trace.sport ?? undefined,
+    feature: context?.feature ?? trace.feature ?? undefined,
+    featureArea: context?.featureArea ?? trace.feature ?? undefined,
     ...context,
     error: {
       name: error.name,
@@ -420,4 +434,3 @@ export function setupGlobalErrorHandlers(): void {
     });
   }
 }
-

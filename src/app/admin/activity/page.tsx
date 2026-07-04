@@ -46,7 +46,7 @@ export default async function ActivityPage({
     return (
       <div className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-4">
         <KpiTile
-          label="Rounds today"
+          label="Rounds/games today"
           value={stats.rounds.today}
           delta={stats.rounds.delta}
           href="/admin/activity?type=round_submitted"
@@ -79,7 +79,7 @@ export default async function ActivityPage({
     const teams = await fetchTeamOptions();
     const options: TeamFilterOption[] = [
       { value: 'all', label: 'All teams', href: teamFilterHref(current, null) },
-      ...teams.map((t) => ({ value: t.id, label: t.name, href: teamFilterHref(current, t.id) })),
+      ...teams.map((t) => ({ value: t.id, label: `${t.name} · ${t.sport}`, href: teamFilterHref(current, t.id) })),
     ];
     return <TeamFilterControl options={options} value={filters.teamId ?? 'all'} />;
   }
@@ -144,7 +144,7 @@ export default async function ActivityPage({
 
       <Surface as="section" padding="sm" className="min-w-0">
         <h2 className="mb-3 border-b border-accent-600/25 pb-1.5 text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Everything golf is doing
+          Everything Helm is doing
         </h2>
         <PanelBoundary title="Activity feed" skeleton={<SkeletonList rows={8} />}>
           <Feed />

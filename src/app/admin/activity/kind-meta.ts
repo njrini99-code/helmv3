@@ -36,7 +36,7 @@ export interface ActivityKindMeta {
 }
 
 export const ACTIVITY_KIND_META: readonly ActivityKindMeta[] = [
-  { kind: 'round_submitted', chipLabel: 'Rounds', icon: Target, tone: 'neutral' },
+  { kind: 'round_submitted', chipLabel: 'Rounds/Games', icon: Target, tone: 'neutral' },
   { kind: 'signup', chipLabel: 'Sign-ups', icon: UserPlus, tone: 'neutral' },
   { kind: 'sign_in', chipLabel: 'Sign-ins', icon: LogIn, tone: 'neutral' },
   { kind: 'insight_generated', chipLabel: 'Insights', icon: Lightbulb, tone: 'neutral' },

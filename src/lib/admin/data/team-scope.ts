@@ -36,12 +36,22 @@ interface TeamCoachEmbedRow {
   golf_coaches: { user_id: string } | null;
 }
 
+interface BaseballTeamMemberEmbedRow {
+  player_id: string;
+  baseball_players: { user_id: string } | null;
+}
+
+interface BaseballTeamCoachEmbedRow {
+  coach_id: string;
+  baseball_coaches: { user_id: string } | null;
+}
+
 /** Active roster (golf_team_members.status='active') union current coaching
  *  staff (golf_team_coach_staff) — every `users.id` currently attached to
  *  this team right now. Two small scoped queries, run in parallel. */
 export async function resolveTeamUserIds(teamId: string): Promise<Set<string>> {
   const admin = createAdminClient();
-  const [membersRes, coachesRes] = await Promise.all([
+  const [membersRes, coachesRes, baseballMembersRes, baseballCoachesRes] = await Promise.all([
     admin
       .from('golf_team_members')
       .select('player_id, golf_players(user_id)')
@@ -51,21 +61,37 @@ export async function resolveTeamUserIds(teamId: string): Promise<Set<string>> {
       .from('golf_team_coach_staff')
       .select('coach_id, golf_coaches(user_id)')
       .eq('team_id', teamId),
+    admin
+      .from('baseball_team_members')
+      .select('player_id, baseball_players(user_id)')
+      .eq('team_id', teamId)
+      .eq('status', 'active'),
+    admin
+      .from('baseball_team_coach_staff')
+      .select('coach_id, baseball_coaches(user_id)')
+      .eq('team_id', teamId),
   ]);
-  if (membersRes.error) {
-    throw new Error(`resolveTeamUserIds(members): ${membersRes.error.message}`);
-  }
-  if (coachesRes.error) {
-    throw new Error(`resolveTeamUserIds(coaches): ${coachesRes.error.message}`);
+  if (membersRes.error && coachesRes.error && baseballMembersRes.error && baseballCoachesRes.error) {
+    throw new Error(
+      `resolveTeamUserIds: golf members=${membersRes.error.message}; golf coaches=${coachesRes.error.message}; baseball members=${baseballMembersRes.error.message}; baseball coaches=${baseballCoachesRes.error.message}`,
+    );
   }
 
   const ids = new Set<string>();
-  for (const row of (membersRes.data ?? []) as unknown as TeamMemberEmbedRow[]) {
+  for (const row of (membersRes.error ? [] : membersRes.data ?? []) as unknown as TeamMemberEmbedRow[]) {
     const uid = row.golf_players?.user_id;
     if (uid) ids.add(uid);
   }
-  for (const row of (coachesRes.data ?? []) as unknown as TeamCoachEmbedRow[]) {
+  for (const row of (coachesRes.error ? [] : coachesRes.data ?? []) as unknown as TeamCoachEmbedRow[]) {
     const uid = row.golf_coaches?.user_id;
+    if (uid) ids.add(uid);
+  }
+  for (const row of (baseballMembersRes.error ? [] : baseballMembersRes.data ?? []) as unknown as BaseballTeamMemberEmbedRow[]) {
+    const uid = row.baseball_players?.user_id;
+    if (uid) ids.add(uid);
+  }
+  for (const row of (baseballCoachesRes.error ? [] : baseballCoachesRes.data ?? []) as unknown as BaseballTeamCoachEmbedRow[]) {
+    const uid = row.baseball_coaches?.user_id;
     if (uid) ids.add(uid);
   }
   return ids;
@@ -75,13 +101,23 @@ export async function resolveTeamUserIds(teamId: string): Promise<Set<string>> {
  *  golf_conversations. Bounded to 500 threads (generous for one team). */
 export async function resolveTeamConversationIds(teamId: string): Promise<Set<string>> {
   const admin = createAdminClient();
-  const { data, error } = await admin
-    .from('golf_conversations')
-    .select('id')
-    .eq('team_id', teamId)
-    .limit(500);
-  if (error) {
-    throw new Error(`resolveTeamConversationIds: ${error.message}`);
+  const [golfRes, baseballRes] = await Promise.all([
+    admin
+      .from('golf_conversations')
+      .select('id')
+      .eq('team_id', teamId)
+      .limit(500),
+    admin
+      .from('baseball_conversations')
+      .select('id')
+      .eq('team_id', teamId)
+      .limit(500),
+  ]);
+  if (golfRes.error && baseballRes.error) {
+    throw new Error(`resolveTeamConversationIds: golf=${golfRes.error.message}; baseball=${baseballRes.error.message}`);
   }
-  return new Set(((data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id));
+  return new Set([
+    ...((golfRes.error ? [] : golfRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
+    ...((baseballRes.error ? [] : baseballRes.data ?? []) as unknown as Array<{ id: string }>).map((r) => r.id),
+  ]);
 }

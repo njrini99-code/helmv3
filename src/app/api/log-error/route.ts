@@ -5,7 +5,25 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
+import {
+  classifyTraceSurface,
+  getTraceAction,
+  getTraceRoute,
+  type TraceSport,
+} from '@/lib/error-trace-classification';
+import type { FeatureKey } from '@/lib/admin/feature-registry';
 import type { Json } from '@/lib/types/database';
+
+function readContextString(context: unknown, key: string): string | null {
+  if (!context || typeof context !== 'object' || Array.isArray(context)) return null;
+  const value = (context as Record<string, unknown>)[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function readContextSport(context: unknown): TraceSport | null {
+  const sport = readContextString(context, 'sport');
+  return sport === 'golf' || sport === 'baseball' || sport === 'shared' ? sport : null;
+}
 
 export async function POST(request: NextRequest) {
   const rateLimitResult = withRateLimit(request, RATE_LIMITS.API_WRITE);
@@ -90,10 +108,16 @@ export async function POST(request: NextRequest) {
     // bucket (mergeTriage falls back to a per-row key when fingerprint is
     // null), so a single network blip can flood the incident queue with
     // hundreds of individually-fingerprinted "network error" rows.
+    const traceRoute = getTraceRoute(errorReport.context, url);
+    const traceAction = getTraceAction(errorReport.context);
+    const trace = classifyTraceSurface(traceRoute, traceAction);
+    const finalSport = readContextSport(errorReport.context) ?? trace.sport;
+    const finalFeature = (readContextString(errorReport.context, 'feature') as FeatureKey | null) ?? trace.feature;
+
     const fingerprint = buildIncidentSignature({
       severity,
       errorCode: null,
-      route: url,
+      route: traceRoute ?? url,
       message,
     });
 
@@ -115,11 +139,29 @@ export async function POST(request: NextRequest) {
     // admin feed distinguish "no user found" from "genuinely anonymous".
     const contextWithAnonymity: Json =
       sanitizedContext && typeof sanitizedContext === 'object' && !Array.isArray(sanitizedContext)
-        ? { ...sanitizedContext, anonymous: isAnonymous }
-        : { anonymous: isAnonymous, raw: sanitizedContext };
+        ? {
+            ...sanitizedContext,
+            anonymous: isAnonymous,
+            route: traceRoute,
+            action: traceAction,
+            sport: finalSport,
+            feature: finalFeature,
+          }
+        : {
+            anonymous: isAnonymous,
+            raw: sanitizedContext,
+            route: traceRoute,
+            action: traceAction,
+            sport: finalSport,
+            feature: finalFeature,
+          };
 
     const adminMetadata = {
-      source: 'client_runtime',
+      source: 'client',
+      route: traceRoute,
+      action: traceAction,
+      sport: finalSport,
+      feature: finalFeature,
       reportedSeverity: errorReport.severity || 'medium',
       timestamp,
       context: contextWithAnonymity,
@@ -155,7 +197,9 @@ export async function POST(request: NextRequest) {
         stack_trace: stack,
         browser_info: contextWithAnonymity,
         fingerprint,
-        source: 'client_runtime',
+        source: 'client',
+        sport: finalSport as TraceSport | null,
+        feature: finalFeature,
       }),
     ]);
 

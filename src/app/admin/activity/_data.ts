@@ -50,6 +50,8 @@ export async function fetchActivityTodayStats(now: Date = new Date()): Promise<A
   const [
     roundsToday,
     roundsYesterday,
+    baseballGamesToday,
+    baseballGamesYesterday,
     signInsToday,
     signInsYesterday,
     newUsersToday,
@@ -60,6 +62,10 @@ export async function fetchActivityTodayStats(now: Date = new Date()): Promise<A
     admin.from('golf_rounds').select('id', { count: 'exact', head: true })
       .eq('status', 'completed').gte('created_at', todayStart),
     admin.from('golf_rounds').select('id', { count: 'exact', head: true })
+      .eq('status', 'completed').gte('created_at', yesterdayStart).lt('created_at', todayStart),
+    admin.from('baseball_games').select('id', { count: 'exact', head: true })
+      .eq('status', 'completed').gte('created_at', todayStart),
+    admin.from('baseball_games').select('id', { count: 'exact', head: true })
       .eq('status', 'completed').gte('created_at', yesterdayStart).lt('created_at', todayStart),
     admin.from('admin_events').select('id', { count: 'exact', head: true })
       .eq('event_type', 'login').gte('created_at', todayStart),
@@ -81,7 +87,10 @@ export async function fetchActivityTodayStats(now: Date = new Date()): Promise<A
   ]);
 
   return {
-    rounds: stat(roundsToday.count ?? 0, roundsYesterday.count ?? 0),
+    rounds: stat(
+      (roundsToday.count ?? 0) + (baseballGamesToday.count ?? 0),
+      (roundsYesterday.count ?? 0) + (baseballGamesYesterday.count ?? 0),
+    ),
     signIns: stat(signInsToday.count ?? 0, signInsYesterday.count ?? 0),
     newUsers: stat(newUsersToday.count ?? 0, newUsersYesterday.count ?? 0),
     errors: stat(errorsTodayQ.count ?? 0, errorsYesterdayQ.count ?? 0),
@@ -91,17 +100,29 @@ export async function fetchActivityTodayStats(now: Date = new Date()): Promise<A
 export interface TeamOption {
   id: string;
   name: string;
+  sport: 'golf' | 'baseball';
 }
 
 /** Bounded to 500 — generous for the team-filter dropdown; never an
  *  unbounded `.select('*')`. CALLER must have passed requireSuperAdmin(). */
 export async function fetchTeamOptions(): Promise<TeamOption[]> {
   const admin = createAdminClient();
-  const { data, error } = await admin
-    .from('golf_teams')
-    .select('id, name')
-    .order('name', { ascending: true })
-    .limit(500);
-  if (error) throw new Error(`fetchTeamOptions: ${error.message}`);
-  return (data ?? []) as unknown as TeamOption[];
+  const [golfRes, baseballRes] = await Promise.all([
+    admin
+      .from('golf_teams')
+      .select('id, name')
+      .order('name', { ascending: true })
+      .limit(500),
+    admin
+      .from('baseball_teams')
+      .select('id, name')
+      .order('name', { ascending: true })
+      .limit(500),
+  ]);
+  if (golfRes.error) throw new Error(`fetchTeamOptions(golf): ${golfRes.error.message}`);
+  if (baseballRes.error) throw new Error(`fetchTeamOptions(baseball): ${baseballRes.error.message}`);
+  return [
+    ...((golfRes.data ?? []) as unknown as Array<{ id: string; name: string }>).map((team) => ({ ...team, sport: 'golf' as const })),
+    ...((baseballRes.data ?? []) as unknown as Array<{ id: string; name: string }>).map((team) => ({ ...team, sport: 'baseball' as const })),
+  ].sort((a, b) => a.name.localeCompare(b.name));
 }

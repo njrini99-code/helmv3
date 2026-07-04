@@ -190,6 +190,17 @@ type RoundSubmittedRow = {
   golf_players: { first_name: string | null; last_name: string | null } | null;
   golf_teams: { name: string } | null;
 };
+type BaseballGameRow = {
+  id: string;
+  created_at: string | null;
+  team_id: string;
+  opponent_name: string | null;
+  our_score: number | null;
+  opponent_score: number | null;
+  status: string;
+  game_type: string;
+  baseball_teams: { name: string } | null;
+};
 
 async function fetchRoundSubmitted(ctx: SourceCtx): Promise<ActivityItem[]> {
   let q = ctx.admin
@@ -202,10 +213,21 @@ async function fetchRoundSubmitted(ctx: SourceCtx): Promise<ActivityItem[]> {
     .limit(ctx.limit);
   if (ctx.cursor) q = q.lt('created_at', ctx.cursor);
   if (ctx.teamId) q = q.eq('team_id', ctx.teamId);
-  const { data, error } = await q;
-  if (error) throw new Error(`round_submitted: ${error.message}`);
+  let baseballQ = ctx.admin
+    .from('baseball_games')
+    .select('id, created_at, team_id, opponent_name, our_score, opponent_score, status, game_type, baseball_teams(name)')
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+    .limit(ctx.limit);
+  if (ctx.cursor) baseballQ = baseballQ.lt('created_at', ctx.cursor);
+  if (ctx.teamId) baseballQ = baseballQ.eq('team_id', ctx.teamId);
 
-  const rows = (data ?? []) as unknown as RoundSubmittedRow[];
+  const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
+  if (error && baseballRes.error) {
+    throw new Error(`round_submitted: ${error.message}; baseball_game: ${baseballRes.error.message}`);
+  }
+
+  const rows = error ? [] : (data ?? []) as unknown as RoundSubmittedRow[];
   const items: ActivityItem[] = [];
   for (const r of rows) {
     if (!r.created_at) continue;
@@ -218,6 +240,17 @@ async function fetchRoundSubmitted(ctx: SourceCtx): Promise<ActivityItem[]> {
       title: `${player} submitted a round`,
       detail: `${team} — ${r.total_score ?? '—'} (${formatToPar(r.score_to_par)})${r.course_name ? ` at ${r.course_name}` : ''}`,
       href: `/admin/golf/tracer?round=${r.id}`,
+    });
+  }
+  for (const r of (baseballRes.error ? [] : baseballRes.data ?? []) as unknown as BaseballGameRow[]) {
+    if (!r.created_at) continue;
+    items.push({
+      id: `baseball_game:${r.id}`,
+      kind: 'round_submitted',
+      ts: r.created_at,
+      title: `${r.baseball_teams?.name ?? 'A baseball team'} logged a game`,
+      detail: `${r.game_type}${r.opponent_name ? ` vs ${r.opponent_name}` : ''} — ${r.our_score ?? '—'}-${r.opponent_score ?? '—'} (${r.status})`,
+      href: `/admin/users?team=${r.team_id}`,
     });
   }
   return items;
@@ -331,6 +364,14 @@ type MessageRow = {
   users: { email: string } | null;
   golf_conversations: { team_id: string | null; title: string | null; is_team_channel: boolean | null } | null;
 };
+type BaseballMessageRow = {
+  id: string;
+  created_at: string | null;
+  conversation_id: string;
+  sender_id: string;
+  users: { email: string } | null;
+  baseball_conversations: { team_id: string | null; title: string | null; is_team_chat: boolean | null } | null;
+};
 
 async function fetchMessageSent(ctx: SourceCtx): Promise<ActivityItem[]> {
   if (ctx.teamId && (!ctx.teamConversationIds || ctx.teamConversationIds.size === 0)) return [];
@@ -343,10 +384,20 @@ async function fetchMessageSent(ctx: SourceCtx): Promise<ActivityItem[]> {
     .limit(ctx.limit);
   if (ctx.cursor) q = q.lt('created_at', ctx.cursor);
   if (ctx.teamId) q = q.in('conversation_id', Array.from(ctx.teamConversationIds!));
-  const { data, error } = await q;
-  if (error) throw new Error(`message_sent: ${error.message}`);
+  let baseballQ = ctx.admin
+    .from('baseball_messages')
+    .select('id, created_at, conversation_id, sender_id, users(email), baseball_conversations(team_id, title, is_team_chat)')
+    .order('created_at', { ascending: false })
+    .limit(ctx.limit);
+  if (ctx.cursor) baseballQ = baseballQ.lt('created_at', ctx.cursor);
+  if (ctx.teamId) baseballQ = baseballQ.in('conversation_id', Array.from(ctx.teamConversationIds!));
 
-  const rows = (data ?? []) as unknown as MessageRow[];
+  const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
+  if (error && baseballRes.error) {
+    throw new Error(`message_sent: ${error.message}; baseball_message_sent: ${baseballRes.error.message}`);
+  }
+
+  const rows = error ? [] : (data ?? []) as unknown as MessageRow[];
   const items: ActivityItem[] = [];
   for (const r of rows) {
     if (!r.created_at) continue;
@@ -358,6 +409,20 @@ async function fetchMessageSent(ctx: SourceCtx): Promise<ActivityItem[]> {
       kind: 'message_sent',
       ts: r.created_at,
       title: `${r.users?.email ?? 'A user'} sent a message`,
+      detail: `in ${thread}`,
+      href,
+    });
+  }
+  for (const r of (baseballRes.error ? [] : baseballRes.data ?? []) as unknown as BaseballMessageRow[]) {
+    if (!r.created_at) continue;
+    const conv = r.baseball_conversations;
+    const href = conv?.team_id ? `/admin/users?team=${conv.team_id}` : `/admin/users/${r.sender_id}`;
+    const thread = conv?.title ?? (conv?.is_team_chat ? 'the baseball team chat' : 'a baseball conversation');
+    items.push({
+      id: `baseball_message:${r.id}`,
+      kind: 'message_sent',
+      ts: r.created_at,
+      title: `${r.users?.email ?? 'A baseball user'} sent a message`,
       detail: `in ${thread}`,
       href,
     });
@@ -374,6 +439,15 @@ type EventRow = {
   start_time: string;
   golf_teams: { name: string } | null;
 };
+type BaseballEventRow = {
+  id: string;
+  created_at: string | null;
+  team_id: string;
+  title: string;
+  event_type: string;
+  start_time: string;
+  baseball_teams: { name: string } | null;
+};
 
 async function fetchEventCreated(ctx: SourceCtx): Promise<ActivityItem[]> {
   let q = ctx.admin
@@ -383,11 +457,21 @@ async function fetchEventCreated(ctx: SourceCtx): Promise<ActivityItem[]> {
     .limit(ctx.limit);
   if (ctx.cursor) q = q.lt('created_at', ctx.cursor);
   if (ctx.teamId) q = q.eq('team_id', ctx.teamId);
-  const { data, error } = await q;
-  if (error) throw new Error(`event_created: ${error.message}`);
+  let baseballQ = ctx.admin
+    .from('baseball_events')
+    .select('id, created_at, team_id, title, event_type, start_time, baseball_teams(name)')
+    .order('created_at', { ascending: false })
+    .limit(ctx.limit);
+  if (ctx.cursor) baseballQ = baseballQ.lt('created_at', ctx.cursor);
+  if (ctx.teamId) baseballQ = baseballQ.eq('team_id', ctx.teamId);
 
-  const rows = (data ?? []) as unknown as EventRow[];
-  return rows
+  const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
+  if (error && baseballRes.error) {
+    throw new Error(`event_created: ${error.message}; baseball_event_created: ${baseballRes.error.message}`);
+  }
+
+  const rows = error ? [] : (data ?? []) as unknown as EventRow[];
+  const items = rows
     .filter((r): r is EventRow & { created_at: string } => !!r.created_at)
     .map((r) => ({
       id: `event_created:${r.id}`,
@@ -397,9 +481,22 @@ async function fetchEventCreated(ctx: SourceCtx): Promise<ActivityItem[]> {
       detail: `${r.event_type} — starts ${new Date(r.start_time).toLocaleString()}`,
       href: `/admin/teams/${r.team_id}`,
     }));
+  for (const r of (baseballRes.error ? [] : baseballRes.data ?? []) as unknown as BaseballEventRow[]) {
+    if (!r.created_at) continue;
+    items.push({
+      id: `baseball_event:${r.id}`,
+      kind: 'event_created',
+      ts: r.created_at,
+      title: `${r.baseball_teams?.name ?? 'A baseball team'} scheduled "${r.title}"`,
+      detail: `${r.event_type} — starts ${new Date(r.start_time).toLocaleString()}`,
+      href: `/admin/users?team=${r.team_id}`,
+    });
+  }
+  return items;
 }
 
 type DemoRow = { id: string; entered_at: string; name: string; email: string; school: string | null };
+type BaseballDemoRow = { id: string; entered_at: string; name: string; email: string; program: string | null };
 
 async function fetchDemoSession(ctx: SourceCtx): Promise<ActivityItem[]> {
   // Never team-scopable — golf_demo_sessions carries no user_id/team_id at
@@ -412,18 +509,36 @@ async function fetchDemoSession(ctx: SourceCtx): Promise<ActivityItem[]> {
     .order('entered_at', { ascending: false })
     .limit(ctx.limit);
   if (ctx.cursor) q = q.lt('entered_at', ctx.cursor);
-  const { data, error } = await q;
-  if (error) throw new Error(`demo_session: ${error.message}`);
+  let baseballQ = ctx.admin
+    .from('baseball_demo_sessions')
+    .select('id, entered_at, name, email, program')
+    .order('entered_at', { ascending: false })
+    .limit(ctx.limit);
+  if (ctx.cursor) baseballQ = baseballQ.lt('entered_at', ctx.cursor);
+  const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
+  if (error && baseballRes.error) {
+    throw new Error(`demo_session: ${error.message}; baseball_demo_session: ${baseballRes.error.message}`);
+  }
 
-  const rows = (data ?? []) as unknown as DemoRow[];
-  return rows.map((r) => ({
+  const rows = error ? [] : (data ?? []) as unknown as DemoRow[];
+  return [
+    ...rows.map((r) => ({
     id: `demo_session:${r.id}`,
     kind: 'demo_session' as const,
     ts: r.entered_at,
     title: `${r.name} entered the demo`,
     detail: r.school ? `${r.email} — ${r.school}` : r.email,
     href: '/admin/golf#demo',
-  }));
+    })),
+    ...((baseballRes.error ? [] : baseballRes.data ?? []) as unknown as BaseballDemoRow[]).map((r) => ({
+      id: `baseball_demo_session:${r.id}`,
+      kind: 'demo_session' as const,
+      ts: r.entered_at,
+      title: `${r.name} entered the baseball demo`,
+      detail: r.program ? `${r.email} — ${r.program}` : r.email,
+      href: '/admin/baseball',
+    })),
+  ];
 }
 
 type DocRow = {
@@ -435,6 +550,16 @@ type DocRow = {
   uploaded_by: string | null;
   golf_teams: { name: string } | null;
 };
+type BaseballDocRow = {
+  id: string;
+  created_at: string | null;
+  team_id: string;
+  title: string;
+  category: string | null;
+  uploaded_by: string | null;
+  baseball_teams: { name: string } | null;
+  users: { email: string } | null;
+};
 
 async function fetchDocumentUploaded(ctx: SourceCtx): Promise<ActivityItem[]> {
   let q = ctx.admin
@@ -444,10 +569,20 @@ async function fetchDocumentUploaded(ctx: SourceCtx): Promise<ActivityItem[]> {
     .limit(ctx.limit);
   if (ctx.cursor) q = q.lt('created_at', ctx.cursor);
   if (ctx.teamId) q = q.eq('team_id', ctx.teamId);
-  const { data, error } = await q;
-  if (error) throw new Error(`document_uploaded: ${error.message}`);
+  let baseballQ = ctx.admin
+    .from('baseball_documents')
+    .select('id, created_at, team_id, title, category, uploaded_by, baseball_teams(name), users(email)')
+    .order('created_at', { ascending: false })
+    .limit(ctx.limit);
+  if (ctx.cursor) baseballQ = baseballQ.lt('created_at', ctx.cursor);
+  if (ctx.teamId) baseballQ = baseballQ.eq('team_id', ctx.teamId);
 
-  const rows = (data ?? []) as unknown as DocRow[];
+  const [{ data, error }, baseballRes] = await Promise.all([q, baseballQ]);
+  if (error && baseballRes.error) {
+    throw new Error(`document_uploaded: ${error.message}; baseball_document_uploaded: ${baseballRes.error.message}`);
+  }
+
+  const rows = error ? [] : (data ?? []) as unknown as DocRow[];
   // golf_documents.uploaded_by has NO declared foreign key (see module doc)
   // — resolve uploader emails via a separate batched lookup, not an embed.
   const uploaderIds = Array.from(new Set(rows.map((r) => r.uploaded_by).filter((v): v is string => !!v)));
@@ -463,7 +598,7 @@ async function fetchDocumentUploaded(ctx: SourceCtx): Promise<ActivityItem[]> {
     }
   }
 
-  return rows
+  const items = rows
     .filter((r): r is DocRow & { created_at: string } => !!r.created_at)
     .map((r) => ({
       id: `document_uploaded:${r.id}`,
@@ -473,6 +608,18 @@ async function fetchDocumentUploaded(ctx: SourceCtx): Promise<ActivityItem[]> {
       detail: `${r.golf_teams?.name ?? 'a team'}${r.category ? ` — ${r.category}` : ''}`,
       href: `/admin/teams/${r.team_id}`,
     }));
+  for (const r of (baseballRes.error ? [] : baseballRes.data ?? []) as unknown as BaseballDocRow[]) {
+    if (!r.created_at) continue;
+    items.push({
+      id: `baseball_document:${r.id}`,
+      kind: 'document_uploaded',
+      ts: r.created_at,
+      title: `${r.users?.email ?? 'Someone'} uploaded "${r.title}"`,
+      detail: `${r.baseball_teams?.name ?? 'a baseball team'}${r.category ? ` — ${r.category}` : ''}`,
+      href: `/admin/users?team=${r.team_id}`,
+    });
+  }
+  return items;
 }
 
 type ErrorRow = {

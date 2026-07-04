@@ -47,10 +47,11 @@ export default async function FeatureHealthPage() {
         <Eyebrow as="p" tone="accent">
           Feature Health
         </Eyebrow>
-        <h1 className="mt-1 text-2xl font-semibold text-warm-900">Every GolfHelm + CoachHelm feature, at a glance</h1>
+        <h1 className="mt-1 text-2xl font-semibold text-warm-900">Every GolfHelm, CoachHelm, and BaseballHelm feature, at a glance</h1>
         <p className="mt-1 max-w-2xl text-sm text-warm-500">
           Computed from get_feature_health() with 2-window hysteresis — a single blip never flips a dot. Features with
-          no feature-tagged data yet render neutral, never red or fake-green (instrumentation lands separately).
+          no feature-tagged data yet render neutral, never red or fake-green. Baseball client errors are promoted into
+          feature tags before they reach this board.
         </p>
       </div>
       <PanelBoundary title="Feature Health">
