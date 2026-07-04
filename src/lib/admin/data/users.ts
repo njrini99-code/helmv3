@@ -50,9 +50,74 @@ export function classifyAtRisk(
 type IdRow = { id: string; user_id: string | null };
 type UserIdRow = { user_id: string | null };
 type TeamRow = { id: string; name: string };
-type MemberRow = { team_id: string | null; player_id: string };
-type ActivityRow = { team_id: string | null; created_at: string | null };
-type ErrorRow = { team_id: string | null; sport: string | null };
+type MemberRow = {
+  team_id: string | null;
+  player_id: string;
+  jersey_number?: number | null;
+  position?: string | null;
+  status?: string | null;
+};
+type ActivityRow = { team_id: string | null; player_id?: string | null; created_at: string | null };
+type ErrorRow = { team_id: string | null; sport: string | null; user_id?: string | null };
+type GolfPlayerRow = IdRow & {
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  graduation_year: number | null;
+  handicap_index: number | null;
+  onboarding_completed: boolean | null;
+  profile_complete: boolean | null;
+};
+type BaseballPlayerRow = IdRow & {
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  grad_year: number | null;
+  primary_position: string | null;
+  secondary_position: string | null;
+  onboarding_completed: boolean | null;
+  profile_completion_percent: number | null;
+  recruiting_activated: boolean | null;
+};
+type GolfRoundRow = ActivityRow & {
+  player_id: string | null;
+  total_score: number | null;
+  score_to_par: number | null;
+};
+type BaseballSignalRow = {
+  team_id: string | null;
+  player_id: string | null;
+  created_at?: string | null;
+  occurred_at?: string | null;
+  event_type?: string | null;
+};
+
+export interface RosterPlayerInsight {
+  sport: 'golf' | 'baseball';
+  teamId: string;
+  playerId: string;
+  userId: string | null;
+  href: string | null;
+  name: string;
+  email: string | null;
+  jerseyNumber: number | null;
+  position: string | null;
+  status: string | null;
+  lastSeen: string | null;
+  activity30d: number;
+  lastActivity: string | null;
+  errors7d: number;
+  profileQuality: 'complete' | 'partial' | 'missing';
+  detail: string;
+}
+
+export interface TeamRosterInsight extends GolfTeamHealthRow {
+  sport: 'golf' | 'baseball';
+  players: RosterPlayerInsight[];
+  activePlayers: number;
+  attentionPlayers: number;
+  profileGaps: number;
+}
 
 /**
  * CALLER must have passed requireSuperAdmin().
@@ -79,11 +144,12 @@ type ErrorRow = { team_id: string | null; sport: string | null };
  */
 export async function fetchUsersTab(filters: { q?: string; role?: string; team?: string }): Promise<{
   users: DirectoryUser[];
-  teams: Array<GolfTeamHealthRow & { sport: 'golf' | 'baseball' }>;
+  teams: TeamRosterInsight[];
   atRisk: DirectoryUser[];
 }> {
   const admin = createAdminClient();
   const now = new Date();
+  const ago30d = new Date(now.getTime() - 30 * 86400_000).toISOString();
   const ago7d = new Date(now.getTime() - 7 * 86400_000).toISOString();
 
   let userQuery = admin
@@ -111,29 +177,54 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     baseballMembersRes,
     golfRoundsRes,
     baseballGamesRes,
+    baseballPitchEventsRes,
+    baseballTimelineEventsRes,
     errorsRes,
   ] = await Promise.all([
     userQuery,
-    admin.from('golf_players').select('id, user_id').limit(2000),
+    admin
+      .from('golf_players')
+      .select('id, user_id, email, first_name, last_name, graduation_year, handicap_index, onboarding_completed, profile_complete')
+      .limit(2000),
     admin.from('golf_coaches').select('user_id').limit(2000),
-    admin.from('baseball_players').select('id, user_id').limit(2000),
+    admin
+      .from('baseball_players')
+      .select('id, user_id, email, first_name, last_name, grad_year, primary_position, secondary_position, onboarding_completed, profile_completion_percent, recruiting_activated')
+      .limit(2000),
     admin.from('baseball_coaches').select('user_id').limit(2000),
     admin.from('golf_teams').select('id, name'),
     admin.from('baseball_teams').select('id, name'),
-    admin.from('golf_team_members').select('team_id, player_id').eq('status', 'active'),
-    admin.from('baseball_team_members').select('team_id, player_id').eq('status', 'active'),
-    admin.from('golf_rounds').select('team_id, created_at').order('created_at', { ascending: false }).limit(2000),
+    admin.from('golf_team_members').select('team_id, player_id, jersey_number, status').eq('status', 'active'),
+    admin.from('baseball_team_members').select('team_id, player_id, jersey_number, position, status').eq('status', 'active'),
+    admin
+      .from('golf_rounds')
+      .select('team_id, player_id, created_at, total_score, score_to_par')
+      .gte('created_at', ago30d)
+      .order('created_at', { ascending: false })
+      .limit(3000),
     admin.from('baseball_games').select('team_id, created_at').order('created_at', { ascending: false }).limit(1000),
     admin
+      .from('baseball_pitch_events')
+      .select('team_id, player_id, created_at')
+      .gte('created_at', ago30d)
+      .order('created_at', { ascending: false })
+      .limit(3000),
+    admin
+      .from('baseball_player_timeline_events')
+      .select('team_id, player_id, occurred_at, event_type')
+      .gte('occurred_at', ago30d)
+      .order('occurred_at', { ascending: false })
+      .limit(3000),
+    admin
       .from('admin_events')
-      .select('team_id, sport')
+      .select('team_id, sport, user_id')
       .eq('event_type', 'error')
       .gte('created_at', ago7d)
       .limit(1000),
   ]);
 
-  const golfPlayerRows = (golfPlayersRes.data ?? []) as IdRow[];
-  const baseballPlayerRows = (baseballPlayersRes.data ?? []) as IdRow[];
+  const golfPlayerRows = (golfPlayersRes.data ?? []) as GolfPlayerRow[];
+  const baseballPlayerRows = (baseballPlayersRes.data ?? []) as BaseballPlayerRow[];
 
   const golfUserIds = new Set(
     [
@@ -215,7 +306,7 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     errorCounts.set(key, (errorCounts.get(key) ?? 0) + 1);
   }
 
-  const teams: Array<GolfTeamHealthRow & { sport: 'golf' | 'baseball' }> = [
+  const baseTeams: Array<GolfTeamHealthRow & { sport: 'golf' | 'baseball' }> = [
     ...((golfTeamsRes.data ?? []) as TeamRow[]).map((t) => {
       const lastActivity = lastGolfActivity.get(t.id) ?? null;
       return {
@@ -241,6 +332,135 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
       };
     }),
   ];
+
+  const userById = new Map(users.map((u) => [u.id, u]));
+  const userErrorCounts = new Map<string, number>();
+  for (const e of (errorsRes.data ?? []) as ErrorRow[]) {
+    if (e.user_id) userErrorCounts.set(e.user_id, (userErrorCounts.get(e.user_id) ?? 0) + 1);
+  }
+
+  const golfPlayerById = new Map(golfPlayerRows.map((p) => [p.id, p]));
+  const baseballPlayerById = new Map(baseballPlayerRows.map((p) => [p.id, p]));
+  const golfActivityByPlayer = new Map<string, { count: number; last: string | null; score: number | null; toPar: number | null }>();
+  for (const r of (golfRoundsRes.data ?? []) as GolfRoundRow[]) {
+    if (!r.player_id) continue;
+    const current = golfActivityByPlayer.get(r.player_id) ?? { count: 0, last: null, score: null, toPar: null };
+    current.count += 1;
+    if (r.created_at && (!current.last || r.created_at > current.last)) {
+      current.last = r.created_at;
+      current.score = r.total_score;
+      current.toPar = r.score_to_par;
+    }
+    golfActivityByPlayer.set(r.player_id, current);
+  }
+
+  const baseballActivityByPlayer = new Map<string, { count: number; last: string | null }>();
+  for (const r of [
+    ...((baseballPitchEventsRes.data ?? []) as BaseballSignalRow[]),
+    ...((baseballTimelineEventsRes.data ?? []) as BaseballSignalRow[]),
+  ]) {
+    if (!r.player_id) continue;
+    const at = r.created_at ?? r.occurred_at ?? null;
+    const current = baseballActivityByPlayer.get(r.player_id) ?? { count: 0, last: null };
+    current.count += 1;
+    if (at && (!current.last || at > current.last)) current.last = at;
+    baseballActivityByPlayer.set(r.player_id, current);
+  }
+
+  function displayName(player: { first_name: string | null; last_name: string | null; email: string | null }): string {
+    return `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || player.email || 'Unnamed player';
+  }
+
+  const playersByTeam = new Map<string, RosterPlayerInsight[]>();
+  function addPlayer(teamId: string | null, player: RosterPlayerInsight) {
+    if (!teamId) return;
+    playersByTeam.set(teamId, [...(playersByTeam.get(teamId) ?? []), player]);
+  }
+
+  for (const m of (golfMembersRes.data ?? []) as MemberRow[]) {
+    const p = golfPlayerById.get(m.player_id);
+    if (!p) continue;
+    const user = p.user_id ? userById.get(p.user_id) : undefined;
+    const activity = golfActivityByPlayer.get(p.id) ?? { count: 0, last: null, score: null, toPar: null };
+    const complete = p.onboarding_completed === true || p.profile_complete === true;
+    addPlayer(m.team_id, {
+      sport: 'golf',
+      teamId: m.team_id ?? '',
+      playerId: p.id,
+      userId: p.user_id,
+      href: p.user_id ? `/admin/users/${p.user_id}` : null,
+      name: displayName(p),
+      email: p.email,
+      jerseyNumber: m.jersey_number ?? null,
+      position: null,
+      status: m.status ?? null,
+      lastSeen: user?.lastSeen ?? null,
+      activity30d: activity.count,
+      lastActivity: activity.last,
+      errors7d: p.user_id ? userErrorCounts.get(p.user_id) ?? 0 : 0,
+      profileQuality: complete ? 'complete' : p.email || p.first_name || p.last_name ? 'partial' : 'missing',
+      detail:
+        activity.score !== null
+          ? `Last round ${activity.score}${activity.toPar === null ? '' : activity.toPar > 0 ? ` (+${activity.toPar})` : activity.toPar === 0 ? ' (E)' : ` (${activity.toPar})`}`
+          : p.handicap_index !== null
+            ? `Handicap ${p.handicap_index}`
+            : 'No recent rounds',
+    });
+  }
+
+  for (const m of (baseballMembersRes.data ?? []) as MemberRow[]) {
+    const p = baseballPlayerById.get(m.player_id);
+    if (!p) continue;
+    const user = p.user_id ? userById.get(p.user_id) : undefined;
+    const activity = baseballActivityByPlayer.get(p.id) ?? { count: 0, last: null };
+    const completion = p.profile_completion_percent ?? null;
+    const profileQuality =
+      completion !== null && completion >= 80
+        ? 'complete'
+        : p.onboarding_completed === true || completion !== null || p.email || p.first_name || p.last_name
+          ? 'partial'
+          : 'missing';
+    addPlayer(m.team_id, {
+      sport: 'baseball',
+      teamId: m.team_id ?? '',
+      playerId: p.id,
+      userId: p.user_id,
+      href: p.user_id ? `/admin/users/${p.user_id}` : null,
+      name: displayName(p),
+      email: p.email,
+      jerseyNumber: m.jersey_number ?? null,
+      position: m.position ?? p.primary_position ?? p.secondary_position,
+      status: m.status ?? null,
+      lastSeen: user?.lastSeen ?? null,
+      activity30d: activity.count,
+      lastActivity: activity.last,
+      errors7d: p.user_id ? userErrorCounts.get(p.user_id) ?? 0 : 0,
+      profileQuality,
+      detail:
+        completion !== null
+          ? `${completion}% profile`
+          : p.recruiting_activated
+            ? 'Recruiting active'
+            : 'Baseball profile present',
+    });
+  }
+
+  const teams: TeamRosterInsight[] = baseTeams.map((team) => {
+    const players = (playersByTeam.get(team.teamId) ?? []).sort((a, b) => {
+      if (a.errors7d !== b.errors7d) return b.errors7d - a.errors7d;
+      if (a.activity30d !== b.activity30d) return b.activity30d - a.activity30d;
+      return a.name.localeCompare(b.name);
+    });
+    const profileGaps = players.filter((p) => p.profileQuality !== 'complete').length;
+    const attentionPlayers = players.filter((p) => p.errors7d > 0 || p.activity30d === 0 || p.profileQuality === 'missing').length;
+    return {
+      ...team,
+      players,
+      activePlayers: players.filter((p) => p.activity30d > 0).length,
+      attentionPlayers,
+      profileGaps,
+    };
+  });
 
   return {
     users,
