@@ -38,6 +38,14 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Health', href: '/admin/health', key: '0', section: 'Platform', description: 'Feature health across every app', meta: 'map' },
 ] as const;
 
+/** Quick links in the Overview command header — must be real ADMIN_NAV routes. */
+export const ADMIN_COMMAND_SHORTCUTS = [
+  { href: '/admin/errors', label: 'Errors' },
+  { href: '/admin/health', label: 'Feature Map' },
+  { href: '/admin/deploys', label: 'Deploys' },
+  { href: '/admin/auth', label: 'Auth' },
+] as const satisfies ReadonlyArray<{ href: AdminHref; label: string }>;
+
 export function hrefForShortcut(key: string): string | null {
   return ADMIN_NAV.find((e) => e.key === key)?.href ?? null;
 }

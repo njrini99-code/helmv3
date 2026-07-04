@@ -21,6 +21,7 @@ import { PanelBoundary } from './_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from './_components/PanelStates';
 import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
 import { SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill } from '@/components/fairway';
+import { ADMIN_COMMAND_SHORTCUTS } from './_components/admin-nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -457,12 +458,12 @@ async function DeployRail() {
 }
 
 function CommandHeader() {
-  const nav = [
-    { href: '/admin/errors', label: 'Errors', icon: Activity },
-    { href: '/admin/health', label: 'Feature Map', icon: RadioTower },
-    { href: '/admin/deploys', label: 'Deploys', icon: GitBranch },
-    { href: '/admin/audit', label: 'Audit', icon: ShieldCheck },
-  ];
+  const iconByHref = {
+    '/admin/errors': Activity,
+    '/admin/health': RadioTower,
+    '/admin/deploys': GitBranch,
+    '/admin/auth': ShieldCheck,
+  } as const;
 
   return (
     <section className="rounded-2xl border border-warm-200 bg-[var(--fw-color-nav-bg)] px-5 py-4 text-white shadow-sm">
@@ -477,8 +478,8 @@ function CommandHeader() {
           </p>
         </div>
         <nav aria-label="Command center shortcuts" className="flex flex-wrap gap-2">
-          {nav.map((item) => {
-            const Icon = item.icon;
+          {ADMIN_COMMAND_SHORTCUTS.map((item) => {
+            const Icon = iconByHref[item.href];
             return (
               <Link
                 key={item.href}

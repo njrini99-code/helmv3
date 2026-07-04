@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ADMIN_NAV, hrefForShortcut } from '@/app/admin/_components/admin-nav';
+import { ADMIN_NAV, ADMIN_COMMAND_SHORTCUTS, hrefForShortcut } from '@/app/admin/_components/admin-nav';
 
 describe('ADMIN_NAV', () => {
   it('declares the canonical tabs in order', () => {
@@ -27,5 +27,13 @@ describe('ADMIN_NAV', () => {
     expect(hrefForShortcut('9')).toBe('/admin/deploys');
     expect(hrefForShortcut('0')).toBe('/admin/health');
     expect(hrefForShortcut('x')).toBeNull();
+  });
+
+  it('keeps command-center shortcuts on real Bridge tabs', () => {
+    const navHrefs = new Set(ADMIN_NAV.map((entry) => entry.href));
+    for (const shortcut of ADMIN_COMMAND_SHORTCUTS) {
+      expect(navHrefs.has(shortcut.href), `${shortcut.href} is not a registered admin tab`).toBe(true);
+    }
+    expect(ADMIN_COMMAND_SHORTCUTS.map((s) => s.href)).not.toContain('/admin/audit');
   });
 });
