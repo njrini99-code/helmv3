@@ -146,7 +146,9 @@ describe('BASEBALL_NAV_MANIFEST', () => {
     const canonicalHrefs = new Set(manifestHrefsByStatus('canonical'));
 
     it('sanity: deprecated entries were actually collected', () => {
-      expect(deprecated.length).toBeGreaterThanOrEqual(10);
+      // Coach/player type routes and stats/games/new now redirect via middleware
+      // (see src/lib/supabase/middleware.ts); only on-disk redirect() pages remain.
+      expect(deprecated.length).toBeGreaterThanOrEqual(2);
     });
 
     it.each(deprecated.map((e) => [e] as const))(

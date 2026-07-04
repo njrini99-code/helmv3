@@ -85,21 +85,27 @@ export function observeActionSoftFailure(
   const expected = isExpectedSoftFailureMessage(failure.message);
   const severity = severityForSoftFailure(failure.message);
 
-  void logServerError(
-    failure.message,
-    {
-      ...context,
-      title: `[${context.action}] ${failure.message}`.slice(0, 500),
-      handled: true,
-      skipSentry: expected,
-      errorCode: failure.code ?? undefined,
-      fingerprint: ['server_action_soft', context.feature ?? context.featureArea ?? 'unknown', context.action],
-      metadata: {
-        ...(context.metadata ?? {}),
-        soft_failure: true,
-        ...(collapsedCount > 0 ? { collapsed_count: collapsedCount } : {}),
-      },
-    },
-    severity,
-  ).catch(() => {});
+  try {
+    void Promise.resolve(
+      logServerError(
+        failure.message,
+        {
+          ...context,
+          title: `[${context.action}] ${failure.message}`.slice(0, 500),
+          handled: true,
+          skipSentry: expected,
+          errorCode: failure.code ?? undefined,
+          fingerprint: ['server_action_soft', context.feature ?? context.featureArea ?? 'unknown', context.action],
+          metadata: {
+            ...(context.metadata ?? {}),
+            soft_failure: true,
+            ...(collapsedCount > 0 ? { collapsed_count: collapsedCount } : {}),
+          },
+        },
+        severity,
+      ),
+    ).catch(() => {});
+  } catch {
+    // Fire-and-forget: observability must never change action results.
+  }
 }
