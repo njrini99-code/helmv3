@@ -316,14 +316,18 @@ async function captureServerTrace(
   }
 
   if (!shouldPersistAdminTables()) {
-    console.error(`[ServerErrorLogger] (${severity}, not persisted off-prod)`, message, enriched.action ?? '');
+    console.error('[ServerErrorLogger] not persisted off-prod', {
+      severity,
+      message,
+      action: enriched.action ?? '',
+    });
     return;
   }
 
   try {
     await writeAdminTables(message, normalizedError, enriched, severity);
   } catch {
-    console.error('[ServerErrorLogger] Failed to persist trace:', message, enriched);
+    console.error('[ServerErrorLogger] Failed to persist trace', { message, context: enriched });
   }
 }
 
