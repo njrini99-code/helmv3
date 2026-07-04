@@ -2,7 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
-import { mergeTriage, type AppTriageEventRow, type TriageItem } from '@/lib/admin/data/triage';
+import { groupAppErrorEvents, type AppTriageEventRow, type TriageItem } from '@/lib/admin/data/triage';
 import {
   fetchFeatureHealth,
   summarizeFeatureHealth,
@@ -82,7 +82,7 @@ export function isoStartOfToday(now: Date = new Date()): string {
 }
 
 export function activeAppErrorGroups(rows: AppTriageEventRow[]): TriageItem[] {
-  return mergeTriage({ sentryIssues: [], appEvents: rows });
+  return groupAppErrorEvents(rows);
 }
 
 /** CALLER must have passed requireSuperAdmin() (service-role reads). */

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import {
   AppShell,
+  Button,
   CommandMenu,
   type Breadcrumb,
   type NavSection,
@@ -49,11 +50,18 @@ function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
   return crumbs;
 }
 
-// Index-aligned with ADMIN_NAV (admin-nav.ts) — Overview, Activity, Errors,
-// Auth, Golf, Baseball, Users, Jobs, Deploys, Health.
-const NAV_ICONS = [
-  LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot, Users, Timer, Rocket, HeartPulse,
-] as const;
+const NAV_ICON_BY_HREF = {
+  '/admin': LayoutDashboard,
+  '/admin/activity': Activity,
+  '/admin/errors': AlertTriangle,
+  '/admin/auth': KeyRound,
+  '/admin/golf': Flag,
+  '/admin/baseball': CircleDot,
+  '/admin/users': Users,
+  '/admin/jobs': Timer,
+  '/admin/deploys': Rocket,
+  '/admin/health': HeartPulse,
+} as const;
 
 /**
  * Helm Bridge chrome: Fairway AppShell (warm-black rail + cream canvas) as
@@ -73,27 +81,36 @@ export function AdminShell({
   const [commandOpen, setCommandOpen] = useState(false);
 
   const sections: readonly NavSection[] = useMemo(
-    () => [
-      {
-        heading: 'Bridge',
-        items: ADMIN_NAV.map((entry, i) => ({
+    () => {
+      const groups = (['Operations', 'Apps', 'Platform'] as const).map((section) => ({
+        heading: section,
+        items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => ({
           label: entry.label,
           href: entry.href,
-          icon: NAV_ICONS[i]!,
-          // Overview must not stay lit on every /admin/* subroute; the other
-          // 7 tabs SHOULD stay lit on their sub-routes (e.g. /admin/errors/[fp]).
+          icon: NAV_ICON_BY_HREF[entry.href],
+          description: entry.description,
+          shortcut: entry.key === '0' ? '0' : entry.key,
+          meta: entry.meta,
           activeMatch: (p: string) =>
             entry.href === '/admin' ? p === '/admin' : p.startsWith(entry.href),
         })),
-      },
-      {
-        heading: 'Elsewhere',
-        items: [
-          // CRM stays a plain LINK OUT — no CRM code crosses the boundary.
-          { label: 'Coach CRM', href: '/golf/admin/crm', icon: ExternalLink },
-        ],
-      },
-    ],
+      }));
+      return [
+        ...groups,
+        {
+          heading: 'Elsewhere',
+          items: [
+            {
+              label: 'Coach CRM',
+              href: '/golf/admin/crm',
+              icon: ExternalLink,
+              description: 'Outbound pipeline stays outside Helm Bridge',
+              meta: 'link',
+            },
+          ],
+        },
+      ];
+    },
     [],
   );
 
@@ -141,8 +158,13 @@ export function AdminShell({
       <AppShell
         sections={sections}
         brand={
-          <span className="text-sm font-semibold tracking-wide text-white">
-            Helm <span className="text-accent-400">Bridge</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.08] bg-nav-surface font-fw-mono text-caption text-accent-400">
+              HB
+            </span>
+            <span className="min-w-0 text-sm font-semibold tracking-wide text-white">
+              Helm <span className="text-accent-400">Bridge</span>
+            </span>
           </span>
         }
         user={{ name: 'Super admin', teamName: email }}
@@ -150,7 +172,23 @@ export function AdminShell({
         linkComponent={Link}
         breadcrumbs={breadcrumbs}
         onSearchOpen={() => setCommandOpen(true)}
-        searchPlaceholder="Jump to tab, user, team…"
+        searchPlaceholder="Jump to command, incident, user…"
+        topBarActions={
+          <div className="hidden items-center gap-2 lg:flex">
+            <span className="rounded-full border border-warm-200 bg-surface px-2.5 py-1 font-fw-mono text-caption uppercase text-warm-600">
+              prod
+            </span>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => router.refresh()}
+              className="min-h-0 rounded-full px-2.5 py-1 text-caption"
+            >
+              Refresh
+            </Button>
+          </div>
+        }
       >
         {children}
       </AppShell>

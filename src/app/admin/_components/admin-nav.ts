@@ -1,22 +1,37 @@
+type AdminHref =
+  | '/admin'
+  | '/admin/activity'
+  | '/admin/errors'
+  | '/admin/auth'
+  | '/admin/golf'
+  | '/admin/baseball'
+  | '/admin/users'
+  | '/admin/jobs'
+  | '/admin/deploys'
+  | '/admin/health';
+
 export interface AdminNavEntry {
   label: string;
-  href: string;
+  href: AdminHref;
   key: string;
+  section: 'Operations' | 'Apps' | 'Platform';
+  description: string;
+  meta?: string;
 }
 
 /** The 10 tabs. Order is the keyboard map: '1'-'9' for the first nine tabs,
  *  '0' for the tenth (Health) — there is no single digit past 9. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
-  { label: 'Overview', href: '/admin', key: '1' },
-  { label: 'Activity', href: '/admin/activity', key: '2' },
-  { label: 'Errors', href: '/admin/errors', key: '3' },
-  { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4' },
-  { label: 'Golf', href: '/admin/golf', key: '5' },
-  { label: 'Baseball', href: '/admin/baseball', key: '6' },
-  { label: 'Users & Teams', href: '/admin/users', key: '7' },
-  { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8' },
-  { label: 'Deploys & Infra', href: '/admin/deploys', key: '9' },
-  { label: 'Health', href: '/admin/health', key: '0' },
+  { label: 'Overview', href: '/admin', key: '1', section: 'Operations', description: 'Command posture, triage, deploys', meta: 'live' },
+  { label: 'Activity', href: '/admin/activity', key: '2', section: 'Operations', description: 'User and product event stream' },
+  { label: 'Errors', href: '/admin/errors', key: '3', section: 'Operations', description: 'Sentry plus app incident groups', meta: 'trace' },
+  { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Operations', description: 'Access, sessions, auth failures' },
+  { label: 'Golf', href: '/admin/golf', key: '5', section: 'Apps', description: 'GolfHelm production signals' },
+  { label: 'Baseball', href: '/admin/baseball', key: '6', section: 'Apps', description: 'BaseballHelm production signals' },
+  { label: 'Users & Teams', href: '/admin/users', key: '7', section: 'Platform', description: 'Accounts, teams, engagement' },
+  { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Platform', description: 'Crons, guards, integrity checks' },
+  { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
+  { label: 'Health', href: '/admin/health', key: '0', section: 'Platform', description: 'Feature health across every app', meta: 'map' },
 ] as const;
 
 export function hrefForShortcut(key: string): string | null {

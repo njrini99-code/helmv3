@@ -144,32 +144,82 @@ async function BannerAndKpis() {
 async function TriagePanel() {
   const { items, sentry } = await fetchTriageQueue();
   const regressed = items.filter((i) => i.substatus === 'regressed');
+  const highSeverity = items.filter((i) => i.severity === 'critical' || i.severity === 'error');
+  const appItems = items.filter((i) => i.origin === 'app');
+  const sentryItems = items.filter((i) => i.origin === 'sentry');
+  const sportCounts = [
+    ['Golf', items.filter((i) => i.sport === 'golf').length],
+    ['Baseball', items.filter((i) => i.sport === 'baseball').length],
+    ['Shared', items.filter((i) => i.sport === 'shared' || i.sport === null).length],
+  ] as const;
+  const topSources = Array.from(
+    items.reduce((map, item) => {
+      const key = item.source ?? item.origin;
+      map.set(key, (map.get(key) ?? 0) + 1);
+      return map;
+    }, new Map<string, number>()),
+  ).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
   return (
-    <div className="grid gap-4 xl:grid-cols-3">
-      <Surface as="section" padding="sm" className="min-w-0 xl:col-span-2">
-        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Triage queue
-        </h2>
-        {sentry.status === 'error' ? (
-          <div className="mt-2"><PanelStale label="Sentry feed" error={sentry.error} /></div>
-        ) : null}
-        {sentry.status === 'unconfigured' ? (
-          <p className="mt-2 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">
-            Sentry live pull not configured (SENTRY_READ_TOKEN) — showing in-app incidents only.
-          </p>
-        ) : null}
-        <TriageQueue items={items.slice(0, 25)} />
-      </Surface>
+    <div className="space-y-4">
       <Surface as="section" padding="sm" className="min-w-0">
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Regressed — a fix failed
+          Action lanes
         </h2>
-        {regressed.length === 0 ? (
-          <PanelAllClear label="No regressed issues" checkedAt={new Date().toISOString()} />
-        ) : (
-          <TriageQueue items={regressed} />
-        )}
+        <div className="mt-3 grid divide-y divide-warm-200 overflow-hidden rounded-lg border border-warm-200 md:grid-cols-4 md:divide-x md:divide-y-0">
+          {[
+            ['Total groups', items.length, 'coalesced incidents'],
+            ['High severity', highSeverity.length, 'critical and error'],
+            ['App groups', appItems.length, 'Supabase admin_events'],
+            ['Sentry groups', sentryItems.length, sentry.status === 'ok' ? 'live pull' : sentry.status],
+          ].map(([label, value, caption]) => (
+            <div key={label} className="bg-surface-sunken px-3 py-2">
+              <p className="text-eyebrow uppercase text-warm-500">{label}</p>
+              <p className="font-fw-mono text-2xl tabular-nums text-warm-900">{value}</p>
+              <p className="truncate text-caption text-warm-500">{caption}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {sportCounts.map(([label, count]) => (
+            <span key={label} className="inline-flex items-center gap-2 rounded-full border border-warm-200 px-2.5 py-1 text-caption text-warm-600">
+              {label}<span className="font-fw-mono tabular-nums text-warm-900">{count}</span>
+            </span>
+          ))}
+          {topSources.map(([source, count]) => (
+            <span key={source} className="inline-flex items-center gap-2 rounded-full bg-warm-100 px-2.5 py-1 font-fw-mono text-caption text-warm-600">
+              {source}<span className="tabular-nums text-warm-900">{count}</span>
+            </span>
+          ))}
+        </div>
       </Surface>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Surface as="section" padding="sm" className="min-w-0 xl:col-span-2">
+          <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+            Triage queue
+          </h2>
+          {sentry.status === 'error' ? (
+            <div className="mt-2"><PanelStale label="Sentry feed" error={sentry.error} /></div>
+          ) : null}
+          {sentry.status === 'unconfigured' ? (
+            <p className="mt-2 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">
+              Sentry live pull not configured (SENTRY_READ_TOKEN) — showing in-app incidents only.
+            </p>
+          ) : null}
+          <TriageQueue items={items.slice(0, 25)} />
+        </Surface>
+        <Surface as="section" padding="sm" className="min-w-0">
+          <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+            Regressed — a fix failed
+          </h2>
+          {regressed.length === 0 ? (
+            <PanelAllClear label="No regressed issues" checkedAt={new Date().toISOString()} />
+          ) : (
+            <TriageQueue items={regressed} />
+          )}
+        </Surface>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
-import { fetchTriageQueue, excludeAuthNoise } from '@/lib/admin/data/triage';
+import { fetchTriageQueue, groupAppErrorEvents, type AppTriageEventRow } from '@/lib/admin/data/triage';
 import { buildDigestEmail, type DigestData } from '@/lib/admin/digest/build-digest';
 import { sendOpsDigest } from '@/lib/admin/digest/transport';
 import { CRON_REGISTRY, classifyCronStatus } from '@/lib/admin/cron-registry';
@@ -22,14 +22,19 @@ export async function GET(req: NextRequest) {
     const ago24h = new Date(Date.now() - 86400_000).toISOString();
     const now = new Date();
 
-    const [errors, criticals, signups, golf, baseball, lifts, integrityFails, jobRows, regressed, triage] =
+    const [errors24h, signups, golf, baseball, lifts, integrityFails, jobRows, regressed, triage] =
       await Promise.all([
-        excludeAuthNoise(
-          admin.from('admin_events').select('id', { count: 'exact', head: true })
-            .eq('event_type', 'error').gte('created_at', ago24h),
-        ),
-        admin.from('admin_events').select('id', { count: 'exact', head: true })
-          .eq('event_type', 'error').eq('severity', 'critical').gte('created_at', ago24h),
+        admin
+          .from('admin_events')
+          .select(
+            'id, title, message, severity, sport, fingerprint, user_id, user_email, url, created_at, source, feature, stack_trace, metadata',
+          )
+          .eq('event_type', 'error')
+          .eq('resolved', false)
+          .gte('created_at', ago24h)
+          .neq('severity', 'info')
+          .order('created_at', { ascending: false })
+          .limit(500),
         admin.from('users').select('email, role').gte('created_at', ago24h).limit(50),
         admin.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago24h),
         admin.from('baseball_games').select('id', { count: 'exact', head: true }).gte('created_at', ago24h),
@@ -54,13 +59,14 @@ export async function GET(req: NextRequest) {
         .filter(({ status }) => status === 'overdue' || status === 'failed')
         .map(({ e, status }) => `cron ${status}: ${e.jobType}`),
     ];
+    const appErrorGroups24h = groupAppErrorEvents((errors24h.data ?? []) as unknown as AppTriageEventRow[]);
 
     const data: DigestData = {
       generatedAt: now.toISOString(),
       errors24h: {
-        total: errors.count ?? 0,
-        critical: criticals.count ?? 0,
-        topIncidents: triage.items.slice(0, 5).map((i) => ({
+        total: appErrorGroups24h.length,
+        critical: appErrorGroups24h.filter((i) => i.severity === 'critical').length,
+        topIncidents: appErrorGroups24h.slice(0, 5).map((i) => ({
           title: i.title, occurrences: i.occurrences, affectedUsers: i.affectedUsers,
         })),
       },

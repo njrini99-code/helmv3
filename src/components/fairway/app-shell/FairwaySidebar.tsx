@@ -21,7 +21,7 @@
  *   • Motion: slow width/opacity transitions (--fw-ease-glide), reduced-motion safe.
  * ========================================================================== */
 
-import { createContext, forwardRef, useCallback, useContext } from 'react';
+import { createContext, forwardRef, useCallback, useContext, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
@@ -104,55 +104,106 @@ interface SidebarRowProps {
 
 function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowProps) {
   const Icon = item.icon;
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [popoutTop, setPopoutTop] = useState<number | null>(null);
+
+  function showPopout() {
+    const rect = rowRef.current?.getBoundingClientRect();
+    if (rect) setPopoutTop(rect.top + rect.height / 2);
+  }
+
+  function hidePopout() {
+    setPopoutTop(null);
+  }
+
   return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      aria-current={active ? 'page' : undefined}
-      aria-label={collapsed ? item.label : undefined}
-      className={cn(
-        navRowBase,
-        collapsed ? 'justify-center px-2 py-2.5' : 'px-3.5 py-2.5',
-        active
-          ? // Active = nav-surface pill + a whisper of glass sheen (the one
-            // glass touch the rail gets). Solid base keeps it legible.
-            'bg-nav-surface text-nav-text [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.05)]'
-          : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
-      )}
+    <div
+      ref={rowRef}
+      className="group/row relative"
     >
-      {/* Active left marker — nav-accent (primary-400, reads on black). */}
-      {active && (
-        <span
+      <Link
+        href={item.href}
+        onClick={onNavigate}
+        onMouseEnter={showPopout}
+        onMouseLeave={hidePopout}
+        onFocus={showPopout}
+        onBlur={hidePopout}
+        aria-current={active ? 'page' : undefined}
+        aria-label={collapsed ? item.label : undefined}
+        title={collapsed ? item.label : undefined}
+        className={cn(
+          navRowBase,
+          collapsed ? 'justify-center px-2 py-2.5' : 'px-3.5 py-2.5',
+          active
+            ? 'bg-nav-surface text-nav-text ring-1 ring-white/[0.08] [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.05)]'
+            : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
+        )}
+      >
+        <Icon
+          size={18}
           aria-hidden
-          className={cn(
-            'absolute left-0 top-1/2 -translate-y-1/2 rounded-r-full bg-nav-accent',
-            collapsed ? 'h-5 w-[3px]' : 'h-6 w-[3px] -ml-3.5',
-          )}
+          className={cn('flex-shrink-0 transition-colors', active ? 'text-nav-accent' : 'text-nav-text-dim')}
         />
-      )}
-      <Icon
-        size={18}
-        aria-hidden
-        className={cn('flex-shrink-0 transition-colors', active ? 'text-nav-accent' : 'text-nav-text-dim')}
-      />
-      {!collapsed && <span className="min-w-0 flex-1 truncate whitespace-nowrap">{item.label}</span>}
-      {/* Badge: inline pill expanded, dot when collapsed. */}
-      {/* A11y (P423): cream digits on accent-500 fill is only ~3.0:1 — below the
-          4.5:1 needed for this small numeric text. accent-700 fill lifts the same
-          cream text to ~5.9:1 (matches the primary-button fix). The collapsed
-          DOT below stays accent-500 — it's a non-text indicator (3:1 large is fine). */}
-      {typeof item.badge === 'number' && item.badge > 0 && !collapsed && (
-        <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-700 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
-          {item.badge > 99 ? '99+' : item.badge}
+        {!collapsed && (
+          <span className="min-w-0 flex-1">
+            <span className="block truncate whitespace-nowrap">{item.label}</span>
+            {item.description ? (
+              <span className="mt-0.5 block truncate text-caption font-normal leading-4 text-nav-text-dim">
+                {item.description}
+              </span>
+            ) : null}
+          </span>
+        )}
+        {!collapsed && item.meta ? (
+          <span className="rounded-full border border-white/[0.08] px-1.5 py-0.5 font-fw-mono text-micro uppercase leading-none text-nav-text-dim">
+            {item.meta}
+          </span>
+        ) : null}
+        {!collapsed && item.shortcut ? (
+          <span className="rounded border border-white/[0.08] px-1.5 py-0.5 font-fw-mono text-micro leading-none text-nav-text-dim">
+            {item.shortcut}
+          </span>
+        ) : null}
+        {typeof item.badge === 'number' && item.badge > 0 && !collapsed && (
+          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-700 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
+            {item.badge > 99 ? '99+' : item.badge}
+          </span>
+        )}
+        {typeof item.badge === 'number' && item.badge > 0 && collapsed && (
+          <span
+            aria-hidden
+            className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent-500 ring-2 ring-nav-bg"
+          />
+        )}
+      </Link>
+      {collapsed && popoutTop !== null && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none fixed left-[88px] z-[calc(var(--fw-z-nav)+1)] w-[268px] -translate-y-1/2 rounded-xl border border-white/[0.09] bg-nav-surface px-3.5 py-3 text-left shadow-fw-modal',
+            'animate-in fade-in-0 zoom-in-95 duration-150',
+          )}
+          style={{ top: popoutTop }}
+        >
+          <span className="flex items-center justify-between gap-3">
+            <span className="truncate text-sm font-semibold text-nav-text">{item.label}</span>
+            {item.shortcut ? (
+              <span className="rounded border border-white/[0.1] px-1.5 py-0.5 font-fw-mono text-micro leading-none text-nav-text-dim">
+                {item.shortcut}
+              </span>
+            ) : null}
+          </span>
+          {item.description ? (
+            <span className="mt-1 block text-xs leading-4 text-nav-text-dim">{item.description}</span>
+          ) : null}
+          {item.meta ? (
+            <span className="mt-2 inline-flex rounded-full border border-white/[0.08] px-2 py-0.5 font-fw-mono text-micro uppercase leading-none text-nav-text-dim">
+              {item.meta}
+            </span>
+          ) : null}
         </span>
       )}
-      {typeof item.badge === 'number' && item.badge > 0 && collapsed && (
-        <span
-          aria-hidden
-          className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent-500 ring-2 ring-nav-bg"
-        />
-      )}
-    </Link>
+    </div>
   );
 }
 
@@ -279,7 +330,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
       <nav
         aria-label="Sections"
         className={cn(
-          'scrollbar-hidden flex-1 overflow-y-auto overflow-x-hidden py-4',
+          'scrollbar-hidden flex-1 overflow-y-auto overflow-x-visible py-4',
           isCollapsed ? 'px-3' : 'px-3',
         )}
       >

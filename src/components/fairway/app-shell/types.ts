@@ -23,6 +23,12 @@ export interface NavItem {
   readonly href: string;
   /** Leading glyph. */
   readonly icon: FairwayIcon;
+  /** Short operational copy shown in expanded rows and collapsed pop-outs. */
+  readonly description?: string;
+  /** Keyboard shortcut or route key shown as a compact hint. */
+  readonly shortcut?: string;
+  /** Small status label for command-center rails. */
+  readonly meta?: string;
   /** Optional unread/notification count rendered as a pill. */
   readonly badge?: number;
   /** Force-mark active regardless of pathname matching (rare). */
@@ -69,5 +75,9 @@ export type ShellLinkComponent = ComponentType<{
   'aria-current'?: 'page' | undefined;
   'aria-label'?: string;
   onClick?: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   title?: string;
 }>;

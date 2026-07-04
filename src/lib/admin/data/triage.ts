@@ -229,6 +229,10 @@ export function mergeTriage(input: {
   });
 }
 
+export function groupAppErrorEvents(rows: AppTriageEventRow[]): TriageItem[] {
+  return mergeTriage({ sentryIssues: [], appEvents: rows });
+}
+
 /**
  * Server fetcher. CALLER must have passed requireSuperAdmin() first —
  * this reads admin_events with the service-role client.
