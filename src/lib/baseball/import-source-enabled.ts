@@ -28,6 +28,7 @@ export type ImportSourceRegistration = Pick<
 type ImportSourceRow = ImportSourceRegistration & {
   adapter_key?: string | null;
   is_active?: boolean | null;
+  source_type?: string | null;
 };
 
 /**
@@ -79,11 +80,14 @@ export async function loadImportSourceRegistration(
     .eq('team_id', teamId);
 
   const rows = ((data ?? []) as ImportSourceRow[])
-    .map((row) => ({
-      source_name: row.source_name,
-      enabled: row.is_active !== false,
-      adapter_key: row.adapter_key,
-    }))
+    .map((row) => {
+      const adapterKey = row.adapter_key ?? row.source_type ?? null;
+      return {
+        source_name: row.source_name,
+        enabled: (row.is_active ?? row.enabled) !== false,
+        adapter_key: adapterKey,
+      };
+    })
     .filter((row) => row.adapter_key === sourceKey || row.source_name === sourceKey);
   if (rows.length === 0) return null;
 
