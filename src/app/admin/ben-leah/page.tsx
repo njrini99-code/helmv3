@@ -1,4 +1,4 @@
-import { Github, ImageUp, Link2, MessageSquarePlus } from 'lucide-react';
+import { GitPullRequest, ImageUp, Link2, MessageSquarePlus } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { Eyebrow, Surface, StatusPill } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
@@ -58,7 +58,7 @@ export default async function BenLeahPage() {
                 <span>Signal URL is separate from Page URL, so a Sentry event or log link does not get buried.</span>
               </li>
               <li className="flex gap-2">
-                <Github size={16} className="mt-0.5 text-accent-600" aria-hidden />
+                <GitPullRequest size={16} className="mt-0.5 text-accent-600" aria-hidden />
                 <span>Submissions go to the configured GitHub repo issues tab.</span>
               </li>
             </ul>

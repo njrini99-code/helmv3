@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { AlertCircle, CheckCircle2, Github, ImageUp, Send } from 'lucide-react';
+import { AlertCircle, CheckCircle2, GitPullRequest, ImageUp, Send } from 'lucide-react';
 import { Button, StatusPill } from '@/components/fairway';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -172,7 +172,7 @@ export function BenLeahForm() {
             {state.message}
             {state.issue ? (
               <a href={state.issue.html_url} className="ml-2 inline-flex items-center gap-1 underline" target="_blank" rel="noreferrer">
-                <Github size={14} aria-hidden />
+                <GitPullRequest size={14} aria-hidden />
                 Open issue
               </a>
             ) : null}
