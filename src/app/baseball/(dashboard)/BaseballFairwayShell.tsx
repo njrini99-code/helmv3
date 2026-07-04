@@ -481,7 +481,13 @@ function BaseballFairwayContent({
  * Exported shell — full standalone replacement for BaseballShellLayout (auth
  * gate + provider stack + shell), rendering the Fairway AppShell frame.
  */
-export function BaseballFairwayShell({ children }: { children: React.ReactNode }) {
+export function BaseballFairwayShell({
+  children,
+  authVerified = false,
+}: {
+  children: React.ReactNode;
+  authVerified?: boolean;
+}) {
   // SAME auth gate BaseballShellLayout uses for this route group (accepts
   // both roles; requiredRole=null).
   const { loading, authorized, role } = useBaseballAuth(null);
@@ -489,7 +495,7 @@ export function BaseballFairwayShell({ children }: { children: React.ReactNode }
   // passes into BaseballDashboardShell.
   const { navContext } = useBaseballNavContext();
 
-  if (loading || !authorized) {
+  if (!authVerified && (loading || !authorized)) {
     return <PageLoading />;
   }
 

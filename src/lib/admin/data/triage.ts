@@ -1,7 +1,11 @@
 import 'server-only';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
+import type { SentryIssue } from '@/lib/admin/sentry-api';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
+import {
+  fetchIncidentFeed,
+  DEFAULT_INCIDENT_WINDOW_HOURS,
+  type IncidentFeedCounts,
+} from '@/lib/admin/data/incident-feed';
 import {
   buildIncidentReport,
   extractActionName,
@@ -237,34 +241,13 @@ export function groupAppErrorEvents(rows: AppTriageEventRow[]): TriageItem[] {
  * Server fetcher. CALLER must have passed requireSuperAdmin() first —
  * this reads admin_events with the service-role client.
  */
-export async function fetchTriageQueue(): Promise<{
+export async function fetchTriageQueue(
+  windowHours: number = DEFAULT_INCIDENT_WINDOW_HOURS,
+): Promise<{
   items: TriageItem[];
   sentry: AdminFetchResult<SentryIssue[]>;
+  counts: IncidentFeedCounts;
 }> {
-  const admin = createAdminClient();
-  const [sentry, appRes] = await Promise.all([
-    fetchSentryIssues(),
-    admin
-      .from('admin_events')
-      .select(
-        'id, title, message, severity, sport, fingerprint, user_id, user_email, url, created_at, source, feature, stack_trace, metadata',
-      )
-      .eq('event_type', 'error')
-      .eq('resolved', false)
-      // `info` rows (integrity-check PASS sweeps, pattern-miner starvation,
-      // philosophy-gate filter counts, etc.) are routine telemetry, not
-      // incidents — excluded from this feed (Needs Attention + the ops
-      // digest) the same way as the /admin/errors tab (errors.ts). They are
-      // still captured in admin_events and still feed Feature Health's
-      // green-dot classifier via a separate query (get_feature_health()).
-      .neq('severity', 'info')
-      .order('created_at', { ascending: false })
-      .limit(500),
-  ]);
-
-  const appEvents = (appRes.data ?? []) as unknown as AppTriageEventRow[];
-  return {
-    items: mergeTriage({ sentryIssues: sentry.data ?? [], appEvents }),
-    sentry,
-  };
+  const feed = await fetchIncidentFeed({ windowHours });
+  return { items: feed.incidents, sentry: feed.sentry, counts: feed.counts };
 }

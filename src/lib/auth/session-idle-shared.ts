@@ -17,6 +17,13 @@ export const SESSION_IDLE_COOKIE = 'sb_last_activity';
 export const SESSION_IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
+ * While the tab is visible, refresh the activity marker on this interval so
+ * reading a dashboard (no mouse/keyboard) does not trip the idle window.
+ * Must stay well below {@link SESSION_IDLE_TIMEOUT_MS}.
+ */
+export const SESSION_VISIBLE_HEARTBEAT_MS = 60 * 1000; // 1 minute
+
+/**
  * Cookie lifetime — deliberately MUCH longer than the timeout.
  *
  * If the cookie expired *at* the timeout it would vanish exactly when we need to

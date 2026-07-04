@@ -38,7 +38,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BaseballShellLayout } from '@/components/baseball/BaseballShellLayout';
 import { BaseballFairwayShell } from './BaseballFairwayShell';
-import { PageLoading } from '@/components/ui/loading';
+import { BaseballDashboardBootstrap } from '@/components/baseball/BaseballDashboardBootstrap';
 import { useBaseballAuth } from '@/hooks/use-baseball-auth';
 import { useBaseballNavContext } from '@/hooks/use-baseball-nav-context';
 import { isRedesignEnabled } from '@/lib/redesign/flag';
@@ -87,10 +87,18 @@ function DashboardSessionGuard({ children }: { children: React.ReactNode }) {
   // Show page skeleton while loading OR while a redirect is pending
   // (navContext null + authorized + settled → redirect in-flight).
   if (!bothSettled || (authorized && navContext === null)) {
-    return <PageLoading />;
+    return <BaseballDashboardBootstrap />;
   }
 
-  return <>{children}</>;
+  const shell = isRedesignEnabled() ? (
+    <BaseballFairwayShell authVerified>{children}</BaseballFairwayShell>
+  ) : (
+    <BaseballShellLayout requiredRole={null} authVerified>
+      {children}
+    </BaseballShellLayout>
+  );
+
+  return shell;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,13 +121,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <DashboardSessionGuard>
-      {isRedesignEnabled() ? (
-        <BaseballFairwayShell>{children}</BaseballFairwayShell>
-      ) : (
-        <BaseballShellLayout requiredRole={null}>{children}</BaseballShellLayout>
-      )}
-    </DashboardSessionGuard>
-  );
+  return <DashboardSessionGuard>{children}</DashboardSessionGuard>;
 }

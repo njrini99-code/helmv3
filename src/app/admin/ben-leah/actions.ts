@@ -7,6 +7,8 @@ import {
   validateFeedback,
   type GitHubIssueResult,
 } from '@/lib/admin/github-feedback';
+import { setBenLeahIssueWorkflow } from '@/lib/admin/github-issues-workflow';
+import type { BenLeahWorkflowSelection } from '@/lib/admin/ben-leah-issue-tracker';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -64,6 +66,47 @@ export async function submitBenLeahFeedback(
     return {
       ok: false,
       message: `Submission could not create a GitHub issue: ${describeError(err)}`,
+    };
+  }
+}
+
+const WORKFLOW_SELECTIONS = new Set<BenLeahWorkflowSelection>([
+  'triaged',
+  'in_progress',
+  'in_production',
+  'wont_fix',
+]);
+
+export async function updateBenLeahIssueWorkflow(
+  issueNumber: number,
+  currentLabels: string[],
+  selection: BenLeahWorkflowSelection,
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    await requireSuperAdmin();
+  } catch (err) {
+    return {
+      ok: false,
+      message: describeError(err) === 'Unauthorized'
+        ? 'Your session expired. Sign in again and retry.'
+        : 'You do not have permission to update Ben + Leah issues.',
+    };
+  }
+
+  if (!Number.isInteger(issueNumber) || issueNumber < 1) {
+    return { ok: false, message: 'Invalid issue number.' };
+  }
+  if (!WORKFLOW_SELECTIONS.has(selection)) {
+    return { ok: false, message: 'Invalid workflow status.' };
+  }
+
+  try {
+    await setBenLeahIssueWorkflow(issueNumber, currentLabels, selection);
+    return { ok: true, message: 'GitHub workflow label updated.' };
+  } catch (err) {
+    return {
+      ok: false,
+      message: `Could not update GitHub labels: ${describeError(err)}`,
     };
   }
 }

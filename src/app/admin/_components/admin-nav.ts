@@ -6,6 +6,7 @@ type AdminHref =
   | '/admin/golf'
   | '/admin/baseball'
   | '/admin/ben-leah'
+  | '/admin/work'
   | '/admin/users'
   | '/admin/jobs'
   | '/admin/deploys'
@@ -30,6 +31,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Golf', href: '/admin/golf', key: '5', section: 'Apps', description: 'GolfHelm production signals' },
   { label: 'Baseball', href: '/admin/baseball', key: '6', section: 'Apps', description: 'BaseballHelm production signals' },
   { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Operations', description: 'Submit bugs, changes, additions', meta: 'issues' },
+  { label: 'Work log', href: '/admin/work', key: 'W', section: 'Operations', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
   { label: 'Users & Teams', href: '/admin/users', key: '7', section: 'Platform', description: 'Accounts, teams, engagement' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Platform', description: 'Crons, guards, integrity checks' },
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },

@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useBaseballAuth } from '../use-baseball-auth';
 
-const routerPush = vi.fn();
+const routerReplace = vi.fn();
 
 // use-baseball-auth.ts talks to the store only via the static
 // `useAuthStore.getState()` accessor (never the React-hook form), so a plain
@@ -29,6 +29,7 @@ const fakeAuthState = {
   user: null as unknown,
   coach: null as unknown,
   player: null as unknown,
+  setUser: vi.fn((user: unknown) => { fakeAuthState.user = user; }),
   setCoach: vi.fn((coach: unknown) => { fakeAuthState.coach = coach; }),
   setPlayer: vi.fn((player: unknown) => { fakeAuthState.player = player; }),
   clear: vi.fn(() => {
@@ -44,8 +45,8 @@ vi.mock('@/stores/auth-store', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: routerPush,
-    replace: vi.fn(),
+    push: vi.fn(),
+    replace: routerReplace,
     prefetch: vi.fn(),
     back: vi.fn(),
     forward: vi.fn(),
@@ -124,6 +125,6 @@ describe('useBaseballAuth', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.authorized).toBe(false);
-    expect(routerPush).toHaveBeenCalledWith('/baseball/login');
+    expect(routerReplace).toHaveBeenCalledWith('/baseball/login');
   });
 });
