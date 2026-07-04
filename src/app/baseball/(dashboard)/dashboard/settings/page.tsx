@@ -263,7 +263,7 @@ export default function SettingsPage() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="rounded-lg border border-warm-200/70 bg-white/60 p-4 transition-colors hover:border-primary-200 hover:bg-white"
+                    className="glass-subtle rounded-lg border border-warm-200/70 p-4 transition-colors hover:border-primary-200 hover:shadow-card-hover"
                   >
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <Icon size={18} className="text-warm-600" />

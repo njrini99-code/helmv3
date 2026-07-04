@@ -133,7 +133,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
     : null;
   if (widerQuery && filters.sport) widerQuery = widerQuery.eq('sport', filters.sport);
 
-  let widerUntaggedQuery =
+  const widerUntaggedQuery =
     widerSince && filters.sport
       ? admin
           .from('admin_events')

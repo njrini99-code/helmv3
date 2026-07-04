@@ -102,25 +102,23 @@ const CommandPalette = dynamic(
 type Role = 'coach' | 'player';
 
 /**
- * P413-equivalent: the 3 highest-frequency destinations for the persistent
- * MOBILE bottom-tab bar, matching the legacy `MobileBottomNav`'s preferred ids
- * exactly (dashboard-shell.tsx's `buildMobileNavFromContext`) — the drawer
- * (opened by AppShell's own hamburger) keeps the long tail, so the 4th "Menu"
- * slot the legacy bar shows is redundant here rather than dropped.
+ * P413-equivalent: mobile bottom-tab destinations derived from the SAME hub
+ * sections as the desktop rail so active states agree across breakpoints.
+ * Golf FairwayDashboardShell uses the same pattern (5 tabs, hub activeMatch).
  */
-function buildBottomNavItems(ctx: BaseballNavContext, unreadCount: number): NavItem[] {
-  const primary = getVisibleBaseballNav(ctx).filter((e) => e.section === 'primary');
-  const preferredIds =
-    ctx.role === 'coach'
-      ? ['command-center', 'calendar', 'roster']
-      : ['player-today', 'calendar', 'player-profile'];
-  const top3 = preferredIds
-    .map((id) => primary.find((e) => e.id === id))
-    .filter((e): e is NonNullable<typeof e> => Boolean(e));
-  const fill = primary.filter((e) => !top3.some((selected) => selected.id === e.id));
-  return [...top3, ...fill].slice(0, 3).map((e) =>
-    toNavItem(e, e.showUnreadBadge && unreadCount > 0 ? unreadCount : undefined),
-  );
+function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem[] {
+  const items = sections.flatMap((section) => section.items);
+  const preferredLabels =
+    role === 'coach'
+      ? (['Dashboard', 'Team', 'Stats & Performance', 'Messages'] as const)
+      : (['Today', 'Stats', 'Development', 'Team', 'Messages'] as const);
+
+  const picked = preferredLabels
+    .map((label) => items.find((item) => item.label === label))
+    .filter((item): item is NavItem => Boolean(item));
+
+  if (picked.length >= 3) return picked.slice(0, 5);
+  return items.slice(0, 5);
 }
 
 /** Next <Link> adapter for the shell's link contract (module scope = stable identity). */
@@ -485,7 +483,10 @@ function BaseballFairwayContent({
     capabilities: ctx.capabilities,
   });
   // P413-equivalent: persistent mobile bottom-tab bar (subset of the rail).
-  const bottomNavItems = useMemo(() => buildBottomNavItems(ctx, unreadCount), [ctx, unreadCount]);
+  const bottomNavItems = useMemo(
+    () => buildBottomNavFromSections(sections, role),
+    [sections, role],
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
