@@ -504,7 +504,7 @@ async function materializeActionObject(
           `convertSignalToAction lift_modification Helm Lifting Lab bridge failed: ${
             bridgeErr instanceof Error ? bridgeErr.message : String(bridgeErr)
           }`,
-          { action: 'convertSignalToAction.lift_modification.helmBridge', featureArea: 'lifting', handled: true },
+          { action: 'convertSignalToAction.lift_modification.helmBridge', featureArea: 'baseball-lifting', handled: true },
         );
       }
 

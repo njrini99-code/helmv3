@@ -116,7 +116,7 @@ function sanitizeItems(
  */
 export const saveDraftContract = withBaseballAction(
   'saveDraftContract',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (
     ctx,
     input: { items: Array<{ id?: string; label?: string; category?: string }> },
@@ -197,7 +197,7 @@ export const saveDraftContract = withBaseballAction(
  */
 export const commitContract = withBaseballAction(
   'commitContract',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (ctx): Promise<DailyContractActionResult> => {
     const supabase = await createClient();
     const playerId = await resolveSelfPlayer(supabase, ctx.user.id, ctx.activeTeamId);
@@ -262,7 +262,7 @@ export const commitContract = withBaseballAction(
  */
 export const saveDraftAndCommit = withBaseballAction(
   'saveDraftAndCommit',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (
     ctx,
     input: { items: Array<{ id?: string; label?: string; category?: string }> },
@@ -344,7 +344,7 @@ export const saveDraftAndCommit = withBaseballAction(
  */
 export const toggleContractItem = withBaseballAction(
   'toggleContractItem',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (
     ctx,
     input: { itemId: string; state: 'done' | 'skipped' | 'reset' },
@@ -407,7 +407,7 @@ export const toggleContractItem = withBaseballAction(
  */
 export const completeContract = withBaseballAction(
   'completeContract',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (ctx, input?: { reflection?: string }): Promise<DailyContractActionResult> => {
     const supabase = await createClient();
     const playerId = await resolveSelfPlayer(supabase, ctx.user.id, ctx.activeTeamId);
@@ -505,7 +505,7 @@ const VALID_VISIBILITY: readonly DailyContractVisibility[] = [
  */
 export const setContractVisibility = withBaseballAction(
   'setContractVisibility',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (
     ctx,
     input: { visibility: DailyContractVisibility },
@@ -591,7 +591,7 @@ const MAX_COACH_NOTE = 400;
  */
 export const acknowledgeDailyContract = withBaseballAction(
   'acknowledgeDailyContract',
-  { featureArea: 'coach_command_center' },
+  { featureArea: 'baseball-coach-command-center' },
   async (
     ctx,
     input: { contractId: string; note?: string; recognizeToTeam?: boolean },

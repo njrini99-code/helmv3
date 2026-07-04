@@ -248,7 +248,7 @@ async function assertGroupOnTeam(
 
 export const createStrengthGroup = withBaseballAction(
   'createStrengthGroup',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof createGroupSchema>): Promise<ActionResult> => {
     const input = createGroupSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -326,7 +326,7 @@ const setGroupMembersSchema = z.object({
 
 export const setGroupMembers = withBaseballAction(
   'setGroupMembers',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof setGroupMembersSchema>): Promise<ActionResult> => {
     const input = setGroupMembersSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -420,7 +420,7 @@ const updateGroupSchema = z.object({
  */
 export const updateStrengthGroup = withBaseballAction(
   'updateStrengthGroup',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof updateGroupSchema>): Promise<ActionResult> => {
     const input = updateGroupSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -473,7 +473,7 @@ const deleteGroupSchema = z.object({ groupId: uuid });
  */
 export const deleteStrengthGroup = withBaseballAction(
   'deleteStrengthGroup',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof deleteGroupSchema>): Promise<ActionResult> => {
     const input = deleteGroupSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -517,7 +517,7 @@ export interface RulePreviewResult {
  */
 export const previewDynamicGroup = withBaseballAction(
   'previewDynamicGroup',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof previewRuleSchema>): Promise<RulePreviewResult> => {
     const input = previewRuleSchema.parse(raw);
     const rule = input.ruleJson as BaseballStrengthGroupRules;
@@ -550,7 +550,7 @@ const recomputeSchema = z.object({ groupId: uuid });
  */
 export const recomputeDynamicGroup = withBaseballAction(
   'recomputeDynamicGroup',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof recomputeSchema>): Promise<ActionResult> => {
     const input = recomputeSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -672,7 +672,7 @@ export const recomputeDynamicGroup = withBaseballAction(
 // ---- Seed the 12 default groups (spec L155-168), idempotent -----------------
 export const seedDefaultStrengthGroups = withBaseballAction(
   'seedDefaultStrengthGroups',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx): Promise<ActionResult> => {
     const supabase = (await createClient()) as Db;
     const liftCtx = await requireLiftingOrg(ctx.targetTeamId);
@@ -734,7 +734,7 @@ const createProgramSchema = z.object({
 
 export const createLiftProgram = withBaseballAction(
   'createLiftProgram',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof createProgramSchema>): Promise<ActionResult> => {
     const input = createProgramSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -774,7 +774,7 @@ const addWeekSchema = z.object({
 
 export const addLiftWeek = withBaseballAction(
   'addLiftWeek',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof addWeekSchema>): Promise<ActionResult> => {
     const input = addWeekSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -809,7 +809,7 @@ const addDaySchema = z.object({
 
 export const addLiftDay = withBaseballAction(
   'addLiftDay',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof addDaySchema>): Promise<ActionResult> => {
     const input = addDaySchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -841,7 +841,7 @@ const addSectionSchema = z.object({
 
 export const addLiftSection = withBaseballAction(
   'addLiftSection',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof addSectionSchema>): Promise<ActionResult> => {
     const input = addSectionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -882,7 +882,7 @@ const addPrescriptionSchema = z.object({
 
 export const addLiftPrescription = withBaseballAction(
   'addLiftPrescription',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof addPrescriptionSchema>): Promise<ActionResult> => {
     const input = addPrescriptionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -941,7 +941,7 @@ const updateProgramSchema = z.object({
 
 export const updateLiftProgram = withBaseballAction(
   'updateLiftProgram',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof updateProgramSchema>): Promise<ActionResult> => {
     const input = updateProgramSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -989,7 +989,7 @@ const updatePrescriptionSchema = z.object({
 
 export const updateLiftPrescription = withBaseballAction(
   'updateLiftPrescription',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof updatePrescriptionSchema>): Promise<ActionResult> => {
     const input = updatePrescriptionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1029,7 +1029,7 @@ const updateSectionSchema = z.object({
 
 export const updateLiftSection = withBaseballAction(
   'updateLiftSection',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof updateSectionSchema>): Promise<ActionResult> => {
     const input = updateSectionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1060,7 +1060,7 @@ const updateDaySchema = z.object({
 
 export const updateLiftDay = withBaseballAction(
   'updateLiftDay',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof updateDaySchema>): Promise<ActionResult> => {
     const input = updateDaySchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1089,7 +1089,7 @@ const reorderSchema = z.object({
 
 export const reorderLiftSections = withBaseballAction(
   'reorderLiftSections',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof reorderSchema>): Promise<ActionResult> => {
     const input = reorderSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1107,7 +1107,7 @@ export const reorderLiftSections = withBaseballAction(
 
 export const reorderLiftPrescriptions = withBaseballAction(
   'reorderLiftPrescriptions',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof reorderSchema>): Promise<ActionResult> => {
     const input = reorderSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1126,7 +1126,7 @@ const deleteByIdSchema = z.object({ id: uuid });
 
 export const deleteLiftPrescription = withBaseballAction(
   'deleteLiftPrescription',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof deleteByIdSchema>): Promise<ActionResult> => {
     const { id } = deleteByIdSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1138,7 +1138,7 @@ export const deleteLiftPrescription = withBaseballAction(
 
 export const deleteLiftSection = withBaseballAction(
   'deleteLiftSection',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof deleteByIdSchema>): Promise<ActionResult> => {
     const { id } = deleteByIdSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1150,7 +1150,7 @@ export const deleteLiftSection = withBaseballAction(
 
 export const deleteLiftDay = withBaseballAction(
   'deleteLiftDay',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof deleteByIdSchema>): Promise<ActionResult> => {
     const { id } = deleteByIdSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1162,7 +1162,7 @@ export const deleteLiftDay = withBaseballAction(
 
 export const deleteLiftWeek = withBaseballAction(
   'deleteLiftWeek',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof deleteByIdSchema>): Promise<ActionResult> => {
     const { id } = deleteByIdSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1223,7 +1223,7 @@ const duplicateDaySchema = z.object({
 
 export const duplicateLiftDay = withBaseballAction(
   'duplicateLiftDay',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof duplicateDaySchema>): Promise<ActionResult> => {
     const input = duplicateDaySchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1280,7 +1280,7 @@ const duplicateWeekSchema = z.object({ weekId: uuid });
 
 export const duplicateLiftWeek = withBaseballAction(
   'duplicateLiftWeek',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (_ctx, raw: z.input<typeof duplicateWeekSchema>): Promise<ActionResult> => {
     const input = duplicateWeekSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1358,7 +1358,7 @@ const saveTemplateSchema = z.object({
 
 export const saveProgramAsTemplate = withBaseballAction(
   'saveProgramAsTemplate',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof saveTemplateSchema>): Promise<ActionResult> => {
     const input = saveTemplateSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1477,7 +1477,7 @@ const publishSchema = z.object({
  */
 export const publishLiftDay = withBaseballAction(
   'publishLiftDay',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof publishSchema>): Promise<ActionResult> => {
     const input = publishSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1957,7 +1957,7 @@ const startSessionSchema = z.object({ sessionId: uuid });
 
 export const startLiftSession = withBaseballAction(
   'startLiftSession',
-  { featureArea: 'lifting', requiredPlayerAccess: 'can_self_log_lift' },
+  { featureArea: 'baseball-lifting', requiredPlayerAccess: 'can_self_log_lift' },
   async (ctx, raw: z.input<typeof startSessionSchema>): Promise<ActionResult> => {
     const input = startSessionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -1996,7 +1996,7 @@ const logSetSchema = z.object({
  */
 export const logSetResult = withBaseballAction(
   'logSetResult',
-  { featureArea: 'lifting', requiredPlayerAccess: 'can_self_log_lift' },
+  { featureArea: 'baseball-lifting', requiredPlayerAccess: 'can_self_log_lift' },
   async (ctx, raw: z.input<typeof logSetSchema>): Promise<ActionResult> => {
     const input = logSetSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -2070,7 +2070,7 @@ const completeSessionSchema = z.object({
 
 export const completeLiftSession = withBaseballAction(
   'completeLiftSession',
-  { featureArea: 'lifting', requiredPlayerAccess: 'can_self_log_lift' },
+  { featureArea: 'baseball-lifting', requiredPlayerAccess: 'can_self_log_lift' },
   async (ctx, raw: z.input<typeof completeSessionSchema>): Promise<CompleteSessionResult> => {
     const input = completeSessionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -2200,7 +2200,7 @@ const refreshLiveSchema = z.object({
 
 export const getLiveWeightRoomSnapshot = withBaseballAction(
   'getLiveWeightRoomSnapshot',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof refreshLiveSchema>): Promise<{
     success: boolean;
     data?: BaseballLiveWeightRoomData;
@@ -2227,7 +2227,7 @@ const modifyExerciseSchema = z.object({
 
 export const modifySessionExercise = withBaseballAction(
   'modifySessionExercise',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof modifyExerciseSchema>): Promise<ActionResult> => {
     const input = modifyExerciseSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -2269,7 +2269,7 @@ const substituteExerciseSchema = z.object({
 
 export const substituteSessionExercise = withBaseballAction(
   'substituteSessionExercise',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof substituteExerciseSchema>): Promise<ActionResult> => {
     const input = substituteExerciseSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -2322,7 +2322,7 @@ const markObservedSchema = z.object({
 
 export const markExerciseObserved = withBaseballAction(
   'markExerciseObserved',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof markObservedSchema>): Promise<ActionResult> => {
     const input = markObservedSchema.parse(raw);
     if (ctx.activeRole !== 'coach') {
@@ -2372,7 +2372,7 @@ const quickMessageSchema = z.object({
 
 export const sendLiftQuickMessage = withBaseballAction(
   'sendLiftQuickMessage',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof quickMessageSchema>): Promise<ActionResult> => {
     const input = quickMessageSchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -2422,7 +2422,7 @@ const followupTaskSchema = z.object({
 
 export const createLiftFollowupTask = withBaseballAction(
   'createLiftFollowupTask',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof followupTaskSchema>): Promise<ActionResult> => {
     const input = followupTaskSchema.parse(raw);
     if (!ctx.user?.id) throw new BaseballActionError('No authenticated coach.');
@@ -2466,7 +2466,7 @@ const sorenessSchema = z.object({
 
 export const saveSorenessMap = withBaseballAction(
   'saveSorenessMap',
-  { featureArea: 'lifting', requiredPlayerAccess: 'can_self_report_availability' },
+  { featureArea: 'baseball-lifting', requiredPlayerAccess: 'can_self_report_availability' },
   async (ctx, raw: z.input<typeof sorenessSchema>): Promise<ActionResult> => {
     const input = sorenessSchema.parse(raw);
     if (!ctx.activePlayerId) throw new BaseballActionError('Only a player can report soreness.');
@@ -2516,7 +2516,7 @@ const bodyweightSchema = z.object({
 
 export const logBodyweight = withBaseballAction(
   'logBodyweight',
-  { featureArea: 'lifting', requiredPlayerAccess: 'can_self_report_availability' },
+  { featureArea: 'baseball-lifting', requiredPlayerAccess: 'can_self_report_availability' },
   async (ctx, raw: z.input<typeof bodyweightSchema>): Promise<ActionResult> => {
     const input = bodyweightSchema.parse(raw);
     if (!ctx.activePlayerId) throw new BaseballActionError('Only a player can log bodyweight.');
@@ -2559,7 +2559,7 @@ const availabilitySchema = z.object({
 
 export const setAvailabilityStatus = withBaseballAction(
   'setAvailabilityStatus',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof availabilitySchema>): Promise<ActionResult> => {
     const input = availabilitySchema.parse(raw);
     const supabase = (await createClient()) as Db;
@@ -2605,7 +2605,7 @@ const setMaxSchema = z.object({
 
 export const setStrengthMax = withBaseballAction(
   'setStrengthMax',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof setMaxSchema>): Promise<ActionResult> => {
     const input = setMaxSchema.parse(raw);
     const supabase = (await createClient()) as Db;

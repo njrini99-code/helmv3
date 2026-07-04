@@ -78,7 +78,7 @@ export interface LiftTodaySummaryResult {
  */
 export const getPlayerLiftTodaySummary = withBaseballAction(
   'getPlayerLiftTodaySummary',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (ctx): Promise<LiftTodaySummaryResult> => {
     const supabase = await createClient();
 

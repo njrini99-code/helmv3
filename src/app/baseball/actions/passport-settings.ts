@@ -174,7 +174,7 @@ function sanitizeFieldVisibility(
  */
 export const updatePassportVisibility = withBaseballAction(
   'updatePassportVisibility',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (
     ctx,
     input: {
@@ -253,7 +253,7 @@ export const updatePassportVisibility = withBaseballAction(
  */
 export const setPassportFieldVisibility = withBaseballAction(
   'setPassportFieldVisibility',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (
     ctx,
     input: {
@@ -347,7 +347,7 @@ export const setPassportFieldVisibility = withBaseballAction(
  */
 export const clearPassportFieldOverride = withBaseballAction(
   'clearPassportFieldOverride',
-  { featureArea: 'player_today' },
+  { featureArea: 'baseball-player-today' },
   async (
     ctx,
     input: { playerId?: string; fieldKey: string },

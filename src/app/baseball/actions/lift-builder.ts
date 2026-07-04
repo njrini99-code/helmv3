@@ -285,7 +285,7 @@ async function upsertSessionExercises(
  */
 export const saveLiftSessionPlan = withBaseballAction(
   'saveLiftSessionPlan',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (
     ctx,
     raw: z.input<typeof saveLiftSessionPlanSchema>,
@@ -448,7 +448,7 @@ export const saveLiftSessionPlan = withBaseballAction(
  */
 export const createBuilderExercise = withBaseballAction(
   'createBuilderExercise',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (
     ctx,
     raw: z.input<typeof createExerciseSchema>,
@@ -521,7 +521,7 @@ export const createBuilderExercise = withBaseballAction(
  */
 export const updateBuilderExercise = withBaseballAction(
   'updateBuilderExercise',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (
     ctx,
     raw: z.input<typeof updateExerciseSchema>,
@@ -601,7 +601,7 @@ const getGroupAvailabilityForWeekSchema = z.object({
  */
 export const getGroupAvailabilityForWeek = withBaseballAction(
   'getGroupAvailabilityForWeek',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (
     ctx,
     raw: z.input<typeof getGroupAvailabilityForWeekSchema>,

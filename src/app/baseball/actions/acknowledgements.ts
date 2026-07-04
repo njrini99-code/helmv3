@@ -15,7 +15,7 @@
 // Every action runs inside withBaseballAction (Wave 2) for:
 //   - auth resolution (401 if signed out)
 //   - active-baseball-context resolution
-//   - Sentry scope tags { sport:'baseball', feature:'command_center', action }
+//   - Sentry scope tags { sport:'baseball', feature:'baseball_command_center', action }
 //   - centralized error logging (error_logs + Sentry) with sanitized rethrow
 //
 // NON-DESTRUCTIVE WRITES: acknowledge uses UPSERT on the UNIQUE(event_id,
@@ -71,7 +71,7 @@ type UntypedClient = { from: (table: string) => any };
  */
 export const acknowledgeEvent = withBaseballAction(
   'acknowledgeEvent',
-  { featureArea: 'command_center' },
+  { feature: 'baseball_command_center', featureArea: 'baseball-command-center' },
   async (ctx, eventId: string): Promise<AcknowledgementResult> => {
     if (!eventId || typeof eventId !== 'string') {
       return { success: false, error: 'An event is required to acknowledge.' };
@@ -134,7 +134,7 @@ export const acknowledgeEvent = withBaseballAction(
  */
 export const withdrawAcknowledgement = withBaseballAction(
   'withdrawAcknowledgement',
-  { featureArea: 'command_center' },
+  { feature: 'baseball_command_center', featureArea: 'baseball-command-center' },
   async (ctx, eventId: string): Promise<AcknowledgementResult> => {
     if (!eventId || typeof eventId !== 'string') {
       return { success: false, error: 'An event is required.' };
@@ -169,7 +169,7 @@ export const withdrawAcknowledgement = withBaseballAction(
  */
 export const getMyEventAcknowledgements = withBaseballAction(
   'getMyEventAcknowledgements',
-  { featureArea: 'command_center' },
+  { feature: 'baseball_command_center', featureArea: 'baseball-command-center' },
   async (ctx, eventIds: string[]): Promise<{ acknowledgedEventIds: string[] }> => {
     if (!Array.isArray(eventIds) || eventIds.length === 0) {
       return { acknowledgedEventIds: [] };

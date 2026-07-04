@@ -60,7 +60,7 @@ export interface MarkLiftOnboardingCompleteResult {
  */
 export const markLiftOnboardingComplete = withBaseballAction(
   'markLiftOnboardingComplete',
-  { featureArea: 'player_lift_onboarding' },
+  { featureArea: 'baseball-lift-onboarding' },
   async (ctx): Promise<MarkLiftOnboardingCompleteResult> => {
     const supabase = await createClient();
 

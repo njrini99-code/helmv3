@@ -10,7 +10,7 @@ import {
 } from '@/lib/admin/feature-registry';
 
 // The canonical key list per docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md
-// §1.1 (24) + §1.2 (13) + §1.3 (1 excluded) = 38. Hard-coded here on purpose —
+// §1.1 (24) + §1.2 (13) + §1.3 (48) + §1.4 (1 excluded) = 86. Hard-coded here on purpose —
 // the doc is canonical, this list is the tripwire that catches drift between
 // the spec and the registry.
 const EXPECTED_KEYS: FeatureKey[] = [
@@ -53,7 +53,56 @@ const EXPECTED_KEYS: FeatureKey[] = [
   'my_development',
   'drills_practice_rx',
   'coachhelm_v3_goals',
-  // §1.3 Excluded (1)
+  // §1.3 BaseballHelm (48)
+  'baseball_academics',
+  'baseball_announcements',
+  'baseball_auth',
+  'baseball_calendar',
+  'baseball_camps',
+  'baseball_classes',
+  'baseball_coach_command_center',
+  'baseball_coachhelm',
+  'baseball_command_center',
+  'baseball_compare',
+  'baseball_decision_room',
+  'baseball_demo_access',
+  'baseball_demo_tracking',
+  'baseball_dev_plans',
+  'baseball_discover',
+  'baseball_documents',
+  'baseball_games',
+  'baseball_import',
+  'baseball_insights',
+  'baseball_interests',
+  'baseball_lift_onboarding',
+  'baseball_lifting',
+  'baseball_lineups',
+  'baseball_messages',
+  'baseball_notes',
+  'baseball_notifications',
+  'baseball_onboarding',
+  'baseball_philosophy',
+  'baseball_player_actions',
+  'baseball_player_peek',
+  'baseball_player_today',
+  'baseball_postgame',
+  'baseball_practice',
+  'baseball_profile',
+  'baseball_recruiting',
+  'baseball_recruiting_philosophy',
+  'baseball_roster',
+  'baseball_scout_packet',
+  'baseball_settings',
+  'baseball_signals',
+  'baseball_staff',
+  'baseball_stats',
+  'baseball_tasks',
+  'baseball_teams',
+  'baseball_timeline',
+  'baseball_travel',
+  'baseball_video',
+  'baseball_watchlist',
+  // §1.4 Excluded (1)
   'crm_recruiting_pipeline',
 ];
 
@@ -186,10 +235,10 @@ function scanExports(relPath: string): string[] {
 }
 
 describe('FEATURE_REGISTRY completeness', () => {
-  it('has exactly 38 entries with unique keys', () => {
-    expect(FEATURE_REGISTRY).toHaveLength(38);
+  it('has exactly 86 entries with unique keys', () => {
+    expect(FEATURE_REGISTRY).toHaveLength(86);
     const keys = FEATURE_REGISTRY.map((f) => f.key);
-    expect(new Set(keys).size).toBe(38);
+    expect(new Set(keys).size).toBe(86);
   });
 
   it('matches the FEATURE_COVERAGE.md §1 canonical key list exactly', () => {
@@ -253,7 +302,7 @@ describe('FEATURE_REGISTRY completeness', () => {
   it('total manifest size is exactly 424 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
-      if (def.excluded) continue;
+      if (def.excluded || def.app === 'baseballhelm') continue;
       for (const [file, manifest] of Object.entries(def.actions)) {
         if (manifest === 'ALL') {
           total += scanExports(file).length;
@@ -285,11 +334,10 @@ describe('FEATURE_REGISTRY completeness', () => {
     expect(featureForTable('crm_coaches')).toBeNull();
   });
 
-  it('never maps a crm_ or baseball_/helm_lifting_ table', () => {
+  it('never maps a crm_ or helm_lifting_ table', () => {
     const tables = Object.keys(TABLE_TO_FEATURE);
     for (const t of tables) {
       expect(t.startsWith('crm_')).toBe(false);
-      expect(t.startsWith('baseball_')).toBe(false);
       expect(t.startsWith('helm_lifting_')).toBe(false);
     }
   });
@@ -306,7 +354,7 @@ describe('FEATURE_REGISTRY completeness', () => {
 
   it('rpcInput() excludes the CRM row and carries heartbeat tables', () => {
     const input = rpcInput();
-    expect(input).toHaveLength(37);
+    expect(input).toHaveLength(85);
     expect(input.some((i) => i.key === 'crm_recruiting_pipeline')).toBe(false);
     const roundTracking = input.find((i) => i.key === 'round_tracking');
     expect(roundTracking?.heartbeat_table).toBe('golf_rounds');

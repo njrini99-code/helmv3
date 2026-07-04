@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
 
 const BASEBALL_APP_ROOT = path.join(process.cwd(), 'src/app/baseball');
 
@@ -51,6 +52,19 @@ function wrappedActionNames(sourceFile: ts.SourceFile): Set<string> {
   return names;
 }
 
+function optionString(sourceFile: ts.SourceFile, objectLiteral: ts.ObjectLiteralExpression, name: string): string | null {
+  for (const property of objectLiteral.properties) {
+    if (
+      ts.isPropertyAssignment(property) &&
+      property.name.getText(sourceFile).replaceAll('"', '').replaceAll("'", '') === name &&
+      ts.isStringLiteralLike(property.initializer)
+    ) {
+      return property.initializer.text;
+    }
+  }
+  return null;
+}
+
 describe('Baseball server-action observability coverage', () => {
   it('wraps direct server-action exports with Helm Bridge error tracking', () => {
     const gaps: string[] = [];
@@ -95,5 +109,47 @@ describe('Baseball server-action observability coverage', () => {
     }
 
     expect(gaps).toEqual([]);
+  });
+
+  it('registers every emitted Baseball feature key in Helm Bridge', () => {
+    const registryKeys = new Set<string>(FEATURE_REGISTRY.map((feature) => feature.key));
+    const missing: string[] = [];
+
+    for (const file of walk(BASEBALL_APP_ROOT)) {
+      const source = fs.readFileSync(file, 'utf8');
+      if (!hasUseServerDirective(source)) continue;
+
+      const sourceFile = ts.createSourceFile(
+        file,
+        source,
+        ts.ScriptTarget.Latest,
+        true,
+        file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      );
+
+      function visit(node: ts.Node): void {
+        const opts = ts.isCallExpression(node) ? node.arguments[1] : undefined;
+        if (
+          ts.isCallExpression(node) &&
+          (node.expression.getText(sourceFile) === 'withBaseballAction' ||
+            node.expression.getText(sourceFile) === 'withAdminObserved') &&
+          opts &&
+          ts.isObjectLiteralExpression(opts)
+        ) {
+          const feature =
+            optionString(sourceFile, opts, 'feature') ??
+            optionString(sourceFile, opts, 'featureArea')?.replaceAll('-', '_');
+          if (feature && !registryKeys.has(feature)) {
+            const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+            missing.push(`${path.relative(process.cwd(), file)}:${line} ${feature}`);
+          }
+        }
+        ts.forEachChild(node, visit);
+      }
+
+      visit(sourceFile);
+    }
+
+    expect(missing).toEqual([]);
   });
 });

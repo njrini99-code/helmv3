@@ -251,7 +251,7 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
 ): (...args: TArgs) => Promise<TResult> {
   const {
     featureArea,
-    feature = featureArea,
+    feature = featureArea.replaceAll('-', '_'),
     requiredCapability,
     requiredPlayerAccess,
     teamFrom = 'active',

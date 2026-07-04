@@ -138,7 +138,7 @@ describe('withBaseballAction observability', () => {
     expect(severity).toBe('warning');
     expect(context).toMatchObject({
       action: 'loadBaseballDashboard',
-      feature: 'baseball-dashboard',
+      feature: 'baseball_dashboard',
       featureArea: 'baseball-dashboard',
       sport: 'baseball',
       teamId: null,
@@ -148,7 +148,7 @@ describe('withBaseballAction observability', () => {
       skipSentry: true,
       tags: {
         sport: 'baseball',
-        feature: 'baseball-dashboard',
+        feature: 'baseball_dashboard',
         feature_area: 'baseball-dashboard',
       },
     });

@@ -56,7 +56,7 @@ export function withAdminObserved<Args extends unknown[], R>(
   name: string,
   opts: {
     sport?: 'golf' | 'baseball' | 'shared';
-    feature?: FeatureKey | string;
+    feature?: FeatureKey;
     featureArea?: string;
     /**
      * Derive extra identity/subject context from the ORIGINAL call

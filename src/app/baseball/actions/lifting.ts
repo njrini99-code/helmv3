@@ -182,7 +182,7 @@ const readinessSchema = z.object({
 
 export const createExercise = withBaseballAction(
   'createExercise',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof createExerciseSchema>): Promise<LiftingActionResult> => {
     const input = createExerciseSchema.parse(raw);
 
@@ -235,7 +235,7 @@ export const createExercise = withBaseballAction(
 
 export const createLiftAssignment = withBaseballAction(
   'createLiftAssignment',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (
     ctx,
     raw: z.input<typeof createAssignmentSchema>,
@@ -462,7 +462,7 @@ export const createLiftAssignment = withBaseballAction(
 
 export const updateAssignmentStatus = withBaseballAction(
   'updateAssignmentStatus',
-  { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
   async (
     ctx,
     raw: z.input<typeof updateAssignmentStatusSchema>,
@@ -504,7 +504,7 @@ export const updateAssignmentStatus = withBaseballAction(
 
 export const logLiftResult = withBaseballAction(
   'logLiftResult',
-  { featureArea: 'lifting', requiredPlayerAccess: 'can_self_log_lift' },
+  { featureArea: 'baseball-lifting', requiredPlayerAccess: 'can_self_log_lift' },
   async (ctx, raw: z.input<typeof logResultSchema>): Promise<LiftingActionResult> => {
     const input = logResultSchema.parse(raw);
 
@@ -602,7 +602,7 @@ export const logLiftResult = withBaseballAction(
 
 export const submitReadinessCheckin = withBaseballAction(
   'submitReadinessCheckin',
-  { featureArea: 'lifting', requiredPlayerAccess: 'can_self_report_availability' },
+  { featureArea: 'baseball-lifting', requiredPlayerAccess: 'can_self_report_availability' },
   async (ctx, raw: z.input<typeof readinessSchema>): Promise<LiftingActionResult> => {
     const input = readinessSchema.parse(raw);
 

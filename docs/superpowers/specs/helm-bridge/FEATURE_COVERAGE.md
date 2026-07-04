@@ -1,11 +1,7 @@
 # FEATURE_COVERAGE.md — Helm Bridge Total Error-Capture Coverage + Feature Health
 
 **Status:** Canonical spec (W15 instrumentation + W16 board build against THIS file).
-**Scope (owner directive, 2026-07-01):** GOLFHELM + COACHHELM ONLY. BaseballHelm is
-unstable in prod — baseball + Lift Lab are DEFERRED. No task in W15/W16 may modify any
-baseball or lifting application code, and no baseball/lifting action gets wrapped. Their
-feature maps live only in Appendix A (future reference). CRM is NEVER touched (no
-wrapping, no tagging, no board presence beyond the "excluded" registry row).
+**Scope (updated 2026-07-04):** GOLFHELM + COACHHELM + BASEBALLHELM. BaseballHelm server actions are now first-class Helm Bridge emitters and registry rows. CRM is NEVER touched (no wrapping, no tagging, no board presence beyond the "excluded" registry row).
 
 **Companion plans:**
 - `docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md` (instrumentation)
@@ -100,7 +96,62 @@ Column meanings:
 | `drills_practice_rx` | Drills & Practice Rx | `drills.ts:*`, `v3/practice-rx.ts:*`, `v3/team-practice-rx.ts:*` | `golf_drills` | low | Rx generation + drill matching return (empty match set = degraded quality signal on drill-in, NOT an error). Low-tier |
 | `coachhelm_v3_goals` | Goals & Progress (V3) | `v3/goals.ts:*`, `v3/goal-progress.ts:*`, `v3/focus-area-progress.ts:*`, `v3/intent.ts:*` | `golf_goals` | med | Goal CRUD/suggestions/progress evaluators complete. V3 surface = documented drift from the 28-feature doc, now first-class here. Med-tier |
 
-### 1.3 Excluded from instrumentation (registry-listed for completeness)
+### 1.3 BaseballHelm (app: `baseballhelm`) — 48 features
+
+BaseballHelm is now first-class in Helm Bridge. Its server-action errors are emitted through `withBaseballAction` or `withAdminObserved`, normalized to underscore feature keys, and registered in `src/lib/admin/feature-registry.ts` so the admin errors board can label, filter, group, and compute health for Baseball just like Golf/CoachHelm.
+
+| Key | Label | Action coverage | healthSignal |
+|---|---|---|---|
+| `baseball_academics` | Baseball Academics | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_announcements` | Baseball Announcements | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_auth` | Baseball Auth | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_calendar` | Baseball Calendar | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_camps` | Baseball Camps | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_classes` | Baseball Classes | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_coach_command_center` | Baseball Coach Command Center | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_coachhelm` | Baseball CoachHelm | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_command_center` | Baseball Command Center | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_compare` | Baseball Compare | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_decision_room` | Baseball Decision Room | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_demo_access` | Baseball Demo Access | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_demo_tracking` | Baseball Demo Tracking | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_dev_plans` | Baseball Dev Plans | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_discover` | Baseball Discover | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_documents` | Baseball Documents | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_games` | Baseball Games | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_import` | Baseball Imports | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_insights` | Baseball Insights | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_interests` | Baseball Interests | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_lift_onboarding` | Baseball Lift Onboarding | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_lifting` | Baseball Lifting | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_lineups` | Baseball Lineups | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_messages` | Baseball Messaging | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_notes` | Baseball Coach Notes | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_notifications` | Baseball Notifications | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_onboarding` | Baseball Onboarding | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_philosophy` | Baseball Philosophy | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_player_actions` | Baseball Player Actions | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_player_peek` | Baseball Player Peek | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_player_today` | Baseball Player Today | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_postgame` | Baseball Postgame | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_practice` | Baseball Practice | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_profile` | Baseball Profile | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_recruiting` | Baseball Recruiting | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_recruiting_philosophy` | Baseball Recruiting Philosophy | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_roster` | Baseball Roster | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_scout_packet` | Baseball Scout Packet | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_settings` | Baseball Settings | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_signals` | Baseball Signals | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_staff` | Baseball Staff | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_stats` | Baseball Stats | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_tasks` | Baseball Tasks | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_teams` | Baseball Teams | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_timeline` | Baseball Timeline | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_travel` | Baseball Travel | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_video` | Baseball Video | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+| `baseball_watchlist` | Baseball Watchlist | Registry actions generated from Baseball wrapper calls in `src/app/baseball/**` | Baseball action/server errors are tagged, grouped, and visible in Helm Bridge. |
+
+### 1.4 Excluded from instrumentation (registry-listed for completeness)
 
 | Key | Label | Why excluded | Files |
 |---|---|---|---|
@@ -127,7 +178,7 @@ contract test's exclusion manifest):** `messages.ts` (re-export shim, no 'use se
 | Already wrapped (W6 exemplar: `savePartialRound`, golf.ts:4949-4961) | 1 |
 | **Net new wraps in W15** | **423** |
 | CRM exports excluded (13 files + resend-activity.ts) | 73 |
-| Baseball / lifting exports deferred (already inside their own HOFs) | 354 / 86 |
+| Baseball / lifting exports now registered under BaseballHelm features | 354 / 86 |
 
 The 10 golf exports in the shared messages file (`src/app/actions/messages.ts:422,514,518,538,682,925,929,946,983,1168`):
 `sendGolfMessage`, `createGolfConversation`, `markGolfMessagesAsRead`,
@@ -135,7 +186,7 @@ The 10 golf exports in the shared messages file (`src/app/actions/messages.ts:42
 `deleteGolfMessage`, `getGolfPlayerUserId`, `searchGolfMessages`,
 `getGolfActiveTeamConversationIds`. The sport-branching generic exports
 (`sendMessage`, `createConversation`, `markMessagesAsRead`, `updateMessage`,
-`deleteMessage`) and all `*Baseball*` exports stay UNTOUCHED (baseball hold).
+`deleteMessage`) and Baseball exports are covered separately under the BaseballHelm registry.
 
 ### 2.2 File → feature map (default tag per file; every wrapped export in the file gets it unless overridden below)
 

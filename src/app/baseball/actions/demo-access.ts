@@ -190,7 +190,7 @@ async function enterBaseballDemoImpl(
 
 const observedEnterBaseballDemo = withAdminObserved(
   'enterBaseballDemo',
-  { sport: 'baseball', feature: 'auth_onboarding' },
+  { sport: 'baseball', feature: 'baseball_demo_access', featureArea: 'baseball-demo-access' },
   enterBaseballDemoImpl,
 );
 
