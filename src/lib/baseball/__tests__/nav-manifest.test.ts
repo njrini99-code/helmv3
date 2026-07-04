@@ -32,6 +32,7 @@ import {
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
+  PLAYER_RECRUITING_TABS,
 } from '@/app/baseball/(dashboard)/_components/hub-definitions';
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..'); // → repo root
@@ -220,6 +221,7 @@ describe('BASEBALL_NAV_MANIFEST', () => {
         ...PLAYER_STATS_TABS,
         ...PLAYER_DEVELOPMENT_TABS,
         ...PLAYER_TEAM_TABS,
+        ...PLAYER_RECRUITING_TABS,
       ];
       for (const tab of allTabs) {
         expect(manifestHrefs.has(tab.href), `hub tab "${tab.id}" href ${tab.href} missing from manifest`).toBe(

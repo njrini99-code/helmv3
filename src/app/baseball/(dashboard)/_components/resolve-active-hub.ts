@@ -12,9 +12,9 @@
 // Coach hub MEMBERSHIP is driven entirely by COACH_HUB_ORDER / COACH_HUB_DEFS
 // (hub-definitions.ts, itself derived from BASEBALL_NAV_REGISTRY's `hub` field)
 // — this module only decides which hubs are VISIBLE for the current
-// role/programType (Recruiting/Academics gating) and does the longest-prefix
-// route match + capability/program-type tab filtering. It never hand-lists a
-// hub's member routes.
+// role/programType (Recruiting gating) and does the longest-prefix route match
+// + capability/program-type tab filtering. It never hand-lists a hub's member
+// routes.
 //
 // PURE. No React, no Supabase. Longest-prefix match across every hub's tabs.
 // =============================================================================
@@ -75,10 +75,9 @@ interface HubDef extends ResolvedHub {
 
 // Coach hubs. Order matters only for tie-breaking; resolution is longest-prefix
 // across ALL tabs of ALL hubs, so a deeper route wins regardless of hub order.
-function coachHubs(opts: { showRecruiting: boolean; showAcademics: boolean }): HubDef[] {
+function coachHubs(opts: { showRecruiting: boolean }): HubDef[] {
   return COACH_HUB_ORDER.filter((hub) => {
     if (hub === 'recruiting') return opts.showRecruiting;
-    if (hub === 'academics') return opts.showAcademics;
     return true;
   }).map((hub) => {
     const def = COACH_HUB_DEFS[hub];
@@ -180,8 +179,6 @@ export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null
     role === 'coach'
       ? coachHubs({
           showRecruiting: Boolean(programType && RECRUITING_PROGRAM_TYPES.has(programType)),
-          // Academics is JUCO-only.
-          showAcademics: programType === 'juco',
         })
       : playerHubs();
 

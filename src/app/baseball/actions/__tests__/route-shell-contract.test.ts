@@ -58,6 +58,7 @@ import {
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
   PLAYER_TEAM_TABS,
+  PLAYER_RECRUITING_TABS,
 } from '@/app/baseball/(dashboard)/_components/hub-definitions';
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..', '..'); // -> repo root
@@ -179,7 +180,8 @@ describe('BaseballHelm route/shell contract (#374)', () => {
         COACH_ACADEMICS_TABS.length +
         PLAYER_STATS_TABS.length +
         PLAYER_DEVELOPMENT_TABS.length +
-        PLAYER_TEAM_TABS.length;
+        PLAYER_TEAM_TABS.length +
+        PLAYER_RECRUITING_TABS.length;
       expect(hubTabCount).toBeGreaterThanOrEqual(4);
     });
 

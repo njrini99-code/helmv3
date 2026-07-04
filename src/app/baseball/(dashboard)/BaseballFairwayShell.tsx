@@ -236,13 +236,14 @@ function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): Na
   for (const hubId of COACH_HUB_ORDER) {
     const def = COACH_HUB_DEFS[hubId];
 
-    // Recruiting/Academics are MODE-gated (RECRUITING_PROGRAM_TYPES / JUCO-only)
-    // — same gate resolveActiveHub.ts's coachHubs() uses — checked up front so
-    // a recruiting-ineligible program type never shows the hub.
+    // Recruiting is mode-gated — same gate resolveActiveHub.ts's coachHubs()
+    // uses — checked up front so a recruiting-ineligible program type never
+    // shows the hub. Academics is capability/module gated instead, so it is
+    // handled by the tab filters and server route guard rather than hard-coded
+    // to one program type here.
     if (hubId === 'recruiting' && !(ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType))) {
       continue;
     }
-    if (hubId === 'academics' && ctx.programType !== 'juco') continue;
 
     const capFiltered = filterHubTabsByCapabilities(def.tabs, 'coach', ctx.capabilities);
     const visibleTabs = filterHubTabsByProgramType(capFiltered, ctx.programType);

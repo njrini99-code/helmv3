@@ -325,9 +325,9 @@ export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = orderTabs(
 );
 
 /**
- * ACADEMICS hub — JUCO coaches only (the sidebar surfaces this hub only when
- * coach_type === 'juco'). A single-surface hub today; kept as a hub so it slots
- * into the same grouped-nav grammar and can grow sub-tabs later.
+ * ACADEMICS hub — capability/module gated. A single-surface hub today; kept as
+ * a hub so it slots into the same grouped-nav grammar and can grow sub-tabs
+ * later.
  */
 export const COACH_ACADEMICS_TABS: readonly HubSubNavTab[] = orderTabs(hubEntries('academics'), ACADEMICS_ORDER);
 
