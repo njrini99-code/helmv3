@@ -146,6 +146,12 @@ export interface WithBaseballActionOptions<TArgs extends unknown[] = unknown[]> 
    */
   featureArea: string;
   /**
+   * Canonical Helm Bridge feature key for admin_events.feature. Defaults to
+   * featureArea for existing Baseball actions, while letting new surfaces keep a
+   * stable feature name if their saved Sentry search uses a broader featureArea.
+   */
+  feature?: string;
+  /**
    * When set, the wrapper enforces this capability SERVER-SIDE (via
    * requireBaseballCapability) against the resolved team before the body runs.
    * Head/primary coach implicitly satisfy every capability.
@@ -245,6 +251,7 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
 ): (...args: TArgs) => Promise<TResult> {
   const {
     featureArea,
+    feature = featureArea,
     requiredCapability,
     requiredPlayerAccess,
     teamFrom = 'active',
@@ -256,13 +263,60 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
     return Sentry.withScope(async (scope) => {
       // Stable scope identity for every trace emitted from this action.
       scope.setTag('sport', 'baseball');
-      scope.setTag('feature', featureArea);
+      scope.setTag('feature', feature);
+      scope.setTag('feature_area', featureArea);
       scope.setTag('action', name);
       scope.addBreadcrumb({
         category: 'baseball.action',
         message: `start ${name}`,
         level: 'info',
-        data: { feature: featureArea, requiredCapability: requiredCapability ?? null },
+        data: {
+          feature,
+          featureArea,
+          requiredCapability: requiredCapability ?? null,
+          requiredPlayerAccess: requiredPlayerAccess ?? null,
+        },
+      });
+
+      let observedUserId: string | null = null;
+      let observedUserEmail: string | null = null;
+      let observedTeamId: string | null = null;
+      let observedRole: ActiveBaseballContext['activeRole'] | null = null;
+      let observedCoachId: string | null = null;
+      let observedPlayerId: string | null = null;
+      let observedTargetTeamId: string | null = null;
+
+      const buildTraceContext = (handled: boolean) => ({
+        action: name,
+        feature,
+        featureArea,
+        sport: 'baseball' as const,
+        teamId: observedTargetTeamId ?? observedTeamId,
+        userId: observedUserId,
+        userEmail: observedUserEmail,
+        source: 'server_action' as const,
+        handled,
+        tags: {
+          sport: 'baseball',
+          feature,
+          feature_area: featureArea,
+          ...(observedRole ? { baseball_role: observedRole } : {}),
+          ...(observedTeamId ? { baseball_team: observedTeamId } : {}),
+          ...(observedTargetTeamId ? { baseball_target_team: observedTargetTeamId } : {}),
+          ...(requiredCapability ? { baseball_capability: requiredCapability } : {}),
+          ...(requiredPlayerAccess ? { baseball_player_access: requiredPlayerAccess } : {}),
+        },
+        metadata: {
+          activeTeamId: observedTeamId,
+          targetTeamId: observedTargetTeamId,
+          activeRole: observedRole,
+          activeCoachId: observedCoachId,
+          activePlayerId: observedPlayerId,
+          requiredCapability: requiredCapability ?? null,
+          requiredPlayerAccess: requiredPlayerAccess ?? null,
+          requireActiveContext,
+          demoSafe,
+        },
       });
 
       try {
@@ -276,6 +330,8 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         if (!user) {
           throw new BaseballUnauthorizedError();
         }
+        observedUserId = user.id;
+        observedUserEmail = user.email ?? null;
         scope.setUser({ id: user.id, email: user.email ?? undefined });
 
         // -------------------------------------------------------------------
@@ -300,6 +356,10 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           if (!context) {
             throw new BaseballNoActiveTeamError();
           }
+          observedTeamId = context.activeTeamId;
+          observedRole = context.activeRole;
+          observedCoachId = context.activeCoachId;
+          observedPlayerId = context.activePlayerId;
           scope.setTag('baseball_team', context.activeTeamId);
           scope.setTag('baseball_role', context.activeRole);
           scope.addBreadcrumb({
@@ -324,10 +384,12 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
             );
           }
           targetTeamId = resolved;
+          observedTargetTeamId = targetTeamId;
           scope.setTag('baseball_target_team', targetTeamId);
         } else if (context) {
           targetTeamId = context.activeTeamId;
         }
+        observedTargetTeamId = targetTeamId || observedTargetTeamId;
 
         // -------------------------------------------------------------------
         // 3. CAPABILITY — enforce server-side when required.
@@ -411,12 +473,8 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           await logServerException(
             error,
             {
-              action: name,
-              featureArea,
-              source: 'server_action',
-              handled: true,
+              ...buildTraceContext(true),
               skipSentry: true,
-              tags: { sport: 'baseball', feature: featureArea },
             },
             'warning',
           );
@@ -430,12 +488,8 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         const normalized =
           error instanceof Error ? error : new Error(String(error));
         await logServerException(normalized, {
-          action: name,
-          featureArea,
-          source: 'server_action',
-          handled: false,
-          tags: { sport: 'baseball', feature: featureArea },
-          fingerprint: ['server_action', featureArea, name],
+          ...buildTraceContext(false),
+          fingerprint: ['server_action', feature, name],
         });
 
         throw new BaseballActionError();
