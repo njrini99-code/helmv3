@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
-  Users, Timer, Rocket, HeartPulse, ExternalLink,
+  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus,
 } from 'lucide-react';
 import {
   AppShell,
@@ -57,6 +57,7 @@ const NAV_ICON_BY_HREF = {
   '/admin/auth': KeyRound,
   '/admin/golf': Flag,
   '/admin/baseball': CircleDot,
+  '/admin/ben-leah': MessageSquarePlus,
   '/admin/users': Users,
   '/admin/jobs': Timer,
   '/admin/deploys': Rocket,

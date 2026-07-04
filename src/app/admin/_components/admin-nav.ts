@@ -5,6 +5,7 @@ type AdminHref =
   | '/admin/auth'
   | '/admin/golf'
   | '/admin/baseball'
+  | '/admin/ben-leah'
   | '/admin/users'
   | '/admin/jobs'
   | '/admin/deploys'
@@ -19,8 +20,8 @@ export interface AdminNavEntry {
   meta?: string;
 }
 
-/** The 10 tabs. Order is the keyboard map: '1'-'9' for the first nine tabs,
- *  '0' for the tenth (Health) — there is no single digit past 9. */
+/** The primary Bridge tabs. Order is the keyboard map: '1'-'9' for the first
+ *  nine tabs, '0' for Health, and 'B' for the Ben + Leah intake desk. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Overview', href: '/admin', key: '1', section: 'Operations', description: 'Command posture, triage, deploys', meta: 'live' },
   { label: 'Activity', href: '/admin/activity', key: '2', section: 'Operations', description: 'User and product event stream' },
@@ -28,6 +29,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Operations', description: 'Access, sessions, auth failures' },
   { label: 'Golf', href: '/admin/golf', key: '5', section: 'Apps', description: 'GolfHelm production signals' },
   { label: 'Baseball', href: '/admin/baseball', key: '6', section: 'Apps', description: 'BaseballHelm production signals' },
+  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Operations', description: 'Submit bugs, changes, additions', meta: 'issues' },
   { label: 'Users & Teams', href: '/admin/users', key: '7', section: 'Platform', description: 'Accounts, teams, engagement' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Platform', description: 'Crons, guards, integrity checks' },
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
