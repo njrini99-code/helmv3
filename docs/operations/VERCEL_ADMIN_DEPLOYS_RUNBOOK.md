@@ -43,6 +43,12 @@ a deploy marker (was there a deploy near this error's timestamp?). When
 Vercel isn't configured, this simply doesn't appear — it is not a required
 field for the error report to render.
 
+## Preview deployment policy (cost control)
+
+Non-`main` branches are **not** built on Vercel by default. See
+`docs/operations/COST_CONTROLS.md` for `ignoreCommand`, Spend Management
+alerts, and manual preview guidance.
+
 ## CI/preview pending-status runbook (#390, #388)
 
 Separate from the admin panel above: PRs can show a pending or failing

@@ -23,9 +23,10 @@ so a job split/rename does not silently break protection.
 - `Review Gate / all` — hard aggregate for ast-grep, semgrep, gitleaks,
   actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, and
   hadolint.
-- `Playwright E2E / Smoke checks` — hard smoke build check. The full
-  `Playwright (chromium)` suite remains advisory until it is stable enough to
-  fail hard.
+- `Playwright E2E / Smoke checks` — hard smoke build check on pull requests
+  and `main` pushes (`playwright.yml`: `npm ci` + `next build`). The full
+  `Playwright (chromium)` suite runs on `main` pushes and manual
+  `workflow_dispatch` only and remains advisory.
 - `CodeQL` — GitHub code-scanning status.
 - `CodeRabbit` — CodeRabbit's own status check, with assertive review,
   pre-merge checks, issue enrichment, and auto-planning configured in
@@ -33,11 +34,14 @@ so a job split/rename does not silently break protection.
 
 Advisory checks:
 
-- `Vercel` and `Vercel Preview Comments`
+- `Vercel` and `Vercel Preview Comments` (non-main preview builds skipped —
+  see `docs/operations/COST_CONTROLS.md`)
 - `Greptile Review`
 - `ci/circleci: lighthouse-preview`
-- `Playwright (chromium)`
-- `Course picker screenshots`
+- `Playwright PR smoke (a11y)` — public routes only, path-filtered within PRs
+- `Playwright (chromium)` — main + manual only
+- `Course picker screenshots` — manual `workflow_dispatch` only
+- `BaseballHelm seeded smoke (advisory)` — main + manual only
 - `migration-lockdown / block-historical-edits`
 
 `Supabase lint + RLS tests` was promoted from advisory into the hard
