@@ -5158,6 +5158,7 @@ export type Database = {
           earned_runs: number | null
           errors: number | null
           exit_velocity: number | null
+          hit_by_pitch: number
           hits: number | null
           hits_allowed: number | null
           home_runs: number | null
@@ -5169,6 +5170,7 @@ export type Database = {
           player_id: string
           putouts: number | null
           rbis: number | null
+          sacrifice_flies: number
           session_date: string
           session_name: string | null
           source: string | null
@@ -5196,6 +5198,7 @@ export type Database = {
           earned_runs?: number | null
           errors?: number | null
           exit_velocity?: number | null
+          hit_by_pitch?: number
           hits?: number | null
           hits_allowed?: number | null
           home_runs?: number | null
@@ -5207,6 +5210,7 @@ export type Database = {
           player_id: string
           putouts?: number | null
           rbis?: number | null
+          sacrifice_flies?: number
           session_date: string
           session_name?: string | null
           source?: string | null
@@ -5234,6 +5238,7 @@ export type Database = {
           earned_runs?: number | null
           errors?: number | null
           exit_velocity?: number | null
+          hit_by_pitch?: number
           hits?: number | null
           hits_allowed?: number | null
           home_runs?: number | null
@@ -5245,6 +5250,7 @@ export type Database = {
           player_id?: string
           putouts?: number | null
           rbis?: number | null
+          sacrifice_flies?: number
           session_date?: string
           session_name?: string | null
           source?: string | null

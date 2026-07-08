@@ -71,7 +71,7 @@ in-flight unification train.
 - E2E: spec cleans up its own rows (service-role delete in teardown); prod junk rows
   (`E2E Created Opponent%`) deleted as a data op; isolated E2E project documented as follow-up
   needing owner (new Supabase project).
-- Seed script gets realistic event times (practice 15:30–17:30, games 18:00–21:00 local);
+- Seed script gets realistic event times (practice 15:30–17:30, games 13:00–16:00, meetings 12:00–13:00 team-local);
   demo team's polluted event rows corrected in place.
 
 ## Ruling 5 — Dead code deleted, not layered over
