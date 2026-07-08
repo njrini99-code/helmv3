@@ -97,6 +97,7 @@ vi.mock('@/lib/lifting/with-lifting-action', () => ({
   LiftingActionError: class LiftingActionError extends Error {},
 }));
 
+import { revalidatePath } from 'next/cache';
 import { logSetResult } from '@/app/lifting/actions/sessions';
 
 describe('logSetResult onConflict target', () => {
@@ -139,5 +140,35 @@ describe('logSetResult onConflict target', () => {
     ];
     expect(payload.athlete_id).toBe(ATHLETE_ID);
     expect(opts.onConflict.split(',')).not.toContain('athlete_id');
+  });
+});
+
+describe('logSetResult revalidates the baseball performance portal (Wave C parallel routes)', () => {
+  beforeEach(() => {
+    resetTables();
+    vi.clearAllMocks();
+    resetTables();
+  });
+
+  it('busts /baseball/dashboard/performance/live and the per-session /lift/[sessionId] page', async () => {
+    await logSetResult({
+      sessionExerciseId: SESSION_EXERCISE_ID,
+      athleteId: ATHLETE_ID,
+      setNumber: 1,
+      actualReps: 8,
+      actualLoad: 135,
+    });
+
+    const calls = vi.mocked(revalidatePath).mock.calls;
+    const paths = calls.map((c) => c[0]);
+    expect(paths).toContain('/baseball/dashboard/performance/live');
+    expect(paths).toContain('/baseball/dashboard/lift');
+    // The [sessionId] detail page uses the bracket-pattern + 'page' type
+    // convention (matches golf/actions/round-reviews.ts) rather than a
+    // resolved id — verify both the path AND the type argument.
+    const sessionPageCall = calls.find((c) => c[0] === '/baseball/dashboard/lift/[sessionId]');
+    expect(sessionPageCall?.[1]).toBe('page');
+    // Still fires the lifting-portal live-room revalidation too (additive).
+    expect(paths).toContain('/lifting/dashboard/sessions/live');
   });
 });

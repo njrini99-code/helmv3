@@ -6,7 +6,7 @@
 // W6 PROTECTION — team-context guard for the generic (dashboard) route group.
 //
 // This layout accepts BOTH roles (coach AND player) with requiredRole=null.
-// BaseballShellLayout handles:
+// BaseballFairwayShell handles:
 //   - Auth enforcement (useBaseballAuth): unauthenticated → /baseball/login,
 //     no profile → /baseball/complete-signup, onboarding incomplete → onboarding.
 //
@@ -36,23 +36,21 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BaseballShellLayout } from '@/components/baseball/BaseballShellLayout';
 import { BaseballFairwayShell } from './BaseballFairwayShell';
 import { BaseballDashboardBootstrap } from '@/components/baseball/BaseballDashboardBootstrap';
 import { useBaseballAuth } from '@/hooks/use-baseball-auth';
 import { useBaseballNavContext } from '@/hooks/use-baseball-nav-context';
-import { isRedesignEnabled } from '@/lib/redesign/flag';
 
 // ---------------------------------------------------------------------------
-// Inner guard — rendered after BaseballShellLayout's auth gate has passed.
+// Inner guard — rendered before BaseballFairwayShell's auth gate re-checks.
 // Placed as a sibling wrapper so the hooks run in a client component boundary
 // that is ABOVE the shell (layout route groups wrap all children).
 //
-// Strategy: call the same two hooks that BaseballShellLayout uses internally.
+// Strategy: call the same two hooks that BaseballFairwayShell uses internally.
 // Both are safe to call twice:
 //   - useBaseballAuth: verifies session; fast-path from Zustand persisted store.
 //   - useBaseballNavContext: module-scope cache → no extra network call when
-//     BaseballShellLayout calls it again synchronously after this component.
+//     BaseballFairwayShell calls it again synchronously after this component.
 // ---------------------------------------------------------------------------
 function DashboardSessionGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -90,31 +88,19 @@ function DashboardSessionGuard({ children }: { children: React.ReactNode }) {
     return <BaseballDashboardBootstrap />;
   }
 
-  const shell = isRedesignEnabled() ? (
-    <BaseballFairwayShell authVerified>{children}</BaseballFairwayShell>
-  ) : (
-    <BaseballShellLayout requiredRole={null} authVerified>
-      {children}
-    </BaseballShellLayout>
-  );
-
-  return shell;
+  return <BaseballFairwayShell authVerified>{children}</BaseballFairwayShell>;
 }
 
 // ---------------------------------------------------------------------------
-// Layout export — thin shell that composes the session guard around the shared
-// BaseballShellLayout. Both components are client components; the guard runs
+// Layout export — thin shell that composes the session guard around
+// BaseballFairwayShell. Both components are client components; the guard runs
 // its hooks before the shell renders, so the shell always receives a non-null
 // navContext (or the user has already been redirected away).
 //
-// FAIRWAY MIGRATION — PHASE A (shell only): the team-context guard above is
-// shared verbatim by both branches below — it is not part of "the shell" and
-// stays byte-for-byte unchanged regardless of the flag. Only what renders
-// INSIDE the guard is gated: flag ON mounts BaseballFairwayShell (the Fairway
-// AppShell frame, presentation-only); flag OFF keeps the existing
-// BaseballShellLayout -> BaseballDashboardShell composition exactly as it
-// shipped before this change. Default (flag unset) is OFF — dark and
-// reversible.
+// SHELL UNIFICATION (Coherence Ruling 1, 2026-07-08): BaseballFairwayShell
+// renders unconditionally — the legacy isRedesignEnabled() fork to
+// BaseballShellLayout was removed. This is the only shell the (dashboard)
+// route group renders.
 // ---------------------------------------------------------------------------
 export default function DashboardLayout({
   children,

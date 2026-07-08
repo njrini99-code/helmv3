@@ -13,24 +13,31 @@
 // COACH_NAV_8TAB_PROPOSAL.md (approved 2026-07-01) — DERIVED, NOT HAND-LISTED:
 // every COACH_*_TABS array below is built by grouping BASEBALL_NAV_REGISTRY on
 // its `hub` field (nav-registry.ts), not by hand-maintaining a parallel route
-// list. That is what fixed the drift the proposal documented: 5 registered
-// features with no hub-tab entry anywhere (camps, postgame-review,
-// practice-effectiveness, practice-planner, comparisons), a phantom coach
-// `tasks` tab with no coach-visible registry row, and a player-only
-// `college-interest` leaking into the coach recruiting hub. Labels, icons,
-// requiredCapability/requiredAnyCapabilities, and allowedProgramTypes are all
-// read from the registry entry verbatim — never re-declared here, so they can
-// never drift from the registry again. The only hand-maintained data left is
-// (a) each hub's DISPLAY ORDER (a small id list; entries not listed simply fall
-// to the end in registry order — nothing can be silently dropped), and (b) a
-// handful of SUPPLEMENTARY leaf tabs (Stats Center's Games/Season/Upload,
-// Performance's Live/Programs/Groups/Builder) that are child pages of a
-// registry feature, not registry features in their own right.
+// list. Labels, icons, requiredCapability/requiredAnyCapabilities, and
+// allowedProgramTypes are all read from the registry entry verbatim — never
+// re-declared here, so they can never drift from the registry again. The only
+// hand-maintained data left is (a) each hub's DISPLAY ORDER (a small id list;
+// entries not listed simply fall to the end in registry order), and (b) ONE
+// supplementary leaf tab (Stats Center's "Games" — a child page of a registry
+// feature, not a registry feature in its own right).
+//
+// HARD CAP (COHERENCE_RULING_2026-07-08.md Ruling 2): every hub renders AT
+// MOST 3 sub-tabs, for every coach type. The mechanism is `hub` +
+// `foldedUnder` on nav-registry.ts entries: a registry entry declares
+// `foldedUnder: <id>` to mark itself as reachable ONLY from its parent's
+// LANDING PAGE (a card grid — see dashboard/operations and dashboard/scouting)
+// rather than as its own rendered sub-tab. `hubEntries()` below excludes any
+// entry carrying `foldedUnder` from the rendered array; the folded entry KEEPS
+// its own registry row, so command palette and deep links still resolve it,
+// and the parent landing entry's `matchPrefixes` (nav-registry.ts) still
+// route `resolve-active-hub.ts` to the right hub + subtab when a user is on
+// the folded destination directly. nav-manifest.test.ts locks both halves of
+// this contract (≤3 rendered tabs; every folded href still resolves a hub).
 //
 // PLAYER_*_TABS are intentionally NOT derived the same way: most player-only
 // registry entries (player-dev-plan, player-lift, player-readiness, etc.) carry
 // no `hub` field (hub is only required for role coach/both — see nav-registry.ts),
-// so they stay hand-maintained here, unchanged by this pass.
+// so they stay hand-maintained here, trimmed to the same ≤3 cap by hand.
 //
 // PURE DATA + ICONS. No 'use client' / 'use server', no Supabase, no React state —
 // safe to import from both the client sidebar and the client hub layouts.
@@ -46,24 +53,18 @@ import {
   IconChartBar,
   IconClipboardList,
   IconTrendingUp,
-  IconUpload,
   IconTarget,
-  IconVideo,
-  IconDumbbell,
-  IconGauge,
   IconShieldCheck,
   IconBuilding,
   IconStar,
   IconHome,
   IconUser,
   IconGraduationCap,
-  IconSettings,
-  IconLock,
-  IconDatabase,
 } from '@/components/icons';
 import type { HubSubNavTab } from './hub-sub-nav';
 import {
   BASEBALL_NAV_REGISTRY,
+  BASEBALL_MESSAGES_NAV,
   type BaseballNavEntry,
   type BaseballNavHub,
   type BaseballNavIcon,
@@ -78,7 +79,10 @@ import {
 function toHubTab(entry: BaseballNavEntry): HubSubNavTab {
   return {
     id: entry.id,
-    label: entry.label,
+    // hubTabLabel overrides the canonical label ONLY inside the sub-nav
+    // strip (Ruling 2 — e.g. "Performance" reads "Training" here, unchanged
+    // everywhere else); falls back to the canonical label otherwise.
+    label: entry.hubTabLabel ?? entry.label,
     href: entry.href,
     icon: entry.icon,
     requiredCapability: entry.requiredCapability ?? undefined,
@@ -89,15 +93,18 @@ function toHubTab(entry: BaseballNavEntry): HubSubNavTab {
 }
 
 /**
- * Every coach/both registry entry tagged for `hub`, converted to tabs. `team`
- * is always excluded — it is the legacy `/dashboard/team` alias (hub:
- * 'dashboard' for the registry invariant, but its href is an exact duplicate
- * of `command-center` for coaches), never a distinct destination worth a tab.
+ * Every coach/both registry entry tagged for `hub`, converted to tabs.
+ * Excludes two kinds of entries from the RENDERED strip (both keep their own
+ * registry row — see the module header):
+ *   - `team`: the legacy `/dashboard/team` alias (hub: 'dashboard' for the
+ *     registry invariant, but its href is an exact duplicate of
+ *     `command-center` for coaches) — never a distinct destination.
+ *   - anything carrying `foldedUnder`: Ruling 2's ≤3-subtabs mechanism.
  */
 function hubEntries(hub: BaseballNavHub): HubSubNavTab[] {
-  return BASEBALL_NAV_REGISTRY.filter((e) => e.hub === hub && e.role !== 'player' && e.id !== 'team').map(
-    toHubTab,
-  );
+  return BASEBALL_NAV_REGISTRY.filter(
+    (e) => e.hub === hub && e.role !== 'player' && e.id !== 'team' && !e.foldedUnder,
+  ).map(toHubTab);
 }
 
 /** Stable-sort tabs by a curated id order; unlisted ids keep registry order at the end. */
@@ -126,8 +133,12 @@ function withSupplements(
 
 // -----------------------------------------------------------------------------
 // Supplementary leaf tabs — child pages of a registry feature that are not
-// themselves BASEBALL_NAV_REGISTRY entries (nav-registry.ts tracks the 32
-// top-level features; these are deeper sub-pages within two of them).
+// themselves BASEBALL_NAV_REGISTRY entries. Games is the ONE surviving
+// supplement post-Ruling-2: Season/Upload now resolve via stats-center's own
+// matchPrefixes (a view + header CTAs inside Stats Center, not their own
+// tabs), and Performance's Live/Programs/Groups/Builder are reached via
+// in-page masthead links on /dashboard/performance itself (verified present),
+// not a second copy of the same links in the hub sub-nav strip.
 // -----------------------------------------------------------------------------
 
 const STATS_GAMES_TAB: HubSubNavTab = {
@@ -137,187 +148,79 @@ const STATS_GAMES_TAB: HubSubNavTab = {
   icon: IconClipboardList,
   matchPrefixes: ['/baseball/dashboard/stats/games'],
 };
-const STATS_SEASON_TAB: HubSubNavTab = {
-  id: 'season',
-  label: 'Season',
-  href: '/baseball/dashboard/stats/season',
-  icon: IconTrendingUp,
-};
-const STATS_UPLOAD_TAB: HubSubNavTab = {
-  id: 'upload',
-  label: 'Upload',
-  href: '/baseball/dashboard/stats/upload',
-  icon: IconUpload,
-};
-const PERFORMANCE_LIVE_TAB: HubSubNavTab = {
-  id: 'performance-live',
-  label: 'Live',
-  href: '/baseball/dashboard/performance/live',
-  icon: IconDumbbell,
-  requiredCapability: 'can_manage_lifting',
-};
-const PERFORMANCE_PROGRAMS_TAB: HubSubNavTab = {
-  id: 'performance-programs',
-  label: 'Programs',
-  href: '/baseball/dashboard/performance/programs',
-  icon: IconClipboardList,
-  matchPrefixes: ['/baseball/dashboard/performance/programs'],
-  requiredCapability: 'can_manage_lifting',
-};
-const PERFORMANCE_GROUPS_TAB: HubSubNavTab = {
-  id: 'performance-groups',
-  label: 'Groups',
-  href: '/baseball/dashboard/performance/groups',
-  icon: IconUsers,
-  requiredCapability: 'can_manage_lifting',
-};
-const PERFORMANCE_BUILDER_TAB: HubSubNavTab = {
-  id: 'performance-builder',
-  label: 'Builder',
-  href: '/baseball/dashboard/performance/builder',
-  icon: IconGauge,
-  requiredCapability: 'can_manage_lifting',
-};
-const SETTINGS_HOME_TAB: HubSubNavTab = {
-  id: 'settings-home',
-  label: 'Settings',
-  href: '/baseball/dashboard/settings',
-  icon: IconSettings,
-};
-const SETTINGS_SEASON_TAB: HubSubNavTab = {
-  id: 'settings-season',
-  label: 'Season',
-  href: '/baseball/dashboard/settings/season',
-  icon: IconCalendar,
-  requiredCapability: 'can_manage_settings',
-};
-const SETTINGS_PHILOSOPHY_TAB: HubSubNavTab = {
-  id: 'settings-philosophy',
-  label: 'Philosophy',
-  href: '/baseball/dashboard/settings/philosophy',
-  icon: IconTarget,
-  requiredCapability: 'can_manage_settings',
-};
-const SETTINGS_ROLES_TAB: HubSubNavTab = {
-  id: 'settings-roles',
-  label: 'Roles',
-  href: '/baseball/dashboard/settings/roles',
-  icon: IconLock,
-  requiredCapability: 'can_manage_settings',
-};
-const SETTINGS_PERMISSIONS_TAB: HubSubNavTab = {
-  id: 'settings-permissions',
-  label: 'Permissions',
-  href: '/baseball/dashboard/settings/permissions',
-  icon: IconShieldCheck,
-  requiredCapability: 'can_manage_settings',
-};
-const SETTINGS_TEAMS_TAB: HubSubNavTab = {
-  id: 'settings-teams',
-  label: 'Team Settings',
-  href: '/baseball/dashboard/settings/teams',
-  icon: IconUsers,
-  requiredCapability: 'can_manage_settings',
-};
-const SETTINGS_IMPORTS_TAB: HubSubNavTab = {
-  id: 'settings-imports',
-  label: 'Imports',
-  href: '/baseball/dashboard/settings/imports',
-  icon: IconUpload,
-  requiredCapability: 'can_manage_imports',
-};
-const SETTINGS_INTEGRATIONS_TAB: HubSubNavTab = {
-  id: 'settings-integrations',
-  label: 'Integrations',
-  href: '/baseball/dashboard/settings/integrations',
-  icon: IconBuilding,
-  requiredCapability: 'can_manage_settings',
-};
-const SETTINGS_AUDIT_TAB: HubSubNavTab = {
-  id: 'settings-audit',
-  label: 'Audit',
-  href: '/baseball/dashboard/settings/audit',
-  icon: IconDatabase,
-  requiredCapability: 'can_manage_settings',
-};
 
 // -----------------------------------------------------------------------------
-// Curated display order per hub (COACH_NAV_8TAB_PROPOSAL.md mapping table).
-// Membership is always registry-derived (hubEntries); this only sequences it.
+// Curated display order per hub (COHERENCE_RULING_2026-07-08.md Ruling 2 —
+// the hub/subtab table is authoritative). Membership is always
+// registry-derived (hubEntries); this only sequences it, and every hub below
+// resolves to AT MOST 3 rendered tabs.
 // -----------------------------------------------------------------------------
 
 const DASHBOARD_ORDER = ['command-center', 'signals'];
-const TEAM_ORDER = ['roster', 'calendar', 'announcements', 'documents', 'travel'];
-const STATS_PERFORMANCE_ORDER = [
-  'stats-center',
-  'performance',
-  'postgame-review',
-  'practice-planner',
-  'practice-effectiveness',
-  'import-center',
-];
-const DEVELOPMENT_ORDER = ['dev-plans', 'videos'];
-const RECRUITING_ORDER = [
-  'pipeline',
-  'college-interest',
-  'discover',
-  'watchlist',
-  'compare',
-  'comparisons',
-  'scout-packets',
-  'camps',
-];
+const TEAM_ORDER = ['roster', 'calendar', 'operations'];
+const MESSAGES_ORDER = ['announcements'];
+const STATS_PERFORMANCE_ORDER = ['stats-center', 'postgame-review'];
+const DEVELOPMENT_ORDER = ['dev-plans', 'performance', 'videos'];
+const RECRUITING_ORDER = ['pipeline', 'discover', 'scouting'];
 const ACADEMICS_ORDER = ['academics'];
-const MANAGEMENT_ORDER = [
-  'staff-decision-room',
-  'program',
-  'staff-settings',
-  'program-settings',
-  'organization',
-  'teams',
-  'events',
-];
+const MANAGEMENT_ORDER = ['staff-decision-room', 'settings', 'organization'];
 
 // -----------------------------------------------------------------------------
 // COACH HUBS — every array below is registry-derived (see the module header).
 // -----------------------------------------------------------------------------
 
-/** DASHBOARD hub — Command Center + Signals (folded from two flat top-level tabs). */
+/** DASHBOARD hub — Overview (command-center) + Signals. */
 export const COACH_DASHBOARD_TABS: readonly HubSubNavTab[] = orderTabs(
   hubEntries('dashboard'),
   DASHBOARD_ORDER,
 );
 
-/** TEAM hub — roster + day-to-day team operations. */
+/** TEAM hub — Roster · Calendar · Operations (Documents/Travel/Practice Planner/
+ *  Practice Effectiveness fold into the Operations landing, Ruling 2). */
 export const COACH_TEAM_TABS: readonly HubSubNavTab[] = orderTabs(hubEntries('team'), TEAM_ORDER);
 
 /**
- * STATS & PERFORMANCE hub — team-wide stats depth, game logs, season, practice
- * intelligence, and lifting/readiness, folded into one hub per the proposal
- * (previously Practice Planner/Effectiveness, Postgame Review, and Import
- * Center had no hub-tab entry anywhere — an unreachable-feature bug this fixes).
+ * MESSAGES hub — Messages · Announcements (Ruling 2: Announcements moves off
+ * Team — comms belong with comms). The Messages tab itself is the persistent
+ * cross-cutting entry (BASEBALL_MESSAGES_NAV, deliberately kept outside the
+ * feature registry — see nav-registry.ts) rendered as the FIRST tab;
+ * Announcements is registry-derived like every other hub.
+ */
+const MESSAGES_TAB: HubSubNavTab = {
+  id: BASEBALL_MESSAGES_NAV.id,
+  label: BASEBALL_MESSAGES_NAV.label,
+  href: BASEBALL_MESSAGES_NAV.href,
+  icon: BASEBALL_MESSAGES_NAV.icon,
+};
+
+export const COACH_MESSAGES_TABS: readonly HubSubNavTab[] = [
+  MESSAGES_TAB,
+  ...orderTabs(hubEntries('messages'), MESSAGES_ORDER),
+];
+
+/**
+ * STATS & PERFORMANCE hub — Stats Center · Games · Postgame (Ruling 2: Season
+ * is a view inside Stats Center, Upload + Import Center are header CTAs
+ * there; Practice Planner/Effectiveness moved to Team>Operations; Performance
+ * moved to Development>Training).
  */
 export const COACH_STATS_TABS: readonly HubSubNavTab[] = withSupplements(
   orderTabs(hubEntries('stats-performance'), STATS_PERFORMANCE_ORDER),
-  {
-    'stats-center': [STATS_GAMES_TAB, STATS_SEASON_TAB, STATS_UPLOAD_TAB],
-    performance: [PERFORMANCE_LIVE_TAB, PERFORMANCE_PROGRAMS_TAB, PERFORMANCE_GROUPS_TAB, PERFORMANCE_BUILDER_TAB],
-  },
+  { 'stats-center': [STATS_GAMES_TAB] },
 );
 
-/** DEVELOPMENT hub — dev plans + video library. */
+/** DEVELOPMENT hub — Dev Plans · Training (performance) · Videos. */
 export const COACH_DEVELOPMENT_TABS: readonly HubSubNavTab[] = orderTabs(
   hubEntries('development'),
   DEVELOPMENT_ORDER,
 );
 
 /**
- * RECRUITING hub — pipeline, discovery, comparisons, scout packets, camps.
- * Gated to RECRUITING_PROGRAM_TYPES by the sidebar/resolve-active-hub, hidden
- * entirely for High School. Fixed by this pass: `import` (misplaced here
- * previously) moved to Stats & Performance; `college-interest` (a coach-facing
- * interest dashboard) stays out of player nav; `comparisons` and `camps`
- * (previously unreachable) added.
+ * RECRUITING hub — Pipeline · Discover · Scouting (Ruling 2: Watchlist,
+ * Compare, Saved Comparisons, Scout Packets, and Camps fold into the new
+ * Scouting landing; Interest folds into Pipeline). Gated to
+ * RECRUITING_PROGRAM_TYPES by the sidebar/resolve-active-hub, hidden entirely
+ * for High School.
  */
 export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = orderTabs(
   hubEntries('recruiting'),
@@ -331,43 +234,17 @@ export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = orderTabs(
  */
 export const COACH_ACADEMICS_TABS: readonly HubSubNavTab[] = orderTabs(hubEntries('academics'), ACADEMICS_ORDER);
 
-const MANAGEMENT_SETTINGS_SUPPLEMENT_ID = 'program-settings';
-
-/** Dev-only guard: settings supplement tabs must attach to a real registry row. */
-function assertManagementSettingsSupplement(tabs: readonly HubSubNavTab[]): void {
-  if (process.env.NODE_ENV === 'production') return;
-  if (!tabs.some((tab) => tab.id === MANAGEMENT_SETTINGS_SUPPLEMENT_ID)) {
-    throw new Error(
-      `COACH_MANAGEMENT_TABS settings supplement requires registry tab "${MANAGEMENT_SETTINGS_SUPPLEMENT_ID}".`,
-    );
-  }
-}
-
 /**
- * MANAGEMENT hub — staff coordination, program settings, and (Showcase/Academy/
- * Club only, via allowedProgramTypes carried through verbatim from the
- * registry) org-level Organization/Teams/Events. Fixed by this pass: the
- * "Decision Room" vs "Staff Room" label drift (the registry's label always
- * wins now — it is read, not re-declared).
+ * MANAGEMENT hub — Decision Room · Settings · Organization (Ruling 2: DELETED
+ * the 9-item settings-route splice — the existing card-grid landing at
+ * /dashboard/settings is now the single settings nav surface; Program
+ * Info/Staff Settings/Program Settings fold into it. Organization/Teams/
+ * Events fold under Organization for Showcase/Academy/Club program types
+ * only, via allowedProgramTypes carried through verbatim from the registry).
  */
-const managementHubTabs = orderTabs(hubEntries('management'), MANAGEMENT_ORDER);
-assertManagementSettingsSupplement(managementHubTabs);
-
-export const COACH_MANAGEMENT_TABS: readonly HubSubNavTab[] = withSupplements(
-  managementHubTabs,
-  {
-    [MANAGEMENT_SETTINGS_SUPPLEMENT_ID]: [
-      SETTINGS_HOME_TAB,
-      SETTINGS_SEASON_TAB,
-      SETTINGS_PHILOSOPHY_TAB,
-      SETTINGS_ROLES_TAB,
-      SETTINGS_PERMISSIONS_TAB,
-      SETTINGS_TEAMS_TAB,
-      SETTINGS_IMPORTS_TAB,
-      SETTINGS_INTEGRATIONS_TAB,
-      SETTINGS_AUDIT_TAB,
-    ],
-  },
+export const COACH_MANAGEMENT_TABS: readonly HubSubNavTab[] = orderTabs(
+  hubEntries('management'),
+  MANAGEMENT_ORDER,
 );
 
 // -----------------------------------------------------------------------------
@@ -383,10 +260,11 @@ export interface CoachHubDef {
   tabs: readonly HubSubNavTab[];
 }
 
-/** Display order of the 7 registry-backed coach hubs (Messages is the 8th tab,
- *  a persistent cross-cutting slot outside this grouping — see nav-registry.ts). */
+/** Display order of the 8 registry-backed coach hubs (Ruling 2 promotes
+ *  Messages from a bare flat link to a real hub with its own sub-nav). */
 export const COACH_HUB_ORDER: readonly BaseballNavHub[] = [
   'dashboard',
+  'messages',
   'team',
   'stats-performance',
   'development',
@@ -397,6 +275,7 @@ export const COACH_HUB_ORDER: readonly BaseballNavHub[] = [
 
 export const COACH_HUB_DEFS: Readonly<Record<BaseballNavHub, CoachHubDef>> = {
   dashboard: { id: 'dashboard', label: 'Dashboard', icon: IconHome, tabs: COACH_DASHBOARD_TABS },
+  messages: { id: 'messages', label: 'Messages', icon: IconMessage, tabs: COACH_MESSAGES_TABS },
   team: { id: 'team', label: 'Team', icon: IconUsers, tabs: COACH_TEAM_TABS },
   'stats-performance': {
     id: 'stats-performance',
@@ -411,8 +290,12 @@ export const COACH_HUB_DEFS: Readonly<Record<BaseballNavHub, CoachHubDef>> = {
 };
 
 // -----------------------------------------------------------------------------
-// PLAYER HUBS — unchanged by this pass (see the module header: most player-only
-// registry entries carry no `hub`, so these stay hand-maintained).
+// PLAYER HUBS — unchanged mechanism (see the module header: most player-only
+// registry entries carry no `hub`, so these stay hand-maintained), trimmed to
+// the same ≤3 cap (Ruling 2 item 7). Every dropped tab below KEEPS its own
+// registry row (still command-palette + deep-link reachable) and, for
+// Lifts/Readiness specifically, is also surfaced inline on Player Today —
+// so nothing is orphaned, only de-duplicated off the sub-nav strip.
 // -----------------------------------------------------------------------------
 
 /** Player STATS hub — own stats depth + game/season views. */
@@ -420,14 +303,17 @@ export const PLAYER_STATS_TABS: readonly HubSubNavTab[] = [
   { id: 'overview', label: 'Overview', href: '/baseball/dashboard/my-stats', icon: IconChartBar },
 ];
 
-/** Player DEVELOPMENT hub — own dev plan, training, proof packet, and video library. */
+/**
+ * Player DEVELOPMENT hub — Dev Plan · Practice · Passport. Lifts and
+ * Readiness are already surfaced inline on Player Today's daily card
+ * (PlayerLiftToday) and remain reachable via their own registry entries
+ * (player-lift, player-readiness); Videos remains reachable via its own
+ * registry entry (role: 'both').
+ */
 export const PLAYER_DEVELOPMENT_TABS: readonly HubSubNavTab[] = [
   { id: 'dev-plan', label: 'Dev Plan', href: '/baseball/dashboard/dev-plan', icon: IconTarget },
   { id: 'practice', label: 'Practice', href: '/baseball/player/practice', icon: IconClipboardList },
-  { id: 'lifts', label: 'Lifts', href: '/baseball/dashboard/lift', icon: IconDumbbell, matchPrefixes: ['/baseball/dashboard/lift'] },
-  { id: 'readiness', label: 'Readiness', href: '/baseball/dashboard/readiness', icon: IconGauge },
   { id: 'passport', label: 'Passport', href: '/baseball/player/passport', icon: IconShieldCheck },
-  { id: 'videos', label: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo, matchPrefixes: ['/baseball/dashboard/videos'] },
 ];
 
 /** Player TEAM hub — shared team surfaces a player reads. */
@@ -437,12 +323,16 @@ export const PLAYER_TEAM_TABS: readonly HubSubNavTab[] = [
   { id: 'documents', label: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
 ];
 
-/** Player RECRUITING hub — player-owned exposure and college discovery surfaces. */
+/**
+ * Player RECRUITING hub — Journey · Colleges · Analytics. Activate Recruiting
+ * remains reachable via its own registry entry (player-activate, section:
+ * 'secondary') — command palette + direct URL — it is a one-time opt-in
+ * action, not a recurring destination worth a permanent tab slot.
+ */
 export const PLAYER_RECRUITING_TABS: readonly HubSubNavTab[] = [
   { id: 'journey', label: 'Journey', href: '/baseball/dashboard/journey', icon: IconStar },
   { id: 'colleges', label: 'Colleges', href: '/baseball/dashboard/colleges', icon: IconGraduationCap },
   { id: 'analytics', label: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconTrendingUp },
-  { id: 'activate', label: 'Activate', href: '/baseball/dashboard/activate', icon: IconShieldCheck },
 ];
 
 // -----------------------------------------------------------------------------
@@ -452,6 +342,7 @@ export const PLAYER_RECRUITING_TABS: readonly HubSubNavTab[] = [
 
 export const HUB_LANDING = {
   coachDashboard: COACH_DASHBOARD_TABS[0]!.href,
+  coachMessages: COACH_MESSAGES_TABS[0]!.href,
   coachTeam: COACH_TEAM_TABS[0]!.href,
   coachStats: COACH_STATS_TABS[0]!.href,
   coachDevelopment: COACH_DEVELOPMENT_TABS[0]!.href,

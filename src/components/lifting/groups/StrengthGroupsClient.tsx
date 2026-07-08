@@ -21,7 +21,8 @@ import { Modal } from '@/components/ui/modal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
-import { IconPlus, IconUsers, IconUserPlus, IconUserX, IconTrash } from '@/components/icons';
+import { Tooltip } from '@/components/ui/tooltip';
+import { IconPlus, IconUsers, IconUserPlus, IconUserX, IconTrash, IconLock } from '@/components/icons';
 import {
   createGroup,
   deleteGroup,
@@ -96,6 +97,75 @@ const TYPE_META: Record<HelmLiftingGroupType, { label: string; cls: string }> = 
   temporary: { label: 'Temp',      cls: 'bg-warm-50 text-warm-500 border-warm-200' },
 };
 
+// Dynamic groups (group_type='dynamic') are rule-managed: their membership is
+// computed server-side from rule_json, not maintained by hand — no rename/
+// archive/add-remove-member UI exists for them yet (that's the "unified Lab"
+// rule editor, tracked separately). This client renders them read-only with
+// this explanation rather than silently letting a coach "remove" a member the
+// rule will just re-add on the next recompute.
+const DYNAMIC_GROUP_TOOLTIP = 'Rule-managed group — edited rules coming to the unified Lab.';
+
+/**
+ * Defensive, best-effort human summary of a dynamic group's rule_json.
+ *
+ * The unified helm_lifting_groups.rule_json is expected to follow the same
+ * predicate shape as the legacy baseball_strength_groups rule engine
+ * (positions / grad_years / availability_statuses / thresholds — see
+ * BaseballStrengthGroupRules in lib/types/baseball-lifting-v11.ts), but this
+ * client never assumes that shape holds for every row: rule_json is typed
+ * `Json` (any JSON value) at the DB layer, golf groups may shape it
+ * differently, and prod rows may be sparse or malformed. Every access below
+ * is a runtime type-check, not a cast — an unrecognized/empty/non-object
+ * shape degrades to a generic label instead of throwing or rendering
+ * "undefined".
+ */
+function summarizeRuleJson(rule: unknown): string {
+  if (!rule || typeof rule !== 'object' || Array.isArray(rule)) {
+    return 'Rule-managed group';
+  }
+  const r = rule as Record<string, unknown>;
+  const asStringArray = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  const asNumberArray = (v: unknown): number[] =>
+    Array.isArray(v) ? v.filter((x): x is number => typeof x === 'number') : [];
+
+  const parts: string[] = [];
+
+  const positions = asStringArray(r.positions);
+  if (positions.length > 0) parts.push(`Position: ${positions.join(', ')}`);
+
+  const gradYears = asNumberArray(r.grad_years);
+  if (gradYears.length > 0) parts.push(`Class: ${gradYears.join(', ')}`);
+
+  const availability = asStringArray(r.availability_statuses);
+  if (availability.length > 0) parts.push(`Availability: ${availability.join(', ')}`);
+
+  if (typeof r.min_recent_pitch_count === 'number') {
+    parts.push(`Pitch count ≥ ${r.min_recent_pitch_count}`);
+  }
+  if (typeof r.min_soreness_severity === 'number') {
+    parts.push(`Soreness ≥ ${r.min_soreness_severity}`);
+  }
+  if (typeof r.bodyweight_min === 'number' || typeof r.bodyweight_max === 'number') {
+    const lo = typeof r.bodyweight_min === 'number' ? r.bodyweight_min : '—';
+    const hi = typeof r.bodyweight_max === 'number' ? r.bodyweight_max : '—';
+    parts.push(`Bodyweight ${lo}–${hi} lb`);
+  }
+  if (typeof r.lift_completion === 'string') {
+    parts.push(`Lift status: ${r.lift_completion}`);
+  }
+
+  if (parts.length === 0) {
+    const keyCount = Object.keys(r).length;
+    return keyCount > 0
+      ? `Custom rule (${keyCount} condition${keyCount === 1 ? '' : 's'})`
+      : 'Rule-managed group';
+  }
+
+  const matchAny = r.match === 'any';
+  return `${matchAny ? 'Matches any — ' : ''}${parts.join(' · ')}`;
+}
+
 export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, canEdit, loading = false }: Props) {
   const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
@@ -115,6 +185,10 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
     () => groups.find((g) => g.id === selectedGroupId) ?? null,
     [groups, selectedGroupId],
   );
+
+  // Dynamic groups are rule-managed — see DYNAMIC_GROUP_TOOLTIP above for why
+  // rename/archive/add-remove-member affordances are disabled for them.
+  const isSelectedDynamic = selectedGroup?.group_type === 'dynamic';
 
   const groupAthletes = useMemo(() => {
     if (!selectedGroup) return [];
@@ -287,6 +361,14 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                       <p className="text-eyebrow text-warm-400 mt-0.5">
                         {group.member_count} member{group.member_count !== 1 ? 's' : ''}
                       </p>
+                      {group.group_type === 'dynamic' && (
+                        <p
+                          className="text-eyebrow text-primary-600/80 mt-0.5 truncate"
+                          title={summarizeRuleJson(group.rule_json)}
+                        >
+                          {summarizeRuleJson(group.rule_json)}
+                        </p>
+                      )}
                     </Button>
                   </motion.div>
                 );
@@ -308,22 +390,48 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-warm-900">{selectedGroup.name}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-warm-900">{selectedGroup.name}</h2>
+                  {isSelectedDynamic && (
+                    <span className="inline-flex items-center gap-1 shrink-0 rounded-full border border-primary-200 bg-primary-50 px-1.5 py-0.5 text-microbadge font-medium text-primary-700">
+                      <IconLock size={10} /> Dynamic
+                    </span>
+                  )}
+                </div>
                 {selectedGroup.description && (
                   <p className="text-sm text-warm-500 mt-0.5">{selectedGroup.description}</p>
                 )}
                 <p className="text-xs text-warm-400 mt-1">{selectedGroup.member_count} members</p>
+                {isSelectedDynamic && (
+                  <div className="mt-2 flex items-start gap-1.5 rounded-lg border border-primary-100 bg-primary-50/60 px-2.5 py-1.5 text-xs text-primary-700">
+                    <IconLock size={12} className="mt-0.5 shrink-0" />
+                    <span>{summarizeRuleJson(selectedGroup.rule_json)}</span>
+                  </div>
+                )}
               </div>
               {canEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-warm-400 hover:text-red-600"
-                  disabled={isPending}
-                  onClick={() => handleArchive(selectedGroup.id)}
-                >
-                  <IconTrash size={14} className="mr-1" /> Archive
-                </Button>
+                isSelectedDynamic ? (
+                  <Tooltip content={DYNAMIC_GROUP_TOOLTIP}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-warm-300"
+                      disabled
+                    >
+                      <IconTrash size={14} className="mr-1" /> Archive
+                    </Button>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-warm-400 hover:text-red-600"
+                    disabled={isPending}
+                    onClick={() => handleArchive(selectedGroup.id)}
+                  >
+                    <IconTrash size={14} className="mr-1" /> Archive
+                  </Button>
+                )
               )}
             </div>
 
@@ -331,7 +439,13 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
             {groupAthletes.length === 0 ? (
               <EmptyState
                 title="No members"
-                description={canEdit ? 'Add athletes from the panel below.' : 'No members in this group.'}
+                description={
+                  isSelectedDynamic
+                    ? 'No athletes currently match this group’s rule.'
+                    : canEdit
+                      ? 'Add athletes from the panel below.'
+                      : 'No members in this group.'
+                }
               />
             ) : (
               <Card variant="flat">
@@ -351,15 +465,23 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                           <td className="py-2.5 px-3 text-warm-500">{a.position ?? '—'}</td>
                           {canEdit && (
                             <td className="py-2.5 pr-4 text-right">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-500 hover:text-red-700"
-                                disabled={isPending}
-                                onClick={() => handleRemoveMember(a.id)}
-                              >
-                                <IconUserX size={13} className="mr-1" /> Remove
-                              </Button>
+                              {isSelectedDynamic ? (
+                                <Tooltip content={DYNAMIC_GROUP_TOOLTIP}>
+                                  <Button size="sm" variant="ghost" className="text-warm-300" disabled>
+                                    <IconUserX size={13} className="mr-1" /> Remove
+                                  </Button>
+                                </Tooltip>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-500 hover:text-red-700"
+                                  disabled={isPending}
+                                  onClick={() => handleRemoveMember(a.id)}
+                                >
+                                  <IconUserX size={13} className="mr-1" /> Remove
+                                </Button>
+                              )}
                             </td>
                           )}
                         </tr>
@@ -372,38 +494,51 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
 
             {/* Add members */}
             {canEdit && athletes.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-400 mb-2">Add athletes</h3>
-                <div className="mb-2">
-                  <Input
-                    placeholder="Search athletes…"
-                    value={athleteSearch}
-                    onChange={(e) => setAthleteSearch(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1 max-h-52 overflow-y-auto">
-                  {nonMembers.slice(0, 30).map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-warm-50 transition-colors"
-                    >
-                      <span className="text-sm text-warm-700">{athleteName(a)}{a.position ? ` · ${a.position}` : ''}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-primary-600"
-                        disabled={isPending}
-                        onClick={() => handleAddMember(a.id)}
+              isSelectedDynamic ? (
+                <Tooltip content={DYNAMIC_GROUP_TOOLTIP}>
+                  <div className="rounded-xl border border-warm-100 bg-warm-50/50 px-3 py-2.5 cursor-not-allowed">
+                    <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-warm-400">
+                      <IconLock size={11} /> Add athletes
+                    </h3>
+                    <p className="text-xs text-warm-400 mt-1">
+                      Membership is computed from this group’s rule — manual add is disabled.
+                    </p>
+                  </div>
+                </Tooltip>
+              ) : (
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-400 mb-2">Add athletes</h3>
+                  <div className="mb-2">
+                    <Input
+                      placeholder="Search athletes…"
+                      value={athleteSearch}
+                      onChange={(e) => setAthleteSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1 max-h-52 overflow-y-auto">
+                    {nonMembers.slice(0, 30).map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-warm-50 transition-colors"
                       >
-                        <IconUserPlus size={13} /> Add
-                      </Button>
-                    </div>
-                  ))}
-                  {nonMembers.length === 0 && (
-                    <p className="text-sm text-warm-400 px-3 py-2 italic">All athletes are already members.</p>
-                  )}
+                        <span className="text-sm text-warm-700">{athleteName(a)}{a.position ? ` · ${a.position}` : ''}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-primary-600"
+                          disabled={isPending}
+                          onClick={() => handleAddMember(a.id)}
+                        >
+                          <IconUserPlus size={13} /> Add
+                        </Button>
+                      </div>
+                    ))}
+                    {nonMembers.length === 0 && (
+                      <p className="text-sm text-warm-400 px-3 py-2 italic">All athletes are already members.</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         )}

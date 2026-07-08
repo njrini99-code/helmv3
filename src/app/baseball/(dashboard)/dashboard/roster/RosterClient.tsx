@@ -20,7 +20,7 @@ import { RosterFairway } from './RosterFairway';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
 export type RosterSurface = 'cards' | 'position' | 'status' | 'development';
-export type SortField = 'name' | 'position' | 'avg' | 'obp' | 'slg' | 'ops' | 'exit_velo' | 'sessions';
+export type SortField = 'name' | 'position' | 'avg' | 'obp' | 'slg' | 'ops' | 'sessions';
 export type SortDirection = 'asc' | 'desc';
 
 export interface RosterClientProps {
@@ -65,7 +65,6 @@ function exportRosterCSV(
     career_obp: number | null;
     career_slg: number | null;
     career_ops: number | null;
-    avg_exit_velocity: number | null;
     total_sessions: number | null;
     status: string | null;
   }>,
@@ -80,7 +79,6 @@ function exportRosterCSV(
     'OBP',
     'SLG',
     'OPS',
-    'Exit Velo',
     'Sessions',
     'Status',
   ];
@@ -94,7 +92,6 @@ function exportRosterCSV(
     p.career_obp !== null ? p.career_obp.toFixed(3) : '',
     p.career_slg !== null ? p.career_slg.toFixed(3) : '',
     p.career_ops !== null ? p.career_ops.toFixed(3) : '',
-    p.avg_exit_velocity !== null ? p.avg_exit_velocity.toFixed(1) : '',
     p.total_sessions?.toString() || '0',
     p.status || '',
   ]);
@@ -338,12 +335,6 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
           comparison = opsB - opsA; // Higher is better
           break;
         }
-        case 'exit_velo': {
-          const veloA = aggA?.avg_exit_velocity ?? -1;
-          const veloB = aggB?.avg_exit_velocity ?? -1;
-          comparison = veloB - veloA; // Higher is better
-          break;
-        }
         case 'sessions': {
           const sessA = aggA?.total_sessions ?? 0;
           const sessB = aggB?.total_sessions ?? 0;
@@ -408,7 +399,6 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
       career_obp: aggregates[member.player.id]?.career_obp ?? null,
       career_slg: aggregates[member.player.id]?.career_slg ?? null,
       career_ops: aggregates[member.player.id]?.career_ops ?? null,
-      avg_exit_velocity: aggregates[member.player.id]?.avg_exit_velocity ?? null,
       total_sessions: aggregates[member.player.id]?.total_sessions ?? null,
       status: member.status,
     }));

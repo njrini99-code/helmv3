@@ -12,6 +12,7 @@ import {
   deleteBaseballEvent,
   rsvpToBaseballEvent,
 } from '@/app/baseball/actions/calendar';
+import { toast } from '@/components/ui/sonner';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -84,8 +85,23 @@ async function respondToBaseballEvent(
 // ── Action handlers ────────────────────────────────────────────────────────────
 
 const baseballActionHandlers = {
-  createEvent: (data: unknown) =>
-    createBaseballEvent(data as Parameters<typeof createBaseballEvent>[0]),
+  /**
+   * The event row itself can succeed while a secondary, best-effort write
+   * (RSVP invites, the linked `baseball_games` row) fails — `createBaseballEvent`
+   * surfaces that as `result.warning` on an otherwise `success: true` result
+   * (see `ActionResult` in `@/app/baseball/actions/calendar`). The shared
+   * `PremiumCalendarClient` only branches on `result.success`, so it never
+   * looks at `.warning` — this non-blocking toast is the only place that gap
+   * gets surfaced to the coach. The result is returned unchanged so the rest
+   * of the save flow (closing the modal, `router.refresh()`) is untouched.
+   */
+  createEvent: async (data: unknown) => {
+    const result = await createBaseballEvent(data as Parameters<typeof createBaseballEvent>[0]);
+    if (result.success && result.warning) {
+      toast.warning('Event created', { description: result.warning });
+    }
+    return result;
+  },
   updateEvent: (id: string, data: unknown) =>
     updateBaseballEvent(id, data as Parameters<typeof updateBaseballEvent>[1]),
   deleteEvent: deleteBaseballEvent,

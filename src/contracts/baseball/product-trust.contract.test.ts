@@ -30,8 +30,14 @@ describe('Baseball product-trust surface contracts', () => {
   });
 
   it('Documents client keeps an explicit empty copy path', () => {
-    const src = read('src/app/baseball/(dashboard)/dashboard/documents/documents-client.tsx');
-    expect(src).toMatch(/No documents/i);
+    // The empty state moved into the Living-Annual kit (EmptyIssue variant
+    // "documents" — copy lives in molecules/EmptyIssue.tsx as "The file drawer
+    // is empty."). Assert the structural empty path in the client chrome, and
+    // the copy itself at its single source of truth in the kit.
+    const src = read('src/components/baseball/documents/DocumentsFairway.tsx');
+    expect(src).toMatch(/EmptyIssue[\s\S]*?variant="documents"/);
+    const kit = read('src/components/baseball/living-annual/molecules/EmptyIssue.tsx');
+    expect(kit).toMatch(/documents:\s*\{[\s\S]*?title:\s*'[^']+'/);
   });
 
   it('canonical read models expose authorized + error envelopes', () => {

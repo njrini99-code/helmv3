@@ -2,39 +2,32 @@
 
 /**
  * ============================================================================
- * BaseballFairwayShell  (ADDITIVE · FLAG-GATED) — Fairway migration Phase A
+ * BaseballFairwayShell — the ONE dashboard frame for BaseballHelm
  * ----------------------------------------------------------------------------
- * The flag-ON dashboard frame for the generic `/baseball/(dashboard)` route
- * group. Mirrors GolfHelm's `FairwayDashboardShell` playbook exactly: a full,
- * standalone replacement for the legacy shell composition (not a wrapper
- * around it) that renders the shared Fairway `<AppShell>` — the warm-black
- * recessive rail on desktop, a slide-in glass drawer on mobile, the one glass
- * top bar — in place of the legacy `BaseballDashboardShell`.
+ * Mounted unconditionally by the generic `/baseball/(dashboard)` and
+ * `/baseball/player` route-group layouts (Coherence Ruling 1, 2026-07-08 —
+ * see docs/baseball/COHERENCE_RULING_2026-07-08.md). Mirrors GolfHelm's
+ * `FairwayDashboardShell` playbook: renders the shared Fairway `<AppShell>` —
+ * the warm-black recessive rail on desktop, a slide-in glass drawer on
+ * mobile, the one glass top bar.
  *
  * PRESENTATION ONLY. No server actions, no RLS, no new reads beyond what the
  * existing baseball auth/nav hooks already resolve:
- *   - useBaseballAuth(requiredRole) — the SAME session/onboarding gate
- *     BaseballShellLayout uses for each mounted route group.
+ *   - useBaseballAuth(requiredRole) — the SAME session/onboarding gate every
+ *     mounted route group uses.
  *   - useBaseballNavContext()      — the SAME server-resolved capability map
- *     (nav-context.ts), so capability-gated verticals never fail-closed here
- *     when they wouldn't in the legacy shell.
+ *     (nav-context.ts), so capability-gated verticals never fail-closed here.
  *   - getVisibleBaseballNav()      — the #383 capability-gated nav-registry
  *     single source of truth (nav-registry.ts). NavSections are built from
  *     this, never a hardcoded route list, so this shell can't drift from (or
- *     duplicate) what Sidebar / MobileBottomNav / CommandPalette already read.
+ *     duplicate) what MobileBottomNav / CommandPalette already read.
  *
- * PROVIDER STACK — kept VERBATIM from BaseballShellLayout (the shared
- * composition point for all three BaseballHelm shell route groups): the same
- * SidebarProvider > SessionActivityProvider > LastSeenUpdater >
- * PeekPanelProvider nesting, unchanged. BaseballShellLayout.tsx itself is not
- * imported or edited — this file is a parallel, full duplicate of that
- * composition (same reason GolfHelm's FairwayDashboardShell duplicates
- * GolfDashboardShell's stack rather than wrapping it).
+ * PROVIDER STACK: SidebarProvider > SessionActivityProvider > LastSeenUpdater
+ * > PeekPanelProvider — the same nesting the legacy `BaseballShellLayout` /
+ * `BaseballDashboardShell` composition used before it was deleted (Ruling 1 /
+ * Ruling 5). This file is the sole surviving shell for BaseballHelm.
  *
- * Mounted ONLY behind isRedesignEnabled() in the Baseball dashboard/player
- * route-group layouts. Flag OFF renders the legacy `BaseballShellLayout` →
- * `BaseballDashboardShell`, byte-for-byte unchanged.
- *
+
  * The AppShell drawer (`mobileOpen`) is BRIDGED to the SAME SidebarContext
  * every legacy baseball page's own menu button already calls `setMobileOpen`
  * against, so a not-yet-migrated page opens the SAME drawer. One nav surface,
@@ -47,7 +40,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AppShell, FairwayBottomNav, useSidebarCollapsed } from '@/components/fairway/app-shell';
-import type { Breadcrumb, NavItem, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell';
+import type { NavItem, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell';
 
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
@@ -88,6 +81,11 @@ import {
 } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
 import { HubSubNav } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
+import {
+  BreadcrumbLabelProvider,
+  useBreadcrumbLabel,
+} from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
+import { buildBreadcrumbs } from '@/app/baseball/(dashboard)/_components/breadcrumbs';
 import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -104,14 +102,20 @@ type Role = 'coach' | 'player';
 /**
  * P413-equivalent: mobile bottom-tab destinations derived from the SAME hub
  * sections as the desktop rail so active states agree across breakpoints.
- * Golf FairwayDashboardShell uses the same pattern (5 tabs, hub activeMatch).
+ * Golf FairwayDashboardShell uses the same pattern (hub activeMatch).
+ *
+ * Ruling 2 (item 8): exactly the top 3 highest-frequency destinations per
+ * role — the mobile drawer (opened via the top bar's hamburger, bridged to
+ * the SAME SidebarContext this shell renders) is the "+ More" the ruling
+ * describes, not a 4th bottom-tab button, so 3 named + the always-present
+ * hamburger covers every remaining hub.
  */
 function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem[] {
   const items = sections.flatMap((section) => section.items);
   const preferredLabels =
     role === 'coach'
-      ? (['Dashboard', 'Team', 'Stats & Performance', 'Messages'] as const)
-      : (['Today', 'Stats', 'Development', 'Team', 'Messages'] as const);
+      ? (['Dashboard', 'Team', 'Stats & Performance'] as const)
+      : (['Today', 'Schedule', 'Messages'] as const);
 
   const picked = preferredLabels
     .map((label) => items.find((item) => item.label === label))
@@ -258,23 +262,38 @@ function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): Na
         href: visibleTabs[0]!.href,
         icon: def.icon as unknown as NavItem['icon'],
         tabs: visibleTabs,
+        // Messages is now a real hub (Ruling 2: Messages · Announcements) —
+        // the unread badge is the one piece of state that stays outside the
+        // registry-derived tab list, so it's threaded in here by hub id.
+        badge: hubId === 'messages' && unreadCount > 0 ? unreadCount : undefined,
       }),
     );
-
-    // Messages is the persistent cross-cutting slot, outside the hub registry.
-    if (hubId === 'dashboard') {
-      items.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]));
-    }
   }
 
   return [{ heading: 'Baseball', items }];
 }
 
 /**
+ * The Messages hub rail item (Ruling 2: a real hub with an Announcements
+ * subtab, not a bare flat link) — shared by the showcase org/team rails below
+ * so a showcase coach's Messages click ALSO opens the sub-nav strip, exactly
+ * like the main coach rail's (`buildCoachHubSections`) Messages entry.
+ */
+function messagesNavItem(unreadCount: number): NavItem {
+  return playerHubToNavItem({
+    label: COACH_HUB_DEFS.messages.label,
+    href: COACH_HUB_DEFS.messages.tabs[0]!.href,
+    icon: COACH_HUB_DEFS.messages.icon as unknown as NavItem['icon'],
+    tabs: COACH_HUB_DEFS.messages.tabs,
+    badge: unreadCount > 0 ? unreadCount : undefined,
+  });
+}
+
+/**
  * Showcase ORG-level rail (no team selected yet) — the documented two-level
  * org→team exception (COACH_NAV_8TAB_PROPOSAL.md): org-wide Dashboard/Teams/
  * Events, mirroring src/components/layout/sidebar.tsx's `showcaseOrgNav`
- * exactly (same routes/icons/order), plus the persistent Messages slot.
+ * exactly (same routes/icons/order), plus the persistent Messages hub.
  */
 function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
   return [
@@ -284,7 +303,7 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
         { label: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
         { label: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
         { label: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
-        toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]),
+        messagesNavItem(unreadCount),
       ],
     },
   ];
@@ -309,7 +328,7 @@ function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number)
         tabs: dashboardTabs,
       }),
     );
-    items.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]));
+    items.push(messagesNavItem(unreadCount));
   }
   for (const hubId of ['team', 'stats-performance', 'development'] as const) {
     const def = COACH_HUB_DEFS[hubId];
@@ -328,30 +347,10 @@ function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number)
   return [{ heading: 'Baseball', items }];
 }
 
-function toTitle(seg: string): string {
-  return seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-/**
- * Breadcrumb label resolved against the SAME registry (never a second
- * hardcoded route→label map) — the longest href the pathname matches wins.
- */
-function buildBreadcrumbs(pathname: string, ctx: BaseballNavContext, homeHref: string): Breadcrumb[] {
-  if (pathname === homeHref) return [{ label: 'Dashboard' }];
-
-  const candidates: { href: string; label: string }[] = [
-    ...getVisibleBaseballNav(ctx).map((e) => ({ href: e.href, label: e.label })),
-    { href: BASEBALL_MESSAGES_NAV.href, label: BASEBALL_MESSAGES_NAV.label },
-  ];
-  let best: { href: string; label: string } | null = null;
-  for (const c of candidates) {
-    if (pathname === c.href || pathname.startsWith(`${c.href}/`)) {
-      if (!best || c.href.length > best.href.length) best = c;
-    }
-  }
-  const lastSegment = pathname.split('/').filter(Boolean).pop() ?? 'Page';
-  return [{ label: 'Dashboard', href: homeHref }, { label: best?.label ?? toTitle(lastSegment) }];
-}
+// buildBreadcrumbs lives in ./_components/breadcrumbs.ts — a pure module
+// (no React/hooks) so it can be unit-tested without importing this whole
+// 'use client' shell file. See its doc comment for the UUID/numeric-id
+// guard + override-label precedence (Ruling 4).
 
 /** BaseballHelm wordmark for the rail header — hides text in icon-only mode. */
 function Brand({ homeHref }: { homeHref: string }) {
@@ -478,7 +477,14 @@ function BaseballFairwayContent({
     }
     return buildCoachHubSections(ctx, unreadCount);
   }, [ctx, unreadCount, role, isShowcaseCoach, selectedTeam]);
-  const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname, ctx, homeHref), [pathname, ctx, homeHref]);
+  // Real record name a dynamic detail page has already fetched (player name,
+  // opponent, plan title, …), registered via the breadcrumb-label override
+  // channel — see breadcrumb-label.tsx and buildBreadcrumbs' doc comment.
+  const breadcrumbOverride = useBreadcrumbLabel(pathname);
+  const breadcrumbs = useMemo(
+    () => buildBreadcrumbs(pathname, ctx, homeHref, breadcrumbOverride),
+    [pathname, ctx, homeHref, breadcrumbOverride],
+  );
   const activeHub = resolveActiveHub({
     pathname,
     role,
@@ -564,15 +570,15 @@ function BaseballFairwayContent({
         </div>
       </AppShell>
 
-      {/* Same global the legacy BaseballDashboardShell mounts unconditionally. */}
+      {/* The one global CommandPalette mount for the whole shell. */}
       <CommandPalette navContext={ctx} />
     </div>
   );
 }
 
 /**
- * Exported shell — full standalone replacement for BaseballShellLayout (auth
- * gate + provider stack + shell), rendering the Fairway AppShell frame.
+ * Exported shell — auth gate + provider stack + shell, rendering the Fairway
+ * AppShell frame. The only shell BaseballHelm renders.
  */
 export function BaseballFairwayShell({
   children,
@@ -583,10 +589,9 @@ export function BaseballFairwayShell({
   authVerified?: boolean;
   requiredRole?: Role | null;
 }) {
-  // SAME auth gate BaseballShellLayout uses for the mounted route group.
+  // Session/onboarding gate for the mounted route group.
   const { loading, authorized, role } = useBaseballAuth(requiredRole);
-  // SAME server-resolved capability map (nav-context.ts) BaseballShellLayout
-  // passes into BaseballDashboardShell.
+  // Server-resolved capability map (nav-context.ts) driving the nav sections.
   const { navContext } = useBaseballNavContext();
 
   if (!authVerified && (loading || !authorized)) {
@@ -600,15 +605,18 @@ export function BaseballFairwayShell({
       <SessionActivityProvider>
         <LastSeenUpdater />
         {/* Render-null: fetches the program's brand + applies it as CSS vars /
-            data attrs on <html>. Mounted here too — this is a full parallel
-            duplicate of BaseballShellLayout's provider stack (not a wrapper),
-            so branding would otherwise silently die whenever the redesign
-            flag is on for this route group. */}
+            data attrs on <html> so persisted branding (settings/appearance)
+            actually takes visible effect. */}
         <BaseballProgramBrand />
         <PeekPanelProvider>
-          <BaseballFairwayContent role={resolvedRole} navContext={navContext ?? undefined}>
-            {children}
-          </BaseballFairwayContent>
+          {/* Breadcrumb-label override channel (Ruling 4) — wraps BOTH the
+              shell chrome (reader, via useBreadcrumbLabel) and `children`
+              (writer, via <BreadcrumbLabel/>) in one context instance. */}
+          <BreadcrumbLabelProvider>
+            <BaseballFairwayContent role={resolvedRole} navContext={navContext ?? undefined}>
+              {children}
+            </BaseballFairwayContent>
+          </BreadcrumbLabelProvider>
         </PeekPanelProvider>
       </SessionActivityProvider>
     </SidebarProvider>

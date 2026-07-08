@@ -69,7 +69,18 @@ interface UpdateEventInput {
   timezoneOffset?: number;
 }
 
-type ActionResult<T = unknown> = { success: boolean; error?: string; data?: T };
+type ActionResult<T = unknown> = {
+  success: boolean;
+  error?: string;
+  data?: T;
+  /**
+   * Set when the primary write succeeded but a secondary, best-effort write
+   * (RSVP invites, the linked baseball_games row) failed — a partial-success
+   * signal so callers can surface it without treating the whole action as
+   * failed (the primary row really was created).
+   */
+  warning?: string;
+};
 
 const CALENDAR_PATH = '/baseball/dashboard/calendar';
 
@@ -211,6 +222,14 @@ const createBaseballEventAction = withBaseballAction(
 
     if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
+    // Secondary writes below are best-effort: the calendar event itself
+    // already exists (`data`), so a failure here should NOT report the whole
+    // action as failed — but it must not be silently discarded either
+    // (supabase-js never throws on a failed insert; the caller has to check
+    // `error` explicitly). Collected into `warnings` and surfaced via the
+    // `warning` field on a `success: true` result.
+    const warnings: string[] = [];
+
     if (input.requiresRsvp && input.attendeeIds && input.attendeeIds.length > 0 && data) {
       const attendanceRecords = input.attendeeIds.map((playerId) => ({
         event_id: data.id,
@@ -219,12 +238,17 @@ const createBaseballEventAction = withBaseballAction(
       }));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('baseball_event_attendance').insert(attendanceRecords);
+      const { error: attendanceError } = await (supabase as any)
+        .from('baseball_event_attendance')
+        .insert(attendanceRecords);
+      if (attendanceError) {
+        warnings.push(`RSVP invites could not be created: ${sanitizeDbError(attendanceError, 'calendar')}`);
+      }
     }
 
     if (data && (input.eventType === 'game' || input.eventType === 'scrimmage')) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('baseball_games').insert({
+      const { error: gameError } = await (supabase as any).from('baseball_games').insert({
         team_id: resolvedTeamId,
         event_id: data.id,
         game_date: input.startDate,
@@ -235,11 +259,18 @@ const createBaseballEventAction = withBaseballAction(
         created_by: coachId,
         status: 'scheduled',
       });
+      if (gameError) {
+        warnings.push(`Linked game record could not be created: ${sanitizeDbError(gameError, 'calendar')}`);
+      } else {
+        revalidatePath('/baseball/dashboard/stats/games');
+      }
     }
 
     revalidatePath(CALENDAR_PATH);
     revalidatePath('/baseball/dashboard/events');
-    return { success: true, data };
+    return warnings.length > 0
+      ? { success: true, data, warning: warnings.join(' ') }
+      : { success: true, data };
   },
 );
 

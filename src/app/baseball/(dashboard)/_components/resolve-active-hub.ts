@@ -51,6 +51,7 @@ export { RECRUITING_PROGRAM_TYPES };
  */
 const RESOLVE_HUB_ID: Readonly<Record<BaseballNavHub, string>> = {
   dashboard: 'dashboard',
+  messages: 'messages',
   team: 'team',
   'stats-performance': 'stats',
   development: 'development',

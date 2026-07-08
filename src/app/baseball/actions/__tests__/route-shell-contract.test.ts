@@ -85,7 +85,6 @@ const ADVISORY_ALLOWLIST: readonly AllowlistEntry[] = [
   // list page, never meant to carry their own nav/hub entry. ---
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]', reason: 'deep-link detail page reached from Roster' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]/passport', reason: 'deep-link sub-view reached from the player profile' },
-  { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]/profile', reason: 'deep-link sub-view reached from Roster' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]/scout-packet', reason: 'deep-link sub-view reached from the player profile' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]/scout-packet/preview', reason: 'deep-link print preview reached from the scout packet' },
   { bucket: 'orphanRoutes', href: '/baseball/dashboard/players/[id]/stats', reason: 'deep-link sub-view reached from the player profile' },

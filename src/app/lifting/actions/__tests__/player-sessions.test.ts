@@ -83,6 +83,7 @@ vi.mock('@/lib/lifting/resolve-baseball-context', () => ({
   resolveMyBaseballAthleteId: vi.fn(async () => ATHLETE_ID),
 }));
 
+import { revalidatePath } from 'next/cache';
 import { logMySetResult, submitLiftReadiness } from '@/app/lifting/actions/player-sessions';
 
 describe('logMySetResult onConflict target', () => {
@@ -107,6 +108,24 @@ describe('logMySetResult onConflict target', () => {
     expect(res.success).toBe(true);
     const [, opts] = tableBuilders.helm_lifting_set_results.upsertArgs as [unknown, { onConflict?: string }];
     expect(opts).toEqual({ onConflict: 'session_exercise_id,set_number' });
+  });
+
+  it('revalidates both the /lifting and /baseball lift portals for the mutated session', async () => {
+    await logMySetResult({
+      sessionExerciseId: SESSION_EXERCISE_ID,
+      sessionId: SESSION_ID,
+      athleteId: ATHLETE_ID,
+      setNumber: 1,
+      actualReps: 8,
+      actualLoad: 135,
+      loadUnit: 'lb',
+      rpe: 8,
+    });
+
+    const paths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
+    expect(paths).toContain('/lifting/dashboard/lift');
+    expect(paths).toContain('/baseball/dashboard/lift');
+    expect(paths).toContain(`/baseball/dashboard/lift/${SESSION_ID}`);
   });
 });
 
@@ -146,5 +165,18 @@ describe('submitLiftReadiness onConflict target', () => {
     });
     expect(res.success).toBe(false);
     expect(tableBuilders.helm_lifting_readiness_checkins.upsert).not.toHaveBeenCalled();
+  });
+
+  it('revalidates the baseball lift portal alongside /lifting/dashboard', async () => {
+    await submitLiftReadiness({
+      sleepQuality: 4,
+      energyLevel: 4,
+      sorenessOverall: 2,
+      notes: null,
+    });
+
+    const paths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
+    expect(paths).toContain('/lifting/dashboard');
+    expect(paths).toContain('/baseball/dashboard/lift');
   });
 });

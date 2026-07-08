@@ -31,7 +31,7 @@ type VerifyResult =
 //
 // (dashboard)/layout.tsx's DashboardSessionGuard calls useBaseballAuth(null)
 // to gate the team-context recovery redirect, then — only once that settles —
-// mounts BaseballShellLayout, which calls useBaseballAuth(requiredRole) AGAIN
+// mounts BaseballFairwayShell, which calls useBaseballAuth(requiredRole) AGAIN
 // to gate the shared shell chrome. Both calls run the full 4-round-trip
 // verifyServerSession() (auth.getUser() + 3 parallel profile queries)
 // independently, back-to-back (never concurrently, since the second mount is

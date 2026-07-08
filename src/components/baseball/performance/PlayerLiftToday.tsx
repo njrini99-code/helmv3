@@ -7,25 +7,27 @@
 // (PlayerTodayClient). It is a clean DEFAULT export so the integration phase can
 // drop it straight in without touching this file.
 //
-// UNIFIED STORAGE (V11): this card reads the SAME materialized
-// baseball_lift_sessions rows that publishLiftDay writes — the identical source
-// the dedicated player lift route (/baseball/dashboard/lift via getPlayerLiftHome)
-// and the CoachHelm engine (loaders-v10) consume. The previous version read the
-// legacy baseball_lift_assignments island, so a lift built+published through the
-// V11 program builder never appeared here and the AI never analyzed it. That
-// island is closed: publish -> materialized session -> set logging -> PRs is now
-// one loop visible on Today, on the lift route, and to the engine.
+// UNIFIED STORAGE (helm_lifting_*, ONE Lift Lab): this card reads the SAME
+// materialized helm_lifting_sessions rows that publishProgram / publishLiftDay
+// write — the identical source the dedicated player lift route
+// (/baseball/dashboard/lift via getPlayerLiftHome, now backed by
+// helm_lifting_sessions via the baseball-view-adapter) and the CoachHelm
+// engine (loaders-v10) consume. The legacy baseball_lift_* / baseball_lift_
+// assignments tables are write-dead — publish -> materialized session -> set
+// logging -> PRs is one loop visible on Today, on the lift route, and to the
+// engine.
 //
 // The card itself is an honest daily-loop SUMMARY + launcher: it lists today's
 // (and overdue, not-yet-completed) sessions with status, and routes each to the
 // dedicated session screen (/baseball/dashboard/lift/[sessionId]) where the full
 // per-set logging surface already lives (one place for execution, not two). The
-// daily readiness check-in writes the shared baseball_readiness_checkins table.
+// daily readiness check-in writes the shared helm_lifting_readiness_checkins
+// table.
 //
 // Players can only ever see/log their OWN sessions and readiness — the RLS
-// policies on baseball_lift_sessions / baseball_readiness_checkins make that
-// structural; the client typing is loosened only because these tables are not in
-// the generated database.ts yet.
+// policies on helm_lifting_sessions / helm_lifting_readiness_checkins make
+// that structural; the client typing is loosened only because these tables
+// are not in the generated database.ts yet.
 // =============================================================================
 
 import { useCallback, useEffect, useState } from 'react';
@@ -363,7 +365,7 @@ export default function PlayerLiftToday({
         </CardContent>
       </Card>
 
-      {/* Daily readiness check-in (shared baseball_readiness_checkins). */}
+      {/* Daily readiness check-in (shared helm_lifting_readiness_checkins). */}
       <Card variant="glass">
         <CardHeader>
           <div className="flex items-center gap-2">

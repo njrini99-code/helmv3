@@ -129,7 +129,7 @@ export function RuledStatLine({
           initial="hidden"
           animate="visible"
           variants={settle}
-          className={cn('flex items-baseline gap-2 pb-1 font-annual leading-none', numeralInk, numeralSize)}
+          className={cn('flex items-baseline gap-2 pb-1 font-annual', numeralInk, numeralSize)}
         >
           {ghost ? (
             <span aria-hidden className="tabular-nums">

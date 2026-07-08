@@ -39,6 +39,19 @@ interface UseCalendarEventsOptions {
   endDate: Date;
 }
 
+/**
+ * Display-only default for a missing `end_time` — mirrors the drag-reschedule
+ * fallback in PremiumCalendarClient ("Fallback: 1 hour duration") and the
+ * baseball calendar page's server-side mapping. NEVER written back to the
+ * DB; only the mapped `end_date` (display field) uses this — the raw
+ * `end_time` column value is passed through unchanged.
+ */
+function defaultEndTime(startIso: string): string {
+  const start = new Date(startIso);
+  if (Number.isNaN(start.getTime())) return startIso;
+  return new Date(start.getTime() + 60 * 60 * 1000).toISOString();
+}
+
 export function useCalendarEvents({ teamId, startDate, endDate }: UseCalendarEventsOptions) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +87,11 @@ export function useCalendarEvents({ teamId, startDate, endDate }: UseCalendarEve
         // For all-day events, normalize dates to prevent timezone shift
         const mappedEvents = (data || []).map(event => {
           let startDateVal = event.start_time;
-          let endDateVal = event.end_time || event.start_time;
+          // NULL end_time previously collapsed to `event.start_time`,
+          // producing a zero-duration timed event. Default to start + 1h for
+          // display only (all-day events are normalized to midnight below
+          // regardless, so the fallback only matters for timed events).
+          let endDateVal = event.end_time || (event.all_day ? event.start_time : defaultEndTime(event.start_time));
           if (event.all_day) {
             const normalize = (d: string) => `${d.slice(0, 10)}T00:00:00`;
             startDateVal = normalize(startDateVal);

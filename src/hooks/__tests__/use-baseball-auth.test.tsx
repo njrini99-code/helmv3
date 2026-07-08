@@ -4,7 +4,7 @@
  * Covers:
  *  - Dedup: (dashboard)/layout.tsx mounts this hook twice on the same hard
  *    navigation (once in DashboardSessionGuard, once again inside
- *    BaseballShellLayout, gated so the second only mounts after the first
+ *    BaseballFairwayShell, gated so the second only mounts after the first
  *    settles). Before the fix, each mount independently ran the full
  *    4-round-trip session verification, doubling the time-to-chrome for
  *    every dashboard page load. The short-lived module cache must collapse
@@ -97,7 +97,7 @@ describe('useBaseballAuth', () => {
     // to land on a fresh cache key instead of resetting module state.
   });
 
-  it('dedupes two back-to-back mounts (DashboardSessionGuard + BaseballShellLayout) into a single verifyServerSession round trip', async () => {
+  it('dedupes two back-to-back mounts (DashboardSessionGuard + BaseballFairwayShell) into a single verifyServerSession round trip', async () => {
     const first = renderHook(() => useBaseballAuth(null));
     await waitFor(() => expect(first.result.current.loading).toBe(false));
     expect(first.result.current.authorized).toBe(true);
@@ -106,7 +106,7 @@ describe('useBaseballAuth', () => {
     expect(callsAfterFirst).toBe(1);
 
     // Second mount, same requiredRole, immediately after the first settles —
-    // exactly the DashboardSessionGuard -> BaseballShellLayout sequence.
+    // exactly the DashboardSessionGuard -> BaseballFairwayShell sequence.
     const second = renderHook(() => useBaseballAuth(null));
     await waitFor(() => expect(second.result.current.loading).toBe(false));
     expect(second.result.current.authorized).toBe(true);

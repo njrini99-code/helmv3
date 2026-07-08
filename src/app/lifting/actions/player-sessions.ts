@@ -11,6 +11,14 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveMyBaseballAthleteId } from '@/lib/lifting/resolve-baseball-context';
+
+// Baseball Wave C renders these same helm_lifting_sessions /
+// helm_lifting_readiness_checkins reads at /baseball/dashboard/lift and
+// /baseball/dashboard/lift/[sessionId] (see src/app/baseball/(dashboard)/
+// dashboard/lift/page.tsx + [sessionId]/page.tsx) — bust both alongside
+// '/lifting/dashboard/lift' below so a baseball athlete's own lift portal
+// reflects a checkin/set/status mutation immediately.
+const BASEBALL_LIFT_PATH = '/baseball/dashboard/lift';
 import type {
   HelmLiftingSessionRow,
   HelmLiftingSessionStatus,
@@ -170,6 +178,7 @@ export async function submitLiftReadiness(input: {
 
   if (error) return { success: false, error: 'Could not save check-in.' };
   revalidatePath('/lifting/dashboard');
+  revalidatePath(BASEBALL_LIFT_PATH);
   return { success: true, id: data?.id };
 }
 
@@ -190,6 +199,8 @@ export async function startMySession(sessionId: string): Promise<{ success: bool
 
   if (error) return { success: false, error: 'Could not start session.' };
   revalidatePath('/lifting/dashboard/lift');
+  revalidatePath(BASEBALL_LIFT_PATH);
+  revalidatePath(`${BASEBALL_LIFT_PATH}/${sessionId}`);
   return { success: true };
 }
 
@@ -250,6 +261,8 @@ export async function logMySetResult(input: {
     .eq('status', 'assigned');
 
   revalidatePath('/lifting/dashboard/lift');
+  revalidatePath(BASEBALL_LIFT_PATH);
+  revalidatePath(`${BASEBALL_LIFT_PATH}/${input.sessionId}`);
   return { success: true, id: data?.id };
 }
 
@@ -269,5 +282,7 @@ export async function completeMySession(sessionId: string): Promise<{ success: b
 
   if (error) return { success: false, error: 'Could not complete session.' };
   revalidatePath('/lifting/dashboard/lift');
+  revalidatePath(BASEBALL_LIFT_PATH);
+  revalidatePath(`${BASEBALL_LIFT_PATH}/${sessionId}`);
   return { success: true };
 }

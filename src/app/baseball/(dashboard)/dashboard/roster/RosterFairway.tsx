@@ -79,7 +79,6 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'obp', label: 'OBP' },
   { value: 'slg', label: 'SLG' },
   { value: 'ops', label: 'OPS' },
-  { value: 'exit_velo', label: 'Exit velo' },
   { value: 'sessions', label: 'Sessions' },
 ];
 
@@ -92,12 +91,14 @@ const ALL = 'all';
 
 // ── Record-book roster wall (the `cards` surface) ───────────────────────────
 
-const WALL_COLUMNS = ['AVG', 'OBP', 'SLG', 'OPS', 'EXIT V', 'SESS'];
+// EXIT V intentionally omitted — the aggregates table carries no exit-velocity
+// column in the live schema and nothing writes one (Ruling 4). Honest UI over
+// a dead column: don't render a stat that can never populate.
+const WALL_COLUMNS = ['AVG', 'OBP', 'SLG', 'OPS', 'SESS'];
 
 function buildWallStats(agg: BaseballPlayerAggregates | undefined, leader: boolean): PlayerRowStat[] {
   if (!agg) {
     return [
-      { value: EM_DASH },
       { value: EM_DASH },
       { value: EM_DASH },
       { value: EM_DASH },
@@ -110,7 +111,6 @@ function buildWallStats(agg: BaseballPlayerAggregates | undefined, leader: boole
     { value: agg.career_obp == null ? EM_DASH : formatRate(agg.career_obp, 3) },
     { value: agg.career_slg == null ? EM_DASH : formatRate(agg.career_slg, 3) },
     { value: agg.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3), leader },
-    { value: agg.avg_exit_velocity ?? EM_DASH, decimals: 1 },
     { value: agg.total_sessions },
   ];
 }

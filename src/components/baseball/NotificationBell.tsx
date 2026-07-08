@@ -14,11 +14,10 @@
 //     clears the badge optimistically.
 //
 // Design tokens: cream/green palette — no blue/purple. Matches the shared
-// BaseballDashboardShell header aesthetic (warm-matte surfaces, subtle
+// BaseballFairwayShell header aesthetic (warm-matte surfaces, subtle
 // ring focus, green-primary CTAs).
 //
-// Integration: the shell integration agent wires this into
-// BaseballShellLayout / BaseballDashboardShell header.
+// Integration: mounted in BaseballFairwayShell's top bar actions slot.
 // =============================================================================
 
 import { useState, useEffect, useTransition, useCallback } from 'react';

@@ -5,7 +5,7 @@ import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { DocumentsClient } from './documents-client';
 import { getTeamDocuments } from '@/app/baseball/actions/documents';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
-import { EmptyState } from '@/components/ui/empty-state';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 
 export const metadata: Metadata = {
   title: 'Documents | BaseballHelm',
@@ -24,11 +24,11 @@ export default async function BaseballDocumentsPage() {
   const ctx = await getActiveBaseballContext();
   if (!ctx?.activeTeamId) {
     return (
-      <div className="p-6 lg:p-8">
-        <EmptyState
-          type="generic"
+      <div className="mx-auto w-full max-w-[1200px] p-6 lg:p-8">
+        <EditorsLetter
+          ink="team"
           title="Join a team to see documents"
-          description="Once you join a baseball team, shared files and resources will show up here."
+          body="Once you join a baseball team, shared files and resources will show up here."
         />
       </div>
     );
@@ -41,7 +41,7 @@ export default async function BaseballDocumentsPage() {
 
   if (error) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="mx-auto w-full max-w-[1200px] p-6 lg:p-8">
         <ReadModelStateNotice
           state="error"
           title="Documents could not load"

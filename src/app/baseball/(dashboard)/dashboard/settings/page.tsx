@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -220,7 +219,13 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Header title="Settings" subtitle="Manage your account settings" />
+      {/* Ruling 2 (item 5): the shell's own top bar already renders
+          breadcrumbs + the mobile menu affordance — this page no longer
+          mounts a second (legacy) <Header>, which duplicated both. */}
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+        <h1 className="text-h2 font-semibold text-warm-900">Settings</h1>
+        <p className="mt-1 text-body-sm text-warm-500">Manage your account settings</p>
+      </div>
       <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
         <section className="grid gap-3 sm:grid-cols-2">
           {(user?.role === 'coach' ? COACH_SETTINGS_LINKS : PLAYER_SETTINGS_LINKS).map((item) => {

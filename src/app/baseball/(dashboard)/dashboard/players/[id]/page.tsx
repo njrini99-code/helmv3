@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { PlayerProfileClient } from '@/components/baseball/player-profile/PlayerProfileClient';
+import { BreadcrumbLabel } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
 import { getPlayerSnapshotCards } from '@/lib/baseball/read-models/player-snapshot-cards';
 import { getPlayerTimeline, getTimelineAcksForSubjectPlayer } from '@/lib/baseball/read-models/timeline';
@@ -206,31 +207,37 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   }));
 
   return (
-    <PlayerProfileClient
-      player={{
-        ...player,
-        jersey_number: membership.jersey_number?.toString() || null,
-        team_position: membership.position,
-        team_status: membership.status,
-        joined_at: membership.joined_at,
-      }}
-      stats={stats || []}
-      aggregates={aggregates}
-      insights={insights || []}
-      notes={transformedNotes}
-      notesCanAuthor={notesResult.canAuthor}
-      videos={transformedVideos}
-      teamId={team.id}
-      teamName={team.name}
-      coachId={coach.id}
-      snapshotHeader={snapshotResult.authorized ? snapshotResult.header : null}
-      timelineEvents={timelineResult.events}
-      timelineViewerRole={timelineResult.viewerRole}
-      timelineHiddenCount={timelineResult.hiddenCount}
-      timelineAcks={timelineAcks}
-      tasks={playerTasks}
-      liftingOrgId={liftingOrgId}
-      liftingAthleteId={liftingAthleteId}
-    />
+    <>
+      {/* Ruling 4: the shell's breadcrumb has no registry entry for a
+          dynamic player id — this supplies the real name so the trail never
+          falls back to a raw UUID segment. */}
+      <BreadcrumbLabel name={`${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || null} />
+      <PlayerProfileClient
+        player={{
+          ...player,
+          jersey_number: membership.jersey_number?.toString() || null,
+          team_position: membership.position,
+          team_status: membership.status,
+          joined_at: membership.joined_at,
+        }}
+        stats={stats || []}
+        aggregates={aggregates}
+        insights={insights || []}
+        notes={transformedNotes}
+        notesCanAuthor={notesResult.canAuthor}
+        videos={transformedVideos}
+        teamId={team.id}
+        teamName={team.name}
+        coachId={coach.id}
+        snapshotHeader={snapshotResult.authorized ? snapshotResult.header : null}
+        timelineEvents={timelineResult.events}
+        timelineViewerRole={timelineResult.viewerRole}
+        timelineHiddenCount={timelineResult.hiddenCount}
+        timelineAcks={timelineAcks}
+        tasks={playerTasks}
+        liftingOrgId={liftingOrgId}
+        liftingAthleteId={liftingAthleteId}
+      />
+    </>
   );
 }
