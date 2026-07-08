@@ -87,6 +87,56 @@ function dateDaysFromNow(days: number): string {
   return dateDaysAgo(-days);
 }
 
+// Team-local wall-clock time -> UTC instant, DST-safe. Mirrors the two-pass
+// offset-resolution algorithm in src/lib/baseball/daily-contract/contract-day.ts
+// (localMidnightUtcMs / tzOffsetMinutesAt) but self-contained here — those are
+// module-private, and this script only needs a fixed-clock variant of the same
+// idea (an arbitrary hh:mm instead of always midnight).
+//
+// THE GAP THIS CLOSES (Coherence Ruling 4): every seeded baseball_events row
+// previously set `end_time: isoDaysAgo(n)` == `start_time: isoDaysAgo(n)` —
+// literally the same instant, so every seeded event rendered as a
+// zero-duration block. It also anchored on the SERVER's UTC day
+// (`isoDaysAgo` mutates UTC date fields), not a real team-local wall-clock
+// time, so the seeded practice/game/meeting didn't land in a believable local
+// hour. This gives each event a realistic team-local start/end on its
+// intended calendar date, in the team's default tz (America/New_York — same
+// default `resolveTeamTimezone` falls back to when a team has no timezone
+// row).
+const TEAM_TZ = 'America/New_York';
+
+function tzOffsetMinutesAt(utcMs: number, tz: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(utcMs));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+  const asUtcMs = Date.UTC(
+    get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'),
+  );
+  return (asUtcMs - utcMs) / 60_000;
+}
+
+/**
+ * UTC ISO instant for `hh:mm` team-local wall-clock time on `dateIso`
+ * (YYYY-MM-DD, itself a tz-independent bare calendar date from
+ * dateDaysAgo/dateDaysFromNow). DST-safe two-pass offset resolution.
+ */
+function localClockIso(dateIso: string, hh: number, mm: number, tz: string = TEAM_TZ): string {
+  const [y, m, d] = dateIso.split('-').map(Number);
+  const naiveGuessMs = Date.UTC(y, m - 1, d, hh, mm, 0);
+  const offset1 = tzOffsetMinutesAt(naiveGuessMs, tz);
+  const refinedGuessMs = naiveGuessMs - offset1 * 60_000;
+  const offset2 = tzOffsetMinutesAt(refinedGuessMs, tz);
+  return new Date(naiveGuessMs - offset2 * 60_000).toISOString();
+}
+
 // --- Upsert wrapper (tolerates missing schema by skipping) ------------------
 type Counts = Record<string, number>;
 const counts: Counts = {};
@@ -214,13 +264,16 @@ async function main() {
   await upsert('baseball_team_members', memberRows);
 
   // --- 4. Events ----------------------------------------------------------
+  // Team-local times (never a zero-duration start==end): practice 15:30-17:30,
+  // game 13:00-16:00, meeting 12:00-13:00, each anchored to its intended
+  // calendar date via localClockIso (America/New_York, DST-safe).
   const practiceEventId = detId('event:practice');
   const gameEventId = detId('event:game');
   const meetingEventId = detId('event:meeting');
   await upsert('baseball_events', [
-    { id: practiceEventId, team_id: TEAM_ID, created_by: COACH_ID, title: 'Team Practice — Defense + Live BP', description: 'Full-squad practice. Mandatory.', event_type: 'practice', location: 'Rini Field', start_time: isoDaysAgo(-1), end_time: isoDaysAgo(-1), is_mandatory: true },
-    { id: gameEventId, team_id: TEAM_ID, created_by: COACH_ID, title: 'vs Coastal State', description: 'Conference matchup.', event_type: 'game', location: 'Rini Field', start_time: isoDaysAgo(-3), end_time: isoDaysAgo(-3), is_mandatory: true },
-    { id: meetingEventId, team_id: TEAM_ID, created_by: COACH_ID, title: 'Team Meeting — Travel Logistics', description: 'Read receipts required.', event_type: 'meeting', location: 'Film Room', start_time: isoDaysAgo(-2), end_time: isoDaysAgo(-2), is_mandatory: true },
+    { id: practiceEventId, team_id: TEAM_ID, created_by: COACH_ID, title: 'Team Practice — Defense + Live BP', description: 'Full-squad practice. Mandatory.', event_type: 'practice', location: 'Rini Field', start_time: localClockIso(dateDaysFromNow(1), 15, 30), end_time: localClockIso(dateDaysFromNow(1), 17, 30), is_mandatory: true },
+    { id: gameEventId, team_id: TEAM_ID, created_by: COACH_ID, title: 'vs Coastal State', description: 'Conference matchup.', event_type: 'game', location: 'Rini Field', start_time: localClockIso(dateDaysFromNow(3), 13, 0), end_time: localClockIso(dateDaysFromNow(3), 16, 0), is_mandatory: true },
+    { id: meetingEventId, team_id: TEAM_ID, created_by: COACH_ID, title: 'Team Meeting — Travel Logistics', description: 'Read receipts required.', event_type: 'meeting', location: 'Film Room', start_time: localClockIso(dateDaysFromNow(2), 12, 0), end_time: localClockIso(dateDaysFromNow(2), 13, 0), is_mandatory: true },
   ]);
 
   // --- 5. Games (6 final + 2 scheduled) -----------------------------------

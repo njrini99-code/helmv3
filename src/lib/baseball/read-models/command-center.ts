@@ -38,6 +38,11 @@ import {
   normalizeConfidence,
   type SourceRef,
 } from '@/lib/baseball/source-record';
+import {
+  localDayBoundsUtc,
+  resolveTeamTimezone,
+  todayIsoInTz,
+} from '@/lib/baseball/daily-contract/contract-day';
 
 // -----------------------------------------------------------------------------
 // Public shapes
@@ -230,10 +235,14 @@ export async function getCommandCenter(
     return base(false, null); // not staff — honest unauthorized envelope
   }
 
-  // Day window for "today" (UTC day; callers can pass forDate to override).
-  const day = forDate ?? new Date().toISOString().slice(0, 10);
-  const dayStart = `${day}T00:00:00.000Z`;
-  const dayEnd = `${day}T23:59:59.999Z`;
+  // Day window for "today" — TEAM-LOCAL (mirrors player-today.ts / contract-day.ts),
+  // never the server's UTC day: a 9pm-local coach otherwise saw "today" roll to
+  // tomorrow's UTC date. `dayStart`/`dayEnd` filter `baseball_events.start_time`
+  // (a timestamptz column), so the boundary itself must be team-local midnight
+  // expressed in UTC, not a literal `${day}T00:00:00.000Z`.
+  const teamTz = await resolveTeamTimezone(supabase, teamId);
+  const day = forDate ?? todayIsoInTz(teamTz);
+  const { startUtcIso: dayStart, endUtcIso: dayEnd } = localDayBoundsUtc(day, teamTz);
 
   let weekStartIso: string | null = null;
   let weekEndIso: string | null = null;
