@@ -20,29 +20,31 @@ rolls up into one of those. (The context name `all` is shared by both the
 |---|---|---|---|
 | `all` (CI) | `ci.yml` | aggregate: DB-types drift, schema invariants, feature knowledge, typecheck, ESLint, lint-ratchet, unit tests, business contracts, `next build`, route hygiene, **Supabase lint + RLS tests** | **Hard gate** (required context `all`) |
 | `all` (Review Gate) | `review-gate.yml` | aggregate: ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** (required context `all`) |
-| `Smoke checks` | `playwright.yml` | build-only smoke: `npm ci` + `next build` (no E2E) | **Hard gate** |
+| `Smoke checks` | `playwright.yml` (PRs + main push) | build-only smoke: `npm ci` + `next build` (no full E2E) | **Hard gate** |
+| `Playwright PR smoke (a11y)` | `pr-smoke.yml` | public-route accessibility Playwright only when frontend/e2e paths change | Advisory |
 | `CodeRabbit` | CodeRabbit GitHub App | assertive line-level review + blocking custom checks (`.coderabbit.yaml`) | **Hard gate** |
 | `CodeQL` | `codeql.yml` | code-scanning security analysis | **Hard gate** |
 | `Greptile Review` | Greptile GitHub App | whole-codebase review + hard rules (`.greptile/rules.md`) | Advisory — *not* a required context; Greptile skips `dependabot` PRs, so requiring it would block the bot flow. CodeRabbit is the blocking AI reviewer. |
-| `Playwright (chromium)` / `Course picker screenshots` | `playwright.yml` | full E2E suite — advisory until stable for a week (see `.github/branch-protection.md`) | Advisory |
-| `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; a11y + CLS are hard errors *within the job*, but the check itself is advisory | Advisory |
+| `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches |
+| `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; usually skips when no preview exists (non-main Vercel builds disabled) | Advisory |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |
 | `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | Advisory |
-| `Vercel` / `Vercel Preview Comments` | Vercel | preview build/deploy status | Advisory (informational; Lighthouse depends on it reaching `READY`) |
+| `Vercel` / `Vercel Preview Comments` | Vercel | production deploy on `main` only; non-main branches skip build (`scripts/vercel-ignore-build.sh`) | Advisory (informational) |
 
 ## 2. Expected wait windows
 
 Don't treat a check as "stuck" before its normal window has passed:
 
-- **Vercel preview** — standard Vercel build pipeline, no custom wait
-  configured in `vercel.json`. Lighthouse polls for the preview to reach
-  `READY` via `.circleci/scripts/wait-for-vercel-preview.sh` before it runs.
+- **Vercel production** — only `main` builds automatically (`vercel.json`
+  `ignoreCommand` + `git.deploymentEnabled`). Non-main branches skip preview
+  deploys; CircleCI Lighthouse usually skips when no preview URL exists.
 - **CodeRabbit / Greptile** — both re-queue automatically on every new
   commit; expect a short pending window while the new review is generated.
-- **Playwright `e2e` job** (`Playwright (chromium)`, `playwright.yml`) —
-  40-minute job budget, 2 CI retries, 1 worker (serial execution).
-  `picker-screenshots` and the advisory `baseball-smoke` job each have a
-  20-minute budget; `Smoke checks` has a 15-minute budget.
+- **PR smoke** (`pr-smoke.yml`) — `Smoke checks` build ~15 min; optional
+  `Playwright PR smoke (a11y)` ~12 min when frontend/e2e paths change.
+- **Full Playwright** (`playwright.yml`, main + manual only) — `e2e` job
+  75-minute budget; `picker-screenshots` and `baseball-smoke` 20 minutes each;
+  main-push `Smoke checks` 15 minutes.
 - **Web server / auth waits** (why Playwright can be slow to even start) —
   120s dev-server startup, 45s auth navigation per spec.
 
@@ -66,9 +68,9 @@ pending check has hung — then rerun (see below) rather than waiting longer.
   page.
 - Local dry-run before pushing: `circleci config validate` and
   `circleci local execute --job <job>` (see `.circleci/README.md`).
-- `lighthouse-preview` depends on a successful Vercel preview — rerun it
-  only after the preview shows `READY`, otherwise it will fail for an
-  unrelated reason.
+- `lighthouse-preview` polls for a Vercel preview URL — with non-main
+  previews disabled it usually skips gracefully. Rerun only when a manual
+  preview deploy exists and you need Lighthouse against it.
 
 ### Vercel / CodeRabbit / Greptile
 
@@ -98,7 +100,11 @@ your diff — `main` itself was already red when you branched.
 
 ---
 
-See also: [`docs/operations/coderabbit-review-workflow.md`](operations/coderabbit-review-workflow.md)
-for clearing a stale CodeRabbit review decision specifically, and
-[`.github/branch-protection.md`](../.github/branch-protection.md) for the
-enforcement policy this runbook describes.
+See also:
+
+- [`docs/operations/COST_CONTROLS.md`](operations/COST_CONTROLS.md) — Vercel
+  preview policy, PR vs main Playwright, manual full E2E, spend alerts
+- [`docs/operations/coderabbit-review-workflow.md`](operations/coderabbit-review-workflow.md)
+  — clearing a stale CodeRabbit review decision
+- [`.github/branch-protection.md`](../.github/branch-protection.md) — required
+  checks enforcement policy
