@@ -315,7 +315,6 @@ const uploadStatsCSVAction = withBaseballAction(
       stat_type: statType,
       session_date: sessionDate,
       session_name: sessionName || undefined,
-      upload_batch_id: upload.id,
       source: 'csv_upload',
     };
 

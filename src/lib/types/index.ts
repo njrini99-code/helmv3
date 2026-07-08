@@ -174,8 +174,16 @@ export interface BaseballPlayerStats {
 
   // Metadata
   source: BaseballStatSource;
-  upload_batch_id: string | null;
   notes: string | null;
+
+  // Source-trust / import provenance (added by the source-trust + import-run
+  // migrations; import_run_id supersedes the removed legacy upload_batch_id).
+  source_trust_level: string | null;
+  source_visibility: string;
+  source_match_confidence: number | null;
+  source_match_tier: string | null;
+  source_external_id: string | null;
+  import_run_id: string | null;
 
   created_at: string;
   updated_at: string;
