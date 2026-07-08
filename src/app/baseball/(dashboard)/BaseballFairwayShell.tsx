@@ -97,14 +97,20 @@ type Role = 'coach' | 'player';
 /**
  * P413-equivalent: mobile bottom-tab destinations derived from the SAME hub
  * sections as the desktop rail so active states agree across breakpoints.
- * Golf FairwayDashboardShell uses the same pattern (5 tabs, hub activeMatch).
+ * Golf FairwayDashboardShell uses the same pattern (hub activeMatch).
+ *
+ * Ruling 2 (item 8): exactly the top 3 highest-frequency destinations per
+ * role — the mobile drawer (opened via the top bar's hamburger, bridged to
+ * the SAME SidebarContext this shell renders) is the "+ More" the ruling
+ * describes, not a 4th bottom-tab button, so 3 named + the always-present
+ * hamburger covers every remaining hub.
  */
 function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem[] {
   const items = sections.flatMap((section) => section.items);
   const preferredLabels =
     role === 'coach'
-      ? (['Dashboard', 'Team', 'Stats & Performance', 'Messages'] as const)
-      : (['Today', 'Stats', 'Development', 'Team', 'Messages'] as const);
+      ? (['Dashboard', 'Team', 'Stats & Performance'] as const)
+      : (['Today', 'Schedule', 'Messages'] as const);
 
   const picked = preferredLabels
     .map((label) => items.find((item) => item.label === label))
@@ -251,23 +257,38 @@ function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): Na
         href: visibleTabs[0]!.href,
         icon: def.icon as unknown as NavItem['icon'],
         tabs: visibleTabs,
+        // Messages is now a real hub (Ruling 2: Messages · Announcements) —
+        // the unread badge is the one piece of state that stays outside the
+        // registry-derived tab list, so it's threaded in here by hub id.
+        badge: hubId === 'messages' && unreadCount > 0 ? unreadCount : undefined,
       }),
     );
-
-    // Messages is the persistent cross-cutting slot, outside the hub registry.
-    if (hubId === 'dashboard') {
-      items.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]));
-    }
   }
 
   return [{ heading: 'Baseball', items }];
 }
 
 /**
+ * The Messages hub rail item (Ruling 2: a real hub with an Announcements
+ * subtab, not a bare flat link) — shared by the showcase org/team rails below
+ * so a showcase coach's Messages click ALSO opens the sub-nav strip, exactly
+ * like the main coach rail's (`buildCoachHubSections`) Messages entry.
+ */
+function messagesNavItem(unreadCount: number): NavItem {
+  return playerHubToNavItem({
+    label: COACH_HUB_DEFS.messages.label,
+    href: COACH_HUB_DEFS.messages.tabs[0]!.href,
+    icon: COACH_HUB_DEFS.messages.icon as unknown as NavItem['icon'],
+    tabs: COACH_HUB_DEFS.messages.tabs,
+    badge: unreadCount > 0 ? unreadCount : undefined,
+  });
+}
+
+/**
  * Showcase ORG-level rail (no team selected yet) — the documented two-level
  * org→team exception (COACH_NAV_8TAB_PROPOSAL.md): org-wide Dashboard/Teams/
  * Events, mirroring src/components/layout/sidebar.tsx's `showcaseOrgNav`
- * exactly (same routes/icons/order), plus the persistent Messages slot.
+ * exactly (same routes/icons/order), plus the persistent Messages hub.
  */
 function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
   return [
@@ -277,7 +298,7 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
         { label: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
         { label: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
         { label: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
-        toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]),
+        messagesNavItem(unreadCount),
       ],
     },
   ];
@@ -302,7 +323,7 @@ function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number)
         tabs: dashboardTabs,
       }),
     );
-    items.push(toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]));
+    items.push(messagesNavItem(unreadCount));
   }
   for (const hubId of ['team', 'stats-performance', 'development'] as const) {
     const def = COACH_HUB_DEFS[hubId];
