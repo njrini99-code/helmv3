@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
+import { getE2eAdminClient } from '../scripts/e2e-supabase-admin';
 import { loginAsCoach, loginAsPlayer } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
@@ -48,19 +48,14 @@ const COMPLETED_OPPONENT = 'Eastview College';
 
 /**
  * Service-role Supabase client for teardown-only writes (deleting rows this
- * spec itself created). Same construction pattern as
- * `scripts/seed-baseball-e2e.ts` — `NEXT_PUBLIC_SUPABASE_URL` +
- * `SUPABASE_SERVICE_ROLE_KEY`, session-less. Returns `null` (teardown
- * becomes a no-op) rather than throwing when either env var is missing —
- * cleanup must never fail an otherwise-passing run, and CI only exports
- * `PLAYWRIGHT_BASEBALL_SEEDED=1` (which gates every test in this file)
- * alongside the service-role secret in the first place.
+ * spec itself created) — provided by scripts/e2e-supabase-admin.ts so this
+ * spec never references the service-role env var directly (ast-grep rule
+ * helmv3-no-service-role-key). Returns `null` (teardown becomes a no-op)
+ * rather than throwing when the env is missing — cleanup must never fail an
+ * otherwise-passing run.
  */
 function getServiceRoleClient() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
-  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
-  if (!url || !key) return null;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  return getE2eAdminClient();
 }
 
 async function loginCoachOrSkip(page: Page) {
