@@ -28,7 +28,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
-import { IconDownload, IconFilter, IconX } from '@/components/icons';
+import { IconDownload, IconFilter, IconUpload, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { loadStatsCenter } from '@/app/baseball/actions/games';
 // V10 stat-visual chart gallery (stat-visuals packet). Mounted at team scope; it
@@ -543,6 +543,27 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
   const mastheadActions = (
     <div className="flex flex-wrap items-center gap-2">
       <SegmentedControl options={GAME_SET_OPTIONS} value={gameSet} onChange={setGameSet} ariaLabel="Game set" />
+      {/* Ruling 2 (item 2): Upload + Import Center folded off the hub sub-nav
+          strip into persistent header-level actions here — Stats Center is
+          now the ONLY place they're reachable from the Stats & Performance
+          hub (the empty-state "Import a box score" CTA below stays too, for
+          the exact moment it's most useful). */}
+      <Button
+        variant="ghost"
+        size="md"
+        leftIcon={<IconUpload size={16} />}
+        onClick={() => router.push('/baseball/dashboard/stats/upload')}
+      >
+        Upload
+      </Button>
+      <Button
+        variant="ghost"
+        size="md"
+        leftIcon={<IconUpload size={16} />}
+        onClick={() => router.push('/baseball/dashboard/import')}
+      >
+        Import Center
+      </Button>
       <Button
         variant="secondary"
         size="md"
