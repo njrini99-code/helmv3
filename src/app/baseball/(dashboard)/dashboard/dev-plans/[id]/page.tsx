@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlanDetail } from '@/components/baseball/dev-plans/PlanDetail';
+import { BreadcrumbLabel } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import {
@@ -123,6 +124,10 @@ export default function DevPlanDetailPage() {
 
   return (
     <>
+      {/* Ruling 4: the shell's breadcrumb has no registry entry for a
+          dynamic plan id — this supplies the real plan title so the trail
+          never falls back to a raw UUID segment. */}
+      <BreadcrumbLabel name={plan.title} />
       <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
       <div className="p-6 lg:p-8">
         <PlanDetail

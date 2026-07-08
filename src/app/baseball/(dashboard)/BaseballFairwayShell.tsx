@@ -40,7 +40,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AppShell, FairwayBottomNav, useSidebarCollapsed } from '@/components/fairway/app-shell';
-import type { Breadcrumb, NavItem, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell';
+import type { NavItem, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell';
 
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
@@ -81,6 +81,11 @@ import {
 } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
 import { HubSubNav } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
+import {
+  BreadcrumbLabelProvider,
+  useBreadcrumbLabel,
+} from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
+import { buildBreadcrumbs } from '@/app/baseball/(dashboard)/_components/breadcrumbs';
 import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -342,30 +347,10 @@ function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number)
   return [{ heading: 'Baseball', items }];
 }
 
-function toTitle(seg: string): string {
-  return seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-/**
- * Breadcrumb label resolved against the SAME registry (never a second
- * hardcoded route→label map) — the longest href the pathname matches wins.
- */
-function buildBreadcrumbs(pathname: string, ctx: BaseballNavContext, homeHref: string): Breadcrumb[] {
-  if (pathname === homeHref) return [{ label: 'Dashboard' }];
-
-  const candidates: { href: string; label: string }[] = [
-    ...getVisibleBaseballNav(ctx).map((e) => ({ href: e.href, label: e.label })),
-    { href: BASEBALL_MESSAGES_NAV.href, label: BASEBALL_MESSAGES_NAV.label },
-  ];
-  let best: { href: string; label: string } | null = null;
-  for (const c of candidates) {
-    if (pathname === c.href || pathname.startsWith(`${c.href}/`)) {
-      if (!best || c.href.length > best.href.length) best = c;
-    }
-  }
-  const lastSegment = pathname.split('/').filter(Boolean).pop() ?? 'Page';
-  return [{ label: 'Dashboard', href: homeHref }, { label: best?.label ?? toTitle(lastSegment) }];
-}
+// buildBreadcrumbs lives in ./_components/breadcrumbs.ts — a pure module
+// (no React/hooks) so it can be unit-tested without importing this whole
+// 'use client' shell file. See its doc comment for the UUID/numeric-id
+// guard + override-label precedence (Ruling 4).
 
 /** BaseballHelm wordmark for the rail header — hides text in icon-only mode. */
 function Brand({ homeHref }: { homeHref: string }) {
@@ -492,7 +477,14 @@ function BaseballFairwayContent({
     }
     return buildCoachHubSections(ctx, unreadCount);
   }, [ctx, unreadCount, role, isShowcaseCoach, selectedTeam]);
-  const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname, ctx, homeHref), [pathname, ctx, homeHref]);
+  // Real record name a dynamic detail page has already fetched (player name,
+  // opponent, plan title, …), registered via the breadcrumb-label override
+  // channel — see breadcrumb-label.tsx and buildBreadcrumbs' doc comment.
+  const breadcrumbOverride = useBreadcrumbLabel(pathname);
+  const breadcrumbs = useMemo(
+    () => buildBreadcrumbs(pathname, ctx, homeHref, breadcrumbOverride),
+    [pathname, ctx, homeHref, breadcrumbOverride],
+  );
   const activeHub = resolveActiveHub({
     pathname,
     role,
@@ -617,9 +609,14 @@ export function BaseballFairwayShell({
             actually takes visible effect. */}
         <BaseballProgramBrand />
         <PeekPanelProvider>
-          <BaseballFairwayContent role={resolvedRole} navContext={navContext ?? undefined}>
-            {children}
-          </BaseballFairwayContent>
+          {/* Breadcrumb-label override channel (Ruling 4) — wraps BOTH the
+              shell chrome (reader, via useBreadcrumbLabel) and `children`
+              (writer, via <BreadcrumbLabel/>) in one context instance. */}
+          <BreadcrumbLabelProvider>
+            <BaseballFairwayContent role={resolvedRole} navContext={navContext ?? undefined}>
+              {children}
+            </BaseballFairwayContent>
+          </BreadcrumbLabelProvider>
         </PeekPanelProvider>
       </SessionActivityProvider>
     </SidebarProvider>
