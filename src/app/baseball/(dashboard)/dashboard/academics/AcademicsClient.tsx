@@ -32,7 +32,8 @@ interface StudentAthlete {
   gpa: number | null;
   credits_completed: number | null;
   credits_required: number | null;
-  is_eligible: boolean;
+  /** Tri-state: null = no eligibility record on file (neutral), never coerced to false. */
+  is_eligible: boolean | null;
   academic_standing: 'good' | 'warning' | 'probation' | null;
   eligibility_id: string | null;
 }
@@ -164,7 +165,9 @@ export default function AcademicsPage() {
       gpa: student.gpa,
       credits_completed: student.credits_completed,
       credits_required: student.credits_required,
-      is_eligible: student.is_eligible,
+      // No record on file yet defaults the editor to "Eligible" — matches
+      // upsertPlayerAcademics' own default for a brand-new record.
+      is_eligible: student.is_eligible ?? true,
       academic_standing: student.academic_standing,
     });
   };
@@ -331,9 +334,25 @@ export default function AcademicsPage() {
     return `${student.credits_completed}/${req}`;
   };
 
+  const gpaDisplay = (student: StudentAthlete) =>
+    student.gpa !== null ? student.gpa.toFixed(2) : 'Not on file';
+
   const standingLabel = (standing: 'good' | 'warning' | 'probation' | null) => {
     if (!standing) return 'Unknown';
     return standing.charAt(0).toUpperCase() + standing.slice(1);
+  };
+
+  // ── Eligibility tri-state: null = no record on file yet (neutral gray,
+  // matches the "Unknown" standing treatment) — never coerced to a red
+  // "Ineligible", which is reserved for a real, recorded `false`. ─────────
+  const eligibilityLabel = (isEligible: boolean | null) => {
+    if (isEligible === null) return 'Not on file';
+    return isEligible ? 'Eligible' : 'Ineligible';
+  };
+
+  const eligibilityBadgeClass = (isEligible: boolean | null) => {
+    if (isEligible === null) return 'bg-warm-100 text-warm-500';
+    return isEligible ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700';
   };
 
   return (
@@ -472,8 +491,8 @@ export default function AcademicsPage() {
                           aria-label="GPA"
                         />
                       ) : (
-                        <p className="text-lg font-semibold text-warm-900">
-                          {student.gpa !== null ? student.gpa.toFixed(2) : 'N/A'}
+                        <p className={student.gpa !== null ? 'text-lg font-semibold text-warm-900' : 'text-lg font-semibold text-warm-400 italic'}>
+                          {gpaDisplay(student)}
                         </p>
                       )}
                       <p className="text-label font-medium uppercase tracking-wide text-warm-500 mt-1">GPA</p>
@@ -533,8 +552,8 @@ export default function AcademicsPage() {
                         >
                           {standingLabel(student.academic_standing)}
                         </Badge>
-                        <Badge className={student.is_eligible ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'}>
-                          {student.is_eligible ? 'Eligible' : 'Ineligible'}
+                        <Badge className={eligibilityBadgeClass(student.is_eligible)}>
+                          {eligibilityLabel(student.is_eligible)}
                         </Badge>
                       </>
                     )}
@@ -619,8 +638,8 @@ export default function AcademicsPage() {
                             aria-label="GPA"
                           />
                         ) : (
-                          <span className="font-medium tabular-nums">
-                            {student.gpa !== null ? student.gpa.toFixed(2) : 'N/A'}
+                          <span className={student.gpa !== null ? 'font-medium tabular-nums' : 'text-warm-400 italic tabular-nums'}>
+                            {gpaDisplay(student)}
                           </span>
                         )}
                       </td>
@@ -681,8 +700,8 @@ export default function AcademicsPage() {
                             ]}
                           />
                         ) : (
-                          <Badge className={student.is_eligible ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'}>
-                            {student.is_eligible ? 'Eligible' : 'Ineligible'}
+                          <Badge className={eligibilityBadgeClass(student.is_eligible)}>
+                            {eligibilityLabel(student.is_eligible)}
                           </Badge>
                         )}
                       </td>

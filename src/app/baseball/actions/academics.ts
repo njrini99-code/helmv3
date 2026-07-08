@@ -215,9 +215,10 @@ const getTeamAcademicsAction = withBaseballAction(
         gpa: eligibility?.gpa ?? player?.gpa ?? null,
         credits_completed: eligibility?.credits_completed ?? null,
         credits_required: eligibility?.credits_required ?? 60,
-        // No eligibility record => treat as unknown / ineligible-safe rather
-        // than inflating "Eligible" / "Good Standing" summary cards.
-        is_eligible: eligibility?.is_eligible ?? false,
+        // Tri-state: null = no eligibility record on file yet (neutral,
+        // "Not on file"), never coerced to false — a missing record is not
+        // the same fact as a coach having marked the player ineligible.
+        is_eligible: eligibility?.is_eligible ?? null,
         academic_standing: eligibility?.academic_standing ?? null,
         class_count: classCounts[m.player_id] || 0,
         eligibility_id: eligibility?.id ?? null,
