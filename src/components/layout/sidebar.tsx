@@ -8,14 +8,10 @@ import { useAuth } from '@/hooks/use-auth';
 import {
   IconHome,
   IconUsers,
-  IconMessage,
   IconSettings,
   IconLogOut,
-  IconUser,
-  IconBuilding,
   IconCalendar,
   IconHelp,
-  IconGraduationCap,
   IconChevronLeft,
   IconChevronRight,
   IconChartBar,
@@ -23,51 +19,29 @@ import {
   IconMessageSquare,
   IconMap,
   IconFileText,
-  IconTarget,
 } from '@/components/icons';
-import {
-  COACH_TEAM_TABS,
-  COACH_STATS_TABS,
-  COACH_DEVELOPMENT_TABS,
-  COACH_MANAGEMENT_TABS,
-  COACH_ACADEMICS_TABS,
-  COACH_RECRUITING_TABS,
-  COACH_HUB_ORDER,
-  COACH_HUB_DEFS,
-  PLAYER_STATS_TABS,
-  PLAYER_DEVELOPMENT_TABS,
-  PLAYER_TEAM_TABS,
-  PLAYER_RECRUITING_TABS,
-} from '@/app/baseball/(dashboard)/_components/hub-definitions';
-import { TeamSwitcher } from './team-switcher';
-import { useTeams } from '@/hooks/use-teams';
-import { usePlayerTeams } from '@/hooks/use-player-teams';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { Button } from '@/components/ui/button';
-import {
-  getVisibleBaseballNav,
-  getBaseballTerminology,
-  BASEBALL_MESSAGES_NAV,
-  type BaseballNavContext,
-} from '@/lib/baseball/nav-registry';
-import {
-  filterHubTabsByCapabilities,
-  filterHubTabsByProgramType,
-} from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
 
 // =============================================================================
-// GROUPED-HUBS NAVIGATION (approved 2026-06-24)
+// GOLF-ONLY SIDEBAR (post BaseballHelm shell unification, Coherence Ruling
+// 2026-07-08 — see docs/baseball/COHERENCE_RULING_2026-07-08.md Ruling 1)
 //
-// The old flat 11–13 sidebar tabs are condensed into a handful of top-level HUBS.
-// Each hub is ONE sidebar item that lands on its first child route; the hub's own
-// sub-tab strip (rendered by BaseballDashboardShell via HubSubNav) then exposes
-// the leaf routes. `hubPrefixes` lists every route inside the hub so the sidebar
-// item lights active whenever ANY of the hub's leaves is the current page. The
-// hub tab lists themselves live in the single-source-of-truth hub-definitions.
+// This component historically rendered BOTH GolfHelm's flat nav AND
+// BaseballHelm's "Grouped-Hubs" nav (a condensed set of top-level hubs, each
+// landing on its first child route, with a sub-tab strip rendered by the
+// legacy `BaseballDashboardShell`). The baseball hub-building logic (5 legacy
+// coach-type nav arrays, `buildCondensedBaseballNavigation`, the showcase
+// org/team split, and every other baseball-only branch) has been deleted —
+// BaseballHelm now renders through `BaseballFairwayShell.tsx`, which owns its
+// own parallel nav-section builders (`buildCoachHubSections` /
+// `buildPlayerNavSections` / `buildShowcaseOrgSections` /
+// `buildShowcaseTeamSections`) and never imports this file.
 //
-// ADDITIVE: every existing leaf route still works; the hubs add a layer above
-// them. The sidebar's dark styling is unchanged — only the top-level item set is.
+// The `isGolf` branch below is preserved byte-identical. Only the golf nav
+// array (`golfCoachNav`) and the generic rendering scaffolding it needs
+// remain.
 // =============================================================================
 
 type SidebarHubItem = {
@@ -78,148 +52,6 @@ type SidebarHubItem = {
   /** Route prefixes that mark this hub item active (defaults to [href]). */
   hubPrefixes?: string[];
 };
-
-/** Collect every route a hub owns (each tab's href + matchPrefixes). */
-function hubPrefixesFrom(
-  tabs: readonly { href: string; matchPrefixes?: readonly string[] }[],
-): string[] {
-  return tabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]);
-}
-
-// --- Coach hub item builders (one shared set; landing differs by program mode) ---
-const COACH_TEAM_HUB: SidebarHubItem = {
-  name: 'Team',
-  href: COACH_TEAM_TABS[0]!.href,
-  icon: IconUsers,
-  hubPrefixes: hubPrefixesFrom(COACH_TEAM_TABS),
-};
-const COACH_STATS_HUB: SidebarHubItem = {
-  name: 'Stats',
-  href: COACH_STATS_TABS[0]!.href,
-  icon: IconChartBar,
-  hubPrefixes: hubPrefixesFrom(COACH_STATS_TABS),
-};
-const COACH_DEVELOPMENT_HUB: SidebarHubItem = {
-  name: 'Development',
-  href: COACH_DEVELOPMENT_TABS[0]!.href,
-  icon: IconTarget,
-  hubPrefixes: hubPrefixesFrom(COACH_DEVELOPMENT_TABS),
-};
-const COACH_MANAGEMENT_HUB: SidebarHubItem = {
-  name: 'Management',
-  href: COACH_MANAGEMENT_TABS[0]!.href,
-  icon: IconBuilding,
-  hubPrefixes: hubPrefixesFrom(COACH_MANAGEMENT_TABS),
-};
-const COACH_ACADEMICS_HUB: SidebarHubItem = {
-  name: 'Academics',
-  href: COACH_ACADEMICS_TABS[0]!.href,
-  icon: IconGraduationCap,
-  hubPrefixes: hubPrefixesFrom(COACH_ACADEMICS_TABS),
-};
-const COACH_RECRUITING_HUB: SidebarHubItem = {
-  name: 'Recruiting',
-  href: COACH_RECRUITING_TABS[0]!.href,
-  icon: COACH_HUB_DEFS.recruiting.icon,
-  hubPrefixes: hubPrefixesFrom(COACH_RECRUITING_TABS),
-};
-// Messages — persistent cross-cutting slot (golf-style), never a hub sub-tab.
-// Deliberately outside BASEBALL_NAV_REGISTRY (see nav-registry.ts), so every
-// nav consumer injects it explicitly; this is the shared literal both the
-// condensed (8-tab) nav and the legacy showcase org nav inject.
-const COACH_MESSAGES_ITEM: SidebarHubItem = {
-  name: BASEBALL_MESSAGES_NAV.label,
-  href: BASEBALL_MESSAGES_NAV.href,
-  icon: IconMessage,
-  badge: true,
-};
-
-// College Coach — grouped hubs. This fallback must mirror the navContext-driven
-// condensed builder closely enough that the shell never flashes the old IA while
-// navContext is resolving.
-const collegeTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
-  COACH_MESSAGES_ITEM,
-  COACH_TEAM_HUB,
-  COACH_STATS_HUB,
-  COACH_DEVELOPMENT_HUB,
-  COACH_RECRUITING_HUB,
-  COACH_MANAGEMENT_HUB,
-];
-
-// HS Coach — same hubs, HS-specific dashboard landing.
-const hsCoachTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
-  COACH_MESSAGES_ITEM,
-  COACH_TEAM_HUB,
-  COACH_STATS_HUB,
-  COACH_DEVELOPMENT_HUB,
-  COACH_MANAGEMENT_HUB,
-];
-
-// JUCO Coach — includes Recruiting + Academics.
-const jucoTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
-  COACH_MESSAGES_ITEM,
-  COACH_TEAM_HUB,
-  COACH_STATS_HUB,
-  COACH_DEVELOPMENT_HUB,
-  COACH_RECRUITING_HUB,
-  COACH_ACADEMICS_HUB,
-  COACH_MANAGEMENT_HUB,
-];
-
-// Showcase Coach - Organization Mode (manages multiple teams). Showcase keeps its
-// org-level surfaces at the top level; the per-team hubs appear once a team is
-// selected (showcaseTeamNav below).
-const showcaseOrgNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
-  { name: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
-  { name: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
-  COACH_MESSAGES_ITEM,
-];
-
-// Showcase Coach - Team-specific hubs (shown when a team is selected).
-const showcaseTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
-  COACH_MESSAGES_ITEM,
-  COACH_TEAM_HUB,
-  COACH_STATS_HUB,
-  COACH_DEVELOPMENT_HUB,
-];
-
-// Player — grouped hubs: Dashboard, My Profile, My Stats hub, Development hub,
-// Calendar, Messages, and a Team hub (Announcements / Tasks / Documents).
-const playerTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/player/today', icon: IconHome },
-  { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
-  {
-    name: 'My Stats',
-    href: PLAYER_STATS_TABS[0]!.href,
-    icon: IconChartBar,
-    hubPrefixes: hubPrefixesFrom(PLAYER_STATS_TABS),
-  },
-  {
-    name: 'Development',
-    href: PLAYER_DEVELOPMENT_TABS[0]!.href,
-    icon: IconTarget,
-    hubPrefixes: hubPrefixesFrom(PLAYER_DEVELOPMENT_TABS),
-  },
-  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-  {
-    name: 'Team',
-    href: PLAYER_TEAM_TABS[0]!.href,
-    icon: IconUsers,
-    hubPrefixes: hubPrefixesFrom(PLAYER_TEAM_TABS),
-  },
-  {
-    name: 'Recruiting',
-    href: PLAYER_RECRUITING_TABS[0]!.href,
-    icon: COACH_HUB_DEFS.recruiting.icon,
-    hubPrefixes: hubPrefixesFrom(PLAYER_RECRUITING_TABS),
-  },
-];
 
 // Golf Coach navigation (flat — golf keeps its own nav model; unchanged).
 const golfCoachNav: SidebarHubItem[] = [
@@ -251,101 +83,13 @@ const playerSecondaryNav = [
  * prefix, since every nested route starts with the dashboard root).
  */
 const EXACT_MATCH_HREFS = new Set<string>([
-  '/baseball/dashboard',
-  '/baseball/dashboard/command-center',
-  '/baseball/player/today',
-  '/baseball/dashboard/organization',
   '/golf/dashboard',
 ]);
-
-const RECRUITING_PROGRAM_TYPES = new Set(['college', 'juco', 'showcase', 'academy', 'club']);
-
-/**
- * The condensed 8-tab coach nav (COACH_NAV_8TAB_PROPOSAL.md, approved
- * 2026-07-01): Dashboard, Team, Messages, Stats & Performance, Development,
- * Recruiting, Academics, Management. GROUPED BY `entry.hub` (via
- * COACH_HUB_ORDER / COACH_HUB_DEFS in hub-definitions.ts, itself derived from
- * BASEBALL_NAV_REGISTRY) — this function never hand-lists a hub's member
- * routes, so a new registry entry tagged with an existing `hub` is picked up
- * automatically, with no risk of re-orphaning a feature from the sidebar.
- */
-function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubItem[] {
-  if (ctx.role === 'player') {
-    return [
-      { name: 'Today', href: '/baseball/player/today', icon: IconHome },
-      { name: 'Schedule', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-      {
-        name: 'My Stats',
-        href: PLAYER_STATS_TABS[0]!.href,
-        icon: IconChartBar,
-        hubPrefixes: hubPrefixesFrom(PLAYER_STATS_TABS),
-      },
-      {
-        name: 'Development',
-        href: PLAYER_DEVELOPMENT_TABS[0]!.href,
-        icon: IconTarget,
-        hubPrefixes: hubPrefixesFrom(PLAYER_DEVELOPMENT_TABS),
-      },
-      {
-        name: 'Team',
-        href: PLAYER_TEAM_TABS[0]!.href,
-        icon: IconUsers,
-        hubPrefixes: hubPrefixesFrom(PLAYER_TEAM_TABS),
-      },
-      {
-        name: getBaseballTerminology(ctx).exposureNoun,
-        href: PLAYER_RECRUITING_TABS[0]!.href,
-        icon: COACH_HUB_DEFS.recruiting.icon,
-        hubPrefixes: hubPrefixesFrom(PLAYER_RECRUITING_TABS),
-      },
-      { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-      { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
-    ];
-  }
-
-  const items: SidebarHubItem[] = [];
-
-  for (const hubId of COACH_HUB_ORDER) {
-    const def = COACH_HUB_DEFS[hubId];
-
-    // Recruiting/Academics are MODE-gated (RECRUITING_PROGRAM_TYPES / JUCO-only),
-    // not just capability-gated — checked up front so a recruiting-ineligible
-    // program type never shows the hub, even if a member id happens to also be
-    // capability-visible.
-    if (hubId === 'recruiting' && !(ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType))) {
-      continue;
-    }
-
-    // Every hub hides itself when NO tab is visible for this coach. Use the
-    // same filters as the shell-level HubSubNav resolver, not just registry
-    // ids: several important sub-tabs (Games, Season, settings supplements)
-    // are intentionally not registry entries but still own real routes.
-    const capFiltered = filterHubTabsByCapabilities(def.tabs, 'coach', ctx.capabilities);
-    const visibleTabs = filterHubTabsByProgramType(capFiltered, ctx.programType);
-    if (visibleTabs.length === 0) continue;
-
-    items.push({
-      name: hubId === 'recruiting' ? getBaseballTerminology(ctx).exposureNoun : def.label,
-      href: visibleTabs[0]!.href,
-      icon: def.icon,
-      hubPrefixes: visibleTabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]),
-    });
-
-    // Messages: persistent cross-cutting slot (golf-style), injected right
-    // after Dashboard — never a hub sub-tab (nav-registry.ts: "messages lives
-    // outside this set").
-    if (hubId === 'dashboard') items.push(COACH_MESSAGES_ITEM);
-  }
-
-  return items;
-}
 
 /**
  * Whether a top-level (hub or flat) sidebar item is active for the current path.
  * A hub item lights when the pathname matches its href OR any route inside the
- * hub (`hubPrefixes`); home/dashboard items match exactly. Settings is excluded
- * from the Management hub's prefixes when it would collide with the secondary
- * Settings link (handled by the secondary nav's own active state).
+ * hub (`hubPrefixes`); home/dashboard items match exactly.
  */
 function isHubItemActive(item: SidebarHubItem, pathname: string): boolean {
   const prefixes = item.hubPrefixes ?? [item.href];
@@ -358,78 +102,30 @@ function isHubItemActive(item: SidebarHubItem, pathname: string): boolean {
 
 interface SidebarProps {
   isMobile?: boolean;
-  navContext?: BaseballNavContext;
 }
 
-export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
+export function Sidebar({ isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, coach, player, signOut } = useAuth();
   const { unreadCount } = useUnreadCount();
   const { collapsed, setCollapsed, setMobileOpen } = useSidebar();
 
-  // Use appropriate teams hook based on user role
-  const coachTeams = useTeams();
-  const playerTeams = usePlayerTeams();
-  const { hasMultipleTeams, selectedTeam } = user?.role === 'coach' ? coachTeams : playerTeams;
-
   // Determine sport-specific dashboard href based on pathname
   const isGolf = pathname.startsWith('/golf');
   const dashboardHref = isGolf ? '/golf/dashboard' : '/baseball/dashboard';
 
   // Determine navigation based on role, coach type, and mode
-  // ARCHIVED: Recruiting mode branches removed — all users see team mode only
   const getNavigation = (): SidebarHubItem[] => {
     if (isGolf) {
       return golfCoachNav;
-    }
-    if (navContext) {
-      return buildCondensedBaseballNavigation(navContext);
-    }
-    if (user?.role === 'coach') {
-      if (coach?.coach_type === 'college') {
-        return collegeTeamNav;
-      } else if (coach?.coach_type === 'juco') {
-        return jucoTeamNav;
-      } else if (coach?.coach_type === 'showcase') {
-        return showcaseOrgNav;
-      } else if (coach?.coach_type === 'high_school') {
-        return hsCoachTeamNav;
-      } else {
-        return hsCoachTeamNav;
-      }
-    } else if (user?.role === 'player') {
-      // ARCHIVED: All players now see team nav only — recruiting nav disabled
-      return playerTeamNav;
-    }
-    return collegeTeamNav;
-  };
-
-  const getTeamNavigation = () => {
-    if (coach?.coach_type === 'showcase' && selectedTeam) {
-      return showcaseTeamNav;
     }
     return [];
   };
 
   const navigation = getNavigation();
-  const teamNavigation = getTeamNavigation();
-  const secondaryNav = !isGolf && navContext
-    ? navContext.role === 'coach'
-      ? [{ name: 'Help', href: '/help', icon: IconHelp }]
-      : [
-          ...getVisibleBaseballNav(navContext)
-            .filter((entry) => entry.section === 'secondary')
-            .map((entry) => ({
-              name: entry.label,
-              href: entry.href,
-              icon: entry.icon,
-            })),
-          { name: 'Help', href: '/help', icon: IconHelp },
-        ]
-    : user?.role === 'coach' ? coachSecondaryNav : playerSecondaryNav;
+  const secondaryNav = user?.role === 'coach' ? coachSecondaryNav : playerSecondaryNav;
   const displayName = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
-  const isShowcaseCoach = coach?.coach_type === 'showcase';
   const subtitle = coach ? ((coach.organization as { name?: string })?.name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : '');
 
   const handleNavClick = () => {
@@ -560,24 +256,10 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
           overscrollBehavior: 'contain',
         }}
       >
-        {/* ARCHIVED: Recruiting mode toggle hidden — re-enable when recruiting is ready */}
-        {/* {showModeToggle && !isCollapsed && (
-          <div className="mb-4 px-1 animate-fade-in">
-            <ModeToggle currentMode={currentMode} onModeChange={handleModeChange} />
-          </div>
-        )} */}
-
-        {/* Team Switcher */}
-        {(isShowcaseCoach || (user?.role === 'player' && hasMultipleTeams)) && hasMultipleTeams && (
-          <TeamSwitcher collapsed={isCollapsed} />
-        )}
-
         {/* Section Label */}
         {!isCollapsed && (
           <p className="px-3 py-2 text-label font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
-            {user?.role === 'coach'
-              ? (coach?.coach_type === 'showcase' ? 'Organization' : 'Team')
-              : 'Team'}
+            Team
           </p>
         )}
 
@@ -635,58 +317,6 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
             );
           })}
         </ul>
-
-        {/* Team-specific navigation for Showcase Coaches */}
-        {isShowcaseCoach && selectedTeam && teamNavigation.length > 0 && (
-          <>
-            {/* Divider */}
-            <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            {!isCollapsed && (
-              <p className="px-3 py-2 text-label font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap overflow-hidden">
-                {selectedTeam.name}
-              </p>
-            )}
-            <ul className="space-y-0.5">
-              {teamNavigation.map((item) => {
-                const isActive = isHubItemActive(item, pathname);
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      onClick={handleNavClick}
-                      title={isCollapsed ? item.name : undefined}
-                      className={cn(
-                        'flex items-center gap-3 py-3 rounded-md text-body-sm font-medium min-h-[44px]',
-                        'transition-colors duration-150 ease-out',
-                        isActive
-                          ? 'bg-warm-50/10 text-primary-400 border-l-[3px] border-primary-500 nav-item-active'
-                          : 'text-white/60 hover:bg-warm-50/5 active:bg-warm-50/10 hover:text-white/90',
-                        isCollapsed ? 'justify-center px-2' : 'px-3'
-                      )}
-                    >
-                      <item.icon
-                        size={18}
-                        aria-hidden="true"
-                        className={cn(
-                          'flex-shrink-0 transition-colors',
-                          isActive ? 'text-primary-400 nav-item-active-icon' : 'text-white/50'
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          'whitespace-nowrap transition-opacity duration-300',
-                          isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-                        )}
-                      >
-                        {item.name}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
 
         {/* Divider */}
         <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -751,7 +381,7 @@ export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
         >
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium text-white">Free Plan</span>
-            
+
           </div>
           <div className="text-xs text-white/50">Free for all teams</div>
         </div>
