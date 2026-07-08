@@ -33,6 +33,11 @@ import type { Json } from '@/lib/types';
 
 const GROUPS_PATH = '/lifting/dashboard/groups';
 
+// Baseball Wave C renders these same helm_lifting_groups reads at
+// /baseball/dashboard/performance/groups (mirroring the pattern in
+// programs.ts) — bust that portal's RSC cache alongside the lifting one.
+const BASEBALL_GROUPS_PATH = '/baseball/dashboard/performance/groups';
+
 // -----------------------------------------------------------------------------
 // Shared result
 // -----------------------------------------------------------------------------
@@ -158,6 +163,7 @@ export const createGroup = withLiftingAction(
     }
 
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true, id: groupId };
   },
 );
@@ -195,6 +201,7 @@ export const updateGroup = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true, id: input.groupId };
   },
 );
@@ -231,6 +238,7 @@ export const deleteGroup = withLiftingAction(
       .is('ends_at', null);
 
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true };
   },
 );
@@ -277,6 +285,7 @@ export const addGroupMember = withLiftingAction(
       }
       // Already active — no-op.
       revalidatePath(GROUPS_PATH);
+      revalidatePath(BASEBALL_GROUPS_PATH);
       return { success: true, id: existing.id };
     }
 
@@ -294,6 +303,7 @@ export const addGroupMember = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -324,6 +334,7 @@ export const removeGroupMember = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true };
   },
 );

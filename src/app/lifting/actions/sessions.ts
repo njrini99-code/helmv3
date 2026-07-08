@@ -36,6 +36,20 @@ import type {
 const SESSIONS_PATH = '/lifting/dashboard/sessions';
 const LIVE_PATH = '/lifting/dashboard/sessions/live';
 
+// Baseball Wave C renders the staff live-room read at
+// /baseball/dashboard/performance/live and the per-session player detail at
+// /baseball/dashboard/lift/[sessionId] (mirroring the pattern in
+// programs.ts / groups.ts) — bust both alongside the lifting-portal paths so
+// a staff edit here doesn't leave the baseball portal serving stale session
+// state. The bracket-pattern + 'page' type revalidates every session id in
+// one call (same convention as revalidatePath('/golf/dashboard/rounds/[id]/
+// review', 'page') in golf/actions/round-reviews.ts) — cheaper and safer
+// than resolving one id per mutation site, several of which only have the
+// session_exercise's parent session_id in scope, not a bound `sessionId`.
+const BASEBALL_LIVE_PATH = '/baseball/dashboard/performance/live';
+const BASEBALL_LIFT_PATH = '/baseball/dashboard/lift';
+const BASEBALL_LIFT_SESSION_PATH = '/baseball/dashboard/lift/[sessionId]';
+
 // -----------------------------------------------------------------------------
 // Shared result
 // -----------------------------------------------------------------------------
@@ -220,6 +234,9 @@ export const advanceSessionLifecycle = withLiftingAction(
     if (error) throw error;
     revalidatePath(SESSIONS_PATH);
     revalidatePath(LIVE_PATH);
+    revalidatePath(BASEBALL_LIVE_PATH);
+    revalidatePath(BASEBALL_LIFT_PATH);
+    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
     return { success: true, id: sessionId };
   },
 );
@@ -261,6 +278,9 @@ export const addSessionNote = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(SESSIONS_PATH);
+    revalidatePath(BASEBALL_LIVE_PATH);
+    revalidatePath(BASEBALL_LIFT_PATH);
+    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
     return { success: true, id: sessionId };
   },
 );
@@ -320,6 +340,9 @@ export const modifySectionForAthlete = withLiftingAction(
       .eq('organization_id', ctx.orgId);
 
     revalidatePath(LIVE_PATH);
+    revalidatePath(BASEBALL_LIVE_PATH);
+    revalidatePath(BASEBALL_LIFT_PATH);
+    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
     return { success: true, id: input.sessionExerciseId };
   },
 );
@@ -399,6 +422,9 @@ export const logSetResult = withLiftingAction(
       .eq('status', 'assigned');
 
     revalidatePath(LIVE_PATH);
+    revalidatePath(BASEBALL_LIVE_PATH);
+    revalidatePath(BASEBALL_LIFT_PATH);
+    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
     return { success: true, id: (data as { id: string }).id };
   },
 );

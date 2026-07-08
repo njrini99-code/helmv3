@@ -39,6 +39,7 @@ import {
   type SourceRef,
 } from '@/lib/baseball/source-record';
 import {
+  isoMinusDays,
   localDayBoundsUtc,
   resolveTeamTimezone,
   todayIsoInTz,
@@ -247,14 +248,20 @@ export async function getCommandCenter(
   let weekStartIso: string | null = null;
   let weekEndIso: string | null = null;
   if (includeWeekEvents) {
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 7);
-    weekStartIso = weekStart.toISOString();
-    weekEndIso = weekEnd.toISOString();
+    // Team-local Sunday–Saturday week window anchored on the same team-local
+    // "today" (`day`) computed above. The previous server-local `new Date()` +
+    // `.getDay()`/`.setDate()` computed the week boundary from the server's
+    // wall clock (effectively UTC in prod), drifting the week start by a day
+    // for non-UTC teams near local midnight — same bug the day window above
+    // was fixed for. Bare calendar-date arithmetic (`getUTCDay`/`isoMinusDays`)
+    // is tz-independent (Sunday is Sunday regardless of clock), then
+    // `localDayBoundsUtc` anchors the actual UTC instant boundaries in
+    // team-local time, mirroring the day-window pattern above.
+    const dayOfWeek = new Date(`${day}T00:00:00.000Z`).getUTCDay(); // 0=Sun..6=Sat
+    const weekStartDateIso = isoMinusDays(day, dayOfWeek);
+    const weekEndDateIso = isoMinusDays(weekStartDateIso, -7);
+    weekStartIso = localDayBoundsUtc(weekStartDateIso, teamTz).startUtcIso;
+    weekEndIso = localDayBoundsUtc(weekEndDateIso, teamTz).startUtcIso;
   }
 
   // NOTE: baseball_player_aggregates has FKs to baseball_players and

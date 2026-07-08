@@ -52,6 +52,16 @@ import type {
 
 const LAB_PATH = '/lifting/dashboard/programs';
 
+// Baseball Wave C now renders these same helm_lifting_* reads at parallel
+// baseball routes (src/app/baseball/(dashboard)/dashboard/performance/...),
+// so every mutation here must also bust the baseball portal's RSC cache —
+// otherwise a coach editing a program from /lifting sees it update, but the
+// same org's baseball staff at /baseball/dashboard/performance/programs keep
+// serving stale data until the next unrelated navigation.
+const BASEBALL_PROGRAMS_PATH = '/baseball/dashboard/performance/programs';
+const BASEBALL_LIVE_PATH = '/baseball/dashboard/performance/live';
+const BASEBALL_LIFT_PATH = '/baseball/dashboard/lift';
+
 // -----------------------------------------------------------------------------
 // Shared result shape
 // -----------------------------------------------------------------------------
@@ -139,6 +149,7 @@ export const createProgram = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(LAB_PATH);
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -192,6 +203,8 @@ export const updateProgram = withLiftingAction(
     if (error) throw error;
     revalidatePath(`${LAB_PATH}/${programId}`);
     revalidatePath(LAB_PATH);
+    revalidatePath(`${BASEBALL_PROGRAMS_PATH}/${programId}`);
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
     return { success: true, id: programId };
   },
 );
@@ -263,6 +276,7 @@ export const deleteProgram = withLiftingAction(
       .eq('organization_id', ctx.orgId);
 
     revalidatePath(LAB_PATH);
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
     return { success: true };
   },
 );
@@ -579,6 +593,9 @@ export const publishProgram = withLiftingAction(
 
     revalidatePath(LAB_PATH);
     revalidatePath('/lifting/dashboard/sessions');
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    revalidatePath(BASEBALL_LIVE_PATH);
+    revalidatePath(BASEBALL_LIFT_PATH);
     return { success: true, count: sessionCount };
   },
 );
@@ -707,6 +724,7 @@ export const addLiftWeek = withLiftingAction(
       .single();
     if (error) throw error;
     revalidatePath(LAB_PATH);
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -735,6 +753,7 @@ export const addLiftDay = withLiftingAction(
       .single();
     if (error) throw error;
     revalidatePath(LAB_PATH);
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -762,6 +781,7 @@ export const addLiftSection = withLiftingAction(
       .single();
     if (error) throw error;
     revalidatePath(LAB_PATH);
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -800,6 +820,7 @@ export const addLiftPrescription = withLiftingAction(
       .single();
     if (error) throw error;
     revalidatePath(LAB_PATH);
+    revalidatePath(BASEBALL_PROGRAMS_PATH);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -1106,7 +1127,10 @@ export const duplicateLiftDay = withLiftingAction(
       .select('program_id').eq('id', weekId).maybeSingle() as {
         data: { program_id?: string } | null
       };
-    if (wk?.program_id) revalidatePath(`${LAB_PATH}/${wk.program_id}`);
+    if (wk?.program_id) {
+      revalidatePath(`${LAB_PATH}/${wk.program_id}`);
+      revalidatePath(`${BASEBALL_PROGRAMS_PATH}/${wk.program_id}`);
+    }
     return { success: true, id: newDayId };
   },
 );
@@ -1179,6 +1203,7 @@ export const duplicateLiftWeek = withLiftingAction(
     }
 
     revalidatePath(`${LAB_PATH}/${src.program_id}`);
+    revalidatePath(`${BASEBALL_PROGRAMS_PATH}/${src.program_id}`);
     return { success: true, id: newWeekId };
   },
 );
