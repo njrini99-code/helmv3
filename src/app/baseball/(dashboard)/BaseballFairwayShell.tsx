@@ -2,39 +2,32 @@
 
 /**
  * ============================================================================
- * BaseballFairwayShell  (ADDITIVE · FLAG-GATED) — Fairway migration Phase A
+ * BaseballFairwayShell — the ONE dashboard frame for BaseballHelm
  * ----------------------------------------------------------------------------
- * The flag-ON dashboard frame for the generic `/baseball/(dashboard)` route
- * group. Mirrors GolfHelm's `FairwayDashboardShell` playbook exactly: a full,
- * standalone replacement for the legacy shell composition (not a wrapper
- * around it) that renders the shared Fairway `<AppShell>` — the warm-black
- * recessive rail on desktop, a slide-in glass drawer on mobile, the one glass
- * top bar — in place of the legacy `BaseballDashboardShell`.
+ * Mounted unconditionally by the generic `/baseball/(dashboard)` and
+ * `/baseball/player` route-group layouts (Coherence Ruling 1, 2026-07-08 —
+ * see docs/baseball/COHERENCE_RULING_2026-07-08.md). Mirrors GolfHelm's
+ * `FairwayDashboardShell` playbook: renders the shared Fairway `<AppShell>` —
+ * the warm-black recessive rail on desktop, a slide-in glass drawer on
+ * mobile, the one glass top bar.
  *
  * PRESENTATION ONLY. No server actions, no RLS, no new reads beyond what the
  * existing baseball auth/nav hooks already resolve:
- *   - useBaseballAuth(requiredRole) — the SAME session/onboarding gate
- *     BaseballShellLayout uses for each mounted route group.
+ *   - useBaseballAuth(requiredRole) — the SAME session/onboarding gate every
+ *     mounted route group uses.
  *   - useBaseballNavContext()      — the SAME server-resolved capability map
- *     (nav-context.ts), so capability-gated verticals never fail-closed here
- *     when they wouldn't in the legacy shell.
+ *     (nav-context.ts), so capability-gated verticals never fail-closed here.
  *   - getVisibleBaseballNav()      — the #383 capability-gated nav-registry
  *     single source of truth (nav-registry.ts). NavSections are built from
  *     this, never a hardcoded route list, so this shell can't drift from (or
- *     duplicate) what Sidebar / MobileBottomNav / CommandPalette already read.
+ *     duplicate) what MobileBottomNav / CommandPalette already read.
  *
- * PROVIDER STACK — kept VERBATIM from BaseballShellLayout (the shared
- * composition point for all three BaseballHelm shell route groups): the same
- * SidebarProvider > SessionActivityProvider > LastSeenUpdater >
- * PeekPanelProvider nesting, unchanged. BaseballShellLayout.tsx itself is not
- * imported or edited — this file is a parallel, full duplicate of that
- * composition (same reason GolfHelm's FairwayDashboardShell duplicates
- * GolfDashboardShell's stack rather than wrapping it).
+ * PROVIDER STACK: SidebarProvider > SessionActivityProvider > LastSeenUpdater
+ * > PeekPanelProvider — the same nesting the legacy `BaseballShellLayout` /
+ * `BaseballDashboardShell` composition used before it was deleted (Ruling 1 /
+ * Ruling 5). This file is the sole surviving shell for BaseballHelm.
  *
- * Mounted ONLY behind isRedesignEnabled() in the Baseball dashboard/player
- * route-group layouts. Flag OFF renders the legacy `BaseballShellLayout` →
- * `BaseballDashboardShell`, byte-for-byte unchanged.
- *
+
  * The AppShell drawer (`mobileOpen`) is BRIDGED to the SAME SidebarContext
  * every legacy baseball page's own menu button already calls `setMobileOpen`
  * against, so a not-yet-migrated page opens the SAME drawer. One nav surface,
@@ -564,15 +557,15 @@ function BaseballFairwayContent({
         </div>
       </AppShell>
 
-      {/* Same global the legacy BaseballDashboardShell mounts unconditionally. */}
+      {/* The one global CommandPalette mount for the whole shell. */}
       <CommandPalette navContext={ctx} />
     </div>
   );
 }
 
 /**
- * Exported shell — full standalone replacement for BaseballShellLayout (auth
- * gate + provider stack + shell), rendering the Fairway AppShell frame.
+ * Exported shell — auth gate + provider stack + shell, rendering the Fairway
+ * AppShell frame. The only shell BaseballHelm renders.
  */
 export function BaseballFairwayShell({
   children,
@@ -583,10 +576,9 @@ export function BaseballFairwayShell({
   authVerified?: boolean;
   requiredRole?: Role | null;
 }) {
-  // SAME auth gate BaseballShellLayout uses for the mounted route group.
+  // Session/onboarding gate for the mounted route group.
   const { loading, authorized, role } = useBaseballAuth(requiredRole);
-  // SAME server-resolved capability map (nav-context.ts) BaseballShellLayout
-  // passes into BaseballDashboardShell.
+  // Server-resolved capability map (nav-context.ts) driving the nav sections.
   const { navContext } = useBaseballNavContext();
 
   if (!authVerified && (loading || !authorized)) {
@@ -600,10 +592,8 @@ export function BaseballFairwayShell({
       <SessionActivityProvider>
         <LastSeenUpdater />
         {/* Render-null: fetches the program's brand + applies it as CSS vars /
-            data attrs on <html>. Mounted here too — this is a full parallel
-            duplicate of BaseballShellLayout's provider stack (not a wrapper),
-            so branding would otherwise silently die whenever the redesign
-            flag is on for this route group. */}
+            data attrs on <html> so persisted branding (settings/appearance)
+            actually takes visible effect. */}
         <BaseballProgramBrand />
         <PeekPanelProvider>
           <BaseballFairwayContent role={resolvedRole} navContext={navContext ?? undefined}>
