@@ -2,7 +2,6 @@
 
 import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { Loading } from '@/components/ui/loading';
 import { LazyConversationList, LazyChatWindow } from '@/lib/lazy-components';
 import { EmptyChatState } from '@/components/messages/EmptyChatState';
@@ -14,7 +13,6 @@ import { createConversation, getPlayerUserId } from '@/app/baseball/actions/mess
 import type { ConversationWithMeta } from '@/lib/types/messages';
 import { getParticipantDetails } from '@/lib/types/messages';
 import { MessagesFairway } from '@/components/baseball/messages/MessagesFairway';
-import { isRedesignEnabled } from '@/lib/redesign/flag';
 
 function MessagesContent() {
   const searchParams = useSearchParams();
@@ -169,88 +167,11 @@ function MessagesContent() {
     return success;
   };
 
-  if (isRedesignEnabled()) {
-    return (
-      <MessagesFairway
-        loading={conversationsLoading}
-        mobileShowChat={mobileShowChat}
-        listSlot={
-          <LazyConversationList
-            conversations={conversations as ConversationWithMeta[]}
-            selectedId={selectedConversationId}
-            currentUserId={user?.id || ''}
-            onSelect={handleSelectConversation}
-            onNewConversation={() => setShowNewMessageModal(true)}
-            className="h-full"
-          />
-        }
-        chatSlot={
-          selectedConversationId ? (
-            <LazyChatWindow
-              messages={messages}
-              participant={selectedParticipant}
-              currentUserId={user?.id || ''}
-              loading={messagesLoading}
-              onSend={handleSendMessage}
-              onBack={handleBack}
-              className="h-full"
-            />
-          ) : (
-            <EmptyChatState
-              onNewConversation={() => setShowNewMessageModal(true)}
-              className="h-full"
-            />
-          )
-        }
-        modalSlot={
-          <NewMessageModal
-            isOpen={showNewMessageModal}
-            onClose={() => setShowNewMessageModal(false)}
-            onSelect={handleNewConversation}
-            currentUserRole={currentUserRole}
-          />
-        }
-      />
-    );
-  }
-
-  if (conversationsLoading) {
-    return (
-      <div className="h-[calc(100dvh-64px)] flex bg-[#FAF6F1]">
-        {/* Conversation list skeleton */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200 bg-cream-50">
-          <div className="p-4 border-b border-warm-200">
-            <div className="h-10 bg-warm-100 rounded-lg animate-pulse" />
-          </div>
-          <div className="divide-y divide-warm-100">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="px-4 py-3 flex items-center gap-3 animate-pulse">
-                <div className="w-10 h-10 rounded-full bg-warm-200 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="h-4 bg-warm-200 rounded w-2/3 mb-2" />
-                  <div className="h-3 bg-warm-100 rounded w-4/5" />
-                </div>
-                <div className="h-3 bg-warm-100 rounded w-10" />
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Chat area skeleton */}
-        <div className="flex-1 hidden lg:flex items-center justify-center">
-          <Loading />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-[calc(100dvh-64px)] flex bg-[#FAF6F1]">
-      {/* Conversation List - Hidden on mobile when viewing chat */}
-      <div className={cn(
-        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200',
-        'transition-transform duration-300',
-        mobileShowChat && 'hidden lg:block'
-      )}>
+    <MessagesFairway
+      loading={conversationsLoading}
+      mobileShowChat={mobileShowChat}
+      listSlot={
         <LazyConversationList
           conversations={conversations as ConversationWithMeta[]}
           selectedId={selectedConversationId}
@@ -259,14 +180,9 @@ function MessagesContent() {
           onNewConversation={() => setShowNewMessageModal(true)}
           className="h-full"
         />
-      </div>
-
-      {/* Chat Window - Full width on mobile, split on desktop */}
-      <div className={cn(
-        'flex-1 min-w-0',
-        !mobileShowChat && 'hidden lg:block'
-      )}>
-        {selectedConversationId ? (
+      }
+      chatSlot={
+        selectedConversationId ? (
           <LazyChatWindow
             messages={messages}
             participant={selectedParticipant}
@@ -281,17 +197,17 @@ function MessagesContent() {
             onNewConversation={() => setShowNewMessageModal(true)}
             className="h-full"
           />
-        )}
-      </div>
-
-      {/* New Message Modal */}
-      <NewMessageModal
-        isOpen={showNewMessageModal}
-        onClose={() => setShowNewMessageModal(false)}
-        onSelect={handleNewConversation}
-        currentUserRole={currentUserRole}
-      />
-    </div>
+        )
+      }
+      modalSlot={
+        <NewMessageModal
+          isOpen={showNewMessageModal}
+          onClose={() => setShowNewMessageModal(false)}
+          onSelect={handleNewConversation}
+          currentUserRole={currentUserRole}
+        />
+      }
+    />
   );
 }
 

@@ -2,10 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { BaseballCalendarWrapper } from '@/components/baseball/calendar/BaseballCalendarWrapper';
 import { CalendarFairway } from '@/components/baseball/calendar/CalendarFairway';
-import { isRedesignEnabled } from '@/lib/redesign/flag';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
 
@@ -15,16 +12,6 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 60;
-
-const EVENT_TYPE_CONFIG: Record<string, { label: string; dot: string }> = {
-  game:     { label: 'Game',     dot: 'bg-blue-500' },
-  practice: { label: 'Practice', dot: 'bg-primary-500' },
-  camp:     { label: 'Camp',     dot: 'bg-purple-500' },
-  tryout:   { label: 'Tryout',   dot: 'bg-amber-500' },
-  meeting:  { label: 'Meeting',  dot: 'bg-warm-500' },
-  travel:   { label: 'Travel',   dot: 'bg-sky-500' },
-  other:    { label: 'Other',    dot: 'bg-warm-400' },
-};
 
 export default async function BaseballCalendarPage() {
   const supabase = await createClient();
@@ -218,63 +205,9 @@ export default async function BaseballCalendarPage() {
   // ── College coach with no team: recruiting-focused empty state ─────────────
 
   if (isCollegeCoach && !teamId) {
-    if (isRedesignEnabled()) {
-      return (
-        <CalendarFairway
-          recruitingEmpty
-          events={events}
-          teamMembers={teamMembers}
-          teamId={teamId}
-          isCoach={isCoach}
-          currentUserId={currentUserId}
-          upcomingEvents={upcomingEvents}
-          eventTypeCounts={eventTypeCounts}
-        />
-      );
-    }
-    return (
-      <div
-        className="h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] md:h-screen flex flex-col"
-        style={{
-          background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
-        }}
-      >
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-md w-full text-center">
-            {/* Calendar icon */}
-            <div className="mx-auto mb-6 w-16 h-16 rounded-2xl bg-primary-50 border border-primary-100 flex items-center justify-center">
-              <svg className="w-8 h-8 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-              </svg>
-            </div>
-
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">
-              Your recruiting calendar is empty
-            </h2>
-            <p className="text-sm text-warm-500 mb-8 leading-relaxed">
-              Camp visits and official visit windows will appear here as you schedule recruiting activity.
-            </p>
-
-            {/* CTA */}
-            <Link
-              href="/baseball/dashboard/discover"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-              Browse Prospects
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isRedesignEnabled()) {
     return (
       <CalendarFairway
-        recruitingEmpty={false}
+        recruitingEmpty
         events={events}
         teamMembers={teamMembers}
         teamId={teamId}
@@ -287,49 +220,15 @@ export default async function BaseballCalendarPage() {
   }
 
   return (
-    <div
-      className="h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] md:h-screen flex flex-col"
-      style={{
-        background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
-      }}
-    >
-      {/* Event summary strip — only shown when there's an upcoming event to
-          summarize. Gating on `upcomingEvents` (not `events.length`) matches
-          what the strip actually says: a team with only past events has
-          nothing "upcoming" to report, so showing "0 upcoming events ·"
-          with no badges after it would just be a second, quieter version of
-          the same contradiction this strip exists to avoid. */}
-      {upcomingEvents > 0 && (
-        <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-            <span className="text-sm font-medium text-warm-600 whitespace-nowrap">
-              {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
-            </span>
-            <span className="text-warm-300" aria-hidden="true">|</span>
-            {Object.entries(eventTypeCounts).map(([type, count]) => {
-              const cfg = EVENT_TYPE_CONFIG[type] ?? { label: type, dot: 'bg-warm-400' };
-              return (
-                <span key={type} className="flex items-center gap-1.5 text-xs text-warm-600 whitespace-nowrap">
-                  <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                  {count} {cfg.label}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Calendar — overflow-hidden is required so PremiumCalendarClient's h-full resolves correctly.
-          Golf's main is overflow-y-auto (which anchors heights); baseball's is not, so we add it here. */}
-      <div className="flex-1 p-4 md:p-6 pt-2 md:pt-2 min-h-0 overflow-hidden">
-        <BaseballCalendarWrapper
-          initialEvents={events}
-          teamMembers={teamMembers}
-          teamId={teamId}
-          isCoach={isCoach}
-          currentUserId={currentUserId}
-        />
-      </div>
-    </div>
+    <CalendarFairway
+      recruitingEmpty={false}
+      events={events}
+      teamMembers={teamMembers}
+      teamId={teamId}
+      isCoach={isCoach}
+      currentUserId={currentUserId}
+      upcomingEvents={upcomingEvents}
+      eventTypeCounts={eventTypeCounts}
+    />
   );
 }
