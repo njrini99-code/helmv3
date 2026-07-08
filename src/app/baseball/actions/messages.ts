@@ -67,7 +67,7 @@ async function getPlayerUserIdImpl(playerId: string): Promise<string | null> {
 /**
  * Coach-only: start (or resurface) a 1:1 conversation with a player, reached
  * from a player-profile surface (e.g. PlayerProfileCoachActions on
- * /baseball/dashboard/players/[id]/profile). This wraps the shared
+ * /baseball/dashboard/players/[id]). This wraps the shared
  * createBaseballConversation primitive — which itself only checks
  * supabase.auth.getUser(), no role/capability check — with a SERVER-SIDE
  * `can_message_players` capability enforcement via withBaseballAction.
