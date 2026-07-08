@@ -269,6 +269,12 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
 
   // --- Tests / contract fixtures ----------------------------------------------
   {
+    path: 'src/lib/baseball/read-models/__tests__/command-center.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note: 'Fake-supabase fixture mirrors command-center.ts (itself grandfathered above) including its baseball_player_aggregates join; migrates when the read-model does.',
+  },
+  {
     path: 'src/lib/baseball/__tests__/action-baseline.test.ts',
     group: 'test',
     status: 'pending migration',

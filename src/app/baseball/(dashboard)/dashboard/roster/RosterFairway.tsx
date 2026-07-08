@@ -91,9 +91,9 @@ const ALL = 'all';
 
 // ── Record-book roster wall (the `cards` surface) ───────────────────────────
 
-// EXIT V intentionally omitted — baseball_player_aggregates.avg_exit_velocity
-// does not exist in the live schema and has no write path (Ruling 4). Honest
-// UI over a dead column: don't render a stat that can never populate.
+// EXIT V intentionally omitted — the aggregates table carries no exit-velocity
+// column in the live schema and nothing writes one (Ruling 4). Honest UI over
+// a dead column: don't render a stat that can never populate.
 const WALL_COLUMNS = ['AVG', 'OBP', 'SLG', 'OPS', 'SESS'];
 
 function buildWallStats(agg: BaseballPlayerAggregates | undefined, leader: boolean): PlayerRowStat[] {
