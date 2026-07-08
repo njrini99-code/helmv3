@@ -11,17 +11,21 @@ Last updated: 2026-07-04
 
 ### Automatic builds
 
-| Branch | Vercel build | Deploy target |
-|--------|--------------|---------------|
-| `main` | **Yes** | Production |
-| All other branches | **No** | Skipped |
+**No git push auto-deploys — production is deployed intentionally, not on every merge.**
+
+| Branch | Vercel git auto-deploy |
+|--------|------------------------|
+| `main` | **No** — deploy manually when you ship a milestone |
+| All other branches | **No** — skipped |
+
+Production is updated on demand only: **Vercel dashboard → Deployments → Redeploy/Promote**, or `vercel --prod` from a trusted shell. Cron jobs keep running against the current production deployment regardless. To go back to auto-deploying `main` on every push, add `"main": true` under `git.deploymentEnabled` in `vercel.json`.
 
 ### How it is enforced (defense in depth)
 
-1. **`vercel.json` → `git.deploymentEnabled`** — only `main` is enabled; `"*": false` disables all other branches.
-2. **`vercel.json` → `ignoreCommand`** — runs `scripts/vercel-ignore-build.sh`:
-   - exit **1** → build proceeds (`main` only)
-   - exit **0** → skip build (every other branch)
+1. **`vercel.json` → `git.deploymentEnabled: { "*": false }`** — no branch (main included) triggers an automatic git deployment. Manual/CLI deploys and promotes are unaffected.
+2. **`vercel.json` → `ignoreCommand`** — `scripts/vercel-ignore-build.sh` is a secondary guard (skips non-`main`, builds `main`) that only takes effect if git deploys are ever re-enabled above.
+   - exit **1** → build proceeds
+   - exit **0** → skip build
 3. **Dashboard fallback** — if the project was linked before `ignoreCommand` synced, set **Project → Settings → Git → Ignored Build Step** to:
 
    ```bash
