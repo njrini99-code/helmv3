@@ -7,6 +7,7 @@ import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { TravelClient } from '@/components/baseball/travel';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 import {
   getTeamItineraries,
   type BaseballTravelItinerary,
@@ -112,10 +113,13 @@ export default function BaseballTravelPage() {
   if (!teamId) {
     return (
       <div className="mx-auto max-w-5xl p-4 md:p-6">
-        <h1 className="text-2xl font-bold tracking-tight text-warm-900">Travel</h1>
-        <div className="mt-8 glass-standard rounded-2xl p-10 text-center">
-          <h2 className="mb-2 text-lg font-semibold text-warm-900">No team found</h2>
-          <p className="text-warm-500">You must be on a team to access travel itineraries.</p>
+        <SectionMasthead eyebrow="THE PRESSBOX · TRAVEL" title="Travel" ink="team" />
+        <div className="mt-8">
+          <EditorsLetter
+            ink="team"
+            title="No team found"
+            body="You must be on a team to access travel itineraries."
+          />
         </div>
       </div>
     );
@@ -124,7 +128,7 @@ export default function BaseballTravelPage() {
   if (loadError) {
     return (
       <div className="mx-auto max-w-5xl p-4 md:p-6">
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-warm-900">Travel</h1>
+        <SectionMasthead eyebrow="THE PRESSBOX · TRAVEL" title="Travel" ink="team" className="mb-6" />
         <ReadModelStateNotice
           state="error"
           title="Travel unavailable"

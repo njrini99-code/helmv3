@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getAnnouncementsWithMeta } from '@/app/baseball/actions/announcements';
 import { AnnouncementsFairway } from '@/components/baseball/announcements/AnnouncementsFairway';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
+import { SectionMasthead } from '@/components/baseball/living-annual';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
 
@@ -95,7 +96,7 @@ export default function BaseballAnnouncementsPage() {
   if (loadError) {
     return (
       <div className={fairwayScope('mx-auto max-w-5xl p-4 md:p-6')}>
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-warm-900">Announcements</h1>
+        <SectionMasthead eyebrow="THE PRESSBOX · ANNOUNCEMENTS" title="Announcements" ink="team" className="mb-6" />
         <ReadModelStateNotice
           state="error"
           title="Announcements unavailable"
