@@ -28,16 +28,22 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 type WrapperProps = ComponentProps<typeof BaseballCalendarWrapper>;
 
-/** Event-type → label + Fairway status tone for the summary strip. */
+/** Event-type → singular label + Fairway status tone for the summary strip. */
 const EVENT_TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
-  game: { label: 'Game', tone: 'info' },
-  practice: { label: 'Practice', tone: 'accent' },
-  camp: { label: 'Camp', tone: 'warning' },
-  tryout: { label: 'Tryout', tone: 'warning' },
-  meeting: { label: 'Meeting', tone: 'neutral' },
-  travel: { label: 'Travel', tone: 'info' },
-  other: { label: 'Other', tone: 'neutral' },
+  game: { label: 'game', tone: 'info' },
+  practice: { label: 'practice', tone: 'accent' },
+  camp: { label: 'camp', tone: 'warning' },
+  tryout: { label: 'tryout', tone: 'warning' },
+  meeting: { label: 'meeting', tone: 'neutral' },
+  travel: { label: 'travel event', tone: 'info' },
+  other: { label: 'other', tone: 'neutral' },
 };
+
+/** Pluralize a singular event-type label for the count badge ("1 game" / "3 games"). */
+function pluralizeEventLabel(label: string, count: number): string {
+  if (count === 1) return label;
+  return label.endsWith('s') ? label : `${label}s`;
+}
 
 // Preserve the legacy full-height flex shell so PremiumCalendarClient's h-full
 // resolves; only the gradient background is swapped for the Fairway canvas.
@@ -109,7 +115,7 @@ export function CalendarFairway({
               };
               return (
                 <StatusPill key={type} tone={meta.tone} size="sm" dot>
-                  {count} {meta.label}
+                  {count} {pluralizeEventLabel(meta.label, count)}
                 </StatusPill>
               );
             })}

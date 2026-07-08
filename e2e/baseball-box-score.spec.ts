@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { createClient } from '@supabase/supabase-js';
 import { loginAsCoach, loginAsPlayer } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
@@ -23,10 +24,13 @@ import { waitForPageLoad } from './helpers/common';
  * including `status`), per the "destructive tests rely on seed reset"
  * pattern used throughout this fixture.
  *
- * The "create game" test adds one extra (non-seeded) game row each run —
- * there is currently no reachable delete affordance in the UI (GamesList's
- * delete button is shipped with a permanent `hidden` class), so this is a
- * known, documented trade-off rather than an oversight. See e2e/README.md.
+ * The "create game" test adds one extra (non-seeded) game row each run.
+ * `GamesList`'s delete button is still shipped with a permanent `hidden`
+ * class, so there is no reachable UI delete affordance — cleanup instead
+ * happens directly against the database: a `test.afterAll` below deletes
+ * every `baseball_games` row (+ its linked `baseball_events` row) this file
+ * created, via the same service-role client construction
+ * `scripts/seed-baseball-e2e.ts` uses for seeding. See e2e/README.md.
  *
  * Gated on PLAYWRIGHT_BASEBALL_SEEDED=1, with a per-test self-skip if the
  * login fixture is unavailable in the target environment — same pattern as
@@ -41,6 +45,23 @@ const SEEDED =
 
 const SCHEDULED_OPPONENT = 'Riverside University';
 const COMPLETED_OPPONENT = 'Eastview College';
+
+/**
+ * Service-role Supabase client for teardown-only writes (deleting rows this
+ * spec itself created). Same construction pattern as
+ * `scripts/seed-baseball-e2e.ts` — `NEXT_PUBLIC_SUPABASE_URL` +
+ * `SUPABASE_SERVICE_ROLE_KEY`, session-less. Returns `null` (teardown
+ * becomes a no-op) rather than throwing when either env var is missing —
+ * cleanup must never fail an otherwise-passing run, and CI only exports
+ * `PLAYWRIGHT_BASEBALL_SEEDED=1` (which gates every test in this file)
+ * alongside the service-role secret in the first place.
+ */
+function getServiceRoleClient() {
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
 
 async function loginCoachOrSkip(page: Page) {
   try {
@@ -65,10 +86,41 @@ async function loginPlayerOrSkip(page: Page) {
 test.describe('Coach - Create New Game', () => {
   test.skip(!SEEDED, 'no seeded baseball team fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
+  // Opponent names created by the "create new game" test below — tracked so
+  // the afterAll teardown can delete exactly (and only) the rows this file
+  // created, never touching the seeded fixture games.
+  const createdOpponents: string[] = [];
+
   test.beforeEach(async ({ page }) => {
     await loginCoachOrSkip(page);
     await page.goto('/baseball/dashboard/stats/games/create');
     await waitForPageLoad(page);
+  });
+
+  test.afterAll(async () => {
+    if (createdOpponents.length === 0) return;
+    const supabase = getServiceRoleClient();
+    if (!supabase) return;
+
+    // The create form defaults `create_calendar_event` to true, so each
+    // created game also has a linked baseball_events row (event_id) —
+    // delete both so no orphaned event survives the game's deletion.
+    const { data: games } = await supabase
+      .from('baseball_games')
+      .select('id, event_id')
+      .in('opponent_name', createdOpponents);
+
+    const gameIds = (games ?? []).map((g) => g.id);
+    const eventIds = (games ?? [])
+      .map((g) => g.event_id)
+      .filter((id): id is string => Boolean(id));
+
+    if (gameIds.length > 0) {
+      await supabase.from('baseball_games').delete().in('id', gameIds);
+    }
+    if (eventIds.length > 0) {
+      await supabase.from('baseball_events').delete().in('id', eventIds);
+    }
   });
 
   test('should display the new game form with date, opponent, and venue fields', async ({ page }) => {
@@ -92,6 +144,7 @@ test.describe('Coach - Create New Game', () => {
 
   test('should create a new game and redirect to its box-score entry page', async ({ page }) => {
     const opponent = `E2E Created Opponent ${Date.now()}`;
+    createdOpponents.push(opponent);
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 45);
     const dateStr = futureDate.toISOString().slice(0, 10);

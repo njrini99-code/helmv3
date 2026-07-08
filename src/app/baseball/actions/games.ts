@@ -152,7 +152,7 @@ const createGameAction = withBaseballAction(
         ? `${input.game_date}T${input.event_time}`
         : `${input.game_date}T12:00:00`;
 
-      const { data: event } = await supabase
+      const { data: event, error: eventError } = await supabase
         .from('baseball_events')
         .insert({
           team_id: teamId,
@@ -172,6 +172,13 @@ const createGameAction = withBaseballAction(
         .select('id')
         .single();
 
+      // The caller explicitly requested a linked calendar event
+      // (`create_calendar_event: true`) — silently proceeding without it
+      // (the previous behaviour: error discarded, `eventId` just stays null)
+      // would create a game the coach believes is on the calendar but isn't.
+      if (eventError) {
+        return { success: false, error: sanitizeDbError(eventError, 'games') };
+      }
       if (event) eventId = event.id;
     }
 
@@ -1062,7 +1069,7 @@ async function uploadBoxScoreCSVImpl(
   const allMatched = unmatched.length === 0;
 
   // Track the upload
-  const { data: upload } = await (supabase as unknown as SupabaseClient)
+  const { data: upload, error: uploadError } = await (supabase as unknown as SupabaseClient)
     .from('baseball_box_score_uploads')
     .insert({
       team_id: teamId,
@@ -1079,7 +1086,30 @@ async function uploadBoxScoreCSVImpl(
     .select('id')
     .single();
 
+  if (uploadError && !allMatched) {
+    // Unmatched rows need a human to resolve them via resolveBoxScoreUpload,
+    // which requires THIS row's id + raw_content — without it the review
+    // flow has nothing to resolve against, so a failed tracking insert must
+    // fail loudly here rather than return a phantom `uploadId: undefined`
+    // that silently strands the unmatched players.
+    return {
+      success: false,
+      matched,
+      unmatched,
+      battingRows,
+      pitchingRows,
+      allMatched,
+      error: sanitizeDbError(uploadError, 'games'),
+    };
+  }
+
   let completionError: string | undefined;
+  if (uploadError) {
+    // allMatched path: the box score itself still gets saved below via the
+    // RPC — only the audit-trail upload row failed to write. Surface it as
+    // a completion-style warning instead of discarding it silently.
+    completionError = `Upload record could not be saved: ${sanitizeDbError(uploadError, 'games')}`;
+  }
 
   // If all matched, auto-save the box score via the atomic RPC — it saves
   // both sides (preserving whichever side isn't in this CSV), finalizes the
@@ -1087,7 +1117,11 @@ async function uploadBoxScoreCSVImpl(
   // season data doesn't sit stale until a second manual action runs.
   if (allMatched && rows.length > 0) {
     const saveResult = await saveCsvBoxScoreViaRpc(gameId, csvType, battingRows, pitchingRows);
-    if (!saveResult.success) completionError = saveResult.error;
+    if (!saveResult.success) {
+      completionError = completionError
+        ? `${completionError} Also: ${saveResult.error}`
+        : saveResult.error;
+    }
   }
 
   return {
@@ -1225,10 +1259,20 @@ async function resolveBoxScoreUploadImpl(
   const result = await saveCsvBoxScoreViaRpc(gameId, csvType, battingRows, pitchingRows);
 
   if (result.success) {
-    await (supabase as unknown as SupabaseClient)
+    // Best-effort bookkeeping: the box score itself already saved above, so
+    // a failure marking the audit-trail row `completed` must not flip the
+    // overall result to failure — but it also must not be discarded
+    // silently, so it's logged for observability instead.
+    const { error: statusError } = await (supabase as unknown as SupabaseClient)
       .from('baseball_box_score_uploads')
       .update({ status: 'completed' })
       .eq('id', uploadId);
+    if (statusError) {
+      await logServerError(
+        `Box score saved but upload ${uploadId} could not be marked completed: ${sanitizeDbError(statusError, 'games')}`,
+        { action: 'baseball_games.resolveBoxScoreUpload', featureArea: 'baseball-games' },
+      );
+    }
   }
 
   return result;

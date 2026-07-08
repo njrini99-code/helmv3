@@ -188,17 +188,32 @@ present (it isn't, on fork PRs, matching the existing `E2E_GOLF_*` secret
 pattern in that workflow). When the secret is absent, the seed step is
 skipped entirely and the three specs above self-skip rather than fail.
 
-### Known limitation: "create game" / "create camp" specs are non-destructive only on the create side
+### Cleanup: "create game" spec self-cleans via a service-role teardown (not the UI)
 
-`GameCard`'s delete affordance is intentionally hidden in the UI (a
-permanent `hidden` class), so the box-score spec's "create a new game" test
-cannot clean up the game row it creates via the UI — each CI run adds one
-new `baseball_games` row with a unique opponent name
-(`E2E Created Opponent ${Date.now()}`) to the test database. This is a
-known, accepted trade-off (documented here rather than worked around) since
-the created row doesn't affect any other spec's assertions. The Camps
-spec's create/delete round-trip *is* fully self-cleaning, since the Camps
-UI does expose a working delete action.
+`GameCard`'s delete affordance is still intentionally hidden in the UI (a
+permanent `hidden` class), so `baseball-box-score.spec.ts`'s "should create
+a new game and redirect to its box-score entry page" test cannot clean up
+the `baseball_games` row it creates through the app UI. It creates a real
+row (plus a linked `baseball_events` row, since the create form defaults
+`create_calendar_event` to `true`) tagged with a unique opponent name
+(`E2E Created Opponent ${Date.now()}`).
+
+Rather than accept that as permanent test-database pollution, the
+`Coach - Create New Game` describe block now has a `test.afterAll` teardown
+that deletes exactly the `baseball_games` row(s) (and their linked
+`baseball_events` row(s)) it created, by opponent name, via a service-role
+Supabase client — the same construction pattern
+`scripts/seed-baseball-e2e.ts` uses for seeding
+(`NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, session-less).
+The teardown is a silent no-op (never a failure) when the service-role key
+isn't present in the environment, matching every other seed/cleanup path in
+this suite.
+
+This test had no cleanup prior to 2026-07-08 and had accumulated ~160 junk
+`baseball_games` rows in the shared database, purged via a one-off SQL
+cleanup that same night. The Camps spec's create/delete round-trip was
+already fully self-cleaning via its working UI delete action and is
+unaffected by this change.
 
 ## CI/CD Integration
 

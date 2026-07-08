@@ -13,6 +13,18 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
+/**
+ * Display-only default for a missing `end_time` — mirrors the drag-reschedule
+ * fallback in PremiumCalendarClient ("Fallback: 1 hour duration"). NEVER
+ * written back to the DB; `event.end_time` on the mapped CalendarEvent stays
+ * the raw (possibly null) column value.
+ */
+function defaultEndTime(startIso: string): string {
+  const start = new Date(startIso);
+  if (Number.isNaN(start.getTime())) return startIso;
+  return new Date(start.getTime() + 60 * 60 * 1000).toISOString();
+}
+
 export default async function BaseballCalendarPage() {
   const supabase = await createClient();
 
@@ -60,6 +72,16 @@ export default async function BaseballCalendarPage() {
   // ── Fetch events + roster ───────────────────────────────────────────────────
 
   if (teamId) {
+    // Bounded window — 90 days back / 365 days forward — so a long-lived team
+    // doesn't drag its entire event history into every calendar render (no
+    // limit/window previously meant this query grew unbounded forever).
+    // Practices/games far outside this range are pagination's job, not a
+    // single dashboard page's.
+    const eventsWindowStart = new Date();
+    eventsWindowStart.setDate(eventsWindowStart.getDate() - 90);
+    const eventsWindowEnd = new Date();
+    eventsWindowEnd.setDate(eventsWindowEnd.getDate() + 365);
+
     const [eventsResult, membersResult, teamOrgResult] = await Promise.all([
       // Read via fromUntyped so the select is not type-checked against the
       // generated baseball_events types (which drift from the live schema).
@@ -73,7 +95,10 @@ export default async function BaseballCalendarPage() {
       fromUntyped(supabase, 'baseball_events')
         .select('id, team_id, title, event_type, start_time, end_time, location, description, is_mandatory, max_attendees, rsvp_deadline, all_day, status, recurring, created_by')
         .eq('team_id', teamId)
-        .order('start_time', { ascending: true }),
+        .gte('start_time', eventsWindowStart.toISOString())
+        .lte('start_time', eventsWindowEnd.toISOString())
+        .order('start_time', { ascending: true })
+        .limit(500),
       supabase
         .from('baseball_team_members')
         .select('player_id, baseball_players!inner(id, first_name, last_name, avatar_url)')
@@ -109,9 +134,13 @@ export default async function BaseballCalendarPage() {
     }) => {
       const normalizeAllDay = (d: string) => `${d.slice(0, 10)}T00:00:00`;
       const startDate = event.all_day ? normalizeAllDay(event.start_time) : event.start_time;
+      // NULL end_time previously collapsed to `event.start_time`, producing a
+      // zero-duration timed event (invisible/unclickable in the hour grid).
+      // Default to start + 1h for display only — `end_time` on the returned
+      // CalendarEvent below stays the raw (possibly null) value.
       const endDate = event.all_day
         ? normalizeAllDay(event.end_time || event.start_time)
-        : event.end_time || event.start_time;
+        : event.end_time || defaultEndTime(event.start_time);
       return {
         id: event.id,
         team_id: event.team_id || '',
