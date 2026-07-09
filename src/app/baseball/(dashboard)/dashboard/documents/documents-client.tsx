@@ -1,13 +1,6 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { IconFile, IconUpload, IconSearch } from '@/components/icons';
-import { DocumentCard } from '@/components/baseball/documents/DocumentCard';
 import { DocumentPreview } from '@/components/baseball/documents/DocumentPreview';
 import { UploadNewVersionModal } from '@/components/baseball/documents/UploadNewVersionModal';
 import { EditDocumentModal, type EditDocumentSaveData } from '@/components/baseball/documents/EditDocumentModal';
@@ -25,9 +18,8 @@ import {
   uploadNewVersion,
 } from '@/app/baseball/actions/documents';
 import { useToast } from '@/components/ui/sonner';
-import { cn } from '@/lib/utils';
 import { DocumentsFairway } from '@/components/baseball/documents/DocumentsFairway';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 const UPLOAD_ACCEPT =
   'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,video/mp4,video/webm,video/quicktime';
@@ -240,273 +232,95 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     setMovingDoc(null);
   }
 
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <DocumentsFairway
-          filtered={filtered}
-          totalCount={documents.length}
-          isCoach={isCoach}
-          search={search}
-          onSearchChange={setSearch}
-          category={category}
-          onCategoryChange={setCategory}
-          isUploadingDocument={isUploadingDocument}
-          onUpload={openUploadPicker}
-          uploadCategory={uploadCategory}
-          onUploadCategoryChange={setUploadCategory}
-          uploadIsPlayerVisible={uploadIsPlayerVisible}
-          onUploadVisibilityChange={setUploadIsPlayerVisible}
-          activeDropdown={activeDropdown}
-          setActiveDropdown={setActiveDropdown}
-          onPreview={(d) => setPreviewDoc(d)}
-          onUploadVersion={isCoach ? (d) => setVersionDoc(d) : undefined}
-          onDelete={isCoach ? handleDelete : undefined}
-          onEdit={isCoach ? openEditModal : undefined}
-          onViewHistory={isCoach ? openVersionHistory : undefined}
-          onMoveToFolder={isCoach ? openMoveModal : undefined}
-          fileInputSlot={
-            isCoach ? (
-               
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileSelected}
-                className="hidden"
-                accept={UPLOAD_ACCEPT}
-              />
-            ) : null
-          }
-          previewSlot={
-            <DocumentPreview
-              document={previewDoc}
-              open={!!previewDoc}
-              onOpenChange={(open) => {
-                if (!open) setPreviewDoc(null);
-              }}
-            />
-          }
-          versionSlot={
-            versionDoc && isCoach ? (
-              <UploadNewVersionModal
-                open={!!versionDoc}
-                onClose={() => setVersionDoc(null)}
-                documentTitle={versionDoc.title}
-                currentFileType={versionDoc.file_type || null}
-                onUpload={handleUploadNewVersion}
-              />
-            ) : null
-          }
-          editSlot={
-            isCoach ? (
-              <EditDocumentModal
-                open={!!editingDoc}
-                document={editingDoc}
-                categories={DOCUMENT_UPLOAD_CATEGORIES}
-                onClose={() => setEditingDoc(null)}
-                onSave={handleSaveEdit}
-              />
-            ) : null
-          }
-          historySlot={
-            isCoach ? (
-              <DocumentVersionHistoryModal
-                open={!!historyDoc}
-                document={historyDoc}
-                onClose={() => setHistoryDoc(null)}
-                onReverted={handleDocumentReverted}
-              />
-            ) : null
-          }
-          moveSlot={
-            isCoach ? (
-              <MoveToFolderModal
-                open={!!movingDoc}
-                document={movingDoc}
-                folders={existingFolders}
-                onClose={() => setMovingDoc(null)}
-                onMove={handleSaveMove}
-              />
-            ) : null
-          }
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 lg:p-8">
-      {/* Hidden file input driving both the header and empty-state upload triggers */}
-      {isCoach && (
-         
-        <input
-          ref={fileInputRef}
-          type="file"
-          onChange={handleFileSelected}
-          className="hidden"
-          accept={UPLOAD_ACCEPT}
-        />
-      )}
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <DocumentsFairway
+        filtered={filtered}
+        totalCount={documents.length}
+        isCoach={isCoach}
+        search={search}
+        onSearchChange={setSearch}
+        category={category}
+        onCategoryChange={setCategory}
+        isUploadingDocument={isUploadingDocument}
+        onUpload={openUploadPicker}
+        uploadCategory={uploadCategory}
+        onUploadCategoryChange={setUploadCategory}
+        uploadIsPlayerVisible={uploadIsPlayerVisible}
+        onUploadVisibilityChange={setUploadIsPlayerVisible}
+        activeDropdown={activeDropdown}
+        setActiveDropdown={setActiveDropdown}
+        onPreview={(d) => setPreviewDoc(d)}
+        onUploadVersion={isCoach ? (d) => setVersionDoc(d) : undefined}
+        onDelete={isCoach ? handleDelete : undefined}
+        onEdit={isCoach ? openEditModal : undefined}
+        onViewHistory={isCoach ? openVersionHistory : undefined}
+        onMoveToFolder={isCoach ? openMoveModal : undefined}
+        fileInputSlot={
+          isCoach ? (
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search documents..."
-            leftIcon={<IconSearch size={16} />}
-            className="text-sm bg-cream-50 border-warm-200 rounded-lg"
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {CATEGORIES.map(cat => (
-            <Button variant="primary"
-              key={cat.value}
-              onClick={() => setCategory(cat.value)}
-              className={cn(
-                'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap',
-                category === cat.value
-                  ? 'bg-primary-100 text-primary-700 border-primary-200'
-                  : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300'
-              )}
-            >
-              {cat.label}
-            </Button>
-          ))}
-        </div>
-        {isCoach && (
-          <Button
-            variant="primary"
-            onClick={openUploadPicker}
-            isLoading={isUploadingDocument}
-            leftIcon={<IconUpload size={16} />}
-            className="whitespace-nowrap flex-shrink-0"
-          >
-            Upload
-          </Button>
-        )}
-      </div>
-
-      {/* Upload-time picker — category + visibility applied to the next file selected */}
-      {isCoach && (
-        <div className="flex flex-wrap items-center gap-4 mb-6 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-warm-400">Next upload</span>
-            <div className="w-40">
-              <Select
-                options={DOCUMENT_UPLOAD_CATEGORIES}
-                value={uploadCategory}
-                onChange={setUploadCategory}
-              />
-            </div>
-          </div>
-          <Checkbox
-            label="Visible to players"
-            checked={uploadIsPlayerVisible}
-            onChange={(e) => setUploadIsPlayerVisible(e.target.checked)}
-          />
-        </div>
-      )}
-
-      {/* Documents Grid */}
-      {filtered.length === 0 ? (
-        <Card variant="glass">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconFile size={28} className="text-warm-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">
-              {documents.length === 0 ? 'No Documents' : 'No Results'}
-            </h3>
-            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
-              {documents.length === 0
-                ? isCoach
-                  ? 'Upload playbooks, practice plans, waivers, and other team documents.'
-                  : 'No documents have been shared yet. Check back later.'
-                : 'Try adjusting your search or filters.'}
-            </p>
-            {documents.length === 0 && isCoach && (
-              <Button
-                onClick={openUploadPicker}
-                isLoading={isUploadingDocument}
-                leftIcon={<IconUpload size={16} />}
-              >
-                Upload Document
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(doc => (
-            <DocumentCard
-              key={doc.id}
-              document={doc}
-              isCoach={isCoach}
-              activeDropdown={activeDropdown}
-              setActiveDropdown={setActiveDropdown}
-              onPreview={(d) => setPreviewDoc(d)}
-              onUploadVersion={isCoach ? (d) => setVersionDoc(d) : undefined}
-              onDelete={isCoach ? handleDelete : undefined}
-              onEdit={isCoach ? openEditModal : undefined}
-              onViewHistory={isCoach ? openVersionHistory : undefined}
-              onMoveToFolder={isCoach ? openMoveModal : undefined}
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileSelected}
+              className="hidden"
+              accept={UPLOAD_ACCEPT}
             />
-          ))}
-        </div>
-      )}
-
-      {/* Preview Modal */}
-      <DocumentPreview
-        document={previewDoc}
-        open={!!previewDoc}
-        onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+          ) : null
+        }
+        previewSlot={
+          <DocumentPreview
+            document={previewDoc}
+            open={!!previewDoc}
+            onOpenChange={(open) => {
+              if (!open) setPreviewDoc(null);
+            }}
+          />
+        }
+        versionSlot={
+          versionDoc && isCoach ? (
+            <UploadNewVersionModal
+              open={!!versionDoc}
+              onClose={() => setVersionDoc(null)}
+              documentTitle={versionDoc.title}
+              currentFileType={versionDoc.file_type || null}
+              onUpload={handleUploadNewVersion}
+            />
+          ) : null
+        }
+        editSlot={
+          isCoach ? (
+            <EditDocumentModal
+              open={!!editingDoc}
+              document={editingDoc}
+              categories={DOCUMENT_UPLOAD_CATEGORIES}
+              onClose={() => setEditingDoc(null)}
+              onSave={handleSaveEdit}
+            />
+          ) : null
+        }
+        historySlot={
+          isCoach ? (
+            <DocumentVersionHistoryModal
+              open={!!historyDoc}
+              document={historyDoc}
+              onClose={() => setHistoryDoc(null)}
+              onReverted={handleDocumentReverted}
+            />
+          ) : null
+        }
+        moveSlot={
+          isCoach ? (
+            <MoveToFolderModal
+              open={!!movingDoc}
+              document={movingDoc}
+              folders={existingFolders}
+              onClose={() => setMovingDoc(null)}
+              onMove={handleSaveMove}
+            />
+          ) : null
+        }
       />
-
-      {/* Upload New Version Modal */}
-      {versionDoc && isCoach && (
-        <UploadNewVersionModal
-          open={!!versionDoc}
-          onClose={() => setVersionDoc(null)}
-          documentTitle={versionDoc.title}
-          currentFileType={versionDoc.file_type || null}
-          onUpload={handleUploadNewVersion}
-        />
-      )}
-
-      {/* Edit Details Modal */}
-      {isCoach && (
-        <EditDocumentModal
-          open={!!editingDoc}
-          document={editingDoc}
-          categories={DOCUMENT_UPLOAD_CATEGORIES}
-          onClose={() => setEditingDoc(null)}
-          onSave={handleSaveEdit}
-        />
-      )}
-
-      {/* Version History Modal */}
-      {isCoach && (
-        <DocumentVersionHistoryModal
-          open={!!historyDoc}
-          document={historyDoc}
-          onClose={() => setHistoryDoc(null)}
-          onReverted={handleDocumentReverted}
-        />
-      )}
-
-      {/* Move to Folder Modal */}
-      {isCoach && (
-        <MoveToFolderModal
-          open={!!movingDoc}
-          document={movingDoc}
-          folders={existingFolders}
-          onClose={() => setMovingDoc(null)}
-          onMove={handleSaveMove}
-        />
-      )}
     </div>
   );
 }

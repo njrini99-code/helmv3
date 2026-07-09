@@ -22,6 +22,7 @@
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
+import { todayIsoInTz, resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
@@ -84,6 +85,13 @@ export default async function PerformancePage() {
   }
 
   const supabase = await createClient();
+
+  // Team-local "today" computed ONCE here so both the readiness 7-day lookback
+  // window below and the client's check-in day math (passed as the `today`
+  // prop) use the exact same value — a server-UTC `new Date()` for one and a
+  // team-local ISO string for the other let the readiness window silently
+  // drift a day at the UTC boundary for teams west of Greenwich.
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
   // Roster (RLS scopes to viewable players for this staff member).
   const { data: members } = await supabase
@@ -161,9 +169,8 @@ export default async function PerformancePage() {
   // ---------------------------------------------------------------------------
   let readiness: BaseballReadinessSummary[] = [];
   if (canViewReadiness && liftCtx) {
-    const today = new Date();
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
+    const sevenDaysAgo = new Date(`${today}T00:00:00Z`);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
     const fromDate = sevenDaysAgo.toISOString().slice(0, 10);
 
     // Build the set of athlete ids for this team's roster.
@@ -265,6 +272,7 @@ export default async function PerformancePage() {
           assignments={assignments}
           exercises={exercises}
           readiness={readiness}
+          today={today}
           embedded
         />
       )}

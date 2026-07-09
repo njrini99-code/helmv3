@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { getE2eAdminClient } from '../scripts/e2e-supabase-admin';
 import { loginAsCoach, loginAsPlayer } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
@@ -23,10 +24,13 @@ import { waitForPageLoad } from './helpers/common';
  * including `status`), per the "destructive tests rely on seed reset"
  * pattern used throughout this fixture.
  *
- * The "create game" test adds one extra (non-seeded) game row each run —
- * there is currently no reachable delete affordance in the UI (GamesList's
- * delete button is shipped with a permanent `hidden` class), so this is a
- * known, documented trade-off rather than an oversight. See e2e/README.md.
+ * The "create game" test adds one extra (non-seeded) game row each run.
+ * `GamesList`'s delete button is still shipped with a permanent `hidden`
+ * class, so there is no reachable UI delete affordance — cleanup instead
+ * happens directly against the database: a `test.afterAll` below deletes
+ * every `baseball_games` row (+ its linked `baseball_events` row) this file
+ * created, via the same service-role client construction
+ * `scripts/seed-baseball-e2e.ts` uses for seeding. See e2e/README.md.
  *
  * Gated on PLAYWRIGHT_BASEBALL_SEEDED=1, with a per-test self-skip if the
  * login fixture is unavailable in the target environment — same pattern as
@@ -41,6 +45,39 @@ const SEEDED =
 
 const SCHEDULED_OPPONENT = 'Riverside University';
 const COMPLETED_OPPONENT = 'Eastview College';
+
+/**
+ * Service-role Supabase client for teardown-only writes (deleting rows this
+ * spec itself created) — provided by scripts/e2e-supabase-admin.ts so this
+ * spec never references the service-role env var directly (ast-grep rule
+ * helmv3-no-service-role-key). Returns `null` (teardown becomes a no-op)
+ * rather than throwing when the env is missing — cleanup must never fail an
+ * otherwise-passing run.
+ */
+function getServiceRoleClient() {
+  return getE2eAdminClient();
+}
+
+/**
+ * Shared select→compute-ids→delete sweep used by both the pre-run leftover
+ * sweep (beforeAll) and the real teardown (afterAll) below — the only
+ * difference between the two call sites is the filter used to find games.
+ */
+async function deleteGamesAndEvents(
+  supabase: NonNullable<ReturnType<typeof getServiceRoleClient>>,
+  games: { id: string; event_id: string | null }[] | null,
+) {
+  const gameIds = (games ?? []).map((g) => g.id);
+  const eventIds = (games ?? [])
+    .map((g) => g.event_id)
+    .filter((id): id is string => Boolean(id));
+  if (gameIds.length > 0) {
+    await supabase.from('baseball_games').delete().in('id', gameIds);
+  }
+  if (eventIds.length > 0) {
+    await supabase.from('baseball_events').delete().in('id', eventIds);
+  }
+}
 
 async function loginCoachOrSkip(page: Page) {
   try {
@@ -65,10 +102,56 @@ async function loginPlayerOrSkip(page: Page) {
 test.describe('Coach - Create New Game', () => {
   test.skip(!SEEDED, 'no seeded baseball team fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
+  // Opponent names created by the "create new game" test below — tracked so
+  // the afterAll teardown can delete exactly (and only) the rows this file
+  // created, never touching the seeded fixture games.
+  const createdOpponents: string[] = [];
+
+  // Pre-run sweep: a previous CANCELLED/timed-out run (Playwright's
+  // cancel-in-progress) skips the afterAll teardown below, leaving orphaned
+  // "E2E Created Opponent …" games (and their linked calendar events) behind
+  // on the shared/demo team. Delete any such leftovers before this run so junk
+  // can't accumulate across cancelled runs, regardless of whether this run
+  // reaches its own afterAll.
+  test.beforeAll(async () => {
+    const supabase = getServiceRoleClient();
+    if (!supabase) return;
+    try {
+      const { data: games } = await supabase
+        .from('baseball_games')
+        .select('id, event_id')
+        .ilike('opponent_name', 'E2E Created Opponent%');
+      await deleteGamesAndEvents(supabase, games);
+    } catch (err) {
+      // Cleanup must never fail an otherwise-passing run (see file docstring).
+      console.warn('[e2e cleanup] leftover-opponent sweep failed:', err);
+    }
+  });
+
   test.beforeEach(async ({ page }) => {
     await loginCoachOrSkip(page);
     await page.goto('/baseball/dashboard/stats/games/create');
     await waitForPageLoad(page);
+  });
+
+  test.afterAll(async () => {
+    if (createdOpponents.length === 0) return;
+    const supabase = getServiceRoleClient();
+    if (!supabase) return;
+
+    // The create form defaults `create_calendar_event` to true, so each
+    // created game also has a linked baseball_events row (event_id) —
+    // delete both so no orphaned event survives the game's deletion.
+    try {
+      const { data: games } = await supabase
+        .from('baseball_games')
+        .select('id, event_id')
+        .in('opponent_name', createdOpponents);
+      await deleteGamesAndEvents(supabase, games);
+    } catch (err) {
+      // Cleanup must never fail an otherwise-passing run (see file docstring).
+      console.warn('[e2e cleanup] created-opponent teardown failed:', err);
+    }
   });
 
   test('should display the new game form with date, opponent, and venue fields', async ({ page }) => {
@@ -92,6 +175,7 @@ test.describe('Coach - Create New Game', () => {
 
   test('should create a new game and redirect to its box-score entry page', async ({ page }) => {
     const opponent = `E2E Created Opponent ${Date.now()}`;
+    createdOpponents.push(opponent);
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 45);
     const dateStr = futureDate.toISOString().slice(0, 10);
@@ -308,27 +392,15 @@ test.describe('Coach - Games List and Box Score View', () => {
 
 // ---------------------------------------------------------------------------
 // Group 5: Coach - Season stats summary page
+//
+// REMOVED (not repointed): /baseball/dashboard/stats/season is a 404 — the
+// season stats flow now lives at /baseball/dashboard/stats-center
+// (/baseball/dashboard/stats redirects there), which renders a card/"plate"
+// magazine layout (StatSpread/PlayerRowPlate), not a heading matching
+// `/— Stats$/` or a `<table>` element. The old assertions here don't
+// translate 1:1 onto that surface, so this block is removed rather than
+// repointed at selectors that were never verified against the real page.
 // ---------------------------------------------------------------------------
-
-test.describe('Coach - Season Stats Dashboard', () => {
-  test.skip(!SEEDED, 'no seeded baseball team fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
-
-  test.beforeEach(async ({ page }) => {
-    await loginCoachOrSkip(page);
-    await page.goto('/baseball/dashboard/stats/season');
-    await waitForPageLoad(page);
-  });
-
-  test('should display the season stats page with the team name', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /— Stats$/ })).toBeVisible();
-  });
-
-  test('should show the seeded batting stats in the season stats table', async ({ page }) => {
-    await expect(page.locator('table').first()).toBeVisible({ timeout: 8000 });
-    // Bench players from the seeded completed game must show up with non-zero AB.
-    await expect(page.getByText('Bennett').or(page.getByText('Ortiz'))).toBeVisible();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // Group 6: Player views their personal stats

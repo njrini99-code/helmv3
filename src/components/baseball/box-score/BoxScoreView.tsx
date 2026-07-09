@@ -3,6 +3,7 @@
 import type { BaseballGame, BaseballBoxScoreBatting, BaseballBoxScorePitching } from '@/lib/types';
 import { IconCalendar, IconMapPin } from '@/components/icons';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
+import { EMPTY_STAT, formatAvg, formatEra, formatWhip } from './format-stat';
 
 interface BoxScoreViewProps {
   game: BaseballGame;
@@ -11,17 +12,12 @@ interface BoxScoreViewProps {
 }
 
 function fmtStat(val: number | null | undefined, decimals = 0) {
-  if (val == null) return '—';
+  if (val == null) return EMPTY_STAT;
   return decimals > 0 ? val.toFixed(decimals) : String(val);
 }
 
-function fmtAvg(val: number | null | undefined) {
-  if (val == null) return '—';
-  return val.toFixed(3).replace(/^0/, '');
-}
-
 function fmtIP(val: number | null | undefined) {
-  if (val == null) return '—';
+  if (val == null) return EMPTY_STAT;
   return val.toFixed(1);
 }
 
@@ -49,11 +45,15 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
       bb: acc.bb + r.bb,
       k: acc.k + r.k,
       sb: acc.sb + r.sb,
+      cs: acc.cs + r.cs,
+      sac: acc.sac + r.sac,
+      sf: acc.sf + r.sf,
+      lob: acc.lob + r.lob,
     }),
-    { ab: 0, r: 0, h: 0, doubles: 0, triples: 0, hr: 0, rbi: 0, bb: 0, k: 0, sb: 0 }
+    { ab: 0, r: 0, h: 0, doubles: 0, triples: 0, hr: 0, rbi: 0, bb: 0, k: 0, sb: 0, cs: 0, sac: 0, sf: 0, lob: 0 }
   );
 
-  const teamAvg = totals.ab > 0 ? (totals.h / totals.ab).toFixed(3).replace(/^0/, '') : '—';
+  const teamAvg = formatAvg(totals.ab > 0 ? totals.h / totals.ab : null);
 
   // Pitching totals
   const pitchTotals = pitching.reduce(
@@ -72,8 +72,8 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
   // Rates divide by TRUE innings (outs / 3), not the notation value. (#434)
   const teamInnings = ipToInnings(pitchTotals.ip);
-  const teamERA = teamInnings > 0 ? (9 * pitchTotals.er / teamInnings).toFixed(2) : '—';
-  const teamWHIP = teamInnings > 0 ? ((pitchTotals.bb + pitchTotals.h) / teamInnings).toFixed(3) : '—';
+  const teamERA = formatEra(teamInnings > 0 ? (9 * pitchTotals.er) / teamInnings : null);
+  const teamWHIP = formatWhip(teamInnings > 0 ? (pitchTotals.bb + pitchTotals.h) / teamInnings : null);
 
   return (
     <div className="space-y-5">
@@ -140,7 +140,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
               <thead>
                 <tr className="border-b border-warm-100 bg-warm-50/60">
                   <th className="text-left px-4 py-2.5 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Player</th>
-                  {['AB','R','H','2B','3B','HR','RBI','BB','K','SB','HBP'].map((h) => (
+                  {['AB','R','H','2B','3B','HR','RBI','BB','K','SB','CS','HBP','SAC','SF','LOB'].map((h) => (
                     <th key={h} className="text-center px-2 py-2.5 font-semibold text-warm-500 min-w-[36px]">{h}</th>
                   ))}
                   <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[48px]">AVG</th>
@@ -171,10 +171,14 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
                     <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.bb)}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.k)}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.sb)}</td>
+                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.cs)}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.hbp)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-700">{fmtAvg(row.avg)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{fmtAvg(row.obp)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{fmtAvg(row.slg)}</td>
+                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.sac)}</td>
+                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.sf)}</td>
+                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.lob)}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-warm-700">{formatAvg(row.avg)}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{formatAvg(row.obp)}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{formatAvg(row.slg)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -191,7 +195,11 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
                   <td className="px-2 py-2.5 text-center tabular-nums">{totals.bb}</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{totals.k}</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{totals.sb}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.cs}</td>
                   <td colSpan={1} />
+                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.sac}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.sf}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.lob}</td>
                   <td className="px-3 py-2.5 text-center font-mono font-bold">{teamAvg}</td>
                   <td colSpan={2} />
                 </tr>
@@ -234,8 +242,8 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
                     <td className="px-2 py-2.5 text-center tabular-nums font-semibold">{fmtStat(row.k)}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.hr)}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums text-warm-500">{fmtStat(row.pitch_count)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-700">{fmtStat(row.era, 2)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{fmtStat(row.whip, 3)}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-warm-700">{formatEra(row.era)}</td>
+                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{formatWhip(row.whip)}</td>
                     <td className="px-3 py-2.5 text-center">
                       {row.result && (
                         <span

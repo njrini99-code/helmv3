@@ -16,7 +16,6 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { getPermissionMatrix } from '@/app/baseball/actions/roles-permissions';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { IconShield, IconLock, IconChevronRight, IconUsers } from '@/components/icons';
 
@@ -46,10 +45,12 @@ export default async function PermissionsPage() {
 
   return (
     <>
-      <Header
-        title="Permissions"
-        subtitle="What each capability group controls"
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Permissions</h1>
+          <p className="mt-1 text-body-sm text-warm-500">What each capability group controls</p>
+        </div>
+      </div>
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600">
           Capabilities are enforced on the server, not by hiding tabs. A capability

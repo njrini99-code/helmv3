@@ -44,6 +44,7 @@ import {
   resolveBaseballLiftingOrg,
   resolveBaseballAthleteIds,
 } from '@/lib/lifting/resolve-baseball-context';
+import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 import type {
   HelmLiftingSessionInsert,
   HelmLiftingSessionExerciseInsert,
@@ -369,146 +370,166 @@ async function materializeActionObject(
     }
 
     // -- signal -> lifting plan assignment ------------------------------------
+    //
+    // CANONICAL WRITE (parity with lifting.ts createLiftAssignment / the W2-G
+    // rewire): writes directly to the unified helm_lifting_sessions +
+    // helm_lifting_session_exercises tables. The legacy baseball_lift_assignments
+    // table was MOVED to the graveyard schema (migration 20260704070000) and is
+    // never read or written. helm_lifting_sessions is the ONLY write — every
+    // player surface (player-today.ts Lifts-Due feed, player-lift.ts
+    // getPlayerLiftHome, PlayerLiftToday.tsx) and the CoachHelm engine read it,
+    // so a single write reaches both the coach's board and the player. We
+    // materialize a single-athlete session (status 'modified', so it lands in
+    // the player's read filter ['assigned','started','modified'] AND reads as a
+    // coach-initiated change, not a fresh assignment), carrying the signal's
+    // reason into coach_note so the player sees WHY their lift changed.
     case 'lift_modification': {
       const playerId = action.assignee_player_id ?? signal.player_id;
       if (!playerId) {
         throw new Error('A player is required for a lift modification.');
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from('baseball_lift_assignments')
-        .insert({
-          team_id: teamId,
-          player_id: playerId,
-          assigned_by_coach_id: action.owner_coach_id ?? ctx.activeCoachId,
-          title: action.title,
-          due_date: null,
-          status: 'assigned',
-          source_signal_id: signal.id,
-          source_reason: signal.why_it_matters ?? action.detail ?? null,
-        })
+
+      const liftCtx = await resolveBaseballLiftingOrg(teamId);
+      if (!liftCtx) {
+        throw new Error('No Helm Lifting Lab is configured for this team yet.');
+      }
+      const athleteMap = await resolveBaseballAthleteIds(liftCtx.organizationId, [playerId]);
+      const athleteId = athleteMap[playerId];
+      if (!athleteId) {
+        throw new Error('This player is not yet set up in Helm Lifting Lab.');
+      }
+
+      // Team-local "today", not server UTC — keeps this write path aligned
+      // with the player Today / readiness date source so a late-night
+      // conversion doesn't land on the wrong calendar day and miss the
+      // (athlete_id, scheduled_date, title) dedupe below.
+      const scheduledDate = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
+      const sessionTitle = action.title || 'Lift modification';
+      const coachNote = signal.why_it_matters ?? action.detail ?? null;
+
+      // Dedupe on (athlete, date, title) for sessions NOT born of a program
+      // publish (program_assignment_id NULL) so a retried/double conversion
+      // does not create two Today rows — same guard createLiftAssignment uses.
+      const { data: dupe } = (await fromUntyped(supabase, 'helm_lifting_sessions')
         .select('id')
-        .single();
-      if (error || !data) throw new Error('Could not write the lift modification.');
+        .eq('athlete_id', athleteId)
+        .eq('scheduled_date', scheduledDate)
+        .eq('title', sessionTitle)
+        .is('program_assignment_id', null)
+        .maybeSingle()) as { data: { id: string } | null };
 
-      // UNIFIED STORAGE BRIDGE (parity with lifting.ts createLiftAssignment).
-      //
-      // The legacy baseball_lift_assignments row above is read ONLY by the coach
-      // Lifting-Lite board — NO player surface reads it. Every player surface
-      // (player-today.ts Lifts-Due feed, player-lift.ts getPlayerLiftHome,
-      // PlayerLiftToday.tsx) and the CoachHelm engine read the unified
-      // helm_lifting_sessions table (see lifting.ts createLiftAssignment / the
-      // W2-G rewire) — NOT baseball_lift_sessions, which is write-dead. Without
-      // this bridge a coach-converted lift modification reaches the coach's
-      // board but NEVER the player — the coach->player half of the round-trip is
-      // dead (this was previously bridged into the legacy, also-dead
-      // baseball_lift_sessions table, which is SILENT DATA LOSS: nothing reads
-      // it either). So we materialize a single-athlete helm_lifting_sessions row
-      // (status 'modified', so it lands in the player's read filter
-      // ['assigned','started','modified'] AND reads as a coach-initiated change,
-      // not a fresh assignment), carrying the signal's reason into coach_note so
-      // the player sees WHY their lift changed.
-      //
-      // Best-effort + non-destructive (stage-and-check dedupe, never delete-then-
-      // reinsert): a bridge failure must NOT roll back the assignment the coach
-      // just converted, so it never throws into the conversion — but unlike the
-      // original bare `catch {}`, an UNEXPECTED failure (not just "no Helm
-      // Lifting org configured yet") is logged via logServerError instead of
-      // silently swallowed.
-      try {
-        const liftCtx = await resolveBaseballLiftingOrg(teamId);
-        if (liftCtx) {
-          const athleteMap = await resolveBaseballAthleteIds(liftCtx.organizationId, [playerId]);
-          const athleteId = athleteMap[playerId];
+      let sessionId = dupe?.id;
+      if (!sessionId) {
+        const sessionPayload: HelmLiftingSessionInsert = {
+          organization_id: liftCtx.organizationId,
+          sport: 'baseball',
+          team_id: teamId,
+          athlete_id: athleteId,
+          title: sessionTitle,
+          scheduled_date: scheduledDate,
+          status: 'modified',
+          coach_note: coachNote,
+          program_assignment_id: null,
+        };
+        const { data: session, error: sessionErr } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+          .insert(sessionPayload)
+          .select('id')
+          .maybeSingle()) as { data: { id: string } | null; error: { code?: string } | null };
 
-          if (athleteId) {
-            const scheduledDate = new Date().toISOString().slice(0, 10);
-            const sessionTitle = action.title || 'Lift modification';
-            const coachNote = signal.why_it_matters ?? action.detail ?? null;
-
-            // Dedupe on (athlete, date, title) for sessions NOT born of a
-            // program publish (program_assignment_id NULL) so a retried/double
-            // conversion does not create two Today rows — same guard
-            // createLiftAssignment uses.
-            const { data: dupe } = await fromUntyped(supabase, 'helm_lifting_sessions')
-              .select('id')
-              .eq('athlete_id', athleteId)
-              .eq('scheduled_date', scheduledDate)
-              .eq('title', sessionTitle)
-              .is('program_assignment_id', null)
-              .maybeSingle() as { data: { id: string } | null };
-
-            let sessionId = dupe?.id;
-            if (!sessionId) {
-              const sessionPayload: HelmLiftingSessionInsert = {
-                organization_id: liftCtx.organizationId,
-                sport: 'baseball',
-                team_id: teamId,
-                athlete_id: athleteId,
-                title: sessionTitle,
-                scheduled_date: scheduledDate,
-                status: 'modified',
-                coach_note: coachNote,
-                program_assignment_id: null,
-              };
-              const { data: session } = await fromUntyped(supabase, 'helm_lifting_sessions')
-                .insert(sessionPayload)
-                .select('id')
-                .maybeSingle() as { data: { id: string } | null };
-              sessionId = session?.id;
-            } else if (coachNote) {
-              // Existing dedup'd session — refresh its coach_note/status so a
-              // re-conversion still surfaces the latest "why" to the player.
-              // Plain UPDATE (no destructive write); status is bumped to
-              // 'modified' so the player sees it as a fresh coach change in
-              // their Lifts-Due feed.
-              await fromUntyped(supabase, 'helm_lifting_sessions')
-                .update({ coach_note: coachNote, status: 'modified', updated_at: new Date().toISOString() })
-                .eq('id', sessionId)
-                .eq('organization_id', liftCtx.organizationId);
-            }
-
-            if (sessionId) {
-              // Seed a single snapshot exercise once (idempotent re-convert
-              // safe) so the player's Lift surface has a row to render + log
-              // against, mirroring createLiftAssignment. No exercise_id (a
-              // signal modification has no V11 library exercise) — name-only
-              // snapshot is honest: the work is named, it just has no
-              // progression identity to PR against.
-              const { data: existingSe } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
-                .select('id')
-                .eq('session_id', sessionId)
-                .limit(1) as { data: Array<{ id: string }> | null };
-              if (!existingSe || existingSe.length === 0) {
-                const sePayload: HelmLiftingSessionExerciseInsert = {
-                  session_id: sessionId,
-                  exercise_id: null,
-                  exercise_name_snapshot: sessionTitle,
-                  order_index: 0,
-                  status: 'assigned',
-                };
-                await fromUntyped(supabase, 'helm_lifting_session_exercises').insert(sePayload);
-              }
-            }
-          }
-          // No athlete resolved for this player yet — expected degrade
-          // (player not seeded into helm_lifting_athletes), skip silently.
+        if (sessionErr?.code === '23505') {
+          // Lost the race to a concurrent conversion for the same (athlete,
+          // date, title) — the DB-level partial unique index
+          // (helm_lifting_sessions_null_program_dedupe_uq, migration
+          // 20260709000000) backstops the app-code check-then-insert dedupe
+          // above, which has a race window between the check and the
+          // insert. Re-query for the row the other request just created
+          // instead of erroring — this IS the dedupe working as intended.
+          const { data: existing } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+            .select('id')
+            .eq('athlete_id', athleteId)
+            .eq('scheduled_date', scheduledDate)
+            .eq('title', sessionTitle)
+            .is('program_assignment_id', null)
+            .maybeSingle()) as { data: { id: string } | null };
+          if (!existing) throw new Error('Could not write the lift modification.');
+          sessionId = existing.id;
+        } else if (sessionErr || !session) {
+          throw new Error('Could not write the lift modification.');
+        } else {
+          sessionId = session.id;
         }
-        // No Helm Lifting organization configured for this team — expected
-        // degrade, skip silently.
-      } catch (bridgeErr) {
-        // Bridge is best-effort; the assignment already committed. But an
-        // UNEXPECTED failure here (RLS gap, unexpected DB error) must be
-        // visible, not silently swallowed.
+      } else if (coachNote) {
+        // Existing dedup'd session — refresh its coach_note/status so a
+        // re-conversion still surfaces the latest "why" to the player. Plain
+        // UPDATE (no destructive write); status is bumped to 'modified' so
+        // the player sees it as a fresh coach change in their Lifts-Due feed.
+        const { error: updateErr } = await fromUntyped(supabase, 'helm_lifting_sessions')
+          .update({ coach_note: coachNote, status: 'modified', updated_at: new Date().toISOString() })
+          .eq('id', sessionId)
+          .eq('organization_id', liftCtx.organizationId);
+        if (updateErr) {
+          throw new Error('Could not write the lift modification.');
+        }
+      }
+
+      if (!sessionId) {
+        throw new Error('Could not write the lift modification.');
+      }
+
+      // Seed a single snapshot exercise once (idempotent re-convert safe) so
+      // the player's Lift surface has a row to render + log against,
+      // mirroring createLiftAssignment. No exercise_id (a signal modification
+      // has no V11 library exercise) — name-only snapshot is honest: the work
+      // is named, it just has no progression identity to PR against. Best-
+      // effort (non-fatal): the session itself is the canonical target and
+      // already committed, so an exercise-row failure is logged, not thrown.
+      try {
+        // fromUntyped() never throws for a failed select/insert — it resolves
+        // to a { data, error } result object — so the outer try/catch alone
+        // never actually caught a real query failure here. Both `.error`
+        // values must be checked explicitly for this best-effort seed to stay
+        // genuinely non-fatal (logged) rather than silently swallowed.
+        const { data: existingSe, error: existingSeError } = (await fromUntyped(
+          supabase,
+          'helm_lifting_session_exercises',
+        )
+          .select('id')
+          .eq('session_id', sessionId)
+          .limit(1)) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+
+        if (existingSeError) {
+          await logServerError(
+            `convertSignalToAction lift_modification session-exercise seed lookup failed: ${existingSeError.message}`,
+            { action: 'convertSignalToAction.lift_modification.sessionExercise', featureArea: 'baseball-lifting', handled: true },
+          );
+        } else if (!existingSe || existingSe.length === 0) {
+          const sePayload: HelmLiftingSessionExerciseInsert = {
+            session_id: sessionId,
+            exercise_id: null,
+            exercise_name_snapshot: sessionTitle,
+            order_index: 0,
+            status: 'assigned',
+          };
+          const { error: insertSeError } = await fromUntyped(supabase, 'helm_lifting_session_exercises').insert(
+            sePayload,
+          );
+          if (insertSeError) {
+            await logServerError(
+              `convertSignalToAction lift_modification session-exercise seed insert failed: ${insertSeError.message}`,
+              { action: 'convertSignalToAction.lift_modification.sessionExercise', featureArea: 'baseball-lifting', handled: true },
+            );
+          }
+        }
+      } catch (exerciseErr) {
         await logServerError(
-          `convertSignalToAction lift_modification Helm Lifting Lab bridge failed: ${
-            bridgeErr instanceof Error ? bridgeErr.message : String(bridgeErr)
+          `convertSignalToAction lift_modification session-exercise seed failed: ${
+            exerciseErr instanceof Error ? exerciseErr.message : String(exerciseErr)
           }`,
-          { action: 'convertSignalToAction.lift_modification.helmBridge', featureArea: 'baseball-lifting', handled: true },
+          { action: 'convertSignalToAction.lift_modification.sessionExercise', featureArea: 'baseball-lifting', handled: true },
         );
       }
 
-      return { targetTable: 'baseball_lift_assignments', targetId: (data as { id: string }).id };
+      return { targetTable: 'helm_lifting_sessions', targetId: sessionId };
     }
 
     // -- action-IS-the-object types (no separate subsystem row) ---------------

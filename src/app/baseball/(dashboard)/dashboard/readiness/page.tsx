@@ -14,6 +14,10 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import {
+  resolveTeamTimezone,
+  todayIsoInTz,
+} from '@/lib/baseball/daily-contract/contract-day';
+import {
   resolveBaseballLiftingOrg,
   resolveMyBaseballAthleteId,
 } from '@/lib/lifting/resolve-baseball-context';
@@ -36,7 +40,13 @@ export default async function PlayerReadinessPage() {
     redirect('/baseball/dashboard/performance');
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Team-local "today" — the readiness gate (player-today.ts) compares
+  // team-local todayIsoInTz; deriving server-UTC here mis-dated evening US
+  // submissions (a 9pm PT check-in would prefill/dedupe against the wrong day).
+  const supabase = await createClient();
+  const today = todayIsoInTz(
+    await resolveTeamTimezone(supabase, context.activeTeamId),
+  );
 
   // W2-G: submitReadinessCheckin (lifting.ts) writes ONLY to
   // helm_lifting_readiness_checkins now — dedupe/prefill must read the same
@@ -58,7 +68,6 @@ export default async function PlayerReadinessPage() {
   if (liftCtx) {
     const athleteId = await resolveMyBaseballAthleteId(liftCtx.organizationId);
     if (athleteId) {
-      const supabase = await createClient();
       const { data: row } = (await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
         .select('*')
         .eq('athlete_id', athleteId)

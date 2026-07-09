@@ -114,7 +114,7 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
       ref={setNodeRef}
       style={style}
       className={[
-        'group relative rounded-xl border bg-white px-3 py-2.5 transition-shadow',
+        'group relative rounded-xl border bg-cream-50 px-3 py-2.5 transition-shadow',
         isDragging ? 'opacity-40 shadow-xl' : 'border-warm-100 hover:border-warm-200 hover:shadow-sm',
         borderAccent,
       ].join(' ')}
@@ -312,7 +312,7 @@ export function ExerciseBin({
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
             selectedRegionGroup === null
               ? 'border-primary-300 bg-primary-100 text-primary-800'
-              : 'border-warm-200 bg-white text-warm-600 hover:bg-warm-50',
+              : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-50',
           ].join(' ')}
         >
           All
@@ -331,7 +331,7 @@ export function ExerciseBin({
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
               selectedRegionGroup === group
                 ? 'border-primary-300 bg-primary-100 text-primary-800'
-                : 'border-warm-200 bg-white text-warm-600 hover:bg-warm-50',
+                : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-50',
             ].join(' ')}
           >
             {label}

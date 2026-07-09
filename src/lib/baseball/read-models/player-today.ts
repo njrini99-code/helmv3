@@ -617,12 +617,10 @@ export async function getPlayerToday(
     // a staff_only action. We additionally filter to the player-facing action
     // types + active statuses + non-staff visibility as defense in depth, and
     // exclude lift_modification: its conversion (signals.ts materializeActionObject
-    // case 'lift_modification') bridges into a legacy baseball_lift_sessions row.
-    // NOTE (#456 follow-up): the Lifts-Due feed above now reads the unified
-    // helm_lifting_sessions table, so a lift_modification action no longer
-    // surfaces there either until signals.ts is rewired onto the same table —
-    // tracked separately; still excluded here either way (never double-shows,
-    // never a staff-internal action leaking onto the player).
+    // case 'lift_modification') writes directly to the unified helm_lifting_sessions
+    // table (rewired off the graveyarded baseball_lift_assignments table), which
+    // the Lifts-Due feed above already reads — so it is excluded here to avoid a
+    // double-show, never a staff-internal action leaking onto the player.
     db
       .from('baseball_actions')
       .select(

@@ -32,6 +32,8 @@ import {
 } from './nav-registry';
 import type { BaseballCapability } from './capabilities';
 import {
+  COACH_DASHBOARD_TABS,
+  COACH_MESSAGES_TABS,
   COACH_TEAM_TABS,
   COACH_STATS_TABS,
   COACH_DEVELOPMENT_TABS,
@@ -51,6 +53,8 @@ import type { HubSubNavTab } from '@/app/baseball/(dashboard)/_components/hub-su
 
 /** Which hub a tab-origin declared href came from. */
 export type HubName =
+  | 'coach-dashboard'
+  | 'coach-messages'
   | 'coach-team'
   | 'coach-stats'
   | 'coach-development'
@@ -89,6 +93,8 @@ const HUB_TAB_SOURCES: ReadonlyArray<{
   role: 'coach' | 'player';
   tabs: readonly HubSubNavTab[];
 }> = [
+  { hub: 'coach-dashboard', role: 'coach', tabs: COACH_DASHBOARD_TABS },
+  { hub: 'coach-messages', role: 'coach', tabs: COACH_MESSAGES_TABS },
   { hub: 'coach-team', role: 'coach', tabs: COACH_TEAM_TABS },
   { hub: 'coach-stats', role: 'coach', tabs: COACH_STATS_TABS },
   { hub: 'coach-development', role: 'coach', tabs: COACH_DEVELOPMENT_TABS },

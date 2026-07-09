@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconPlus,
@@ -14,6 +13,7 @@ import {
   IconChevronDown,
   IconChevronUp,
 } from '@/components/icons';
+import { SectionMasthead, EmptyIssue } from '@/components/baseball/living-annual';
 import { CreateItineraryModal } from './CreateItineraryModal';
 import { ExpenseForm } from './ExpenseForm';
 import { ExpenseList } from './ExpenseList';
@@ -118,45 +118,40 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Travel</h1>
-          <p className="text-warm-500 mt-1 text-sm">
-            {itineraries.length > 0
-              ? `${itineraries.length} trip${itineraries.length !== 1 ? 's' : ''} planned`
-              : 'Manage team travel and expenses'}
-          </p>
-        </div>
-        {isCoach && (
-          <Button onClick={() => { setEditingItinerary(null); setShowCreateModal(true); }} className="gap-2">
-            <IconPlus size={18} />
-            Create Trip
-          </Button>
-        )}
-      </div>
+      <SectionMasthead
+        eyebrow="THE PRESSBOX · TRAVEL"
+        title="Travel"
+        ink="team"
+        actions={
+          isCoach ? (
+            <Button onClick={() => { setEditingItinerary(null); setShowCreateModal(true); }} className="gap-2">
+              <IconPlus size={18} />
+              Create Trip
+            </Button>
+          ) : undefined
+        }
+      >
+        <p className="max-w-prose font-annual text-body text-text-secondary">
+          {itineraries.length > 0
+            ? `${itineraries.length} trip${itineraries.length !== 1 ? 's' : ''} planned`
+            : 'Manage team travel and expenses'}
+        </p>
+      </SectionMasthead>
 
       {/* Empty State */}
       {itineraries.length === 0 && (
-        <Card variant="glass">
-          <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconMapPin size={32} className="text-warm-300" />
-            </div>
-            <h3 className="text-lg font-medium text-warm-900 mb-2">No Trips Planned</h3>
-            <p className="text-warm-500 mb-6 max-w-md mx-auto">
-              {isCoach
-                ? 'Create a trip itinerary to track travel logistics and expenses for your team.'
-                : 'Your coach has not added any travel itineraries yet.'}
-            </p>
-            {isCoach && (
-              <Button onClick={() => setShowCreateModal(true)} className="gap-2">
+        <EmptyIssue
+          variant="travel"
+          ink="team"
+          action={
+            isCoach ? (
+              <Button onClick={() => { setEditingItinerary(null); setShowCreateModal(true); }} className="gap-2">
                 <IconPlus size={18} />
                 Create First Trip
               </Button>
-            )}
-          </CardContent>
-        </Card>
+            ) : undefined
+          }
+        />
       )}
 
       {/* Upcoming Trips */}

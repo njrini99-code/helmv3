@@ -68,6 +68,7 @@ import {
   IconBolt,
   IconFlag,
   IconMapPin,
+  IconEye,
 } from '@/components/icons';
 
 // -----------------------------------------------------------------------------
@@ -82,16 +83,22 @@ export type BaseballNavRole = ActiveBaseballRole | 'both';
 
 /**
  * The 8 top-level GROUPED HUBS the coach sidebar condenses ~32 destinations
- * into (COACH_NAV_8TAB_PROPOSAL.md, approved 2026-07-01). 'messages' is
- * deliberately absent — Messages lives outside the registry as a persistent
- * cross-cutting slot (see BASEBALL_MESSAGES_NAV below), so it is never a
- * grouping target here. Every coach/both registry entry below declares
- * exactly one of these (nav-manifest.test.ts asserts it), so hub-definitions.ts
- * can GROUP BY this field instead of hand-listing routes per hub.
+ * into (COACH_NAV_8TAB_PROPOSAL.md, approved 2026-07-01; hub/subtab caps
+ * finalized in COHERENCE_RULING_2026-07-08.md Ruling 2). 'messages' is a real
+ * grouping target — the persistent Messages surface itself is STILL declared
+ * outside the registry (see BASEBALL_MESSAGES_NAV below, the cross-cutting
+ * "Messages" tab every consumer prepends), but Announcements folds into this
+ * hub (moved off Team — comms belong with comms) so hub-definitions.ts can
+ * derive a real "Messages · Announcements" sub-nav instead of rendering
+ * Messages as a bare flat link with no sub-tab strip. Every coach/both
+ * registry entry below declares exactly one of these (nav-manifest.test.ts
+ * asserts it), so hub-definitions.ts can GROUP BY this field instead of
+ * hand-listing routes per hub.
  */
 export type BaseballNavHub =
   | 'dashboard'
   | 'team'
+  | 'messages'
   | 'stats-performance'
   | 'development'
   | 'recruiting'
@@ -144,7 +151,11 @@ export type BaseballNavId =
   | 'player-readiness'
   | 'teams'
   | 'player-activate'
-  | 'team';
+  | 'team'
+  // --- New hub-landing pages (COHERENCE_RULING_2026-07-08 Ruling 2) ---
+  | 'operations'
+  | 'scouting'
+  | 'settings';
 
 /**
  * Icon contract shared by sidebar (`<icon size={18} className=... />`) and
@@ -236,6 +247,29 @@ export interface BaseballNavEntry {
    * detail routes (e.g. /players/[id]) highlight the parent registry tab.
    */
   matchPrefixes?: readonly string[];
+  /**
+   * COHERENCE_RULING_2026-07-08 Ruling 2 — the "≤3 subtabs per hub" mechanism.
+   * When set, this entry is a FOLDED destination: hub-definitions.ts's
+   * `hubEntries()` excludes it from the hub's RENDERED sub-tab strip (so the
+   * hub never exceeds 3 tabs), but the entry keeps its own registry row —
+   * command palette, breadcrumbs, and deep links still resolve it normally.
+   * The value is the id of the sibling registry entry that acts as this
+   * entry's LANDING/parent tab (e.g. a Documents/Travel/Practice Planner row
+   * folds under the 'operations' landing). The parent entry's own
+   * `matchPrefixes` must list this entry's `href` so resolve-active-hub still
+   * highlights the right hub + subtab when a user is on the folded route
+   * (nav-manifest.test.ts asserts this pairing).
+   */
+  foldedUnder?: BaseballNavId;
+  /**
+   * Optional override for how this entry's label reads INSIDE a hub sub-nav
+   * strip specifically, when the canonical `label` (used everywhere else —
+   * breadcrumbs, command palette, mobile nav) reads better unchanged. Used by
+   * Ruling 2's Development hub, where the "Performance" feature is folded in
+   * as the hub's "Training" subtab without renaming the feature itself
+   * everywhere it's referenced.
+   */
+  hubTabLabel?: string;
 }
 
 /**
@@ -284,11 +318,26 @@ export interface BaseballNavContext {
 // Showcase-style org surfaces (#367) — hidden from college/HS/JUCO program types.
 const SHOWCASE_ORG_PROGRAM_TYPES = ['showcase', 'academy', 'club'] as const satisfies readonly BaseballProgramType[];
 
+// College/JUCO-only surfaces — hidden from HS/Showcase/Academy/Club program
+// types. Postgame Review's page has always hard-redirected non-college/juco
+// coaches (box-score-driven review only makes sense for those programs), but
+// the nav entry itself was shown to ALL coach types, so HS/Showcase/Academy/
+// Club coaches saw the tab, clicked it, and got silently bounced back to
+// Command Center. Gating the entry here hides the tab for those program
+// types instead; the page's own guard stays as defense-in-depth.
+const COLLEGE_JUCO_PROGRAM_TYPES = ['college', 'juco'] as const satisfies readonly BaseballProgramType[];
+
 export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   // --- Daily loops (no capability gate beyond role) ----------------------------
   {
     id: 'command-center',
-    label: 'Command Center',
+    // Ruling 2 (item 9): the top-level hub is already labeled "Dashboard" —
+    // a subtab/breadcrumb ALSO reading "Command Center" is drift the founder
+    // called out by name. The route/id/page masthead keep "Command Center"
+    // (the page's own distinctive editorial title); only the NAV-visible
+    // label (breadcrumbs, hub subtab strip, command palette, mobile nav)
+    // changes to "Overview" so "Dashboard" never has two names in the UI.
+    label: 'Overview',
     href: '/baseball/dashboard/command-center',
     icon: IconLayers,
     role: 'coach',
@@ -434,6 +483,13 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'stats-performance',
+    // Ruling 2: Season is a VIEW inside Stats Center (no longer its own
+    // subtab), and Upload + Import Center are CTAs on the Stats Center page
+    // header — so all three routes must still resolve to this hub + subtab.
+    matchPrefixes: [
+      '/baseball/dashboard/stats/upload',
+      '/baseball/dashboard/import',
+    ],
   },
 
   // --- Coach feature verticals (capability-gated) ------------------------------
@@ -446,6 +502,8 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_imports',
     section: 'primary',
     hub: 'stats-performance',
+    // Ruling 2: a CTA inside Stats Center, not its own subtab.
+    foldedUnder: 'stats-center',
   },
   {
     id: 'practice-planner',
@@ -458,7 +516,12 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // Coaches need can_manage_practice to plan; players see the published plan.
     requiredCapability: null,
     section: 'primary',
-    hub: 'stats-performance',
+    // Ruling 2: Practice Planner + Practice Effectiveness moved OFF
+    // Stats & Performance (which caps at Stats Center/Games/Postgame) and
+    // fold into the Team hub's new Operations landing alongside
+    // Documents/Travel — all four are team-logistics surfaces, not stats.
+    hub: 'team',
+    foldedUnder: 'operations',
   },
   {
     id: 'practice-effectiveness',
@@ -471,7 +534,8 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // so this is gated on can_manage_practice (the read model enforces it too).
     requiredCapability: 'can_manage_practice',
     section: 'primary',
-    hub: 'stats-performance',
+    hub: 'team',
+    foldedUnder: 'operations',
   },
   {
     id: 'postgame-review',
@@ -485,10 +549,17 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_stats',
     section: 'primary',
     hub: 'stats-performance',
+    allowedProgramTypes: COLLEGE_JUCO_PROGRAM_TYPES,
   },
   {
     id: 'performance',
     label: 'Performance',
+    // Ruling 2: Development hub reads "Dev Plans · Training · Videos" — this
+    // feature IS "Training" in that strip. The canonical label stays
+    // "Performance" everywhere else (breadcrumbs, command palette, the
+    // page's own masthead already titled "Performance") — only the hub
+    // sub-nav tab renders the reframed name.
+    hubTabLabel: 'Training',
     href: '/baseball/dashboard/performance',
     icon: IconDumbbell,
     role: 'coach',
@@ -496,7 +567,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     requiredAnyCapabilities: ['can_manage_lifting', 'can_view_readiness'],
     section: 'primary',
-    hub: 'stats-performance',
+    hub: 'development',
     matchPrefixes: ['/baseball/dashboard/performance'],
   },
   {
@@ -523,6 +594,10 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_invite_staff',
     section: 'secondary',
     hub: 'management',
+    // Ruling 2: folds into the Settings landing (card grid at
+    // /dashboard/settings already links here) — Management caps at
+    // Decision Room/Settings/Organization.
+    foldedUnder: 'settings',
   },
   {
     id: 'program-settings',
@@ -533,6 +608,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_settings',
     section: 'secondary',
     hub: 'management',
+    foldedUnder: 'settings',
   },
 
   // -----------------------------------------------------------------------
@@ -559,6 +635,11 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'recruiting',
+    // Ruling 2: Interest is a coach-facing recruiting-funnel view — closest
+    // conceptual home is Pipeline (not explicitly named in the ruling's
+    // Recruiting row; smallest-safe-choice fold, still command-palette +
+    // deep-link reachable).
+    matchPrefixes: ['/baseball/dashboard/college-interest'],
   },
   {
     id: 'college-interest',
@@ -572,6 +653,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'recruiting',
+    foldedUnder: 'pipeline',
   },
   {
     id: 'discover',
@@ -595,6 +677,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'recruiting',
+    // Ruling 2: folds into the new Scouting landing (Recruiting caps at
+    // Pipeline/Discover/Scouting).
+    foldedUnder: 'scouting',
   },
   {
     id: 'compare',
@@ -607,6 +692,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_roster',
     section: 'primary',
     hub: 'recruiting',
+    foldedUnder: 'scouting',
   },
   {
     id: 'comparisons',
@@ -618,6 +704,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_roster',
     section: 'primary',
     hub: 'recruiting',
+    foldedUnder: 'scouting',
   },
   {
     id: 'scout-packets',
@@ -631,6 +718,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_export_reports',
     section: 'primary',
     hub: 'recruiting',
+    foldedUnder: 'scouting',
   },
   {
     id: 'dev-plans',
@@ -671,6 +759,29 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     section: 'primary',
     hub: 'recruiting',
     matchPrefixes: ['/baseball/dashboard/camps'],
+    foldedUnder: 'scouting',
+  },
+  {
+    // Ruling 2 (Recruiting hub): the new landing page that keeps Watchlist,
+    // Compare Players, Saved Comparisons, Scout Packets, and Camps reachable
+    // once Recruiting caps at 3 rendered subtabs (Pipeline · Discover ·
+    // Scouting). Card-grid landing (dashboard/scouting) — each card inherits
+    // its target's own registry gating, never re-declares it.
+    id: 'scouting',
+    label: 'Scouting',
+    href: '/baseball/dashboard/scouting',
+    icon: IconEye,
+    role: 'coach',
+    requiredCapability: null,
+    section: 'primary',
+    hub: 'recruiting',
+    matchPrefixes: [
+      '/baseball/dashboard/watchlist',
+      '/baseball/dashboard/compare',
+      '/baseball/dashboard/comparisons',
+      '/baseball/dashboard/scout-packets',
+      '/baseball/dashboard/camps',
+    ],
   },
   {
     id: 'organization',
@@ -685,6 +796,11 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'secondary',
     hub: 'management',
+    // Ruling 2: Organization is the rendered Management subtab; Teams +
+    // Events fold under it for Showcase-types (both already share this
+    // entry's allowedProgramTypes gate), so both routes still highlight the
+    // Organization subtab when visited directly.
+    matchPrefixes: ['/baseball/dashboard/teams', '/baseball/dashboard/events'],
   },
   {
     id: 'teams',
@@ -698,6 +814,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'secondary',
     hub: 'management',
+    foldedUnder: 'organization',
   },
   {
     id: 'program',
@@ -711,6 +828,29 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_settings',
     section: 'secondary',
     hub: 'management',
+    foldedUnder: 'settings',
+  },
+  {
+    // Ruling 2 (Management hub): the existing card-grid landing at
+    // /dashboard/settings (KEPT, per the ruling — its own 13-tab strip is
+    // gone by design now that Management caps at 3 subtabs: Decision Room ·
+    // Settings · Organization). Program Info, Staff Settings, and Program
+    // Settings fold into this one Settings destination; the card grid
+    // already links every one of them (verified, nothing orphaned).
+    id: 'settings',
+    label: 'Settings',
+    href: '/baseball/dashboard/settings',
+    icon: IconSettings,
+    role: 'coach',
+    requiredCapability: null,
+    section: 'secondary',
+    hub: 'management',
+    // '/baseball/dashboard/settings/*' sub-routes (staff, program, season,
+    // philosophy, roles, permissions, imports, integrations, audit) resolve
+    // via this entry's own href as a natural route PREFIX — only the
+    // 'program' fold target needs an explicit prefix since its href is NOT
+    // nested under /settings/.
+    matchPrefixes: ['/baseball/dashboard/program'],
   },
 
   // --- Shared team surfaces (coach + player) --------------------------------
@@ -725,7 +865,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     role: 'both',
     requiredCapability: null,
     section: 'primary',
-    hub: 'team',
+    // Ruling 2: moved OFF Team — announcements are comms, so they fold into
+    // the Messages hub (Messages · Announcements) instead.
+    hub: 'messages',
   },
   {
     id: 'documents',
@@ -738,6 +880,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'team',
+    // Ruling 2: Team hub caps at Roster/Calendar/Operations — Documents folds
+    // into the new Operations landing.
+    foldedUnder: 'operations',
   },
   {
     id: 'travel',
@@ -750,6 +895,28 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: null,
     section: 'primary',
     hub: 'team',
+    foldedUnder: 'operations',
+  },
+  {
+    // Ruling 2 (Team hub): the new landing page that keeps Documents, Travel,
+    // Practice Planner, and Practice Effectiveness reachable in ≤2 clicks
+    // once Team caps at 3 rendered subtabs (Roster · Calendar · Operations).
+    // Card-grid landing (src/app/baseball/(dashboard)/dashboard/operations) —
+    // each card inherits its target's own registry gating, never re-declares it.
+    id: 'operations',
+    label: 'Operations',
+    href: '/baseball/dashboard/operations',
+    icon: IconClipboardList,
+    role: 'coach',
+    requiredCapability: null,
+    section: 'primary',
+    hub: 'team',
+    matchPrefixes: [
+      '/baseball/dashboard/documents',
+      '/baseball/dashboard/travel',
+      '/baseball/dashboard/practice',
+      '/baseball/dashboard/practice-effectiveness',
+    ],
   },
   {
     id: 'videos',
@@ -776,6 +943,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'primary',
     hub: 'management',
+    foldedUnder: 'organization',
   },
   {
     id: 'team',

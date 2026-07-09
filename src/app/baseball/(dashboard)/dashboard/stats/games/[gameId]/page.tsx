@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getGameBoxScore } from '@/app/baseball/actions/games';
+import { BreadcrumbLabel } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
 import { BoxScoreView } from '@/components/baseball/box-score/BoxScoreView';
 import { BoxScoreUpload } from '@/components/baseball/box-score/BoxScoreUpload';
+import { GameDetailHeader } from '@/components/baseball/games/GameDetailHeader';
 import { mapBattingToInput, mapPitchingToInput } from '@/components/baseball/box-score/mappers';
+import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import type { BaseballGame } from '@/lib/types';
 
 interface PageProps {
@@ -79,18 +81,19 @@ export default async function GameDetailPage({ params }: PageProps) {
   const initialBatting = batting.map(mapBattingToInput);
   const initialPitching = pitching.map(mapPitchingToInput);
 
+  const opponentLabel = `${game.game_type === 'scrimmage' ? 'Scrimmage' : 'Game'} vs ${game.opponent_name ?? 'TBD'}`;
+  const canManageStats = await hasBaseballCapability(team.id, 'can_manage_stats');
+
   return (
     <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-warm-400">
-        <Link href="/baseball/dashboard/stats/games" className="hover:text-warm-600 transition-colors">
-          Games
-        </Link>
-        <span>›</span>
-        <span className="text-warm-600">
-          {game.game_type === 'scrimmage' ? 'Scrimmage' : 'Game'} vs {game.opponent_name ?? 'TBD'}
-        </span>
-      </div>
+      {/* Ruling 4: the shell's breadcrumb has no registry entry for a dynamic
+          game id — this supplies the real matchup name so the trail never
+          falls back to a raw UUID segment. */}
+      <BreadcrumbLabel name={opponentLabel} />
+      {/* Breadcrumb + coach-only Edit affordance (P2: fix a mistyped
+          date/opponent/location/notes without deleting the game, which
+          cascade-destroys its box score). */}
+      <GameDetailHeader game={game as BaseballGame} opponentLabel={opponentLabel} canManageStats={canManageStats} />
 
       {/* Completed game with stats: show box score, then offer to edit */}
       {isCompleted && hasStats ? (

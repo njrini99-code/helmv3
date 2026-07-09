@@ -28,7 +28,6 @@
 
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -381,14 +380,18 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
 
   return (
     <>
-      <Header title="Import Sources" subtitle={`${teamName} • source registry`}>
+      <header className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Import Sources</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{teamName} • source registry</p>
+        </div>
         {canManage && !showForm && (
           <Button onClick={() => setShowForm(true)} disabled={isPending}>
             <IconPlus size={16} className="mr-1.5" />
             Add source
           </Button>
         )}
-      </Header>
+      </header>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         {!canManage && (

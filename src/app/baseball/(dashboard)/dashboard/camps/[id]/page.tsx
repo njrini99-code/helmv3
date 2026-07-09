@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -222,7 +221,9 @@ export default function CampDetailPage() {
   if (loading) {
     return (
       <>
-        <Header title="Camp Details" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Camp Details</h1>
+        </div>
         <PageLoading />
       </>
     );
@@ -231,7 +232,9 @@ export default function CampDetailPage() {
   if (!camp) {
     return (
       <>
-        <Header title="Camp Not Found" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Camp Not Found</h1>
+        </div>
         <div className="p-6">
           <EmptyState
             icon={<IconAlertCircle size={24} />}
@@ -250,17 +253,20 @@ export default function CampDetailPage() {
 
   return (
     <>
-      <Header
-        title={camp.name}
-        subtitle={camp.organization?.name}
-      >
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">{camp.name}</h1>
+          {camp.organization?.name && (
+            <p className="mt-1 text-body-sm text-warm-500">{camp.organization.name}</p>
+          )}
+        </div>
         <Link href="/baseball/dashboard/camps">
           <Button variant="secondary" size="sm">
             <IconArrowLeft size={16} className="mr-1.5" />
             Back
           </Button>
         </Link>
-      </Header>
+      </div>
 
       <div className="p-6 lg:p-8 space-y-6">
         {/* Camp Info */}

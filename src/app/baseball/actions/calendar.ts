@@ -1,9 +1,11 @@
 'use server';
 
+import { z } from 'zod';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { sanitizeDbError } from '@/lib/db-error';
+import { logServerError } from '@/lib/server-error-logger';
 import { revalidatePath } from 'next/cache';
 import { requireBaseballCapability, BaseballCapabilityError } from '@/lib/baseball/capabilities';
 import {
@@ -50,6 +52,31 @@ interface CreateEventInput {
   timezoneOffset?: number;
 }
 
+// Validates the raw CreateEventInput before it reaches Supabase — an
+// unvalidated eventType/date string could otherwise silently violate a
+// baseball_events CHECK constraint and surface as a raw sanitized DB error
+// instead of a clean validation message.
+const createEventInputSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(200),
+  eventType: z.string().trim().min(1, 'Event type is required'),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate must be YYYY-MM-DD'),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate must be YYYY-MM-DD').nullable().optional(),
+  startTime: z.string().nullable().optional(),
+  endTime: z.string().nullable().optional(),
+  allDay: z.boolean().optional(),
+  location: z.string().max(500).nullable().optional(),
+  description: z.string().max(5000).nullable().optional(),
+  isMandatory: z.boolean().optional(),
+  maxAttendees: z.number().int().positive().nullable().optional(),
+  rsvpDeadline: z.string().nullable().optional(),
+  attendeeIds: z.array(z.string().uuid()).optional(),
+  requiresRsvp: z.boolean().optional(),
+  opponentName: z.string().max(200).nullable().optional(),
+  homeAway: z.enum(['home', 'away', 'neutral']).nullable().optional(),
+  teamId: z.string().uuid().optional(),
+  timezoneOffset: z.number().optional(),
+});
+
 interface UpdateEventInput {
   title?: string;
   eventType?: string;
@@ -69,7 +96,18 @@ interface UpdateEventInput {
   timezoneOffset?: number;
 }
 
-type ActionResult<T = unknown> = { success: boolean; error?: string; data?: T };
+type ActionResult<T = unknown> = {
+  success: boolean;
+  error?: string;
+  data?: T;
+  /**
+   * Set when the primary write succeeded but a secondary, best-effort write
+   * (RSVP invites, the linked baseball_games row) failed — a partial-success
+   * signal so callers can surface it without treating the whole action as
+   * failed (the primary row really was created).
+   */
+  warning?: string;
+};
 
 const CALENDAR_PATH = '/baseball/dashboard/calendar';
 
@@ -133,6 +171,9 @@ function buildRsvpDeadline(deadline?: string | null, timezoneOffset?: number): s
 }
 
 function mapCalendarActionError(error: unknown): ActionResult {
+  if (error instanceof z.ZodError) {
+    return { success: false, error: error.issues[0]?.message ?? 'Invalid event input' };
+  }
   if (error instanceof BaseballUnauthorizedError) {
     return { success: false, error: 'Not authenticated' };
   }
@@ -167,7 +208,8 @@ async function getPlayerInfo(supabase: Awaited<ReturnType<typeof createClient>>,
 const createBaseballEventAction = withBaseballAction(
   'createBaseballEvent',
   { featureArea: 'baseball-calendar', requiredCapability: 'can_manage_calendar' },
-  async (ctx, input: CreateEventInput): Promise<ActionResult> => {
+  async (ctx, rawInput: CreateEventInput): Promise<ActionResult> => {
+    const input = createEventInputSchema.parse(rawInput);
     const supabase = await createClient();
     const coachId = ctx.activeCoachId;
     if (!coachId) return { success: false, error: 'Coach or team not found' };
@@ -211,6 +253,14 @@ const createBaseballEventAction = withBaseballAction(
 
     if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
+    // Secondary writes below are best-effort: the calendar event itself
+    // already exists (`data`), so a failure here should NOT report the whole
+    // action as failed — but it must not be silently discarded either
+    // (supabase-js never throws on a failed insert; the caller has to check
+    // `error` explicitly). Collected into `warnings` and surfaced via the
+    // `warning` field on a `success: true` result.
+    const warnings: string[] = [];
+
     if (input.requiresRsvp && input.attendeeIds && input.attendeeIds.length > 0 && data) {
       const attendanceRecords = input.attendeeIds.map((playerId) => ({
         event_id: data.id,
@@ -219,12 +269,25 @@ const createBaseballEventAction = withBaseballAction(
       }));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('baseball_event_attendance').insert(attendanceRecords);
+      const { error: attendanceError } = await (supabase as any)
+        .from('baseball_event_attendance')
+        .insert(attendanceRecords);
+      if (attendanceError) {
+        const message = `RSVP invites could not be created: ${sanitizeDbError(attendanceError, 'calendar')}`;
+        warnings.push(message);
+        await logServerError(`[createBaseballEvent] ${message}`, {
+          action: 'baseball_calendar.createBaseballEvent.attendance',
+          featureArea: 'baseball-calendar',
+          sport: 'baseball',
+          teamId: resolvedTeamId,
+          metadata: { eventId: data.id },
+        }, 'warning');
+      }
     }
 
     if (data && (input.eventType === 'game' || input.eventType === 'scrimmage')) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('baseball_games').insert({
+      const { error: gameError } = await (supabase as any).from('baseball_games').insert({
         team_id: resolvedTeamId,
         event_id: data.id,
         game_date: input.startDate,
@@ -235,11 +298,26 @@ const createBaseballEventAction = withBaseballAction(
         created_by: coachId,
         status: 'scheduled',
       });
+      if (gameError) {
+        const message = `Linked game record could not be created: ${sanitizeDbError(gameError, 'calendar')}`;
+        warnings.push(message);
+        await logServerError(`[createBaseballEvent] ${message}`, {
+          action: 'baseball_calendar.createBaseballEvent.linkedGame',
+          featureArea: 'baseball-calendar',
+          sport: 'baseball',
+          teamId: resolvedTeamId,
+          metadata: { eventId: data.id },
+        }, 'warning');
+      } else {
+        revalidatePath('/baseball/dashboard/stats/games');
+      }
     }
 
     revalidatePath(CALENDAR_PATH);
     revalidatePath('/baseball/dashboard/events');
-    return { success: true, data };
+    return warnings.length > 0
+      ? { success: true, data, warning: warnings.join('; ') }
+      : { success: true, data };
   },
 );
 

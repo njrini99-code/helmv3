@@ -81,6 +81,10 @@ interface Props {
   orgId: string;
   canEdit: boolean;
   loading?: boolean;
+  /** Base route for this caller's programs list, e.g. '/lifting/dashboard/programs'
+   * or '/baseball/dashboard/performance/programs'. Used for the "← Programs" back
+   * link and the post-delete redirect so this component never hardcodes an app. */
+  basePath: string;
 }
 
 function ProgramEditorSkeleton() {
@@ -208,7 +212,7 @@ function moveItem<T extends { id: string }>(arr: T[], id: string, direction: 'up
 // Component
 // -----------------------------------------------------------------------------
 
-export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit, loading = false }: Props) {
+export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit, loading = false, basePath }: Props) {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
@@ -637,7 +641,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
     startTransition(async () => {
       const result = await deleteProgram({ orgId, programId: program.id });
       if (result.success) {
-        router.push('/lifting/dashboard/programs');
+        router.push(basePath);
       }
     });
   }
@@ -652,7 +656,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
       <aside className="w-72 shrink-0 border-r border-warm-100 bg-warm-50/50 p-4 overflow-y-auto">
         {/* Nav + edit meta */}
         <div className="mb-4 flex items-center justify-between">
-          <Link href="/lifting/dashboard/programs" className="text-xs text-warm-400 hover:text-warm-700 transition-colors">
+          <Link href={basePath} className="text-xs text-warm-400 hover:text-warm-700 transition-colors">
             ← Programs
           </Link>
           {canEdit && (

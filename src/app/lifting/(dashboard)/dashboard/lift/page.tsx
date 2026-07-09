@@ -110,20 +110,40 @@ async function fetchPlayerSessions(athleteId: string): Promise<{
     .toISOString()
     .slice(0, 10);
 
-  // Upcoming: today + future + overdue open
-  const { data: upcomingRows } = await fromUntyped(supabase, 'helm_lifting_sessions')
-    .select('*')
-    .eq('athlete_id', athleteId)
-    .or(
-      `and(scheduled_date.gte.${today}),` +
-        `and(status.in.(assigned,started,modified),scheduled_date.lt.${today})`,
-    )
-    .order('scheduled_date', { ascending: true })
-    .limit(20) as { data: HelmLiftingSessionRow[] | null };
+  // Today + future and overdue-but-still-open are fetched as SEPARATE bounded
+  // queries (each with its own .limit()), not one combined .or(...) query
+  // capped at 20 with a post-filter — a single capped query orders ascending
+  // by scheduled_date, so overdue-open rows (earlier dates) sort BEFORE
+  // today/future rows; 20+ overdue-open sessions would fill the entire cap
+  // and push today's session out of the result set entirely (mirrors the
+  // baseball Lift Home fix — src/app/baseball/(dashboard)/dashboard/lift/page.tsx).
+  const [
+    { data: currentFutureRows },
+    { data: overdueOpenRows },
+  ] = (await Promise.all([
+    fromUntyped(supabase, 'helm_lifting_sessions')
+      .select('*')
+      .eq('athlete_id', athleteId)
+      .in('status', OPEN_STATUSES)
+      .gte('scheduled_date', today)
+      .order('scheduled_date', { ascending: true })
+      .limit(20),
+    fromUntyped(supabase, 'helm_lifting_sessions')
+      .select('*')
+      .eq('athlete_id', athleteId)
+      .in('status', OPEN_STATUSES)
+      .lt('scheduled_date', today)
+      .order('scheduled_date', { ascending: true })
+      .limit(20),
+  ])) as [
+    { data: HelmLiftingSessionRow[] | null },
+    { data: HelmLiftingSessionRow[] | null },
+  ];
 
-  const upcoming = (upcomingRows ?? []).filter(
-    (s) => s.scheduled_date >= today || OPEN_STATUSES.includes(s.status),
-  );
+  // Overdue-open rows are all < today and already ascending, so concatenating
+  // them ahead of the current/future rows (also ascending) preserves overall
+  // chronological order without needing an extra merge-sort.
+  const upcoming = [...(overdueOpenRows ?? []), ...(currentFutureRows ?? [])];
 
   // Recent: completed / missed / excused in the last RECENT_DAYS days
   const { data: recentRows } = await fromUntyped(supabase, 'helm_lifting_sessions')

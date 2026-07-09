@@ -334,29 +334,6 @@ function analyzePlayer(
     });
   }
 
-  // 5. Exit Velocity Analysis (recruiting potential indicator)
-  if (aggregates?.avg_exit_velocity && aggregates.max_exit_velocity) {
-    const evGap = aggregates.max_exit_velocity - aggregates.avg_exit_velocity;
-
-    if (evGap >= 8) {
-      insights.push({
-        player_id: playerId,
-        insight_type: 'position_opportunity',
-        priority: 'medium',
-        title: `${playerName} has untapped power potential`,
-        description: `Max exit velocity (${aggregates.max_exit_velocity.toFixed(1)} mph) is ${evGap.toFixed(1)} mph above average (${aggregates.avg_exit_velocity.toFixed(1)} mph). Room to improve consistency.`,
-        metadata: {
-          category: 'recruiting' as BaseballInsightCategory,
-          avg_ev: aggregates.avg_exit_velocity,
-          max_ev: aggregates.max_exit_velocity,
-          gap: evGap,
-        },
-        recommended_action: 'Focus on barrel consistency drills, swing plane optimization.',
-        status: 'active',
-      });
-    }
-  }
-
   return insights;
 }
 

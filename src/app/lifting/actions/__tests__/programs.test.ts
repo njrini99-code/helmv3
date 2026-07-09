@@ -171,6 +171,7 @@ vi.mock('@/lib/lifting/with-lifting-action', () => ({
   LiftingActionError: class LiftingActionError extends Error {},
 }));
 
+import { revalidatePath } from 'next/cache';
 import { publishProgram } from '@/app/lifting/actions/programs';
 
 describe('publishProgram program_assignments write target', () => {
@@ -246,5 +247,31 @@ describe('publishProgram idempotent re-publish', () => {
     ];
     expect(sessionPayload.program_assignment_id).toBe(ASSIGNMENT_ID);
     expect(sessionOpts).toEqual({ onConflict: 'program_assignment_id,athlete_id' });
+  });
+});
+
+describe('publishProgram revalidates the baseball performance portal (Wave C parallel routes)', () => {
+  beforeEach(() => {
+    resetTables(null);
+    vi.clearAllMocks();
+    resetTables(null);
+  });
+
+  it('busts /baseball/dashboard/performance/programs, /performance/live, and /lift alongside the lifting-portal paths', async () => {
+    await publishProgram({
+      programId: PROGRAM_ID,
+      scheduleDate: '2026-07-06',
+      targetGroupId: null,
+      targetAthleteId: null,
+    });
+
+    const revalidated = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
+    expect(revalidated).toContain('/baseball/dashboard/performance/programs');
+    expect(revalidated).toContain('/baseball/dashboard/performance/live');
+    expect(revalidated).toContain('/baseball/dashboard/lift');
+    // The lifting-portal paths must still fire too — this is additive, not a
+    // replacement of the existing revalidation.
+    expect(revalidated).toContain('/lifting/dashboard/programs');
+    expect(revalidated).toContain('/lifting/dashboard/sessions');
   });
 });

@@ -52,6 +52,8 @@ import { BASEBALL_NAV_REGISTRY, BASEBALL_MESSAGES_NAV } from './nav-registry';
 import type { BaseballCapability } from './capabilities';
 import { BASEBALL_SETTINGS_ALIASES } from './settings-route-aliases';
 import {
+  COACH_DASHBOARD_TABS,
+  COACH_MESSAGES_TABS,
   COACH_TEAM_TABS,
   COACH_STATS_TABS,
   COACH_DEVELOPMENT_TABS,
@@ -140,6 +142,8 @@ registryEntries.push({
 // -----------------------------------------------------------------------------
 
 const ALL_HUB_TAB_ARRAYS: readonly (readonly HubSubNavTab[])[] = [
+  COACH_DASHBOARD_TABS,
+  COACH_MESSAGES_TABS,
   COACH_TEAM_TABS,
   COACH_STATS_TABS,
   COACH_DEVELOPMENT_TABS,

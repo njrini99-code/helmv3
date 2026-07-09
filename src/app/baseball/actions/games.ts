@@ -44,13 +44,28 @@ import type {
 const STATS_PATHS = [
   '/baseball/dashboard/stats-center',
   '/baseball/dashboard/stats/games',
-  '/baseball/dashboard/stats/season',
   '/baseball/dashboard/my-stats',
   '/baseball/dashboard/calendar',
 ];
 
 function revalidateStatsPaths() {
   STATS_PATHS.forEach((p) => revalidatePath(p));
+}
+
+/**
+ * Revalidates the dynamic routes a coach actually lands on after a box-score
+ * save: the specific game's detail page and each affected player's dashboard
+ * + stats pages. The literal STATS_PATHS list above never covers these
+ * dynamic `[id]` segments, so without this a coach viewing a game or player
+ * page right after saving sees stale data until the route's own revalidation
+ * window elapses.
+ */
+function revalidateGameAndPlayerPaths(gameId: string, playerIds: string[]) {
+  revalidatePath(`/baseball/dashboard/stats/games/${gameId}`);
+  for (const playerId of playerIds) {
+    revalidatePath(`/baseball/dashboard/players/${playerId}`);
+    revalidatePath(`/baseball/dashboard/players/${playerId}/stats`);
+  }
 }
 
 function mapGameActionError(error: unknown): { success: false; error: string } {
@@ -152,7 +167,7 @@ const createGameAction = withBaseballAction(
         ? `${input.game_date}T${input.event_time}`
         : `${input.game_date}T12:00:00`;
 
-      const { data: event } = await supabase
+      const { data: event, error: eventError } = await supabase
         .from('baseball_events')
         .insert({
           team_id: teamId,
@@ -172,6 +187,13 @@ const createGameAction = withBaseballAction(
         .select('id')
         .single();
 
+      // The caller explicitly requested a linked calendar event
+      // (`create_calendar_event: true`) — silently proceeding without it
+      // (the previous behaviour: error discarded, `eventId` just stays null)
+      // would create a game the coach believes is on the calendar but isn't.
+      if (eventError) {
+        return { success: false, error: sanitizeDbError(eventError, 'games') };
+      }
       if (event) eventId = event.id;
     }
 
@@ -194,7 +216,17 @@ const createGameAction = withBaseballAction(
       .select()
       .single();
 
-    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+    if (error) {
+      // Roll back the calendar event we just created above so we don't
+      // strand an event on the calendar with no backing game (mirrors the
+      // rollback pattern in importScheduleImpl below). Only the event WE
+      // created — never a caller-supplied input.event_id — is eligible for
+      // rollback here.
+      if (input.create_calendar_event && !input.event_id && eventId) {
+        await supabase.from('baseball_events').delete().eq('id', eventId);
+      }
+      return { success: false, error: sanitizeDbError(error, 'games') };
+    }
 
     revalidateStatsPaths();
     return { success: true, data: game as BaseballGame };
@@ -656,7 +688,7 @@ async function completeGameAndRecalculate(
 
   const { data: game } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
-    .select('team_id')
+    .select('team_id, game_date')
     .eq('id', gameId)
     .single();
 
@@ -695,7 +727,16 @@ async function completeGameAndRecalculate(
     ]),
   ];
 
-  const currentYear = new Date().getFullYear();
+  // Derive the season-year bucket from the game's own date, not "today" —
+  // a backdated or cross-New-Year game must recalc into the season it was
+  // actually played in, mirroring the fix already applied in the
+  // `save_baseball_full_box_score` RPC.
+  // game_date is a date-only string (e.g. "2026-01-01"); parse the year
+  // directly instead of via `new Date(...).getFullYear()`, which parses as
+  // UTC midnight but reads back in local time — an off-by-one at Jan 1 /
+  // Dec 31 on any non-UTC server. Slicing keeps this consistent with the
+  // string-based season bucketing used by getTeamGamesImpl / getPlayerSeasonStatsImpl.
+  const seasonYear = parseInt(String(game.game_date).slice(0, 4), 10);
 
   const db2 = supabase as unknown as SupabaseClient;
   const recalcResults = await Promise.all(
@@ -703,13 +744,14 @@ async function completeGameAndRecalculate(
       db2.rpc('recalculate_baseball_season_stats', {
         p_player_id: playerId,
         p_team_id: game.team_id,
-        p_season_year: currentYear,
+        p_season_year: seasonYear,
       })
     )
   );
 
   revalidateStatsPaths();
   revalidatePath(`/baseball/dashboard/players`);
+  revalidateGameAndPlayerPaths(gameId, allPlayerIds);
 
   const recalcError = recalcResults.find((r) => r.error)?.error;
   if (recalcError) {
@@ -803,8 +845,16 @@ async function saveCsvBoxScoreViaRpc(
     return { success: false, error: result?.error ?? 'Box score save failed' };
   }
 
+  const affectedPlayerIds = [
+    ...new Set([
+      ...finalBatting.map((line) => line.player_id),
+      ...finalPitching.map((line) => line.player_id),
+    ]),
+  ];
+
   revalidateStatsPaths();
   revalidatePath(`/baseball/dashboard/players`);
+  revalidateGameAndPlayerPaths(gameId, affectedPlayerIds);
   return { success: true };
 }
 
@@ -886,8 +936,16 @@ const saveFullBoxScoreAction = withBaseballAction(
       return { success: false, error: result?.error ?? 'Box score save failed' };
     }
 
+    const affectedPlayerIds = [
+      ...new Set([
+        ...batting.map((line) => line.player_id),
+        ...pitching.map((line) => line.player_id),
+      ]),
+    ];
+
     revalidateStatsPaths();
     revalidatePath(`/baseball/dashboard/players`);
+    revalidateGameAndPlayerPaths(gameId, affectedPlayerIds);
     return { success: true };
   },
 );
@@ -1062,7 +1120,7 @@ async function uploadBoxScoreCSVImpl(
   const allMatched = unmatched.length === 0;
 
   // Track the upload
-  const { data: upload } = await (supabase as unknown as SupabaseClient)
+  const { data: upload, error: uploadError } = await (supabase as unknown as SupabaseClient)
     .from('baseball_box_score_uploads')
     .insert({
       team_id: teamId,
@@ -1079,7 +1137,30 @@ async function uploadBoxScoreCSVImpl(
     .select('id')
     .single();
 
+  if (uploadError && !allMatched) {
+    // Unmatched rows need a human to resolve them via resolveBoxScoreUpload,
+    // which requires THIS row's id + raw_content — without it the review
+    // flow has nothing to resolve against, so a failed tracking insert must
+    // fail loudly here rather than return a phantom `uploadId: undefined`
+    // that silently strands the unmatched players.
+    return {
+      success: false,
+      matched,
+      unmatched,
+      battingRows,
+      pitchingRows,
+      allMatched,
+      error: sanitizeDbError(uploadError, 'games'),
+    };
+  }
+
   let completionError: string | undefined;
+  if (uploadError) {
+    // allMatched path: the box score itself still gets saved below via the
+    // RPC — only the audit-trail upload row failed to write. Surface it as
+    // a completion-style warning instead of discarding it silently.
+    completionError = `Upload record could not be saved: ${sanitizeDbError(uploadError, 'games')}`;
+  }
 
   // If all matched, auto-save the box score via the atomic RPC — it saves
   // both sides (preserving whichever side isn't in this CSV), finalizes the
@@ -1087,7 +1168,11 @@ async function uploadBoxScoreCSVImpl(
   // season data doesn't sit stale until a second manual action runs.
   if (allMatched && rows.length > 0) {
     const saveResult = await saveCsvBoxScoreViaRpc(gameId, csvType, battingRows, pitchingRows);
-    if (!saveResult.success) completionError = saveResult.error;
+    if (!saveResult.success) {
+      completionError = completionError
+        ? `${completionError} Also: ${saveResult.error}`
+        : saveResult.error;
+    }
   }
 
   return {
@@ -1225,10 +1310,20 @@ async function resolveBoxScoreUploadImpl(
   const result = await saveCsvBoxScoreViaRpc(gameId, csvType, battingRows, pitchingRows);
 
   if (result.success) {
-    await (supabase as unknown as SupabaseClient)
+    // Best-effort bookkeeping: the box score itself already saved above, so
+    // a failure marking the audit-trail row `completed` must not flip the
+    // overall result to failure — but it also must not be discarded
+    // silently, so it's logged for observability instead.
+    const { error: statusError } = await (supabase as unknown as SupabaseClient)
       .from('baseball_box_score_uploads')
       .update({ status: 'completed' })
       .eq('id', uploadId);
+    if (statusError) {
+      await logServerError(
+        `Box score saved but upload ${uploadId} could not be marked completed: ${sanitizeDbError(statusError, 'games')}`,
+        { action: 'baseball_games.resolveBoxScoreUpload', featureArea: 'baseball-games' },
+      );
+    }
   }
 
   return result;
@@ -1311,12 +1406,16 @@ async function getPlayerSeasonStatsImpl(
   // derived from the parent baseball_games row. Resolve the season's game ids
   // first, then constrain the batting/pitching logs with `.in('game_id', ...)`,
   // matching the established pattern in operational-signals.ts.
-  const { data: seasonGames } = await db
+  const { data: seasonGames, error: seasonGamesError } = await db
     .from('baseball_games')
     .select('id')
     .eq('team_id', teamId)
     .gte('game_date', `${year}-01-01`)
     .lte('game_date', `${year}-12-31`);
+
+  if (seasonGamesError) {
+    return { success: false, error: sanitizeDbError(seasonGamesError, 'games') };
+  }
 
   const seasonGameIds = ((seasonGames ?? []) as Array<{ id: string }>).map((g) => g.id);
 
@@ -1328,10 +1427,21 @@ async function getPlayerSeasonStatsImpl(
     .eq('season_year', year)
     .single();
 
+  // `.single()` on the stats query legitimately errors with PGRST116 ("no
+  // rows") for a player who simply has no season-stats row yet — that is NOT
+  // a query failure and must keep rendering as honest "no stats" rather than
+  // a false-positive error banner. Any OTHER error code is a real DB/RLS
+  // failure and must not be swallowed into a silent `data: undefined`.
+  const isRealStatsError = (error: { code?: string } | null) =>
+    Boolean(error) && error?.code !== 'PGRST116';
+
   // Short-circuit when there are no games in the season — an empty `.in()`
   // would otherwise still round-trip to the database for no rows.
   if (seasonGameIds.length === 0) {
     const statsResult = await statsPromise;
+    if (isRealStatsError(statsResult.error)) {
+      return { success: false, error: sanitizeDbError(statsResult.error, 'games') };
+    }
     return {
       success: true,
       data: statsResult.data as BaseballPlayerSeasonStats | undefined,
@@ -1361,6 +1471,15 @@ async function getPlayerSeasonStatsImpl(
       .eq('team_id', teamId)
       .in('game_id', seasonGameIds),
   ]);
+
+  // The two log queries have no `.single()` — any error on them is a real
+  // failure (never a "no rows" false positive), same as the stats query.
+  if (isRealStatsError(statsResult.error) || battingLogResult.error || pitchingLogResult.error) {
+    const firstError = isRealStatsError(statsResult.error)
+      ? statsResult.error
+      : (battingLogResult.error ?? pitchingLogResult.error);
+    return { success: false, error: sanitizeDbError(firstError, 'games') };
+  }
 
   // PostgREST cannot reliably order a parent list by a to-many embedded
   // column, so sort by the joined game's date descending in-memory.

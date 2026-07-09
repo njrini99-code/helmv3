@@ -172,7 +172,7 @@ export function NutritionPlanAssignmentsTable({ orgId, rows, includeArchived = f
                 'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                 statusFilter === s
                   ? 'border-primary-400 bg-primary-50 text-primary-700'
-                  : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300',
+                  : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300',
               ].join(' ')}
             >
               {s === 'all' ? 'All' : (STATUS_META[s as ScheduleStatus]?.label ?? s)}

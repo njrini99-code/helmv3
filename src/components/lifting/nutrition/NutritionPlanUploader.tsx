@@ -131,7 +131,7 @@ function TypePill({
         'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border transition-all duration-150',
         selected
           ? 'border-primary-400 bg-primary-50 text-primary-700 shadow-sm'
-          : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300 hover:bg-warm-50',
+          : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300 hover:bg-warm-50',
       ].join(' ')}
       aria-pressed={selected}
     >
@@ -478,7 +478,7 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
             >
               <span
                 className={[
-                  'inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200',
+                  'inline-block h-4 w-4 rounded-full bg-cream-50 shadow-sm transition-transform duration-200',
                   publish ? 'translate-x-4' : 'translate-x-0',
                 ].join(' ')}
               />

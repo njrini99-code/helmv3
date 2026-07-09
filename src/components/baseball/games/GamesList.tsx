@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { getBaseballStatsGameCreateHref } from '@/lib/baseball/stats-route-aliases';
 import { GameCard } from './GameCard';
@@ -16,6 +16,24 @@ interface GamesListProps {
   title?: string;
   showAddButton?: boolean;
   limit?: number;
+  // Server-fetched initial data (from the parent Server Component). When
+  // provided, a change to these props (e.g. a fresh RSC payload delivered by
+  // router.refresh() after a box-score save) is synced into client state —
+  // see the effect below. Without this, a revalidated payload with unchanged
+  // teamId/activeTab/seasonYear/limit would never reach the client, leaving
+  // the list showing stale pre-edit data until a hard reload.
+  initialGames?: BaseballGame[];
+  initialRecord?: TeamSeasonRecord | null;
+  // Set by the parent Server Component when its server-side fetch failed
+  // (as opposed to genuinely finding zero games) — lets the empty-vs-error
+  // states stay distinguishable instead of a failed load rendering as an
+  // ordinary "No games yet" empty season.
+  initialError?: string | null;
+  // Set when the season-record fetch (separate query from games) failed
+  // server-side. Rendered as its own small notice near the record line —
+  // NOT folded into `initialError`/the full-page "Couldn't load games"
+  // banner, since the games list itself may have loaded fine.
+  initialRecordError?: string | null;
 }
 
 type TabFilter = 'all' | 'game' | 'scrimmage';
@@ -25,19 +43,55 @@ const SEASON_YEARS = (() => {
   return [current, current - 1, current - 2];
 })();
 
-export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton = true, limit }: GamesListProps) {
+export function GamesList({
+  teamId,
+  title = 'Games & Scrimmages',
+  showAddButton = true,
+  limit,
+  initialGames,
+  initialRecord,
+  initialError,
+  initialRecordError,
+}: GamesListProps) {
   const { showToast } = useToast();
-  const [games, setGames] = useState<BaseballGame[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [games, setGames] = useState<BaseballGame[]>(initialGames ?? []);
+  const [loading, setLoading] = useState(!initialGames);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    initialGames !== undefined ? (initialError ?? null) : null,
+  );
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear());
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // Season record is computed over the FULL season (all completed games) via a
   // dedicated selector — never over the possibly limit-truncated display list —
   // so this header matches the Games & Scrimmages page exactly on every surface.
-  const [seasonRecord, setSeasonRecord] = useState<TeamSeasonRecord | null>(null);
+  const [seasonRecord, setSeasonRecord] = useState<TeamSeasonRecord | null>(initialRecord ?? null);
+  // Distinct from `error` (which drives the full-page "Couldn't load games"
+  // state) — a failed record fetch should surface even when games loaded fine.
+  const [recordError, setRecordError] = useState<string | null>(
+    initialRecord !== undefined ? (initialRecordError ?? null) : null,
+  );
+
+  // Sync client state whenever the parent Server Component delivers a fresh
+  // initialGames/initialRecord pair — this is what actually surfaces a
+  // revalidated RSC payload (e.g. after a box-score save + router.refresh())
+  // when teamId/activeTab/seasonYear/limit haven't changed and the
+  // tab/filter fetchGames effect below wouldn't otherwise re-run.
+  useEffect(() => {
+    if (initialGames !== undefined) {
+      setGames(initialGames);
+      setLoading(false);
+      setError(initialError ?? null);
+    }
+  }, [initialGames, initialError]);
+
+  useEffect(() => {
+    if (initialRecord !== undefined) {
+      setSeasonRecord(initialRecord);
+      setRecordError(initialRecordError ?? null);
+    }
+  }, [initialRecord, initialRecordError]);
 
   const fetchGames = useCallback(
     async (isRefresh = false) => {
@@ -56,14 +110,32 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       } else {
         setError(result.error ?? 'Failed to load games');
       }
-      setSeasonRecord(recordResult.success ? (recordResult.data ?? null) : null);
+      if (recordResult.success) {
+        setSeasonRecord(recordResult.data ?? null);
+        setRecordError(null);
+      } else {
+        setSeasonRecord(null);
+        setRecordError(recordResult.error ?? 'Failed to load season record');
+      }
       setLoading(false);
       setRefreshing(false);
     },
     [teamId, activeTab, seasonYear, limit]
   );
 
+  // Skip the very first client fetch when the parent Server Component
+  // already seeded games/record — the sync effects above cover that case.
+  // Without this, `fetchGames` (a fresh useCallback on first render) still
+  // fires unconditionally on mount, reverting the seeded `loading: false`
+  // and re-fetching the exact same data the server already fetched,
+  // flashing the skeleton the seeding was meant to eliminate.
+  const skippedInitialFetchRef = useRef(initialGames !== undefined);
+
   useEffect(() => {
+    if (skippedInitialFetchRef.current) {
+      skippedInitialFetchRef.current = false;
+      return;
+    }
     fetchGames();
   }, [fetchGames]);
 
@@ -89,6 +161,11 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
             <p className={`text-sm text-warm-500 ${title ? 'mt-0.5' : ''}`}>
               {seasonRecord.played} played · {seasonRecord.wins}W-{seasonRecord.losses}L
               {seasonRecord.ties > 0 ? `-${seasonRecord.ties}T` : ''}
+            </p>
+          )}
+          {recordError && !seasonRecord && (
+            <p className={`text-sm text-destructive/90 ${title ? 'mt-0.5' : ''}`}>
+              Season record unavailable
             </p>
           )}
         </div>

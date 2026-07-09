@@ -3,20 +3,20 @@
 import { useState, useEffect, useTransition } from 'react';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
-import { Header } from '@/components/layout/header';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/sonner';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeams } from '@/hooks/use-teams';
 import {
   IconPlus,
-  IconCalendar,
   IconMapPin,
   IconClock,
   IconTrash,
 } from '@/components/icons';
+import { SectionMasthead, EditorsLetter, EmptyIssue } from '@/components/baseball/living-annual';
 import { createBaseballEvent, deleteBaseballEvent } from '@/app/baseball/actions/calendar';
 
 interface Event {
@@ -220,6 +220,15 @@ export default function EventsPage() {
         return;
       }
 
+      // The event row itself succeeded while a secondary, best-effort write
+      // (RSVP invites, the linked baseball_games row) can still fail —
+      // createBaseballEvent surfaces that as `result.warning` on an
+      // otherwise `success: true` result. Non-blocking: the event stays
+      // created, this just tells the coach the secondary write needs a look.
+      if (result.warning) {
+        toast.warning('Event created', { description: result.warning });
+      }
+
       // Optimistically add the new event to local state so UI updates instantly
       // without waiting for a full re-fetch.
       const created = result.data as Event | undefined;
@@ -300,7 +309,9 @@ export default function EventsPage() {
   if (authLoading) {
     return (
       <>
-        <Header title="Events" subtitle="Loading…" />
+        <div className="px-4 pt-6 sm:px-6 lg:px-8">
+          <SectionMasthead eyebrow="ORGANIZATION · EVENTS" title="Events" ink="team" />
+        </div>
         <div className="p-6">
           <EventsSkeleton />
         </div>
@@ -311,11 +322,15 @@ export default function EventsPage() {
   if (!coach) {
     return (
       <>
-        <Header title="Events" subtitle="Showcase coach access required" />
+        <div className="px-4 pt-6 sm:px-6 lg:px-8">
+          <SectionMasthead eyebrow="ORGANIZATION · EVENTS" title="Events" ink="team" />
+        </div>
         <div className="p-6">
-          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
-            <p className="text-warm-500">Please log in as a showcase coach to manage events.</p>
-          </div>
+          <EditorsLetter
+            ink="team"
+            title="Showcase coach access required"
+            body="Please log in as a showcase coach to manage events."
+          />
         </div>
       </>
     );
@@ -327,19 +342,25 @@ export default function EventsPage() {
 
   return (
     <>
-      <Header
-        title="Events"
-        subtitle={
-          loading
-            ? 'Loading…'
-            : `${filteredEvents.length} upcoming event${filteredEvents.length !== 1 ? 's' : ''}`
-        }
-      >
-        <Button onClick={() => setShowCreateModal(true)}>
-          <IconPlus size={16} />
-          New Event
-        </Button>
-      </Header>
+      <div className="px-4 pt-6 sm:px-6 lg:px-8">
+        <SectionMasthead
+          eyebrow="ORGANIZATION · EVENTS"
+          title="Events"
+          ink="team"
+          actions={
+            <Button onClick={() => setShowCreateModal(true)}>
+              <IconPlus size={16} />
+              New Event
+            </Button>
+          }
+        >
+          <p className="max-w-prose font-annual text-body text-text-secondary">
+            {loading
+              ? 'Loading…'
+              : `${filteredEvents.length} upcoming event${filteredEvents.length !== 1 ? 's' : ''}`}
+          </p>
+        </SectionMasthead>
+      </div>
 
       <div className="p-6">
         {/* Filters */}
@@ -368,34 +389,29 @@ export default function EventsPage() {
           </div>
         </div>
 
-        {/* Fetch error */}
+        {/* Fetch error — page-level load failure, via the kit's composed
+            error surface (design-system-living-annual.md §7: empty AND error
+            states render through EditorsLetter, never a red/amber inline box). */}
         {fetchError && (
-          <div
-            role="alert"
-            className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            {fetchError}
+          <div role="alert" className="mb-4">
+            <EditorsLetter ink="team" title="Unable to load events" body={fetchError} />
           </div>
         )}
 
         {/* Skeleton while loading */}
         {loading ? (
           <EventsSkeleton />
-        ) : filteredEvents.length === 0 ? (
-          /* Honest empty state */
-          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
-              <IconCalendar size={24} className="text-warm-400" />
-            </div>
-            <h3 className="text-lg font-medium text-warm-900 mb-2">No upcoming events</h3>
-            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
-              No upcoming events — coaches can add events from the calendar.
-            </p>
-            <Button onClick={() => setShowCreateModal(true)}>
-              <IconPlus size={16} />
-              Create Your First Event
-            </Button>
-          </div>
+        ) : fetchError ? null : filteredEvents.length === 0 ? (
+          <EmptyIssue
+            variant="calendar"
+            ink="team"
+            action={
+              <Button onClick={() => setShowCreateModal(true)}>
+                <IconPlus size={16} />
+                Create Your First Event
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-6">
             {Object.entries(groupedEvents).map(([date, dateEvents]) => (

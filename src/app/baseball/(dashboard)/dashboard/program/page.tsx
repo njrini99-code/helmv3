@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -212,7 +211,10 @@ export default function ProgramPage() {
   if (user?.role !== 'coach' || !coach) {
     return (
       <>
-        <Header title="Program Profile" subtitle="Coach access required" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Program Profile</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Coach access required</p>
+        </div>
         <div className="p-6">
           <Card variant="glass">
             <CardContent className="p-12 text-center">
@@ -227,7 +229,10 @@ export default function ProgramPage() {
   if (!organization) {
     return (
       <>
-        <Header title="Program Profile" subtitle="No organization found" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Program Profile</h1>
+          <p className="mt-1 text-body-sm text-warm-500">No organization found</p>
+        </div>
         <div className="p-6">
           <Card variant="glass">
             <CardContent className="p-12 text-center">
@@ -243,17 +248,18 @@ export default function ProgramPage() {
 
   return (
     <>
-      <Header
-        title="Program Profile"
-        subtitle="Customize how your program appears to recruits"
-      >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Program Profile</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Customize how your program appears to recruits</p>
+        </div>
         <Link href={`/baseball/program/${organization.id}`} target="_blank">
           <Button variant="secondary" size="sm" className="gap-2">
             <IconGlobe size={14} />
             View Public Page
           </Button>
         </Link>
-      </Header>
+      </div>
 
       <div className="p-6 lg:p-8 max-w-[720px] mx-auto">
         <Card variant="glass">

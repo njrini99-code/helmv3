@@ -182,6 +182,7 @@ export default async function ProgramEditorPage({ params }: Props) {
       assignContext={assignCtx}
       orgId={orgId}
       canEdit={access.canEdit}
+      basePath="/lifting/dashboard/programs"
     />
   );
 }

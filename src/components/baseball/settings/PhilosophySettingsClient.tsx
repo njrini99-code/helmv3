@@ -11,10 +11,8 @@
 // =============================================================================
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
@@ -31,6 +29,8 @@ import {
 } from '@/components/icons';
 import { savePhilosophySettings } from '@/app/baseball/actions/philosophy';
 import type { BaseballCoachPhilosophy } from '@/lib/types';
+
+const SETTINGS_PATH = '/baseball/dashboard/settings';
 
 interface PhilosophySettingsClientProps {
   coachId: string;
@@ -236,16 +236,21 @@ export function PhilosophySettingsClient({
 
   return (
     <LazyMotion features={domAnimation}>
-      <Header
-        title="Coaching Philosophy"
-        subtitle={`${coachName} • how AI insights are tuned`}
-      >
-        <Link href="/baseball/dashboard/settings" aria-label="Back to settings">
-          <Button variant="ghost" size="sm" leftIcon={<IconArrowLeft size={16} />}>
-            Settings
-          </Button>
-        </Link>
-      </Header>
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Coaching Philosophy</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{`${coachName} • how AI insights are tuned`}</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<IconArrowLeft size={16} />}
+          aria-label="Back to settings"
+          onClick={() => router.push(SETTINGS_PATH)}
+        >
+          Settings
+        </Button>
+      </div>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         {/* Welcome message for new users */}
@@ -440,9 +445,9 @@ export function PhilosophySettingsClient({
 
         {/* Save Button */}
         <div className="flex justify-end gap-3">
-          <Link href="/baseball/dashboard/settings">
-            <Button variant="secondary">Cancel</Button>
-          </Link>
+          <Button variant="secondary" onClick={() => router.push(SETTINGS_PATH)}>
+            Cancel
+          </Button>
           <Button
             onClick={handleSave}
             isLoading={saving}

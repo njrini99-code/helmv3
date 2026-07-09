@@ -56,7 +56,7 @@ import { PlayerDetailModal } from '@/components/coach/PlayerDetailModal';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { PositionPlanner } from '@/components/baseball/position-planner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { IconUsers, IconLayoutGrid, IconList, IconTarget, IconTrash } from '@/components/icons';
+import { IconUsers, IconLayoutGrid, IconList, IconTarget, IconTrash, IconTrendingUp } from '@/components/icons';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
@@ -829,6 +829,13 @@ export default function PipelinePage() {
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/baseball/dashboard/college-interest" className="inline-flex items-center gap-2">
+              <IconTrendingUp size={14} />
+              College interest
+            </Link>
+          </Button>
+
           <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">Grad Year</span>
           <div className="w-36">
             <Select

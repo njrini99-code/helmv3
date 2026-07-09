@@ -1,20 +1,59 @@
 'use client';
 
 import { useState } from 'react';
-import { Header } from '@/components/layout/header';
+import Link from 'next/link';
 import { TeamSelector } from '@/components/baseball/showcase/TeamSelector';
 import { OrgDashboard } from '@/components/baseball/showcase/OrgDashboard';
+import { IconUsers, IconFlag, IconChevronRight } from '@/components/icons';
+
+const ORGANIZATION_LANDING_CARDS = [
+  {
+    href: '/baseball/dashboard/teams',
+    label: 'Teams',
+    description: 'The full list of teams in your organization — rosters, staff, and program details.',
+    icon: IconUsers,
+  },
+  {
+    href: '/baseball/dashboard/events',
+    label: 'Events',
+    description: 'Every showcase and tournament on the calendar, across all of your teams.',
+    icon: IconFlag,
+  },
+] as const;
 
 export default function OrganizationDashboardPage() {
   const [teamFilterId, setTeamFilterId] = useState('all');
 
   return (
     <>
-      <Header
-        title="Organization Dashboard"
-        subtitle="Multi-team overview and roster management"
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+        <h1 className="text-h2 font-semibold text-warm-900">Organization Dashboard</h1>
+        <p className="mt-1 text-body-sm text-warm-500">Multi-team overview and roster management</p>
+      </div>
       <div className="p-6 lg:p-8 space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {ORGANIZATION_LANDING_CARDS.map(({ href, label, description, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
+            >
+              <div className="glass-standard border border-cream-400/40 rounded-2xl shadow-glass flex h-full items-start gap-4 p-5 transition-all duration-200 group-hover:shadow-card-hover group-hover:-translate-y-0.5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-600/10 text-primary-600">
+                  <Icon size={20} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-body-lg font-semibold text-warm-900">{label}</h3>
+                  <p className="mt-1 text-body-sm text-warm-500">{description}</p>
+                </div>
+                <IconChevronRight
+                  size={18}
+                  className="mt-1 shrink-0 text-warm-500 transition-transform duration-200 group-hover:translate-x-0.5"
+                />
+              </div>
+            </Link>
+          ))}
+        </div>
         <TeamSelector value={teamFilterId} onChange={setTeamFilterId} />
         <OrgDashboard teamFilterId={teamFilterId} />
       </div>

@@ -59,8 +59,13 @@ describe('program-type variant engine — live runtime behavior', () => {
     // genuinely absent for College, not just reordered, so the two sets are
     // equal only once that one showcase-only id is excluded from both sides.
     const SHOWCASE_ONLY_IDS = new Set(['events']);
-    const collegeSet = new Set(college.filter((id) => !SHOWCASE_ONLY_IDS.has(id)));
-    const showcaseSet = new Set(showcase.filter((id) => !SHOWCASE_ONLY_IDS.has(id)));
+    // postgame-review is college/JUCO-only (its page hard-redirects other
+    // program types), so it's genuinely absent for Showcase — exclude it too
+    // when comparing the otherwise-shared set.
+    const COLLEGE_JUCO_ONLY_IDS = new Set(['postgame-review']);
+    const excluded = (id: string) => SHOWCASE_ONLY_IDS.has(id) || COLLEGE_JUCO_ONLY_IDS.has(id);
+    const collegeSet = new Set(college.filter((id) => !excluded(id)));
+    const showcaseSet = new Set(showcase.filter((id) => !excluded(id)));
     expect(collegeSet).toEqual(showcaseSet);
     expect(college).not.toEqual(showcase);
   });

@@ -24,6 +24,10 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import {
+  resolveTeamTimezone,
+  todayIsoInTz,
+} from '@/lib/baseball/daily-contract/contract-day';
+import {
   getBuilderExerciseLibrary,
   getGroupSorenessFlags,
   getGroupAvailability,
@@ -33,11 +37,6 @@ import { LiftBuilderClient } from '@/components/baseball/performance/LiftBuilder
 // =============================================================================
 // Helpers
 // =============================================================================
-
-/** ISO YYYY-MM-DD for today (UTC). */
-function todayYmd(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /** ISO YYYY-MM-DD for the Monday of the week containing `ymd` (UTC). */
 function mondayOf(ymd: string): string {
@@ -64,8 +63,9 @@ export default async function LiftBuilderPage() {
   const caps = await resolveBaseballCapabilities(teamId);
   if (!caps.can_manage_lifting) redirect('/baseball/dashboard/performance');
 
-  // ── Date anchors ────────────────────────────────────────────────────────────
-  const today = todayYmd();
+  // ── Date anchors (team-local, not server-UTC) ──────────────────────────────
+  const supabase = await createClient();
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
   const weekOf = mondayOf(today);
 
   // ── Team-scoped builder scope ────────────────────────────────────────────────
@@ -79,7 +79,6 @@ export default async function LiftBuilderPage() {
   ]);
 
   // ── Light group list (for breadcrumb links / scope switcher hints) ───────────
-  const supabase = await createClient();
   const { data: groupRows } = await fromUntyped(supabase, 'helm_lifting_groups')
     .select('id, name')
     .eq('team_id', teamId)

@@ -2,7 +2,6 @@
 
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,7 +130,12 @@ function CompareContent() {
   if (loading && playerIds.length > 0) {
     return (
       <>
-        <Header title="Compare Players" subtitle="Side-by-side player comparison" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Side-by-side player comparison</p>
+          </div>
+        </div>
         <div className="p-8 space-y-6">
           {/* Skeleton for search area */}
           <Card variant="glass">
@@ -165,7 +169,12 @@ function CompareContent() {
   if (loadError && playerIds.length > 0) {
     return (
       <>
-        <Header title="Compare Players" subtitle="Side-by-side player comparison" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Side-by-side player comparison</p>
+          </div>
+        </div>
         <div className="p-8">
           <ReadModelStateNotice
             state="error"
@@ -179,10 +188,14 @@ function CompareContent() {
 
   return (
     <>
-      <Header
-        title="Compare Players"
-        subtitle={players.length > 0 ? `Comparing ${players.length} players` : 'Select players to compare'}
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
+          <p className="mt-1 text-body-sm text-warm-500">
+            {players.length > 0 ? `Comparing ${players.length} players` : 'Select players to compare'}
+          </p>
+        </div>
+      </div>
       <div className="p-8 space-y-6">
         {/* Add Players Section */}
         <Card variant="glass">
@@ -321,7 +334,15 @@ function CompareContent() {
 
 export default function ComparePage() {
   return (
-    <Suspense fallback={<><Header title="Compare Players" subtitle="Side-by-side player comparison" /><PageLoading /></>}>
+    <Suspense fallback={<>
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Side-by-side player comparison</p>
+        </div>
+      </div>
+      <PageLoading />
+    </>}>
       <CompareContent />
     </Suspense>
   );

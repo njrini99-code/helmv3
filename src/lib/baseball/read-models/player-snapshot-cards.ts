@@ -604,7 +604,7 @@ export async function getPlayerSnapshotCards(
       .eq('player_id', playerId).eq('team_id', teamId).eq('season_year', seasonYear)
       .maybeSingle(),
     db.from('baseball_player_aggregates')
-      .select('career_avg, game_avg, practice_avg, last_5_avg, recent_trend, pressure_gap, total_sessions, updated_at')
+      .select('career_avg, career_obp, career_slg, career_ops, game_avg, practice_avg, last_5_avg, recent_trend, pressure_gap, total_sessions, updated_at')
       .eq('player_id', playerId).eq('team_id', teamId).maybeSingle(),
     supabase.from('baseball_events')
       .select('id, title, event_type, start_time, location')
@@ -692,7 +692,8 @@ export async function getPlayerSnapshotCards(
   if (seasonRes?.error) note('Season stats could not be loaded.');
 
   const agg = (aggRes?.error ? null : aggRes?.data ?? null) as null | {
-    career_avg: number | null; game_avg: number | null; practice_avg: number | null;
+    career_avg: number | null; career_obp: number | null; career_slg: number | null;
+    career_ops: number | null; game_avg: number | null; practice_avg: number | null;
     last_5_avg: number | null; recent_trend: 'improving' | 'declining' | 'stable' | null;
     pressure_gap: number | null; total_sessions: number | null; updated_at: string | null;
   };
@@ -708,9 +709,9 @@ export async function getPlayerSnapshotCards(
       trust: trustForSource(null, 'Season stats'),
       asOf: season?.last_updated ?? agg?.updated_at ?? null,
       avg: season?.avg ?? agg?.career_avg ?? null,
-      obp: season?.obp ?? null,
-      slg: season?.slg ?? null,
-      ops: season?.ops ?? null,
+      obp: season?.obp ?? agg?.career_obp ?? null,
+      slg: season?.slg ?? agg?.career_slg ?? null,
+      ops: season?.ops ?? agg?.career_ops ?? null,
       hr: season?.hr ?? 0,
       rbi: season?.rbi ?? 0,
       ab: season?.ab ?? 0,

@@ -219,11 +219,6 @@ export const DYNAMIC_ROUTE_SAMPLES: DynamicRouteSample[] = [
     reason: 'Player passport view reached from the player profile.',
   },
   {
-    template: '/baseball/dashboard/players/[id]/profile',
-    sampleParams: { id: 'demo-player' },
-    reason: 'Player profile sub-view reached from Roster.',
-  },
-  {
     template: '/baseball/dashboard/players/[id]/scout-packet',
     sampleParams: { id: 'demo-player' },
     reason: 'Scout packet builder reached from the player profile.',

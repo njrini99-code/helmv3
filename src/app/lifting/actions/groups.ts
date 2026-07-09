@@ -33,6 +33,11 @@ import type { Json } from '@/lib/types';
 
 const GROUPS_PATH = '/lifting/dashboard/groups';
 
+// Baseball Wave C renders these same helm_lifting_groups reads at
+// /baseball/dashboard/performance/groups (mirroring the pattern in
+// programs.ts) — bust that portal's RSC cache alongside the lifting one.
+const BASEBALL_GROUPS_PATH = '/baseball/dashboard/performance/groups';
+
 // -----------------------------------------------------------------------------
 // Shared result
 // -----------------------------------------------------------------------------
@@ -106,6 +111,17 @@ async function assertGroupInOrg(
   return data;
 }
 
+// Dynamic groups are rule-managed (membership/rules computed off `rule_json`),
+// so no mutation path in this file may touch them directly. The user-facing
+// message must match what the caller is actually trying to do — a coach
+// renaming or deleting a dynamic group should not be told "membership can't
+// be edited" (that wording is for addGroupMember/removeGroupMember only).
+function assertGroupIsEditable(group: { group_type: string }, message: string): void {
+  if (group.group_type === 'dynamic') {
+    throw new LiftingActionError(message);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // 1. createGroup
 // -----------------------------------------------------------------------------
@@ -158,6 +174,7 @@ export const createGroup = withLiftingAction(
     }
 
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true, id: groupId };
   },
 );
@@ -177,7 +194,11 @@ export const updateGroup = withLiftingAction(
     const input = updateGroupSchema.parse(raw);
     const supabase = await createClient();
 
-    await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
+    const group = await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; they can't be edited manually.",
+    );
 
     const update: HelmLiftingGroupUpdate = {
       ...(input.name !== undefined && { name: input.name }),
@@ -195,6 +216,7 @@ export const updateGroup = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true, id: input.groupId };
   },
 );
@@ -214,7 +236,11 @@ export const deleteGroup = withLiftingAction(
     const { groupId } = deleteGroupSchema.parse(raw);
     const supabase = await createClient();
 
-    await assertGroupInOrg(supabase, groupId, ctx.orgId);
+    const group = await assertGroupInOrg(supabase, groupId, ctx.orgId);
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; they can't be deleted manually.",
+    );
 
     // Soft delete.
     const { error } = await fromUntyped(supabase, 'helm_lifting_groups')
@@ -231,6 +257,7 @@ export const deleteGroup = withLiftingAction(
       .is('ends_at', null);
 
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true };
   },
 );
@@ -250,7 +277,11 @@ export const addGroupMember = withLiftingAction(
     const input = addMemberSchema.parse(raw);
     const supabase = await createClient();
 
-    await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
+    const group = await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; membership can't be edited manually.",
+    );
 
     // Verify the athlete is in this org.
     const { data: athlete } = await fromUntyped(supabase, 'helm_lifting_athletes')
@@ -277,6 +308,7 @@ export const addGroupMember = withLiftingAction(
       }
       // Already active — no-op.
       revalidatePath(GROUPS_PATH);
+      revalidatePath(BASEBALL_GROUPS_PATH);
       return { success: true, id: existing.id };
     }
 
@@ -294,6 +326,7 @@ export const addGroupMember = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -313,7 +346,11 @@ export const removeGroupMember = withLiftingAction(
     const input = removeMemberSchema.parse(raw);
     const supabase = await createClient();
 
-    await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
+    const group = await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; membership can't be edited manually.",
+    );
 
     // Soft-remove: set ends_at=now() on any active member row.
     const { error } = await fromUntyped(supabase, 'helm_lifting_group_members')
@@ -324,6 +361,7 @@ export const removeGroupMember = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(GROUPS_PATH);
+    revalidatePath(BASEBALL_GROUPS_PATH);
     return { success: true };
   },
 );

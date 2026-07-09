@@ -17,7 +17,6 @@
 
 import { useState, useTransition } from 'react';
 
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -128,7 +127,12 @@ export function TeamSettingsClient({ data }: Props) {
   if (!canEdit) {
     return (
       <>
-        <Header title="Team Settings" subtitle="Coach access required" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">Team Settings</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Coach access required</p>
+          </div>
+        </div>
         <div className="p-6 lg:p-8 max-w-3xl mx-auto">
           <EmptyState
             variant="card"
@@ -144,10 +148,12 @@ export function TeamSettingsClient({ data }: Props) {
 
   return (
     <>
-      <Header
-        title="Team Settings"
-        subtitle={`${settings.teamName} • how members join`}
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Team Settings</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{`${settings.teamName} • how members join`}</p>
+        </div>
+      </div>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         {/* Join code */}

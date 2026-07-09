@@ -5152,23 +5152,30 @@ export type Database = {
         Row: {
           assists: number | null
           at_bats: number | null
+          caught_stealing: number | null
           coach_id: string
           created_at: string | null
           doubles: number | null
           earned_runs: number | null
           errors: number | null
           exit_velocity: number | null
+          hit_by_pitch: number
           hits: number | null
           hits_allowed: number | null
           home_runs: number | null
           id: string
           import_run_id: string | null
           innings_pitched: number | null
+          launch_angle: number | null
           notes: string | null
           pitch_velocity: number | null
+          pitches_thrown: number | null
           player_id: string
           putouts: number | null
           rbis: number | null
+          runs_allowed: number | null
+          sacrifice_bunts: number | null
+          sacrifice_flies: number
           session_date: string
           session_name: string | null
           source: string | null
@@ -5177,10 +5184,12 @@ export type Database = {
           source_match_tier: string | null
           source_trust_level: string | null
           source_visibility: string
+          spin_rate: number | null
           stat_type: string
           stolen_bases: number | null
           strikeouts: number | null
           strikeouts_thrown: number | null
+          strikes_thrown: number | null
           team_id: string
           triples: number | null
           updated_at: string | null
@@ -5190,23 +5199,30 @@ export type Database = {
         Insert: {
           assists?: number | null
           at_bats?: number | null
+          caught_stealing?: number | null
           coach_id: string
           created_at?: string | null
           doubles?: number | null
           earned_runs?: number | null
           errors?: number | null
           exit_velocity?: number | null
+          hit_by_pitch?: number
           hits?: number | null
           hits_allowed?: number | null
           home_runs?: number | null
           id?: string
           import_run_id?: string | null
           innings_pitched?: number | null
+          launch_angle?: number | null
           notes?: string | null
           pitch_velocity?: number | null
+          pitches_thrown?: number | null
           player_id: string
           putouts?: number | null
           rbis?: number | null
+          runs_allowed?: number | null
+          sacrifice_bunts?: number | null
+          sacrifice_flies?: number
           session_date: string
           session_name?: string | null
           source?: string | null
@@ -5215,10 +5231,12 @@ export type Database = {
           source_match_tier?: string | null
           source_trust_level?: string | null
           source_visibility?: string
+          spin_rate?: number | null
           stat_type: string
           stolen_bases?: number | null
           strikeouts?: number | null
           strikeouts_thrown?: number | null
+          strikes_thrown?: number | null
           team_id: string
           triples?: number | null
           updated_at?: string | null
@@ -5228,23 +5246,30 @@ export type Database = {
         Update: {
           assists?: number | null
           at_bats?: number | null
+          caught_stealing?: number | null
           coach_id?: string
           created_at?: string | null
           doubles?: number | null
           earned_runs?: number | null
           errors?: number | null
           exit_velocity?: number | null
+          hit_by_pitch?: number
           hits?: number | null
           hits_allowed?: number | null
           home_runs?: number | null
           id?: string
           import_run_id?: string | null
           innings_pitched?: number | null
+          launch_angle?: number | null
           notes?: string | null
           pitch_velocity?: number | null
+          pitches_thrown?: number | null
           player_id?: string
           putouts?: number | null
           rbis?: number | null
+          runs_allowed?: number | null
+          sacrifice_bunts?: number | null
+          sacrifice_flies?: number
           session_date?: string
           session_name?: string | null
           source?: string | null
@@ -5253,10 +5278,12 @@ export type Database = {
           source_match_tier?: string | null
           source_trust_level?: string | null
           source_visibility?: string
+          spin_rate?: number | null
           stat_type?: string
           stolen_bases?: number | null
           strikeouts?: number | null
           strikeouts_thrown?: number | null
+          strikes_thrown?: number | null
           team_id?: string
           triples?: number | null
           updated_at?: string | null

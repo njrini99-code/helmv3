@@ -65,7 +65,7 @@ export default async function PlayerStatsPage({ params }: PageProps) {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 text-sm text-warm-400 mb-2">
-            <Link href={`/baseball/dashboard/players/${playerId}/profile`} className="hover:text-warm-600">
+            <Link href={`/baseball/dashboard/players/${playerId}`} className="hover:text-warm-600">
               {player.first_name} {player.last_name}
             </Link>
             <span>›</span>
@@ -81,7 +81,7 @@ export default async function PlayerStatsPage({ params }: PageProps) {
           </p>
         </div>
         <Link
-          href={`/baseball/dashboard/players/${playerId}/profile`}
+          href={`/baseball/dashboard/players/${playerId}`}
           className="text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
           View Profile →

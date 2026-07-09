@@ -7,7 +7,6 @@ import { FilterPanel } from '@/components/coach/discover/FilterPanel';
 import { DiscoverView } from '@/components/coach/discover/DiscoverView';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { TeamPeekPanel } from '@/components/panels/TeamPeekPanel';
-import { Header } from '@/components/layout/header';
 import { Button, IconButton } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { IconFilter, IconX } from '@/components/icons';
@@ -335,7 +334,12 @@ function DiscoverContent() {
   if (!coach) {
     return (
       <>
-        <Header title="Discover" subtitle="Coach access required" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">Discover</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Coach access required</p>
+          </div>
+        </div>
         <div className="p-6">
           <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
             <p className="text-warm-500">
@@ -363,14 +367,16 @@ function DiscoverContent() {
 
   return (
     <>
-      <Header
-        title="Discover"
-        subtitle={
-          filters.mode === 'players'
-            ? `Find your next recruit${playerCount > 0 ? ` \u2014 ${playerCount.toLocaleString()} players found` : ''}`
-            : `Explore programs with talent${teamCount > 0 ? ` \u2014 ${teamCount.toLocaleString()} programs found` : ''}`
-        }
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Discover</h1>
+          <p className="mt-1 text-body-sm text-warm-500">
+            {filters.mode === 'players'
+              ? `Find your next recruit${playerCount > 0 ? ` \u2014 ${playerCount.toLocaleString()} players found` : ''}`
+              : `Explore programs with talent${teamCount > 0 ? ` \u2014 ${teamCount.toLocaleString()} programs found` : ''}`}
+          </p>
+        </div>
+      </div>
 
       <div className="p-6 lg:p-8">
         {/* Error Alert */}

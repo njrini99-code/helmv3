@@ -2,14 +2,16 @@
 
 /**
  * ============================================================================
- * DocumentsFairway — Fairway (warm-premium) presentation of the baseball
- * Documents page. Phase B leaf migration, Wave 2 · documents. Flag-gated
- * behind `isRedesignEnabled()` — see the client fork.
+ * DocumentsFairway — "The Living Annual" presentation of the baseball
+ * Documents page (spec: docs/baseball/design-system-living-annual.md; map:
+ * docs/baseball/ui-migration-map.md `documents` row — `SectionMasthead` +
+ * `EmptyIssue` consistency pass).
  * ----------------------------------------------------------------------------
  * PRESENTATION ONLY. Receives the SAME computed state + handlers the client
  * owns (filtered docs, search/category state, upload state, and the card
- * callbacks) and migrates the CHROME — header + upload, search, category tabs,
- * empty state — to `@/components/fairway` primitives.
+ * callbacks) and migrates the CHROME — masthead + upload, search, category
+ * tabs, empty state — to the Living-Annual kit (search/filter tabs stay on
+ * `@/components/fairway` primitives, which aren't part of the kit's coverage).
  *
  * The document cards are rendered from the reused `DocumentCard` (which owns
  * its own menu + actions); the hidden file input, preview modal, and
@@ -18,9 +20,8 @@
  * ========================================================================== */
 
 import type { ComponentProps, ReactNode } from 'react';
-import { Upload, FileText } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import {
-  ViewHeader,
   SearchField,
   Segmented,
   Button,
@@ -28,6 +29,7 @@ import {
   Select,
   Switch,
 } from '@/components/fairway';
+import { SectionMasthead, EmptyIssue } from '@/components/baseball/living-annual';
 import { DocumentCard } from './DocumentCard';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
 
@@ -111,10 +113,11 @@ export function DocumentsFairway({
     <div className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
       {fileInputSlot}
 
-      <ViewHeader
+      <SectionMasthead
+        eyebrow="THE PRESSBOX · DOCUMENTS"
         title="Documents"
-        description={isCoach ? 'Share playbooks, plans, and team files' : 'Team documents and resources'}
-        primaryAction={
+        ink="team"
+        actions={
           isCoach ? (
             <Button
               variant="primary"
@@ -127,7 +130,11 @@ export function DocumentsFairway({
             </Button>
           ) : undefined
         }
-      />
+      >
+        <p className="max-w-prose font-annual text-body text-text-secondary">
+          {isCoach ? 'Share playbooks, plans, and team files' : 'Team documents and resources'}
+        </p>
+      </SectionMasthead>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="sm:max-w-xs sm:flex-1">
@@ -178,30 +185,48 @@ export function DocumentsFairway({
 
       <div className="mt-6">
         {filtered.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title={totalCount === 0 ? 'No documents' : 'No results'}
-            description={
-              totalCount === 0
-                ? isCoach
-                  ? 'Upload playbooks, practice plans, waivers, and other team documents.'
-                  : 'No documents have been shared yet. Check back later.'
-                : 'Try adjusting your search or filters.'
-            }
-            action={
-              totalCount === 0 && isCoach ? (
+          totalCount === 0 ? (
+            <EmptyIssue
+              variant="documents"
+              ink="team"
+              action={
+                isCoach ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    busy={isUploadingDocument}
+                    leftIcon={<Upload className="h-4 w-4" />}
+                    onClick={onUpload}
+                  >
+                    Upload document
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            // Filtered-to-zero (search/category), not a true empty surface —
+            // outside the kit's empty-state doctrine, so it keeps the neutral
+            // Fairway `search` variant rather than the `documents` EmptyIssue
+            // preset copy ("The file drawer is empty"), which would be wrong
+            // here.
+            <EmptyState
+              variant="search"
+              title="No results"
+              description="Try adjusting your search or filters."
+              action={
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
-                  busy={isUploadingDocument}
-                  leftIcon={<Upload className="h-4 w-4" />}
-                  onClick={onUpload}
+                  onClick={() => {
+                    onSearchChange('');
+                    onCategoryChange('all');
+                  }}
                 >
-                  Upload document
+                  Clear filters
                 </Button>
-              ) : undefined
-            }
-          />
+              }
+            />
+          )
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((doc) => (

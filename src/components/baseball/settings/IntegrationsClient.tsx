@@ -25,7 +25,6 @@
 
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -308,14 +307,18 @@ export function IntegrationsClient({ teamName, canManage, integrations }: Props)
 
   return (
     <>
-      <Header title="Integrations" subtitle={`${teamName} • adapter contracts`}>
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Integrations</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{`${teamName} • adapter contracts`}</p>
+        </div>
         {canManage && !showForm && (
           <Button onClick={() => setShowForm(true)} disabled={isPending}>
             <IconPlus size={16} className="mr-1.5" />
             Add integration
           </Button>
         )}
-      </Header>
+      </div>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600">

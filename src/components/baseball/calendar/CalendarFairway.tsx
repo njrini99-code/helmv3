@@ -2,17 +2,19 @@
 
 /**
  * ============================================================================
- * CalendarFairway — Fairway (warm-premium) presentation of the baseball
- * Calendar page. Phase B leaf migration, Wave 1 · calendar. Flag-gated behind
- * `isRedesignEnabled()` — see the page fork.
+ * CalendarFairway — "The Living Annual" presentation of the baseball Calendar
+ * page (spec: docs/baseball/design-system-living-annual.md; map:
+ * docs/baseball/ui-migration-map.md `calendar` row — `SectionMasthead` +
+ * `EmptyIssue`/`EditorsLetter` consistency pass).
  * ----------------------------------------------------------------------------
  * PRESENTATION ONLY. Migrates the page-owned chrome — the canvas background,
- * the event-summary strip, and the college-coach recruiting empty state — to
- * Fairway primitives. The interactive grid (`BaseballCalendarWrapper` →
- * `PremiumCalendarClient`) is a SHARED component and is reused verbatim inside
- * the new frame per the migration playbook §3.5. No data path, action, event
- * mapping, RSVP bridge, or query is touched here — the wrapper keeps every
- * baseball action handler and capability flag it already had.
+ * the masthead, the event-summary strip, and the college-coach recruiting
+ * empty state — to the Living-Annual kit. The interactive grid
+ * (`BaseballCalendarWrapper` → `PremiumCalendarClient`) is a SHARED component
+ * and is reused verbatim inside the new frame per the migration playbook §3.5.
+ * No data path, action, event mapping, RSVP bridge, or query is touched here —
+ * the wrapper keeps every baseball action handler and capability flag it
+ * already had.
  *
  * A full Fairway-native month grid (as golf built under
  * `components/fairway/pages/calendar`) is a separate, larger effort.
@@ -20,24 +22,30 @@
 
 import type { ComponentProps } from 'react';
 import Link from 'next/link';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { EmptyState, StatusPill, Button, type FwStatusTone } from '@/components/fairway';
+import { Button } from '@/components/fairway';
+import { SectionMasthead, EditorsLetter, InkBadge, LiveDot } from '@/components/baseball/living-annual';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { BaseballCalendarWrapper } from './BaseballCalendarWrapper';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 type WrapperProps = ComponentProps<typeof BaseballCalendarWrapper>;
 
-/** Event-type → label + Fairway status tone for the summary strip. */
-const EVENT_TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
-  game: { label: 'Game', tone: 'info' },
-  practice: { label: 'Practice', tone: 'accent' },
-  camp: { label: 'Camp', tone: 'warning' },
-  tryout: { label: 'Tryout', tone: 'warning' },
-  meeting: { label: 'Meeting', tone: 'neutral' },
-  travel: { label: 'Travel', tone: 'info' },
-  other: { label: 'Other', tone: 'neutral' },
+/** Event-type → singular label for the ruled summary strip. */
+const EVENT_TYPE_LABEL: Record<string, string> = {
+  game: 'game',
+  practice: 'practice',
+  camp: 'camp',
+  tryout: 'tryout',
+  meeting: 'meeting',
+  travel: 'travel event',
+  other: 'other',
 };
+
+/** Pluralize a singular event-type label for the count badge ("1 game" / "3 games"). */
+function pluralizeEventLabel(label: string, count: number): string {
+  if (count === 1) return label;
+  return label.endsWith('s') ? label : `${label}s`;
+}
 
 // Preserve the legacy full-height flex shell so PremiumCalendarClient's h-full
 // resolves; only the gradient background is swapped for the Fairway canvas.
@@ -46,6 +54,10 @@ const SHELL = 'flex h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] flex-col 
 export interface CalendarFairwayProps {
   /** College coach with no team → recruiting-focused empty state. */
   recruitingEmpty: boolean;
+  /** Any other role (non-college coach, or player) with no team resolved yet
+   *  → generic "no team assigned" state, distinct from `recruitingEmpty`'s
+   *  recruiting-specific narrative. Mutually exclusive with `recruitingEmpty`. */
+  noTeamEmpty: boolean;
   events: CalendarEvent[];
   teamMembers: WrapperProps['teamMembers'];
   teamId: string | null;
@@ -57,6 +69,7 @@ export interface CalendarFairwayProps {
 
 export function CalendarFairway({
   recruitingEmpty,
+  noTeamEmpty,
   events,
   teamMembers,
   teamId,
@@ -68,16 +81,43 @@ export function CalendarFairway({
   if (recruitingEmpty) {
     return (
       <div className={fairwayScope(SHELL, 'bg-canvas')}>
+        <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
+          <SectionMasthead eyebrow="THE WAR ROOM · CALENDAR" title="Calendar" ink="pursuit" />
+        </div>
         <div className="flex flex-1 items-center justify-center p-6">
-          <EmptyState
-            icon={CalendarIcon}
+          {/* Not the `calendar` EmptyIssue preset ("No dates on the card") —
+              this is the recruiting-specific narrative (camp/official-visit
+              windows), so it stays a bespoke EditorsLetter like the other
+              Batch A surfaces' non-preset states (e.g. TasksFairway/
+              AnnouncementsFairway "no team selected"). */}
+          <EditorsLetter
+            ink="pursuit"
             title="Your recruiting calendar is empty"
-            description="Camp visits and official visit windows will appear here as you schedule recruiting activity."
+            body="Camp visits and official visit windows will appear here as you schedule recruiting activity."
             action={
               <Button asChild variant="primary">
                 <Link href="/baseball/dashboard/discover">Browse prospects</Link>
               </Button>
             }
+            className="max-w-md"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (noTeamEmpty) {
+    return (
+      <div className={fairwayScope(SHELL, 'bg-canvas')}>
+        <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
+          <SectionMasthead eyebrow="THE PRESSBOX · SCHEDULE" title="Calendar" ink="team" />
+        </div>
+        <div className="flex flex-1 items-center justify-center p-6">
+          <EditorsLetter
+            ink="team"
+            title="No team assigned"
+            body="Join or select a team to see its calendar of practices, games, and events."
+            className="max-w-md"
           />
         </div>
       </div>
@@ -86,6 +126,10 @@ export function CalendarFairway({
 
   return (
     <div className={fairwayScope(SHELL, 'bg-canvas')}>
+      <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
+        <SectionMasthead eyebrow="THE PRESSBOX · SCHEDULE" title="Calendar" ink="team" />
+      </div>
+
       {/* Gated on `upcomingEvents` (not `events.length`) — the strip reads
           "N upcoming events", so a team with only past events has nothing
           upcoming to summarize. `eventTypeCounts` is derived from the same
@@ -94,23 +138,13 @@ export function CalendarFairway({
           scrolling horizontally so nothing clips off the 390px viewport with
           no visible way to reach it (visual-verify coach-ops__calendar). */}
       {upcomingEvents > 0 && (
-        <div className="flex-shrink-0 px-4 pb-2 pt-4 md:px-6 md:pt-6">
+        <div className="flex-shrink-0 px-4 pb-2 pt-3 md:px-6">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <span className="whitespace-nowrap text-sm font-medium text-text-secondary">
-              {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
-            </span>
-            <span className="text-border-strong" aria-hidden>
-              ·
-            </span>
+            <LiveDot ink="team" label={`${upcomingEvents} upcoming ${pluralizeEventLabel('event', upcomingEvents)}`} />
             {Object.entries(eventTypeCounts).map(([type, count]) => {
-              const meta = EVENT_TYPE_META[type] ?? {
-                label: type,
-                tone: 'neutral' as FwStatusTone,
-              };
+              const label = EVENT_TYPE_LABEL[type] ?? type;
               return (
-                <StatusPill key={type} tone={meta.tone} size="sm" dot>
-                  {count} {meta.label}
-                </StatusPill>
+                <InkBadge key={type} tone="team" label={`${count} ${pluralizeEventLabel(label, count)}`} />
               );
             })}
           </div>
