@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { IconCheck, IconUsers, IconUser, IconX, IconArrowLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 // ============================================================================
 // CONFETTI COMPONENT
@@ -170,7 +171,7 @@ export function JoinTeamClient({
       <>
         <Confetti active={true} />
         <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-6">
-          <div className="max-w-lg w-full glass-standard rounded-2xl overflow-clip shadow-sm animate-in zoom-in-95 duration-300">
+          <PaperCard className="max-w-lg w-full rounded-2xl animate-in zoom-in-95 duration-300">
             <div className="p-12 text-center">
               {/* Success animation */}
               <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in-50 duration-500">
@@ -188,7 +189,7 @@ export function JoinTeamClient({
                 Redirecting to your team dashboard...
               </p>
             </div>
-          </div>
+          </PaperCard>
         </div>
       </>
     );
@@ -196,9 +197,9 @@ export function JoinTeamClient({
 
   return (
     <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
-      <div className="max-w-lg w-full glass-standard rounded-2xl overflow-clip shadow-sm">
+      <PaperCard className="max-w-lg w-full rounded-2xl">
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary-50/80 to-white/60 border-b border-white/30 p-6 sm:p-8 text-center">
+        <div className="bg-gradient-to-br from-primary-50/80 to-white/60 border-b border-[color:var(--hairline)] p-6 sm:p-8 text-center">
           {team.organization?.logoUrl ? (
             <Image
               src={team.organization.logoUrl}
@@ -306,7 +307,7 @@ export function JoinTeamClient({
             </p>
           </div>
         </div>
-      </div>
+      </PaperCard>
     </div>
   );
 }

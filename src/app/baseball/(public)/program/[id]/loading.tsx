@@ -5,7 +5,7 @@ export default function Loading() {
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
-      <div className="glass-prominent border-b border-warm-200">
+      <div className="border-b border-[color:var(--hairline)] bg-[var(--paper)]">
         <div className="max-w-[720px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Skeleton className="w-8 h-8 rounded-lg" />

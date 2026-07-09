@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { IconX, IconWarning, IconArrowRight, IconShieldCheck } from '@/components/icons';
 import { StaffJoinClient } from './staff-join-client';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 export const metadata = {
   title: 'Join Staff | Helm Baseball',
@@ -34,9 +35,9 @@ interface PageProps {
 function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-auth-baseball p-4 sm:p-6">
-      <div className="w-full max-w-md glass-standard rounded-2xl p-6 sm:p-8">
+      <PaperCard className="w-full max-w-md rounded-2xl p-6 sm:p-8">
         {children}
-      </div>
+      </PaperCard>
     </div>
   );
 }

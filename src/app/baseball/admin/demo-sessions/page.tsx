@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getBaseballDemoSessions } from '@/app/baseball/actions/demo-tracking';
 import { IconUsers, IconChevronRight, IconActivity } from '@/components/icons';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 export const metadata = { title: 'Demo Sessions — BaseballHelm' };
 
@@ -76,7 +77,7 @@ export default async function BaseballDemoSessionsPage() {
 
         {/* Summary badge */}
         {result && (
-          <div className="flex items-center gap-2 glass-standard rounded-2xl px-4 py-2.5 self-start sm:self-auto">
+          <div className="flex items-center gap-2 rounded-2xl border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-2.5 self-start sm:self-auto">
             <IconUsers className="w-4 h-4 text-primary-600" />
             <span className="text-sm font-semibold text-warm-900">
               {total.toLocaleString()} {total === 1 ? 'entry' : 'entries'}
@@ -98,25 +99,20 @@ export default async function BaseballDemoSessionsPage() {
 
       {/* ── Empty state ────────────────────────────────────────────────── */}
       {!fetchError && sessions.length === 0 && (
-        <div className="glass-standard rounded-2xl flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-warm-50 flex items-center justify-center mb-4">
-            <IconUsers className="w-7 h-7 text-warm-300" />
-          </div>
-          <p className="text-warm-700 font-medium text-lg">No demo sessions yet</p>
-          <p className="text-warm-400 text-sm mt-2 max-w-xs">
-            Sessions appear here once a coach completes the demo gate form and enters the live demo.
-          </p>
-        </div>
+        <EditorsLetter
+          title="No demo sessions yet"
+          body="Sessions appear here once a coach completes the demo gate form and enters the live demo."
+        />
       )}
 
       {/* ── Table ──────────────────────────────────────────────────────── */}
       {!fetchError && sessions.length > 0 && (
-        <div className="glass-standard rounded-2xl overflow-hidden">
+        <PaperCard className="overflow-hidden p-0">
           {/* Scrollable wrapper for narrow viewports */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/30 bg-cream-50">
+                <tr className="border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)]">
                   <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
                     Name
                   </th>
@@ -137,7 +133,7 @@ export default async function BaseballDemoSessionsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/20">
+              <tbody className="divide-y divide-[color:var(--hairline)]">
                 {sessions.map((s) => (
                   <tr
                     key={s.id}
@@ -174,11 +170,11 @@ export default async function BaseballDemoSessionsPage() {
 
           {/* Footer note */}
           {total > 200 && (
-            <div className="border-t border-white/20 px-5 py-3 text-xs text-warm-400 text-center">
+            <div className="border-t border-[color:var(--hairline)] px-5 py-3 text-xs text-warm-400 text-center">
               Showing the 200 most recent entries of {total.toLocaleString()} total.
             </div>
           )}
-        </div>
+        </PaperCard>
       )}
     </div>
   );

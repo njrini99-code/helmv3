@@ -249,7 +249,7 @@ export function PlayerProfileClient({
           <div className="absolute top-4 left-4 z-10">
             <Link
               href="/baseball/dashboard/discover"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg glass-standard text-white hover:bg-cream-100/20 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors"
             >
               <IconArrowLeft size={18} />
               <span className="text-sm font-medium">Back to Discover</span>
@@ -267,7 +267,7 @@ export function PlayerProfileClient({
                   "shadow-lg",
                   isInWatchlist
                     ? "bg-cream-50 text-primary-700 hover:bg-primary-50 active:bg-primary-100"
-                    : "glass-standard text-white hover:bg-cream-100/20"
+                    : "bg-black/50 text-white hover:bg-black/70"
                 )}
               >
                 {isPending ? (
@@ -281,7 +281,7 @@ export function PlayerProfileClient({
               </Button>
               <Button
                 variant="secondary"
-                className="glass-standard text-white hover:bg-cream-100/20 transition-colors"
+                className="bg-black/50 text-white hover:bg-black/70 transition-colors"
               >
                 <IconMail size={16} className="mr-2" />
                 Message

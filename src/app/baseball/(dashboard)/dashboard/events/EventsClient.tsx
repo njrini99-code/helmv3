@@ -16,7 +16,8 @@ import {
   IconClock,
   IconTrash,
 } from '@/components/icons';
-import { SectionMasthead, EditorsLetter, EmptyIssue, PaperCard } from '@/components/baseball/living-annual';
+import { SectionMasthead, EditorsLetter, EmptyIssue, PaperCard, InkBadge } from '@/components/baseball/living-annual';
+import type { InkBadgeProps } from '@/components/baseball/living-annual';
 import { InlineNotice } from '@/components/fairway';
 import { createBaseballEvent, deleteBaseballEvent } from '@/app/baseball/actions/calendar';
 
@@ -43,15 +44,29 @@ interface Event {
   };
 }
 
-const eventTypeColors: Record<string, string> = {
-  game: 'bg-blue-50 text-blue-700',
-  practice: 'bg-primary-50 text-primary-700',
-  showcase: 'bg-purple-50 text-purple-700',
-  tryout: 'bg-amber-50 text-amber-700',
-  tournament: 'bg-red-50 text-red-700',
-  meeting: 'bg-warm-100 text-warm-700',
-  other: 'bg-warm-100 text-warm-600',
+type EventInk = { tone: NonNullable<InkBadgeProps['tone']>; variant: NonNullable<InkBadgeProps['variant']> };
+
+const DEFAULT_EVENT_INK: EventInk = { tone: 'neutral', variant: 'soft' };
+
+// Ink lane per event type (spec's colour law: green = team/development,
+// clay = recruiting/pursuit — showcases and tryouts are the recruiting-facing
+// event types). Only 3 non-reserved tones exist (sodium is reserved for a
+// genuinely live/PR moment, never a category), so `variant` adds a second axis
+// to keep 7 event types visually distinct; `meeting`/`other` share the
+// lowest-salience combo since the label text carries the rest of the read.
+const eventTypeInk: Record<string, EventInk> = {
+  game: { tone: 'team', variant: 'solid' },
+  practice: { tone: 'team', variant: 'soft' },
+  showcase: { tone: 'pursuit', variant: 'solid' },
+  tryout: { tone: 'pursuit', variant: 'soft' },
+  tournament: { tone: 'neutral', variant: 'solid' },
+  meeting: { tone: 'neutral', variant: 'soft' },
+  other: DEFAULT_EVENT_INK,
 };
+
+function eventInk(eventType: string): EventInk {
+  return eventTypeInk[eventType] ?? DEFAULT_EVENT_INK;
+}
 
 const eventTypeOptions = [
   { value: 'game', label: 'Game' },
@@ -452,14 +467,14 @@ export default function EventsPage() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2 mt-2">
-                                <Badge
-                                  className={
-                                    eventTypeColors[event.event_type] || eventTypeColors.other
+                                <InkBadge
+                                  tone={eventInk(event.event_type).tone}
+                                  variant={eventInk(event.event_type).variant}
+                                  label={
+                                    event.event_type.charAt(0).toUpperCase() +
+                                    event.event_type.slice(1)
                                   }
-                                >
-                                  {event.event_type.charAt(0).toUpperCase() +
-                                    event.event_type.slice(1)}
-                                </Badge>
+                                />
                                 <Badge variant="secondary">{event.team?.name}</Badge>
                               </div>
                             </div>
