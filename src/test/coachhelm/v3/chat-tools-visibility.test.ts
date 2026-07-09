@@ -47,7 +47,9 @@ function row(over: Partial<FixtureRow> & { id: string }): FixtureRow {
     title: `Insight ${over.id}`,
     content: 'body',
     evidence: { metric_label: 'Putts/round', your_value_display: '30.1' },
-    created_at: '2026-06-09T00:00:00.000Z',
+    // Dynamic: get_team_patterns filters gte(created_at, now − window). A
+    // hardcoded date here is a time bomb — it silently ages out of the window.
+    created_at: new Date(Date.now() - 5 * 86400_000).toISOString(),
     player_id: PLAYER,
     engine_version: 'v3',
     signature: 'v3:putting:abc',
