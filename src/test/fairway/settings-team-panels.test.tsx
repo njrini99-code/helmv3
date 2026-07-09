@@ -13,6 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { GolfUserProvider } from '@/contexts/golf-user-context';
+import {
+  TeamSettingsPanel,
+  InviteSettingsPanel,
+} from '@/components/fairway/pages/settings/FairwaySettingsGeneral';
 
 // ── Light stand-ins for the Fairway primitives the panels render ───────────
 vi.mock('@/components/fairway', () => ({
@@ -135,10 +139,6 @@ describe('Fairway settings panels follow the active-team toggle', () => {
       { name: 'State U', location_city: 'City', location_state: 'CA', division: 'I', conference: 'Pac-12' },
     ]);
 
-    const { TeamSettingsPanel } = await import(
-      '@/components/fairway/pages/settings/FairwaySettingsGeneral'
-    );
-
     render(
       <GolfUserProvider userData={womensContext}>
         <TeamSettingsPanel onUpdate={() => {}} />
@@ -160,10 +160,6 @@ describe('Fairway settings panels follow the active-team toggle', () => {
       { id: 'team-women', name: "Women's Golf", season: '2025-2026', organization_id: 'org-1' },
     ]);
     maybeSingleResults.set('organizations', [{ name: 'State U' }]);
-
-    const { TeamSettingsPanel } = await import(
-      '@/components/fairway/pages/settings/FairwaySettingsGeneral'
-    );
 
     render(
       <GolfUserProvider userData={womensContext}>
@@ -198,10 +194,6 @@ describe('Fairway settings panels follow the active-team toggle', () => {
     ]);
     maybeSingleResults.set('organizations', [{ name: 'State U' }]);
 
-    const { TeamSettingsPanel } = await import(
-      '@/components/fairway/pages/settings/FairwaySettingsGeneral'
-    );
-
     render(
       <GolfUserProvider userData={womensContext}>
         <TeamSettingsPanel onUpdate={() => {}} />
@@ -225,10 +217,6 @@ describe('Fairway settings panels follow the active-team toggle', () => {
 
   it('InviteSettingsPanel regenerates the join code on the ACTIVE (women’s) team row', async () => {
     maybeSingleResults.set('golf_teams', [{ id: 'team-women', join_code: 'OLDCODE1' }]);
-
-    const { InviteSettingsPanel } = await import(
-      '@/components/fairway/pages/settings/FairwaySettingsGeneral'
-    );
 
     render(
       <GolfUserProvider userData={womensContext}>

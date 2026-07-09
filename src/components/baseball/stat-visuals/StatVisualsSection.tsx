@@ -329,17 +329,19 @@ export function StatVisualsSection({
     // Capture the active family tab as this scope's filter state. `active: true`
     // marks the tab to restore on the next visit; forward-compatible Json lets
     // per-chart filters merge in as their read models land.
-    void onSaveView({
+    // onSaveView already toasts + rolls back before rethrowing (use-stat-visual-views.ts); swallow it here.
+    onSaveView({
       visualKey: activeKey,
       viewState: { family, active: true } as Json,
       playerId: playerId ?? null,
       isPinned,
-    });
+    })?.catch(() => {});
   }, [onSaveView, activeKey, family, playerId, isPinned]);
 
   const handleTogglePin = React.useCallback(() => {
     if (!onSetPinned) return;
-    void onSetPinned({ visualKey: activeKey, isPinned: !isPinned, playerId: playerId ?? null });
+    // onSetPinned already toasts + rolls back before rethrowing (use-stat-visual-views.ts); swallow it here.
+    onSetPinned({ visualKey: activeKey, isPinned: !isPinned, playerId: playerId ?? null })?.catch(() => {});
   }, [onSetPinned, activeKey, isPinned, playerId]);
 
   return (

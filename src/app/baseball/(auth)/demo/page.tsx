@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowRight, Brain, ClipboardList, Users } from 'lucide-react';
+import { ArrowRight, Brain, ClipboardList, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -21,7 +21,7 @@ import {
   AuthPendingDots,
   BaseballAuthShell,
 } from '@/components/auth/baseball-auth-shell';
-import { EditorsLetter } from '@/components/baseball/living-annual';
+import { EditorsLetter, InkNotice } from '@/components/baseball/living-annual';
 
 // ---------------------------------------------------------------------------
 // Value-prop pills shown below the headline (the "why bother" scan).
@@ -245,15 +245,7 @@ function DemoGateContent() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-label="Demo access form">
-            {serverError && (
-              <div
-                className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
-                role="alert"
-              >
-                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
-                <span>{serverError}</span>
-              </div>
-            )}
+            {serverError && <InkNotice>{serverError}</InkNotice>}
 
             <Input
               id="demo-name"

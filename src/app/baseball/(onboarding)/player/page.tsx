@@ -28,6 +28,7 @@ import {
 } from '@/components/baseball/onboarding/StepIndicator';
 import { EntryField, type SceneStage } from '@/components/baseball/scenes/EntryField';
 import { resolveSceneVariant, type SceneVariant } from '@/lib/entry/greeting';
+import { HairlineRule, InkNotice, stampPress, inkBleed } from '@/components/baseball/living-annual';
 import { flFraunces } from '@/components/marketing/first-light/fonts';
 import '@/components/marketing/first-light/first-light.css';
 import './onboarding-entry.css';
@@ -69,6 +70,43 @@ const STEP_SCENE_STAGE: Record<Step, SceneStage> = {
   team: 3,
   complete: 4,
 };
+
+// ─── Join Seal ──────────────────────────────────────────────────────────────
+// The team-join ceremony object (island-join-ceremony packet) — a
+// `--team-ink` embossed stamp (kit `stampPress` + `inkBleed` motion, the same
+// grammar as `<CommitSeal>` but recolored green for this team/development
+// moment; `<CommitSeal>` itself stays hardcoded oxblood for recruiting
+// COMMITTED/OFFER) pressing down over an ink-bleed bloom, followed by a
+// green ink-rule reveal. Replaces the plain check-circle "Team Joined!" tile;
+// honors `prefers-reduced-motion` via the shared motion variants. Kept local
+// (mirrors the identical `JoinSeal` in join-team-client.tsx / staff-join-
+// client.tsx — no shared file was in this packet's scope).
+function JoinSeal() {
+  const reduced = useReducedMotion() ?? false;
+  return (
+    <div className="relative inline-grid place-items-center">
+      <m.span
+        aria-hidden
+        initial="hidden"
+        animate="visible"
+        variants={inkBleed(reduced)}
+        className="pointer-events-none absolute h-20 w-20 rounded-full blur-md"
+        style={{ background: 'var(--team-ink)' }}
+      />
+      <m.div
+        initial="hidden"
+        animate="visible"
+        variants={stampPress(reduced)}
+        style={{ rotate: -1.5 }}
+        className="relative inline-grid h-20 w-20 place-items-center rounded-full text-[color:var(--paper)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3),inset_0_-1px_2px_rgba(255,255,255,0.15),0_2px_6px_rgba(0,0,0,0.2)]"
+      >
+        <span aria-hidden className="absolute inset-0 rounded-full" style={{ background: 'var(--team-ink)' }} />
+        <span aria-hidden className="absolute inset-[12%] rounded-full border border-[rgba(255,255,255,0.32)]" />
+        <IconCheck size={28} className="relative" aria-hidden />
+      </m.div>
+    </div>
+  );
+}
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -670,11 +708,14 @@ export default function BaseballPlayerOnboarding() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="text-center py-4"
                       >
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.14)' }}>
-                          <IconCheck size={32} className="text-[color:var(--fl-sage-deep)]" />
+                        <div className="flex justify-center mb-4">
+                          <JoinSeal />
+                        </div>
+                        <div className="flex justify-center mb-4">
+                          <HairlineRule ink="team" className="w-14" />
                         </div>
                         <h3 className="text-lg font-semibold text-warm-900 mb-1">
-                          Team Joined!
+                          Team Joined
                         </h3>
                         <p className="text-warm-600">
                           You are now a member of <span className="font-medium text-[color:var(--fl-sage-deep)]">{teamName}</span>
@@ -707,13 +748,12 @@ export default function BaseballPlayerOnboarding() {
                         />
 
                         {teamJoinError && (
-                          <m.p
+                          <m.div
                             initial={{ opacity: 0, y: -8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-sm text-red-600 text-center bg-red-50 border border-red-200 rounded-xl px-4 py-3"
                           >
-                            {teamJoinError}
-                          </m.p>
+                            <InkNotice>{teamJoinError}</InkNotice>
+                          </m.div>
                         )}
 
                         <Button
@@ -829,13 +869,13 @@ export default function BaseballPlayerOnboarding() {
                       <IconArrowRight size={16} className="ml-2" />
                     </Button>
                     {error && (
-                      <m.p
+                      <m.div
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                        className="mt-3"
                       >
-                        {error}
-                      </m.p>
+                        <InkNotice>{error}</InkNotice>
+                      </m.div>
                     )}
                   </m.div>
                 </m.div>

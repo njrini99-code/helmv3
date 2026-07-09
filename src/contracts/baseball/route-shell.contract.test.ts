@@ -38,6 +38,23 @@ describe('Baseball route/shell contracts (#374)', () => {
       expect(src).toContain('ReadModelStateNotice');
     }
   });
+
+  it('legacy page.tsx wrappers actually carry the W0a auth guard (#413/#416)', () => {
+    // The check above only covers the *Client.tsx sibling (the UI body).
+    // This asserts the guard itself — getSessionProfile() + redirect to
+    // /baseball/login for a missing session — is present on the thin
+    // server page.tsx that renders that client, which is the actual W0a
+    // fix (these routes previously had NO server-side auth check at all).
+    for (const path of [
+      'src/app/baseball/(dashboard)/dashboard/announcements/page.tsx',
+      'src/app/baseball/(dashboard)/dashboard/travel/page.tsx',
+      'src/app/baseball/(dashboard)/dashboard/camps/page.tsx',
+    ]) {
+      const src = read(path);
+      expect(src).toContain('getSessionProfile');
+      expect(src).toContain("redirect('/baseball/login')");
+    }
+  });
 });
 
 describe('Baseball business-trust contracts (#377)', () => {

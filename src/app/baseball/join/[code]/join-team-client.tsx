@@ -1,100 +1,51 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { processTeamInvitation, joinTeamByCode } from '@/app/baseball/actions/teams';
 import Image from 'next/image';
-import { IconCheck, IconUsers, IconUser, IconX, IconArrowLeft } from '@/components/icons';
+import { m, useReducedMotion } from 'framer-motion';
+import { IconCheck, IconUsers, IconUser, IconArrowLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PaperCard } from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
+import { PaperCard, HairlineRule, stampPress, inkBleed } from '@/components/baseball/living-annual';
 
 // ============================================================================
-// CONFETTI COMPONENT
+// JOIN SEAL — the ceremony object (island-join-ceremony packet).
+//
+// Replaces the old rainbow-confetti + 🎉-emoji celebration with one stamp
+// ceremony in team green: a `--team-ink` embossed seal (kit `stampPress` +
+// `inkBleed` motion — same grammar as `<CommitSeal>`, recolored for the
+// team/development lane per the design-system's two-ink law) pressing down
+// over an ink-bleed bloom. `<CommitSeal>` itself is hardcoded oxblood
+// (reserved for recruiting COMMITTED/OFFER moments) so this composes the
+// same kit primitives locally rather than repurposing that component's ink.
+// Honors `prefers-reduced-motion` via the shared motion variants.
 // ============================================================================
-
-interface ConfettiPiece {
-  id: number;
-  x: number;
-  color: string;
-  delay: number;
-  duration: number;
-  size: number;
-}
-
-function Confetti({ active }: { active: boolean }) {
-  const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
-
-  const generateConfetti = useCallback(() => {
-    const colors = [
-      '#22c55e', // primary-500
-      'var(--color-primary-600)', // primary-600
-      '#4ade80', // primary-400
-      '#fbbf24', // amber-400
-      '#f59e0b', // amber-500
-      '#3b82f6', // blue-500
-      '#8b5cf6', // violet-500
-      '#ec4899', // pink-500
-    ];
-
-    const newPieces: ConfettiPiece[] = [];
-    for (let i = 0; i < 50; i++) {
-      newPieces.push({
-        id: i,
-        x: Math.random() * 100,
-        color: colors[Math.floor(Math.random() * colors.length)] ?? '#22c55e',
-        delay: Math.random() * 0.5,
-        duration: 2 + Math.random() * 2,
-        size: 6 + Math.random() * 8,
-      });
-    }
-    setPieces(newPieces);
-  }, []);
-
-  useEffect(() => {
-    if (active) {
-      generateConfetti();
-    }
-  }, [active, generateConfetti]);
-
-  if (!active || pieces.length === 0) return null;
-
+function JoinSeal() {
+  const reduced = useReducedMotion() ?? false;
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
-      {pieces.map((piece) => (
-        <div
-          key={piece.id}
-          className="absolute animate-confetti-fall"
-          style={{
-            left: `${piece.x}%`,
-            top: '-20px',
-            width: `${piece.size}px`,
-            height: `${piece.size}px`,
-            backgroundColor: piece.color,
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-            animationDelay: `${piece.delay}s`,
-            animationDuration: `${piece.duration}s`,
-            transform: `rotate(${Math.random() * 360}deg)`,
-          }}
-        />
-      ))}
-      <style jsx>{`
-        @keyframes confetti-fall {
-          0% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(100vh) rotate(720deg);
-            opacity: 0;
-          }
-        }
-        .animate-confetti-fall {
-          animation-name: confetti-fall;
-          animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          animation-fill-mode: forwards;
-        }
-      `}</style>
+    <div className="relative inline-grid place-items-center">
+      <m.span
+        aria-hidden
+        initial="hidden"
+        animate="visible"
+        variants={inkBleed(reduced)}
+        className="pointer-events-none absolute h-24 w-24 rounded-full blur-md"
+        style={{ background: 'var(--team-ink)' }}
+      />
+      <m.div
+        initial="hidden"
+        animate="visible"
+        variants={stampPress(reduced)}
+        style={{ rotate: -1.5 }}
+        className="relative inline-grid h-24 w-24 place-items-center rounded-full text-[color:var(--paper)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3),inset_0_-1px_2px_rgba(255,255,255,0.15),0_2px_6px_rgba(0,0,0,0.2)]"
+      >
+        <span aria-hidden className="absolute inset-0 rounded-full" style={{ background: 'var(--team-ink)' }} />
+        <span aria-hidden className="absolute inset-[12%] rounded-full border border-[rgba(255,255,255,0.32)]" />
+        <IconCheck size={32} className="relative" aria-hidden />
+      </m.div>
     </div>
   );
 }
@@ -165,33 +116,30 @@ export function JoinTeamClient({
     }, 1500);
   }
 
-  // Success state with celebration and confetti
+  // Success state — the join ceremony (stamp seal, no confetti).
   if (state === 'success') {
     return (
-      <>
-        <Confetti active={true} />
-        <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-6">
-          <PaperCard className="max-w-lg w-full rounded-2xl animate-in zoom-in-95 duration-300">
-            <div className="p-12 text-center">
-              {/* Success animation */}
-              <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in-50 duration-500">
-                <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300 delay-200">
-                  <IconCheck size={32} className="text-white animate-in slide-in-from-bottom-2 duration-300 delay-300" />
-                </div>
-              </div>
-              <h1 className="text-2xl font-semibold text-warm-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-150">
-                Welcome to {team.name}! 🎉
-              </h1>
-              <p className="text-warm-600 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-200">
-                You&apos;re now officially part of the team
-              </p>
-              <p className="text-sm text-warm-500 mt-4 animate-in fade-in duration-300 delay-300">
-                Redirecting to your team dashboard...
-              </p>
+      <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-6">
+        <PaperCard className="max-w-lg w-full rounded-2xl animate-in zoom-in-95 duration-300">
+          <div className="p-12 text-center">
+            <div className="flex justify-center mb-6">
+              <JoinSeal />
             </div>
-          </PaperCard>
-        </div>
-      </>
+            <div className="flex justify-center mb-5">
+              <HairlineRule ink="team" className="w-16" />
+            </div>
+            <h1 className="text-2xl font-semibold text-warm-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-150">
+              Welcome to {team.name}
+            </h1>
+            <p className="text-warm-600 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-200">
+              You&apos;re now officially part of the team
+            </p>
+            <p className="text-sm text-warm-500 mt-4 animate-in fade-in duration-300 delay-300">
+              Redirecting to your team dashboard...
+            </p>
+          </div>
+        </PaperCard>
+      </div>
     );
   }
 
@@ -257,16 +205,12 @@ export function JoinTeamClient({
             </div>
           </div>
 
-          {/* Error state */}
+          {/* Error state — shared InlineNotice, not an ad-hoc red box. */}
           {state === 'error' && error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <IconX size={12} className="text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-red-800">Unable to join team</p>
-                <p className="text-sm text-red-600 mt-0.5">{error}</p>
-              </div>
+            <div className="mb-6">
+              <InlineNotice tone="danger" title="Unable to join team">
+                {error}
+              </InlineNotice>
             </div>
           )}
 

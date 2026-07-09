@@ -14,10 +14,11 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
+import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -42,10 +43,20 @@ export async function GET(req: NextRequest) {
 async function handleRosterSweep(): Promise<NextResponse> {
   const supabase = createAdminClient();
 
-  const { data: memberships, error } = await supabase
-    .from('golf_team_members')
-    .select('player_id, team_id')
-    .eq('status', 'active');
+  // Paginated: platform-wide, unfiltered fetch across every active roster —
+  // easily exceeds the PostgREST 1000-row cap once enough teams have active
+  // members (mirrors event-reminders' use of fetchAllRowsResult).
+  const { data: memberships, error } = await fetchAllRowsResult<{ player_id: string; team_id: string }>(
+    (from, to) =>
+      supabase
+        .from('golf_team_members')
+        .select('player_id, team_id')
+        .eq('status', 'active')
+        .order('id', { ascending: true })
+        .range(from, to),
+    undefined,
+    { table: 'golf_team_members', action: 'cron.coachhelm.rosterSweep.fetchMembers', sport: 'golf' },
+  );
 
   if (error) {
     await logServerError(
@@ -71,12 +82,23 @@ async function handleRosterSweep(): Promise<NextResponse> {
   // SKIP_IF_ANALYZED_WITHIN_MS (audit P1-3 — was re-running engine 3× per
   // round between this sweep + safety-net + post-round trigger).
   const recencyCutoff = new Date(Date.now() - SKIP_IF_ANALYZED_WITHIN_MS).toISOString();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recentRounds } = await (supabase as any)
-    .from('golf_rounds')
-    .select('player_id')
-    .in('player_id', uniquePlayerIds)
-    .gte('coachhelm_analyzed_at', recencyCutoff);
+  // Paginated: one row per analyzed round (not per player), so a large
+  // roster with many rounds analyzed inside the window can exceed the
+  // PostgREST 1000-row cap just as easily as the unfiltered members query
+  // above.
+  const { data: recentRounds } = await fetchAllRowsResult<{ player_id: string }>(
+    (from, to) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('golf_rounds')
+        .select('player_id')
+        .in('player_id', uniquePlayerIds)
+        .gte('coachhelm_analyzed_at', recencyCutoff)
+        .order('id', { ascending: true })
+        .range(from, to),
+    undefined,
+    { table: 'golf_rounds', action: 'cron.coachhelm.rosterSweep.recentRounds', sport: 'golf' },
+  );
   const recentlyAnalyzedPlayerIds = new Set(
     ((recentRounds ?? []) as Array<{ player_id: string }>).map((r) => r.player_id),
   );

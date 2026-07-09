@@ -56,6 +56,7 @@ import {
   FormField,
   Input,
   TextArea,
+  Eyebrow,
 } from '@/components/fairway';
 import { CoachHelmShell } from './CoachHelmShell';
 import {
@@ -623,10 +624,18 @@ export function FairwayMyDevelopment({
               ) : null}
 
               {total > 0 ? (
-                <>
-                  {/* ── The plan instrument — ONE warm-glass focal readout of the
-                        player's development progress. The dense FocusAreaCard rows
-                        below stay MATTE + legible; this is the hero summary. ── */}
+                <div className="flex flex-col gap-6 border-t border-border-subtle pt-8">
+                  {/* ── Framing masthead — labels the merged plan + active +
+                        completed zone as ONE section beneath Goals/Causal/
+                        Proposed above. GoalHero (GoalsSection) owns the page's
+                        accent focal point; this stays a quiet compact frame,
+                        never a second hero. ── */}
+                  <Eyebrow>Your plan</Eyebrow>
+
+                  {/* ── The plan instrument — a calm base-density summary
+                        readout of the player's development progress (NOT the
+                        accent focal panel — GoalHero above owns that). The
+                        dense FocusAreaCard rows below stay MATTE + legible. ── */}
                   <DevelopmentOverviewInstrument
                     activeCount={activeAreas.length}
                     completedCount={completedAreas.length}
@@ -693,7 +702,7 @@ export function FairwayMyDevelopment({
                       </div>
                     </section>
                   ) : null}
-                </>
+                </div>
               ) : null}
             </div>
           )}
@@ -781,12 +790,15 @@ function ProposedAreaCard({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * The development overview instrument — ONE flat focal panel summarizing the
- * player's plan: a big mono Readout of areas in progress, a FLAT completion
+ * The development overview instrument — a calm BASE-density summary panel of
+ * the player's plan: a big mono Readout of areas in progress, a FLAT completion
  * Readout (share of all assigned areas finished — NO dial), and a micro
  * completed readout inset. Honest awaiting when no area has been completed yet —
- * never a fabricated 0% completion that reads as failure. The dense per-area
- * FocusAreaCard rows beneath this stay MATTE + legible.
+ * never a fabricated 0% completion that reads as failure. Deliberately base
+ * depth / neutral tone (NOT raised/accent) so GoalHero (GoalsSection, above)
+ * stays the page's ONE accent focal point — this panel summarizes, it doesn't
+ * compete for the hero read. The dense per-area FocusAreaCard rows beneath this
+ * stay MATTE + legible.
  * ─────────────────────────────────────────────────────────────────────────── */
 function DevelopmentOverviewInstrument({
   activeCount,
@@ -802,8 +814,6 @@ function DevelopmentOverviewInstrument({
 
   return (
     <InstrumentPanel
-      depth="raised"
-      tone="accent"
       padding="lg"
       header="Development progress"
       as="section"

@@ -18,6 +18,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -55,19 +56,38 @@ async function handle(): Promise<NextResponse> {
 
   // Active team players, oldest-genome-first. NULL computed_at sorts
   // first so never-computed players catch up before everyone else.
-  const { data: existingGenomes } = await supabase
-    .from('golf_player_genome')
-    .select('player_id, computed_at')
-    .order('computed_at', { ascending: true });
+  // Paginated: platform-wide, unfiltered fetch (both queries) can exceed the
+  // PostgREST 1000-row cap once the roster grows (mirrors event-reminders'
+  // use of fetchAllRowsResult). Ordering here only needs to be a STABLE
+  // unique key for correct page boundaries — the actual "stalest first"
+  // ordering is re-derived client-side below via computedAtByPlayer, so
+  // ordering by the table's own primary key (player_id) is safe.
+  const { data: existingGenomes } = await fetchAllRowsResult<{ player_id: string; computed_at: string }>(
+    (from, to) =>
+      supabase
+        .from('golf_player_genome')
+        .select('player_id, computed_at')
+        .order('player_id', { ascending: true })
+        .range(from, to),
+    undefined,
+    { table: 'golf_player_genome', action: 'cron.v3.genome-nightly', sport: 'golf' },
+  );
   const computedAtByPlayer = new Map<string, string>();
   for (const g of existingGenomes ?? []) {
     computedAtByPlayer.set(g.player_id, g.computed_at);
   }
 
-  const { data: members } = await supabase
-    .from('golf_team_members')
-    .select('player_id')
-    .eq('status', 'active');
+  const { data: members } = await fetchAllRowsResult<{ player_id: string }>(
+    (from, to) =>
+      supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('status', 'active')
+        .order('id', { ascending: true })
+        .range(from, to),
+    undefined,
+    { table: 'golf_team_members', action: 'cron.v3.genome-nightly', sport: 'golf' },
+  );
   const allPlayerIds = Array.from(new Set((members ?? []).map((m) => m.player_id)));
 
   // Sort: never-computed (no entry in map) come first, then by ascending

@@ -75,6 +75,7 @@ async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ al
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { __registerTriggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 // ============================================================================
@@ -4080,6 +4081,11 @@ async function triggerPlayerInsightsAfterRoundImpl(
   }
 }
 
+// SECURITY: intentionally NOT exported. Every exported async function in a
+// 'use server' file (this file) is a public, directly-POSTable action
+// regardless of client references — and this skips the user auth gate
+// entirely (admin client, caller-supplied playerId, generates insights).
+//
 // Post-round trigger is async fan-out fired FIRE-AND-FORGET from
 // postRoundTrigger (src/lib/coachhelm/v2/post-round-trigger.ts) after the
 // round-submit response is sent — the delegator below must keep returning
@@ -4090,11 +4096,15 @@ const observedTriggerPlayerInsightsAfterRound = withAdminObserved(
   { sport: 'golf', feature: 'coachhelm_ai_engine' },
   triggerPlayerInsightsAfterRoundImpl,
 );
-export async function triggerPlayerInsightsAfterRound(
-  playerId: string
-): Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }> {
-  return observedTriggerPlayerInsightsAfterRound(playerId);
-}
+
+// Hands the observed impl above to the server-only bridge so trusted,
+// non-'use server' callers (postRoundTrigger, the roster-sweep cron) can
+// reach it without this file ever exporting it — see
+// @/lib/coachhelm/v2/trigger-insights-bridge. The one legitimate
+// CLIENT-reachable path (coach manual refresh) uses the still-exported
+// `refreshPlayerAnalysisAsCoach` below, which calls
+// `observedTriggerPlayerInsightsAfterRound` directly in-process.
+__registerTriggerPlayerInsightsAfterRound(observedTriggerPlayerInsightsAfterRound);
 
 /**
  * Coach-initiated manual refresh of a player's CoachHelm analysis.
@@ -4134,7 +4144,10 @@ async function refreshPlayerAnalysisAsCoachImpl(
     .maybeSingle();
   if (!membership) return { success: false, error: 'Player is not on your team' };
 
-  const result = await triggerPlayerInsightsAfterRound(playerId);
+  // Session/team-membership already verified above; call the observed impl
+  // directly in-process — this file no longer exports a bare
+  // triggerPlayerInsightsAfterRound (see the SECURITY comment above it).
+  const result = await observedTriggerPlayerInsightsAfterRound(playerId);
 
   if (result.success) {
     revalidatePath(`/golf/dashboard/players/${playerId}`);

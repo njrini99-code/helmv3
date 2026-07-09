@@ -15,15 +15,50 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { m, useReducedMotion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { IconCheck, IconArrowRight } from '@/components/icons';
 import { acceptStaffInvite } from '@/app/baseball/actions/staff';
+import { HairlineRule, stampPress, inkBleed } from '@/components/baseball/living-annual';
 
 interface StaffJoinClientProps {
   token: string;
   teamName: string;
+}
+
+// JOIN SEAL — the ceremony object (island-join-ceremony packet). Same
+// team-green stamp-press language as the player join-team ceremony
+// (`join-team-client.tsx`'s `JoinSeal`) — `--team-ink` embossed seal, kit
+// `stampPress` + `inkBleed` motion, honors `prefers-reduced-motion`.
+// `<CommitSeal>` stays hardcoded oxblood for recruiting COMMITTED/OFFER
+// moments, so this composes the same kit primitives locally instead.
+function JoinSeal() {
+  const reduced = useReducedMotion() ?? false;
+  return (
+    <div className="relative inline-grid place-items-center">
+      <m.span
+        aria-hidden
+        initial="hidden"
+        animate="visible"
+        variants={inkBleed(reduced)}
+        className="pointer-events-none absolute h-20 w-20 rounded-full blur-md"
+        style={{ background: 'var(--team-ink)' }}
+      />
+      <m.div
+        initial="hidden"
+        animate="visible"
+        variants={stampPress(reduced)}
+        style={{ rotate: -1.5 }}
+        className="relative inline-grid h-20 w-20 place-items-center rounded-full text-[color:var(--paper)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3),inset_0_-1px_2px_rgba(255,255,255,0.15),0_2px_6px_rgba(0,0,0,0.2)]"
+      >
+        <span aria-hidden className="absolute inset-0 rounded-full" style={{ background: 'var(--team-ink)' }} />
+        <span aria-hidden className="absolute inset-[12%] rounded-full border border-[rgba(255,255,255,0.32)]" />
+        <IconCheck size={28} className="relative" aria-hidden />
+      </m.div>
+    </div>
+  );
 }
 
 export function StaffJoinClient({ token, teamName }: StaffJoinClientProps) {
@@ -48,13 +83,31 @@ export function StaffJoinClient({ token, teamName }: StaffJoinClientProps) {
         }
         setAccepted(true);
         showToast(`Welcome to ${teamName}`, 'success');
-        router.push('/baseball/dashboard/command-center');
-        router.refresh();
+        // Hold the stamp ceremony on screen briefly before redirecting —
+        // same beat as the player join flow's ceremony pause.
+        setTimeout(() => {
+          router.push('/baseball/dashboard/command-center');
+          router.refresh();
+        }, 900);
       } catch {
         showToast('Something went wrong. Please try again.', 'error');
       }
     });
   };
+
+  if (accepted) {
+    return (
+      <div className="space-y-4 py-2 text-center">
+        <div className="flex justify-center">
+          <JoinSeal />
+        </div>
+        <div className="flex justify-center">
+          <HairlineRule ink="team" className="w-14" />
+        </div>
+        <p className="text-sm font-medium text-warm-900">Joined {teamName}</p>
+      </div>
+    );
+  }
 
   if (needsProfile) {
     return (

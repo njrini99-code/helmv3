@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -21,21 +21,12 @@ import {
   IconTrendingDown,
   IconMinus,
   IconVideo,
-  IconChart,
-  IconActivity,
-  IconSparkles,
-  IconNote,
-  IconX,
   IconPlay,
-  IconTarget,
   IconClock,
   IconPlus,
   IconChevronRight,
-  IconMapPin,
   IconShieldCheck,
-  IconDumbbell,
-  IconList,
-  IconCheck,
+  IconX,
 } from '@/components/icons';
 import type {
   BaseballCoachInsight,
@@ -47,6 +38,20 @@ import type {
 import type { BaseballNoteScope } from '@/lib/types/baseball-extended';
 import type { SnapshotHeader } from '@/lib/baseball/read-models/player-snapshot-cards';
 import type { TimelineEventView } from '@/lib/baseball/read-models/timeline';
+import { cn } from '@/lib/utils';
+import {
+  PaperCard,
+  Masthead,
+  Eyebrow,
+  HairlineRule,
+  InkBadge,
+  RuledStatLine,
+  StatReadout,
+  EditorsLetter,
+  Reveal,
+  pressableClass,
+} from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
 import { PlayerInsightsPanel } from './PlayerInsightsPanel';
 import { PlayerNotesSection } from './PlayerNotesSection';
 import { ProfileTimeline } from './ProfileTimeline';
@@ -58,6 +63,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { NativeSelect } from '@/components/ui/select';
 import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
 import { createCoachNote } from '@/app/baseball/actions/coach-notes';
+
+// =============================================================================
+// PlayerProfileClient — MIGRATED to "The Living Annual" kit
+// (design-system-living-annual.md §6 P0 #1 "The Player Passport Spread" idiom,
+// applied to the coach-facing player profile island).
+//
+// PRESENTATION ONLY. Every backdrop-blur card is now a `<PaperCard>`, the
+// gradient accent bar + gradient avatar are gone, trend/class/priority
+// semantics route through `<InkBadge>` tones + graphite/green ink instead of
+// raw amber/red, and the tab bar is the same Fairway-pattern tab system used
+// elsewhere in baseball (raw `<button role="tab">` + `pressableClass` +
+// `<InkBadge>`, with per-tab counts as a trailing `<InkBadge>`). Every empty
+// state renders through `<EditorsLetter>` per the kit's empty-state doctrine.
+//
+// Data wiring, handlers, computed values, and prop contracts are unchanged.
+// =============================================================================
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -213,12 +234,32 @@ function formatShortDate(iso: string): string {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+/** Eyebrow-kicker card header, matching the SubSectionHeader idiom every other
+ * migrated baseball surface uses. `count` renders as a trailing InkBadge
+ * (the same "counts as trailing InkBadge" idiom the tab bar uses below);
+ * `action` overrides it with a bespoke trailing control. */
+function CardHeading({ title, count, action }: { title: string; count?: number; action?: ReactNode }) {
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-sm">
-      <p className="text-eyebrow font-medium text-warm-400 uppercase tracking-wide mb-1">{label}</p>
-      <p className="text-2xl font-bold text-warm-900 tabular-nums leading-none">{value}</p>
-      {sub && <p className="text-xs text-warm-400 mt-1">{sub}</p>}
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <Eyebrow ink="team">{title}</Eyebrow>
+      {action ? (
+        <div className="flex items-center gap-2">{action}</div>
+      ) : count != null && count > 0 ? (
+        <InkBadge label={String(count)} tone="neutral" variant="soft" />
+      ) : null}
+    </div>
+  );
+}
+
+/** Trend chip — icon + `<InkBadge>`. `declining` stays graphite (`neutral`),
+ * never clay/red: clay is reserved for the War Room recruiting lane, and this
+ * is a Pressbox/Passport (team) surface — the down arrow carries the meaning,
+ * not a banned red badge. */
+function TrendIndicator({ badge }: { badge: { label: string; icon: ReactNode; tone: 'team' | 'neutral' } }) {
+  return (
+    <div className="inline-flex items-center gap-1.5">
+      <span className={badge.tone === 'team' ? 'text-grade-plus' : 'text-text-tertiary'}>{badge.icon}</span>
+      <InkBadge label={badge.label} tone={badge.tone} variant="soft" />
     </div>
   );
 }
@@ -243,7 +284,10 @@ function SortHeader({
     <th
       scope="col"
       aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
-      className={`text-${align} text-xs font-semibold text-warm-500 uppercase tracking-wide`}
+      className={cn(
+        'font-annual text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary',
+        align === 'left' ? 'text-left' : 'text-center',
+      )}
     >
       {/* A header-sized sort control; the Button primitive's fixed min-height + ripple
           would not fit a table heading row. */}
@@ -251,12 +295,15 @@ function SortHeader({
       <button
         type="button"
         onClick={() => onSort(sortKey)}
-        className={`w-full px-3 py-3 inline-flex items-center gap-1 select-none transition-colors hover:text-warm-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md ${
-          align === 'left' ? 'justify-start' : 'justify-center'
-        } ${active ? 'text-warm-800' : ''}`}
+        className={cn(
+          'inline-flex w-full select-none items-center gap-1 rounded-fw-sm px-3 py-3',
+          align === 'left' ? 'justify-start' : 'justify-center',
+          active ? 'text-grade-plus' : 'hover:text-grade-plus',
+          pressableClass({ ink: 'team' }),
+        )}
       >
         {label}
-        <span aria-hidden="true" className={`inline-block transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`}>
+        <span aria-hidden="true" className={cn('inline-block transition-opacity', active ? 'opacity-100' : 'opacity-0')}>
           {dir === 'asc' ? '↑' : '↓'}
         </span>
       </button>
@@ -276,14 +323,14 @@ function TrendTooltip({ active, payload, label }: TrendTooltipProps) {
   if (!active || !payload?.length) return null;
   const data = payload[0];
   return (
-    <div className="bg-cream-50/95 backdrop-blur-xl border border-warm-200/80 rounded-xl shadow-lg px-3 py-2.5 text-xs">
-      <p className="font-medium text-warm-700 mb-1">{label}</p>
-      <p className="text-warm-900 font-bold">{formatAvg(data?.value)}</p>
-      <p className="text-warm-400 mt-0.5">
+    <PaperCard grain={false} className="px-3 py-2.5">
+      <p className="font-annual text-body-sm font-medium text-text-primary">{label}</p>
+      <p className="font-annual text-h3 font-semibold tabular-nums text-text-primary">{formatAvg(data?.value)}</p>
+      <p className="mt-0.5 text-eyebrow text-text-tertiary">
         {data?.payload.hits}/{data?.payload.atBats} AB
         {data?.payload.type && ` · ${data.payload.type}`}
       </p>
-    </div>
+    </PaperCard>
   );
 }
 
@@ -515,10 +562,13 @@ export function PlayerProfileClient({
     if (diff < -0.02) return 'declining';
     return 'stable';
   }, [last5Avg, seasonStats]);
+  // Tones stay inside the team (green/graphite) lane — clay is reserved for
+  // the War Room recruiting lane, so "declining" reads as quiet graphite +
+  // a down arrow, never a banned red/clay badge.
   const trendBadge = {
-    improving: { label: 'Improving', icon: <IconTrendingUp size={14} />, cls: 'bg-primary-100 text-primary-700' },
-    declining: { label: 'Declining', icon: <IconTrendingDown size={14} />, cls: 'bg-red-100 text-red-700' },
-    stable: { label: 'Stable', icon: <IconMinus size={14} />, cls: 'bg-warm-100 text-warm-600' },
+    improving: { label: 'Improving', icon: <IconTrendingUp size={13} />, tone: 'team' as const },
+    declining: { label: 'Declining', icon: <IconTrendingDown size={13} />, tone: 'neutral' as const },
+    stable: { label: 'Stable', icon: <IconMinus size={13} />, tone: 'neutral' as const },
   } as const;
   const badge = trend ? trendBadge[trend] : trendBadge.stable;
 
@@ -530,151 +580,138 @@ export function PlayerProfileClient({
     ).map((t) => ({ key: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))),
   ];
 
+  // ── Main tab bar — counts render as a trailing InkBadge ─────────────────────
+  const TABS: Array<{ id: MainTab; label: string; count?: number }> = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'stats', label: 'Stats' },
+    { id: 'videos', label: 'Videos', count: videos.length },
+    { id: 'performance', label: 'Performance' },
+    { id: 'passport', label: 'Passport' },
+    { id: 'timeline', label: 'Timeline' },
+    { id: 'notes', label: 'Notes', count: notes.length },
+    { id: 'tasks', label: 'Tasks', count: tasks.length },
+  ];
+
+  // ── Season Statistics grid rows (Overview) — box-score canonical ───────────
+  const seasonStatRows: Array<{ label: string; value: number | string; ghost?: boolean }> = [
+    { label: 'AVG', value: formatAvg(seasonStats?.avg), ghost: seasonStats?.avg == null },
+    { label: 'OBP', value: formatAvg(seasonStats?.obp), ghost: seasonStats?.obp == null },
+    { label: 'SLG', value: formatAvg(seasonStats?.slg), ghost: seasonStats?.slg == null },
+    { label: 'OPS', value: seasonStats?.ops != null ? seasonStats.ops.toFixed(3) : '—', ghost: seasonStats?.ops == null },
+    { label: 'Game AVG', value: formatAvg(gameAvg), ghost: gameAvg == null },
+    { label: 'Scrimmage AVG', value: formatAvg(scrimmageAvg), ghost: scrimmageAvg == null },
+    { label: 'Last 5 AVG', value: formatAvg(last5Avg), ghost: last5Avg == null },
+    { label: 'AB', value: seasonAB },
+    { label: 'Hits', value: seasonHits },
+    { label: 'HR', value: seasonHR },
+    { label: 'RBI', value: seasonRBI },
+    { label: 'Games', value: seasonGames },
+  ];
+
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <>
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
 
         {/* ── Back button ─────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 mb-7">
+        <div className="mb-7 flex items-center gap-3">
           <Link
             href="/baseball/dashboard/command-center"
-            className="flex items-center gap-2 text-warm-500 hover:text-warm-800 transition-colors group"
+            className={cn('group flex items-center gap-2 text-text-secondary', pressableClass({ ink: 'team', className: '-m-1 rounded-fw-md p-1' }))}
           >
-            <span className="w-8 h-8 flex items-center justify-center rounded-xl bg-cream-100/82 border border-warm-200/80 shadow-sm group-hover:shadow transition-shadow">
+            <span className="flex h-8 w-8 items-center justify-center rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06)] transition-colors group-hover:text-grade-plus">
               <IconArrowLeft size={16} />
             </span>
-            <span className="text-sm font-medium hidden sm:inline">Back to Command Center</span>
+            <span className="hidden font-annual text-body-sm font-medium sm:inline">Back to Command Center</span>
           </Link>
-          <span className="text-warm-300 hidden sm:inline">/</span>
-          <span className="text-sm text-warm-400 hidden sm:inline truncate max-w-[200px]">{teamName}</span>
+          <span className="hidden text-text-tertiary sm:inline">/</span>
+          <span className="hidden max-w-[200px] truncate font-annual text-body-sm text-text-tertiary sm:inline">{teamName}</span>
         </div>
 
         {/* ── Hero card ────────────────────────────────────────────────── */}
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm mb-6 overflow-clip">
-          {/* gradient accent bar */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-400 to-primary-400" />
-
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-              {/* Avatar */}
-              <div className="relative flex-shrink-0 self-start">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-md">
-                  {player.avatar_url ? (
-                    <Image
-                      src={player.avatar_url}
-                      alt={fullName}
-                      width={128}
-                      height={128}
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <span className="text-3xl font-bold text-white select-none">
-                      {initials}
-                    </span>
-                  )}
-                </div>
-                {/* Jersey badge */}
-                {player.jersey_number && (
-                  <span className="absolute -top-2 -right-2 min-w-[26px] h-[26px] px-1.5
-                                   flex items-center justify-center
-                                   bg-primary-600 text-white text-eyebrow font-bold rounded-full border-2 border-white shadow">
-                    #{player.jersey_number}
+        <PaperCard registrationTick className="mb-6 p-6 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+            {/* Portrait */}
+            <div className="relative shrink-0 self-start">
+              <div className="h-28 w-28 overflow-hidden rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] sm:h-32 sm:w-32">
+                {player.avatar_url ? (
+                  <Image
+                    src={player.avatar_url}
+                    alt={fullName}
+                    width={128}
+                    height={128}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full select-none items-center justify-center font-annual text-h1 text-text-tertiary">
+                    {initials}
                   </span>
                 )}
               </div>
-
-              {/* Name + info */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-warm-900 leading-tight">
-                  {fullName}
-                </h1>
-
-                {/* Position + year badges */}
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {player.primary_position && (
-                    <span className="px-2.5 py-1 bg-primary-100 text-primary-700 text-xs font-semibold rounded-lg">
-                      {player.primary_position}
-                    </span>
-                  )}
-                  {player.secondary_position && (
-                    <span className="px-2.5 py-1 bg-warm-100 text-warm-600 text-xs font-semibold rounded-lg">
-                      {player.secondary_position}
-                    </span>
-                  )}
-                  {player.grad_year && (
-                    <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg">
-                      Class of {player.grad_year}
-                    </span>
-                  )}
-                  {player.gpa && (
-                    <span className="px-2.5 py-1 bg-warm-100 text-warm-700 text-xs font-semibold rounded-lg">
-                      GPA {player.gpa.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Physical + hometown row */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm text-warm-500">
-                  {hometown && (
-                    <span className="flex items-center gap-1">
-                      <IconMapPin size={14} className="shrink-0 text-warm-400" />
-                      {hometown}
-                    </span>
-                  )}
-                  {height && <span>{height}</span>}
-                  {player.weight_lbs && <span>{player.weight_lbs} lbs</span>}
-                  {(player.bats || player.throws) && (
-                    <span>
-                      {player.bats && `Bats ${player.bats}`}
-                      {player.bats && player.throws && ' / '}
-                      {player.throws && `Throws ${player.throws}`}
-                    </span>
-                  )}
-                  {player.high_school_name && (
-                    <span className="truncate max-w-[200px]">{player.high_school_name}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick stat pills — right side on desktop */}
-              <div className="flex sm:flex-col items-center sm:items-end gap-2 flex-wrap">
-                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${badge.cls}`}>
-                  {badge.icon}
-                  {badge.label}
-                </div>
-              </div>
+              {/* Jersey badge */}
+              {player.jersey_number && (
+                <span className="absolute -right-2 -top-2 flex h-7 min-w-[28px] items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--paper)] px-1.5 font-annual text-eyebrow font-semibold tabular-nums text-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06)]">
+                  #{player.jersey_number}
+                </span>
+              )}
             </div>
 
-            {/* ── Key stat row — season totals, box-score canonical ───────── */}
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-warm-100">
-              <div className="text-center">
-                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">AVG</p>
-                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {formatAvg(seasonStats?.avg)}
-                </p>
+            {/* Masthead + info */}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <Masthead
+                  given={player.first_name ?? ''}
+                  surname={player.last_name ?? (player.first_name ? '' : 'Unknown Player')}
+                  dateline={
+                    <Eyebrow
+                      ink="team"
+                      items={[
+                        player.primary_position,
+                        player.secondary_position,
+                        player.grad_year ? `Class of ${player.grad_year}` : null,
+                        hometown,
+                      ]}
+                    />
+                  }
+                  ink="team"
+                  accentRule
+                />
+
+                {/* Quick stat pills */}
+                <div className="flex flex-col items-end gap-2">
+                  <TrendIndicator badge={badge} />
+                  {player.gpa ? <InkBadge label={`GPA ${player.gpa.toFixed(2)}`} tone="neutral" variant="soft" /> : null}
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">OBP</p>
-                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {formatAvg(seasonStats?.obp)}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">HR</p>
-                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {seasonHR}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">Games</p>
-                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {seasonGames}
-                </p>
+
+              {/* Physical row */}
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 font-annual text-body-sm text-text-secondary">
+                {height && <span>{height}</span>}
+                {player.weight_lbs && <span>{player.weight_lbs} lbs</span>}
+                {(player.bats || player.throws) && (
+                  <span>
+                    {player.bats && `Bats ${player.bats}`}
+                    {player.bats && player.throws && ' / '}
+                    {player.throws && `Throws ${player.throws}`}
+                  </span>
+                )}
+                {player.high_school_name && (
+                  <span className="max-w-[200px] truncate">{player.high_school_name}</span>
+                )}
               </div>
             </div>
           </div>
-        </div>
+
+          <HairlineRule ink="hairline" className="my-6" />
+
+          {/* ── Key stat row — season totals, box-score canonical ───────── */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
+            <RuledStatLine label="AVG" value={formatAvg(seasonStats?.avg)} ghost={seasonStats?.avg == null} ink="team" size="row" />
+            <RuledStatLine label="OBP" value={formatAvg(seasonStats?.obp)} ghost={seasonStats?.obp == null} ink="team" size="row" />
+            <RuledStatLine label="HR" value={seasonHR} ink="team" size="row" />
+            <RuledStatLine label="Games" value={seasonGames} ink="team" size="row" />
+          </div>
+        </PaperCard>
 
         {/* ── Snapshot Header Band — V7 operating status strip ────────── */}
         {snapshotHeader && (
@@ -683,36 +720,29 @@ export function PlayerProfileClient({
           </div>
         )}
 
-        {/* ── Tabs ─────────────────────────────────────────────────────── */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="Player sections">
-          {([
-            { id: 'overview' as const, label: 'Overview', icon: <IconChart size={15} /> },
-            { id: 'stats' as const, label: 'Stats', icon: <IconActivity size={15} /> },
-            { id: 'videos' as const, label: `Videos${videos.length > 0 ? ` (${videos.length})` : ''}`, icon: <IconVideo size={15} /> },
-            { id: 'performance' as const, label: 'Performance', icon: <IconDumbbell size={15} /> },
-            { id: 'passport' as const, label: 'Passport', icon: <IconShieldCheck size={15} /> },
-            { id: 'timeline' as const, label: 'Timeline', icon: <IconActivity size={15} /> },
-            { id: 'notes' as const, label: `Notes${notes.length > 0 ? ` (${notes.length})` : ''}`, icon: <IconNote size={15} /> },
-            { id: 'tasks' as const, label: `Tasks${tasks.length > 0 ? ` (${tasks.length})` : ''}`, icon: <IconList size={15} /> },
-          ]).map((tab) => {
+        {/* ── Tabs — the Fairway-pattern tab system (role=tab + InkBadge +
+            pressableClass), matching ImportCenterShell / PostgameReviewClient.
+            Per-tab counts render as a trailing InkBadge. ─────────────────── */}
+        <div className="mb-6 flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="Player sections">
+          {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
-              <Button variant="ghost"
+              // eslint-disable-next-line helm/no-raw-button
+              <button
                 key={tab.id}
+                type="button"
                 role="tab"
                 aria-selected={isActive}
                 aria-controls={`pp-panel-${tab.id}`}
                 id={`pp-tab-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
-                  isActive
-                    ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600 hover:text-white'
-                    : 'bg-cream-100/75 backdrop-blur-sm text-warm-600 hover:bg-cream-50 border border-warm-200/45 hover:shadow-sm'
-                }`}
+                className={cn('flex items-center gap-1.5 whitespace-nowrap rounded-fw-lg px-3 py-2', pressableClass({ ink: 'team' }))}
               >
-                {tab.icon}
-                {tab.label}
-              </Button>
+                <InkBadge label={tab.label} tone={isActive ? 'team' : 'neutral'} variant={isActive ? 'solid' : 'soft'} />
+                {tab.count != null && tab.count > 0 ? (
+                  <InkBadge label={String(tab.count)} tone="neutral" variant="soft" />
+                ) : null}
+              </button>
             );
           })}
         </div>
@@ -742,181 +772,161 @@ export function PlayerProfileClient({
             <div className="lg:col-span-2 space-y-6">
 
               {/* Season stats grid — box-score canonical (baseball_player_season_stats) */}
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-warm-900 mb-4">Season Statistics</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
-                  <StatCard label="AVG" value={formatAvg(seasonStats?.avg)} />
-                  <StatCard label="OBP" value={formatAvg(seasonStats?.obp)} />
-                  <StatCard label="SLG" value={formatAvg(seasonStats?.slg)} />
-                  <StatCard label="OPS" value={seasonStats?.ops != null ? seasonStats.ops.toFixed(3) : '—'} />
-                  <StatCard label="Game AVG" value={formatAvg(gameAvg)} />
-                  <StatCard label="Scrimmage AVG" value={formatAvg(scrimmageAvg)} />
-                  <StatCard label="Last 5 AVG" value={formatAvg(last5Avg)} />
-                  <StatCard label="AB" value={String(seasonAB)} />
-                  <StatCard label="Hits" value={String(seasonHits)} />
-                  <StatCard label="HR" value={String(seasonHR)} />
-                  <StatCard label="RBI" value={String(seasonRBI)} />
-                  <StatCard label="Games" value={String(seasonGames)} />
+              <PaperCard className="p-6 sm:p-8">
+                <CardHeading title="Season Statistics" />
+                <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+                  {seasonStatRows.map((row, i) => (
+                    <Reveal key={row.label} staggerIndex={Math.min(i, 8)}>
+                      <RuledStatLine label={row.label} value={row.ghost ? 0 : row.value} ghost={row.ghost} ink="team" size="row" />
+                    </Reveal>
+                  ))}
                 </div>
-              </div>
+              </PaperCard>
 
               {/* Trend chart */}
               {trendData.length > 0 && (
-                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <PaperCard className="p-6 sm:p-8">
+                  <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-warm-900">Performance Trend</h3>
-                      <p className="text-xs text-warm-400 mt-0.5">Batting average per game</p>
+                      <Eyebrow ink="team">Performance Trend</Eyebrow>
+                      <p className="mt-1 font-annual text-body-sm text-text-tertiary">Batting average per game</p>
                     </div>
-                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${badge.cls}`}>
-                      {badge.icon}
-                      {badge.label}
-                    </div>
+                    <TrendIndicator badge={badge} />
                   </div>
                   <div className="h-52">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={trendData} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" strokeOpacity={0.6} vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#D6CBB0" strokeOpacity={0.8} vertical={false} />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 10, fill: '#78716c' }}
-                          axisLine={{ stroke: '#e7e5e4' }}
+                          tick={{ fontSize: 10, fill: '#6B655B' }}
+                          axisLine={{ stroke: '#D6CBB0' }}
                           tickLine={false}
                           interval="preserveStartEnd"
                           minTickGap={40}
                         />
                         <YAxis
-                          tick={{ fontSize: 10, fill: '#78716c' }}
+                          tick={{ fontSize: 10, fill: '#6B655B' }}
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(v: number) => formatAvg(v)}
                           domain={[0, 0.5]}
                           width={36}
                         />
-                        <ReferenceLine y={0.3} stroke="#a8a29e" strokeDasharray="4 4" strokeWidth={1} />
+                        <ReferenceLine y={0.3} stroke="#6B655B" strokeDasharray="4 4" strokeWidth={1} />
                         <Tooltip content={<TrendTooltip />} />
                         <Line
                           type="monotone"
                           dataKey="avg"
-                          stroke="#16a34a"
+                          stroke="#16A34A"
                           strokeWidth={2.5}
-                          dot={{ r: 3, fill: '#16a34a', stroke: '#fff', strokeWidth: 1.5 }}
-                          activeDot={{ r: 5, fill: '#16a34a', stroke: '#fff', strokeWidth: 2 }}
+                          dot={{ r: 3, fill: '#16A34A', stroke: '#F3EAD6', strokeWidth: 1.5 }}
+                          activeDot={{ r: 5, fill: '#16A34A', stroke: '#F3EAD6', strokeWidth: 2 }}
                           connectNulls
                         />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-warm-400">
+                  <div className="mt-3 flex items-center gap-4 font-annual text-eyebrow text-text-tertiary">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-0.5 rounded bg-primary-500 inline-block" />
+                      <span className="inline-block h-0.5 w-3 rounded bg-grade-plus" />
                       Batting Average
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-0.5 inline-block" style={{ background: 'repeating-linear-gradient(90deg,#a8a29e,#a8a29e 3px,transparent 3px,transparent 6px)' }} />
+                      <span
+                        className="inline-block h-0.5 w-3"
+                        style={{ background: 'repeating-linear-gradient(90deg,#D6CBB0,#D6CBB0 3px,transparent 3px,transparent 6px)' }}
+                      />
                       .300 Line
                     </span>
                   </div>
-                </div>
+                </PaperCard>
               )}
 
-              {/* Advanced metrics — always shown; individual cards appear when data exists */}
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-warm-900 mb-4">Advanced Metrics</h3>
+              {/* Advanced metrics — always shown; individual rows appear when data exists */}
+              <PaperCard className="p-6 sm:p-8">
+                <CardHeading title="Advanced Metrics" />
                 {!pressureIndex && trendMagnitude == null ? (
-                  <p className="text-sm text-warm-400 italic">Trend data not yet available — metrics populate once box scores are logged for both game and scrimmage contexts.</p>
+                  <EditorsLetter
+                    ink="team"
+                    title="Trend data not yet available."
+                    body="Metrics populate once box scores are logged for both game and scrimmage contexts."
+                  />
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {pressureIndex ? (
-                      <div className="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200/45 rounded-xl">
-                        <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
-                          <IconTarget size={18} className="text-warm-600" />
-                        </div>
-                        <div>
-                          <p className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Pressure</p>
-                          <p className="text-base font-bold text-warm-900">{pressureIndex}</p>
-                          {pressureGap != null && (
-                            <p className="text-eyebrow text-warm-400">
-                              {pressureGap > 0 ? '+' : ''}{(pressureGap * 1000).toFixed(0)} pts game vs scrimmage
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200/45 rounded-xl opacity-50">
-                        <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
-                          <IconTarget size={18} className="text-warm-400" />
-                        </div>
-                        <div>
-                          <p className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wide">Pressure</p>
-                          <p className="text-sm text-warm-400">Not yet available</p>
-                        </div>
-                      </div>
-                    )}
-                    {trendMagnitude != null ? (
-                      <div className="flex items-center gap-3 p-3.5 bg-amber-50 border border-amber-200/45 rounded-xl">
-                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                          <IconActivity size={18} className="text-amber-600" />
-                        </div>
-                        <div>
-                          <p className="text-eyebrow font-semibold text-amber-500 uppercase tracking-wide">Trend Velocity</p>
-                          <p className="text-base font-bold text-warm-900">
-                            {(trendMagnitude * 100).toFixed(1)}%
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+                    <Reveal staggerIndex={0}>
+                      <div>
+                        <RuledStatLine label="Pressure" value={pressureIndex ?? 0} ghost={!pressureIndex} ink="team" size="row" />
+                        {pressureGap != null && (
+                          <p className="mt-1.5 text-eyebrow text-text-tertiary">
+                            {pressureGap > 0 ? '+' : ''}{(pressureGap * 1000).toFixed(0)} pts game vs scrimmage
                           </p>
-                          <p className="text-eyebrow text-warm-400">Rate of change</p>
-                        </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-3 p-3.5 bg-amber-50/50 border border-amber-200/25 rounded-xl opacity-50">
-                        <div className="w-10 h-10 rounded-xl bg-amber-100/60 flex items-center justify-center flex-shrink-0">
-                          <IconActivity size={18} className="text-amber-400" />
-                        </div>
-                        <div>
-                          <p className="text-eyebrow font-semibold text-amber-400 uppercase tracking-wide">Trend Velocity</p>
-                          <p className="text-sm text-warm-400">Not yet available</p>
-                        </div>
+                    </Reveal>
+                    <Reveal staggerIndex={1}>
+                      <div>
+                        <RuledStatLine
+                          label="Trend Velocity"
+                          value={trendMagnitude != null ? (trendMagnitude * 100).toFixed(1) : 0}
+                          unit={trendMagnitude != null ? '%' : undefined}
+                          ghost={trendMagnitude == null}
+                          ink="team"
+                          size="row"
+                        />
+                        <p className="mt-1.5 text-eyebrow text-text-tertiary">Rate of change</p>
                       </div>
-                    )}
+                    </Reveal>
                   </div>
                 )}
-              </div>
+              </PaperCard>
 
               {/* Recent videos preview */}
               {videos.length > 0 && (
-                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-warm-900">Videos</h3>
-                    <Button variant="ghost"
-                      onClick={() => setActiveTab('videos')}
-                      className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
-                    >
-                      View all ({videos.length}) <IconChevronRight size={13} />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {videos.slice(0, 4).map((v) => (
-                      <Button variant="ghost"
-                        key={v.id}
-                        onClick={() => { setSelectedVideo(v); setActiveTab('videos'); }}
-                        aria-label={`Play ${v.title ?? 'video'}`}
-                        className="group relative aspect-video rounded-xl overflow-hidden bg-warm-100 p-0 min-h-0 hover:ring-2 hover:ring-primary-500 transition-shadow"
+                <PaperCard className="p-6 sm:p-8">
+                  <CardHeading
+                    title="Videos"
+                    action={
+                      // eslint-disable-next-line helm/no-raw-button
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('videos')}
+                        className={cn('flex items-center gap-1 font-annual text-body-sm font-medium text-grade-plus', pressableClass({ ink: 'team' }))}
                       >
-                        {v.thumbnail_url ? (
-                          <Image src={v.thumbnail_url} alt={v.title ?? 'Video'} fill className="object-cover" />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-warm-200 to-warm-300">
-                            <IconVideo size={20} className="text-warm-400" />
+                        View all ({videos.length}) <IconChevronRight size={13} />
+                      </button>
+                    }
+                  />
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {videos.slice(0, 4).map((v, i) => (
+                      <Reveal key={v.id} staggerIndex={Math.min(i, 4)}>
+                        {/* eslint-disable-next-line helm/no-raw-button */}
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedVideo(v); setActiveTab('videos'); }}
+                          aria-label={`Play ${v.title ?? 'video'}`}
+                          className={cn(
+                            'group relative aspect-video w-full overflow-hidden rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] hover:ring-2 hover:ring-grade-plus',
+                            pressableClass({ ink: 'team' }),
+                          )}
+                        >
+                          {v.thumbnail_url ? (
+                            <Image src={v.thumbnail_url} alt={v.title ?? 'Video'} fill className="object-cover" />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <IconVideo size={20} className="text-text-tertiary" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/25">
+                            <div className="flex h-9 w-9 scale-75 items-center justify-center rounded-full bg-[var(--paper)]/92 opacity-0 transition-[opacity,transform] group-hover:scale-100 group-hover:opacity-100">
+                              <IconPlay size={16} className="ml-0.5 text-text-primary" />
+                            </div>
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                          <div className="w-9 h-9 rounded-full bg-cream-50/92 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform]">
-                            <IconPlay size={16} className="text-warm-900 ml-0.5" />
-                          </div>
-                        </div>
-                      </Button>
+                        </button>
+                      </Reveal>
                     ))}
                   </div>
-                </div>
+                </PaperCard>
               )}
             </div>
 
@@ -924,74 +934,68 @@ export function PlayerProfileClient({
             <div className="space-y-6">
 
               {/* AI Insights */}
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-warm-900 flex items-center gap-2 mb-4">
-                  <IconSparkles size={16} className="text-primary-600" />
-                  AI Insights
-                  {insights.length > 0 && (
-                    <span className="ml-auto text-xs font-medium px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full">
-                      {insights.length}
-                    </span>
-                  )}
-                </h3>
+              <PaperCard className="p-6 sm:p-8">
+                <CardHeading title="AI Insights" count={insights.length} />
                 <PlayerInsightsPanel insights={insights.slice(0, 3)} />
                 {insights.length > 3 && (
-                  <p className="text-xs text-warm-400 text-center mt-3">
+                  <p className="mt-3 text-center font-annual text-eyebrow text-text-tertiary">
                     +{insights.length - 3} more insights
                   </p>
                 )}
-              </div>
+              </PaperCard>
 
               {/* Notes */}
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-warm-900 flex items-center gap-2">
-                    <IconNote size={15} className="text-warm-400" />
-                    Coach Notes
-                  </h3>
-                  {notesCanAuthor && (
-                    <Button
-                      variant="ghost"
-                      onClick={() => setActiveTab('notes')}
-                      className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium"
-                    >
-                      <IconPlus size={13} />
-                      Add
-                    </Button>
-                  )}
-                </div>
+              <PaperCard className="p-6 sm:p-8">
+                <CardHeading
+                  title="Coach Notes"
+                  action={
+                    notesCanAuthor ? (
+                      // eslint-disable-next-line helm/no-raw-button
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('notes')}
+                        className={cn('flex items-center gap-1 font-annual text-body-sm font-medium text-grade-plus', pressableClass({ ink: 'team' }))}
+                      >
+                        <IconPlus size={13} />
+                        Add
+                      </button>
+                    ) : undefined
+                  }
+                />
                 <PlayerNotesSection notes={notes.slice(0, 3)} compact />
-              </div>
+              </PaperCard>
 
               {/* Games breakdown — box-score canonical (baseball_games.game_type) */}
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-warm-900 mb-4">Games</h3>
+              <PaperCard className="p-6 sm:p-8">
+                <CardHeading title="Games" />
                 <div className="space-y-3">
                   {[
-                    { label: 'Game', count: battingLog.filter((s) => s.game?.game_type === 'game').length, color: 'bg-primary-500' },
-                    { label: 'Scrimmage', count: battingLog.filter((s) => s.game?.game_type === 'scrimmage').length, color: 'bg-primary-300' },
-                  ].map(({ label, count, color }) => (
-                    <div key={label} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
-                        <span className="text-sm text-warm-600">{label}</span>
-                      </div>
-                      <span className="text-sm font-semibold text-warm-900">{count}</span>
+                    { label: 'Game', count: battingLog.filter((s) => s.game?.game_type === 'game').length },
+                    { label: 'Scrimmage', count: battingLog.filter((s) => s.game?.game_type === 'scrimmage').length },
+                  ].map(({ label, count }) => (
+                    <div key={label} className="flex items-center justify-between font-annual text-body-sm">
+                      <span className="text-text-secondary">{label}</span>
+                      <StatReadout value={count} className="text-h3" />
                     </div>
                   ))}
-                  <div className="flex items-center justify-between pt-2 border-t border-warm-100">
-                    <span className="text-sm font-medium text-warm-700">Total</span>
-                    <span className="text-sm font-bold text-primary-600">{battingLog.length}</span>
+                  <HairlineRule ink="hairline" />
+                  <div className="flex items-center justify-between font-annual text-body-sm font-medium">
+                    <span className="text-text-primary">Total</span>
+                    <StatReadout value={battingLog.length} emphasis className="text-h3" />
                   </div>
                 </div>
-                <Button variant="primary"
+                {/* eslint-disable-next-line helm/no-raw-button */}
+                <button
+                  type="button"
                   onClick={() => setActiveTab('stats')}
-                  className="flex items-center justify-center gap-1 w-full mt-4 py-2 text-xs font-medium text-primary-600
-                             bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
+                  className={cn(
+                    'mt-4 flex w-full items-center justify-center gap-1 rounded-fw-md border border-[color:var(--hairline)] py-2 font-annual text-body-sm font-medium text-grade-plus',
+                    pressableClass({ ink: 'team' }),
+                  )}
                 >
                   View all stats <IconChevronRight size={12} />
-                </Button>
-              </div>
+                </button>
+              </PaperCard>
             </div>
           </div>
         </motion.div>
@@ -1016,84 +1020,78 @@ export function PlayerProfileClient({
             {/* Season stats banner — links to box score stats page */}
             <Link
               href={`/baseball/dashboard/players/${player.id}/stats`}
-              className="flex items-center justify-between bg-primary-50 border border-primary-100 rounded-2xl px-5 py-3.5 hover:bg-primary-100 transition-colors group"
+              className={cn(
+                'group flex items-center justify-between rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-5 py-3.5',
+                pressableClass({ ink: 'team' }),
+              )}
             >
               <div>
-                <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-0.5">
-                  Season Stats (Box Score)
-                </p>
-                <p className="text-xs text-primary-600">
+                <Eyebrow ink="team">Season Stats (Box Score)</Eyebrow>
+                <p className="mt-0.5 font-annual text-body-sm text-text-secondary">
                   AVG · OBP · SLG · OPS · ERA · WHIP · game log
                 </p>
               </div>
-              <span className="text-primary-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
-                View →
+              <span className="flex items-center gap-1 font-annual text-body-sm font-medium text-grade-plus transition-transform group-hover:translate-x-1">
+                View <IconChevronRight size={14} />
               </span>
             </Link>
 
             {/* Filter toggle */}
             <div className="flex items-center gap-2">
-              <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Filter games by type">
+              <div className="flex items-center gap-1 rounded-fw-lg border border-[color:var(--hairline)] bg-[var(--paper)] p-1" role="group" aria-label="Filter games by type">
                 {(['all', 'game', 'scrimmage'] as const).map((f) => (
-                  <Button variant="ghost"
+                  // eslint-disable-next-line helm/no-raw-button
+                  <button
                     key={f}
+                    type="button"
                     onClick={() => setStatFilter(f)}
                     aria-pressed={statFilter === f}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium min-h-0 transition-[color,background-color,box-shadow] ${
-                      statFilter === f
-                        ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600 hover:text-white'
-                        : 'text-warm-600 hover:text-warm-900'
-                    }`}
+                    className={cn('rounded-fw-md px-3 py-1.5', pressableClass({ ink: 'team' }))}
                   >
-                    {f === 'all' ? 'All' : f === 'game' ? 'Game' : 'Scrimmage'}
-                  </Button>
+                    <InkBadge
+                      label={f === 'all' ? 'All' : f === 'game' ? 'Game' : 'Scrimmage'}
+                      tone={statFilter === f ? 'team' : 'neutral'}
+                      variant={statFilter === f ? 'solid' : 'soft'}
+                    />
+                  </button>
                 ))}
               </div>
-              <span className="text-xs text-warm-400">{filteredStats.length} games</span>
+              <Eyebrow ink="muted">{filteredStats.length} games</Eyebrow>
             </div>
 
             {/* Summary row */}
             {filteredStats.length > 0 && (
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4">
-                <p className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wide mb-3">
+              <PaperCard className="p-5">
+                <Eyebrow ink="muted" className="mb-3">
                   Totals — {statFilter === 'all' ? 'All Games' : statFilter === 'game' ? 'Games' : 'Scrimmages'}
-                </p>
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
+                </Eyebrow>
+                <div className="grid grid-cols-3 gap-x-6 gap-y-5 sm:grid-cols-4 lg:grid-cols-7">
                   {[
-                    { label: 'AB', value: String(statSummary.ab) },
-                    { label: 'H', value: String(statSummary.h) },
-                    { label: 'AVG', value: formatAvg(statSummary.avg) },
-                    { label: 'HR', value: String(statSummary.hr) },
-                    { label: 'RBI', value: String(statSummary.rbi) },
-                    { label: 'BB', value: String(statSummary.bb) },
-                    { label: 'SO', value: String(statSummary.so) },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="text-center">
-                      <p className="text-eyebrow text-warm-400 uppercase">{label}</p>
-                      <p className="text-base font-bold text-warm-900 tabular-nums">{value}</p>
-                    </div>
+                    { label: 'AB', value: statSummary.ab },
+                    { label: 'H', value: statSummary.h },
+                    { label: 'AVG', value: formatAvg(statSummary.avg), ghost: statSummary.avg == null },
+                    { label: 'HR', value: statSummary.hr },
+                    { label: 'RBI', value: statSummary.rbi },
+                    { label: 'BB', value: statSummary.bb },
+                    { label: 'SO', value: statSummary.so },
+                  ].map((s) => (
+                    <RuledStatLine key={s.label} label={s.label} value={s.ghost ? 0 : s.value} ghost={s.ghost} ink="team" size="row" />
                   ))}
                 </div>
-              </div>
+              </PaperCard>
             )}
 
             {/* Stats table */}
             {filteredStats.length === 0 ? (
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
-                  <IconActivity size={28} />
-                </div>
-                <p className="font-semibold text-warm-900">No stats for this filter</p>
-                <p className="mt-1 text-sm leading-relaxed text-warm-500">Switch to “All” to see every game.</p>
-              </div>
+              <EditorsLetter ink="team" title="No stats for this filter." body="Switch to “All” to see every game." />
             ) : (
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+              <PaperCard className="overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-warm-100 bg-warm-50/80">
+                      <tr className="border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)]">
                         <SortHeader label="Date" sortKey="date" currentKey={sortKey} dir={sortDir} onSort={handleSort} align="left" />
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-warm-500 uppercase tracking-wide">Type</th>
+                        <th className="px-3 py-3 text-left font-annual text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">Type</th>
                         <SortHeader label="AB" sortKey="ab" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
                         <SortHeader label="H" sortKey="h" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
                         <SortHeader label="AVG" sortKey="avg" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
@@ -1110,40 +1108,34 @@ export function PlayerProfileClient({
                         return (
                           <tr
                             key={stat.id}
-                            className="border-b border-warm-50 last:border-0 hover:bg-warm-50/80 transition-colors"
+                            className="border-b border-[color:var(--hairline)]/60 transition-colors last:border-0 hover:bg-[color:var(--paper-canvas)]"
                           >
-                            <td className="px-3 py-3 text-sm text-warm-700 whitespace-nowrap">
+                            <td className="whitespace-nowrap px-3 py-3 font-annual text-body-sm text-text-secondary">
                               {stat.game?.game_date ? formatDate(stat.game.game_date) : '—'}
                             </td>
                             <td className="px-3 py-3">
-                              <span
-                                className={`px-2 py-0.5 text-eyebrow font-semibold rounded-md whitespace-nowrap ${
-                                  stat.game?.game_type === 'game'
-                                    ? 'bg-primary-100 text-primary-700'
-                                    : stat.game?.game_type === 'scrimmage'
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-warm-100 text-warm-600'
-                                }`}
-                              >
-                                {stat.game?.game_type === 'scrimmage' ? 'Scrimmage' : stat.game?.game_type ?? '—'}
-                              </span>
+                              <InkBadge
+                                label={stat.game?.game_type === 'scrimmage' ? 'Scrimmage' : stat.game?.game_type ?? '—'}
+                                tone={stat.game?.game_type === 'game' ? 'team' : 'neutral'}
+                                variant="soft"
+                              />
                             </td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.ab ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.h ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm font-semibold text-warm-900 tabular-nums">
+                            <td className="px-3 py-3 text-center font-annual text-body-sm tabular-nums text-text-primary">{stat.ab ?? '—'}</td>
+                            <td className="px-3 py-3 text-center font-annual text-body-sm tabular-nums text-text-primary">{stat.h ?? '—'}</td>
+                            <td className="px-3 py-3 text-center font-annual text-body-sm font-semibold tabular-nums text-text-primary">
                               {formatAvg(gameAvgForRow)}
                             </td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.hr ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.rbi ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.bb ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.k ?? '—'}</td>
+                            <td className="px-3 py-3 text-center font-annual text-body-sm tabular-nums text-text-primary">{stat.hr ?? '—'}</td>
+                            <td className="px-3 py-3 text-center font-annual text-body-sm tabular-nums text-text-primary">{stat.rbi ?? '—'}</td>
+                            <td className="px-3 py-3 text-center font-annual text-body-sm tabular-nums text-text-primary">{stat.bb ?? '—'}</td>
+                            <td className="px-3 py-3 text-center font-annual text-body-sm tabular-nums text-text-primary">{stat.k ?? '—'}</td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </PaperCard>
             )}
 
             {/* Pitching log — reuses the same PlayerGameLog component
@@ -1151,9 +1143,7 @@ export function PlayerProfileClient({
                 shows here too instead of only ever reflecting batting. */}
             {pitchingLog.length > 0 && (
               <div className="pt-2">
-                <p className="mb-3 text-eyebrow font-semibold text-warm-400 uppercase tracking-wide">
-                  Pitching
-                </p>
+                <Eyebrow ink="muted" className="mb-3">Pitching</Eyebrow>
                 <PlayerGameLog batting={[]} pitching={pitchingLog} />
               </div>
             )}
@@ -1180,97 +1170,82 @@ export function PlayerProfileClient({
             {/* Sub-tabs */}
             {videoTabs.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Filter videos by type">
-                  {videoTabs.map(({ key, label }) => (
-                    <Button variant="ghost"
-                      key={key}
-                      onClick={() => setVideoFilter(key)}
-                      aria-pressed={videoFilter === key}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium min-h-0 transition-[color,background-color,box-shadow] whitespace-nowrap ${
-                        videoFilter === key
-                          ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600 hover:text-white'
-                          : 'text-warm-600 hover:text-warm-900'
-                      }`}
-                    >
-                      {label}
-                      {key !== 'all' && (videoTypeCounts[key] ?? 0) > 0 && (
-                        <span className={`ml-1.5 text-eyebrow px-1.5 py-0.5 rounded-full ${
-                          videoFilter === key ? 'bg-[rgba(255,255,255,0.2)] text-white' : 'bg-warm-100 text-warm-500'
-                        }`}>
-                          {videoTypeCounts[key]}
-                        </span>
-                      )}
-                      {key === 'all' && (
-                        <span className={`ml-1.5 text-eyebrow px-1.5 py-0.5 rounded-full ${
-                          videoFilter === 'all' ? 'bg-[rgba(255,255,255,0.2)] text-white' : 'bg-warm-100 text-warm-500'
-                        }`}>
-                          {videos.length}
-                        </span>
-                      )}
-                    </Button>
-                  ))}
+                <div className="flex items-center gap-1 rounded-fw-lg border border-[color:var(--hairline)] bg-[var(--paper)] p-1" role="group" aria-label="Filter videos by type">
+                  {videoTabs.map(({ key, label }) => {
+                    const active = videoFilter === key;
+                    const count = key === 'all' ? videos.length : videoTypeCounts[key] ?? 0;
+                    return (
+                      // eslint-disable-next-line helm/no-raw-button
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setVideoFilter(key)}
+                        aria-pressed={active}
+                        className={cn('flex items-center gap-1.5 whitespace-nowrap rounded-fw-md px-3 py-1.5', pressableClass({ ink: 'team' }))}
+                      >
+                        <InkBadge label={label} tone={active ? 'team' : 'neutral'} variant={active ? 'solid' : 'soft'} />
+                        {count > 0 ? <InkBadge label={String(count)} tone="neutral" variant="soft" /> : null}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Video grid / empty state */}
             {videosByFilter.length === 0 ? (
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
-                  <IconVideo size={28} />
-                </div>
-                <p className="font-semibold text-warm-900">No videos uploaded yet</p>
-                <p className="mt-1 text-sm leading-relaxed text-warm-500">
-                  Videos will appear here once the player uploads them.
-                </p>
-              </div>
+              <EditorsLetter ink="team" title="No videos uploaded yet." body="Videos will appear here once the player uploads them." />
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {videosByFilter.map((video) => (
-                  <Button variant="ghost"
-                    key={video.id}
-                    onClick={() => setSelectedVideo(video)}
-                    aria-label={`Play ${video.title ?? 'video'}`}
-                    className="group relative aspect-video rounded-2xl overflow-hidden bg-warm-100 p-0 min-h-0
-                               hover:ring-2 hover:ring-primary-500 hover:shadow-md transition-shadow duration-200"
-                  >
-                    {video.thumbnail_url ? (
-                      <Image
-                        src={video.thumbnail_url}
-                        alt={video.title ?? 'Video thumbnail'}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-warm-200 to-warm-300">
-                        <IconVideo size={28} className="text-warm-400" />
-                      </div>
-                    )}
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {videosByFilter.map((video, i) => (
+                  <Reveal key={video.id} staggerIndex={Math.min(i, 8)}>
+                    {/* eslint-disable-next-line helm/no-raw-button */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVideo(video)}
+                      aria-label={`Play ${video.title ?? 'video'}`}
+                      className={cn(
+                        'group relative aspect-video w-full overflow-hidden rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] hover:ring-2 hover:ring-grade-plus',
+                        pressableClass({ ink: 'team' }),
+                      )}
+                    >
+                      {video.thumbnail_url ? (
+                        <Image
+                          src={video.thumbnail_url}
+                          alt={video.title ?? 'Video thumbnail'}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <IconVideo size={28} className="text-text-tertiary" />
+                        </div>
+                      )}
 
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-cream-50/92 flex items-center justify-center
-                                      opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform] duration-200">
-                        <IconPlay size={20} className="text-warm-900 ml-0.5" />
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+                        <div className="flex h-12 w-12 scale-75 items-center justify-center rounded-full bg-[var(--paper)]/92 opacity-0 transition-[opacity,transform] duration-200 group-hover:scale-100 group-hover:opacity-100">
+                          <IconPlay size={20} className="ml-0.5 text-text-primary" />
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Type badge */}
-                    {video.video_type && (
-                      <div className="absolute top-2 left-2">
-                        <span className="px-2 py-0.5 text-eyebrow font-semibold bg-black/50 text-white rounded-md capitalize">
-                          {video.video_type}
-                        </span>
-                      </div>
-                    )}
+                      {/* Type badge */}
+                      {video.video_type && (
+                        <div className="absolute left-2 top-2">
+                          <span className="rounded-md bg-black/50 px-2 py-0.5 font-annual text-microbadge uppercase text-white">
+                            {video.video_type}
+                          </span>
+                        </div>
+                      )}
 
-                    {/* Title */}
-                    {video.title && (
-                      <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/70 to-transparent">
-                        <p className="text-xs text-white font-medium truncate">{video.title}</p>
-                      </div>
-                    )}
-                  </Button>
+                      {/* Title */}
+                      {video.title && (
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2.5">
+                          <p className="truncate font-annual text-body-sm font-medium text-white">{video.title}</p>
+                        </div>
+                      )}
+                    </button>
+                  </Reveal>
                 ))}
               </div>
             )}
@@ -1295,21 +1270,15 @@ export function PlayerProfileClient({
           {liftingOrgId && liftingAthleteId ? (
             <PlayerPerformanceTab orgId={liftingOrgId} athleteId={liftingAthleteId} />
           ) : (
-            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
-                <IconDumbbell size={28} />
-              </div>
-              <p className="font-semibold text-warm-900">No performance data yet</p>
-              {!liftingOrgId ? (
-                <p className="mt-1 text-sm leading-relaxed text-warm-500">
-                  Set up Helm Lifting Lab for this team to unlock performance tracking.
-                </p>
-              ) : (
-                <p className="mt-1 text-sm leading-relaxed text-warm-500">
-                  This player&apos;s lifting athlete record has not been created yet.
-                </p>
-              )}
-            </div>
+            <EditorsLetter
+              ink="team"
+              title="No performance data yet."
+              body={
+                !liftingOrgId
+                  ? 'Set up Helm Lifting Lab for this team to unlock performance tracking.'
+                  : "This player's lifting athlete record has not been created yet."
+              }
+            />
           )}
         </motion.div>
         )}
@@ -1330,15 +1299,15 @@ export function PlayerProfileClient({
         >
           <div className="space-y-6">
             {/* Passport summary entry — links into the dedicated full surface */}
-            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-                    <IconShieldCheck size={20} className="text-primary-600" />
-                  </div>
+            <PaperCard className="p-6 sm:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus">
+                    <IconShieldCheck size={20} />
+                  </span>
                   <div>
-                    <h3 className="font-semibold text-warm-900">Player Passport</h3>
-                    <p className="text-sm text-warm-500 mt-0.5">
+                    <Eyebrow ink="team">Player Passport</Eyebrow>
+                    <p className="mt-1 font-annual text-body-sm text-text-secondary">
                       Source-backed proof: measurables, development story, video, and performance
                       with full provenance for roster evaluation.
                     </p>
@@ -1346,24 +1315,27 @@ export function PlayerProfileClient({
                 </div>
                 <Link
                   href={`/baseball/dashboard/players/${player.id}/passport`}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors shadow-sm"
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+                    pressableClass({ ink: 'team' }),
+                  )}
                 >
                   <IconShieldCheck size={14} />
                   View passport
                 </Link>
               </div>
-            </div>
+            </PaperCard>
 
             {/* Scout Packet entry — links into the dedicated share surface */}
-            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
-                    <IconShieldCheck size={20} className="text-warm-600" />
-                  </div>
+            <PaperCard className="p-6 sm:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--hairline)] text-text-secondary">
+                    <IconShieldCheck size={20} />
+                  </span>
                   <div>
-                    <h3 className="font-semibold text-warm-900">Scout Packet</h3>
-                    <p className="text-sm text-warm-500 mt-0.5">
+                    <Eyebrow ink="muted">Scout Packet</Eyebrow>
+                    <p className="mt-1 font-annual text-body-sm text-text-secondary">
                       Mint revocable share links for college scouts. Control exactly
                       what a scout sees and track packet access.
                     </p>
@@ -1371,16 +1343,19 @@ export function PlayerProfileClient({
                 </div>
                 <Link
                   href={`/baseball/dashboard/players/${player.id}/scout-packet`}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cream-100/75 hover:bg-warm-50 border border-warm-200/60 text-warm-700 text-sm font-semibold transition-colors shadow-sm"
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-2 font-annual text-body-sm font-semibold text-text-primary',
+                    pressableClass({ ink: 'team' }),
+                  )}
                 >
                   Manage
                   <IconChevronRight size={14} />
                 </Link>
               </div>
-            </div>
+            </PaperCard>
 
             {/* Visibility hint */}
-            <p className="text-xs text-warm-400 text-center px-4">
+            <p className="px-4 text-center font-annual text-eyebrow text-text-tertiary">
               Passport visibility and scout-packet sharing are managed on the full passport surface.
               Changes take effect immediately across all active share links.
             </p>
@@ -1428,11 +1403,8 @@ export function PlayerProfileClient({
           <div className="space-y-5">
             {/* Add note form — staff only */}
             {notesCanAuthor && (
-              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-warm-900 mb-4 flex items-center gap-2">
-                  <IconPlus size={15} className="text-primary-600" />
-                  Add Note
-                </h3>
+              <PaperCard className="p-6 sm:p-8">
+                <CardHeading title="Add Note" />
                 <Textarea
                   value={noteBody}
                   onChange={(e) => { setNoteBody(e.target.value); setNoteSuccess(false); }}
@@ -1443,7 +1415,7 @@ export function PlayerProfileClient({
                 {/* Visibility scope — staff-only vs. shared with the player. A
                     player_visible note surfaces on the player's Today + timeline. */}
                 <div className="mt-3">
-                  <label htmlFor="note-visibility" className="block text-xs font-medium text-warm-500 mb-1.5">
+                  <label htmlFor="note-visibility" className="mb-1.5 block font-annual text-body-sm text-text-secondary">
                     Visibility
                   </label>
                   <NativeSelect
@@ -1456,24 +1428,21 @@ export function PlayerProfileClient({
                     <option value="staff_public">Staff only</option>
                     <option value="player_visible">Visible to player</option>
                   </NativeSelect>
-                  <p className="text-xs text-warm-400 mt-1.5">
+                  <p className="mt-1.5 font-annual text-eyebrow text-text-tertiary">
                     {noteScope === 'player_visible'
                       ? 'The player will see this note on their Today and timeline.'
                       : 'Only staff can see this note.'}
                   </p>
                 </div>
-                <div className="flex items-center justify-between mt-3">
-                  <div>
-                    {noteError && (
-                      <p className="text-xs text-red-600">{noteError}</p>
-                    )}
-                    {noteSuccess && (
-                      <p className="text-xs text-primary-600 flex items-center gap-1">
-                        <IconCheck size={13} />
-                        Note saved
-                      </p>
-                    )}
-                  </div>
+
+                {noteError ? (
+                  <InlineNotice tone="danger" className="mt-3">{noteError}</InlineNotice>
+                ) : null}
+                {noteSuccess ? (
+                  <InlineNotice tone="success" className="mt-3">Note saved.</InlineNotice>
+                ) : null}
+
+                <div className="mt-3 flex items-center justify-end">
                   <Button
                     variant="primary"
                     onClick={handleAddNote}
@@ -1483,22 +1452,14 @@ export function PlayerProfileClient({
                     {isPendingNote ? 'Saving…' : 'Save Note'}
                   </Button>
                 </div>
-              </div>
+              </PaperCard>
             )}
 
             {/* Notes list */}
-            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-              <h3 className="font-semibold text-warm-900 mb-4 flex items-center gap-2">
-                <IconNote size={15} className="text-warm-400" />
-                Coach Notes
-                {notes.length > 0 && (
-                  <span className="ml-auto text-xs font-medium px-2 py-0.5 bg-warm-100 text-warm-600 rounded-full">
-                    {notes.length}
-                  </span>
-                )}
-              </h3>
+            <PaperCard className="p-6 sm:p-8">
+              <CardHeading title="Coach Notes" count={notes.length} />
               <PlayerNotesSection notes={notes} compact={false} />
-            </div>
+            </PaperCard>
           </div>
         </motion.div>
         )}
@@ -1517,95 +1478,75 @@ export function PlayerProfileClient({
           exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
         >
-          <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-              <h3 className="font-semibold text-warm-900 flex items-center gap-2">
-                <IconList size={15} className="text-warm-400" />
-                Tasks
-              </h3>
-              {tasks.length > 0 && (
-                <span className="text-xs font-medium px-2 py-0.5 bg-warm-100 text-warm-600 rounded-full">
-                  {tasks.length}
-                </span>
-              )}
+          <PaperCard className="overflow-hidden">
+            <div className="flex items-center justify-between border-b border-[color:var(--hairline)] px-6 py-4">
+              <Eyebrow ink="team">Tasks</Eyebrow>
+              {tasks.length > 0 && <InkBadge label={String(tasks.length)} tone="neutral" variant="soft" />}
             </div>
 
             {tasks.length === 0 ? (
-              <div className="p-12 text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
-                  <IconList size={24} />
-                </div>
-                <p className="font-semibold text-warm-900">No tasks assigned</p>
-                <p className="mt-1 text-sm leading-relaxed text-warm-500">
-                  Tasks assigned to this player will appear here.
-                </p>
+              <div className="p-8">
+                <EditorsLetter ink="team" title="No tasks assigned." body="Tasks assigned to this player will appear here." />
               </div>
             ) : (
-              <ul className="divide-y divide-warm-50">
-                {tasks.map((task) => {
+              <ul className="divide-y divide-[color:var(--hairline)]">
+                {tasks.map((task, i) => {
                   const isOverdue =
                     task.due_date &&
                     new Date(task.due_date) < new Date() &&
                     task.assignment_status !== 'completed';
                   return (
-                    <li key={task.id} className="px-6 py-4 flex items-start gap-3 hover:bg-warm-50/60 transition-colors">
-                      <span
-                        className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                          task.assignment_status === 'completed'
-                            ? 'bg-primary-500'
-                            : isOverdue
-                            ? 'bg-red-400'
-                            : 'bg-warm-300'
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium leading-snug ${
-                          task.assignment_status === 'completed'
-                            ? 'line-through text-warm-400'
-                            : 'text-warm-900'
-                        }`}>
-                          {task.title}
-                        </p>
-                        {task.description && (
-                          <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">
-                            {task.description}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                          {task.due_date && (
-                            <span className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-warm-400'}`}>
-                              Due {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
-                          )}
-                          {task.priority && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${
-                              task.priority === 'high'
-                                ? 'bg-red-100 text-red-700'
-                                : task.priority === 'medium'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-warm-100 text-warm-600'
-                            }`}>
-                              {task.priority}
-                            </span>
-                          )}
-                          <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${
+                    <Reveal key={task.id} staggerIndex={Math.min(i, 8)}>
+                      <li className="flex items-start gap-3 px-6 py-4">
+                        <span
+                          className={cn(
+                            'mt-1.5 h-2 w-2 shrink-0 rounded-full',
                             task.assignment_status === 'completed'
-                              ? 'bg-primary-100 text-primary-700'
+                              ? 'bg-grade-plus'
                               : isOverdue
-                              ? 'bg-red-50 text-red-600'
-                              : 'bg-warm-100 text-warm-600'
-                          }`}>
-                            {task.assignment_status}
-                          </span>
+                              ? 'bg-text-primary'
+                              : 'bg-[color:var(--hairline)]',
+                          )}
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className={cn(
+                            'font-annual text-body-sm font-medium leading-snug',
+                            task.assignment_status === 'completed' ? 'text-text-tertiary line-through' : 'text-text-primary',
+                          )}>
+                            {task.title}
+                          </p>
+                          {task.description && (
+                            <p className="mt-0.5 line-clamp-2 font-annual text-body-sm text-text-secondary">
+                              {task.description}
+                            </p>
+                          )}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                            {task.due_date && (
+                              <span className={cn(
+                                'font-annual text-eyebrow',
+                                isOverdue ? 'font-semibold text-text-primary' : 'text-text-tertiary',
+                              )}>
+                                Due {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            )}
+                            {task.priority && (
+                              <InkBadge label={task.priority} tone="neutral" variant={task.priority === 'high' ? 'solid' : 'soft'} />
+                            )}
+                            <InkBadge
+                              label={isOverdue ? 'Overdue' : task.assignment_status}
+                              tone={task.assignment_status === 'completed' ? 'team' : 'neutral'}
+                              variant={isOverdue ? 'solid' : 'soft'}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    </li>
+                      </li>
+                    </Reveal>
                   );
                 })}
               </ul>
             )}
-          </div>
+          </PaperCard>
         </motion.div>
         )}
 
@@ -1688,6 +1629,6 @@ export function PlayerProfileClient({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

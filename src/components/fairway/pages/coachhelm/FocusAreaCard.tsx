@@ -51,6 +51,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Surface, Inset } from '@/components/fairway/surfaces';
+import { ProgressTrack } from './ProgressTrack';
 import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -361,11 +362,6 @@ function ProgressMeter({
   const lowerBetter = isLowerIsBetter(metric);
   const met = pct >= 100;
 
-  // Fill tone: green when the goal is met, accent-soft while in motion. Amber
-  // (never red) is reserved for the trend classification, not the meter fill —
-  // a partial bar is "in progress", not "bad".
-  const fill = met ? 'bg-accent-500' : 'bg-accent-400';
-
   return (
     <div>
       <div className="mb-2 flex items-center justify-between font-fw-sans text-body-sm">
@@ -388,21 +384,19 @@ function ProgressMeter({
           ) : null}
         </span>
       </div>
-      <div
-        role="progressbar"
-        aria-valuenow={pct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${metric || 'Progress'}: ${pct}% toward target`}
-        className="h-2 w-full overflow-hidden rounded-full bg-surface-sunken"
-      >
-        <motion.div
-          className={cn('h-full rounded-full', fill)}
-          initial={reduced ? false : { width: 0 }}
-          animate={{ width: `${Math.min(pct, 100)}%` }}
-          transition={reduced ? { duration: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        />
-      </div>
+      {/* Shared flat track + accent fill (ProgressTrack) — the SAME rail as
+          FairwayGoalCard's goal-progress bar, so the plan surface's two "how
+          far along" reads render as one system. Amber (never red) is reserved
+          for the trend classification, not the meter fill — a partial bar is
+          "in progress", not "bad". */}
+      <ProgressTrack
+        pct={pct}
+        size="md"
+        tone={met ? 'done' : 'active'}
+        animateIn
+        reduced={reduced}
+        label={`${metric || 'Progress'}: ${pct}% toward target`}
+      />
     </div>
   );
 }
@@ -666,7 +660,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               ) : null}
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="line-clamp-2 font-fw-sans text-h3 font-semibold text-text-primary">
+                  <h3 className="line-clamp-2 font-fw-sans text-body-lg font-semibold text-text-primary">
                     {focusArea.title || 'Untitled'}
                   </h3>
                   <p className="mt-0.5 font-fw-sans text-body-sm font-medium text-accent-700">

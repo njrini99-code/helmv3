@@ -4,6 +4,12 @@
  * Every day at 06:30 UTC, pulls the top 3 actionable insights + 1 celebration
  * + 1 watch per coach, renders a transactional email, and sends via Resend.
  *
+ * Idempotency: a retry/manual re-trigger on the same UTC day must not
+ * re-email every coach. Each send carries an
+ * `idempotencyKey: coach-morning-digest:${coach_id}:${date}` (Resend's
+ * `Idempotency-Key` header) so a duplicate tick for the same coach/day
+ * returns Resend's cached response instead of dispatching a second digest.
+ *
  * Auth: `Authorization: Bearer ${CRON_SECRET}` (Vercel Cron standard).
  * Schedule: `30 6 * * *` — see vercel.json.
  *
@@ -161,13 +167,18 @@ async function handleDigest(): Promise<NextResponse> {
 
   // ─── 2. Process coaches in parallel batches of 5 ────────────────────────
 
+  // Stable per-invocation dedupe key (UTC date) — computed once so every
+  // coach in this run shares the same period key even if the run straddles
+  // a millisecond boundary near midnight.
+  const dateKey = new Date().toISOString().slice(0, 10);
+
   const coaches = Array.from(eligible.values());
   for (let i = 0; i < coaches.length; i += COACH_BATCH_SIZE) {
     const batch = coaches.slice(i, i + COACH_BATCH_SIZE);
     await Promise.all(
       batch.map(async (coach) => {
         try {
-          const result = await processCoach(supabase, coach);
+          const result = await processCoach(supabase, coach, dateKey);
           if (result.sent) summary.sent += 1;
           else if (result.skipped) {
             summary.skipped += 1;
@@ -218,6 +229,7 @@ interface CoachResult {
 async function processCoach(
   supabase: ReturnType<typeof createAdminClient>,
   coach: EligibleCoach,
+  dateKey: string,
 ): Promise<CoachResult> {
   // Collect every player id on any team this coach staffs, so the digest
   // cron isn't bound to a single team (coaches commonly staff JV + varsity).
@@ -308,6 +320,7 @@ async function processCoach(
     html: rendered.html,
     text: rendered.text,
     coachId: coach.coach_id,
+    idempotencyKey: `coach-morning-digest:${coach.coach_id}:${dateKey}`,
   });
 
   return result;

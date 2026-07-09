@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button, InlineNotice } from '@/components/fairway';
 import { Input, Select, TextArea } from '@/components/fairway/forms';
+import { formatShortDate } from '@/lib/golf/format-date';
 import type { TransportationType, TravelItinerary } from './travel-helpers';
 import { TRANSPORT_LABEL } from './travel-helpers';
 
@@ -209,7 +210,7 @@ export function FairwayItineraryModal({
       ...events.map((ev) => ({
         value: ev.id,
         label: ev.start_time
-          ? `${ev.title} · ${new Date(ev.start_time).toLocaleDateString()}`
+          ? `${ev.title} · ${formatShortDate(ev.start_time)}`
           : ev.title,
       })),
     ],

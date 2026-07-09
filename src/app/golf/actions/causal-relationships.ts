@@ -164,6 +164,90 @@ async function fetchPlayerRowsDeduped(
   return dedupeAndRank((data ?? []) as unknown as RawCausalRow[]);
 }
 
+const TEAM_FETCH_CONCURRENCY = 8;
+
+/** Split into fixed-size, order-preserving batches for bounded concurrent fan-out. */
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}
+
+/**
+ * Fetch (newest-first, capped) + dedupe MANY players' causal relationships.
+ *
+ * NOT a single `.in('player_id', ...)` query — that was the original shape
+ * here and it is WRONG. `supabase/config.toml` sets PostgREST's `max_rows` to
+ * 1000, which hard-caps EVERY response at 1000 rows regardless of any
+ * `.limit(...)` the client sends. A single `.in()` query ordered
+ * `created_at desc` for the whole roster shares that one 1000-row budget
+ * across every player: one high-volume player (there are 2,000+ row players
+ * on this table per the header) can fill the entire response by themselves,
+ * silently starving every teammate ordered behind them — their relationships
+ * just vanish from the team panel with no error surfaced anywhere.
+ *
+ * The fix is PER-PLAYER queries (each with its own real `FETCH_LIMIT`, safely
+ * under `max_rows`) run CONCURRENTLY in bounded batches of
+ * `TEAM_FETCH_CONCURRENCY` via `Promise.all` — this keeps the N+1-avoidance
+ * latency win (parallelism) this function was written for, while giving every
+ * player a fair, independent row budget and bounding total in-flight work.
+ * Assumes the caller has already authorized access to `teamId`/`playerIds`.
+ */
+async function fetchTeamRowsDeduped(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerIds: string[],
+  includeInactive = false,
+): Promise<Record<string, CausalRelationshipRow[]>> {
+  const out: Record<string, CausalRelationshipRow[]> = {};
+
+  for (const batch of chunk(playerIds, TEAM_FETCH_CONCURRENCY)) {
+    const batchResults = await Promise.all(
+      batch.map(async (playerId) => {
+        // Table is not in the generated types yet.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let query = (supabase.from('golf_causal_relationships' as any) as any)
+          .select(SELECT_COLUMNS)
+          .eq('player_id', playerId);
+
+        // Default to ACTIVE rows only (see fetchPlayerRowsDeduped for why).
+        if (!includeInactive) {
+          query = query.eq('is_active', true);
+        }
+
+        const { data, error } = await query
+          .order('created_at', { ascending: false })
+          .limit(FETCH_LIMIT);
+
+        if (error) {
+          await logServerError(
+            `getTeamCausalRelationships fetch failed: ${error.message ?? String(error)}`,
+            {
+              action: 'causal-relationships.fetchTeamRowsDeduped',
+              playerId,
+              metadata: { teamSize: playerIds.length },
+            },
+          );
+          return null;
+        }
+
+        return { playerId, rows: (data ?? []) as unknown as RawCausalRow[] };
+      }),
+    );
+
+    for (const result of batchResults) {
+      if (!result) continue;
+      // Only include players who actually have relationships (honest-empty:
+      // players with zero rows are absent from the map).
+      const deduped = dedupeAndRank(result.rows);
+      if (deduped.length > 0) out[result.playerId] = deduped;
+    }
+  }
+
+  return out;
+}
+
 /**
  * Player-scoped read. Auth: the authenticated caller must BE the player
  * (self-access) or a coach who staffs a team the player is an active member of
@@ -206,9 +290,10 @@ export async function getPlayerCausalRelationships(
 /**
  * Team-scoped read. Auth: the authenticated caller must staff `teamId`
  * (`verifyTeamAccess`). Resolves the team's ACTIVE player_ids via
- * `golf_team_members`, then fetches + dedupes per player. Returns a
- * `Record<playerId, CausalRelationshipRow[]>` (players with no rows are simply
- * absent from the map). Returns `{}` on any auth failure or DB error.
+ * `golf_team_members`, then fetches + dedupes the WHOLE roster via bounded,
+ * concurrent per-player queries (`fetchTeamRowsDeduped`). Returns a `Record<playerId,
+ * CausalRelationshipRow[]>` (players with no rows are simply absent from the
+ * map). Returns `{}` on any auth failure or DB error.
  */
 async function getTeamCausalRelationshipsImpl(
   teamId: string,
@@ -248,18 +333,11 @@ async function getTeamCausalRelationshipsImpl(
 
   if (playerIds.length === 0) return {};
 
-  const byPlayer: Record<string, CausalRelationshipRow[]> = {};
-  await Promise.all(
-    playerIds.map(async (pid) => {
-      const rows = await fetchPlayerRowsDeduped(supabase, pid, opts?.includeInactive ?? false);
-      // Only include players who actually have relationships (honest-empty:
-      // players with zero rows — e.g. Tyler Passmore — are absent from the map,
-      // and the panel renders its calm empty state via `?? []`).
-      if (rows.length > 0) byPlayer[pid] = rows;
-    }),
-  );
-
-  return byPlayer;
+  // Per-player queries in bounded concurrent batches (see fetchTeamRowsDeduped
+  // for why one shared `.in()` query is wrong here). Players with zero rows —
+  // e.g. Tyler Passmore — are absent from the map, and the panel renders its
+  // calm empty state via `?? []`.
+  return fetchTeamRowsDeduped(supabase, playerIds, opts?.includeInactive ?? false);
 }
 
 const observedGetTeamCausalRelationships = withAdminObserved(

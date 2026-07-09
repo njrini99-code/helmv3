@@ -309,6 +309,9 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
 
+  // Restore
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+
   // ---- Filtering ----
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -393,9 +396,14 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
   }
 
   function handleRestore(id: string) {
+    setRestoreError(null);
     startTransition(async () => {
-      await restoreExercise({ exerciseId: id });
-      router.refresh();
+      const result = await restoreExercise({ exerciseId: id });
+      if (result.success) {
+        router.refresh();
+      } else {
+        setRestoreError(result.error ?? 'Failed to restore exercise.');
+      }
     });
   }
 
@@ -450,6 +458,10 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
           </Button>
         )}
       </div>
+
+      {restoreError && (
+        <p className="text-sm text-red-600">{restoreError}</p>
+      )}
 
       {/* List */}
       {initial.length === 0 ? (

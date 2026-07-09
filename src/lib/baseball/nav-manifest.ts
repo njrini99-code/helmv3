@@ -227,40 +227,49 @@ const legacyRedirectEntries: NavManifestEntry[] = [
     source: 'legacy-redirect',
     status: 'removed',
   },
-  // Pre-consolidation settings sub-pages (W5 dead-code sweep, 2026-07-09):
-  // zero inbound links from nav-registry/hub-definitions/command palettes and
-  // no readiness-matrix citation, unlike 'notifications' and 'demo-mode'
-  // above — deleted outright rather than kept as redirect stubs. Tombstoned
-  // so a future re-add doesn't silently resurrect a dead link.
+  // Pre-consolidation settings sub-pages — restored 2026-07-09: the W5
+  // dead-code sweep (above) had misjudged these as zero-inbound and deleted
+  // the redirect stubs outright, but each was a previously-live, linked URL
+  // (see git log --diff-filter=D on this path for the wrongly-removed
+  // page.tsx trio). Recreated identically to the accepted-consolidation
+  // pattern (same as 'notifications' above) and reclassified 'deprecated' —
+  // 'removed' would now fail this suite's own "must not resolve on disk"
+  // assertion since the redirect page exists again.
   {
     href: '/baseball/dashboard/settings/ai',
     source: 'legacy-redirect',
-    status: 'removed',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
   },
   {
     href: '/baseball/dashboard/settings/appearance',
     source: 'legacy-redirect',
-    status: 'removed',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
   },
   {
     href: '/baseball/dashboard/settings/data-retention',
     source: 'legacy-redirect',
-    status: 'removed',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
   },
   {
     href: '/baseball/dashboard/settings/guardian-access',
     source: 'legacy-redirect',
-    status: 'removed',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
   },
   {
     href: '/baseball/dashboard/settings/player-access',
     source: 'legacy-redirect',
-    status: 'removed',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
   },
   {
     href: '/baseball/dashboard/settings/showcase-profile',
     source: 'legacy-redirect',
-    status: 'removed',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
   },
 ];
 

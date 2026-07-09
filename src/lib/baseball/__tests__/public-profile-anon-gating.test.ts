@@ -25,9 +25,24 @@
 // `isPublicViewer: !user` derivation is guarded directly on the helper below.
 // =============================================================================
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+// Hoisted so the `notFound` mock exists before `vi.mock('next/navigation', ...)`
+// runs (vitest hoists vi.mock calls above imports). We assert on the throw so
+// tests below can distinguish "blocked via the gate" from any other failure.
+const mocks = vi.hoisted(() => ({
+  notFound: vi.fn(() => {
+    throw new Error('NOT_FOUND');
+  }),
+}));
+
+vi.mock('next/navigation', () => ({
+  notFound: mocks.notFound,
+}));
+
+import { resolveRecruitingViewerAccess } from '../recruiting-viewer-access';
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..'); // -> repo root
 
@@ -99,5 +114,62 @@ describe('resolveRecruitingViewerAccess — shared gate extracted from team/[id]
   it('blocks non-recruiting authenticated users via notFound()', () => {
     expect(source).toMatch(/notFound\(\)/);
     expect(source).toMatch(/\[.college.,\s*.juco.\]/);
+  });
+});
+
+// The regex checks above are belt-and-braces (they'd catch a naive revert of
+// the source shape). These tests actually invoke resolveRecruitingViewerAccess
+// against a mocked Supabase client, mirroring the fake-client idiom used by
+// ../server-route-guards.test.ts, so the gate's real runtime behavior — not
+// just its source text — is what's under test.
+describe('resolveRecruitingViewerAccess — direct unit tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Builds a fake Supabase client whose `.auth.getUser()` resolves to the
+   * given user and whose `.from('baseball_coaches').select().eq().single()`
+   * chain resolves to the given coach row — enough surface for the gate. */
+  function fakeSupabase(
+    user: { id: string } | null,
+    coachRow: { coach_type: string } | null = null,
+  ) {
+    const query = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: coachRow, error: null }),
+    };
+    return {
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user } }) },
+      from: vi.fn().mockReturnValue(query),
+    } as unknown as Parameters<typeof resolveRecruitingViewerAccess>[0];
+  }
+
+  it('no signed-in user -> public viewer, no coach lookup performed', async () => {
+    const supabase = fakeSupabase(null);
+    const result = await resolveRecruitingViewerAccess(supabase);
+    expect(result).toEqual({ isPublicViewer: true, coach: null });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it.each(['college', 'juco'] as const)(
+    'signed-in %s (recruiting) coach -> non-public viewer, coach resolved',
+    async (coachType) => {
+      const supabase = fakeSupabase({ id: 'user-1' }, { coach_type: coachType });
+      const result = await resolveRecruitingViewerAccess(supabase);
+      expect(result).toEqual({ isPublicViewer: false, coach: { coach_type: coachType } });
+    },
+  );
+
+  it('signed-in non-recruiting coach (e.g. high_school) -> blocked via notFound()', async () => {
+    const supabase = fakeSupabase({ id: 'user-1' }, { coach_type: 'high_school' });
+    await expect(resolveRecruitingViewerAccess(supabase)).rejects.toThrow('NOT_FOUND');
+    expect(mocks.notFound).toHaveBeenCalledTimes(1);
+  });
+
+  it('signed-in user with no coach row -> blocked via notFound()', async () => {
+    const supabase = fakeSupabase({ id: 'user-1' }, null);
+    await expect(resolveRecruitingViewerAccess(supabase)).rejects.toThrow('NOT_FOUND');
+    expect(mocks.notFound).toHaveBeenCalledTimes(1);
   });
 });

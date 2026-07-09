@@ -19,6 +19,7 @@ import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/Fair
 import { FairwayPlayerDashboard, type PlayerDashboardData } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
+import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,11 @@ function renderCoachDashboard(props: {
     data: CoachDashboardData;
     enhancedData?: CoachDashboardPayload | null;
     dateRange: DashboardDateRange;
+    // Fetched server-side (see the coach branch below) and passed straight
+    // through so FairwayJoinRequestAlert renders from data already present at
+    // first paint instead of self-fetching on mount — no post-hydration
+    // reflow of everything below the banner.
+    joinRequests?: JoinRequestData[];
 }) {
     return (
         <div className={fairwayScope('min-h-full')}>
@@ -40,6 +46,7 @@ function renderCoachDashboard(props: {
                 data={props.data}
                 enhancedData={props.enhancedData ?? undefined}
                 dateRange={props.dateRange}
+                joinRequests={props.joinRequests}
             />
         </div>
     );
@@ -109,7 +116,19 @@ export default async function GolfDashboardPage({
             // team returns empty arrays/zero counts WITHOUT throwing (see
             // getCoachDashboardData), so letting this throw only fires on a true
             // failure.
-            const payload = await getCachedCoachDashboardData(coach.id, userId, teamId, dateRange);
+            // Fetch the join-request banner's data alongside the dashboard payload
+            // (not after it, client-side) so FairwayJoinRequestAlert can render
+            // from a prop at first paint — the banner used to self-fetch on
+            // mount, which meant it popped in after hydration and reflowed the
+            // KPI/rounds content below it. A request failure degrades to "no
+            // pending requests" (an empty array) rather than surfacing an error
+            // here — the banner is a convenience callout, not core dashboard data.
+            const [payload, joinRequestsResult] = await Promise.all([
+                getCachedCoachDashboardData(coach.id, userId, teamId, dateRange),
+                getTeamJoinRequests(),
+            ]);
+            const joinRequests: JoinRequestData[] =
+                joinRequestsResult.success && joinRequestsResult.data ? joinRequestsResult.data : [];
 
             const data: CoachDashboardData = {
                 coach: {
@@ -130,7 +149,7 @@ export default async function GolfDashboardPage({
                 teamScoringTrend: payload.teamScoringTrend.length > 0 ? payload.teamScoringTrend : undefined,
             };
 
-            return renderCoachDashboard({ data, enhancedData: payload, dateRange });
+            return renderCoachDashboard({ data, enhancedData: payload, dateRange, joinRequests });
         }
 
         // Coach without team — empty state

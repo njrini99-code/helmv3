@@ -6,9 +6,10 @@ import { BaseballDiamond, POSITION_COORDS } from './BaseballDiamond';
 import { PositionPlayerStack } from './PositionPlayerPill';
 import { PlayerQuickView } from './PlayerQuickView';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Select } from '@/components/ui/select';
+import { RuledStatLine, InkBadge, PaperCard } from '@/components/baseball/living-annual';
+import { Button, Select } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import { IconUsers, IconTarget, IconFilter } from '@/components/icons';
+import { IconTarget, IconFilter } from '@/components/icons';
 import type { WatchlistWithPlayer, Player, PipelineStage } from '@/lib/types';
 
 interface PositionPlannerProps {
@@ -24,8 +25,14 @@ const POSITION_ALIASES: Record<string, string> = {
   'OF': 'CF', // Generic OF goes to center field area
 };
 
+/** Fairway `<Select>` needs a real option value — map the "no filter" empty
+ * string to this sentinel at the select boundary only; every other piece of
+ * filtering logic (gradYearFilter / onGradYearChange) keeps comparing against
+ * `''` exactly as before. */
+const ALL_GRAD_YEARS = '__all__';
+
 const GRAD_YEAR_OPTIONS = [
-  { value: '', label: 'All Years' },
+  { value: ALL_GRAD_YEARS, label: 'All Years' },
   { value: '2025', label: '2025' },
   { value: '2026', label: '2026' },
   { value: '2027', label: '2027' },
@@ -41,13 +48,16 @@ const STAGE_FILTER_OPTIONS = [
   { value: 'committed', label: 'Committed' },
 ];
 
-// Stage colors for the legend
+// Pipeline legend — War Room lane, clay ink only (spec §4.2 rule 1: never mix
+// inks within a lane's chrome). Ramps from a faint clay tint to full
+// `--pursuit-ink` as a recruit moves toward a commitment — the same "darkens
+// toward the deadline" language as `<AgingBar>`, not raw amber/green swatches.
 const LEGEND_ITEMS = [
-  { color: 'bg-warm-400', label: 'Watching', glow: 'shadow-warm-400/30' },
-  { color: 'bg-amber-500', label: 'Priority', glow: 'shadow-amber-500/30' },
-  { color: 'bg-primary-500', label: 'Offer', glow: 'shadow-primary-500/30' },
-  { color: 'bg-primary-700', label: 'Committed', glow: 'shadow-primary-700/40' },
-];
+  { label: 'Watching', dot: 'bg-pursuit/[0.3]' },
+  { label: 'Priority', dot: 'bg-pursuit/[0.55]' },
+  { label: 'Offer', dot: 'bg-pursuit/[0.8]' },
+  { label: 'Committed', dot: 'bg-pursuit' },
+] as const;
 
 export function PositionPlanner({
   watchlist,
@@ -113,6 +123,10 @@ export function PositionPlanner({
   const totalPlayers = filteredWatchlist.length;
   const positionsWithPlayers = Object.keys(playersByPosition).length;
   const totalPositions = Object.keys(POSITION_COORDS).length - 4; // Exclude RHP, LHP, OF, UTL
+  // Active filter count for the Filters toggle badge — same semantics as
+  // before: the grad-year filter counts if set, the stage filter counts if
+  // it isn't 'all'.
+  const activeFilterCount = (gradYearFilter ? 1 : 0) + (stageFilter !== 'all' ? 1 : 0);
 
   const handlePositionClick = (position: string) => {
     setExpandedPosition(prev => prev === position ? null : position);
@@ -146,109 +160,41 @@ export function PositionPlanner({
 
   return (
     <div className="relative">
-      {/* Premium Header Stats & Filters */}
+      {/* Header stats & filters — War Room (clay) lane */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4 })}
         className="mb-8"
       >
-        <div className="flex items-center justify-between mb-4">
-          {/* Stats Pills with premium glass effect */}
-          <div className="flex items-center gap-3">
-            <motion.div
-              whileHover={{ scale: 1.02, y: -1 }}
-              className={cn(
-                'flex items-center gap-2.5 px-4 py-2',
-                'bg-gradient-to-br from-white/90 to-warm-50/70',
-                'backdrop-blur-md',
-                'rounded-xl',
-                'border border-warm-200/55',
-                'shadow-glass-sm',
-                // Inner highlight
-                'before:absolute before:inset-0 before:rounded-xl',
-                'before:bg-gradient-to-b before:from-white/40 before:to-transparent',
-                'before:pointer-events-none',
-                'relative'
-              )}
-            >
-              <div className="p-1.5 rounded-lg bg-primary-100/60">
-                <IconUsers size={14} className="text-primary-600" />
-              </div>
-              <span className="text-sm font-semibold text-warm-800">
-                {totalPlayers}
-              </span>
-              <span className="text-xs text-warm-500">
-                player{totalPlayers !== 1 ? 's' : ''}
-              </span>
-            </motion.div>
+        <PaperCard className="p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Stat pills — the numeral carries the contrast, clay rule beneath */}
+            <div className="flex flex-wrap items-center gap-8">
+              <RuledStatLine label="Players" value={totalPlayers} ink="pursuit" size="row" />
+              <RuledStatLine
+                label="Positions"
+                value={`${positionsWithPlayers}/${totalPositions}`}
+                ink="pursuit"
+                size="row"
+              />
+            </div>
 
-            <motion.div
-              whileHover={{ scale: 1.02, y: -1 }}
-              className={cn(
-                'flex items-center gap-2.5 px-4 py-2',
-                'bg-gradient-to-br from-white/90 to-warm-50/70',
-                'backdrop-blur-md',
-                'rounded-xl',
-                'border border-warm-200/55',
-                'shadow-glass-sm',
-                'relative'
-              )}
+            {/* Filter Toggle Button */}
+            <Button
+              variant={showFilters ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              aria-expanded={showFilters}
+              leftIcon={<IconFilter size={14} />}
             >
-              <div className="p-1.5 rounded-lg bg-primary-100/60">
-                <IconTarget size={14} className="text-primary-600" />
-              </div>
-              <span className="text-sm font-semibold text-warm-800">
-                {positionsWithPlayers}/{totalPositions}
+              <span className="inline-flex items-center gap-1.5">
+                Filters
+                {activeFilterCount > 0 ? <InkBadge label={String(activeFilterCount)} tone="pursuit" /> : null}
               </span>
-              <span className="text-xs text-warm-500">
-                positions
-              </span>
-            </motion.div>
+            </Button>
           </div>
-
-          {/* Filter Toggle Button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-xl',
-              'text-sm font-semibold',
-              'transition-all duration-300',
-              'border',
-              showFilters
-                ? [
-                    'bg-gradient-to-br from-primary-50 to-primary-100/50',
-                    'text-primary-700',
-                    'border-primary-200/60',
-                    'shadow-md shadow-primary-500/10'
-                  ]
-                : [
-                    'bg-gradient-to-br from-cream-50 to-warm-50/70',
-                    'text-warm-600',
-                    'border-warm-200/55',
-                    'hover:bg-cream-100 active:bg-cream-100/75 hover:shadow-md'
-                  ]
-            )}
-          >
-            <IconFilter size={14} />
-            Filters
-            {(gradYearFilter || stageFilter !== 'all') && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className={cn(
-                  'ml-1 px-1.5 py-0.5 rounded-md',
-                  'text-micro font-bold',
-                  'bg-primary-500 text-white'
-                )}
-              >
-                {[gradYearFilter, stageFilter !== 'all' ? 1 : 0].filter(Boolean).length}
-              </motion.span>
-            )}
-          </motion.button>
-        </div>
+        </PaperCard>
 
         {/* Filters Panel with smooth animation */}
         <AnimatePresence>
@@ -260,56 +206,54 @@ export function PositionPlanner({
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
               className="overflow-hidden"
             >
-              <div className={cn(
-                'flex items-center gap-6 p-5',
-                'bg-gradient-to-br from-white/95 to-warm-50/80',
-                'backdrop-blur-xl',
-                'rounded-2xl',
-                'border border-warm-200/55',
-                'shadow-glass'
-              )}>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-warm-600">Class:</span>
-                  <Select
-                    options={GRAD_YEAR_OPTIONS}
-                    value={gradYearFilter}
-                    onChange={(value) => onGradYearChange?.(value)}
-                    className="w-32"
-                  />
+              <PaperCard className="mt-3 p-5">
+                <div className="flex flex-wrap items-center gap-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                      Class
+                    </span>
+                    <div className="w-32">
+                      <Select
+                        size="sm"
+                        aria-label="Filter by grad year"
+                        value={gradYearFilter || ALL_GRAD_YEARS}
+                        onValueChange={(v) => onGradYearChange?.(!v || v === ALL_GRAD_YEARS ? '' : v)}
+                        options={GRAD_YEAR_OPTIONS}
+                      />
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-[color:var(--hairline)]" />
+                  <div className="flex items-center gap-3">
+                    <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                      Stage
+                    </span>
+                    <div className="w-40">
+                      <Select
+                        size="sm"
+                        aria-label="Filter by pipeline stage"
+                        value={stageFilter}
+                        onValueChange={(v) => v && setStageFilter(v)}
+                        options={STAGE_FILTER_OPTIONS}
+                      />
+                    </div>
+                  </div>
+                  {(gradYearFilter || stageFilter !== 'all') && (
+                    <>
+                      <div className="h-8 w-px bg-[color:var(--hairline)]" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          onGradYearChange?.('');
+                          setStageFilter('all');
+                        }}
+                      >
+                        Clear all
+                      </Button>
+                    </>
+                  )}
                 </div>
-                <div className="w-px h-8 bg-warm-200/50" />
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-warm-600">Stage:</span>
-                  <Select
-                    options={STAGE_FILTER_OPTIONS}
-                    value={stageFilter}
-                    onChange={setStageFilter}
-                    className="w-40"
-                  />
-                </div>
-                {(gradYearFilter || stageFilter !== 'all') && (
-                  <>
-                    <div className="w-px h-8 bg-warm-200/50" />
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        onGradYearChange?.('');
-                        setStageFilter('all');
-                      }}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg',
-                        'text-sm font-medium',
-                        'text-warm-500 hover:text-warm-700',
-                        'hover:bg-warm-100/80',
-                        'transition-colors duration-200'
-                      )}
-                    >
-                      Clear all
-                    </motion.button>
-                  </>
-                )}
-              </div>
+              </PaperCard>
             </motion.div>
           )}
         </AnimatePresence>
@@ -390,27 +334,15 @@ export function PositionPlanner({
         )}
       </AnimatePresence>
 
-      {/* Premium Legend */}
+      {/* Pipeline legend — clay ink ramp, War Room lane */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.4 })}
-        className={cn(
-          'mt-8 flex items-center justify-center gap-6 px-6 py-3',
-          'bg-gradient-to-r from-transparent via-white/50 to-transparent',
-          'backdrop-blur-sm',
-          'rounded-full',
-          'mx-auto w-fit'
-        )}
+        className="mx-auto mt-8 flex w-fit items-center justify-center gap-6 px-6 py-3"
       >
         {LEGEND_ITEMS.map((item, idx) => (
-          <LegendItem
-            key={item.label}
-            color={item.color}
-            label={item.label}
-            glow={item.glow}
-            index={idx}
-          />
+          <LegendItem key={item.label} dot={item.dot} label={item.label} index={idx} />
         ))}
       </motion.div>
     </div>
@@ -429,7 +361,6 @@ function PositionEmptyMarker({
   onClick: () => void;
   isActive: boolean;
 }) {
-  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.button
       onClick={onClick}
@@ -440,6 +371,10 @@ function PositionEmptyMarker({
         'flex items-center justify-center',
         'text-micro font-bold uppercase tracking-wider',
         'transition-all duration-300',
+        // Static dashed hairline — an unfilled position reads like a ghosted
+        // measurable (spec §7 `ghost` doctrine), never a decorative infinite
+        // pulse. Nothing here animates on a loop, so there's nothing for
+        // prefers-reduced-motion to suppress.
         'border-2 border-dashed',
         'pointer-events-auto',
         isActive
@@ -461,36 +396,20 @@ function PositionEmptyMarker({
       title={`${label} (No players)`}
     >
       <span className="relative z-10">{position}</span>
-      {/* Subtle pulse for empty positions */}
-      <motion.span
-        className={cn(
-          'absolute inset-0 rounded-xl',
-          'border-2 border-dashed border-warm-200/40'
-        )}
-        animate={{
-          scale: [1, 1.1, 1],
-          opacity: [0.5, 0, 0.5]
-        }}
-        transition={prefersReducedMotion ? { duration: 0 } : ({
-          duration: 2.5,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        })}
-      />
     </motion.button>
   );
 }
 
-// Premium legend item
+// Pipeline legend item — a clay-ink dot (intensity ramps with recruiting
+// stage) + a quiet graphite/60 label. The dot carries the ink; the label
+// stays quiet, matching `<RuledStatLine>`'s label convention.
 function LegendItem({
-  color,
+  dot,
   label,
-  glow,
   index,
 }: {
-  color: string;
+  dot: string;
   label: string;
-  glow: string;
   index: number;
 }) {
   const prefersReducedMotion = useReducedMotion();
@@ -501,16 +420,8 @@ function LegendItem({
       transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 + index * 0.08 })}
       className="flex items-center gap-2"
     >
-      <motion.span
-        whileHover={{ scale: 1.2 }}
-        className={cn(
-          'w-3 h-3 rounded-full',
-          'ring-2 ring-white/60',
-          color,
-          glow && `shadow-lg ${glow}`
-        )}
-      />
-      <span className="text-xs font-medium text-warm-500">
+      <span aria-hidden className={cn('h-2.5 w-2.5 rounded-full', dot)} />
+      <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
         {label}
       </span>
     </motion.div>

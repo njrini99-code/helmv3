@@ -1,10 +1,44 @@
 'use client';
 
+// =============================================================================
+// src/components/baseball/box-score/BoxScoreView.tsx
+//
+// ISLAND REBUILD onto "The Living Annual" kit (design-system-living-annual.md
+// §7): the game header is now a `SectionMasthead` (green accent rule, per the
+// founder "more green" addendum) and every rainbow chip — the W/L/T result
+// stamp, the scrimmage tag, and the per-pitcher decision letter — is an
+// `InkBadge` in team (green) / neutral (graphite) tones only. No pursuit
+// (clay) here: this is the Pressbox lane, not the War Room.
+//
+// Every measurable in both tables now renders through `<StatReadout>`
+// (`font-annual tabular-nums`, near-black graphite contrast per the founder
+// CONTRAST LAW) — the old `font-mono` rate-stat columns are gone, so batting
+// and pitching read as one typographic system instead of two. Rate stats
+// (AVG/OBP/SLG/ERA/WHIP) keep the box-score's own `format-stat.ts` helpers
+// (shared with BoxScoreEntry.tsx) so the on-screen figures are byte-identical
+// to before; only how they're *set* changed.
+//
+// PRESENTATION ONLY — batting/pitching totals math, the innings-pitched outs
+// convention (#434), and every `data-testid` the e2e suite depends on
+// (`batting-table`, `pitching-table`, `batting-totals-row`,
+// `pitching-totals-row`) are unchanged.
+// =============================================================================
+
 import type { BaseballGame, BaseballBoxScoreBatting, BaseballBoxScorePitching } from '@/lib/types';
 import { IconCalendar, IconMapPin } from '@/components/icons';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 import { EMPTY_STAT, formatAvg, formatEra, formatWhip } from './format-stat';
-import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
+import {
+  PaperCard,
+  EditorsLetter,
+  SectionMasthead,
+  StatReadout,
+  InkBadge,
+  HairlineRule,
+  Eyebrow,
+  PositionChip,
+} from '@/components/baseball/living-annual';
+import type { InkBadgeProps } from '@/components/baseball/living-annual';
 
 interface BoxScoreViewProps {
   game: BaseballGame;
@@ -12,14 +46,34 @@ interface BoxScoreViewProps {
   pitching: BaseballBoxScorePitching[];
 }
 
-function fmtStat(val: number | null | undefined, decimals = 0) {
-  if (val == null) return EMPTY_STAT;
-  return decimals > 0 ? val.toFixed(decimals) : String(val);
+/** Counting stats render through `<StatReadout>` — a number rolls on the
+ *  odometer, a missing value renders the honest em dash statically. */
+function fmtStat(val: number | null | undefined): number | string {
+  return val == null ? EMPTY_STAT : val;
 }
 
-function fmtIP(val: number | null | undefined) {
+/** IP is stored in the .1/.2 (outs) convention, not a true decimal — display
+ *  verbatim as a pre-formatted string (never fed to the numeric odometer
+ *  branch, which would imply real decimal rounding). */
+function fmtIP(val: number | null | undefined): string {
   if (val == null) return EMPTY_STAT;
   return val.toFixed(1);
+}
+
+// Shared typography so the two tables read as ONE record-book system, not two
+// (packet: "unify batting/pitching table typography") — matches the th/tbody
+// idiom already established on the passport game-log table
+// (PlayerPassportFairway.tsx).
+const TH = 'text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary';
+const TD_STAT = 'px-2 py-2.5 text-center';
+const TD_RATE = 'px-3 py-2.5 text-center';
+
+/** Every possible pitching decision code, grouped by outcome: a team
+ *  achievement (win / save / hold) reads team-green, everything else
+ *  (loss / blown save / no-decision) stays quiet neutral graphite. Never
+ *  clay — that ink is reserved for the War Room. */
+function decisionTone(result: BaseballBoxScorePitching['result']): NonNullable<InkBadgeProps['tone']> {
+  return result === 'W' || result === 'S' || result === 'H' ? 'team' : 'neutral';
 }
 
 export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
@@ -31,7 +85,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
   const won = game.our_score != null && game.opponent_score != null && game.our_score > game.opponent_score;
   const lost = game.our_score != null && game.opponent_score != null && game.our_score < game.opponent_score;
   const resultLabel = won ? 'W' : lost ? 'L' : 'T';
-  const resultColor = won ? 'text-primary-700 bg-primary-50' : lost ? 'text-red-700 bg-red-50' : 'text-amber-700 bg-amber-50';
+  const resultTone: NonNullable<InkBadgeProps['tone']> = won ? 'team' : 'neutral';
 
   // Batting totals
   const totals = batting.reduce(
@@ -78,130 +132,130 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
   return (
     <div className="space-y-5">
-      {/* Game header */}
+      {/* Game header — a masthead, not a form-list. */}
       <PaperCard className="p-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide ${
-                  game.game_type === 'scrimmage' ? 'bg-purple-100 text-purple-700' : 'bg-primary-100 text-primary-700'
-                }`}
-              >
-                {game.game_type === 'scrimmage' ? 'Scrimmage' : 'Game'}
-              </span>
-              {game.home_away && (
-                <span className="text-xs text-warm-400 uppercase tracking-wide font-medium">
-                  {game.home_away}
-                </span>
-              )}
-            </div>
-            <h1 className="text-2xl font-bold text-warm-900">
-              vs {game.opponent_name ?? 'Unknown Opponent'}
-            </h1>
-            <div className="flex items-center gap-3 mt-1.5 text-sm text-warm-500">
-              <span className="flex items-center gap-1">
-                <IconCalendar size={14} />
-                {formattedDate}
-              </span>
-              {game.location && (
-                <span className="flex items-center gap-1">
-                  <IconMapPin size={14} />
-                  {game.location}
-                </span>
-              )}
-            </div>
+        {(game.game_type === 'scrimmage' || game.home_away) && (
+          <div className="mb-2 flex items-center gap-2">
+            {/* Only the exception (scrimmage) earns a stamp — an official game
+                needs no badge, the same convention the passport game log uses. */}
+            {game.game_type === 'scrimmage' && <InkBadge label="Scrimmage" tone="neutral" />}
+            {game.home_away && (
+              <span className={TH}>{game.home_away}</span>
+            )}
           </div>
+        )}
 
-          {/* Final score */}
-          {game.our_score != null && game.opponent_score != null && (
-            <div className="flex items-center gap-3">
-              <span className={`px-3 py-1 rounded-lg text-lg font-black ${resultColor}`}>
-                {resultLabel}
-              </span>
-              <div className="text-center">
-                <p className="text-xs text-warm-400 font-medium">FINAL</p>
-                <p className="text-4xl font-black text-warm-900 tabular-nums leading-none">
-                  {game.our_score} – {game.opponent_score}
-                </p>
+        <SectionMasthead
+          title={`vs ${game.opponent_name ?? 'Unknown Opponent'}`}
+          ink="team"
+          actions={
+            game.our_score != null && game.opponent_score != null ? (
+              <div className="flex items-center gap-3">
+                <InkBadge label={resultLabel} tone={resultTone} variant="solid" className="px-2.5 py-1 text-body-lg" />
+                <div className="text-right">
+                  {/* Literal uppercase source text — `getByText(/^FINAL$/)` in
+                      the e2e suite matches DOM text content, not CSS
+                      `text-transform`, so this can't lean on `TH`'s `uppercase`. */}
+                  <p className={TH}>FINAL</p>
+                  <StatReadout
+                    value={`${game.our_score} – ${game.opponent_score}`}
+                    className="text-display leading-none"
+                  />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            ) : undefined
+          }
+        >
+          <div className="flex items-center gap-3 font-annual text-body-sm text-text-secondary">
+            <span className="flex items-center gap-1">
+              <IconCalendar size={14} />
+              {formattedDate}
+            </span>
+            {game.location && (
+              <span className="flex items-center gap-1">
+                <IconMapPin size={14} />
+                {game.location}
+              </span>
+            )}
+          </div>
+        </SectionMasthead>
       </PaperCard>
 
       {/* Batting */}
       {batting.length > 0 && (
-        <PaperCard className="overflow-hidden" data-testid="batting-table">
-          <div className="px-5 py-3 border-b border-warm-100">
-            <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Batting</h2>
+        <PaperCard className="overflow-hidden p-0" data-testid="batting-table">
+          <div className="px-5 pb-3 pt-4">
+            <Eyebrow ink="team">Batting</Eyebrow>
+            <HairlineRule ink="team" weight={2} className="mt-2 w-10" />
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full border-collapse text-xs">
               <thead>
-                <tr className="border-b border-warm-100 bg-warm-50/60">
-                  <th className="text-left px-4 py-2.5 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Player</th>
+                <tr className="border-b-[1.5px] border-grade-plus/60 bg-[var(--paper-canvas)]">
+                  <th scope="col" className={`sticky left-0 min-w-[140px] bg-[var(--paper-canvas)] px-4 py-2.5 text-left ${TH}`}>
+                    Player
+                  </th>
                   {['AB','R','H','2B','3B','HR','RBI','BB','K','SB','CS','HBP','SAC','SF','LOB'].map((h) => (
-                    <th key={h} className="text-center px-2 py-2.5 font-semibold text-warm-500 min-w-[36px]">{h}</th>
+                    <th key={h} scope="col" className={`min-w-[36px] px-2 py-2.5 ${TH}`}>{h}</th>
                   ))}
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[48px]">AVG</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[48px]">OBP</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[48px]">SLG</th>
+                  <th scope="col" className={`min-w-[48px] px-3 py-2.5 ${TH}`}>AVG</th>
+                  <th scope="col" className={`min-w-[48px] px-3 py-2.5 ${TH}`}>OBP</th>
+                  <th scope="col" className={`min-w-[48px] px-3 py-2.5 ${TH}`}>SLG</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-warm-50">
+              <tbody className="divide-y divide-[color:var(--hairline)]">
                 {batting.map((row) => (
-                  <tr key={row.id} className="hover:bg-warm-50/40 transition-colors">
-                    <td className="px-4 py-2.5 sticky left-0 bg-cream-50/92 font-medium text-warm-800">
+                  <tr key={row.id} className="hover:bg-[color:var(--paper-canvas)]">
+                    <td className="sticky left-0 bg-[var(--paper)] px-4 py-2.5 font-annual text-body-sm font-medium text-text-primary">
                       {row.player ? (
-                        <span>
+                        <span className="inline-flex items-center gap-1.5">
                           {row.player.first_name?.[0]}. {row.player.last_name}
                           {row.player.primary_position && (
-                            <span className="ml-1 text-eyebrow text-warm-400">{row.player.primary_position}</span>
+                            <PositionChip label={row.player.primary_position} size="sm" />
                           )}
                         </span>
-                      ) : '—'}
+                      ) : EMPTY_STAT}
                     </td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.ab)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.r)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums font-semibold">{fmtStat(row.h)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.doubles)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.triples)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.hr)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.rbi)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.bb)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.k)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.sb)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.cs)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.hbp)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.sac)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.sf)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.lob)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-700">{formatAvg(row.avg)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{formatAvg(row.obp)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{formatAvg(row.slg)}</td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.ab)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.r)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.h)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.doubles)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.triples)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.hr)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.rbi)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.bb)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.k)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.sb)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.cs)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.hbp)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.sac)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.sf)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.lob)} /></td>
+                    <td className={TD_RATE}><StatReadout value={formatAvg(row.avg)} /></td>
+                    <td className={TD_RATE}><StatReadout value={formatAvg(row.obp)} /></td>
+                    <td className={TD_RATE}><StatReadout value={formatAvg(row.slg)} /></td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="batting-totals-row">
-                  <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.ab}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.r}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums font-bold">{totals.h}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.doubles}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.triples}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.hr}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.rbi}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.bb}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.k}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.sb}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.cs}</td>
+                <tr className="border-t-2 border-grade-plus/60 bg-[var(--paper-canvas)]" data-testid="batting-totals-row">
+                  <td className={`sticky left-0 bg-[var(--paper-canvas)] px-4 py-2.5 ${TH} text-text-primary`}>TOTALS</td>
+                  <td className={TD_STAT}><StatReadout value={totals.ab} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.r} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.h} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.doubles} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.triples} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.hr} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.rbi} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.bb} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.k} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.sb} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.cs} className="font-semibold" /></td>
                   <td colSpan={1} />
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.sac}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.sf}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{totals.lob}</td>
-                  <td className="px-3 py-2.5 text-center font-mono font-bold">{teamAvg}</td>
+                  <td className={TD_STAT}><StatReadout value={totals.sac} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.sf} className="font-semibold" /></td>
+                  <td className={TD_STAT}><StatReadout value={totals.lob} className="font-semibold" /></td>
+                  <td className={TD_RATE}><StatReadout value={teamAvg} className="font-semibold" /></td>
                   <td colSpan={2} />
                 </tr>
               </tfoot>
@@ -212,51 +266,45 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Pitching */}
       {pitching.length > 0 && (
-        <PaperCard className="overflow-hidden" data-testid="pitching-table">
-          <div className="px-5 py-3 border-b border-warm-100">
-            <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Pitching</h2>
+        <PaperCard className="overflow-hidden p-0" data-testid="pitching-table">
+          <div className="px-5 pb-3 pt-4">
+            <Eyebrow ink="team">Pitching</Eyebrow>
+            <HairlineRule ink="team" weight={2} className="mt-2 w-10" />
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full border-collapse text-xs">
               <thead>
-                <tr className="border-b border-warm-100 bg-warm-50/60">
-                  <th className="text-left px-4 py-2.5 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Pitcher</th>
+                <tr className="border-b-[1.5px] border-grade-plus/60 bg-[var(--paper-canvas)]">
+                  <th scope="col" className={`sticky left-0 min-w-[140px] bg-[var(--paper-canvas)] px-4 py-2.5 text-left ${TH}`}>
+                    Pitcher
+                  </th>
                   {['IP','H','R','ER','BB','K','HR','PC'].map((h) => (
-                    <th key={h} className="text-center px-2 py-2.5 font-semibold text-warm-500 min-w-[40px]">{h}</th>
+                    <th key={h} scope="col" className={`min-w-[40px] px-2 py-2.5 ${TH}`}>{h}</th>
                   ))}
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[52px]">ERA</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[52px]">WHIP</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[40px]">Dec</th>
+                  <th scope="col" className={`min-w-[52px] px-3 py-2.5 ${TH}`}>ERA</th>
+                  <th scope="col" className={`min-w-[52px] px-3 py-2.5 ${TH}`}>WHIP</th>
+                  <th scope="col" className={`min-w-[40px] px-3 py-2.5 ${TH}`}>Dec</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-warm-50">
+              <tbody className="divide-y divide-[color:var(--hairline)]">
                 {pitching.map((row) => (
-                  <tr key={row.id} className="hover:bg-warm-50/40 transition-colors">
-                    <td className="px-4 py-2.5 sticky left-0 bg-cream-50/92 font-medium text-warm-800">
-                      {row.player ? `${row.player.first_name?.[0]}. ${row.player.last_name}` : '—'}
+                  <tr key={row.id} className="hover:bg-[color:var(--paper-canvas)]">
+                    <td className="sticky left-0 bg-[var(--paper)] px-4 py-2.5 font-annual text-body-sm font-medium text-text-primary">
+                      {row.player ? `${row.player.first_name?.[0]}. ${row.player.last_name}` : EMPTY_STAT}
                     </td>
-                    <td className="px-2 py-2.5 text-center font-mono tabular-nums">{fmtIP(row.ip)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.h)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.r)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.er)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.bb)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums font-semibold">{fmtStat(row.k)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{fmtStat(row.hr)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums text-warm-500">{fmtStat(row.pitch_count)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-700">{formatEra(row.era)}</td>
-                    <td className="px-3 py-2.5 text-center font-mono text-warm-500">{formatWhip(row.whip)}</td>
-                    <td className="px-3 py-2.5 text-center">
+                    <td className={TD_STAT}><StatReadout value={fmtIP(row.ip)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.h)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.r)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.er)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.bb)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.k)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.hr)} /></td>
+                    <td className={TD_STAT}><StatReadout value={fmtStat(row.pitch_count)} /></td>
+                    <td className={TD_RATE}><StatReadout value={formatEra(row.era)} /></td>
+                    <td className={TD_RATE}><StatReadout value={formatWhip(row.whip)} /></td>
+                    <td className={TD_RATE}>
                       {row.result && (
-                        <span
-                          className={`px-1.5 py-0.5 rounded font-bold text-eyebrow ${
-                            row.result === 'W' ? 'bg-primary-100 text-primary-700' :
-                            row.result === 'L' ? 'bg-red-100 text-red-700' :
-                            row.result === 'S' ? 'bg-blue-100 text-blue-700' :
-                            'bg-warm-100 text-warm-500'
-                          }`}
-                        >
-                          {row.result}
-                        </span>
+                        <InkBadge label={row.result} tone={decisionTone(row.result)} />
                       )}
                     </td>
                   </tr>
@@ -264,18 +312,18 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
               </tbody>
               {pitching.length > 1 && (
                 <tfoot>
-                  <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="pitching-totals-row">
-                    <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
-                    <td className="px-2 py-2.5 text-center font-mono tabular-nums">{fmtIP(pitchTotals.ip)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchTotals.h}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchTotals.r}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchTotals.er}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchTotals.bb}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums font-bold">{pitchTotals.k}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchTotals.hr}</td>
+                  <tr className="border-t-2 border-grade-plus/60 bg-[var(--paper-canvas)]" data-testid="pitching-totals-row">
+                    <td className={`sticky left-0 bg-[var(--paper-canvas)] px-4 py-2.5 ${TH} text-text-primary`}>TOTALS</td>
+                    <td className={TD_STAT}><StatReadout value={fmtIP(pitchTotals.ip)} className="font-semibold" /></td>
+                    <td className={TD_STAT}><StatReadout value={pitchTotals.h} className="font-semibold" /></td>
+                    <td className={TD_STAT}><StatReadout value={pitchTotals.r} className="font-semibold" /></td>
+                    <td className={TD_STAT}><StatReadout value={pitchTotals.er} className="font-semibold" /></td>
+                    <td className={TD_STAT}><StatReadout value={pitchTotals.bb} className="font-semibold" /></td>
+                    <td className={TD_STAT}><StatReadout value={pitchTotals.k} className="font-semibold" /></td>
+                    <td className={TD_STAT}><StatReadout value={pitchTotals.hr} className="font-semibold" /></td>
                     <td colSpan={1} />
-                    <td className="px-3 py-2.5 text-center font-mono font-bold">{teamERA}</td>
-                    <td className="px-3 py-2.5 text-center font-mono">{teamWHIP}</td>
+                    <td className={TD_RATE}><StatReadout value={teamERA} className="font-semibold" /></td>
+                    <td className={TD_RATE}><StatReadout value={teamWHIP} className="font-semibold" /></td>
                     <td />
                   </tr>
                 </tfoot>
@@ -285,9 +333,9 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
         </PaperCard>
       )}
 
-      {/* Empty states */}
+      {/* Empty states — no yellow warning boxes, an unreleased-first-issue letter. */}
       {batting.length === 0 && pitching.length === 0 && (
-        <EditorsLetter title="No stats recorded for this game yet" />
+        <EditorsLetter ink="team" title="No stats recorded for this game yet" />
       )}
     </div>
   );

@@ -1,20 +1,26 @@
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notFound } from 'next/navigation';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import Link from 'next/link';
 import {
-  IconMapPin,
   IconUsers,
   IconBuilding,
-  IconShield,
-  IconLock,
 } from '@/components/icons';
 import { Metadata } from 'next';
 import Image from 'next/image';
 import { resolveRecruitingViewerAccess } from '@/lib/baseball/recruiting-viewer-access';
+import { cn } from '@/lib/utils';
+import {
+  PaperCard,
+  Masthead,
+  Eyebrow,
+  HairlineRule,
+  InkBadge,
+  EditorsLetter,
+  EmptyIssue,
+  pressableClass,
+} from '@/components/baseball/living-annual';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -49,6 +55,23 @@ function getTeamTypeLabel(teamType: string): string {
     default:
       return teamType;
   }
+}
+
+// Splits a program/team name into the two-line <Masthead> grammar (a lighter
+// "given" line over a bold small-caps "surname" line) — the trailing word
+// (e.g. "Rini University Baseball" -> given "Rini University", surname
+// "BASEBALL") reads as the program masthead's dominant banner line. Single-
+// word names fall back to an empty given line.
+function splitProgramName(name: string): { given: string; surname: string } {
+  const trimmed = name.trim();
+  const lastSpace = trimmed.lastIndexOf(' ');
+  if (lastSpace === -1) {
+    return { given: '', surname: trimmed };
+  }
+  return {
+    given: trimmed.slice(0, lastSpace),
+    surname: trimmed.slice(lastSpace + 1),
+  };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -376,17 +399,40 @@ export default async function TeamProfilePage({ params }: PageProps) {
     state: org?.location_state,
   };
 
+  // Program masthead name — the trailing word (usually "Baseball") reads as
+  // the bold small-caps banner line under the lighter program name. A
+  // single-word team name has no natural split, so the lighter line falls
+  // back to the team type rather than rendering blank.
+  const programName = splitProgramName(team.name);
+  const mastheadGiven = programName.given || getTeamTypeLabel(team.team_type);
+
+  // Quick Facts sidebar — same fields/conditions as before, built as a plain
+  // array so the label/value rows below can map over it (avoids repeating
+  // the same conditional five times).
+  const quickFacts: { label: string; value: string | number }[] = [
+    { label: 'Type', value: getTeamTypeLabel(team.team_type) },
+  ];
+  if (org?.division) quickFacts.push({ label: 'Division', value: org.division });
+  if (org?.conference) quickFacts.push({ label: 'Conference', value: org.conference });
+  if (canViewRoster) quickFacts.push({ label: 'Roster Size', value: sortedRoster.length });
+  if (staff.length > 0) quickFacts.push({ label: 'Coaching Staff', value: staff.length });
+
   return (
-    <div className="min-h-dvh bg-[#FAF6F1]">
+    <div className="min-h-dvh bg-[var(--paper-canvas)]">
       {/* Header */}
-      <div className="bg-cream-50 border-b border-warm-200">
+      <div className="border-b border-[color:var(--hairline)] bg-[var(--paper)]">
         <div className="max-w-[1536px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
-              </div>
-              <span className="font-semibold text-warm-900">Helm</span>
+              <Image
+                src="/helm-baseball-logo.png"
+                alt=""
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+                unoptimized
+              />
+              <span className="font-annual font-semibold text-text-primary">Helm</span>
             </Link>
           </div>
         </div>
@@ -398,97 +444,81 @@ export default async function TeamProfilePage({ params }: PageProps) {
           {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* Team Header */}
-            <Card className="overflow-hidden">
-              <div className="bg-gradient-to-br from-primary-50 to-white p-8 border-b border-warm-200">
-                <div className="flex items-start gap-6">
-                  {org?.logo_url ? (
-                    <Image
-                      src={org.logo_url}
-                      alt={team.name}
-                      width={96}
-                      height={96}
-                      className="w-24 h-24 rounded-lg object-cover border-2 border-white shadow-lg"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-lg bg-primary-600 flex items-center justify-center shadow-lg">
-                      <IconBuilding size={48} className="text-white" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-warm-900 mb-2">
-                      {team.name}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
-                      <Badge variant="success">{getTeamTypeLabel(team.team_type)}</Badge>
-                      {org?.division && (
-                        <Badge variant="secondary">{org.division}</Badge>
-                      )}
-                      {org?.conference && (
-                        <Badge>{org.conference}</Badge>
-                      )}
-                    </div>
-                    {location.city && location.state && (
-                      <div className="flex items-center gap-2 text-warm-600">
-                        <IconMapPin size={16} />
-                        <span className="text-sm">
-                          {location.city}, {location.state}
-                        </span>
-                      </div>
-                    )}
+            <PaperCard registrationTick className="p-8">
+              <div className="flex items-start gap-6">
+                {org?.logo_url ? (
+                  <Image
+                    src={org.logo_url}
+                    alt={team.name}
+                    width={96}
+                    height={96}
+                    className="h-24 w-24 rounded-fw-md border border-[color:var(--hairline)] object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-fw-md border border-[color:var(--hairline)] bg-grade-plus/10">
+                    <IconBuilding size={40} className="text-grade-plus" />
                   </div>
+                )}
+                <div className="flex-1">
+                  <Masthead
+                    given={mastheadGiven}
+                    surname={programName.surname}
+                    dateline={
+                      <Eyebrow
+                        ink="team"
+                        items={[
+                          getTeamTypeLabel(team.team_type),
+                          org?.division,
+                          org?.conference,
+                          location.city && location.state ? `${location.city}, ${location.state}` : null,
+                        ]}
+                      />
+                    }
+                    ink="team"
+                    accentRule
+                  />
                 </div>
               </div>
 
               {(team.description || org?.description) && (
-                <div className="p-6 bg-cream-50">
-                  <h2 className="text-lg font-semibold tracking-tight text-warm-900 mb-3">About</h2>
-                  <p className="text-warm-600 leading-relaxed whitespace-pre-line">
+                <div className="mt-8">
+                  <HairlineRule className="mb-6" />
+                  <Eyebrow as="h2" ink="muted" className="mb-2">About</Eyebrow>
+                  <p className="font-annual text-body-lg leading-relaxed text-text-secondary whitespace-pre-line">
                     {team.description || org?.description}
                   </p>
                 </div>
               )}
-            </Card>
+            </PaperCard>
 
             {/* Roster - gated: sign-in prompt for anon, permission-gated for coaches */}
             {isPublicViewer ? (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-cream-50">
-                  <div className="flex items-center gap-2">
-                    <IconUsers size={20} className="text-primary-600" />
-                    <h2 className="text-lg font-semibold tracking-tight text-warm-900">Roster</h2>
-                  </div>
-                </div>
-                <div className="p-8 text-center">
-                  <div className="text-warm-400 mb-2">
-                    <IconLock size={32} className="mx-auto" />
-                  </div>
-                  <p className="text-warm-600 font-medium">Sign in to view roster</p>
-                  <p className="text-sm text-warm-500 mt-1 mb-4">
-                    Roster details are visible to verified college and JUCO coaches.
-                  </p>
+              <EditorsLetter
+                title="Sign in to view roster"
+                body="Roster details are visible to verified college and JUCO coaches."
+                ink="team"
+                action={
                   <Link
                     href={`/baseball/login?returnTo=${encodeURIComponent(`/baseball/team/${id}`)}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-600 px-5 py-2.5 min-h-[44px] text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-primary-700 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    className="inline-flex items-center justify-center gap-2 rounded-fw-full bg-primary-600 px-5 py-2.5 min-h-[44px] text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-primary-700 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper)]"
                   >
                     Sign in
                   </Link>
-                </div>
-              </Card>
+                }
+              />
             ) : canViewRoster ? (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-cream-50">
-                  <div className="flex items-center justify-between">
+              sortedRoster.length > 0 ? (
+                <PaperCard className="overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-6">
                     <div className="flex items-center gap-2">
-                      <IconUsers size={20} className="text-primary-600" />
-                      <h2 className="text-lg font-semibold tracking-tight text-warm-900">Roster</h2>
+                      <IconUsers size={20} className="text-grade-plus" />
+                      <h2 className="font-annual text-h2 text-text-primary">Roster</h2>
                     </div>
-                    <span className="text-sm text-warm-500">{sortedRoster.length} players</span>
+                    <span className="text-body-sm text-text-tertiary">{sortedRoster.length} players</span>
                   </div>
-                </div>
-                <div className="divide-y divide-warm-100">
-                  {sortedRoster.length > 0 ? (
-                    sortedRoster.map((member) => {
+                  <div className="divide-y divide-[color:var(--hairline)]">
+                    {sortedRoster.map((member) => {
                       const player = member.player!;
                       const isRecruiting = player.recruiting_activated === true;
                       const displayName = formatPlayerName(
@@ -500,9 +530,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                       return (
                         <div
                           key={member.id}
-                          className={`p-4 hover:bg-warm-50 active:bg-warm-100 transition-colors ${
-                            isRecruiting ? 'cursor-pointer' : ''
-                          }`}
+                          className={cn('p-4', isRecruiting && pressableClass({ ink: 'team' }))}
                         >
                           {isRecruiting ? (
                             <Link
@@ -528,51 +556,37 @@ export default async function TeamProfilePage({ params }: PageProps) {
                           )}
                         </div>
                       );
-                    })
-                  ) : (
-                    <div className="p-8 text-center text-warm-500">
-                      No players on the roster yet.
-                    </div>
-                  )}
-                </div>
-              </Card>
+                    })}
+                  </div>
+                </PaperCard>
+              ) : (
+                <EmptyIssue variant="roster" ink="team" />
+              )
             ) : (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-cream-50">
-                  <div className="flex items-center gap-2">
-                    <IconUsers size={20} className="text-primary-600" />
-                    <h2 className="text-lg font-semibold tracking-tight text-warm-900">Roster</h2>
-                  </div>
-                </div>
-                <div className="p-8 text-center">
-                  <div className="text-warm-400 mb-2">
-                    <IconShield size={32} className="mx-auto" />
-                  </div>
-                  <p className="text-warm-600 font-medium">Roster not available</p>
-                  <p className="text-sm text-warm-500 mt-1">
-                    {coach?.coach_type === 'juco'
-                      ? 'JUCO coaches can only view high school team rosters.'
-                      : 'You do not have access to view this team\'s roster.'}
-                  </p>
-                </div>
-              </Card>
+              <EditorsLetter
+                title="Roster not available"
+                body={
+                  coach?.coach_type === 'juco'
+                    ? 'JUCO coaches can only view high school team rosters.'
+                    : "You do not have access to view this team's roster."
+                }
+                ink="team"
+              />
             )}
 
             {/* Coaching Staff */}
             {staff.length > 0 && (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-cream-50">
-                  <div className="flex items-center gap-2">
-                    <IconUsers size={20} className="text-primary-600" />
-                    <h2 className="text-lg font-semibold tracking-tight text-warm-900">Coaching Staff</h2>
-                  </div>
+              <PaperCard className="overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-6">
+                  <IconUsers size={20} className="text-grade-plus" />
+                  <h2 className="font-annual text-h2 text-text-primary">Coaching Staff</h2>
                 </div>
-                <div className="p-6 bg-warm-50">
+                <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {staff.map((member) => (
                       <div
                         key={member.id}
-                        className="bg-cream-50 rounded-lg border border-warm-200 p-4"
+                        className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-4"
                       >
                         <div className="flex items-start gap-4">
                           {member.headshot_url ? (
@@ -592,12 +606,12 @@ export default async function TeamProfilePage({ params }: PageProps) {
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-warm-900 truncate">
+                            <h3 className="font-annual font-semibold text-text-primary truncate">
                               {member.name}
                             </h3>
-                            <p className="text-sm leading-relaxed text-primary-600 mb-2">{member.title}</p>
+                            <p className="text-body-sm leading-relaxed text-grade-plus mb-2">{member.title}</p>
                             {member.bio && (
-                              <p className="text-xs text-warm-600 line-clamp-3">
+                              <p className="text-xs text-text-tertiary line-clamp-3">
                                 {member.bio}
                               </p>
                             )}
@@ -607,21 +621,21 @@ export default async function TeamProfilePage({ params }: PageProps) {
                     ))}
                   </div>
                 </div>
-              </Card>
+              </PaperCard>
             )}
 
             {/* Facilities (College/JUCO only) */}
             {showFacilities && facilities.length > 0 && (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-cream-50">
-                  <h2 className="text-lg font-semibold tracking-tight text-warm-900">Facilities</h2>
+              <PaperCard className="overflow-hidden">
+                <div className="border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-6">
+                  <h2 className="font-annual text-h2 text-text-primary">Facilities</h2>
                 </div>
-                <div className="p-6 bg-warm-50">
+                <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {facilities.map((facility) => (
                       <div
                         key={facility.id}
-                        className="bg-cream-50 rounded-lg border border-warm-200 overflow-hidden"
+                        className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] overflow-hidden"
                       >
                         {facility.image_url ? (
                           <Image
@@ -633,16 +647,16 @@ export default async function TeamProfilePage({ params }: PageProps) {
                             unoptimized
                           />
                         ) : (
-                          <div className="w-full h-40 bg-warm-100 flex items-center justify-center">
-                            <IconBuilding size={32} className="text-warm-400" />
+                          <div className="w-full h-40 flex items-center justify-center bg-[var(--paper)]">
+                            <IconBuilding size={32} className="text-text-tertiary" />
                           </div>
                         )}
                         <div className="p-4">
-                          <h3 className="font-semibold text-warm-900 mb-1">
+                          <h3 className="font-annual font-semibold text-text-primary mb-1">
                             {facility.name}
                           </h3>
                           {facility.description && (
-                            <p className="text-sm leading-relaxed text-warm-600 line-clamp-2">
+                            <p className="text-body-sm leading-relaxed text-text-secondary line-clamp-2">
                               {facility.description}
                             </p>
                           )}
@@ -651,14 +665,14 @@ export default async function TeamProfilePage({ params }: PageProps) {
                     ))}
                   </div>
                 </div>
-              </Card>
+              </PaperCard>
             )}
 
             {/* Team Facilities Image - from organization if available */}
             {showFacilities && facilities.length > 0 && facilities[0]?.image_url && (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-warm-200 bg-cream-50">
-                  <h2 className="text-lg font-semibold tracking-tight text-warm-900">Team Facility</h2>
+              <PaperCard className="overflow-hidden">
+                <div className="border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-6">
+                  <h2 className="font-annual text-h2 text-text-primary">Team Facility</h2>
                 </div>
                 <Image
                   src={facilities[0]?.image_url ?? ''}
@@ -668,96 +682,55 @@ export default async function TeamProfilePage({ params }: PageProps) {
                   className="w-full h-64 object-cover"
                   unoptimized
                 />
-              </Card>
+              </PaperCard>
             )}
           </div>
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Quick Facts */}
-            <Card className="p-6 bg-gradient-to-br from-primary-50 to-white">
-              <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
-                Quick Facts
-              </h3>
+            <PaperCard className="p-6">
+              <Eyebrow as="h3" ink="muted" className="mb-4">Quick Facts</Eyebrow>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm leading-relaxed text-warm-600">Type</span>
-                  <span className="text-sm font-semibold text-warm-900">
-                    {getTeamTypeLabel(team.team_type)}
-                  </span>
-                </div>
-                {org?.division && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-warm-600">Division</span>
-                    <span className="text-sm font-semibold text-warm-900">
-                      {org.division}
-                    </span>
+                {quickFacts.map((fact) => (
+                  <div key={fact.label} className="flex items-center justify-between gap-4">
+                    <span className="text-body-sm text-text-secondary">{fact.label}</span>
+                    <span className="text-body-sm font-semibold text-text-primary">{fact.value}</span>
                   </div>
-                )}
-                {org?.conference && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-warm-600">Conference</span>
-                    <span className="text-sm font-semibold text-warm-900">
-                      {org.conference}
-                    </span>
-                  </div>
-                )}
-                {canViewRoster && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-warm-600">Roster Size</span>
-                    <span className="text-sm font-semibold text-warm-900">
-                      {sortedRoster.length}
-                    </span>
-                  </div>
-                )}
-                {staff.length > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-warm-600">Coaching Staff</span>
-                    <span className="text-sm font-semibold text-warm-900">
-                      {staff.length}
-                    </span>
-                  </div>
-                )}
+                ))}
               </div>
-            </Card>
+            </PaperCard>
 
             {/* Contact */}
             {org?.website_url && (
-              <Card className="p-6">
-                <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
-                  Contact
-                </h3>
+              <PaperCard className="p-6">
+                <Eyebrow as="h3" ink="muted" className="mb-4">Contact</Eyebrow>
                 <a
                   href={org.website_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm leading-relaxed text-primary-600 hover:text-primary-700 hover:underline break-all"
+                  className="text-body-sm text-grade-plus hover:text-grade-plus/80 hover:underline break-all"
                 >
                   Visit Website
                 </a>
-              </Card>
+              </PaperCard>
             )}
 
             {/* Legend - Only show when roster is visible */}
             {canViewRoster && (
-              <Card className="p-6">
-                <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
-                  Roster Legend
-                </h3>
+              <PaperCard className="p-6">
+                <Eyebrow as="h3" ink="muted" className="mb-4">Roster Legend</Eyebrow>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <Badge variant="success" className="flex items-center gap-1">
-                      <IconShield size={12} />
-                      Verified
-                    </Badge>
-                    <span className="text-xs text-warm-600">Recruiting active</span>
+                    <InkBadge label="Verified" tone="team" />
+                    <span className="text-xs text-text-tertiary">Recruiting active</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-warm-400">J.S****</span>
-                    <span className="text-xs text-warm-600">Privacy protected</span>
+                    <span className="text-sm font-medium text-text-tertiary">J.S****</span>
+                    <span className="text-xs text-text-tertiary">Privacy protected</span>
                   </div>
                 </div>
-              </Card>
+              </PaperCard>
             )}
           </div>
         </div>
@@ -803,8 +776,8 @@ function RosterPlayerRow({
           unoptimized
         />
       ) : (
-        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center">
-          <span className="text-lg font-semibold text-warm-400">
+        <div className="w-12 h-12 rounded-full border border-[color:var(--hairline)] bg-[var(--paper-canvas)] flex items-center justify-center">
+          <span className="text-lg font-semibold text-text-tertiary">
             {player.first_name?.charAt(0) || '?'}
           </span>
         </div>
@@ -813,38 +786,24 @@ function RosterPlayerRow({
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={`font-semibold truncate ${isRecruiting ? 'text-warm-900' : 'text-warm-400'}`}>
+          <span className={cn('font-annual font-semibold truncate', isRecruiting ? 'text-text-primary' : 'text-text-tertiary')}>
             {displayName}
           </span>
-          {isRecruiting && (
-            <Badge variant="success" className="flex items-center gap-1 text-xs">
-              <IconShield size={10} />
-              Verified
-            </Badge>
-          )}
+          {isRecruiting && <InkBadge label="Verified" tone="team" />}
         </div>
-        <div className="flex items-center gap-2 text-sm text-warm-500">
-          {member.position || player.primary_position ? (
-            <span>{member.position || player.primary_position}</span>
-          ) : null}
-          {player.grad_year && (
-            <>
-              <span className="text-warm-300">•</span>
-              <span>Class of {player.grad_year}</span>
-            </>
-          )}
-          {isRecruiting && player.city && player.state && (
-            <>
-              <span className="text-warm-300">•</span>
-              <span>{player.city}, {player.state}</span>
-            </>
-          )}
-        </div>
+        <Eyebrow
+          ink="muted"
+          items={[
+            member.position || player.primary_position,
+            player.grad_year ? `Class of ${player.grad_year}` : null,
+            isRecruiting && player.city && player.state ? `${player.city}, ${player.state}` : null,
+          ]}
+        />
       </div>
 
       {/* Jersey Number */}
       {member.jersey_number && (
-        <div className="text-lg font-bold text-warm-300">
+        <div className="font-annual text-lg font-bold tabular-nums text-text-tertiary">
           #{member.jersey_number}
         </div>
       )}

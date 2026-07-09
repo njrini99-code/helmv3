@@ -26,7 +26,7 @@ import {
   IconSchool,
   IconBaseball,
 } from '@/components/icons';
-import { Eyebrow, Reveal, CommitSeal, LiveDot, DUR, EASE_GLIDE, EASE_PRESS } from '@/components/baseball/living-annual';
+import { Eyebrow, Reveal, CommitSeal, LiveDot, InkNotice, DUR, EASE_GLIDE, EASE_PRESS } from '@/components/baseball/living-annual';
 import { EntryField, type SceneStage } from '@/components/baseball/scenes/EntryField';
 import { resolveSceneVariant, type SceneVariant } from '@/lib/entry/greeting';
 import { flFraunces } from '@/components/marketing/first-light/fonts';
@@ -620,13 +620,13 @@ export default function BaseballCoachOnboarding() {
                   </Reveal>
 
                   {existingUser && error && (
-                    <m.p
+                    <m.div
                       initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-center text-sm text-red-700"
+                      className="mt-4"
                     >
-                      {error}
-                    </m.p>
+                      <InkNotice>{error}</InkNotice>
+                    </m.div>
                   )}
                 </EditorialFrame>
               </m.div>
@@ -735,13 +735,13 @@ export default function BaseballCoachOnboarding() {
                   </Reveal>
 
                   {error && (
-                    <m.p
+                    <m.div
                       initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-center text-sm text-red-700"
+                      className="mt-4"
                     >
-                      {error}
-                    </m.p>
+                      <InkNotice>{error}</InkNotice>
+                    </m.div>
                   )}
                 </EditorialFrame>
               </m.div>
@@ -830,13 +830,13 @@ export default function BaseballCoachOnboarding() {
                   </Reveal>
 
                   {error && (
-                    <m.p
+                    <m.div
                       initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-center text-sm text-red-700"
+                      className="mt-4"
                     >
-                      {error}
-                    </m.p>
+                      <InkNotice>{error}</InkNotice>
+                    </m.div>
                   )}
                 </EditorialFrame>
               </m.div>
@@ -870,9 +870,7 @@ export default function BaseballCoachOnboarding() {
                       <h1 className="font-annual text-2xl font-medium text-text-primary sm:text-3xl">
                         We hit a snag
                       </h1>
-                      <p className="rounded-fw-sm border border-red-200/70 bg-red-50/60 px-4 py-3 text-sm text-red-700">
-                        {error}
-                      </p>
+                      <InkNotice>{error}</InkNotice>
                       <Button
                         variant="secondary"
                         onClick={() => { setError(''); goBack(existingUser ? 'program' : 'account'); }}

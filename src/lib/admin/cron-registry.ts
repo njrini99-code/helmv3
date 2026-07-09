@@ -27,6 +27,7 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY },
   { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY },
   { jobType: 'admin-digest', path: '/api/cron/admin-digest', cadenceMinutes: DAILY },
+  { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 5 },
 ] as const;
 
 export type CronBoardStatus = 'ok' | 'overdue' | 'never-ran' | 'failed';

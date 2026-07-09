@@ -194,7 +194,7 @@ export function SeasonStatsTable({
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-warm-100 bg-warm-50/80">
-                  <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">
+                  <th scope="col" className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">
                     Player
                   </th>
                   {columns.map((col) => {
@@ -202,19 +202,34 @@ export function SeasonStatsTable({
                     return (
                       <th
                         key={col.key as string}
-                        onClick={() => handleSort(col.key as string, col.desc !== false)}
-                        className={`text-center px-2 py-3 font-semibold cursor-pointer select-none min-w-[44px] transition-colors ${
-                          isActive
-                            ? 'text-primary-600 bg-primary-50/50'
-                            : 'text-warm-500 hover:text-warm-700'
-                        }`}
+                        scope="col"
+                        aria-sort={isActive ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
+                        className="relative text-center px-0 py-0 font-semibold min-w-[44px]"
                       >
-                        <span className="flex items-center justify-center gap-0.5">
+                        {/* Header-sized sort control — the Button primitive's fixed min-height
+                            would not fit a dense table heading row (matches SortHeader in
+                            PlayerProfileClient.tsx). A real <button> so the sort is keyboard-
+                            operable (Tab + Enter/Space) with a visible focus ring, unlike the
+                            old onClick-on-<th>. */}
+                        {/* eslint-disable-next-line helm/no-raw-button */}
+                        <button
+                          type="button"
+                          onClick={() => handleSort(col.key as string, col.desc !== false)}
+                          className={`flex w-full cursor-pointer select-none items-center justify-center gap-0.5 rounded-md px-2 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus focus-visible:ring-offset-1 ${
+                            isActive ? 'text-grade-plus' : 'text-warm-500 hover:text-warm-700'
+                          }`}
+                        >
                           {col.label}
                           {isActive && (
-                            <span className="text-eyebrow">{sortDir === 'desc' ? '↓' : '↑'}</span>
+                            <span aria-hidden className="text-eyebrow">{sortDir === 'desc' ? '↓' : '↑'}</span>
                           )}
-                        </span>
+                        </button>
+                        {/* RuledStatLine's signature baseline — a green rule marks the active
+                            sort column (spec §4.2 rule 4: active/selected states are green),
+                            replacing the old soft primary-tint fill. */}
+                        {isActive && (
+                          <span aria-hidden className="absolute inset-x-2 bottom-0 h-[1.5px] bg-grade-plus" />
+                        )}
                       </th>
                     );
                   })}
@@ -233,7 +248,7 @@ export function SeasonStatsTable({
                           href={`/baseball/dashboard/players/${s.player_id}/stats`}
                           className="flex items-center gap-2 group"
                         >
-                          <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-eyebrow font-bold text-warm-500 shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-eyebrow font-annual font-bold tabular-nums text-warm-500 shrink-0">
                             {i + 1}
                           </div>
                           <div>
@@ -255,7 +270,9 @@ export function SeasonStatsTable({
                             ? String(numVal)
                             : '—';
                         const isActive = sortField === (col.key as string);
-                        // Highlight notable stats
+                        // Highlight notable stats — StatReadout's leader treatment: the
+                        // number itself carries the green, not a background fill (spec
+                        // §4.2 rule 3: "leaders/bests get green").
                         const isHighlight =
                           (col.key === 'avg' && (rawVal as number) >= 0.3) ||
                           (col.key === 'ops' && (rawVal as number) >= 0.9) ||
@@ -265,9 +282,9 @@ export function SeasonStatsTable({
                         return (
                           <td
                             key={col.key as string}
-                            className={`px-2 py-2.5 text-center tabular-nums ${
-                              isActive ? 'bg-primary-50/30 font-semibold text-primary-900' : ''
-                            } ${isHighlight ? 'text-primary-700 font-semibold' : 'text-warm-700'}`}
+                            className={`px-2 py-2.5 text-center font-annual tabular-nums ${isActive ? 'font-semibold' : ''} ${
+                              isHighlight ? 'text-grade-plus font-semibold' : 'text-warm-700'
+                            }`}
                           >
                             {display}
                           </td>

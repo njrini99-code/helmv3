@@ -20,6 +20,7 @@
  */
 import { useMemo } from 'react';
 import { ClimbArc } from '@/components/baseball/living-annual';
+import { formatDate } from '@/lib/baseball/format-date';
 import type { BaseballPlayerStats } from '@/lib/types';
 
 interface TrendChartProps {
@@ -34,7 +35,9 @@ export function TrendChart({ stats, className }: TrendChartProps) {
         .filter((s) => s.at_bats > 0)
         .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
         .map((s) => ({
-          label: new Date(s.session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          // relative:false — a chart axis wants uniform short dates on every
+          // point, not "Today" mixed in among "Jul 5" for the newest one.
+          label: formatDate(s.session_date, { relative: false }),
           value: s.hits / s.at_bats,
         })),
     [stats],

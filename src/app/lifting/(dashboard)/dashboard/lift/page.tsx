@@ -23,6 +23,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { PlayerLiftHomeClient } from '@/components/lifting/players/PlayerLiftHomeClient';
+import { resolveLiftingAthleteTimezone } from '@/lib/lifting/resolve-athlete-timezone';
+import { todayIsoInTz, isoMinusDays } from '@/lib/baseball/daily-contract/contract-day';
 import type {
   HelmLiftingSessionRow,
   HelmLiftingSessionStatus,
@@ -100,15 +102,15 @@ async function resolveAthleteId(userId: string): Promise<string | null> {
 const OPEN_STATUSES: HelmLiftingSessionStatus[] = ['assigned', 'started', 'modified'];
 const RECENT_DAYS = 14;
 
-async function fetchPlayerSessions(athleteId: string): Promise<{
+async function fetchPlayerSessions(athleteId: string, today: string): Promise<{
   upcoming: HelmLiftingSessionRow[];
   recent: HelmLiftingSessionRow[];
 }> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
-  const cutoff = new Date(Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  // `today` is the caller's already-timezone-resolved local day (see
+  // PlayerLiftPage below) — never re-derive it from server UTC here, or the
+  // upcoming/recent split silently reverts to the server's day boundary.
+  const cutoff = isoMinusDays(today, RECENT_DAYS);
 
   // Today + future and overdue-but-still-open are fetched as SEPARATE bounded
   // queries (each with its own .limit()), not one combined .or(...) query
@@ -161,9 +163,8 @@ async function fetchPlayerSessions(athleteId: string): Promise<{
   };
 }
 
-async function checkReadinessToday(athleteId: string): Promise<boolean> {
+async function checkReadinessToday(athleteId: string, today: string): Promise<boolean> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
 
   const { data } = await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
     .select('id')
@@ -190,11 +191,20 @@ export default async function PlayerLiftPage() {
 
   const athleteId = await resolveAthleteId(user.id);
 
+  // Resolve the athlete's own team-local "today" (session scheduled_date /
+  // checkin_date bucketing) once — mirrors the baseball Daily Contract's
+  // resolveTeamTimezone + todayIsoInTz idiom so a late-night athlete isn't
+  // shown tomorrow's session as "today's lift" or told they haven't checked
+  // in when they already have (server UTC day disagrees with their own).
+  const today = athleteId
+    ? todayIsoInTz(await resolveLiftingAthleteTimezone(athleteId))
+    : null;
+
   // No athlete row — show empty state via client with empty arrays
-  const [sessions, readinessSubmittedToday] = athleteId
+  const [sessions, readinessSubmittedToday] = athleteId && today
     ? await Promise.all([
-        fetchPlayerSessions(athleteId),
-        checkReadinessToday(athleteId),
+        fetchPlayerSessions(athleteId, today),
+        checkReadinessToday(athleteId, today),
       ])
     : [{ upcoming: [], recent: [] }, false];
 

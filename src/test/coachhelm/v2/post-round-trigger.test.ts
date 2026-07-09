@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createFakeSupabase } from '@/test/fixtures/fake-supabase';
 
-// Mock the underlying trigger before importing postRoundTrigger.
+// Mock the underlying trigger before importing postRoundTrigger. postRoundTrigger
+// now goes through the server-only bridge (never the 'use server' insights.ts
+// export surface — see src/lib/coachhelm/v2/trigger-insights-bridge.ts).
 const mockTrigger = vi.fn();
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/lib/coachhelm/v2/trigger-insights-bridge', () => ({
   triggerPlayerInsightsAfterRound: (...args: unknown[]) => mockTrigger(...args),
 }));
 

@@ -2,18 +2,19 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Circle, Flag, LayoutGrid, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { HelmLiftingSport } from '@/lib/types/helm-lifting';
 
 interface SportTab {
   sport: HelmLiftingSport;
   label: string;
-  emoji: string;
+  icon: LucideIcon;
 }
 
 const SPORT_TABS: SportTab[] = [
-  { sport: 'baseball', label: 'Baseball', emoji: '⚾' },
-  { sport: 'golf', label: 'Golf', emoji: '⛳' },
+  { sport: 'baseball', label: 'Baseball', icon: Circle },
+  { sport: 'golf', label: 'Golf', icon: Flag },
 ];
 
 interface SportTabBarProps {
@@ -26,10 +27,11 @@ interface SportTabBarProps {
 /**
  * Horizontal sport-filter tab bar shown on the Lab dashboard home.
  * Renders an "All" tab + one tab per sport the coach has assignments for.
+ * Icons + small-caps labels — no decorative emoji glyphs.
  */
 export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
-  const tabs: Array<{ sport: HelmLiftingSport | null; label: string; emoji: string }> = [
-    { sport: null, label: 'All sports', emoji: '🏋️' },
+  const tabs: Array<{ sport: HelmLiftingSport | null; label: string; icon: LucideIcon }> = [
+    { sport: null, label: 'All sports', icon: LayoutGrid },
     ...SPORT_TABS,
   ];
 
@@ -42,6 +44,7 @@ export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
       {tabs.map((tab) => {
         const isActive = activeSport === tab.sport;
         const href = tab.sport ? `${baseHref}?sport=${tab.sport}` : baseHref;
+        const Icon = tab.icon;
 
         return (
           <Link
@@ -50,7 +53,7 @@ export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
             role="tab"
             aria-selected={isActive}
             className={cn(
-              'relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 min-h-[40px] select-none',
+              'relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wide transition-all duration-200 min-h-[40px] select-none',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
               isActive
                 ? 'text-primary-700'
@@ -64,7 +67,7 @@ export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               />
             )}
-            <span className="relative z-10" aria-hidden="true">{tab.emoji}</span>
+            <Icon className="relative z-10 h-3.5 w-3.5" aria-hidden="true" />
             <span className="relative z-10">{tab.label}</span>
           </Link>
         );

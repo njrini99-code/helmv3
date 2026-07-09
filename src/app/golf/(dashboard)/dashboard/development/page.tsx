@@ -6,11 +6,10 @@ import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
-import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
-import { runFocusAreaProgressForPlayers } from '@/app/golf/actions/v3/focus-area-progress';
+import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
+import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
-import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 
 export const metadata: Metadata = {
@@ -274,11 +273,19 @@ export default async function DevelopmentPlansPage({
   // RLS scopes coach visibility to assigned + shared goals; we just compose
   // each goal with its live standing snapshot (null when the cron hasn't
   // populated a row for the metric yet). Coaches do not create/accept here.
+  // Batched: one goals query (loadActiveGoalsForPlayers) + one chunked standing
+  // read (loadPlayersStandingMap) for the WHOLE roster, instead of N per-player
+  // round trips of each.
+  const [goalsByPlayerMap, standingByPlayer] = await Promise.all([
+    loadActiveGoalsForPlayers(playerIds),
+    loadPlayersStandingMap(playerIds),
+  ]);
   const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
-  await Promise.all(playerIds.map(async (pid) => {
-    const [g, sm] = await Promise.all([loadActiveGoals(pid), loadPlayerStandingMap(pid)]);
+  for (const pid of playerIds) {
+    const g = goalsByPlayerMap.get(pid) ?? [];
+    const sm = standingByPlayer.get(pid) ?? new Map();
     goalsByPlayer[pid] = g.map(goal => ({ goal, standing: sm.get(goal.metric_id) ?? null }));
-  }));
+  }
 
   // Owning-player display names for the coach goal-card provenance labels.
   const playerNameById: Record<string, string> = {};

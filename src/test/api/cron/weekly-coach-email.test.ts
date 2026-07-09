@@ -68,10 +68,21 @@ function buildSupabase(cfg: MockConfig) {
   return {
     from: vi.fn((table: string): AnyBuilder => {
       if (table === 'golf_teams') {
+        // Mirrors the .range() idiom in dashboard-data.test.ts:68 — the route
+        // now paginates via fetchAllRowsResult, which awaits
+        // .select().order().range(from, to) directly rather than the
+        // builder itself. .range() is the terminal call and resolves
+        // { data, error } (sliced, so pagination truncation is exercised
+        // for real if a test ever exceeds one page).
         const builder: AnyBuilder = {
           select: vi.fn(() => builder),
-          then: (onFulfilled?: (v: unknown) => unknown) =>
-            Promise.resolve({ data: cfg.teamIds.map((id) => ({ id })), error: null }).then(onFulfilled),
+          order: vi.fn(() => builder),
+          range: vi.fn((from: number, to: number) =>
+            Promise.resolve({
+              data: cfg.teamIds.slice(from, to + 1).map((id) => ({ id })),
+              error: null,
+            }),
+          ),
         };
         return builder;
       }
@@ -214,6 +225,12 @@ describe('GET /api/cron/v3/weekly-coach-email — opt-out gate', () => {
     expect(body.skipped_opted_out).toBe(0);
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
     expect(sendEmailMock.mock.calls[0]?.[0]?.to).toBe('c1@example.com');
+    // Idempotency: weekly-coach-email:<coachId>:<isoWeekStartKey>, so a
+    // retry within the same ISO week dedupes via Resend's Idempotency-Key
+    // instead of re-emailing the coach.
+    expect(sendEmailMock.mock.calls[0]?.[0]?.idempotencyKey).toMatch(
+      /^weekly-coach-email:c1:\d{4}-\d{2}-\d{2}$/,
+    );
   });
 
   it('sends when the philosophy row explicitly opts in (email_digest_enabled=true)', async () => {
@@ -251,5 +268,10 @@ describe('GET /api/cron/v3/weekly-coach-email — opt-out gate', () => {
     expect(body.skipped_opted_out).toBe(1);
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
     expect(sendEmailMock.mock.calls[0]?.[0]?.to).toBe('c2@example.com');
+    // The opted-out coach (c1) never reaches sendEmail at all, so the only
+    // call's idempotencyKey must key off the opted-in coach (c2).
+    expect(sendEmailMock.mock.calls[0]?.[0]?.idempotencyKey).toMatch(
+      /^weekly-coach-email:c2:\d{4}-\d{2}-\d{2}$/,
+    );
   });
 });

@@ -15,6 +15,7 @@ import {
 } from '@/components/icons';
 import type { BaseballCoachInsight } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/sonner';
 import { dismissInsight, markInsightAddressed } from '@/app/baseball/actions/insights';
 
 interface PlayerInsightsPanelProps {
@@ -41,6 +42,7 @@ const priorityColors: Record<string, { bg: string; border: string; text: string;
 export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsightsPanelProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
+  const { addToast } = useToast();
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
   const [pendingAction, setPendingAction] = useState<{ id: string; action: 'dismiss' | 'address' } | null>(null);
   const [, startTransition] = useTransition();
@@ -49,9 +51,17 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
     if (pendingAction) return;
     setPendingAction({ id: insightId, action: 'dismiss' });
     startTransition(async () => {
-      await dismissInsight(insightId);
+      const result = await dismissInsight(insightId);
       setPendingAction(null);
-      router.refresh();
+      if (result.success) {
+        router.refresh();
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Could not dismiss insight',
+          description: result.error ?? 'Please try again in a moment.',
+        });
+      }
     });
   }
 
@@ -59,9 +69,17 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
     if (pendingAction) return;
     setPendingAction({ id: insightId, action: 'address' });
     startTransition(async () => {
-      await markInsightAddressed(insightId);
+      const result = await markInsightAddressed(insightId);
       setPendingAction(null);
-      router.refresh();
+      if (result.success) {
+        router.refresh();
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Could not mark insight addressed',
+          description: result.error ?? 'Please try again in a moment.',
+        });
+      }
     });
   }
 

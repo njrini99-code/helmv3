@@ -18,6 +18,7 @@ import {
 import { validatePassword } from '@/lib/auth/password-validation';
 import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
 import { logServerError } from '@/lib/server-error-logger';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 import { DEMO_ENTER_EVENT } from '@/lib/demo/config';
 import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { captureServer } from '@/lib/analytics/posthog-server';
@@ -306,7 +307,7 @@ async function signupActionImpl(
         last_name: lastName || '',
       },
       // Skip email confirmation redirect - user will be auto-confirmed if disabled in Supabase
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/golf/dashboard`,
+      emailRedirectTo: `${getAppBaseUrl()}/golf/dashboard`,
     },
   });
 
@@ -437,7 +438,7 @@ async function requestPasswordResetActionImpl(
   const supabase = await createClient();
 
   await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/golf/reset-password`,
+    redirectTo: `${getAppBaseUrl()}/golf/reset-password`,
   });
 
   // Log password-reset request (fire-and-forget) — closes the golf auth

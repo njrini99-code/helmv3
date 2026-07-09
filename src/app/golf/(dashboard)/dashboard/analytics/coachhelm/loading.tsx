@@ -1,49 +1,112 @@
-import { Shimmer, ShimmerCard } from '@/components/ui/shimmer';
+import { Skeleton, InstrumentPanel, InstrumentCluster } from '@/components/fairway';
+import { fairwayScope } from '@/lib/redesign/flag';
 
+/**
+ * Route Suspense fallback for /golf/dashboard/analytics/coachhelm.
+ *
+ * Shape-matches FairwayEffectiveness's INSTRUMENT COCKPIT (CoachHelmShell's
+ * masthead + persistent sub-nav strip, then a raised focal Readout+Ribbon hero,
+ * a secondary rail of two base instruments — Outcomes / Calibration — a
+ * tertiary 3-up micro-readout row, the pattern-impact + error-mix decks below,
+ * and the "Go deeper" drill-down row) on `fairwayScope` `bg-canvas`. Replaces
+ * the legacy `glass-standard` header + `Shimmer`/`ShimmerCard` tab UI, which
+ * matched neither the redesigned cockpit layout nor its tokens (CLS + a
+ * wrong-chrome flash on mount).
+ */
 export default function Loading() {
   return (
-    <div className="min-h-full">
-      <div className="sticky top-0 z-20 border-b border-warm-200/30 glass-standard pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
-        <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Shimmer className="w-12 h-12 rounded-xl" />
-              <div className="space-y-2">
-                <Shimmer className="h-6 w-48" />
-                <Shimmer className="h-3 w-64" />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Shimmer className="h-9 w-20 rounded-lg" />
-              <Shimmer className="h-9 w-20 rounded-lg" />
-            </div>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 pt-2 md:px-6">
+        {/* Masthead — ViewHeader silhouette (eyebrow + title + description + actions) */}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-8 w-64 max-w-full" />
+            <Skeleton className="h-4 w-56 max-w-full" />
           </div>
+          {/* range Segmented + Refresh action cluster */}
+          <Skeleton className="h-9 w-64 max-w-full rounded-full" />
         </div>
+
+        {/* CoachHelmSubNav strip — Brief · Signals · Players · Effectiveness · Ask */}
+        <nav
+          aria-hidden="true"
+          className="flex w-full items-center gap-1 border-b border-border-subtle"
+        >
+          {[48, 60, 56, 84, 40].map((w, i) => (
+            <div key={i} className="px-3.5 pb-3 pt-2.5">
+              <Skeleton className="h-4" style={{ width: w }} />
+            </div>
+          ))}
+        </nav>
       </div>
 
-      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-8 space-y-8">
-        <div className="flex gap-2 p-1 bg-warm-100/50 rounded-xl w-fit">
-          {[1, 2, 3].map((i) => (
-            <Shimmer key={i} staggerIndex={i} className="h-9 w-28 rounded-lg" />
-          ))}
-        </div>
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6 md:px-6"
+      >
+        <span className="sr-only">Loading effectiveness…</span>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <ShimmerCard key={i} staggerIndex={i} className="rounded-3xl p-6">
-              <div className="space-y-3">
-                <Shimmer className="h-3 w-24" />
-                <Shimmer className="h-8 w-16" />
-                <Shimmer className="h-3 w-32" />
+        {/* The instrument cluster — focal hero, outcomes + calibration rail, tertiary row */}
+        <InstrumentCluster
+          ariaLabel="CoachHelm effectiveness instrument cluster (loading)"
+          tertiaryColumns={3}
+          primary={
+            <InstrumentPanel depth="raised" padding="lg" className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-48" />
+                <Skeleton className="h-16 w-40" />
               </div>
-            </ShimmerCard>
-          ))}
-        </div>
+              <Skeleton className="h-44 w-full rounded-fw-md" />
+            </InstrumentPanel>
+          }
+          secondary={[
+            <InstrumentPanel key="outcomes" depth="base" className="flex h-full flex-col gap-4">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-8 w-full rounded-full" />
+              <Skeleton className="h-4 w-32" />
+            </InstrumentPanel>,
+            <InstrumentPanel key="calibration" depth="base" className="flex h-full flex-col gap-4">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-10 w-20" />
+              <InstrumentPanel depth="inset" padding="sm" className="w-full">
+                <Skeleton className="h-6 w-16" />
+              </InstrumentPanel>
+            </InstrumentPanel>,
+          ]}
+          tertiary={[
+            <InstrumentPanel key="surfaced" depth="base" padding="md" className="h-full">
+              <Skeleton className="h-8 w-16" />
+            </InstrumentPanel>,
+            <InstrumentPanel key="mae" depth="base" padding="md" className="h-full">
+              <Skeleton className="h-8 w-16" />
+            </InstrumentPanel>,
+            <InstrumentPanel key="resolved" depth="base" padding="md" className="h-full">
+              <Skeleton className="h-8 w-16" />
+            </InstrumentPanel>,
+          ]}
+        />
 
-        <ShimmerCard className="rounded-3xl p-6">
-          <Shimmer className="h-5 w-32 mb-4" />
-          <Shimmer className="h-64 w-full rounded-xl" />
-        </ShimmerCard>
+        {/* Pattern impact — diverging tornado deck */}
+        <InstrumentPanel depth="base" padding="lg" className="flex flex-col gap-4">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-40 w-full rounded-fw-md" />
+        </InstrumentPanel>
+
+        {/* Error mix — compact matte read */}
+        <InstrumentPanel depth="base" padding="md" className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-24 w-full rounded-fw-md" />
+        </InstrumentPanel>
+
+        {/* "Go deeper" — quiet secondary drill-down switch */}
+        <div className="flex flex-wrap items-center gap-3 border-t border-border-subtle pt-5">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-8 w-64 max-w-full rounded-full" />
+        </div>
       </div>
     </div>
   );

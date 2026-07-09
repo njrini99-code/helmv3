@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { BaseballGame } from '@/lib/types';
 import { IconCalendar, IconMapPin, IconTrendingUp } from '@/components/icons';
+import { formatDate } from '@/lib/baseball/format-date';
 
 interface GameCardProps {
   game: BaseballGame;
@@ -35,12 +36,10 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function GameCard({ game }: GameCardProps) {
   const result = getResultInfo(game);
-  const gameDate = new Date(game.game_date + 'T00:00:00');
-  const formattedDate = gameDate.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
+  // Anchor at local midnight so a date-only string doesn't shift a day west
+  // of UTC; short date + near-term relative ("Today"/"Tomorrow") is the one
+  // house grammar shared with the other stats/schedule surfaces.
+  const formattedDate = formatDate(game.game_date + 'T00:00:00');
   const detailHref = `/baseball/dashboard/stats/games/${game.id}`;
   const opponentLabel = game.opponent_name ? `vs ${game.opponent_name}` : 'TBD Opponent';
 

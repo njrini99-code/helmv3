@@ -16,10 +16,11 @@
  *   • Sub-line — metric display_label · window · days-left (active only).
  *   • Values — Baseline / Now / Target, formatted via the shipped formatValue,
  *     honest `—` when null.
- *   • Progress — a flat Fairway track + accent fill; rendered ONLY when a real
- *     progress pct exists. When current == baseline (cron hasn't moved it) the
- *     bar reads 0 with an honest "Not started — baseline captured" caption —
- *     NEVER styled as a miss.
+ *   • Progress — the shared `<ProgressTrack>` (flat track + accent fill, the
+ *     SAME rail FocusAreaCard's per-area meter renders through); rendered ONLY
+ *     when a real progress pct exists. When current == baseline (cron hasn't
+ *     moved it) the bar reads 0 with an honest "Not started — baseline
+ *     captured" caption — NEVER styled as a miss.
  *   • Standing — when `data.standing` maps to a metric, the Fairway-native
  *     StandingStrip shows the player's live PGA·team·you standing on the EXACT
  *     metric the goal targets. Omitted entirely when no standing row exists
@@ -59,6 +60,7 @@ import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { pauseGoal, abandonGoal } from '@/app/golf/actions/v3/goals';
 import type { Goal, GoalState } from '@/lib/coachhelm/v3/goals/types';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { ProgressTrack } from './ProgressTrack';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props
@@ -280,25 +282,17 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
         </span>
       </div>
 
-      {/* Progress — flat Fairway track + accent fill. Only when a real pct exists. */}
+      {/* Progress — the shared ProgressTrack (flat track + accent fill), the
+          SAME rail FocusAreaCard's per-area meter renders through. Only when a
+          real pct exists. */}
       {pct !== null ? (
         <>
-          <div
-            className="relative h-1.5 w-full overflow-hidden rounded-full bg-warm-100"
-            role="progressbar"
-            aria-valuenow={pct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`${goalDisplayTitle(goal, cfg)} progress`}
-          >
-            <div
-              className={`absolute left-0 top-0 h-full rounded-full ${
-                achievedAt ? 'bg-fw-success' : 'bg-accent-600'
-              }`}
-              style={{ width: `${pct}%` }}
-              aria-hidden="true"
-            />
-          </div>
+          <ProgressTrack
+            pct={pct}
+            size="sm"
+            tone={achievedAt ? 'done' : 'active'}
+            label={`${goalDisplayTitle(goal, cfg)} progress`}
+          />
           {/* Fixed-height row + single-line caption so the sparkline sits at the
               exact same spot on every card (even across the grid). */}
           <div className="mt-2 flex h-5 items-center justify-between gap-3">

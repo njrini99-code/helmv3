@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { InsightsFeed } from '@/components/golf/coachhelm/insights/InsightsFeed';
 
 // ---------------------------------------------------------------------------
 // framer-motion stub — DOM passthroughs so click targets render synchronously.
@@ -213,7 +214,6 @@ describe('InsightsFeed (coach)', () => {
     ];
     mockGetInsightsForCoach.mockResolvedValue(rows);
 
-    const { InsightsFeed } = await import('@/components/golf/coachhelm/insights/InsightsFeed');
     render(<InsightsFeed coachId="coach-1" limit={10} showGenerateButton={false} />);
 
     await waitFor(() => {
@@ -224,7 +224,6 @@ describe('InsightsFeed (coach)', () => {
 
   it('shows the empty state when no evidence-backed insights exist', async () => {
     mockGetInsightsForCoach.mockResolvedValue([]);
-    const { InsightsFeed } = await import('@/components/golf/coachhelm/insights/InsightsFeed');
     render(<InsightsFeed coachId="coach-1" showGenerateButton={false} />);
     await waitFor(() => {
       expect(screen.getByText(/No Active Insights/i)).toBeInTheDocument();

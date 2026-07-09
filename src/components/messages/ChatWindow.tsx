@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
@@ -54,11 +55,26 @@ export function ChatWindow({
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion() ?? false;
 
-  // Scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages — ONLY when near the bottom, so a
+  // reply from the other side doesn't yank someone away from scrollback
+  // they're reading. Honors prefers-reduced-motion (instant jump instead of
+  // an animated scroll). Mirrors the Fairway MessageThreadPane near-bottom
+  // check (scrollTop + clientHeight >= scrollHeight - 100).
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
+    const container = messagesContainerRef.current;
+    if (!container) {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+      return;
+    }
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }
+  }, [messages, reduceMotion]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +106,7 @@ export function ChatWindow({
   return (
     <div className={cn('flex flex-col bg-cream-100', className)}>
       {/* Header — iOS-native chat title bar with back chevron on mobile */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/70 bg-cream-50/92 backdrop-blur-xl sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/70 bg-cream-50 sticky top-0 z-10">
         {onBack && (
           <IconButton variant="default"
             onClick={onBack}
@@ -112,7 +128,10 @@ export function ChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4 [-webkit-overflow-scrolling:touch]">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4 [-webkit-overflow-scrolling:touch]"
+      >
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
@@ -172,7 +191,7 @@ export function ChatWindow({
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="px-4 pt-3 border-t border-warm-200/70 bg-cream-50/92 backdrop-blur-xl"
+        className="px-4 pt-3 border-t border-warm-200/70 bg-cream-50"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <div className="flex items-center gap-2">

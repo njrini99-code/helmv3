@@ -27,6 +27,23 @@ import type { Player } from '@/lib/types';
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
+// Debounce hook for search (mirrors the local useDebounce in DiscoverClient)
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,6 +55,11 @@ function CompareContent() {
   const [searching, setSearching] = useState(false);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  // Debounce the search box so every keystroke doesn't fire a query; the input
+  // itself stays fully responsive since `searchQuery` updates immediately.
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // Stale-response guard: only the most recently issued search may paint results.
+  const searchRequestRef = useRef(0);
 
   // Get player IDs from URL, deduped but preserving first-occurrence order
   const playerIds = Array.from(
@@ -85,44 +107,65 @@ function CompareContent() {
   const MAX_PLAYERS = 4;
   const canAddMore = playerIds.length < MAX_PLAYERS;
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
+  };
+
+  // Fires only after the debounced value settles (300ms after the last
+  // keystroke). Guarded by `searchRequestRef` so an older, slower search that
+  // resolves after a newer one can't overwrite it with stale results.
+  useEffect(() => {
+    const query = debouncedSearchQuery;
 
     if (!query || query.length < 2) {
+      // Bump the ref even though nothing async is in flight here -- a slower
+      // in-flight request from a PRIOR keystroke could otherwise resolve
+      // after this clear and overwrite it with stale results.
+      ++searchRequestRef.current;
       setSearchResults([]);
       return;
     }
 
     if (!canAddMore) {
+      ++searchRequestRef.current;
       setSearchResults([]);
       return;
     }
 
+    const requestId = ++searchRequestRef.current;
     setSearching(true);
-    try {
-      let queryBuilder = supabase
-        .from('baseball_players')
-        .select('*')
-        .eq('recruiting_activated', true)
-        .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
-        .limit(10);
 
-      // Only add NOT IN filter if there are playerIds
-      if (playerIds.length > 0) {
-        queryBuilder = queryBuilder.not('id', 'in', `(${playerIds.join(',')})`);
+    (async () => {
+      try {
+        let queryBuilder = supabase
+          .from('baseball_players')
+          .select('*')
+          .eq('recruiting_activated', true)
+          .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
+          .limit(10);
+
+        // Only add NOT IN filter if there are playerIds
+        if (playerIds.length > 0) {
+          queryBuilder = queryBuilder.not('id', 'in', `(${playerIds.join(',')})`);
+        }
+
+        const { data, error } = await queryBuilder;
+
+        if (error) throw error;
+        if (searchRequestRef.current !== requestId) return; // stale — a newer search is in flight
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error('Error searching players:', error);
+        if (searchRequestRef.current !== requestId) return;
+        setSearchResults([]);
+      } finally {
+        if (searchRequestRef.current === requestId) {
+          setSearching(false);
+        }
       }
-
-      const { data, error } = await queryBuilder;
-
-      if (error) throw error;
-      setSearchResults(data || []);
-    } catch (error) {
-      console.error('Error searching players:', error);
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
-  };
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable (module-scope); `playerIds` is recomputed fresh from `searchParams` every render (see the fetchPlayers effect above), so listing it here would re-run this on every render. Adding a player already clears `searchQuery`/`searchResults` directly via `addPlayer`, so re-running on `playerIds` alone isn't needed.
+  }, [debouncedSearchQuery, canAddMore]);
 
   const addPlayer = (player: Player) => {
     const newIds = [...playerIds, player.id];

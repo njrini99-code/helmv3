@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { classifyTeamHealth, type GolfTeamHealthRow } from '@/lib/admin/data/golf';
 import type { Database } from '@/lib/types/database';
 
@@ -196,25 +197,39 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     admin.from('baseball_teams').select('id, name'),
     admin.from('golf_team_members').select('team_id, player_id, jersey_number, status').eq('status', 'active'),
     admin.from('baseball_team_members').select('team_id, player_id, jersey_number, position, status').eq('status', 'active'),
-    admin
-      .from('golf_rounds')
-      .select('team_id, player_id, created_at, total_score, score_to_par')
-      .gte('created_at', ago30d)
-      .order('created_at', { ascending: false })
-      .limit(3000),
+    // Platform-wide 30d activity — paginate past the PostgREST 1000-row cap
+    // (a .limit(3000) still silently truncates at 1000 regardless of the
+    // requested size); `.order('id')` gives stable page boundaries alongside
+    // the primary `created_at`/`occurred_at` ordering the "first hit is max"
+    // per-team last-activity maps below rely on.
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('golf_rounds')
+        .select('team_id, player_id, created_at, total_score, score_to_par')
+        .gte('created_at', ago30d)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
     admin.from('baseball_games').select('team_id, created_at').order('created_at', { ascending: false }).limit(1000),
-    admin
-      .from('baseball_pitch_events')
-      .select('team_id, player_id, created_at')
-      .gte('created_at', ago30d)
-      .order('created_at', { ascending: false })
-      .limit(3000),
-    admin
-      .from('baseball_player_timeline_events')
-      .select('team_id, player_id, occurred_at, event_type')
-      .gte('occurred_at', ago30d)
-      .order('occurred_at', { ascending: false })
-      .limit(3000),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('baseball_pitch_events')
+        .select('team_id, player_id, created_at')
+        .gte('created_at', ago30d)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('baseball_player_timeline_events')
+        .select('team_id, player_id, occurred_at, event_type')
+        .gte('occurred_at', ago30d)
+        .order('occurred_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
     admin
       .from('admin_events')
       .select('team_id, sport, user_id')

@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { fullName } from '@/lib/admin/data/activity';
 
@@ -71,6 +72,13 @@ export function computeWoWDelta(thisWeek: number, lastWeek: number): number | nu
 
 const NEWLY_DORMANT_MIN_DAYS = 14;
 const NEWLY_DORMANT_MAX_DAYS = 21;
+// Recency window for the platform-wide rounds scan in checkNewlyDormantTeams:
+// a round outside this window is either too recent to make a team "newly"
+// dormant (< MIN_DAYS) or already long-dormant and surfaced elsewhere, not
+// "newly" (> MAX_DAYS) — so bounding the fetch to a margin above MAX_DAYS
+// can never drop a team that would actually qualify, while turning an
+// all-time platform scan into a genuinely bounded one.
+const NEWLY_DORMANT_SCAN_WINDOW_DAYS = 30;
 
 export interface TeamLastActivity {
   teamId: string;
@@ -251,8 +259,21 @@ async function checkRoundsWoW(admin: AdminClient): Promise<BriefingCandidate | n
 async function checkNewlyDormantTeams(admin: AdminClient): Promise<BriefingCandidate | null> {
   const [teamsRes, roundsRes] = await Promise.all([
     admin.from('golf_teams').select('id, name').limit(1000),
-    admin.from('golf_rounds').select('team_id, created_at').eq('status', 'completed')
-      .order('created_at', { ascending: false }).limit(2000),
+    // Paginate past the PostgREST 1000-row cap (the prior .limit(2000) still
+    // silently truncated at 1000) — bounded by the recency window above
+    // rather than by a size cap, and `.order('id')` keeps page boundaries
+    // stable alongside the primary `created_at desc` the "first hit is max"
+    // per-team last-activity map below relies on.
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('golf_rounds')
+        .select('team_id, created_at')
+        .eq('status', 'completed')
+        .gte('created_at', isoDaysAgo(NEWLY_DORMANT_SCAN_WINDOW_DAYS))
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
   ]);
   if (teamsRes.error) throw new Error(teamsRes.error.message);
   if (roundsRes.error) throw new Error(roundsRes.error.message);

@@ -9,6 +9,7 @@ import { getPlayerCoachNotes } from '@/lib/baseball/read-models/coach-notes';
 import { getPlayerTasks } from '@/app/baseball/actions/tasks';
 import { getPlayerSeasonStats } from '@/app/baseball/actions/games';
 import { resolveBaseballLiftingOrg, resolveBaseballAthleteIds } from '@/lib/lifting/resolve-baseball-context';
+import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -108,12 +109,19 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
   const currentSeasonYear = new Date().getFullYear();
 
+  // getPlayerSnapshotCards' "overdue" task computation anchors on `forDate`
+  // (defaulting to the server's UTC day when omitted) — resolve the team's
+  // own IANA timezone and pass its local day so a task due "today" isn't
+  // read as overdue (or not) a day early/late for a non-UTC program. Mirrors
+  // the Daily Contract's resolveTeamTimezone + todayIsoInTz idiom.
+  const todayIso = todayIsoInTz(await resolveTeamTimezone(supabase, team.id));
+
   // Parallel fetch: snapshot cards + timeline + coach notes + player tasks +
   // box-score-canonical season stats (mirrors /players/[id]/stats — the
   // source of truth a box-score save actually updates) + Helm Lifting Lab
   // context (org + athlete mapping for the Performance tab).
   const [snapshotResult, timelineResult, notesResult, tasksResult, seasonStatsResult, liftingContext] = await Promise.all([
-    getPlayerSnapshotCards(team.id, playerId),
+    getPlayerSnapshotCards(team.id, playerId, { forDate: todayIso }),
     getPlayerTimeline(team.id, playerId),
     getPlayerCoachNotes(team.id, playerId),
     getPlayerTasks(playerId),

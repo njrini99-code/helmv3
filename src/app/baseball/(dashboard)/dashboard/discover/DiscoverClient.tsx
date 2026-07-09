@@ -21,7 +21,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { IconFilter, IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
-import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
+import { SectionMasthead, EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
 import type { Player, Organization } from '@/lib/types';
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
@@ -375,7 +375,7 @@ function DiscoverContent() {
 
   return (
     <div className={PAGE_SHELL}>
-      <SectionMasthead eyebrow="THE WAR ROOM \u00b7 RECRUITING" title="Discover" ink="pursuit">
+      <SectionMasthead eyebrow="THE WAR ROOM · RECRUITING" title="Discover" ink="pursuit">
         <p className="max-w-prose font-annual text-body-sm text-text-secondary">
           {filters.mode === 'players'
             ? `Find your next recruit${playerCount > 0 ? ` \u2014 ${playerCount.toLocaleString()} players found` : ''}`
@@ -416,9 +416,7 @@ function DiscoverContent() {
               <IconFilter size={16} className="mr-2" />
               Filters
               {activeFilterCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">
-                  {activeFilterCount}
-                </span>
+                <InkBadge label={String(activeFilterCount)} tone="pursuit" variant="solid" className="ml-2" />
               )}
             </Button>
           </div>
@@ -462,28 +460,26 @@ function DiscoverContent() {
               {''}
             </Button>
             <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-[var(--paper)] shadow-xl overflow-y-auto animate-slide-in-left">
-              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-warm-200 bg-cream-50">
+              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)]">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-warm-900">Filters</h2>
+                  <h2 className="text-lg font-semibold text-text-primary">Filters</h2>
                   {activeFilterCount > 0 && (
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-primary-700 bg-primary-100 rounded-full">
-                      {activeFilterCount} active
-                    </span>
+                    <InkBadge label={`${activeFilterCount} active`} tone="pursuit" variant="solid" />
                   )}
                 </div>
                 <IconButton variant="default"
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-pursuit/10 active:bg-pursuit/15 transition-colors"
                   aria-label="Close filters"
                 >
-                  <IconX size={20} className="text-warm-500" />
+                  <IconX size={20} className="text-text-tertiary" />
                 </IconButton>
               </div>
               <div className="p-6">
                 <FilterPanel currentFilters={filters} mode={filters.mode} />
               </div>
               {/* Apply button at the bottom of filter sheet */}
-              <div className="sticky bottom-0 p-4 bg-cream-50 border-t border-warm-200">
+              <div className="sticky bottom-0 p-4 bg-[var(--paper-canvas)] border-t border-[color:var(--hairline)]">
                 <Button
                   onClick={() => setMobileFiltersOpen(false)}
                   className="w-full min-h-[44px]"

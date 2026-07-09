@@ -49,6 +49,8 @@ import {
   InlineNotice as FwInlineNotice,
   EmptyState as FwEmptyState,
   Skeleton as FwSkeleton,
+  Surface as FwSurface,
+  Eyebrow as FwEyebrow,
 } from '@/components/fairway';
 import { Flag as LucideFlag } from 'lucide-react';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
@@ -766,10 +768,8 @@ export default function RoundReviewPage() {
           return (
             <section className="space-y-3">
               <div>
-                <h2 className="text-base font-medium text-warm-900 tracking-[-0.012em]">
-                  Where this sits
-                </h2>
-                <p className="text-xs text-warm-500">
+                <FwEyebrow as="h2">Where this sits</FwEyebrow>
+                <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
                   Your season standing vs PGA Tour and your team.
                 </p>
               </div>
@@ -824,12 +824,16 @@ export default function RoundReviewPage() {
           );
           if (!storedReview?.id || !promoteSuggestion) return null;
           return (
-            <div className="rounded-2xl border border-primary-200/60 bg-primary-50/40 backdrop-blur-xl p-4 flex items-start gap-3">
+            <FwSurface
+              elevation="border"
+              padding="sm"
+              className="flex items-start gap-3 border-accent-200 bg-accent-50/60"
+            >
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-warm-900">
+                <p className="font-fw-sans text-body-sm font-medium text-text-primary">
                   Turn this into a focus area
                 </p>
-                <p className="text-xs text-warm-600 mt-0.5">
+                <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
                   {promoteSuggestion.title}
                 </p>
               </div>
@@ -843,7 +847,7 @@ export default function RoundReviewPage() {
                 reviewContext={round.course_name ?? undefined}
                 className="flex-shrink-0"
               />
-            </div>
+            </FwSurface>
           );
         })()}
     </m.div>

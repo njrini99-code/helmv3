@@ -11,8 +11,7 @@ import {
   loadRecentlyAchievedGoals,
 } from '@/lib/coachhelm/v3/goals/loader';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
-import { evaluateAndPersistGoals } from '@/app/golf/actions/v3/goal-progress';
-import { evaluateAndPersistFocusAreas } from '@/app/golf/actions/v3/focus-area-progress';
+import { evaluateAndPersistGoals, evaluateAndPersistFocusAreas } from '@/lib/golf/progress-drivers';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';

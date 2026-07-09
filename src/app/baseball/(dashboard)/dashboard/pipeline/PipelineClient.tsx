@@ -56,7 +56,7 @@ import { PlayerDetailModal } from '@/components/coach/PlayerDetailModal';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { PositionPlanner } from '@/components/baseball/position-planner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { IconUsers, IconLayoutGrid, IconList, IconTarget, IconTrash, IconTrendingUp } from '@/components/icons';
+import { IconUsers, IconLayoutGrid, IconList, IconTarget, IconTrash, IconTrendingUp, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
@@ -89,6 +89,14 @@ const statusOptions = PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label 
 // UUID. This set lets the drag handler tell a real drop-target column apart
 // from a card that `closestCorners` happened to land on.
 const PIPELINE_STAGE_IDS = new Set<PipelineStage>(PIPELINE_STAGES.map((s) => s.id));
+
+// The four "active" lanes render as equal board columns; `uninterested` moves
+// into a collapsed tray at the board's end (below, `PipelineUninterestedTray`)
+// instead of a 5th equal-weight column — a declined-fit prospect shouldn't
+// carry the same visual weight as an active recruiting lane. Presentation
+// grouping only: `PIPELINE_STAGES` itself (and every stage-index-based
+// prev/next computation that reads it) is untouched.
+const BOARD_STAGES = PIPELINE_STAGES.filter((s) => s.id !== 'uninterested');
 
 const filterTabs = [
   { value: 'all', label: 'All' },
@@ -185,28 +193,37 @@ function PipelineStatsStrip({ watchlist }: { watchlist: WatchlistWithPlayer[] })
 
 function PipelineBoardSkeleton() {
   return (
-    <div
-      role="status"
-      aria-busy="true"
-      aria-label="Loading pipeline"
-      className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0"
-    >
-      {PIPELINE_STAGES.map((s) => (
-        <div key={s.id} className="w-[280px] flex-shrink-0 lg:w-auto">
-          <PaperCard className="flex h-full min-h-[420px] flex-col p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton circle className="h-5 w-5" />
-            </div>
-            <HairlineRule ink="hairline" className="mb-4" />
-            <div className="space-y-3">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-28 w-full rounded-card" />
-              ))}
-            </div>
-          </PaperCard>
+    <div className="space-y-4">
+      <div
+        role="status"
+        aria-busy="true"
+        aria-label="Loading pipeline"
+        className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0"
+      >
+        {BOARD_STAGES.map((s) => (
+          <div key={s.id} className="w-[280px] flex-shrink-0 lg:w-auto">
+            <PaperCard className="flex h-full min-h-[420px] flex-col p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton circle className="h-5 w-5" />
+              </div>
+              <HairlineRule ink="hairline" className="mb-4" />
+              <div className="space-y-3">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-card" />
+                ))}
+              </div>
+            </PaperCard>
+          </div>
+        ))}
+      </div>
+      {/* Collapsed Not-Interested tray shape, mirrored below at board end. */}
+      <PaperCard className="p-4" aria-hidden="true">
+        <div className="flex items-center justify-between gap-2">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-7 w-20" />
         </div>
-      ))}
+      </PaperCard>
     </div>
   );
 }
@@ -363,6 +380,100 @@ function PipelineBoardColumn({ stage, items, onOpenPeek, onQuickMove, onQuickRem
             </p>
           ) : null}
         </div>
+      </PaperCard>
+    </div>
+  );
+}
+
+// ─── Not-Interested tray ────────────────────────────────────────────────────
+// A collapsed drawer at the board's end rather than a 5th equal-weight column
+// (spec §4.2 rule 5 — no gray card-soup / no lane getting undue chrome weight
+// it hasn't earned; a declined-fit prospect shouldn't read as co-equal with
+// an active recruiting lane). Collapsed by default; still a live dnd-kit drop
+// target either way — `useDroppable({ id: 'uninterested' })` is mounted on
+// the outer wrapper regardless of expand state, so a drag-drop here reaches
+// the exact same `handleDragEnd` write as any other column. No handler logic
+// added — `onQuickMove`/`onQuickRemove` are the same callbacks the board
+// columns already use.
+
+interface PipelineUninterestedTrayProps {
+  items: WatchlistWithPlayer[];
+  onOpenPeek: (playerId: string) => void;
+  onQuickMove: (item: WatchlistWithPlayer, stage: PipelineStage) => void;
+  onQuickRemove: (item: WatchlistWithPlayer) => void;
+}
+
+function PipelineUninterestedTray({
+  items,
+  onOpenPeek,
+  onQuickMove,
+  onQuickRemove,
+}: PipelineUninterestedTrayProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'uninterested' });
+  const [expanded, setExpanded] = useState(false);
+  const reducedMotion = useReducedMotion() ?? false;
+  const label = getPipelineStageLabel('uninterested');
+  const listId = 'pipeline-uninterested-list';
+
+  return (
+    <div ref={setNodeRef} data-testid="pipeline-column-uninterested" className="mt-4">
+      <PaperCard
+        className={cn(
+          'flex flex-col p-4 transition-colors',
+          isOver && 'bg-pursuit/[0.05] ring-2 ring-pursuit',
+        )}
+      >
+        <div className="flex w-full items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <Eyebrow ink="pursuit">{label}</Eyebrow>
+            <InkBadge label={String(items.length)} tone="pursuit" variant={items.length > 0 ? 'solid' : 'soft'} />
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-controls={listId}
+            rightIcon={expanded ? <IconChevronUp size={15} aria-hidden /> : <IconChevronDown size={15} aria-hidden />}
+          >
+            {expanded ? 'Collapse' : 'Review'}
+          </Button>
+        </div>
+
+        <AnimatePresence initial={false}>
+          {expanded ? (
+            <m.div
+              id={listId}
+              initial={reducedMotion ? false : { height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+              transition={
+                reducedMotion
+                  ? { duration: 0 }
+                  : { height: { type: 'spring', stiffness: 500, damping: 36 }, opacity: { duration: 0.2 } }
+              }
+              style={{ overflow: 'hidden' }}
+            >
+              <HairlineRule ink="pursuit" className="my-4" />
+              {items.length === 0 ? (
+                <p className="py-6 text-center font-annual text-body-sm text-text-tertiary">No players</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {items.map((item, index) => (
+                    <Reveal key={item.id} staggerIndex={Math.min(index, 10)}>
+                      <PipelineBoardCard
+                        item={item}
+                        onOpenPeek={onOpenPeek}
+                        onQuickMove={onQuickMove}
+                        onQuickRemove={onQuickRemove}
+                      />
+                    </Reveal>
+                  ))}
+                </div>
+              )}
+            </m.div>
+          ) : null}
+        </AnimatePresence>
       </PaperCard>
     </div>
   );
@@ -915,8 +1026,8 @@ export default function PipelinePage() {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
-                <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory scroll-smooth lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0 lg:snap-none">
-                  {PIPELINE_STAGES.map((s) => (
+                <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory scroll-smooth lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 lg:snap-none">
+                  {BOARD_STAGES.map((s) => (
                     <PipelineBoardColumn
                       key={s.id}
                       stage={s.id}
@@ -927,6 +1038,13 @@ export default function PipelinePage() {
                     />
                   ))}
                 </div>
+
+                <PipelineUninterestedTray
+                  items={filteredByGradYear.filter((w) => w.pipeline_stage === 'uninterested')}
+                  onOpenPeek={setPeekPlayerId}
+                  onQuickMove={handleQuickMove}
+                  onQuickRemove={handleQuickRemove}
+                />
 
                 <DragOverlay>
                   {activeItem ? (

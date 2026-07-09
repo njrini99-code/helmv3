@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
+import { InlineNotice } from '@/components/fairway';
 import { LabNav } from './LabNav';
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
 
@@ -172,16 +173,12 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
           </div>
         </header>
 
-        {/* View-only banner */}
+        {/* View-only banner — neutral InlineNotice, not an amber warning box */}
         {isViewOnly && (
           <div className="px-4 sm:px-6 pt-4">
-            <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-              <p className="text-sm text-amber-700">
-                <span className="font-semibold">View-only mode.</span>{' '}
-                You can see all lifting data but cannot make changes. Invite a lifting coach to enable full editing.
-              </p>
-            </div>
+            <InlineNotice tone="info" title="View-only mode">
+              You can see all lifting data but cannot make changes. Invite a lifting coach to enable full editing.
+            </InlineNotice>
           </div>
         )}
 

@@ -12,7 +12,7 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { IconSave, IconUser, IconTrendingUp } from '@/components/icons';
+import { IconSave, IconUser, IconTrendingUp, IconX } from '@/components/icons';
 import { sumInningsPitched } from '@/lib/baseball/innings';
 import { formatAvg, formatOps, formatEra, formatWhip } from './format-stat';
 import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
@@ -284,7 +284,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 value={ourScore}
                 onChange={(e) => setOurScore(Number(e.target.value))}
                 aria-label="Our score"
-                className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
+                className="w-16 min-h-[44px] text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82 font-annual tabular-nums"
               />
             </div>
             <span className="text-2xl font-bold text-warm-300 mt-4">—</span>
@@ -299,7 +299,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 value={oppScore}
                 onChange={(e) => setOppScore(Number(e.target.value))}
                 aria-label={`${game.opponent_name ?? 'Opponent'} score`}
-                className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
+                className="w-16 min-h-[44px] text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82 font-annual tabular-nums"
               />
             </div>
           </div>
@@ -369,14 +369,14 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             value={row[field] as number}
                             onChange={(e) => updateBatting(row.player_id, field, Number(e.target.value))}
                             aria-label={`${playerFullName(player)} ${BATTING_FIELD_LABELS[field]}`}
-                            className="w-10 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
+                            className="w-10 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 font-annual tabular-nums"
                           />
                         </td>
                       ))}
-                      <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                      <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                         {calcAvg(row.h, row.ab)}
                       </td>
-                      <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                      <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                         {calcOPS(row)}
                       </td>
                     </tr>
@@ -387,18 +387,18 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               <tfoot>
                 <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="batting-entry-totals-row">
                   <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.ab}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.r}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.h}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.doubles}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.triples}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.hr}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.rbi}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.bb}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.k}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.sb}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.ab}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.r}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.h}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.doubles}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.triples}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.hr}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.rbi}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.bb}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.k}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.sb}</td>
                   <td colSpan={5} />
-                  <td className="px-2 py-2.5 text-center text-warm-500 font-mono">
+                  <td className="px-2 py-2.5 text-center text-warm-500 font-annual tabular-nums">
                     {calcAvg(battingTotals.h, battingTotals.ab)}
                   </td>
                   <td />
@@ -418,7 +418,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               value={selectedPitcherId}
               onChange={(value) => setSelectedPitcherId(value)}
               placeholder="Select pitcher to add..."
-              className="flex-1 max-w-xs text-sm min-h-0 py-2 bg-cream-100/75"
+              className="flex-1 max-w-xs text-sm min-h-[44px] py-2 bg-cream-100/75"
               options={teamPlayers
                 .filter((p) => !pitchingRows.some((r) => r.player_id === p.id))
                 .map((p) => ({
@@ -475,7 +475,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                                   updatePitching(row.player_id, field, Number(e.target.value))
                                 }
                                 aria-label={`${playerFullName(player)} ${PITCHING_FIELD_LABELS[field]}`}
-                                className="w-12 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
+                                className="w-12 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 font-annual tabular-nums"
                               />
                             </td>
                           ))}
@@ -490,7 +490,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                                 updatePitching(row.player_id, 'pitch_count', Number(e.target.value))
                               }
                               aria-label={`${playerFullName(player)} pitch count`}
-                              className="w-14 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 tabular-nums"
+                              className="w-14 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 font-annual tabular-nums"
                             />
                           </td>
                           {/* Result */}
@@ -506,22 +506,25 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               }
                               placeholder="—"
                               options={PITCHING_RESULTS.map((r) => ({ value: r, label: r }))}
-                              className="w-20 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50"
+                              className="w-20 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50"
                             />
                           </td>
-                          <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                          <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                             {calcERA(row.er, row.ip)}
                           </td>
-                          <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                          <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                             {calcWHIP(row.h, row.bb, row.ip)}
                           </td>
                           <td className="px-2 py-2 text-center">
-                            <Button variant="danger"
+                            <Button
+                              variant="danger"
+                              size="icon-sm"
                               onClick={() => removePitcher(row.player_id)}
-                              className="text-warm-300 hover:text-red-400 transition-colors text-lg leading-none"
+                              className="text-warm-300 hover:text-red-400 transition-colors"
+                              aria-label={`Remove ${playerFullName(player)} from pitching lines`}
                               title="Remove"
                             >
-                              ×
+                              <IconX size={14} />
                             </Button>
                           </td>
                         </tr>
@@ -532,15 +535,15 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                     <tfoot>
                       <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="pitching-entry-totals-row">
                         <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums font-mono">
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">
                           {/* .1/.2 are outs — sum via outs, not base-10 (#434) */}
                           {sumInningsPitched(pitchingRows.map((r) => r.ip)).toFixed(1)}
                         </td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.h, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.r, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.er, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.bb, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.k, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.h, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.r, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.er, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.bb, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.k, 0)}</td>
                         {/* Remaining header columns: HR, PC, Result, ERA, WHIP, Remove = 6
                             (header total is 13: Pitcher + 9 stat/meta headers + ERA + WHIP +
                             Remove; this row already renders TOTALS + IP/H/R/ER/BB/K = 7). */}
@@ -557,9 +560,16 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
 
       {/* Save button */}
       {saveError && (
-        <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600">
-          {saveError}
-        </div>
+        <EditorsLetter
+          ink="team"
+          title="Couldn't save box score"
+          body={saveError}
+          action={
+            <Button variant="outline" onClick={handleSave} disabled={saving}>
+              Try again
+            </Button>
+          }
+        />
       )}
 
       <div className="flex items-center justify-between">

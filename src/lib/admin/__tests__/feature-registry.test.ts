@@ -299,7 +299,22 @@ describe('FEATURE_REGISTRY completeness', () => {
     expect(duplicated, `multiply-mapped exports:\n${duplicated.join('\n')}`).toEqual([]);
   });
 
-  it('total manifest size is exactly 424 (excludes the CRM row)', () => {
+  // 2026-07-09 security fix: -5 from 424. `getDetailedStatsAsAdmin`
+  // (stats-data.ts, -1), `evaluateAndPersistGoals` + `runGoalProgressForPlayers`
+  // (v3/goal-progress.ts, -2), and `runFocusAreaProgressForPlayers` +
+  // `evaluateAndPersistFocusAreas` (v3/focus-area-progress.ts, -2) were
+  // caller-supplied-player_id admin-bypass functions with zero auth, exported
+  // from 'use server' files — making each a publicly-POSTable action per
+  // Next.js's server-actions guidance. All four are now module-private
+  // (goal-progress.ts/focus-area-progress.ts relocated whole to
+  // src/lib/golf/progress-drivers.ts, a non-'use server' module; stats-data.ts
+  // keeps its impl private and hands it to trusted callers via
+  // src/lib/golf/detailed-stats-admin-bridge.ts) — these three 'ALL'-mapped
+  // files now scan 5 fewer real exports. All non-'ALL' manifests (including
+  // insights.ts's explicit array, which still lists the now-private
+  // triggerPlayerInsightsAfterRound by name) are unaffected since this count
+  // sums `manifest.length` for those, not a live export scan.
+  it('total manifest size is exactly 419 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -311,7 +326,7 @@ describe('FEATURE_REGISTRY completeness', () => {
         }
       }
     }
-    expect(total).toBe(424);
+    expect(total).toBe(419);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

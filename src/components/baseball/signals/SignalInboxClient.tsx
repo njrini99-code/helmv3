@@ -17,7 +17,7 @@
 // It is NOT a commit/offer/milestone ticker — no `<CommitSeal>` anywhere on
 // this surface. Triage + convert-to-action wire to the SAME signals server
 // actions as before; the page re-renders via `router.refresh()`. Every
-// zero/degraded state renders through `<EditorsLetter>` / `<InlineNotice>` —
+// zero/degraded state renders through `<EditorsLetter>` / `<InkNotice>` —
 // never a yellow/amber box. NO golf labels.
 // =============================================================================
 
@@ -32,8 +32,9 @@ import {
   StatReadout,
   EditorsLetter,
   LiveDot,
+  InkNotice,
 } from '@/components/baseball/living-annual';
-import { Button, InlineNotice, Segmented, SelectablePill } from '@/components/fairway';
+import { Button, Segmented, SelectablePill } from '@/components/fairway';
 import {
   IconShieldAlert,
   IconList,
@@ -341,9 +342,9 @@ export function SignalInboxClient({
 
       {/* ── Honest degraded-feed error ───────────────────────────── */}
       {model.error && (
-        <InlineNotice tone="warning" className="mt-4">
+        <InkNotice ink="pursuit" className="mt-4">
           {model.error}
-        </InlineNotice>
+        </InkNotice>
       )}
 
       {/* ── View toggle ──────────────────────────────────────────── */}

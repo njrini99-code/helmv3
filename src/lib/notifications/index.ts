@@ -43,10 +43,17 @@ export async function notifyNewMessage(
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
+  // Golf has no /messages/[id] route — deep-link via the ?conversation= query
+  // param instead, matching the in-app notification (messages.ts) and push
+  // payload (push.ts) forms. Baseball keeps the path-segment route.
+  const messageUrl = sport === 'golf'
+    ? `${baseUrl}/golf/dashboard/messages?conversation=${conversationId}`
+    : `${baseUrl}/baseball/dashboard/messages/${conversationId}`;
+
   return sendEmailNotification('new_message', recipientId, recipientEmail, {
     senderName,
     preview,
-    messageUrl: `${baseUrl}/${sport}/dashboard/messages/${conversationId}`,
+    messageUrl,
   });
 }
 
@@ -93,7 +100,9 @@ export async function notifyTeamAnnouncement(
   title: string,
   content: string,
   coachName: string,
-  announcementId: string
+  // No /golf/dashboard/announcements/[id] route exists (deleted in W1) — kept
+  // for call-site compatibility but unused; link goes to the static list page.
+  _announcementId: string
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
@@ -101,7 +110,7 @@ export async function notifyTeamAnnouncement(
     title,
     content,
     coachName,
-    announcementUrl: `${baseUrl}/golf/dashboard/announcements/${announcementId}`,
+    announcementUrl: `${baseUrl}/golf/dashboard/announcements`,
   });
 }
 

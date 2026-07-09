@@ -23,8 +23,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
-import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
-import { runFocusAreaProgressForPlayers } from '@/app/golf/actions/v3/focus-area-progress';
+import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
 import {
   STANDING_REFRESH_METRIC_IDS,
   STANDING_REFRESH_DEFERRED_METRIC_IDS,

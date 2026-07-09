@@ -19,9 +19,10 @@
 //     <SignalSourceDrawer> with the signal's sourceChips, confidence, and
 //     limitation. Per spec §3.4: no source data → "Source not yet attached —
 //     this signal cannot be acted upon".
-//   * `sampleTooSmall` renders a first-class advisory banner (InlineNotice,
-//     never a yellow box) and the recommended action is shown as ADVISORY
-//     (not a directive) — a source-starved signal is never authoritative.
+//   * `sampleTooSmall` renders a first-class advisory banner (InkNotice, the
+//     baseball kit's pursuit-ink strip — never an amber/yellow box) and the
+//     recommended action is shown as ADVISORY (not a directive) — a
+//     source-starved signal is never authoritative.
 //   * confidence shows "—" when null; never a fake 0%.
 //   * Interactions are capability-aware: when `canManage` is false the card is
 //     read-only (no triage / convert buttons).
@@ -36,11 +37,12 @@ import * as React from 'react';
 import {
   PaperCard,
   InkBadge,
+  InkNotice,
   StatReadout,
   Reveal,
   HoverReveal,
 } from '@/components/baseball/living-annual';
-import { Button, IconButton, InlineNotice, SelectablePill } from '@/components/fairway';
+import { Button, IconButton, SelectablePill } from '@/components/fairway';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
 import { SignalSourceDrawer } from '@/components/baseball/source-trust/SourceDrawer';
 import { SignalDrillDown } from './SignalDrillDown';
@@ -231,11 +233,11 @@ export function SignalCard({
 
             {/* ── Sample-too-small first-class advisory ────────────────── */}
             {signal.sampleTooSmall && (
-              <InlineNotice tone="warning" className="mt-2.5">
+              <InkNotice ink="pursuit" role="status" className="mt-2.5">
                 Sample too small
                 {signal.sampleN != null ? ` (n=${signal.sampleN})` : ''} — treat as a
                 watch item, not a confident finding.
-              </InlineNotice>
+              </InkNotice>
             )}
 
             {/* ── Why it matters + evidence (full only) ───────────────── */}

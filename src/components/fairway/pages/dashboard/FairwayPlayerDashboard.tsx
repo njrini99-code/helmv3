@@ -66,6 +66,7 @@ import {
   GenomeFingerprintTeaser,
   RecentRoundsList,
   StandingCard,
+  type ActionCenterSummary,
 } from './player-dashboard-parts';
 import { PlayerActionCenter } from './PlayerActionCenter';
 
@@ -259,6 +260,36 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
 
   const sparklines = enhancedData?.sparklines;
   const secondary = enhancedData?.secondaryStats;
+
+  // CONSOLIDATION (review): TodayCard's "what's next" preview and the Action
+  // center section below it must read from ONE source, not two independent
+  // feeds. When this player has a Hub feed (hubData present), derive the
+  // Action center's own visibility + count from that SAME hubData and hand it
+  // to TodayCard — the preview and the full section can then never disagree,
+  // and TodayCard's "See details" CTA can gate on the exact condition that
+  // decides whether `#action-center` exists on the page. Teamless players
+  // have no hubData — TodayCard falls back to its original events/actionItems
+  // preview.
+  //
+  // NOTE: this mirrors PlayerActionCenter's own `hasAnything` gate
+  // (pending tasks + un-RSVP'd future events + upcoming trips + announcements
+  // / load-error) verbatim. PlayerActionCenter.tsx is out of this packet's
+  // file scope, so the predicate is kept here rather than imported; if that
+  // component's gate ever changes, this must be updated to match.
+  const actionCenterSummary = useMemo<ActionCenterSummary | null>(() => {
+    if (!hubData) return null;
+    const now = new Date();
+    const pendingTaskCount = hubData.tasks.filter((t) => t.status !== 'completed').length;
+    const pendingEventCount = hubData.events.filter(
+      (e) => (!e.rsvp_status || e.rsvp_status === 'pending') && new Date(e.start_time) >= now,
+    ).length;
+    const upcomingTripCount = hubData.trips.filter(
+      (t) => new Date(t.departure_date) >= now,
+    ).length;
+    const count = pendingTaskCount + pendingEventCount + upcomingTripCount;
+    const visible = count > 0 || hubData.announcements.length > 0 || hubData.announcementsLoadError;
+    return { visible, count };
+  }, [hubData]);
 
   const newRoundCta = (
     <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
@@ -496,6 +527,7 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
                 events={enhancedData?.todayEvents ?? []}
                 actionItems={enhancedData?.actionItems ?? []}
                 timezone={enhancedData?.timezone}
+                hubSummary={actionCenterSummary}
               />
             </section>
 

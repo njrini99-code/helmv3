@@ -38,9 +38,10 @@ export default function PlayerTodayLoading() {
           </div>
         </div>
 
-        {/* Contents strip + readiness */}
+        {/* Contents strip + readiness — matches KPIContentsStrip columns={4}
+            (grid-cols-1 gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-4). */}
         <div className="mt-9 space-y-6">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="space-y-2">
                 <Skeleton className="h-2.5 w-24" />

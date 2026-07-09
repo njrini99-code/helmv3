@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { IconChevronDown, IconChevronUp, IconCalendar } from '@/components/icons';
 import type { BaseballPlayerStats } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/baseball/format-date';
 import {
   PaperCard,
   Eyebrow,
@@ -42,15 +43,6 @@ interface SessionRowProps {
   stat: BaseballPlayerStats;
   isExpanded: boolean;
   onToggle: () => void;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
 }
 
 function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
@@ -89,7 +81,7 @@ function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
         aria-label={`Session on ${formatDate(stat.session_date)}`}
       >
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex items-center gap-1.5 font-annual text-body-sm text-text-secondary">
+          <span className="flex items-center gap-1.5 font-annual text-body-sm tabular-nums text-text-primary">
             <IconCalendar size={14} aria-hidden />
             {formatDate(stat.session_date)}
           </span>

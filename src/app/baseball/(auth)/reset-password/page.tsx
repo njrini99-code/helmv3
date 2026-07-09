@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,7 @@ import {
   BaseballAuthShell,
   humanizeAuthError,
 } from '@/components/auth/baseball-auth-shell';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -126,18 +126,15 @@ export default function ResetPasswordPage() {
         ) : sessionValid === false ? (
           // Invalid session state
           <div className="animate-fade-in space-y-4">
-            <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
-              <div>
-                <p>{error}</p>
-                <Link
-                  href="/baseball/forgot-password"
-                  className="mt-2 block rounded font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
-                >
-                  Request a new reset link
-                </Link>
-              </div>
-            </div>
+            <InkNotice>
+              <p>{error}</p>
+              <Link
+                href="/baseball/forgot-password"
+                className="mt-2 block rounded font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
+              >
+                Request a new reset link
+              </Link>
+            </InkNotice>
             <Link href="/baseball/login">
               <Button variant="outline" className="w-full py-2.5 text-sm font-medium sm:py-3">
                 Back to Sign In
@@ -147,15 +144,7 @@ export default function ResetPasswordPage() {
         ) : (
           // Valid session - show form
           <form onSubmit={handleSubmit} className="animate-fade-in space-y-4 sm:space-y-5" noValidate>
-            {error && (
-              <div
-                className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
-                role="alert"
-              >
-                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
-                <span>{error}</span>
-              </div>
-            )}
+            {error && <InkNotice>{error}</InkNotice>}
 
             <div className="space-y-1.5">
               <Input

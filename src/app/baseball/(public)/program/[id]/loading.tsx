@@ -3,11 +3,12 @@ import { Card } from '@/components/ui/card';
 
 export default function Loading() {
   return (
-    <div className="min-h-dvh bg-[#FAF6F1]">
+    <div className="min-h-dvh bg-[var(--paper-canvas)]">
       {/* Header */}
-      {/* Must color-match the real header in page.tsx (bg-cream-50 border-warm-200)
+      {/* Must color-match the real header in page.tsx (bg-[var(--paper)] on
+          border-[color:var(--hairline)], root canvas bg-[var(--paper-canvas)])
           or the header visibly shifts tone the instant content mounts. */}
-      <div className="bg-cream-50 border-b border-warm-200">
+      <div className="border-b border-[color:var(--hairline)] bg-[var(--paper)]">
         <div className="max-w-[720px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Skeleton className="w-8 h-8 rounded-lg" />

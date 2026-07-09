@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 424', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 419', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -240,6 +240,34 @@ describe('global tripwire', () => {
     expect(golfMessageExports.length).toBe(10);
     // 425 as of W2 (2026-07-09): +getPlayerHubSummaryData (player-hub-data.ts,
     // withAdminObserved-wrapped) — the Hub→Dashboard merge's extracted read.
-    expect(total).toBe(425);
+    //
+    // 419 as of the 2026-07-09 security fix (-6 from 425): this tripwire
+    // live-scans every DISCOVERED file's real `export async function` list
+    // (via scanActionFile), so it catches a superset of what
+    // feature-registry.test.ts's manifest-length count does (-5 there — see
+    // that file's comment). The same four functions are involved, but here
+    // the drop is -6 because two whole files drop out of discovery, not just
+    // two exports:
+    //   - `getDetailedStatsAsAdmin` (stats-data.ts) is no longer exported —
+    //     the file keeps its 'use server' directive and its other exports,
+    //     so this is a straight -1 export.
+    //   - `triggerPlayerInsightsAfterRound` (insights.ts) is no longer
+    //     exported for the same reason — another straight -1 export. (Its
+    //     name remains, unexported, in FEATURE_REGISTRY's explicit array for
+    //     that file, which is why feature-registry.test.ts's count doesn't
+    //     move for this one.)
+    //   - `evaluateAndPersistGoals` + `runGoalProgressForPlayers`
+    //     (v3/goal-progress.ts) and `runFocusAreaProgressForPlayers` +
+    //     `evaluateAndPersistFocusAreas` (v3/focus-area-progress.ts) moved to
+    //     src/lib/golf/progress-drivers.ts, a plain module with NO
+    //     'use server' directive. Both source files lost their 'use server'
+    //     directive entirely (now just `export {}`), so
+    //     discoverGolfActionFiles() no longer picks them up at all —
+    //     -2 exports per file, -4 total.
+    // All four were caller-supplied-player_id admin-bypass functions with
+    // zero auth in a 'use server' file — Next.js makes every such export a
+    // public, directly-POSTable action regardless of who actually imports it.
+    // 425 - 1 - 1 - 4 = 419.
+    expect(total).toBe(419);
   });
 });

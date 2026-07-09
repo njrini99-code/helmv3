@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { fetchAdminRollupA, type RollupA } from '@/app/golf/actions/admin/rollup-a';
 
 export type TeamHealth = 'active' | 'cooling' | 'dormant';
@@ -68,14 +69,27 @@ export async function fetchGolfTab(): Promise<{
   const today = new Date();
   const todayDate = today.toISOString().slice(0, 10);
 
-  const [rollup, teamsRes, membersRes, errorRes, llmCallsRes, llmBudgetRes, demoSessionsRes, demoRequestsRes] =
+  const [rollup, teamsRes, membersRes, errorRes, llmCallsCountRes, llmCostRes, llmBudgetRes, demoSessionsRes, demoRequestsRes] =
     await Promise.all([
       fetchAdminRollupA(),
       admin.from('golf_teams').select('id, name'),
       admin.from('golf_team_members').select('team_id').eq('status', 'active'),
       admin.from('admin_events').select('team_id')
         .eq('sport', 'golf').eq('event_type', 'error').gte('created_at', ago7d).limit(1000),
-      admin.from('golf_coachhelm_llm_calls').select('cost_usd').gte('created_at', ago30d).limit(1000),
+      // Pure count — head:true never triggers the PostgREST 1000-row cap,
+      // unlike deriving calls30d from llmCalls.length on a capped fetch.
+      admin.from('golf_coachhelm_llm_calls').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+      // Cost needs every row's cost_usd to sum — paginate past the cap
+      // instead of the prior .limit(1000), which silently under-summed
+      // cost30d once platform-wide 30d LLM calls passed 1000 rows.
+      fetchAllRowsResult((from, to) =>
+        admin
+          .from('golf_coachhelm_llm_calls')
+          .select('cost_usd')
+          .gte('created_at', ago30d)
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
       admin.from('golf_coachhelm_llm_budget').select('budget_usd, spent_usd').eq('date', todayDate),
       admin.from('golf_demo_sessions').select('id', { count: 'exact', head: true }).gte('entered_at', ago30d),
       admin.from('demo_requests').select('id', { count: 'exact', head: true }),
@@ -112,7 +126,7 @@ export async function fetchGolfTab(): Promise<{
     };
   });
 
-  const llmCalls = (llmCallsRes.data ?? []) as Array<{ cost_usd: number | null }>;
+  const llmCalls = (llmCostRes.data ?? []) as Array<{ cost_usd: number | null }>;
   const budgetRows = (llmBudgetRes.data ?? []) as Array<{ budget_usd: number; spent_usd: number }>;
   const budgetRemaining = budgetRows.length > 0
     ? budgetRows.reduce((sum, row) => sum + (row.budget_usd - row.spent_usd), 0)
@@ -122,7 +136,7 @@ export async function fetchGolfTab(): Promise<{
     rollup,
     teams: sortTeamsByHealth(teams),
     llm: {
-      calls30d: llmCalls.length,
+      calls30d: llmCallsCountRes.count ?? 0,
       cost30d: llmCalls.reduce((sum, c) => sum + (c.cost_usd ?? 0), 0),
       budgetRemaining,
     },

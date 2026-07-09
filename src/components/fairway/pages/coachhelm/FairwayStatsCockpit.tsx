@@ -64,6 +64,8 @@ import {
   BarCompare,
   StandingStrip,
   RuledLeaderStat,
+  StrokesGainedTornado,
+  type SGCategory,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -595,6 +597,22 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
     return { best, worst };
   }, [sgCategoryItems]);
 
+  // Tornado data for the SG tab — the same four category values, shaped for
+  // <StrokesGainedTornado> (sign-instant gain/loss: green right of the Tour
+  // baseline, amber left) so the player's SG breakdown reads at a glance the
+  // same way the team tab's hero tornado does. "SG: " prefix stripped to match
+  // the team tab's short category labels ("Off the Tee", not "SG: Off the Tee").
+  const sgTornadoData = useMemo<SGCategory[]>(
+    () =>
+      sgCategoryItems
+        .map((it) => ({
+          label: it.cfg.display_label.replace(/^SG:\s*/i, ''),
+          value: finite(it.row.player_value),
+        }))
+        .filter((d): d is SGCategory => d.value !== null),
+    [sgCategoryItems],
+  );
+
   // CoachHelm cause/effect — the patterns moving scoring the most (by absolute
   // stroke impact), top 3. Each carries a cause (description), an effect
   // (strokeImpact) and, when available, a fix (recommendation).
@@ -738,23 +756,28 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
 
   return (
     <div className={cn('flex flex-col gap-10', className)}>
-      {/* ════════════════ 0 · EXPORT — print / save-as-PDF the stat sheet ═════ */}
-      {/* P351 · A coach or player viewing the full stat sheet can print or save
-          it as a PDF to share. `print:hidden` drops the control from the printed
-          output; the global @media print stylesheet handles the page layout. */}
-      <div className="flex justify-end print:hidden">
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={<Printer className="h-4 w-4" aria-hidden />}
-          onClick={() => window.print()}
-        >
-          Print / Save as PDF
-        </Button>
-      </div>
-
       {/* ════════════════ 1 · VERDICT — SG hero + synthesized read ════════════ */}
-      <SgVerdict sgTotal={sgTotal} detailedStats={detailedStats} gainLeak={gainLeak} />
+      {/* P351 · Export lives in the hero's own header bezel (readout slot) —
+          title + action in ONE row, matching the team tab's ViewHeader
+          masthead pattern instead of floating in a disconnected row above it.
+          `print:hidden` drops the control from the printed output; the global
+          @media print stylesheet handles the page layout. */}
+      <SgVerdict
+        sgTotal={sgTotal}
+        detailedStats={detailedStats}
+        gainLeak={gainLeak}
+        headerAction={
+          <Button
+            variant="secondary"
+            size="sm"
+            className="print:hidden"
+            leftIcon={<Printer className="h-4 w-4" aria-hidden />}
+            onClick={() => window.print()}
+          >
+            Print / Save as PDF
+          </Button>
+        }
+      />
 
       {detailedStats?.truncated ? (
         <InlineNotice tone="warning" title="Showing the most recent rounds">
@@ -872,43 +895,59 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                   {gainLeak ? (
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                       {/* W6 polish: the best-value column across the four SG
-                          categories gets the green-ruled leader treatment
-                          instead of a plain text callout. */}
+                          categories gets the green-ruled leader treatment.
+                          Biggest gain/leak now share the SAME atom (both
+                          RuledLeaderStat) — leak stays plain-graphite (no
+                          `leader`) rather than an ad hoc warning-colored span,
+                          so the pair reads as one consistent callout. */}
                       <RuledLeaderStat
                         label="Biggest gain"
                         value={`${formatSg(gainLeak.best.value)} · ${gainLeak.best.label.replace(/^SG:\s*/i, '')}`}
                         size="compact"
                         leader
                       />
-                      <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
-                        <span aria-hidden className="text-fw-warning">▼</span>
-                        Biggest leak:{' '}
-                        <span className="font-medium text-text-primary">{gainLeak.worst.label}</span>
-                      </span>
+                      <RuledLeaderStat
+                        label="Biggest leak"
+                        value={`${formatSg(gainLeak.worst.value)} · ${gainLeak.worst.label.replace(/^SG:\s*/i, '')}`}
+                        size="compact"
+                      />
                     </div>
                   ) : null}
                 </div>
 
                 {sgCategoryItems.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {sgCategoryItems.map(({ id, row, cfg }) => (
-                      <StandingStrip
-                        key={id}
-                        metric_id={id}
-                        metric_label={cfg.display_label}
-                        player_value={row.player_value}
-                        team_avg={row.team_avg}
-                        team_n={row.team_n}
-                        team_pct={row.team_pct}
-                        pga_value={row.pga_value}
-                        is_womens={row.is_womens}
-                        direction={cfg.direction}
-                        unit={cfg.unit}
-                        scale={cfg.default_scale}
-                        size="card"
-                      />
-                    ))}
-                  </div>
+                  <>
+                    {/* Sign-instant read: diverging bars around the Tour
+                        baseline (green right = gained, amber left = lost) —
+                        the same tornado the team tab uses for its hero, so a
+                        player's SG breakdown reads at a glance before the
+                        detailed per-category strips below. */}
+                    <StrokesGainedTornado
+                      title="Category breakdown"
+                      subtitle={`vs ${sgTotal?.is_womens ? 'LPGA' : 'PGA'} Tour baseline`}
+                      data={sgTornadoData}
+                      state={sgTornadoData.length > 0 ? undefined : 'insufficient-data'}
+                    />
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {sgCategoryItems.map(({ id, row, cfg }) => (
+                        <StandingStrip
+                          key={id}
+                          metric_id={id}
+                          metric_label={cfg.display_label}
+                          player_value={row.player_value}
+                          team_avg={row.team_avg}
+                          team_n={row.team_n}
+                          team_pct={row.team_pct}
+                          pga_value={row.pga_value}
+                          is_womens={row.is_womens}
+                          direction={cfg.direction}
+                          unit={cfg.unit}
+                          scale={cfg.default_scale}
+                          size="card"
+                        />
+                      ))}
+                    </div>
+                  </>
                 ) : (
                   <Surface padding="lg">
                     <InsufficientData
@@ -998,10 +1037,13 @@ function SgVerdict({
   sgTotal,
   detailedStats,
   gainLeak,
+  headerAction,
 }: {
   sgTotal: PlayerStandingRow | null;
   detailedStats: GolfStats | null;
   gainLeak: { best: { label: string }; worst: { label: string } } | null;
+  /** Rendered in the hero panel's own header bezel (top-right), e.g. the print/export control. */
+  headerAction?: React.ReactNode;
 }) {
   const sgCfg = getMetricRenderConfig('sg_total');
   const scoringAvg = finite(detailedStats?.scoringAverage);
@@ -1030,6 +1072,7 @@ function SgVerdict({
       padding="lg"
       eyebrow="Strokes Gained"
       header="SG: Total vs PGA Tour"
+      readout={headerAction}
       as="section"
       className="flex flex-col gap-6"
     >

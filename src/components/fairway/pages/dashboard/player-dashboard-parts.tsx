@@ -46,6 +46,23 @@ import type {
   StrokesGainedSnapshot,
 } from '@/app/golf/actions/dashboard-data';
 
+/**
+ * The Action center section's own visibility + item count (see
+ * FairwayPlayerDashboard, which derives this from `hubData` — the same feed
+ * PlayerActionCenter renders below). Defined here (not imported from
+ * PlayerActionCenter.tsx) so TodayCard's contract doesn't reach across a file
+ * boundary outside this packet's scope; the SHAPE must stay in lockstep with
+ * PlayerActionCenter's own `hasAnything`/count gate.
+ */
+export interface ActionCenterSummary {
+  /** Whether the Action center section renders anything at all — the exact
+   *  condition the `#action-center` anchor's existence depends on. */
+  visible: boolean;
+  /** Actionable item count (pending tasks + un-RSVP'd events + upcoming
+   *  trips). Excludes announcements — reference material, not a "to-do". */
+  count: number;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
  * Section heading — quiet General Sans h3 with an optional trailing link.
  * One consistent section-title voice across the page (no bespoke per-card
@@ -86,10 +103,22 @@ export function SectionTitle({
  * "Today" summary card — DEMOTES the old TodayTimeline + ActionItemsCard.
  * ----------------------------------------------------------------------------
  * The plan: the Dashboard must NOT reproduce the Hub's today/tasks tabs. It
- * shows a single compact summary (the next event + the next/overdue task) and
- * links into the Hub, which is the canonical action surface. The counts read
- * off the SAME data the page already received from the payload — no second
- * source-table query here.
+ * shows a single compact summary and links into the Action center, which is
+ * the canonical action surface.
+ *
+ * CONSOLIDATION (review): this card used to derive its own "next event" /
+ * "lead task" preview from `events`/`actionItems` (the dashboard's own
+ * today/action feed) — a SECOND source independent of the Action center
+ * section below, which reads the Hub's tasks/events/trips feed. The two could
+ * disagree (e.g. this card saying "you're all caught up" while the Action
+ * center rendered real items). When `hubSummary` is supplied (the Action
+ * center's own {@link ActionCenterSummary} — the Hub feed is present), this
+ * card defers to it as the ONE source: it shows a plain count instead of
+ * re-deriving a preview, and the "See details" CTA is gated on the EXACT SAME
+ * `visible` flag that decides whether the Action center section (and its
+ * `#action-center` anchor) renders at all. A teamless player has no Hub feed
+ * (`hubSummary` omitted) and keeps the original `events`/`actionItems`
+ * preview — the only "what's next" surface such a player has.
  * ──────────────────────────────────────────────────────────────────────── */
 
 function formatEventTime(start: string, timezone?: string): string {
@@ -108,10 +137,14 @@ export function TodayCard({
   events,
   actionItems,
   timezone,
+  hubSummary = null,
 }: {
   events: TodayEvent[];
   actionItems: ActionItem[];
   timezone?: string;
+  /** The Action center's own visibility + count (present only when the
+   *  player has a Hub feed — see the consolidation note above). */
+  hubSummary?: ActionCenterSummary | null;
 }) {
   const nextEvent = events[0] ?? null;
   const overdue = useMemo(
@@ -124,7 +157,22 @@ export function TodayCard({
   );
   const leadTask = overdue[0] ?? openTasks[0] ?? actionItems[0] ?? null;
 
-  const nothingToday = !nextEvent && actionItems.length === 0;
+  const usingHubSummary = hubSummary != null;
+  const nothingToday = usingHubSummary
+    ? !hubSummary.visible
+    : !nextEvent && actionItems.length === 0;
+
+  // Gate the CTA on the exact same visibility the Action center section uses
+  // to decide whether it (and its `#action-center` anchor) renders at all.
+  const showActionCenterCta = usingHubSummary && hubSummary.visible;
+
+  const footerLabel = usingHubSummary
+    ? hubSummary.count > 0
+      ? `${hubSummary.count} item${hubSummary.count === 1 ? '' : 's'} to action`
+      : 'Your action center'
+    : actionItems.length > 0
+      ? `${actionItems.length} item${actionItems.length === 1 ? '' : 's'} to action`
+      : 'Your action center';
 
   return (
     <Surface padding="md" className="flex h-full flex-col">
@@ -133,85 +181,122 @@ export function TodayCard({
         subtitle={
           nothingToday
             ? "You're all caught up"
-            : 'Your next event and task — manage everything in the Hub'
+            : usingHubSummary
+              ? 'What needs you — see the Action center below'
+              : 'Your next event and task — manage everything in the Hub'
         }
       />
 
       <div className="flex flex-1 flex-col gap-2.5">
-        {/* Next event row */}
-        {nextEvent ? (
-          <Inset padding="sm" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
-              <CalendarClock aria-hidden className="h-4 w-4" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {nextEvent.title}
-              </p>
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                {formatEventTime(nextEvent.start_time, timezone)}
-                {nextEvent.location ? ` · ${nextEvent.location}` : ''}
-              </p>
-            </div>
-          </Inset>
-        ) : null}
-
-        {/* Lead task row (overdue first) */}
-        {leadTask ? (
-          <Inset padding="sm" className="flex items-center gap-3">
-            <span
-              className={cn(
-                'grid h-9 w-9 shrink-0 place-items-center rounded-fw-md',
-                leadTask.overdue
-                  ? 'bg-fw-warning-bg text-fw-warning'
-                  : 'bg-surface text-text-tertiary',
-              )}
-            >
-              {leadTask.overdue ? (
-                <AlertCircle aria-hidden className="h-4 w-4" />
-              ) : (
+        {usingHubSummary ? (
+          hubSummary.visible ? (
+            <Inset padding="sm" className="flex items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
                 <ClipboardList aria-hidden className="h-4 w-4" />
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {leadTask.title}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-fw-sans text-body-sm font-medium text-text-primary">
+                  {hubSummary.count > 0
+                    ? `${hubSummary.count} thing${hubSummary.count === 1 ? '' : 's'} need${hubSummary.count === 1 ? 's' : ''} you`
+                    : 'New announcements'}
+                </p>
+                <p className="font-fw-sans text-caption text-text-tertiary">
+                  Tasks, RSVPs, and trips — full list in the Action center.
+                </p>
+              </div>
+            </Inset>
+          ) : (
+            <Inset
+              padding="md"
+              className="flex flex-1 flex-col items-center justify-center gap-1 text-center"
+            >
+              <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
+                Nothing scheduled
               </p>
               <p className="font-fw-sans text-caption text-text-tertiary">
-                {leadTask.overdue ? 'Overdue' : 'Open'}
-                {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
+                Tasks, events, and trips will show up here.
               </p>
-            </div>
-          </Inset>
-        ) : null}
+            </Inset>
+          )
+        ) : (
+          <>
+            {/* Next event row */}
+            {nextEvent ? (
+              <Inset padding="sm" className="flex items-center gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
+                  <CalendarClock aria-hidden className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                    {nextEvent.title}
+                  </p>
+                  <p className="font-fw-sans text-caption text-text-tertiary">
+                    {formatEventTime(nextEvent.start_time, timezone)}
+                    {nextEvent.location ? ` · ${nextEvent.location}` : ''}
+                  </p>
+                </div>
+              </Inset>
+            ) : null}
 
-        {nothingToday ? (
-          <Inset
-            padding="md"
-            className="flex flex-1 flex-col items-center justify-center gap-1 text-center"
-          >
-            <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
-              Nothing scheduled
-            </p>
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              Check the Hub for trips and upcoming events.
-            </p>
-          </Inset>
-        ) : null}
+            {/* Lead task row (overdue first) */}
+            {leadTask ? (
+              <Inset padding="sm" className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    'grid h-9 w-9 shrink-0 place-items-center rounded-fw-md',
+                    leadTask.overdue
+                      ? 'bg-fw-warning-bg text-fw-warning'
+                      : 'bg-surface text-text-tertiary',
+                  )}
+                >
+                  {leadTask.overdue ? (
+                    <AlertCircle aria-hidden className="h-4 w-4" />
+                  ) : (
+                    <ClipboardList aria-hidden className="h-4 w-4" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                    {leadTask.title}
+                  </p>
+                  <p className="font-fw-sans text-caption text-text-tertiary">
+                    {leadTask.overdue ? 'Overdue' : 'Open'}
+                    {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
+                  </p>
+                </div>
+              </Inset>
+            ) : null}
+
+            {nothingToday ? (
+              <Inset
+                padding="md"
+                className="flex flex-1 flex-col items-center justify-center gap-1 text-center"
+              >
+                <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
+                  Nothing scheduled
+                </p>
+                <p className="font-fw-sans text-caption text-text-tertiary">
+                  Check the Hub for trips and upcoming events.
+                </p>
+              </Inset>
+            ) : null}
+          </>
+        )}
       </div>
 
       <Surface.Footer className="mt-3">
-        <span className="font-fw-sans text-caption text-text-tertiary">
-          {actionItems.length > 0
-            ? `${actionItems.length} item${actionItems.length === 1 ? '' : 's'} to action`
-            : 'Your action center'}
-        </span>
+        <span className="font-fw-sans text-caption text-text-tertiary">{footerLabel}</span>
         {/* WAVE W2: the standalone Hub route is gone (merged into this page —
             see PlayerActionCenter below on this same Dashboard); jump to the
-            merged section instead of navigating to a redirect. */}
-        <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
-          <Link href="#action-center">See details</Link>
-        </Button>
+            merged section instead of navigating to a redirect. Only rendered
+            when that section actually exists on the page (see
+            `showActionCenterCta` above) — otherwise `#action-center` would
+            link at nothing. */}
+        {showActionCenterCta ? (
+          <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
+            <Link href="#action-center">See details</Link>
+          </Button>
+        ) : null}
       </Surface.Footer>
     </Surface>
   );

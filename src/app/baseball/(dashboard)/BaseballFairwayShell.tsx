@@ -132,8 +132,23 @@ function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem
     .map((label) => items.find((item) => item.label === label))
     .filter((item): item is NavItem => Boolean(item));
 
-  if (picked.length >= 3) return picked.slice(0, 5);
-  return items.slice(0, 5);
+  if (picked.length >= 3) return picked.slice(0, 5).map(relabelForBottomNav);
+  return items.slice(0, 5).map(relabelForBottomNav);
+}
+
+/** Bottom-tab-only label shortening — the rail's full label doesn't fit the
+ *  bottom bar's narrow per-tab column (`FairwayBottomNav`'s `truncate`). */
+const BOTTOM_NAV_LABEL_OVERRIDES: Partial<Record<string, string>> = {
+  'Stats & Performance': 'Stats',
+};
+
+/** Display-only relabel for the bottom bar — the desktop rail keeps the full
+ *  label (a NEW object here, never mutating the shared NavItem the rail also
+ *  renders). Applied to both `buildBottomNavFromSections` return paths so a
+ *  showcase coach's fallback slice is shortened too. */
+function relabelForBottomNav(item: NavItem): NavItem {
+  const short = BOTTOM_NAV_LABEL_OVERRIDES[item.label];
+  return short ? { ...item, label: short } : item;
 }
 
 /**
@@ -641,11 +656,15 @@ function BaseballFairwayContent({
       >
         <div id="main-content" tabIndex={-1} className="outline-none">
           {activeHub && (
+            // Renders at every breakpoint — its own `overflow-x-auto` row
+            // (hub-sub-nav.tsx) IS the mobile treatment (a horizontal scroll
+            // strip), not a desktop-only affordance hidden below `md:`.
+            // `md:top-16` clears the desktop top bar; mobile sticks flush.
             <HubSubNav
               key={activeHub.id}
               tabs={activeHub.tabs}
               ariaLabel={activeHub.ariaLabel}
-              className="hidden md:block md:top-16"
+              className="md:top-16"
             />
           )}
           {children}

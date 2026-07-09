@@ -39,6 +39,13 @@ export interface SendCoachDigestArgs {
   html: string;
   text: string;
   coachId?: string;
+  /**
+   * Sent as the Resend `Idempotency-Key` header. A retry/manual re-trigger of
+   * the same cron tick with the same key returns Resend's cached response
+   * instead of dispatching a second digest — callers should derive this from
+   * a stable `coachId:date` period key.
+   */
+  idempotencyKey?: string;
 }
 
 export interface SendCoachDigestResult {
@@ -76,13 +83,16 @@ export async function sendCoachDigest(
   const from = process.env.RESEND_COACH_DIGEST_FROM || DEFAULT_FROM;
 
   try {
-    const { data, error } = await client.emails.send({
-      from,
-      to,
-      subject: args.subject,
-      html: args.html,
-      text: args.text,
-    });
+    const { data, error } = await client.emails.send(
+      {
+        from,
+        to,
+        subject: args.subject,
+        html: args.html,
+        text: args.text,
+      },
+      args.idempotencyKey ? { idempotencyKey: args.idempotencyKey } : undefined,
+    );
 
     if (error) {
       await logServerError(
