@@ -1,11 +1,20 @@
 'use client';
 
+// =============================================================================
+// DevPlanDetailPage — the coach's single development-plan detail view,
+// migrated onto "The Living Annual" kit (Lane 1 · THE PRESSBOX, green ink,
+// sibling to DevPlansClient). PRESENTATION ONLY: `fetchPlan`/`completeGoal`/
+// `uncompleteGoal`, the not-found vs. genuine-error disambiguation, and the
+// breadcrumb wiring are unchanged — only the render moved to the kit (a
+// shared `<SectionMasthead>` instead of the 5 copy-pasted header blocks, and
+// `<EditorsLetter>` instead of the bespoke destructive/warm boxes).
+// =============================================================================
+
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { PageLoading } from '@/components/ui/loading';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PlanDetail } from '@/components/baseball/dev-plans/PlanDetail';
 import { BreadcrumbLabel } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
 import { IconChevronLeft } from '@/components/icons';
@@ -17,6 +26,19 @@ import {
   uncompleteGoal,
 } from '@/app/baseball/actions/dev-plans';
 import type { DevPlanWithPlayer } from '@/lib/baseball/dev-plan-types';
+import { cn } from '@/lib/utils';
+import { SectionMasthead, PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
+
+const BACK_ACTION = (
+  <Link href="/baseball/dashboard/dev-plans">
+    <Button variant="secondary" size="sm">
+      <IconChevronLeft size={16} className="mr-1.5" />
+      Back
+    </Button>
+  </Link>
+);
 
 export default function DevPlanDetailPage() {
   const params = useParams<{ id: string }>();
@@ -106,140 +128,71 @@ export default function DevPlanDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
-          <Link
-            href="/baseball/dashboard/dev-plans"
-            aria-label="Go back"
-            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
-          >
-            <IconChevronLeft size={20} aria-hidden="true" />
-          </Link>
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
-          </div>
-        </div>
-        <div className="p-6 lg:p-8">
-          <PageLoading />
-        </div>
-      </>
+      <div className={cn(PAGE_SHELL, 'space-y-6')}>
+        <SectionMasthead eyebrow="THE PRESSBOX · DEVELOPMENT PLANS" title="Development Plan" ink="team" actions={BACK_ACTION} />
+        <PaperCard className="p-6">
+          <Skeleton variant="text" width="40%" height={18} className="mb-3" />
+          <Skeleton variant="text" width="100%" height={40} />
+        </PaperCard>
+      </div>
     );
   }
 
   if (user?.role !== 'coach') {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
-          <Link
-            href="/baseball/dashboard/dev-plans"
-            aria-label="Go back"
-            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
-          >
-            <IconChevronLeft size={20} aria-hidden="true" />
-          </Link>
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
-          </div>
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE PRESSBOX · DEVELOPMENT PLANS" title="Development Plan" ink="team" actions={BACK_ACTION} />
+        <div className="mt-6 mx-auto max-w-lg">
+          <EditorsLetter ink="team" title="Coaches only" body="Only coaches can access development plans." />
         </div>
-        <div className="p-6 lg:p-8">
-          <Card variant="glass">
-            <CardContent className="p-12 text-center">
-              <p className="text-warm-500">Only coaches can access development plans.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </>
+      </div>
     );
   }
 
   if (fetchError) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
-          <Link
-            href="/baseball/dashboard/dev-plans"
-            aria-label="Go back"
-            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
-          >
-            <IconChevronLeft size={20} aria-hidden="true" />
-          </Link>
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
-          </div>
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE PRESSBOX · DEVELOPMENT PLANS" title="Development Plan" ink="team" actions={BACK_ACTION} />
+        <div className="mt-6">
+          <EditorsLetter
+            ink="team"
+            title="Couldn't load this plan"
+            body={fetchError}
+            action={
+              <Button variant="secondary" size="sm" onClick={() => fetchPlan()}>
+                Try again
+              </Button>
+            }
+          />
         </div>
-        <div className="p-6 lg:p-8">
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive">
-            <p className="font-medium">Couldn&apos;t load this plan</p>
-            <p className="mt-1 text-destructive/80">{fetchError}</p>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => fetchPlan()}
-              className="mt-4"
-            >
-              Try again
-            </Button>
-          </div>
-        </div>
-      </>
+      </div>
     );
   }
 
   if (notFound || !plan) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
-          <Link
-            href="/baseball/dashboard/dev-plans"
-            aria-label="Go back"
-            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
-          >
-            <IconChevronLeft size={20} aria-hidden="true" />
-          </Link>
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
-          </div>
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE PRESSBOX · DEVELOPMENT PLANS" title="Development Plan" ink="team" actions={BACK_ACTION} />
+        <div className="mt-6">
+          <EditorsLetter ink="team" title="Plan not found." body="This development plan could not be found." />
         </div>
-        <div className="p-6 lg:p-8">
-          <div className="rounded-xl border border-warm-200 bg-cream-50 p-6 text-sm text-warm-600">
-            This development plan could not be found.
-          </div>
-        </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className={cn(PAGE_SHELL, 'space-y-6')}>
       {/* Ruling 4: the shell's breadcrumb has no registry entry for a
           dynamic plan id — this supplies the real plan title so the trail
           never falls back to a raw UUID segment. */}
       <BreadcrumbLabel name={plan.title} />
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
-        <Link
-          href="/baseball/dashboard/dev-plans"
-          aria-label="Go back"
-          className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
-        >
-          <IconChevronLeft size={20} aria-hidden="true" />
-        </Link>
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
-        </div>
-      </div>
-      <div className="p-6 lg:p-8">
-        <PlanDetail
-          plan={plan}
-          onComplete={handleComplete}
-          onUncomplete={handleUncomplete}
-          pendingGoalId={isPending ? pendingGoalId : null}
-        />
-      </div>
-    </>
+      <SectionMasthead eyebrow="THE PRESSBOX · DEVELOPMENT PLANS" title="Development Plan" ink="team" actions={BACK_ACTION} />
+      <PlanDetail
+        plan={plan}
+        onComplete={handleComplete}
+        onUncomplete={handleUncomplete}
+        pendingGoalId={isPending ? pendingGoalId : null}
+      />
+    </div>
   );
 }

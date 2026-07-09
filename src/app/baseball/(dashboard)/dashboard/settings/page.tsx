@@ -8,6 +8,8 @@ import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { changePasswordAction } from '@/app/baseball/actions/auth';
+import { SectionMasthead } from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
 import {
   IconBell,
   IconBuilding,
@@ -218,15 +220,15 @@ export default function SettingsPage() {
   };
 
   return (
-    <>
-      {/* Ruling 2 (item 5): the shell's own top bar already renders
-          breadcrumbs + the mobile menu affordance — this page no longer
-          mounts a second (legacy) <Header>, which duplicated both. */}
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-        <h1 className="text-h2 font-semibold text-warm-900">Settings</h1>
-        <p className="mt-1 text-body-sm text-warm-500">Manage your account settings</p>
-      </div>
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Shared LA masthead — same component + eyebrow grammar as Roles and
+          Program Settings, so the three settings surfaces read as one section
+          of the publication (spec §5, ui-migration-map settings row). */}
+      <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Settings" ink="team">
+        <p className="font-annual text-body-sm text-text-secondary">Manage your account settings</p>
+      </SectionMasthead>
+
+      <div className="space-y-6">
         <section className="grid gap-3 sm:grid-cols-2">
           {(user?.role === 'coach' ? COACH_SETTINGS_LINKS : PLAYER_SETTINGS_LINKS).map((item) => {
             const Icon = item.icon;
@@ -404,55 +406,57 @@ export default function SettingsPage() {
                   </Button>
                 </>
               ) : (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3 animate-fade-in">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <IconShield size={16} className="text-red-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-red-900 mb-1">Confirm Account Deletion</h4>
-                      <p className="text-sm text-red-700 mb-3">
-                        This will permanently delete your account, all your data, and any associated content. This action cannot be undone.
-                      </p>
-                      <p className="text-sm text-red-700 mb-2">
-                        Type <span className="font-mono font-semibold">DELETE</span> to confirm:
-                      </p>
-                      <Input
-                        type="text"
-                        value={deleteConfirmText}
-                        onChange={(e) => setDeleteConfirmText(e.target.value)}
-                        placeholder="Type DELETE to confirm"
-                        className="border-red-300 focus:border-red-500 focus:ring-red-100"
-                      />
+                <InlineNotice
+                  tone="danger"
+                  title="Confirm account deletion"
+                  dismissible
+                  onDismiss={() => {
+                    setShowDeleteConfirm(false);
+                    setDeleteConfirmText('');
+                  }}
+                >
+                  <div className="space-y-3">
+                    <p>
+                      This will permanently delete your account, all your data, and any
+                      associated content. This action cannot be undone.
+                    </p>
+                    <p>
+                      Type <span className="font-mono font-semibold">DELETE</span> to confirm:
+                    </p>
+                    <Input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE to confirm"
+                    />
+                    <div className="flex items-center gap-3 justify-end">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          setDeleteConfirmText('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        isLoading={deletingAccount}
+                        onClick={handleDeleteAccount}
+                        disabled={deleteConfirmText !== 'DELETE'}
+                      >
+                        Permanently Delete Account
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 justify-end">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setShowDeleteConfirm(false);
-                        setDeleteConfirmText('');
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      isLoading={deletingAccount}
-                      onClick={handleDeleteAccount}
-                      disabled={deleteConfirmText !== 'DELETE'}
-                    >
-                      Permanently Delete Account
-                    </Button>
-                  </div>
-                </div>
+                </InlineNotice>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }

@@ -101,11 +101,24 @@ function DashboardSessionGuard({ children }: { children: React.ReactNode }) {
 // renders unconditionally — the legacy isRedesignEnabled() fork to
 // BaseballShellLayout was removed. This is the only shell the (dashboard)
 // route group renders.
+//
+// MANIFEST: this layout (and everything nested under it — coach + shared
+// dashboard routes) is a client component, so it cannot export the Next
+// metadata API's `manifest` field (Server Components only). Without an
+// override it silently inherits the root layout's `/manifest.json` (the
+// GolfHelm PWA manifest — wrong branding for a BaseballHelm install prompt).
+// Same fix as (player-dashboard)/player/layout.tsx: render the `<link>` tag
+// directly — React 19 / Next.js 16 hoist it to `<head>`.
 // ---------------------------------------------------------------------------
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardSessionGuard>{children}</DashboardSessionGuard>;
+  return (
+    <>
+      <link rel="manifest" href="/baseball-manifest.webmanifest" />
+      <DashboardSessionGuard>{children}</DashboardSessionGuard>
+    </>
+  );
 }

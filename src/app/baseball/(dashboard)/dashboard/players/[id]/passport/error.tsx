@@ -13,11 +13,11 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/dashboard/settings/data-retention"
-      component="DataRetentionSettingsPage"
-      title="Couldn't load data retention settings"
-      message="We couldn't load data retention settings. Please try again."
-      homePath="/baseball/dashboard/settings"
+      route="/baseball/dashboard/players/[id]/passport"
+      component="CoachPlayerPassportPage"
+      title="Passport couldn't load"
+      message="We couldn't load this player's passport. Please try again."
+      homePath="/baseball/dashboard/roster"
     />
   );
 }

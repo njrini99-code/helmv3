@@ -19,11 +19,12 @@
  * primary-50 highlight on the active row and warm text throughout.
  */
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
 import { IconSearch, IconPlus, IconMail, IconUpload, IconUser } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface Destination {
   id: string;
@@ -67,12 +68,20 @@ export function CrmCommandPalette({
 }: CrmCommandPaletteProps) {
   const [search, setSearch] = useState('');
 
-  if (!open) return null;
-
-  const close = () => {
+  const close = useCallback(() => {
     onOpenChange(false);
     setSearch('');
-  };
+  }, [onOpenChange]);
+
+  // Shared hand-rolled-dialog primitive (already proven in ConfirmDialog /
+  // JoinRequestsModal / EventDetailModal): Tab focus trap + focus restore to
+  // whatever triggered the palette + Escape-to-close, scoped to `modalRef`
+  // below. cmdk itself owns only the fuzzy matcher/keyboard nav, not modal
+  // semantics, so without this Tab could escape to background controls and
+  // focus was never returned to the trigger on close (#a11y-sweep P1).
+  const { modalRef } = useFocusTrap(open, close);
+
+  if (!open) return null;
 
   // Pre-filter the coach list ourselves (case-insensitive substring over
   // name/school/email) so we can cap the rendered rows BEFORE handing them to
@@ -95,12 +104,7 @@ export function CrmCommandPalette({
   );
 
   return (
-    <div
-      className="fixed inset-0 z-[60] animate-in fade-in-0 duration-200"
-      role="dialog"
-      aria-modal="true"
-      aria-label="CRM command palette"
-    >
+    <div className="fixed inset-0 z-[60] animate-in fade-in-0 duration-200">
       {/* Backdrop — click closes (cmdk.Dialog isn't used; we own the frame) */}
       <Button
         variant="ghost"
@@ -113,7 +117,13 @@ export function CrmCommandPalette({
       </Button>
 
       {/* Palette frame */}
-      <div className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="CRM command palette"
+        className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
+      >
         <Command
           label="CRM command palette"
           loop
@@ -127,15 +137,10 @@ export function CrmCommandPalette({
           <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/40">
             <IconSearch size={18} className="text-warm-400" aria-hidden />
             <Command.Input
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
               value={search}
               onValueChange={setSearch}
               placeholder="Search coaches, jump to a tab, run an action…"
               className="flex-1 bg-transparent outline-none text-base text-warm-900 placeholder:text-warm-500 tracking-[-0.005em] focus-visible:outline-none"
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') close();
-              }}
             />
             <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
               ESC

@@ -13,11 +13,11 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/dashboard/settings/appearance"
-      component="AppearanceSettingsPage"
-      title="Couldn't load appearance settings"
-      message="We couldn't load appearance settings. Please try again."
-      homePath="/baseball/dashboard/settings"
+      route="/baseball/staff/join/[code]"
+      component="StaffJoinPage"
+      title="Failed to load invitation"
+      message="We couldn't load this staff invitation. The link may have expired."
+      homePath="/baseball/dashboard"
     />
   );
 }

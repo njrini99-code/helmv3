@@ -10,7 +10,6 @@ import {
   IconMapPin,
   IconMail,
   IconUsers,
-  IconStar,
   IconBuilding,
   IconLock,
 } from '@/components/icons';
@@ -18,6 +17,7 @@ import { Metadata } from 'next';
 import Image from 'next/image';
 import { ProgramTabs } from '@/components/baseball/program/ProgramTabs';
 import { ProgramRoster } from '@/components/baseball/program/ProgramRoster';
+import { resolveRecruitingViewerAccess } from '@/lib/baseball/recruiting-viewer-access';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -61,23 +61,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
   //   task only widens access for LOGGED-OUT visitors, per product
   //   decision.
   // ============================================================
-  const { data: { user } } = await supabase.auth.getUser();
-
-  let coach: { coach_type: string } | null = null;
-  if (user) {
-    const { data } = await supabase
-      .from('baseball_coaches')
-      .select('coach_type')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!data || !['college', 'juco'].includes(data.coach_type)) {
-      notFound(); // Block non-recruiting authenticated users (unchanged)
-    }
-    coach = data;
-  }
-
-  const isPublicViewer = !user;
+  const { isPublicViewer, coach } = await resolveRecruitingViewerAccess(supabase);
 
   interface OrganizationCore {
     id: string;
@@ -226,19 +210,6 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
     }
   }
 
-  type OrganizationFacility = {
-    id: string; name: string; facility_type: string | null;
-    description: string | null; capacity: number | null;
-    image_url: string | null; display_order: number;
-  };
-  type ProgramCommitment = {
-    id: string; player_name: string; position: string; grad_year: number;
-    high_school: string; city: string; state: string;
-    commitment_date: string; is_signed: boolean;
-  };
-  const facilities: OrganizationFacility[] = [];
-  const commitments: ProgramCommitment[] = [];
-
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
@@ -368,93 +339,13 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                     </Card>
                   )}
 
-                  {/* Facilities */}
-                  {facilities.length > 0 && (
-                    <Card className="overflow-hidden">
-                      <div className="p-6 border-b border-warm-200 bg-cream-50">
-                        <h2 className="text-lg font-semibold tracking-tight text-warm-900">Facilities</h2>
-                      </div>
-                      <div className="p-6 bg-warm-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {facilities.map((facility) => (
-                            <div
-                              key={facility.id}
-                              className="bg-cream-50 rounded-lg border border-warm-200 overflow-hidden"
-                            >
-                              {facility.image_url ? (
-                                <Image
-                                  src={facility.image_url}
-                                  alt={facility.name}
-                                  width={400}
-                                  height={160}
-                                  className="w-full h-40 object-cover"
-                                  unoptimized
-                                />
-                              ) : (
-                                <div className="w-full h-40 bg-warm-100 flex items-center justify-center">
-                                  <IconBuilding size={32} className="text-warm-400" />
-                                </div>
-                              )}
-                              <div className="p-4">
-                                <h3 className="font-semibold text-warm-900 mb-1">
-                                  {facility.name}
-                                </h3>
-                                {facility.capacity && (
-                                  <p className="text-xs text-warm-500 mb-2">
-                                    Capacity: {facility.capacity}
-                                  </p>
-                                )}
-                                {facility.description && (
-                                  <p className="text-sm leading-relaxed text-warm-600 line-clamp-2">
-                                    {facility.description}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Commitments */}
-                  {commitments.length > 0 && (
-                    <Card className="overflow-hidden">
-                      <div className="p-6 border-b border-warm-200 bg-cream-50">
-                        <div className="flex items-center gap-2">
-                          <IconStar size={20} className="text-primary-600" />
-                          <h2 className="text-lg font-semibold tracking-tight text-warm-900">
-                            Class of {new Date().getFullYear()} Commits
-                          </h2>
-                        </div>
-                      </div>
-                      <div className="p-6 bg-cream-50">
-                        <div className="divide-y divide-warm-200">
-                          {commitments.slice(0, 10).map((commit) => (
-                            <div key={commit.id} className="py-3 first:pt-0 last:pb-0">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium text-warm-900">{commit.player_name}</p>
-                                  <p className="text-sm leading-relaxed text-warm-600">
-                                    {commit.position} • {commit.high_school}
-                                  </p>
-                                  <p className="text-xs text-warm-500">
-                                    {commit.city}, {commit.state}
-                                  </p>
-                                </div>
-                                {commit.is_signed && (
-                                  <Badge variant="success">Signed</Badge>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-
                   {/* Empty state when no additional info */}
-                  {staff.length === 0 && facilities.length === 0 && commitments.length === 0 && (
+                  {/* Facilities and Commitments sections were removed (W4d): the
+                      backing tables (organization_facilities, program_commitments)
+                      don't exist yet, so those sections rendered permanently-empty
+                      UI that could never show real data. A future feature re-adds
+                      them once the tables + read paths exist. */}
+                  {staff.length === 0 && (
                     <Card className="p-8 text-center">
                       <p className="text-warm-500">No additional program information available.</p>
                     </Card>
@@ -543,14 +434,6 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                     <span className="text-sm leading-relaxed text-warm-600">Coaching Staff</span>
                     <span className="text-sm font-semibold text-warm-900">
                       {staff.length}
-                    </span>
-                  </div>
-                )}
-                {commitments.length > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-warm-600">Commits</span>
-                    <span className="text-sm font-semibold text-warm-900">
-                      {commitments.length}
                     </span>
                   </div>
                 )}

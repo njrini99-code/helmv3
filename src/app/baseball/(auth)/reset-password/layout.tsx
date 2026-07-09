@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Reset Password | BaseballHelm',
   description: 'Set a new password for your BaseballHelm account.',
+  manifest: '/baseball-manifest.webmanifest',
 };
 
 export default function ResetPasswordLayout({

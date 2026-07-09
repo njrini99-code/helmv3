@@ -14,6 +14,7 @@ import {
 } from '@/components/icons';
 import { Metadata } from 'next';
 import Image from 'next/image';
+import { resolveRecruitingViewerAccess } from '@/lib/baseball/recruiting-viewer-access';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -88,23 +89,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
   //   unchanged pre-existing block — this task only widens access for
   //   LOGGED-OUT visitors, per product decision.
   // ============================================================
-  const { data: { user } } = await supabase.auth.getUser();
-
-  let coach: { coach_type: string } | null = null;
-  if (user) {
-    const { data } = await supabase
-      .from('baseball_coaches')
-      .select('coach_type')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!data || !['college', 'juco'].includes(data.coach_type)) {
-      notFound(); // Block non-recruiting authenticated users (unchanged)
-    }
-    coach = data;
-  }
-
-  const isPublicViewer = !user;
+  const { isPublicViewer, coach } = await resolveRecruitingViewerAccess(supabase);
 
   interface TeamCore {
     id: string;

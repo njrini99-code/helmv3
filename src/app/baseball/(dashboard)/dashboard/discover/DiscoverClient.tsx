@@ -1,5 +1,15 @@
 'use client';
 
+// =============================================================================
+// DiscoverClient — the coach's "find recruits" surface, migrated onto "The
+// Living Annual" kit (Lane 2 · THE WAR ROOM, clay ink — ui-migration-map.md
+// `discover`/`watchlist` row). PRESENTATION ONLY: the debounced filter state,
+// the player/team abort-controller fetch effects, and the watchlist/state-count
+// loads are all unchanged — only the page's own chrome (masthead, coach-access
+// gate, error notice) moved to the kit. `FilterPanel`/`DiscoverView` render the
+// actual results grid and are out of scope for this pass.
+// =============================================================================
+
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getDiscoverPlayers, getDiscoverTeams, getWatchlistIds, getStateCounts, type DiscoverFilters, type CoachType } from '@/app/baseball/actions/discover';
@@ -11,7 +21,10 @@ import { Button, IconButton } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { IconFilter, IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 import type { Player, Organization } from '@/lib/types';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 // Debounce hook for search
 function useDebounce<T>(value: T, delay: number): T {
@@ -333,21 +346,16 @@ function DiscoverContent() {
 
   if (!coach) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Discover</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Coach access required</p>
-          </div>
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE WAR ROOM · RECRUITING" title="Discover" ink="pursuit" />
+        <div className="mt-6 mx-auto max-w-lg">
+          <EditorsLetter
+            ink="pursuit"
+            title="Coach access required"
+            body="Please log in as a coach to access discovery."
+          />
         </div>
-        <div className="p-6">
-          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
-            <p className="text-warm-500">
-              Please log in as a coach to access discovery.
-            </p>
-          </div>
-        </div>
-      </>
+      </div>
     );
   }
 
@@ -366,29 +374,29 @@ function DiscoverContent() {
   ].filter(Boolean).length;
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Discover</h1>
-          <p className="mt-1 text-body-sm text-warm-500">
-            {filters.mode === 'players'
-              ? `Find your next recruit${playerCount > 0 ? ` \u2014 ${playerCount.toLocaleString()} players found` : ''}`
-              : `Explore programs with talent${teamCount > 0 ? ` \u2014 ${teamCount.toLocaleString()} programs found` : ''}`}
-          </p>
-        </div>
-      </div>
+    <div className={PAGE_SHELL}>
+      <SectionMasthead eyebrow="THE WAR ROOM \u00b7 RECRUITING" title="Discover" ink="pursuit">
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          {filters.mode === 'players'
+            ? `Find your next recruit${playerCount > 0 ? ` \u2014 ${playerCount.toLocaleString()} players found` : ''}`
+            : `Explore programs with talent${teamCount > 0 ? ` \u2014 ${teamCount.toLocaleString()} programs found` : ''}`}
+        </p>
+      </SectionMasthead>
 
-      <div className="p-6 lg:p-8">
-        {/* Error Alert */}
+      <div className="mt-6">
+        {/* Error notice */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
-            <span>{error}</span>
-            <Button variant="danger"
-              onClick={() => setError(null)}
-              className="text-red-600 hover:text-red-700 font-medium transition-colors"
-            >
-              Dismiss
-            </Button>
+          <div className="mb-6">
+            <EditorsLetter
+              ink="pursuit"
+              title="Something went wrong"
+              body={error}
+              action={
+                <Button variant="ghost" onClick={() => setError(null)} className="text-pursuit hover:bg-[color:var(--paper-canvas)]">
+                  Dismiss
+                </Button>
+              }
+            />
           </div>
         )}
 
@@ -505,7 +513,7 @@ function DiscoverContent() {
         teamId={selectedTeamId}
         onClose={() => setSelectedTeamId(null)}
       />
-    </>
+    </div>
   );
 }
 

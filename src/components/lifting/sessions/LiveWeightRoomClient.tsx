@@ -309,12 +309,12 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                 <span className="font-medium text-primary-700">{stats.completed}</span>/{stats.total} done
               </span>
               {stats.atRisk > 0 && (
-                <span className="text-amber-600 font-medium">
+                <span className="text-warning font-medium">
                   {stats.atRisk} at risk
                 </span>
               )}
               {stats.needsCoach > 0 && (
-                <span className="text-red-600 font-medium flex items-center gap-1">
+                <span className="text-destructive font-medium flex items-center gap-1">
                   <IconAlertCircle size={13} /> {stats.needsCoach} needs coach
                 </span>
               )}
@@ -442,7 +442,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                           <span className="text-eyebrow text-warm-500">
                             {athlete.actual_load}
                             {athlete.prescribed_load != null && athlete.has_load_change ? (
-                              <span className="text-amber-600"> (Δ{athlete.prescribed_load})</span>
+                              <span className="text-warning"> (Δ{athlete.prescribed_load})</span>
                             ) : null}
                             {athlete.rpe != null ? ` RPE ${athlete.rpe}` : ''}
                           </span>

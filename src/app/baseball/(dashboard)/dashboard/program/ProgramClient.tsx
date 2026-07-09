@@ -10,15 +10,15 @@ import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { createClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
 import {
   IconBuilding,
   IconGlobe,
-  IconCheck,
   IconUpload,
 } from '@/components/icons';
 import Link from 'next/link';
 import Image from 'next/image';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
 
 const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA', 'JUCO', 'High School', 'Showcase'];
 
@@ -210,58 +210,53 @@ export default function ProgramClient() {
 
   if (user?.role !== 'coach' || !coach) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Program Profile</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Coach access required</p>
-        </div>
-        <div className="p-6">
-          <Card variant="glass">
-            <CardContent className="p-12 text-center">
-              <p className="text-warm-500">This page is only available to coaches.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </>
+      <div className="mx-auto w-full max-w-[720px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Program Profile" ink="team">
+          <p className="font-annual text-body-sm text-text-secondary">Coach access required</p>
+        </SectionMasthead>
+        <EditorsLetter
+          ink="team"
+          title="Coaches only."
+          body="This page is only available to coaches."
+        />
+      </div>
     );
   }
 
   if (!organization) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Program Profile</h1>
-          <p className="mt-1 text-body-sm text-warm-500">No organization found</p>
-        </div>
-        <div className="p-6">
-          <Card variant="glass">
-            <CardContent className="p-12 text-center">
-              <IconBuilding size={48} className="mx-auto text-warm-300 mb-4" />
-              <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">No Program Found</h3>
-              <p className="text-warm-500 mb-4">Your account is not associated with a program yet.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </>
+      <div className="mx-auto w-full max-w-[720px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Program Profile" ink="team">
+          <p className="font-annual text-body-sm text-text-secondary">No organization found</p>
+        </SectionMasthead>
+        <EditorsLetter
+          ink="team"
+          title="No program found."
+          body="Your account is not associated with a program yet."
+        />
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Program Profile</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Customize how your program appears to recruits</p>
-        </div>
-        <Link href={`/baseball/program/${organization.id}`} target="_blank">
-          <Button variant="secondary" size="sm" className="gap-2">
-            <IconGlobe size={14} />
-            View Public Page
-          </Button>
-        </Link>
-      </div>
+    <div className="mx-auto w-full max-w-[720px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <SectionMasthead
+        eyebrow="THE PRESSBOX · SETTINGS"
+        title="Program Profile"
+        ink="team"
+        actions={
+          <Link href={`/baseball/program/${organization.id}`} target="_blank">
+            <Button variant="secondary" size="sm" className="gap-2">
+              <IconGlobe size={14} />
+              View Public Page
+            </Button>
+          </Link>
+        }
+      >
+        <p className="font-annual text-body-sm text-text-secondary">Customize how your program appears to recruits</p>
+      </SectionMasthead>
 
-      <div className="p-6 lg:p-8 max-w-[720px] mx-auto">
+      <div>
         <Card variant="glass">
           <CardContent className="p-6">
             <div className="space-y-6">
@@ -417,26 +412,20 @@ export default function ProgramClient() {
               </div>
 
               {/* Save Button */}
-              <div className="flex items-center justify-between pt-4 border-t border-warm-200">
-                {saveMessage && (
-                  <p className={cn(
-                    'text-sm font-medium flex items-center gap-2',
-                    saveMessage.type === 'success' ? 'text-primary-600' : 'text-red-600'
-                  )}>
-                    {saveMessage.type === 'success' && <IconCheck size={16} />}
-                    {saveMessage.text}
-                  </p>
-                )}
-                <div className="ml-auto">
-                  <Button onClick={handleSaveBasicInfo} isLoading={saving}>
-                    Save Changes
-                  </Button>
-                </div>
+              {saveMessage && (
+                <InlineNotice tone={saveMessage.type === 'success' ? 'success' : 'danger'}>
+                  {saveMessage.text}
+                </InlineNotice>
+              )}
+              <div className="flex items-center justify-end pt-4 border-t border-warm-200">
+                <Button onClick={handleSaveBasicInfo} isLoading={saving}>
+                  Save Changes
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }

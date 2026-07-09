@@ -69,6 +69,9 @@ import {
   HUB_ICONS,
   HUB_LANDING,
   PLAYER_DEVELOPMENT_TABS,
+  PLAYER_HUB_ROW_IDS,
+  PLAYER_RAIL_PRIMARY_IDS,
+  PLAYER_RAIL_SECONDARY_IDS,
   PLAYER_RECRUITING_TABS,
   PLAYER_STATS_TABS,
   PLAYER_TEAM_TABS,
@@ -193,6 +196,18 @@ function playerHubToNavItem({
   };
 }
 
+/**
+ * Owner directive (wave W3, 2026-07-09): the player rail caps at ~8
+ * destinations. Settings used to be a 9th row inside the secondary "More"
+ * section; it now lives in the shell's pinned rail FOOTER (ShellFooter,
+ * below) instead — matching the coach shell, which has always kept Settings
+ * out of the hub rail and pinned at the bottom. This function only supplies
+ * the RENDERABLE bits (icon component, live href, badge) for each row;
+ * hub-definitions.ts's PLAYER_RAIL_PRIMARY_IDS / PLAYER_RAIL_SECONDARY_IDS is
+ * the single source of truth for the rail's SHAPE (which ids, which section,
+ * what order) — nav-player-rail.test.ts pins that shape without importing
+ * this 'use client' module.
+ */
 function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
   const visible = getVisibleBaseballNav(ctx);
   const byId = new Map(visible.map((entry) => [entry.id, entry]));
@@ -200,44 +215,57 @@ function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): N
   const schedule = byId.get('calendar');
   const profile = byId.get('player-profile');
 
-  const primary: NavItem[] = [
-    ...(today ? [toNavItem(today)] : []),
-    ...(schedule ? [toNavItem(schedule)] : []),
-    ...(profile ? [toNavItem(profile)] : []),
+  const itemsById = new Map<string, NavItem>();
+  if (today) itemsById.set(today.id, toNavItem(today));
+  if (schedule) itemsById.set(schedule.id, toNavItem(schedule));
+  if (profile) itemsById.set(profile.id, toNavItem(profile));
+  itemsById.set(
+    PLAYER_HUB_ROW_IDS.stats,
     playerHubToNavItem({
       label: 'Stats',
       href: HUB_LANDING.playerStats,
       icon: HUB_ICONS.stats as unknown as NavItem['icon'],
       tabs: PLAYER_STATS_TABS,
     }),
+  );
+  itemsById.set(
+    PLAYER_HUB_ROW_IDS.development,
     playerHubToNavItem({
       label: 'Development',
       href: HUB_LANDING.playerDevelopment,
       icon: HUB_ICONS.development as unknown as NavItem['icon'],
       tabs: PLAYER_DEVELOPMENT_TABS,
     }),
+  );
+  itemsById.set(
+    PLAYER_HUB_ROW_IDS.team,
     playerHubToNavItem({
       label: 'Team',
       href: HUB_LANDING.playerTeam,
       icon: HUB_ICONS.team as unknown as NavItem['icon'],
       tabs: PLAYER_TEAM_TABS,
     }),
+  );
+  itemsById.set(
+    BASEBALL_MESSAGES_NAV.id,
     toNavItem(BASEBALL_MESSAGES_NAV, unreadCount > 0 ? unreadCount : undefined, [BASEBALL_MESSAGES_NAV.href]),
-  ];
-
-  const secondary: NavItem[] = [
+  );
+  itemsById.set(
+    PLAYER_HUB_ROW_IDS.recruiting,
     playerHubToNavItem({
       label: getBaseballTerminology(ctx).exposureNoun,
       href: HUB_LANDING.playerRecruiting,
       icon: HUB_ICONS.recruiting as unknown as NavItem['icon'],
       tabs: PLAYER_RECRUITING_TABS,
     }),
-    toNavItem(
-      { href: '/baseball/dashboard/settings', label: 'Settings', icon: IconSettings },
-      undefined,
-      ['/baseball/dashboard/settings'],
-    ),
-  ];
+  );
+
+  const primary = PLAYER_RAIL_PRIMARY_IDS.map((id) => itemsById.get(id)).filter(
+    (item): item is NavItem => Boolean(item),
+  );
+  const secondary = PLAYER_RAIL_SECONDARY_IDS.map((id) => itemsById.get(id)).filter(
+    (item): item is NavItem => Boolean(item),
+  );
 
   const sections: NavSection[] = [{ heading: 'My Baseball', items: primary }];
   if (secondary.length) sections.push({ heading: 'More', items: secondary });
@@ -392,9 +420,19 @@ function Brand({ homeHref }: { homeHref: string }) {
   );
 }
 
-/** Pinned rail footer — Settings (coach only, matching the legacy secondary
- *  nav) + Sign out, styled for the warm-black rail. */
-function ShellFooter({ role }: { role: Role }) {
+/**
+ * Pinned rail footer — Settings + Sign out, styled for the warm-black rail.
+ *
+ * Wave W3 (2026-07-09): Settings now renders here for BOTH roles. Coaches
+ * always had it here; players previously reached Settings via a row inside
+ * the secondary "More" nav section, which pushed the player rail to 9
+ * destinations (owner directive: ~8). Moving it into this pinned footer —
+ * exactly where the coach shell already puts it — drops the player rail back
+ * to 8 without changing the Settings ROUTE or any of its behavior; only where
+ * the link lives changed. See buildPlayerNavSections' doc comment and
+ * hub-definitions.ts's PLAYER_RAIL_PRIMARY_IDS / PLAYER_RAIL_SECONDARY_IDS.
+ */
+export function ShellFooter() {
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useAuth();
@@ -415,30 +453,26 @@ function ShellFooter({ role }: { role: Role }) {
 
   return (
     <div className="flex flex-col gap-1">
-      {/* Players reach Settings via the secondary nav section instead (matches
-          the legacy player secondary nav — coaches keep it in Management). */}
-      {role === 'coach' && (
-        <Link
-          href={settingsHref}
-          prefetch
-          aria-current={settingsActive ? 'page' : undefined}
-          aria-label={collapsed ? 'Settings' : undefined}
-          title={collapsed ? 'Settings' : undefined}
-          className={cn(
-            rowBase,
-            settingsActive
-              ? 'bg-nav-surface text-nav-text'
-              : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
-          )}
-        >
-          <IconSettings
-            size={18}
-            aria-hidden
-            className={cn('flex-shrink-0', settingsActive ? 'text-nav-accent' : 'text-nav-text-dim')}
-          />
-          {!collapsed && <span className="min-w-0 flex-1 truncate">Settings</span>}
-        </Link>
-      )}
+      <Link
+        href={settingsHref}
+        prefetch
+        aria-current={settingsActive ? 'page' : undefined}
+        aria-label={collapsed ? 'Settings' : undefined}
+        title={collapsed ? 'Settings' : undefined}
+        className={cn(
+          rowBase,
+          settingsActive
+            ? 'bg-nav-surface text-nav-text'
+            : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
+        )}
+      >
+        <IconSettings
+          size={18}
+          aria-hidden
+          className={cn('flex-shrink-0', settingsActive ? 'text-nav-accent' : 'text-nav-text-dim')}
+        />
+        {!collapsed && <span className="min-w-0 flex-1 truncate">Settings</span>}
+      </Link>
       <Button
         type="button"
         variant="ghost"
@@ -584,7 +618,7 @@ function BaseballFairwayContent({
         sections={sections}
         user={{ name, teamName: teamName ?? undefined, avatarUrl: avatarUrl ?? undefined }}
         brand={<Brand homeHref={homeHref} />}
-        sidebarFooter={<ShellFooter role={role} />}
+        sidebarFooter={<ShellFooter />}
         topBarActions={<NotificationBell />}
         pathname={pathname}
         linkComponent={shellLink}

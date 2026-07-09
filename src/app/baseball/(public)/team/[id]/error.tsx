@@ -13,11 +13,11 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/dashboard/settings/notifications"
-      component="NotificationSettingsPage"
-      title="Couldn't load notification settings"
-      message="We couldn't load notification settings. Please try again."
-      homePath="/baseball/dashboard/settings"
+      route="/baseball/team/[id]"
+      component="PublicTeamProfile"
+      title="Failed to load team profile"
+      message="We couldn't load this team's profile. The team may not exist or there might be a connection issue."
+      homePath="/baseball/dashboard"
     />
   );
 }

@@ -24,7 +24,7 @@
 3. Qualifiers ✅
 
 **Team Management Features:**
-4. Calendar & Events ✅
+4. Calendar & Events ⚠️
 5. Roster Management ✅
 6. Task Management ⚠️
 7. Messaging ✅
@@ -220,10 +220,10 @@ golf_qualifiers, golf_qualifier_entries
 
 ---
 
-## 4. CALENDAR & EVENTS ✅
+## 4. CALENDAR & EVENTS ⚠️
 
 ### What It Does
-Full event management with RSVP, attendance tracking, recurring events, availability polling, iCal feeds, and academic conflict detection.
+Full event management with RSVP, attendance tracking, recurring events, iCal feeds, and academic conflict detection. (Availability polling is NOT built — see Sub-Features below.)
 
 ### Data Flow
 ```
@@ -246,7 +246,7 @@ Calendar views: MonthView, WeekView, DayView, MobileListView
 ### Sub-Features
 
 **Recurring Events** ✅ — RRULE parsing, edit scopes: this | thisAndFuture | all
-**Availability Polling** ✅ — Coach creates polls, players vote, convert to event
+**Availability Polling** ❌ — NOT BUILT (backlog). No `availability-polling.ts`/`availability-locking.ts` or any poll UI exists in code; `golf_availability_polls`/`golf_poll_responses` are orphaned schema only (verified 2026-07-09, zero references in `src/`).
 **iCal Feeds** ✅ — Token auth, RFC 5545 compliant, rate limited
 **Event Status Lifecycle** ✅ — draft → confirmed → completed | cancelled
 **Academic Conflict Detection** ✅ — Checks classes, blocked time, exclusions
@@ -258,7 +258,7 @@ Calendar views: MonthView, WeekView, DayView, MobileListView
 | Wrapper | `src/components/golf/calendar/GolfCalendarWrapper.tsx` |
 | Views | `MonthView.tsx`, `WeekView.tsx`, `DayView.tsx`, `MobileCalendarWrapper.tsx` |
 | Actions | `event-lifecycle.ts`, `recurring-events.ts`, `attendance.ts` |
-| Polling | `availability-polling.ts`, `availability-locking.ts` |
+| Polling | _not built — no files exist (backlog)_ |
 | Feeds | `calendar-feeds.ts`, `calendar-sync.ts`, `caldav-sync.ts` |
 | Conflicts | `src/lib/calendar/conflicts.ts`, `src/lib/calendar/ical.ts` |
 
@@ -1278,7 +1278,7 @@ Reads from ALL major tables: users, golf_coaches, golf_players, golf_teams, golf
 | 1 | Round Tracking | Both | ✅ | 95% | Auto-save | Offline shots, SG calc |
 | 2 | Stats & Analytics | Both | ✅ | 90% | — | SG not populated |
 | 3 | Qualifiers | Both | ✅ | 100% | ✅ | — |
-| 4 | Calendar & Events | Both | ✅ | 100% | — | — |
+| 4 | Calendar & Events | Both | ⚠️ | 90% | — | Availability Polling not built (backlog) |
 | 5 | Roster Management | Both | ✅ | 100% | — | — |
 | 6 | Task Management | Both | ⚠️ | 85% | ✅ | Reminder auto-trigger |
 | 7 | Messaging | Both | ✅ | 100% | ✅ | — |

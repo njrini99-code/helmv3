@@ -31,6 +31,7 @@ import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract
 import { getPlayerLiftOnboardingState } from '@/lib/baseball/read-models/player-lift';
 import { PlayerLiftHomeClient } from '@/components/lifting/players/PlayerLiftHomeClient';
 import { LiftOnboardingGate } from '@/components/baseball/performance/lift-onboarding';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 import { resolvePlayerLiftAthleteContext, hasReadinessCheckinToday } from './_lift-athlete-context';
 import type { HelmLiftingSessionRow, HelmLiftingSessionStatus } from '@/lib/types/helm-lifting-data';
 
@@ -152,12 +153,10 @@ export default async function PlayerLiftPage() {
   if (sessionsError) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-6">
-        <div className="glass-standard rounded-2xl border border-cream-400/40 p-8 shadow-glass">
-          <h2 className="text-h3 text-warm-900">Unable to load your lift sessions</h2>
-          <p className="mt-2 text-body text-warm-500">
-            Something went wrong loading your Lift Lab data. Please refresh the page to try again.
-          </p>
-        </div>
+        <EditorsLetter
+          title="Unable to load your lift sessions"
+          body="Something went wrong loading your Lift Lab data. Please refresh the page to try again."
+        />
       </div>
     );
   }
