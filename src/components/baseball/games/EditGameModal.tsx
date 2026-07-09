@@ -50,11 +50,15 @@ export function EditGameModal({ game, open, onClose }: EditGameModalProps) {
     const result = await updateGame(game.id, {
       game_date: gameDate,
       game_type: gameType,
-      opponent_name: opponentName.trim() || undefined,
-      location: location.trim() || undefined,
+      // Send `null` (not `undefined`) for cleared optional fields — updateGame
+      // skips `undefined` keys entirely before building the .update() payload,
+      // so an emptied field would otherwise leave the old value in the row.
+      // `null` is a real value for these nullable columns and clears them.
+      opponent_name: opponentName.trim() || null,
+      location: location.trim() || null,
       home_away: homeAway,
-      notes: notes.trim() || undefined,
-      weather: weather.trim() || undefined,
+      notes: notes.trim() || null,
+      weather: weather.trim() || null,
     });
 
     setSaving(false);
@@ -73,18 +77,19 @@ export function EditGameModal({ game, open, onClose }: EditGameModalProps) {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Game type */}
         <div>
-          <p className="text-sm font-medium text-warm-700 block mb-2">Type</p>
-          <div className="flex gap-3">
+          <p id="edit-game-type-label" className="text-sm font-medium text-warm-700 block mb-2">Type</p>
+          <div className="flex gap-3" role="group" aria-labelledby="edit-game-type-label">
             {(['game', 'scrimmage'] as BaseballGameType[]).map((t) => (
               <Button
                 variant="ghost"
                 key={t}
                 type="button"
                 onClick={() => setGameType(t)}
+                aria-pressed={gameType === t}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all capitalize ${
                   gameType === t
                     ? t === 'scrimmage'
-                      ? 'bg-purple-600 text-white border-purple-600'
+                      ? 'bg-warm-800 text-white border-warm-800'
                       : 'bg-primary-600 text-white border-primary-600'
                     : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300'
                 }`}
@@ -128,14 +133,15 @@ export function EditGameModal({ game, open, onClose }: EditGameModalProps) {
 
         {/* Home/Away */}
         <div>
-          <p className="text-sm font-medium text-warm-700 block mb-2">Location</p>
-          <div className="flex gap-2">
+          <p id="edit-game-homeaway-label" className="text-sm font-medium text-warm-700 block mb-2">Location</p>
+          <div className="flex gap-2" role="group" aria-labelledby="edit-game-homeaway-label">
             {(['home', 'away', 'neutral'] as BaseballHomeAway[]).map((ha) => (
               <Button
                 variant="ghost"
                 key={ha}
                 type="button"
                 onClick={() => setHomeAway(ha)}
+                aria-pressed={homeAway === ha}
                 className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all capitalize ${
                   homeAway === ha
                     ? 'bg-warm-800 text-white border-warm-800'
@@ -191,7 +197,7 @@ export function EditGameModal({ game, open, onClose }: EditGameModalProps) {
         />
 
         {error && (
-          <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600">
+          <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-sm text-destructive">
             {error}
           </div>
         )}

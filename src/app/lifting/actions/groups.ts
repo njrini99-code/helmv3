@@ -111,6 +111,17 @@ async function assertGroupInOrg(
   return data;
 }
 
+// Dynamic groups are rule-managed (membership/rules computed off `rule_json`),
+// so no mutation path in this file may touch them directly. The user-facing
+// message must match what the caller is actually trying to do — a coach
+// renaming or deleting a dynamic group should not be told "membership can't
+// be edited" (that wording is for addGroupMember/removeGroupMember only).
+function assertGroupIsEditable(group: { group_type: string }, message: string): void {
+  if (group.group_type === 'dynamic') {
+    throw new LiftingActionError(message);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // 1. createGroup
 // -----------------------------------------------------------------------------
@@ -184,11 +195,10 @@ export const updateGroup = withLiftingAction(
     const supabase = await createClient();
 
     const group = await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
-    if (group.group_type === 'dynamic') {
-      throw new LiftingActionError(
-        "Dynamic groups are rule-managed; membership can't be edited manually.",
-      );
-    }
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; they can't be edited manually.",
+    );
 
     const update: HelmLiftingGroupUpdate = {
       ...(input.name !== undefined && { name: input.name }),
@@ -227,11 +237,10 @@ export const deleteGroup = withLiftingAction(
     const supabase = await createClient();
 
     const group = await assertGroupInOrg(supabase, groupId, ctx.orgId);
-    if (group.group_type === 'dynamic') {
-      throw new LiftingActionError(
-        "Dynamic groups are rule-managed; membership can't be edited manually.",
-      );
-    }
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; they can't be deleted manually.",
+    );
 
     // Soft delete.
     const { error } = await fromUntyped(supabase, 'helm_lifting_groups')
@@ -269,11 +278,10 @@ export const addGroupMember = withLiftingAction(
     const supabase = await createClient();
 
     const group = await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
-    if (group.group_type === 'dynamic') {
-      throw new LiftingActionError(
-        "Dynamic groups are rule-managed; membership can't be edited manually.",
-      );
-    }
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; membership can't be edited manually.",
+    );
 
     // Verify the athlete is in this org.
     const { data: athlete } = await fromUntyped(supabase, 'helm_lifting_athletes')
@@ -339,11 +347,10 @@ export const removeGroupMember = withLiftingAction(
     const supabase = await createClient();
 
     const group = await assertGroupInOrg(supabase, input.groupId, ctx.orgId);
-    if (group.group_type === 'dynamic') {
-      throw new LiftingActionError(
-        "Dynamic groups are rule-managed; membership can't be edited manually.",
-      );
-    }
+    assertGroupIsEditable(
+      group,
+      "Dynamic groups are rule-managed; membership can't be edited manually.",
+    );
 
     // Soft-remove: set ends_at=now() on any active member row.
     const { error } = await fromUntyped(supabase, 'helm_lifting_group_members')

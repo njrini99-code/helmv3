@@ -209,7 +209,23 @@ export function DocumentsFairway({
             // Fairway `search` variant rather than the `documents` EmptyIssue
             // preset copy ("The file drawer is empty"), which would be wrong
             // here.
-            <EmptyState variant="search" title="No results" description="Try adjusting your search or filters." />
+            <EmptyState
+              variant="search"
+              title="No results"
+              description="Try adjusting your search or filters."
+              action={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    onSearchChange('');
+                    onCategoryChange('all');
+                  }}
+                >
+                  Clear filters
+                </Button>
+              }
+            />
           )
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

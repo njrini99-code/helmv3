@@ -44,6 +44,7 @@ import {
   resolveBaseballLiftingOrg,
   resolveBaseballAthleteIds,
 } from '@/lib/lifting/resolve-baseball-context';
+import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 import type {
   HelmLiftingSessionInsert,
   HelmLiftingSessionExerciseInsert,
@@ -398,7 +399,11 @@ async function materializeActionObject(
         throw new Error('This player is not yet set up in Helm Lifting Lab.');
       }
 
-      const scheduledDate = new Date().toISOString().slice(0, 10);
+      // Team-local "today", not server UTC — keeps this write path aligned
+      // with the player Today / readiness date source so a late-night
+      // conversion doesn't land on the wrong calendar day and miss the
+      // (athlete_id, scheduled_date, title) dedupe below.
+      const scheduledDate = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
       const sessionTitle = action.title || 'Lift modification';
       const coachNote = signal.why_it_matters ?? action.detail ?? null;
 

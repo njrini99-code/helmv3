@@ -331,7 +331,15 @@ export default function DevPlanClient() {
 
   // Fetch plan data
   const fetchPlan = useCallback(async () => {
-    if (!player?.id) return;
+    if (!player?.id) {
+      // useAuth always resolves `loading` in its own finally block, even when
+      // the session settles with no player row (role mismatch or missing
+      // profile) — so this branch must resolve isLoading itself, or a
+      // player-role session with no player record strands on DevPlanSkeleton
+      // forever.
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const data = await getActiveDevPlan(player.id);
@@ -345,10 +353,13 @@ export default function DevPlanClient() {
   }, [player?.id]);
 
   useEffect(() => {
-    if (player?.id) {
-      fetchPlan();
-    }
-  }, [player?.id, fetchPlan]);
+    // Wait for auth to resolve, then always run fetchPlan — including when it
+    // resolves with no player row. Gating this call on `player?.id` meant
+    // fetchPlan (and its isLoading(false)) never ran for that case, stranding
+    // the view on DevPlanSkeleton indefinitely.
+    if (authLoading) return;
+    fetchPlan();
+  }, [authLoading, player?.id, fetchPlan]);
 
   // Handle goal completion
   const handleComplete = useCallback(
@@ -539,9 +550,9 @@ export default function DevPlanClient() {
                   {plan.start_date || plan.end_date ? (
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
                       <IconCalendar size={14} className="flex-shrink-0" />
-                      {plan.start_date ? <span>Started {new Date(plan.start_date).toLocaleDateString()}</span> : null}
+                      {plan.start_date ? <span>Started {parseLocalDate(plan.start_date).toLocaleDateString()}</span> : null}
                       {plan.start_date && plan.end_date ? <span aria-hidden>·</span> : null}
-                      {plan.end_date ? <span>Ends {new Date(plan.end_date).toLocaleDateString()}</span> : null}
+                      {plan.end_date ? <span>Ends {parseLocalDate(plan.end_date).toLocaleDateString()}</span> : null}
                     </div>
                   ) : null}
                 </PaperCard>

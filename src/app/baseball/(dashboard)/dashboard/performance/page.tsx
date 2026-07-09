@@ -22,6 +22,7 @@
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
+import { todayIsoInTz, resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
@@ -232,6 +233,10 @@ export default async function PerformancePage() {
     .maybeSingle();
   const teamName = (teamRow as { name?: string } | null)?.name ?? 'Team';
 
+  // Team-local "today" so the client's readiness/check-in day math can't
+  // drift across the UTC boundary for teams west of Greenwich.
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
+
   return (
     <div className={fairwayScope('mx-auto max-w-7xl space-y-8 px-4 py-6')}>
       {/*
@@ -265,6 +270,7 @@ export default async function PerformancePage() {
           assignments={assignments}
           exercises={exercises}
           readiness={readiness}
+          today={today}
           embedded
         />
       )}

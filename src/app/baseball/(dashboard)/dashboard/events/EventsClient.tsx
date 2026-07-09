@@ -401,7 +401,7 @@ export default function EventsPage() {
         {/* Skeleton while loading */}
         {loading ? (
           <EventsSkeleton />
-        ) : filteredEvents.length === 0 ? (
+        ) : fetchError ? null : filteredEvents.length === 0 ? (
           <EmptyIssue
             variant="calendar"
             ink="team"

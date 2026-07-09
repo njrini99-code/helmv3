@@ -111,7 +111,7 @@ describe('logMySetResult onConflict target', () => {
   });
 
   it('revalidates both the /lifting and /baseball lift portals for the mutated session', async () => {
-    await logMySetResult({
+    const res = await logMySetResult({
       sessionExerciseId: SESSION_EXERCISE_ID,
       sessionId: SESSION_ID,
       athleteId: ATHLETE_ID,
@@ -122,6 +122,9 @@ describe('logMySetResult onConflict target', () => {
       rpe: 8,
     });
 
+    // Guard against a regression test that stays green even if the action
+    // itself failed but happened to touch the cache before erroring.
+    expect(res.success).toBe(true);
     const paths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
     expect(paths).toContain('/lifting/dashboard/lift');
     expect(paths).toContain('/baseball/dashboard/lift');
@@ -168,13 +171,16 @@ describe('submitLiftReadiness onConflict target', () => {
   });
 
   it('revalidates the baseball lift portal alongside /lifting/dashboard', async () => {
-    await submitLiftReadiness({
+    const res = await submitLiftReadiness({
       sleepQuality: 4,
       energyLevel: 4,
       sorenessOverall: 2,
       notes: null,
     });
 
+    // Guard against a regression test that stays green even if the action
+    // itself failed but happened to touch the cache before erroring.
+    expect(res.success).toBe(true);
     const paths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
     expect(paths).toContain('/lifting/dashboard');
     expect(paths).toContain('/baseball/dashboard/lift');

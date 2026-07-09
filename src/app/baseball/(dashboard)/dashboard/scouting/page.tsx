@@ -25,7 +25,6 @@ import { getBaseballNavContext } from '@/lib/baseball/nav-context';
 import {
   getBaseballNavEntry,
   isBaseballNavEntryVisible,
-  type BaseballNavContext,
   type BaseballNavEntry,
   type BaseballNavId,
 } from '@/lib/baseball/nav-registry';
@@ -65,7 +64,36 @@ const SCOUTING_CARD_IDS: readonly {
 export default async function ScoutingPage() {
   await requireRecruitingCoachRoute();
 
-  const navContext = (await getBaseballNavContext()) ?? ({ role: 'coach', capabilities: {} } as BaseballNavContext);
+  const navContext = await getBaseballNavContext();
+
+  // getBaseballNavContext() returns null when the active-team lookup itself
+  // failed (no membership resolved, or a caught DB error) — a REAL branch,
+  // not dead code, and distinct from a capability gap. Fabricating a
+  // `{ role: 'coach', capabilities: {} }` context here previously hid every
+  // gated card (via isBaseballNavEntryVisible's fail-closed check) and then
+  // told the coach "your role doesn't have access... ask a head coach to
+  // grant access" below — false, since the actual cause is an unresolved
+  // team context, not a permissions gap. Say so honestly instead.
+  if (!navContext) {
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE WAR ROOM · SCOUTING" title="Scouting" ink="pursuit">
+          <p className="max-w-2xl font-annual text-body text-text-secondary">
+            The evaluation toolkit — shortlists, side-by-side comparisons, and exportable packets —
+            once a prospect is worth a closer look.
+          </p>
+        </SectionMasthead>
+        <PaperCard className="mt-8 p-6">
+          <Eyebrow ink="pursuit">Unable to load your team</Eyebrow>
+          <p className="mt-2 font-annual text-body text-text-secondary">
+            We couldn&apos;t resolve your active team just now — this isn&apos;t a permissions
+            issue. Refresh the page, or switch teams from the sidebar if you coach more than one
+            program.
+          </p>
+        </PaperCard>
+      </div>
+    );
+  }
 
   const cards = SCOUTING_CARD_IDS.map(({ id, description }) => {
     const entry = getBaseballNavEntry(id);

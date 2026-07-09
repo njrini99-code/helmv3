@@ -380,10 +380,10 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
 
   return (
     <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+      <header className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-h2 font-semibold text-warm-900">Import Sources</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{`${teamName} • source registry`}</p>
+          <p className="mt-1 text-body-sm text-warm-500">{teamName} • source registry</p>
         </div>
         {canManage && !showForm && (
           <Button onClick={() => setShowForm(true)} disabled={isPending}>
@@ -391,7 +391,7 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
             Add source
           </Button>
         )}
-      </div>
+      </header>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         {!canManage && (

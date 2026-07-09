@@ -248,7 +248,7 @@ export default function ProgramPage() {
 
   return (
     <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
         <div>
           <h1 className="text-h2 font-semibold text-warm-900">Program Profile</h1>
           <p className="mt-1 text-body-sm text-warm-500">Customize how your program appears to recruits</p>

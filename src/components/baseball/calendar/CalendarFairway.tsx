@@ -54,6 +54,10 @@ const SHELL = 'flex h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] flex-col 
 export interface CalendarFairwayProps {
   /** College coach with no team → recruiting-focused empty state. */
   recruitingEmpty: boolean;
+  /** Any other role (non-college coach, or player) with no team resolved yet
+   *  → generic "no team assigned" state, distinct from `recruitingEmpty`'s
+   *  recruiting-specific narrative. Mutually exclusive with `recruitingEmpty`. */
+  noTeamEmpty: boolean;
   events: CalendarEvent[];
   teamMembers: WrapperProps['teamMembers'];
   teamId: string | null;
@@ -65,6 +69,7 @@ export interface CalendarFairwayProps {
 
 export function CalendarFairway({
   recruitingEmpty,
+  noTeamEmpty,
   events,
   teamMembers,
   teamId,
@@ -101,6 +106,24 @@ export function CalendarFairway({
     );
   }
 
+  if (noTeamEmpty) {
+    return (
+      <div className={fairwayScope(SHELL, 'bg-canvas')}>
+        <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
+          <SectionMasthead eyebrow="THE PRESSBOX · SCHEDULE" title="Calendar" ink="team" />
+        </div>
+        <div className="flex flex-1 items-center justify-center p-6">
+          <EditorsLetter
+            ink="team"
+            title="No team assigned"
+            body="Join or select a team to see its calendar of practices, games, and events."
+            className="max-w-md"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={fairwayScope(SHELL, 'bg-canvas')}>
       <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
@@ -117,7 +140,7 @@ export function CalendarFairway({
       {upcomingEvents > 0 && (
         <div className="flex-shrink-0 px-4 pb-2 pt-3 md:px-6">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <LiveDot ink="team" label={`${upcomingEvents} upcoming event${upcomingEvents !== 1 ? 's' : ''}`} />
+            <LiveDot ink="team" label={`${upcomingEvents} upcoming ${pluralizeEventLabel('event', upcomingEvents)}`} />
             {Object.entries(eventTypeCounts).map(([type, count]) => {
               const label = EVENT_TYPE_LABEL[type] ?? type;
               return (

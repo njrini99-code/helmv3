@@ -4,6 +4,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { sanitizeDbError } from '@/lib/db-error';
+import { logServerError } from '@/lib/server-error-logger';
 import { revalidatePath } from 'next/cache';
 import { requireBaseballCapability, BaseballCapabilityError } from '@/lib/baseball/capabilities';
 import {
@@ -242,7 +243,15 @@ const createBaseballEventAction = withBaseballAction(
         .from('baseball_event_attendance')
         .insert(attendanceRecords);
       if (attendanceError) {
-        warnings.push(`RSVP invites could not be created: ${sanitizeDbError(attendanceError, 'calendar')}`);
+        const message = `RSVP invites could not be created: ${sanitizeDbError(attendanceError, 'calendar')}`;
+        warnings.push(message);
+        await logServerError(`[createBaseballEvent] ${message}`, {
+          action: 'baseball_calendar.createBaseballEvent.attendance',
+          featureArea: 'baseball-calendar',
+          sport: 'baseball',
+          teamId: resolvedTeamId,
+          metadata: { eventId: data.id },
+        }, 'warning');
       }
     }
 
@@ -260,7 +269,15 @@ const createBaseballEventAction = withBaseballAction(
         status: 'scheduled',
       });
       if (gameError) {
-        warnings.push(`Linked game record could not be created: ${sanitizeDbError(gameError, 'calendar')}`);
+        const message = `Linked game record could not be created: ${sanitizeDbError(gameError, 'calendar')}`;
+        warnings.push(message);
+        await logServerError(`[createBaseballEvent] ${message}`, {
+          action: 'baseball_calendar.createBaseballEvent.linkedGame',
+          featureArea: 'baseball-calendar',
+          sport: 'baseball',
+          teamId: resolvedTeamId,
+          metadata: { eventId: data.id },
+        }, 'warning');
       } else {
         revalidatePath('/baseball/dashboard/stats/games');
       }
@@ -269,7 +286,7 @@ const createBaseballEventAction = withBaseballAction(
     revalidatePath(CALENDAR_PATH);
     revalidatePath('/baseball/dashboard/events');
     return warnings.length > 0
-      ? { success: true, data, warning: warnings.join(' ') }
+      ? { success: true, data, warning: warnings.join('; ') }
       : { success: true, data };
   },
 );

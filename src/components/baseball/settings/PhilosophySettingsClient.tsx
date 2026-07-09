@@ -11,7 +11,6 @@
 // =============================================================================
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -240,11 +239,15 @@ export function PhilosophySettingsClient({
           <h1 className="text-h2 font-semibold text-warm-900">Coaching Philosophy</h1>
           <p className="mt-1 text-body-sm text-warm-500">{`${coachName} • how AI insights are tuned`}</p>
         </div>
-        <Link href="/baseball/dashboard/settings" aria-label="Back to settings">
-          <Button variant="ghost" size="sm" leftIcon={<IconArrowLeft size={16} />}>
-            Settings
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<IconArrowLeft size={16} />}
+          aria-label="Back to settings"
+          onClick={() => router.push('/baseball/dashboard/settings')}
+        >
+          Settings
+        </Button>
       </div>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
@@ -440,9 +443,9 @@ export function PhilosophySettingsClient({
 
         {/* Save Button */}
         <div className="flex justify-end gap-3">
-          <Link href="/baseball/dashboard/settings">
-            <Button variant="secondary">Cancel</Button>
-          </Link>
+          <Button variant="secondary" onClick={() => router.push('/baseball/dashboard/settings')}>
+            Cancel
+          </Button>
           <Button
             onClick={handleSave}
             isLoading={saving}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { GamesList } from '@/components/baseball/games/GamesList';
 import { getTeamGames, getTeamSeasonRecord } from '@/app/baseball/actions/games';
+import { logServerError } from '@/lib/server-error-logger';
 
 export default async function GamesPage() {
   const supabase = await createClient();
@@ -37,6 +38,27 @@ export default async function GamesPage() {
     getTeamSeasonRecord(team.id, defaultSeasonYear),
   ]);
 
+  // A failed fetch must not collapse into an ordinary empty season — log it
+  // server-side and thread a distinct error message into GamesList so a
+  // transient DB/RLS failure renders as "couldn't load" rather than an
+  // indistinguishable "No games yet".
+  if (!gamesResult.success) {
+    await logServerError(`[GamesPage] getTeamGames failed: ${gamesResult.error}`, {
+      action: 'baseball.games-page.getTeamGames',
+      userId: user.id,
+      teamId: team.id,
+      metadata: { seasonYear: defaultSeasonYear },
+    });
+  }
+  if (!recordResult.success) {
+    await logServerError(`[GamesPage] getTeamSeasonRecord failed: ${recordResult.error}`, {
+      action: 'baseball.games-page.getTeamSeasonRecord',
+      userId: user.id,
+      teamId: team.id,
+      metadata: { seasonYear: defaultSeasonYear },
+    });
+  }
+
   return (
     <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8">
       <GamesList
@@ -45,6 +67,7 @@ export default async function GamesPage() {
         showAddButton={true}
         initialGames={gamesResult.success ? (gamesResult.data ?? []) : []}
         initialRecord={recordResult.success ? (recordResult.data ?? null) : null}
+        initialError={gamesResult.success ? null : (gamesResult.error ?? 'Failed to load games')}
       />
     </div>
   );

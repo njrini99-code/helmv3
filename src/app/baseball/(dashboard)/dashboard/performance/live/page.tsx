@@ -45,6 +45,7 @@ import {
   todayIsoInTz,
 } from '@/lib/baseball/daily-contract/contract-day';
 import { logServerError } from '@/lib/server-error-logger';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { LiveWeightRoomClient } from '@/components/lifting/sessions/LiveWeightRoomClient';
 import type {
   HelmLiftingSessionRow,
@@ -69,14 +70,19 @@ async function logQueryError(table: string, error: UntypedQueryError, teamId: st
   });
 }
 
+type LiveRoomResult =
+  | {
+      ok: true;
+      athletes: HelmLiftingLiveAthleteRow[];
+      exerciseLibrary: Array<{ id: string; name: string; category: string | null }>;
+    }
+  | { ok: false };
+
 async function buildLiveRoomData(
   organizationId: string,
   teamId: string,
   canViewReadiness: boolean,
-): Promise<{
-  athletes: HelmLiftingLiveAthleteRow[];
-  exerciseLibrary: Array<{ id: string; name: string; category: string | null }>;
-}> {
+): Promise<LiveRoomResult> {
   const supabase = await createClient();
   const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
@@ -88,6 +94,14 @@ async function buildLiveRoomData(
     .order('athlete_id', { ascending: true })) as { data: HelmLiftingSessionRow[] | null; error: UntypedQueryError };
   await logQueryError('helm_lifting_sessions', sessionsError, teamId);
 
+  if (sessionsError) {
+    // A genuine query/RLS failure must never render identically to a
+    // legitimately empty live board (a real "no sessions today" is `!sessions
+    // || sessions.length === 0` with NO error) — surface it distinctly so
+    // the page renders the error notice instead of an empty athlete grid.
+    return { ok: false };
+  }
+
   if (!sessions || sessions.length === 0) {
     const { data: exercises, error: exercisesError } = (await fromUntyped(supabase, 'helm_lifting_exercises')
       .select('id, name, category')
@@ -97,7 +111,7 @@ async function buildLiveRoomData(
       .order('name', { ascending: true })
       .limit(200)) as { data: Array<{ id: string; name: string; category: string | null }> | null; error: UntypedQueryError };
     await logQueryError('helm_lifting_exercises', exercisesError, teamId);
-    return { athletes: [], exerciseLibrary: exercises ?? [] };
+    return { ok: true, athletes: [], exerciseLibrary: exercises ?? [] };
   }
 
   const sessionIds = sessions.map((s) => s.id);
@@ -248,7 +262,7 @@ async function buildLiveRoomData(
     };
   });
 
-  return { athletes: liveAthletes, exerciseLibrary: exercises ?? [] };
+  return { ok: true, athletes: liveAthletes, exerciseLibrary: exercises ?? [] };
 }
 
 export default async function LiveWeightRoomPage() {
@@ -266,14 +280,22 @@ export default async function LiveWeightRoomPage() {
   const canViewReadiness = caps.can_view_readiness;
 
   const liftCtx = await resolveBaseballLiftingOrg(teamId);
-  const { athletes, exerciseLibrary } = liftCtx
+  const liveRoomResult: LiveRoomResult = liftCtx
     ? await buildLiveRoomData(liftCtx.organizationId, teamId, canViewReadiness)
-    : { athletes: [], exerciseLibrary: [] };
+    : { ok: true, athletes: [], exerciseLibrary: [] };
+
+  if (!liveRoomResult.ok) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        <ReadModelStateNotice state="error" title="Live weight room could not load" />
+      </div>
+    );
+  }
 
   return (
     <LiveWeightRoomClient
-      initialAthletes={athletes}
-      exerciseLibrary={exerciseLibrary}
+      initialAthletes={liveRoomResult.athletes}
+      exerciseLibrary={liveRoomResult.exerciseLibrary}
       orgId={liftCtx?.organizationId ?? ''}
       canEdit={caps.can_manage_lifting}
     />

@@ -18,8 +18,15 @@
 // src/app/lifting/actions/programs.ts (withLiftingAction, requireEdit:true).
 // That wrapper gates on resolveLiftingAccess(orgId), which requires an active
 // helm_lifting_coaches (or org_viewer) row for THIS org — baseball staff who
-// have never onboarded through /lifting have neither. See this lane's report
-// for the confirmed access-gate gap (out of this lane's file scope to fix).
+// have never onboarded through /lifting have neither.
+//
+// The read path has the same gap: helm_lifting_programs RLS is gated by
+// public.helm_lifting_can_view_org() (supabase/migrations/
+// 20260625000000_helm_lifting_identity.sql), which only allows an active
+// helm_lifting_coaches row or a helm_lifting_org_viewers row — passing
+// BaseballHelm's own can_manage_lifting gate is not enough. Rather than let
+// getPrograms() silently come back empty for an unonboarded coach, resolve
+// canView up front and render an explicit "not onboarded" state instead.
 // =============================================================================
 
 import { redirect } from 'next/navigation';
@@ -29,6 +36,7 @@ import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
+import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { ProgramListClient } from '@/components/lifting/programs/ProgramListClient';
 import type { HelmLiftingProgramRow } from '@/lib/types/helm-lifting-data';
 
@@ -90,7 +98,24 @@ export default async function ProgramsPage() {
   if (!caps.can_manage_lifting) redirect('/baseball/dashboard/performance');
 
   const liftCtx = await resolveBaseballLiftingOrg(teamId);
-  const programs = liftCtx ? await getPrograms(liftCtx.organizationId, teamId) : [];
+  const access = liftCtx ? await resolveLiftingAccess(liftCtx.organizationId) : null;
+
+  if (!liftCtx || !access?.canView) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        <div className="rounded-2xl border border-warm-200/60 bg-cream-50 px-6 py-10 text-center">
+          <h2 className="text-h3 font-semibold text-warm-900">Lift Lab access not set up</h2>
+          <p className="mx-auto mt-2 max-w-md text-body-sm text-warm-500">
+            {liftCtx
+              ? "You have programming access on the baseball side, but you haven't been onboarded into this team's Lifting Lab yet. Ask a Lift Lab admin to add you as a coach or org viewer to see programs here."
+              : "This team isn't linked to a Lifting Lab organization yet. Ask an admin to link it before programs can be created."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const programs = await getPrograms(liftCtx.organizationId, teamId);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">

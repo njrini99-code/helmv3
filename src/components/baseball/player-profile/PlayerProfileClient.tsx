@@ -41,6 +41,7 @@ import type {
   BaseballCoachInsight,
   BaseballPlayerSeasonStats,
   BaseballBoxScoreBatting,
+  BaseballBoxScorePitching,
   BaseballGame,
 } from '@/lib/types';
 import type { BaseballNoteScope } from '@/lib/types/baseball-extended';
@@ -49,6 +50,7 @@ import type { TimelineEventView } from '@/lib/baseball/read-models/timeline';
 import { PlayerInsightsPanel } from './PlayerInsightsPanel';
 import { PlayerNotesSection } from './PlayerNotesSection';
 import { ProfileTimeline } from './ProfileTimeline';
+import { PlayerGameLog } from '@/components/baseball/season-stats/PlayerGameLog';
 import { SnapshotHeaderBand } from './snapshot-cards';
 import { Button, IconButton } from '@/components/ui/button';
 import { VideoPlayer } from '@/components/features/video-player';
@@ -98,6 +100,15 @@ interface PlayerProfileClientProps {
    * from real saved box scores instead of the deprecated flat stat log.
    */
   battingLog: Array<BaseballBoxScoreBatting & { game: Partial<BaseballGame> }>;
+  /**
+   * Box-score-canonical per-game pitching log for the current season
+   * (baseball_box_score_pitching joined to baseball_games), same source and
+   * shape contract as `battingLog` from getPlayerSeasonStats(). Renders via
+   * the shared `PlayerGameLog` (same component /players/[id]/stats uses) in
+   * the Stats tab so pitcher profiles show their own per-game history instead
+   * of only ever reflecting batting.
+   */
+  pitchingLog: Array<BaseballBoxScorePitching & { game: Partial<BaseballGame> }>;
   insights: BaseballCoachInsight[];
   notes: Array<{
     id: string;
@@ -272,6 +283,7 @@ export function PlayerProfileClient({
   player,
   seasonStats,
   battingLog,
+  pitchingLog,
   insights,
   notes,
   videos,
@@ -1123,6 +1135,18 @@ export function PlayerProfileClient({
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* Pitching log — reuses the same PlayerGameLog component
+                /players/[id]/stats renders, so a pitcher's per-game history
+                shows here too instead of only ever reflecting batting. */}
+            {pitchingLog.length > 0 && (
+              <div className="pt-2">
+                <p className="mb-3 text-eyebrow font-semibold text-warm-400 uppercase tracking-wide">
+                  Pitching
+                </p>
+                <PlayerGameLog batting={[]} pitching={pitchingLog} />
               </div>
             )}
           </div>

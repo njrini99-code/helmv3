@@ -77,5 +77,16 @@ export function buildBreadcrumbs(
     return [{ label: 'Dashboard', href: homeHref }, { label: overrideLabel ?? fallback }];
   }
 
-  return [{ label: 'Dashboard', href: homeHref }, { label: overrideLabel ?? best?.label ?? toTitle(lastSegment) }];
+  // `best` may be a HUB entry whose href is only a route PREFIX of the
+  // current page rather than the page itself — e.g. the Settings entry
+  // (nav-registry.ts) explicitly folds permissions/roles/audit/imports/
+  // integrations/philosophy/season under its own href for nav-highlighting
+  // purposes, none of which register their own entry. Trusting `best.label`
+  // unconditionally collapses every one of those subpages to the SAME crumb
+  // ("Settings" for both /settings and /settings/roles). Only trust it when
+  // the pathname IS that entry's own href; otherwise the URL's own trailing
+  // segment names the actual current page more specifically than its hub.
+  const isHubLandingPage = best !== null && pathname === best.href;
+  const label = overrideLabel ?? (isHubLandingPage ? best!.label : toTitle(lastSegment));
+  return [{ label: 'Dashboard', href: homeHref }, { label }];
 }

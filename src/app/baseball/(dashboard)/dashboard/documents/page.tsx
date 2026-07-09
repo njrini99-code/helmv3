@@ -26,7 +26,6 @@ export default async function BaseballDocumentsPage() {
     return (
       <div className="mx-auto w-full max-w-[1200px] p-6 lg:p-8">
         <EditorsLetter
-          ink="team"
           title="Join a team to see documents"
           body="Once you join a baseball team, shared files and resources will show up here."
         />

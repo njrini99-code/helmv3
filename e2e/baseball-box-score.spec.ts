@@ -58,6 +58,27 @@ function getServiceRoleClient() {
   return getE2eAdminClient();
 }
 
+/**
+ * Shared select→compute-ids→delete sweep used by both the pre-run leftover
+ * sweep (beforeAll) and the real teardown (afterAll) below — the only
+ * difference between the two call sites is the filter used to find games.
+ */
+async function deleteGamesAndEvents(
+  supabase: NonNullable<ReturnType<typeof getServiceRoleClient>>,
+  games: { id: string; event_id: string | null }[] | null,
+) {
+  const gameIds = (games ?? []).map((g) => g.id);
+  const eventIds = (games ?? [])
+    .map((g) => g.event_id)
+    .filter((id): id is string => Boolean(id));
+  if (gameIds.length > 0) {
+    await supabase.from('baseball_games').delete().in('id', gameIds);
+  }
+  if (eventIds.length > 0) {
+    await supabase.from('baseball_events').delete().in('id', eventIds);
+  }
+}
+
 async function loginCoachOrSkip(page: Page) {
   try {
     await loginAsCoach(page);
@@ -95,19 +116,15 @@ test.describe('Coach - Create New Game', () => {
   test.beforeAll(async () => {
     const supabase = getServiceRoleClient();
     if (!supabase) return;
-    const { data: games } = await supabase
-      .from('baseball_games')
-      .select('id, event_id')
-      .ilike('opponent_name', 'E2E Created Opponent%');
-    const gameIds = (games ?? []).map((g) => g.id);
-    const eventIds = (games ?? [])
-      .map((g) => g.event_id)
-      .filter((id): id is string => Boolean(id));
-    if (gameIds.length > 0) {
-      await supabase.from('baseball_games').delete().in('id', gameIds);
-    }
-    if (eventIds.length > 0) {
-      await supabase.from('baseball_events').delete().in('id', eventIds);
+    try {
+      const { data: games } = await supabase
+        .from('baseball_games')
+        .select('id, event_id')
+        .ilike('opponent_name', 'E2E Created Opponent%');
+      await deleteGamesAndEvents(supabase, games);
+    } catch (err) {
+      // Cleanup must never fail an otherwise-passing run (see file docstring).
+      console.warn('[e2e cleanup] leftover-opponent sweep failed:', err);
     }
   });
 
@@ -125,21 +142,15 @@ test.describe('Coach - Create New Game', () => {
     // The create form defaults `create_calendar_event` to true, so each
     // created game also has a linked baseball_events row (event_id) —
     // delete both so no orphaned event survives the game's deletion.
-    const { data: games } = await supabase
-      .from('baseball_games')
-      .select('id, event_id')
-      .in('opponent_name', createdOpponents);
-
-    const gameIds = (games ?? []).map((g) => g.id);
-    const eventIds = (games ?? [])
-      .map((g) => g.event_id)
-      .filter((id): id is string => Boolean(id));
-
-    if (gameIds.length > 0) {
-      await supabase.from('baseball_games').delete().in('id', gameIds);
-    }
-    if (eventIds.length > 0) {
-      await supabase.from('baseball_events').delete().in('id', eventIds);
+    try {
+      const { data: games } = await supabase
+        .from('baseball_games')
+        .select('id, event_id')
+        .in('opponent_name', createdOpponents);
+      await deleteGamesAndEvents(supabase, games);
+    } catch (err) {
+      // Cleanup must never fail an otherwise-passing run (see file docstring).
+      console.warn('[e2e cleanup] created-opponent teardown failed:', err);
     }
   });
 

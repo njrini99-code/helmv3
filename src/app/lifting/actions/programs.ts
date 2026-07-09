@@ -62,6 +62,23 @@ const BASEBALL_PROGRAMS_PATH = '/baseball/dashboard/performance/programs';
 const BASEBALL_LIVE_PATH = '/baseball/dashboard/performance/live';
 const BASEBALL_LIFT_PATH = '/baseball/dashboard/lift';
 
+// Single choke point for the lifting↔baseball cross-portal cache-bust pair
+// duplicated across createProgram/deleteProgram/addLiftWeek/addLiftDay/
+// addLiftSection/addLiftPrescription below. Pass a programId when the caller
+// already has one cheaply in scope to also bust that program's detail route
+// (matches the per-program busting updateProgram/duplicateLiftDay/
+// duplicateLiftWeek already do) — omit it to preserve the prior list-only
+// behavior for call sites that don't have a programId at hand without an
+// extra query.
+function revalidateProgramPaths(programId?: string): void {
+  revalidatePath(LAB_PATH);
+  revalidatePath(BASEBALL_PROGRAMS_PATH);
+  if (programId) {
+    revalidatePath(`${LAB_PATH}/${programId}`);
+    revalidatePath(`${BASEBALL_PROGRAMS_PATH}/${programId}`);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Shared result shape
 // -----------------------------------------------------------------------------
@@ -148,8 +165,7 @@ export const createProgram = withLiftingAction(
       .single();
 
     if (error) throw error;
-    revalidatePath(LAB_PATH);
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    revalidateProgramPaths();
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -275,8 +291,7 @@ export const deleteProgram = withLiftingAction(
       .eq('id', programId)
       .eq('organization_id', ctx.orgId);
 
-    revalidatePath(LAB_PATH);
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    revalidateProgramPaths();
     return { success: true };
   },
 );
@@ -723,8 +738,10 @@ export const addLiftWeek = withLiftingAction(
       .select('id')
       .single();
     if (error) throw error;
-    revalidatePath(LAB_PATH);
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    // Also bust this program's builder detail route — a coach adding week 1
+    // to a brand-new program should see it reflected there immediately
+    // rather than waiting for an unrelated revalidation elsewhere.
+    revalidateProgramPaths(input.programId);
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -752,8 +769,7 @@ export const addLiftDay = withLiftingAction(
       .select('id')
       .single();
     if (error) throw error;
-    revalidatePath(LAB_PATH);
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    revalidateProgramPaths();
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -780,8 +796,7 @@ export const addLiftSection = withLiftingAction(
       .select('id')
       .single();
     if (error) throw error;
-    revalidatePath(LAB_PATH);
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    revalidateProgramPaths();
     return { success: true, id: (data as { id: string }).id };
   },
 );
@@ -819,8 +834,7 @@ export const addLiftPrescription = withLiftingAction(
       .select('id')
       .single();
     if (error) throw error;
-    revalidatePath(LAB_PATH);
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    revalidateProgramPaths();
     return { success: true, id: (data as { id: string }).id };
   },
 );

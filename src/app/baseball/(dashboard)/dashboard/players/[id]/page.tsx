@@ -209,6 +209,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         }}
         seasonStats={seasonStatsResult.success ? (seasonStatsResult.data ?? null) : null}
         battingLog={seasonStatsResult.success ? (seasonStatsResult.gameLog ?? []) : []}
+        pitchingLog={seasonStatsResult.success ? (seasonStatsResult.pitchingLog ?? []) : []}
         insights={insights || []}
         notes={transformedNotes}
         notesCanAuthor={notesResult.canAuthor}

@@ -145,7 +145,7 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
           ink="team"
           action={
             isCoach ? (
-              <Button onClick={() => setShowCreateModal(true)} className="gap-2">
+              <Button onClick={() => { setEditingItinerary(null); setShowCreateModal(true); }} className="gap-2">
                 <IconPlus size={18} />
                 Create First Trip
               </Button>

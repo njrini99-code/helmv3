@@ -26,6 +26,7 @@ import { redirect } from 'next/navigation';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { logServerError } from '@/lib/server-error-logger';
 import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 import { getPlayerLiftOnboardingState } from '@/lib/baseball/read-models/player-lift';
 import { PlayerLiftHomeClient } from '@/components/lifting/players/PlayerLiftHomeClient';
@@ -43,29 +44,58 @@ async function fetchPlayerSessions(
   const supabase = await createClient();
   const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
-  // Upcoming: today + future, plus overdue-but-still-open (mirrors the
-  // canonical /lifting/dashboard/lift resolution exactly).
-  const { data: upcomingRows, error: upcomingError } = (await fromUntyped(
-    supabase,
-    'helm_lifting_sessions',
-  )
-    .select('*')
-    .eq('athlete_id', athleteId)
-    .eq('organization_id', organizationId)
-    .or(
-      `and(scheduled_date.gte.${today}),` +
-        `and(status.in.(assigned,started,modified),scheduled_date.lt.${today})`,
-    )
-    .order('scheduled_date', { ascending: true })
-    .limit(20)) as { data: HelmLiftingSessionRow[] | null; error: unknown };
+  // Today + future and overdue-but-still-open are fetched as SEPARATE
+  // bounded queries (each with its own .limit()), not one combined query
+  // capped at 20. A single capped query orders ascending by scheduled_date,
+  // so overdue-open rows (earlier dates) sort BEFORE today/future rows —
+  // 20+ overdue-open sessions would fill the entire cap and push today's
+  // session out of the result set entirely, showing "No lift today" even
+  // though a session exists.
+  const [
+    { data: currentFutureRows, error: currentFutureError },
+    { data: overdueOpenRows, error: overdueOpenError },
+  ] = (await Promise.all([
+    fromUntyped(supabase, 'helm_lifting_sessions')
+      .select('*')
+      .eq('athlete_id', athleteId)
+      .eq('organization_id', organizationId)
+      .gte('scheduled_date', today)
+      .order('scheduled_date', { ascending: true })
+      .limit(20),
+    fromUntyped(supabase, 'helm_lifting_sessions')
+      .select('*')
+      .eq('athlete_id', athleteId)
+      .eq('organization_id', organizationId)
+      .in('status', OPEN_STATUSES)
+      .lt('scheduled_date', today)
+      .order('scheduled_date', { ascending: true })
+      .limit(20),
+  ])) as [
+    { data: HelmLiftingSessionRow[] | null; error: unknown },
+    { data: HelmLiftingSessionRow[] | null; error: unknown },
+  ];
 
-  if (upcomingError) {
-    console.error('[lift/page] fetchPlayerSessions upcoming query failed', upcomingError);
+  if (currentFutureError) {
+    await logServerError(
+      `[lift/page] fetchPlayerSessions current/future query failed: ${
+        (currentFutureError as Error)?.message ?? String(currentFutureError)
+      }`,
+      { action: 'lift.fetchPlayerSessions', metadata: { athleteId, teamId, phase: 'current_future' } },
+    );
+  }
+  if (overdueOpenError) {
+    await logServerError(
+      `[lift/page] fetchPlayerSessions overdue-open query failed: ${
+        (overdueOpenError as Error)?.message ?? String(overdueOpenError)
+      }`,
+      { action: 'lift.fetchPlayerSessions', metadata: { athleteId, teamId, phase: 'overdue_open' } },
+    );
   }
 
-  const upcoming = (upcomingRows ?? []).filter(
-    (s) => s.scheduled_date >= today || OPEN_STATUSES.includes(s.status),
-  );
+  // Overdue-open rows are all < today and already ascending, so concatenating
+  // them ahead of the current/future rows (also ascending) preserves overall
+  // chronological order without needing an extra merge-sort.
+  const upcoming = [...(overdueOpenRows ?? []), ...(currentFutureRows ?? [])];
 
   const { data: recentRows, error: recentError } = (await fromUntyped(supabase, 'helm_lifting_sessions')
     .select('*')
@@ -76,13 +106,18 @@ async function fetchPlayerSessions(
     .limit(10)) as { data: HelmLiftingSessionRow[] | null; error: unknown };
 
   if (recentError) {
-    console.error('[lift/page] fetchPlayerSessions recent query failed', recentError);
+    await logServerError(
+      `[lift/page] fetchPlayerSessions recent query failed: ${
+        (recentError as Error)?.message ?? String(recentError)
+      }`,
+      { action: 'lift.fetchPlayerSessions', metadata: { athleteId, phase: 'recent' } },
+    );
   }
 
   return {
     upcoming,
     recent: recentRows ?? [],
-    error: Boolean(upcomingError || recentError),
+    error: Boolean(currentFutureError || overdueOpenError || recentError),
   };
 }
 

@@ -13,13 +13,24 @@
 // midnight UTC — the exact case contract-day.test.ts validates for
 // `todayIsoInTz`) and asserts the page now resolves the SAME team-local date
 // the readiness gate uses, by calling the real (unmocked) contract-day
-// helpers — only the Supabase row backing `resolveTeamTimezone` is faked.
+// helpers — only the Supabase row backing `resolveTeamTimezone` is faked
+// (via the shared fake-supabase fixture, not a bespoke inline mock).
 // =============================================================================
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render } from '@testing-library/react';
+
+import { createFakeSupabase } from '@/test/fixtures/fake-supabase';
+
+// Spies on the props the page hands the client — asserting on OBSERVED
+// PROPS (user-visible state) rather than the page's raw JSX element-tree
+// shape, so an unrelated markup change (e.g. wrapping in a <Suspense> or
+// adding a sibling element) doesn't break this test with an opaque
+// type-cast failure.
+const readinessClientMock = vi.hoisted(() => vi.fn((_props: unknown) => null));
 
 vi.mock('@/components/baseball/performance/PlayerReadinessClient', () => ({
-  PlayerReadinessClient: () => null,
+  PlayerReadinessClient: (props: unknown) => readinessClientMock(props),
 }));
 
 vi.mock('@/lib/baseball/active-context', () => ({
@@ -40,22 +51,17 @@ vi.mock('@/lib/lifting/resolve-baseball-context', () => ({
 
 // The ONLY Supabase call this page makes when liftCtx is null is the
 // `baseball_teams.timezone` lookup inside resolveTeamTimezone (real,
-// unmocked implementation below) — fake just that row.
+// unmocked implementation below). The shared fake-supabase fixture already
+// covers the from(...).select().eq().maybeSingle() chain this needs, so no
+// bespoke hand-rolled chain mock is required here.
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(async () => ({
-    from: (table: string) => {
-      if (table !== 'baseball_teams') {
-        throw new Error(`unexpected table in test double: ${table}`);
-      }
-      return {
-        select: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({ data: { timezone: 'America/Los_Angeles' } }),
-          }),
-        }),
-      };
-    },
-  })),
+  createClient: vi.fn(async () =>
+    createFakeSupabase({
+      tables: {
+        baseball_teams: [{ id: 'team-1', timezone: 'America/Los_Angeles' }],
+      },
+    }),
+  ),
 }));
 
 // Deliberately NOT mocking '@/lib/baseball/daily-contract/contract-day' —
@@ -64,11 +70,11 @@ vi.mock('@/lib/supabase/server', () => ({
 import { todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 
 import PlayerReadinessPage from '../page';
-import { PlayerReadinessClient } from '@/components/baseball/performance/PlayerReadinessClient';
 
 describe('PlayerReadinessPage — team-local today (evening US timestamp)', () => {
   afterEach(() => {
     vi.useRealTimers();
+    readinessClientMock.mockClear();
   });
 
   it('resolves the team-local date, not the server UTC date, for a 9pm PT check-in', async () => {
@@ -79,21 +85,19 @@ describe('PlayerReadinessPage — team-local today (evening US timestamp)', () =
     vi.setSystemTime(new Date('2026-06-24T04:00:00Z'));
 
     const element = await PlayerReadinessPage();
+    render(element);
 
     // Same helper + same tz + same instant as the readiness gate in
     // player-today.ts:534 (`todayIsoInTz(teamTz)`) — equality here is the
     // gate/page agreement the ruling requires, not a coincidence of mocking.
     const expectedTeamLocalToday = todayIsoInTz('America/Los_Angeles', new Date());
-
     expect(expectedTeamLocalToday).toBe('2026-06-23');
 
-    // The page wraps PlayerReadinessClient in a layout <div> — unwrap one level.
-    const inner = (element.props as { children: { type: unknown; props: unknown } })
-      .children;
-    expect(inner.type).toBe(PlayerReadinessClient);
-    expect((inner.props as { checkDate: string }).checkDate).toBe(
-      expectedTeamLocalToday,
-    );
-    expect((inner.props as { checkDate: string }).checkDate).not.toBe('2026-06-24');
+    // Assert on what the client actually received (user-visible state), not
+    // on the page's internal element-tree shape.
+    expect(readinessClientMock).toHaveBeenCalledTimes(1);
+    const props = readinessClientMock.mock.calls[0]?.[0] as { checkDate: string };
+    expect(props.checkDate).toBe(expectedTeamLocalToday);
+    expect(props.checkDate).not.toBe('2026-06-24');
   });
 });

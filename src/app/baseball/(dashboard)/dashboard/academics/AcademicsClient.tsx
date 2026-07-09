@@ -233,7 +233,7 @@ export default function AcademicsPage() {
       <>
         <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
           <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress</p>
+          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
         </div>
         <div className="p-8">
           <EmptyState
@@ -252,7 +252,7 @@ export default function AcademicsPage() {
       <>
         <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
           <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress</p>
+          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
         </div>
         <div className="p-4 lg:p-8 space-y-6">
           {/* Summary skeleton */}
@@ -309,7 +309,7 @@ export default function AcademicsPage() {
       <>
         <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
           <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress</p>
+          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
         </div>
         <div className="p-8">
           <EmptyState

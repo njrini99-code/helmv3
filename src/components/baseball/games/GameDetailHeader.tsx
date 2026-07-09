@@ -44,9 +44,11 @@ export function GameDetailHeader({ game, opponentLabel, canManageStats }: GameDe
             <IconPencil size={14} />
             <span className="ml-1.5">Edit</span>
           </Button>
-          {editOpen && (
-            <EditGameModal game={game} open={editOpen} onClose={() => setEditOpen(false)} />
-          )}
+          {/* Stay mounted and let the `open` prop drive Modal's own
+              show/hide transition — wrapping this in `editOpen &&` would
+              unmount the modal the instant it closes, skipping its exit
+              animation entirely. */}
+          <EditGameModal game={game} open={editOpen} onClose={() => setEditOpen(false)} />
         </>
       )}
     </div>

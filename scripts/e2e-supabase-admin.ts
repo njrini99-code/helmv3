@@ -15,8 +15,17 @@
  * otherwise-passing run, and CI only exports `PLAYWRIGHT_BASEBALL_SEEDED=1`
  * (which gates the specs that use this) alongside the service-role secret
  * in the first place.
+ *
+ * `playwright test` does NOT auto-load `.env.local` (unlike `next dev`), so a
+ * local `npm run test:e2e` would otherwise see empty `process.env` here and
+ * silently no-op teardown even when `.env.local` has real creds. Load it here
+ * (same pattern as the sibling `scripts/*.ts` seed/backfill utilities) —
+ * `dotenv` never overwrites already-exported vars, so CI's real env still wins.
  */
+import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+
+loadEnv({ path: '.env.local' });
 
 export function getE2eAdminClient() {
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();

@@ -131,6 +131,10 @@ function StatusChip({ status, template }: { status: HelmLiftingProgramStatus; te
 }
 
 export function ProgramListClient({ programs, orgId, canEdit, loading = false, basePath }: Props) {
+  // Guard against a trailing slash producing a double-`/` route — the
+  // docstring examples assume none, but nothing enforces that at the
+  // type/runtime level for this shared, multi-consumer prop.
+  const base = basePath.replace(/\/$/, '');
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
@@ -172,7 +176,7 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false, b
         setShowCreate(false);
         setName('');
         setDescription('');
-        router.push(`${basePath}/${result.id}`);
+        router.push(`${base}/${result.id}`);
       } else {
         setCreateError(result.error ?? 'Failed to create program.');
       }
@@ -187,7 +191,7 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false, b
       transition={{ duration: 0.22, delay: prefersReducedMotion ? 0 : index * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <Link
-        href={`${basePath}/${program.id}`}
+        href={`${base}/${program.id}`}
         className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 rounded-2xl"
       >
         <Card variant="interactive" className="group cursor-pointer p-0 overflow-hidden">

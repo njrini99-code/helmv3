@@ -28,7 +28,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
-import { IconDownload, IconFilter, IconUpload, IconX } from '@/components/icons';
+import { IconDownload, IconFilter, IconFolder, IconUpload, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { loadStatsCenter } from '@/app/baseball/actions/games';
 // V10 stat-visual chart gallery (stat-visuals packet). Mounted at team scope; it
@@ -559,7 +559,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
       <Button
         variant="ghost"
         size="md"
-        leftIcon={<IconUpload size={16} />}
+        leftIcon={<IconFolder size={16} />}
         onClick={() => router.push('/baseball/dashboard/import')}
       >
         Import Center

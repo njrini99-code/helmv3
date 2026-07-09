@@ -147,7 +147,6 @@ describe('logSetResult revalidates the baseball performance portal (Wave C paral
   beforeEach(() => {
     resetTables();
     vi.clearAllMocks();
-    resetTables();
   });
 
   it('busts /baseball/dashboard/performance/live and the per-session /lift/[sessionId] page', async () => {
@@ -163,6 +162,10 @@ describe('logSetResult revalidates the baseball performance portal (Wave C paral
     const paths = calls.map((c) => c[0]);
     expect(paths).toContain('/baseball/dashboard/performance/live');
     expect(paths).toContain('/baseball/dashboard/lift');
+    // Pin the type arg for the non-bracket routes too, so a future
+    // 'layout'/'page' swap on these is caught here rather than in prod.
+    expect(calls.find((c) => c[0] === '/baseball/dashboard/performance/live')?.[1]).toBeUndefined();
+    expect(calls.find((c) => c[0] === '/baseball/dashboard/lift')?.[1]).toBeUndefined();
     // The [sessionId] detail page uses the bracket-pattern + 'page' type
     // convention (matches golf/actions/round-reviews.ts) rather than a
     // resolved id — verify both the path AND the type argument.
@@ -170,5 +173,6 @@ describe('logSetResult revalidates the baseball performance portal (Wave C paral
     expect(sessionPageCall?.[1]).toBe('page');
     // Still fires the lifting-portal live-room revalidation too (additive).
     expect(paths).toContain('/lifting/dashboard/sessions/live');
+    expect(calls.find((c) => c[0] === '/lifting/dashboard/sessions/live')?.[1]).toBeUndefined();
   });
 });

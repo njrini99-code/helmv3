@@ -19,6 +19,7 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { logServerError } from '@/lib/server-error-logger';
 import {
   resolveBaseballLiftingOrg,
   resolveMyBaseballAthleteId,
@@ -32,37 +33,45 @@ export interface PlayerLiftAthleteContext {
 }
 
 /**
- * baseball_players.id -> baseball_teams.id (first active membership).
+ * baseball_players.id -> ALL active baseball_teams.id memberships.
  *
  * A player can legitimately hold TWO active baseball_team_members rows
- * (JUCO + Showcase). Without the status filter + explicit limit(1),
- * .maybeSingle() errors with PGRST116 on a >1-row result and silently
- * degrades the entire Lift Lab to empty for that athlete.
+ * (JUCO + Showcase). Previously this collapsed the set to the earliest row
+ * via `.limit(1).maybeSingle()`; if THAT team's org had no Lift Lab athlete
+ * seeded, resolution failed even though the player's other active team
+ * would have resolved fine. Return the full ordered list so the caller can
+ * try each membership in turn.
  */
-async function resolvePlayerTeamId(
+async function resolvePlayerTeamIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
-): Promise<string | null> {
+): Promise<string[]> {
   const { data, error } = await supabase
     .from('baseball_team_members')
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order('created_at', { ascending: true });
   if (error) {
-    console.error('[lift-athlete-context] resolvePlayerTeamId query failed', error);
-    return null;
+    await logServerError(
+      `[lift-athlete-context] resolvePlayerTeamIds query failed: ${error.message}`,
+      { action: 'baseball.liftAthleteContext.resolvePlayerTeamIds', metadata: { playerId } },
+    );
+    return [];
   }
-  return (data?.team_id as string | undefined) ?? null;
+  return (data ?? [])
+    .map((row) => row.team_id as string | undefined)
+    .filter((teamId): teamId is string => Boolean(teamId));
 }
 
 /**
  * Full resolution chain: baseball playerId -> teamId -> organizationId ->
- * helm_lifting_athletes.id. Returns null at any step that cannot be
- * resolved (degrade-gracefully — the caller renders an honest empty state,
- * never an error, matching the existing player-lift read-model's contract).
+ * helm_lifting_athletes.id. Tries EVERY active team membership (JUCO +
+ * Showcase dual-team players) before giving up, since a Lift Lab athlete row
+ * may only be seeded for one of the player's active teams/orgs. Returns null
+ * only once all active memberships have been exhausted (degrade-gracefully
+ * — the caller renders an honest empty state, never an error, matching the
+ * existing player-lift read-model's contract).
  */
 export async function resolvePlayerLiftAthleteContext(
   playerId: string,
@@ -70,16 +79,19 @@ export async function resolvePlayerLiftAthleteContext(
   if (!playerId) return null;
 
   const supabase = await createClient();
-  const teamId = await resolvePlayerTeamId(supabase, playerId);
-  if (!teamId) return null;
+  const teamIds = await resolvePlayerTeamIds(supabase, playerId);
 
-  const liftCtx = await resolveBaseballLiftingOrg(teamId);
-  if (!liftCtx) return null;
+  for (const teamId of teamIds) {
+    const liftCtx = await resolveBaseballLiftingOrg(teamId);
+    if (!liftCtx) continue;
 
-  const athleteId = await resolveMyBaseballAthleteId(liftCtx.organizationId);
-  if (!athleteId) return null;
+    const athleteId = await resolveMyBaseballAthleteId(liftCtx.organizationId);
+    if (!athleteId) continue;
 
-  return { organizationId: liftCtx.organizationId, teamId, athleteId };
+    return { organizationId: liftCtx.organizationId, teamId, athleteId };
+  }
+
+  return null;
 }
 
 /** Whether the athlete has a helm_lifting_readiness_checkins row for today. */
@@ -99,7 +111,15 @@ export async function hasReadinessCheckinToday(
     .maybeSingle()) as { data: { id: string } | null; error: unknown };
 
   if (error) {
-    console.error('[lift-athlete-context] hasReadinessCheckinToday query failed', error);
+    await logServerError(
+      `[lift-athlete-context] hasReadinessCheckinToday query failed: ${
+        (error as Error)?.message ?? String(error)
+      }`,
+      {
+        action: 'baseball.liftAthleteContext.hasReadinessCheckinToday',
+        metadata: { athleteId, organizationId, teamId },
+      },
+    );
   }
 
   return data !== null;

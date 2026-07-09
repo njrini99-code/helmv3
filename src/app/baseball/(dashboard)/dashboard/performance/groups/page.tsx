@@ -32,6 +32,7 @@ import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { logServerError } from '@/lib/server-error-logger';
 import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
 import { StrengthGroupsClient } from '@/components/lifting/groups/StrengthGroupsClient';
 import type { HelmLiftingGroupRow } from '@/lib/types/helm-lifting-data';
@@ -42,23 +43,46 @@ interface GroupWithMembers extends HelmLiftingGroupRow {
   member_athlete_ids: string[];
 }
 
-async function getGroupsWithMembers(organizationId: string, teamId: string): Promise<GroupWithMembers[]> {
+async function getGroupsWithMembers(
+  organizationId: string,
+  teamId: string,
+): Promise<{ groups: GroupWithMembers[]; error: boolean }> {
   const supabase = await createClient();
 
-  const { data: groups } = (await fromUntyped(supabase, 'helm_lifting_groups')
+  const { data: groups, error: groupsError } = (await fromUntyped(supabase, 'helm_lifting_groups')
     .select('*')
     .eq('organization_id', organizationId)
     .eq('team_id', teamId)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
-    .limit(100)) as { data: HelmLiftingGroupRow[] | null };
+    .limit(100)) as { data: HelmLiftingGroupRow[] | null; error: unknown };
 
-  if (!groups || groups.length === 0) return [];
+  if (groupsError) {
+    await logServerError(
+      `[performance/groups] getGroupsWithMembers groups query failed: ${
+        (groupsError as Error)?.message ?? String(groupsError)
+      }`,
+      { action: 'baseball.strengthGroups.getGroupsWithMembers', metadata: { organizationId, teamId } },
+    );
+    return { groups: [], error: true };
+  }
 
-  const { data: members } = (await fromUntyped(supabase, 'helm_lifting_group_members')
+  if (!groups || groups.length === 0) return { groups: [], error: false };
+
+  const { data: members, error: membersError } = (await fromUntyped(supabase, 'helm_lifting_group_members')
     .select('group_id, athlete_id')
     .in('group_id', groups.map((g) => g.id))
-    .is('ends_at', null)) as { data: Array<{ group_id: string; athlete_id: string }> | null };
+    .is('ends_at', null)) as { data: Array<{ group_id: string; athlete_id: string }> | null; error: unknown };
+
+  if (membersError) {
+    await logServerError(
+      `[performance/groups] getGroupsWithMembers members query failed: ${
+        (membersError as Error)?.message ?? String(membersError)
+      }`,
+      { action: 'baseball.strengthGroups.getGroupsWithMembers', metadata: { organizationId, teamId } },
+    );
+    return { groups: [], error: true };
+  }
 
   const membersByGroup = new Map<string, string[]>();
   for (const m of members ?? []) {
@@ -67,18 +91,24 @@ async function getGroupsWithMembers(organizationId: string, teamId: string): Pro
     membersByGroup.set(m.group_id, arr);
   }
 
-  return groups.map((g) => {
-    const athleteIds = membersByGroup.get(g.id) ?? [];
-    return { ...g, member_count: athleteIds.length, member_athlete_ids: athleteIds };
-  });
+  return {
+    groups: groups.map((g) => {
+      const athleteIds = membersByGroup.get(g.id) ?? [];
+      return { ...g, member_count: athleteIds.length, member_athlete_ids: athleteIds };
+    }),
+    error: false,
+  };
 }
 
 async function getAthletes(
   organizationId: string,
   teamId: string,
-): Promise<Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>>> {
+): Promise<{
+  athletes: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>>;
+  error: boolean;
+}> {
   const supabase = await createClient();
-  const { data } = (await fromUntyped(supabase, 'helm_lifting_athletes')
+  const { data, error } = (await fromUntyped(supabase, 'helm_lifting_athletes')
     .select('id, first_name, last_name, position, sport')
     .eq('organization_id', organizationId)
     .eq('team_id', teamId)
@@ -86,8 +116,18 @@ async function getAthletes(
     .order('last_name', { ascending: true })
     .limit(500)) as {
     data: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>> | null;
+    error: unknown;
   };
-  return data ?? [];
+
+  if (error) {
+    await logServerError(
+      `[performance/groups] getAthletes query failed: ${(error as Error)?.message ?? String(error)}`,
+      { action: 'baseball.strengthGroups.getAthletes', metadata: { organizationId, teamId } },
+    );
+    return { athletes: [], error: true };
+  }
+
+  return { athletes: data ?? [], error: false };
 }
 
 export default async function StrengthGroupsPage() {
@@ -100,18 +140,37 @@ export default async function StrengthGroupsPage() {
   if (!caps.can_manage_lifting) redirect('/baseball/dashboard/performance');
 
   const liftCtx = await resolveBaseballLiftingOrg(teamId);
-  const [groups, athletes] = liftCtx
+  const [groupsResult, athletesResult] = liftCtx
     ? await Promise.all([
         getGroupsWithMembers(liftCtx.organizationId, teamId),
         getAthletes(liftCtx.organizationId, teamId),
       ])
-    : [[], []];
+    : [
+        { groups: [] as GroupWithMembers[], error: false },
+        { athletes: [] as Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>>, error: false },
+      ];
+
+  // Surface a genuine query/RLS failure distinctly from a legitimate
+  // "no groups seeded yet" empty state — swallowing errors here made both
+  // look identical.
+  if (groupsResult.error || athletesResult.error) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        <div className="glass-standard rounded-2xl border border-cream-400/40 p-8 shadow-glass">
+          <h2 className="text-h3 text-warm-900">Unable to load strength groups</h2>
+          <p className="mt-2 text-body text-warm-500">
+            Something went wrong loading your Lift Lab groups. Please refresh the page to try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
       <StrengthGroupsClient
-        groups={groups}
-        athletes={athletes}
+        groups={groupsResult.groups}
+        athletes={athletesResult.athletes}
         orgId={liftCtx?.organizationId ?? ''}
         canEdit={caps.can_manage_lifting}
       />

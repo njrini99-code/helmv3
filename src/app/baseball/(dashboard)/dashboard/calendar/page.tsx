@@ -231,12 +231,17 @@ export default async function BaseballCalendarPage() {
     return acc;
   }, {});
 
-  // ── College coach with no team: recruiting-focused empty state ─────────────
+  // ── No team resolved: college coaches get the recruiting-focused empty
+  //    state (they're pure recruiters — no team is expected); every other
+  //    no-team case (non-college coach, or a player with no team) gets a
+  //    distinct "no team assigned" state instead of falling through to the
+  //    generic calendar shell with nothing to show. ──────────────────────────
 
-  if (isCollegeCoach && !teamId) {
+  if (!teamId) {
     return (
       <CalendarFairway
-        recruitingEmpty
+        recruitingEmpty={isCollegeCoach}
+        noTeamEmpty={!isCollegeCoach}
         events={events}
         teamMembers={teamMembers}
         teamId={teamId}
@@ -251,6 +256,7 @@ export default async function BaseballCalendarPage() {
   return (
     <CalendarFairway
       recruitingEmpty={false}
+      noTeamEmpty={false}
       events={events}
       teamMembers={teamMembers}
       teamId={teamId}

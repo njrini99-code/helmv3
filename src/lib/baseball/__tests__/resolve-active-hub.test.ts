@@ -8,6 +8,9 @@ import {
   COACH_MANAGEMENT_TABS,
   COACH_MESSAGES_TABS,
   COACH_STATS_TABS,
+  COACH_TEAM_TABS,
+  COACH_RECRUITING_TABS,
+  COACH_ACADEMICS_TABS,
 } from '@/app/baseball/(dashboard)/_components/hub-definitions';
 
 describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
@@ -214,6 +217,9 @@ describe('every coach hub caps at 3 rendered subtabs (Ruling 2)', () => {
     ['development', COACH_DEVELOPMENT_TABS],
     ['management', COACH_MANAGEMENT_TABS],
     ['messages', COACH_MESSAGES_TABS],
+    ['team', COACH_TEAM_TABS],
+    ['recruiting', COACH_RECRUITING_TABS],
+    ['academics', COACH_ACADEMICS_TABS],
   ] as const)('%s renders ≤3 tabs', (_hub, tabs) => {
     expect(tabs.length).toBeLessThanOrEqual(3);
   });

@@ -23,6 +23,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { logServerError } from '@/lib/server-error-logger';
 import { PlayerLiftSessionClient } from '@/components/lifting/players/PlayerLiftSessionClient';
 import { resolvePlayerLiftAthleteContext, hasReadinessCheckinToday } from '../_lift-athlete-context';
 import type {
@@ -58,7 +59,15 @@ async function fetchSessionWithExercises(
     .maybeSingle()) as { data: HelmLiftingSessionRow | null; error: unknown };
 
   if (sessionError) {
-    console.error('[lift/[sessionId]] fetchSessionWithExercises session query failed', sessionError);
+    await logServerError(
+      `[lift/[sessionId]] fetchSessionWithExercises session query failed: ${
+        (sessionError as Error)?.message ?? String(sessionError)
+      }`,
+      {
+        action: 'baseball.liftSessionPage.fetchSession',
+        metadata: { sessionId, athleteId, organizationId },
+      },
+    );
     return { session: null, error: true };
   }
 
@@ -76,9 +85,14 @@ async function fetchSessionWithExercises(
   };
 
   if (exercisesError) {
-    console.error(
-      '[lift/[sessionId]] fetchSessionWithExercises exercises query failed',
-      exercisesError,
+    await logServerError(
+      `[lift/[sessionId]] fetchSessionWithExercises exercises query failed: ${
+        (exercisesError as Error)?.message ?? String(exercisesError)
+      }`,
+      {
+        action: 'baseball.liftSessionPage.fetchSession',
+        metadata: { sessionId, athleteId, organizationId },
+      },
     );
     return { session: null, error: true };
   }
@@ -101,7 +115,15 @@ async function fetchSessionWithExercises(
     };
 
     if (setsError) {
-      console.error('[lift/[sessionId]] fetchSessionWithExercises sets query failed', setsError);
+      await logServerError(
+        `[lift/[sessionId]] fetchSessionWithExercises sets query failed: ${
+          (setsError as Error)?.message ?? String(setsError)
+        }`,
+        {
+          action: 'baseball.liftSessionPage.fetchSession',
+          metadata: { sessionId, athleteId, organizationId },
+        },
+      );
       return { session: null, error: true };
     }
 

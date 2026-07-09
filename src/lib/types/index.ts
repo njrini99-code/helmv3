@@ -755,12 +755,16 @@ export interface BoxScorePitchingInput {
 export interface CreateGameInput {
   game_date: string;
   game_type: BaseballGameType;
-  opponent_name?: string;
-  location?: string;
+  // opponent_name/location/notes/weather are nullable columns on
+  // baseball_games; `null` (distinct from `undefined`) is a valid value here
+  // so an edit form can explicitly CLEAR one of these fields — updateGame's
+  // partial-update logic only skips keys that are `undefined`.
+  opponent_name?: string | null;
+  location?: string | null;
   home_away?: BaseballHomeAway;
   innings_played?: number;
-  notes?: string;
-  weather?: string;
+  notes?: string | null;
+  weather?: string | null;
   event_id?: string; // Link to existing calendar event
   // If provided, also creates a calendar event
   create_calendar_event?: boolean;

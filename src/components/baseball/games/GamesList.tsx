@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { getBaseballStatsGameCreateHref } from '@/lib/baseball/stats-route-aliases';
 import { GameCard } from './GameCard';
@@ -24,6 +24,11 @@ interface GamesListProps {
   // the list showing stale pre-edit data until a hard reload.
   initialGames?: BaseballGame[];
   initialRecord?: TeamSeasonRecord | null;
+  // Set by the parent Server Component when its server-side fetch failed
+  // (as opposed to genuinely finding zero games) — lets the empty-vs-error
+  // states stay distinguishable instead of a failed load rendering as an
+  // ordinary "No games yet" empty season.
+  initialError?: string | null;
 }
 
 type TabFilter = 'all' | 'game' | 'scrimmage';
@@ -40,12 +45,15 @@ export function GamesList({
   limit,
   initialGames,
   initialRecord,
+  initialError,
 }: GamesListProps) {
   const { showToast } = useToast();
   const [games, setGames] = useState<BaseballGame[]>(initialGames ?? []);
   const [loading, setLoading] = useState(!initialGames);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    initialGames !== undefined ? (initialError ?? null) : null,
+  );
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear());
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -63,9 +71,9 @@ export function GamesList({
     if (initialGames !== undefined) {
       setGames(initialGames);
       setLoading(false);
-      setError(null);
+      setError(initialError ?? null);
     }
-  }, [initialGames]);
+  }, [initialGames, initialError]);
 
   useEffect(() => {
     if (initialRecord !== undefined) {
@@ -97,7 +105,19 @@ export function GamesList({
     [teamId, activeTab, seasonYear, limit]
   );
 
+  // Skip the very first client fetch when the parent Server Component
+  // already seeded games/record — the sync effects above cover that case.
+  // Without this, `fetchGames` (a fresh useCallback on first render) still
+  // fires unconditionally on mount, reverting the seeded `loading: false`
+  // and re-fetching the exact same data the server already fetched,
+  // flashing the skeleton the seeding was meant to eliminate.
+  const skippedInitialFetchRef = useRef(initialGames !== undefined);
+
   useEffect(() => {
+    if (skippedInitialFetchRef.current) {
+      skippedInitialFetchRef.current = false;
+      return;
+    }
     fetchGames();
   }, [fetchGames]);
 

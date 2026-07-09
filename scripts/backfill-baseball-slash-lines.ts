@@ -68,6 +68,22 @@ function valuesEqual(a: number | null, b: number | null): boolean {
   return Math.abs(a - b) < 0.0005;
 }
 
+/** Page through a table past PostgREST's 1000-row default cap, with a stable order. */
+async function fetchAllRows<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const PAGE = 1000;
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = data ?? [];
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return out;
+}
+
 async function main() {
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
@@ -78,12 +94,16 @@ async function main() {
 
   console.log(`${DRY ? '[DRY RUN] printing plan, writing NOTHING. Re-run with --confirm.\n' : ''}Backfilling baseball_player_aggregates.career_obp/slg/ops...\n`);
 
-  const { data: rows, error: fetchError } = await supabase
-    .from('baseball_player_aggregates')
-    .select('player_id, team_id, career_avg, career_obp, career_slg, career_ops')
-    .returns<AggregateRow[]>();
+  const rows = await fetchAllRows<AggregateRow>((from, to) =>
+    supabase
+      .from('baseball_player_aggregates')
+      .select('player_id, team_id, career_avg, career_obp, career_slg, career_ops')
+      .order('player_id', { ascending: true })
+      .order('team_id', { ascending: true })
+      .range(from, to)
+      .returns<AggregateRow[]>(),
+  );
 
-  if (fetchError) throw fetchError;
   if (!rows || rows.length === 0) {
     console.log('No baseball_player_aggregates rows found — nothing to backfill.');
     return;
@@ -107,15 +127,21 @@ async function main() {
     // table), so an explicit select naming them 400s. `computeCareerSlashLine`
     // treats a missing field as 0 via `pick(s) || 0`, which is exactly how
     // the app's own recalculation already behaves in production today.
-    const { data: statsRows, error: statsError } = await supabase
-      .from('baseball_player_stats')
-      .select('*')
-      .eq('player_id', row.player_id)
-      .eq('team_id', row.team_id)
-      .returns<SlashLineStatRow[]>();
-
-    if (statsError) {
-      console.warn(`  ⚠ ${row.player_id.slice(0, 8)}/${row.team_id.slice(0, 8)}: failed to load stats — ${statsError.message}`);
+    let statsRows: SlashLineStatRow[];
+    try {
+      statsRows = await fetchAllRows<SlashLineStatRow>((from, to) =>
+        supabase
+          .from('baseball_player_stats')
+          .select('*')
+          .eq('player_id', row.player_id)
+          .eq('team_id', row.team_id)
+          .order('id', { ascending: true })
+          .range(from, to)
+          .returns<SlashLineStatRow[]>(),
+      );
+    } catch (statsError) {
+      const message = statsError instanceof Error ? statsError.message : String(statsError);
+      console.warn(`  ⚠ ${row.player_id.slice(0, 8)}/${row.team_id.slice(0, 8)}: failed to load stats — ${message}`);
       errors++;
       continue;
     }

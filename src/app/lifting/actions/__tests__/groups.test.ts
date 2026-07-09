@@ -90,7 +90,7 @@ vi.mock('@/lib/lifting/with-lifting-action', () => ({
 }));
 
 import { revalidatePath } from 'next/cache';
-import { createGroup, updateGroup, deleteGroup } from '@/app/lifting/actions/groups';
+import { createGroup, updateGroup, deleteGroup, addGroupMember, removeGroupMember } from '@/app/lifting/actions/groups';
 
 describe('lifting groups actions revalidate the baseball performance portal (Wave C parallel routes)', () => {
   beforeEach(() => {
@@ -117,6 +117,22 @@ describe('lifting groups actions revalidate the baseball performance portal (Wav
 
   it('deleteGroup busts /baseball/dashboard/performance/groups alongside the lifting-portal path', async () => {
     await deleteGroup({ groupId: GROUP_ID });
+
+    const paths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
+    expect(paths).toContain('/lifting/dashboard/groups');
+    expect(paths).toContain('/baseball/dashboard/performance/groups');
+  });
+
+  it('addGroupMember busts /baseball/dashboard/performance/groups alongside the lifting-portal path', async () => {
+    await addGroupMember({ groupId: GROUP_ID, athleteId: ATHLETE_ID });
+
+    const paths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
+    expect(paths).toContain('/lifting/dashboard/groups');
+    expect(paths).toContain('/baseball/dashboard/performance/groups');
+  });
+
+  it('removeGroupMember busts /baseball/dashboard/performance/groups alongside the lifting-portal path', async () => {
+    await removeGroupMember({ groupId: GROUP_ID, athleteId: ATHLETE_ID });
 
     const paths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
     expect(paths).toContain('/lifting/dashboard/groups');

@@ -721,7 +721,12 @@ async function completeGameAndRecalculate(
   // a backdated or cross-New-Year game must recalc into the season it was
   // actually played in, mirroring the fix already applied in the
   // `save_baseball_full_box_score` RPC.
-  const seasonYear = new Date(game.game_date).getFullYear();
+  // game_date is a date-only string (e.g. "2026-01-01"); parse the year
+  // directly instead of via `new Date(...).getFullYear()`, which parses as
+  // UTC midnight but reads back in local time — an off-by-one at Jan 1 /
+  // Dec 31 on any non-UTC server. Slicing keeps this consistent with the
+  // string-based season bucketing used by getTeamGamesImpl / getPlayerSeasonStatsImpl.
+  const seasonYear = parseInt(String(game.game_date).slice(0, 4), 10);
 
   const db2 = supabase as unknown as SupabaseClient;
   const recalcResults = await Promise.all(

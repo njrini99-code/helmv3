@@ -23,7 +23,7 @@ import {
 } from '../nav-manifest';
 import { BASEBALL_NAV_REGISTRY, BASEBALL_MESSAGES_NAV, type BaseballNavHub } from '../nav-registry';
 import { BASEBALL_CAPABILITY_KEYS, type BaseballCapabilityMap } from '../capabilities';
-import type { BaseballProgramType } from '@/lib/types/baseball-settings';
+import { BASEBALL_PROGRAM_TYPES, type BaseballProgramType } from '@/lib/types/baseball-settings';
 import {
   COACH_HUB_ORDER,
   COACH_HUB_DEFS,
@@ -310,14 +310,13 @@ describe('BASEBALL_NAV_MANIFEST', () => {
     });
 
     it('(b) every coach hub renders ≤3 subtabs for a fully-capable head coach in every program type', () => {
-      const PROGRAM_TYPES: readonly BaseballProgramType[] = [
-        'college',
-        'high_school',
-        'showcase',
-        'juco',
-        'academy',
-        'club',
-      ];
+      // Imported from the canonical source (mirrors BASEBALL_CAPABILITY_KEYS
+      // below) rather than hand-listed — a hand-typed literal array would
+      // type-check even if BaseballProgramType gains/loses a member, silently
+      // losing coverage for the new value. BASEBALL_PROGRAM_TYPES can never
+      // drift from BaseballProgramType because it's the array the type is
+      // derived from.
+      const PROGRAM_TYPES: readonly BaseballProgramType[] = BASEBALL_PROGRAM_TYPES;
       const allCaps = BASEBALL_CAPABILITY_KEYS.reduce((acc, key) => {
         acc[key] = true;
         return acc;
@@ -374,6 +373,14 @@ describe('BASEBALL_NAV_MANIFEST', () => {
           resolved,
           `folded destination "${entry.id}" (${entry.href}, foldedUnder: "${entry.foldedUnder}") does not resolve to any hub via resolveActiveHub`,
         ).not.toBeNull();
+        // `.not.toBeNull()` alone only proves SOME hub matched — assert the
+        // resolved hub is actually the one this entry claims to fold into
+        // (its `tabs` must contain the `foldedUnder` tab id), so a
+        // wrong-hub resolution fails the test instead of passing silently.
+        expect(
+          resolved?.tabs.some((t) => t.id === entry.foldedUnder),
+          `folded destination "${entry.id}" (${entry.href}) resolved to hub "${resolved?.id}", whose tabs do not include the claimed foldedUnder id "${entry.foldedUnder}"`,
+        ).toBe(true);
       }
     });
   });

@@ -50,6 +50,13 @@ const BASEBALL_LIVE_PATH = '/baseball/dashboard/performance/live';
 const BASEBALL_LIFT_PATH = '/baseball/dashboard/lift';
 const BASEBALL_LIFT_SESSION_PATH = '/baseball/dashboard/lift/[sessionId]';
 
+/** Shared by every mutation below — busts all three baseball-portal paths in one call. */
+function revalidateBaseballLiftPaths(): void {
+  revalidatePath(BASEBALL_LIVE_PATH);
+  revalidatePath(BASEBALL_LIFT_PATH);
+  revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
+}
+
 // -----------------------------------------------------------------------------
 // Shared result
 // -----------------------------------------------------------------------------
@@ -234,9 +241,7 @@ export const advanceSessionLifecycle = withLiftingAction(
     if (error) throw error;
     revalidatePath(SESSIONS_PATH);
     revalidatePath(LIVE_PATH);
-    revalidatePath(BASEBALL_LIVE_PATH);
-    revalidatePath(BASEBALL_LIFT_PATH);
-    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
+    revalidateBaseballLiftPaths();
     return { success: true, id: sessionId };
   },
 );
@@ -278,9 +283,7 @@ export const addSessionNote = withLiftingAction(
 
     if (error) throw error;
     revalidatePath(SESSIONS_PATH);
-    revalidatePath(BASEBALL_LIVE_PATH);
-    revalidatePath(BASEBALL_LIFT_PATH);
-    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
+    revalidateBaseballLiftPaths();
     return { success: true, id: sessionId };
   },
 );
@@ -340,9 +343,7 @@ export const modifySectionForAthlete = withLiftingAction(
       .eq('organization_id', ctx.orgId);
 
     revalidatePath(LIVE_PATH);
-    revalidatePath(BASEBALL_LIVE_PATH);
-    revalidatePath(BASEBALL_LIFT_PATH);
-    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
+    revalidateBaseballLiftPaths();
     return { success: true, id: input.sessionExerciseId };
   },
 );
@@ -422,9 +423,7 @@ export const logSetResult = withLiftingAction(
       .eq('status', 'assigned');
 
     revalidatePath(LIVE_PATH);
-    revalidatePath(BASEBALL_LIVE_PATH);
-    revalidatePath(BASEBALL_LIFT_PATH);
-    revalidatePath(BASEBALL_LIFT_SESSION_PATH, 'page');
+    revalidateBaseballLiftPaths();
     return { success: true, id: (data as { id: string }).id };
   },
 );

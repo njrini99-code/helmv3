@@ -29,7 +29,10 @@ import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
 import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { ProgramEditorClient } from '@/components/lifting/programs/ProgramEditorClient';
 import type {
   HelmLiftingProgramRow,
@@ -60,57 +63,116 @@ interface AssignContext {
   groups: Array<Pick<HelmLiftingGroupRow, 'id' | 'name' | 'group_type'>>;
 }
 
+interface ProgramTreeResult {
+  tree: LiftProgramTree | null;
+  error: boolean;
+}
+
+async function logProgramTreeError(step: string, error: unknown, metadata: Record<string, unknown>) {
+  await logServerError(
+    `[performance/programs] getProgramTree ${step} query failed: ${
+      (error as Error)?.message ?? String(error)
+    }`,
+    { action: 'baseball.programEditor.getProgramTree', metadata },
+  );
+}
+
 async function getProgramTree(
   programId: string,
   organizationId: string,
   teamId: string,
-): Promise<LiftProgramTree | null> {
+): Promise<ProgramTreeResult> {
   const supabase = await createClient();
 
-  const { data: program } = (await fromUntyped(supabase, 'helm_lifting_programs')
+  const { data: program, error: programError } = (await fromUntyped(supabase, 'helm_lifting_programs')
     .select('*')
     .eq('id', programId)
     .eq('organization_id', organizationId)
     .eq('team_id', teamId)
-    .maybeSingle()) as { data: HelmLiftingProgramRow | null };
+    .maybeSingle()) as { data: HelmLiftingProgramRow | null; error: unknown };
 
-  if (!program) return null;
+  if (programError) {
+    await logProgramTreeError('program', programError, { programId, organizationId, teamId });
+    return { tree: null, error: true };
+  }
 
-  const { data: weeks } = (await fromUntyped(supabase, 'helm_lifting_weeks')
+  if (!program) return { tree: null, error: false };
+
+  const { data: weeks, error: weeksError } = (await fromUntyped(supabase, 'helm_lifting_weeks')
     .select('*')
     .eq('program_id', programId)
-    .order('week_number', { ascending: true })) as { data: HelmLiftingWeekRow[] | null };
+    .order('week_number', { ascending: true })) as { data: HelmLiftingWeekRow[] | null; error: unknown };
+
+  if (weeksError) {
+    await logProgramTreeError('weeks', weeksError, { programId });
+    return { tree: null, error: true };
+  }
 
   const weekList = weeks ?? [];
   if (weekList.length === 0) {
-    return { program, weeks: [], exerciseNameMap: {} };
+    return { tree: { program, weeks: [], exerciseNameMap: {} }, error: false };
   }
 
-  const { data: days } = (await fromUntyped(supabase, 'helm_lifting_days')
+  const { data: days, error: daysError } = (await fromUntyped(supabase, 'helm_lifting_days')
     .select('*')
     .in('week_id', weekList.map((w) => w.id))
-    .order('day_number', { ascending: true })) as { data: HelmLiftingDayRow[] | null };
+    .order('day_number', { ascending: true })) as { data: HelmLiftingDayRow[] | null; error: unknown };
+
+  if (daysError) {
+    await logProgramTreeError('days', daysError, { programId });
+    return { tree: null, error: true };
+  }
 
   const dayList = days ?? [];
-  const { data: sections } = (await fromUntyped(supabase, 'helm_lifting_sections')
+  const { data: sections, error: sectionsError } = (await fromUntyped(supabase, 'helm_lifting_sections')
     .select('*')
     .in('lift_day_id', dayList.map((d) => d.id))
-    .order('section_order', { ascending: true })) as { data: HelmLiftingSectionRow[] | null };
+    .order('section_order', { ascending: true })) as { data: HelmLiftingSectionRow[] | null; error: unknown };
+
+  if (sectionsError) {
+    await logProgramTreeError('sections', sectionsError, { programId });
+    return { tree: null, error: true };
+  }
 
   const sectionList = sections ?? [];
-  const { data: prescriptions } = (await fromUntyped(supabase, 'helm_lifting_prescriptions')
-    .select('*')
-    .in('section_id', sectionList.map((s) => s.id))
-    .order('order_index', { ascending: true })) as { data: HelmLiftingPrescriptionRow[] | null };
 
-  const prescList = prescriptions ?? [];
+  // Paginated via fetchAllRowsResult: a dense program (many weeks x days x
+  // sections x sets) can push prescriptions past PostgREST's 1000-row cap,
+  // silently truncating the tree under a single unpaginated `.select()`.
+  // Ordered by the unique `id` column (not `order_index`, which repeats
+  // across sections) so page boundaries never drift; the display order is
+  // restored below with an explicit sort.
+  const { data: prescriptions, error: prescriptionsError } = sectionList.length > 0
+    ? await fetchAllRowsResult<HelmLiftingPrescriptionRow>((from, to) =>
+        fromUntyped(supabase, 'helm_lifting_prescriptions')
+          .select('*')
+          .in('section_id', sectionList.map((s) => s.id))
+          .order('id', { ascending: true })
+          .range(from, to),
+      )
+    : { data: [] as HelmLiftingPrescriptionRow[], error: null };
+
+  if (prescriptionsError) {
+    await logProgramTreeError('prescriptions', prescriptionsError, { programId });
+    return { tree: null, error: true };
+  }
+
+  const prescList = (prescriptions ?? [])
+    .slice()
+    .sort((a, b) => a.order_index - b.order_index);
 
   const exerciseIds = [...new Set(prescList.map((p) => p.exercise_id).filter(Boolean) as string[])];
   const exerciseNameMap: Record<string, string> = {};
   if (exerciseIds.length > 0) {
-    const { data: exRows } = (await fromUntyped(supabase, 'helm_lifting_exercises')
+    const { data: exRows, error: exRowsError } = (await fromUntyped(supabase, 'helm_lifting_exercises')
       .select('id, name')
-      .in('id', exerciseIds)) as { data: Array<{ id: string; name: string }> | null };
+      .in('id', exerciseIds)) as { data: Array<{ id: string; name: string }> | null; error: unknown };
+
+    if (exRowsError) {
+      await logProgramTreeError('exRows', exRowsError, { programId });
+      return { tree: null, error: true };
+    }
+
     for (const ex of exRows ?? []) exerciseNameMap[ex.id] = ex.name;
   }
 
@@ -136,9 +198,12 @@ async function getProgramTree(
   }
 
   return {
-    program,
-    weeks: weekList.map((w) => ({ ...w, days: daysByWeekId.get(w.id) ?? [] })),
-    exerciseNameMap,
+    tree: {
+      program,
+      weeks: weekList.map((w) => ({ ...w, days: daysByWeekId.get(w.id) ?? [] })),
+      exerciseNameMap,
+    },
+    error: false,
   };
 }
 
@@ -183,10 +248,18 @@ export default async function ProgramEditorPage({
   const liftCtx = await resolveBaseballLiftingOrg(teamId);
   if (!liftCtx) notFound();
 
-  const [tree, assign] = await Promise.all([
+  const [{ tree, error: treeError }, assign] = await Promise.all([
     getProgramTree(programId, liftCtx.organizationId, teamId),
     getAssignContext(liftCtx.organizationId, teamId),
   ]);
+
+  if (treeError) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        <ReadModelStateNotice state="error" title="Program could not load" />
+      </div>
+    );
+  }
 
   if (!tree) notFound();
 

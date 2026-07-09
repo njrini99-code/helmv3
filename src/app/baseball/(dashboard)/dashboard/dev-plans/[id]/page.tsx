@@ -91,7 +91,7 @@ export default function DevPlanDetailPage() {
           <Link
             href="/baseball/dashboard/dev-plans"
             aria-label="Go back"
-            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
           >
             <IconChevronLeft size={20} aria-hidden="true" />
           </Link>
@@ -114,7 +114,7 @@ export default function DevPlanDetailPage() {
           <Link
             href="/baseball/dashboard/dev-plans"
             aria-label="Go back"
-            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
           >
             <IconChevronLeft size={20} aria-hidden="true" />
           </Link>
@@ -141,7 +141,7 @@ export default function DevPlanDetailPage() {
           <Link
             href="/baseball/dashboard/dev-plans"
             aria-label="Go back"
-            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
           >
             <IconChevronLeft size={20} aria-hidden="true" />
           </Link>
@@ -169,7 +169,7 @@ export default function DevPlanDetailPage() {
         <Link
           href="/baseball/dashboard/dev-plans"
           aria-label="Go back"
-          className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+          className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 active:scale-95 active:bg-warm-200"
         >
           <IconChevronLeft size={20} aria-hidden="true" />
         </Link>
