@@ -28,6 +28,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { IconSparkles } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/sonner';
 
 export interface HubInsightSignalCardProps {
   insight: EvidenceInsight | null;
@@ -63,6 +64,7 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
   const [dismissedToday, setDismissedToday] = useState<boolean | null>(null);
   const [hidden, setHidden] = useState(false);
   const [, startTransition] = useTransition();
+  const { addToast } = useToast();
 
   // Hydrate dismiss state from localStorage. `dismissedToday === null` on the
   // first render prevents a flash of the card before we know if the player has
@@ -103,9 +105,18 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
                   : 'dismissed';
           try {
             await rateInsightAsPlayer({ insightId, rating });
-          } catch {
-            // Server-side action logs via logServerError already. Swallow so a
-            // failing rating doesn't crash the Hub.
+          } catch (err) {
+            // Server-side action logs via logServerError already. Toast
+            // instead of swallowing so the player knows the rating didn't
+            // save — and leave the card visible rather than hiding it on a
+            // failed dismiss.
+            addToast({
+              type: 'error',
+              title: 'Could not save feedback',
+              description:
+                err instanceof Error ? err.message : 'Please try again in a moment.',
+            });
+            return;
           }
           if (action === 'dismissed') {
             setHidden(true);
@@ -125,7 +136,7 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
           return;
       }
     },
-    [router],
+    [router, addToast],
   );
 
   if (!insight) return null;

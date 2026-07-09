@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { InsightCard, type InsightAction } from '@/components/golf/coachhelm/insight-card';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
+import { useToast } from '@/components/ui/sonner';
 import { RoundTakeaway } from './RoundTakeaway';
 
 interface V2ReviewSummaryProps {
@@ -71,6 +72,7 @@ export function V2ReviewSummary({
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const { addToast } = useToast();
 
   const { composedReview, reasoning, focusAreas, practicePriority } = review;
   const rawConfidence = reasoning.calibratedConfidence ?? reasoning.confidence;
@@ -104,8 +106,16 @@ export function V2ReviewSummary({
                   : 'dismissed';
           try {
             await rateInsightAsPlayer({ insightId, rating });
-          } catch {
-            // Already logged via `logServerError` server-side.
+          } catch (err) {
+            // Already logged via `logServerError` server-side. Toast so the
+            // player knows the rating didn't save instead of failing silently.
+            addToast({
+              type: 'error',
+              title: 'Could not save feedback',
+              description:
+                err instanceof Error ? err.message : 'Please try again in a moment.',
+            });
+            return;
           }
           startTransition(() => {
             router.refresh();
@@ -122,7 +132,7 @@ export function V2ReviewSummary({
           return;
       }
     },
-    [router],
+    [router, addToast],
   );
 
   // Decide which layout we're in. The new layout requires either a takeaway

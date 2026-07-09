@@ -545,15 +545,23 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
     const section = selectedDay?.sections.find((s) => s.id === pickerSectionId);
     const nextOrder = section?.prescriptions.length ?? 0;
     startTransition(async () => {
-      await addLiftPrescription({
-        sectionId: pickerSectionId,
-        exerciseId,
-        orderIndex: nextOrder,
-        sets: 3,
-        reps: 8,
-      });
-      setPickerSectionId(null);
-      refresh();
+      try {
+        const result = await addLiftPrescription({
+          sectionId: pickerSectionId,
+          exerciseId,
+          orderIndex: nextOrder,
+          sets: 3,
+          reps: 8,
+        });
+        if (result.success) {
+          setPickerSectionId(null);
+          refresh();
+        } else {
+          setActionError(result.error ?? 'Failed to add exercise.');
+        }
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'Failed to add exercise.');
+      }
     });
   }
 

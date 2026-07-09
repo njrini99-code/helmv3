@@ -663,7 +663,11 @@ export default function PipelinePage() {
 
     setRemoving(true);
     try {
-      await removeFromWatchlist(item.coach_id, item.player_id);
+      const result = await removeFromWatchlist(item.coach_id, item.player_id);
+      if (!result.success) {
+        showToast(result.message || 'Failed to remove from watchlist', 'error');
+        return;
+      }
       refetch();
       showToast('Player removed from watchlist', 'success');
     } catch {
@@ -676,7 +680,11 @@ export default function PipelinePage() {
 
   async function handleSaveNote(watchlistId: string) {
     try {
-      await addWatchlistNote(watchlistId, noteValue);
+      const result = await addWatchlistNote(watchlistId, noteValue);
+      if (!result.success) {
+        showToast(result.error || 'Failed to save note', 'error');
+        return;
+      }
       refetch();
       setEditingNote(null);
       setNoteValue('');
@@ -737,15 +745,20 @@ export default function PipelinePage() {
     try {
       const itemsToRemove = watchlist.filter(item => selectedPlayers.has(item.id));
 
-      await Promise.all(
+      const results = await Promise.all(
         itemsToRemove.map(item =>
           removeFromWatchlist(item.coach_id, item.player_id)
         )
       );
 
+      const failed = results.filter(r => !r.success).length;
+      if (failed > 0) {
+        showToast(`Failed to remove ${failed} player${failed !== 1 ? 's' : ''}`, 'error');
+      } else {
+        showToast(`${selectedPlayers.size} player(s) removed from watchlist`, 'success');
+      }
       refetch();
       setSelectedPlayers(new Set());
-      showToast(`${selectedPlayers.size} player(s) removed from watchlist`, 'success');
     } catch {
       showToast('Failed to remove some players', 'error');
     } finally {

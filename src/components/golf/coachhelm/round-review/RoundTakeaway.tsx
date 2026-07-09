@@ -34,6 +34,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { IconSparkles, IconArrowRight, IconTarget } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/sonner';
 
 export interface RoundTakeawayProps {
   /** Top insight tied to this round (or null when the round produced none). */
@@ -86,6 +87,7 @@ function buildPreheader(
 export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const { addToast } = useToast();
 
   const handleAction = useCallback(
     async (action: InsightAction, insightId: string) => {
@@ -104,10 +106,17 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
                   : 'dismissed';
           try {
             await rateInsightAsPlayer({ insightId, rating });
-          } catch {
+          } catch (err) {
             // `rateInsightAsPlayer` already routes failures through
-            // `logServerError`. Swallow so a failing rating never crashes
-            // the round review.
+            // `logServerError`. Surface a toast so the player knows the
+            // rating didn't save, rather than swallowing it silently.
+            addToast({
+              type: 'error',
+              title: 'Could not save feedback',
+              description:
+                err instanceof Error ? err.message : 'Please try again in a moment.',
+            });
+            return;
           }
           startTransition(() => {
             router.refresh();
@@ -126,7 +135,7 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
           return;
       }
     },
-    [router],
+    [router, addToast],
   );
 
   // ---------------------------------------------------------------------
