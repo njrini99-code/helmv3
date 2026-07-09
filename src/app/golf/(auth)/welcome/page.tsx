@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
+import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { getGreeting, getTimeOfDay, type TimeOfDay } from '@/lib/utils/time-of-day';
 import { extractFirstName, extractLastName } from '@/lib/utils/names';
 import { useSequencedNavigation } from '@/hooks/use-sequenced-navigation';
@@ -63,7 +64,7 @@ function WelcomeContent() {
         .maybeSingle();
       const isAdmin = (userRow?.role as string | undefined) === 'admin';
       const nextSafe = isSafeInternalPath(nextParam) ? nextParam : null;
-      destRef.current = nextSafe ?? (isAdmin ? '/golf/admin' : '/golf/dashboard');
+      destRef.current = nextSafe ?? resolveAdminPostLoginPath(isAdmin);
 
       const [coachRes, playerRes] = await Promise.all([
         supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle(),

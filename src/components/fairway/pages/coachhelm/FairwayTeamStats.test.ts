@@ -6,6 +6,7 @@ import {
   formatCounts,
   rankPlayers,
   buildTeamStatsCsv,
+  computeMetricLeaders,
 } from './FairwayTeamStats';
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
@@ -316,6 +317,69 @@ describe('rankPlayers', () => {
     const before = players.map((p) => p.id);
     rankPlayers(players, 'scoring_average', noComposite);
     expect(players.map((p) => p.id)).toEqual(before);
+  });
+});
+
+// ── computeMetricLeaders (W6 — green-tick leader treatment) ─────────────────────
+
+describe('computeMetricLeaders', () => {
+  it('picks the lower scoring average / putts / best round as the leader', () => {
+    const players = [
+      makePlayer({ id: 'a', scoring_average: 78, putts_per_round: 32, best_round: 74 }),
+      makePlayer({ id: 'b', scoring_average: 71, putts_per_round: 29, best_round: 68 }),
+    ];
+    const leaders = computeMetricLeaders(players);
+    expect([...leaders.scoring_average]).toEqual(['b']);
+    expect([...leaders.putts_per_round]).toEqual(['b']);
+    expect([...leaders.best_round]).toEqual(['b']);
+  });
+
+  it('picks the higher fairway% / gir% as the leader', () => {
+    const players = [
+      makePlayer({ id: 'a', fairway_pct: 40, gir_pct: 35 }),
+      makePlayer({ id: 'b', fairway_pct: 70, gir_pct: 60 }),
+    ];
+    const leaders = computeMetricLeaders(players);
+    expect([...leaders.fairway_pct]).toEqual(['b']);
+    expect([...leaders.gir_pct]).toEqual(['b']);
+  });
+
+  it('crowns every tied player (never arbitrarily picks one)', () => {
+    const players = [
+      makePlayer({ id: 'a', scoring_average: 72 }),
+      makePlayer({ id: 'b', scoring_average: 72 }),
+      makePlayer({ id: 'c', scoring_average: 80 }),
+    ];
+    const leaders = computeMetricLeaders(players);
+    expect(new Set(leaders.scoring_average)).toEqual(new Set(['a', 'b']));
+  });
+
+  it('requires >= 2 comparable values — a solo carrier never "leads"', () => {
+    const players = [
+      makePlayer({ id: 'a', scoring_average: 72, fairway_pct: null }),
+      makePlayer({ id: 'b', scoring_average: null, fairway_pct: null }),
+    ];
+    const leaders = computeMetricLeaders(players);
+    expect(leaders.scoring_average.size).toBe(0);
+    expect(leaders.fairway_pct.size).toBe(0);
+  });
+
+  it('is honestly empty on an empty roster', () => {
+    const leaders = computeMetricLeaders([]);
+    expect(leaders.scoring_average.size).toBe(0);
+    expect(leaders.putts_per_round.size).toBe(0);
+    expect(leaders.fairway_pct.size).toBe(0);
+    expect(leaders.gir_pct.size).toBe(0);
+    expect(leaders.best_round.size).toBe(0);
+  });
+
+  it('skips players missing the metric when comparing', () => {
+    const players = [
+      makePlayer({ id: 'a', best_round: 70 }),
+      makePlayer({ id: 'b', best_round: null }),
+      makePlayer({ id: 'c', best_round: 65 }),
+    ];
+    expect([...computeMetricLeaders(players).best_round]).toEqual(['c']);
   });
 });
 

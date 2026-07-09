@@ -63,6 +63,7 @@ import {
   InlineNotice,
   BarCompare,
   StandingStrip,
+  RuledLeaderStat,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -869,12 +870,16 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
                 <div className="flex flex-col gap-1 px-1">
                   <SectionHeading as="div">Where you win &amp; lose strokes</SectionHeading>
                   {gainLeak ? (
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
-                      <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
-                        <span aria-hidden className="text-fw-success">▲</span>
-                        Biggest gain:{' '}
-                        <span className="font-medium text-text-primary">{gainLeak.best.label}</span>
-                      </span>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                      {/* W6 polish: the best-value column across the four SG
+                          categories gets the green-ruled leader treatment
+                          instead of a plain text callout. */}
+                      <RuledLeaderStat
+                        label="Biggest gain"
+                        value={`${formatSg(gainLeak.best.value)} · ${gainLeak.best.label.replace(/^SG:\s*/i, '')}`}
+                        size="compact"
+                        leader
+                      />
                       <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
                         <span aria-hidden className="text-fw-warning">▼</span>
                         Biggest leak:{' '}

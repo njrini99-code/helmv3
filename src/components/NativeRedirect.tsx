@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 
 /**
  * Native-only bounce away from the marketing landing page.
@@ -49,7 +50,7 @@ export function NativeRedirect({ to }: { to: string }) {
         if (cancelled) return;
 
         const isAdmin = (userRow?.role as string | undefined) === 'admin';
-        const dest = isAdmin ? '/golf/admin' : '/golf/dashboard';
+        const dest = resolveAdminPostLoginPath(isAdmin);
         router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
       } catch {
         // Network timeout, AbortError, or unexpected Supabase failure —

@@ -23,6 +23,7 @@ import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { captureServer } from '@/lib/analytics/posthog-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
+import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 
 export type LoginResult = {
   success: boolean;
@@ -203,7 +204,7 @@ async function loginActionImpl(
   if (userData?.role === 'admin') {
     return {
       success: true,
-      redirectTo: '/golf/admin',
+      redirectTo: resolveAdminPostLoginPath(true),
     };
   }
 

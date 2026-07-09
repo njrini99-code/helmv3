@@ -307,6 +307,10 @@ export {
   // StandingStrip: flat matte PGA·team·you comparison (Fairway-native StandingBar).
   StandingStrip,
   type StandingStripProps,
+  // RuledLeaderStat: green-ruled leader stat atom (W6 polish).
+  RuledLeaderStat,
+  type RuledLeaderStatProps,
+  type RuledLeaderStatSize,
   ShotDispersion,
   type ShotDispersionProps,
   type ShotPoint,

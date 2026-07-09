@@ -4,6 +4,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { FairwayDashboardShell } from './FairwayDashboardShell';
 import { resolveCoachActiveTeamId, getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { getActiveTeamCookie } from '@/app/golf/actions/team-switcher';
+import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
 /**
@@ -52,7 +53,7 @@ export default async function GolfDashboardLayout({
 
     // Admin users don't have golf profiles — send them to the admin dashboard
     if (userData?.role === 'admin') {
-      redirect('/golf/admin');
+      redirect(resolveAdminPostLoginPath(true));
     }
 
     declaredRole = (userData?.role === 'coach' || userData?.role === 'player')

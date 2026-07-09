@@ -121,6 +121,11 @@ export type { LeakMapProps, LeakMapBucket } from './LeakMap';
 export { StandingStrip } from './StandingStrip';
 export type { StandingStripProps } from './StandingStrip';
 
+// ── Fairway-native green-ruled leader stat (W6 polish — owner's "green
+// rules, green leaders" ask; ports the RuledStatLine CONCEPT, not the code) ──
+export { RuledLeaderStat } from './RuledLeaderStat';
+export type { RuledLeaderStatProps, RuledLeaderStatSize } from './RuledLeaderStat';
+
 // ── Canvas-based charts ─────────────────────────────────────────────────────
 export { ShotDispersion } from './ShotDispersion';
 export type { ShotDispersionProps, ShotPoint } from './ShotDispersion';
