@@ -1406,12 +1406,16 @@ async function getPlayerSeasonStatsImpl(
   // derived from the parent baseball_games row. Resolve the season's game ids
   // first, then constrain the batting/pitching logs with `.in('game_id', ...)`,
   // matching the established pattern in operational-signals.ts.
-  const { data: seasonGames } = await db
+  const { data: seasonGames, error: seasonGamesError } = await db
     .from('baseball_games')
     .select('id')
     .eq('team_id', teamId)
     .gte('game_date', `${year}-01-01`)
     .lte('game_date', `${year}-12-31`);
+
+  if (seasonGamesError) {
+    return { success: false, error: sanitizeDbError(seasonGamesError, 'games') };
+  }
 
   const seasonGameIds = ((seasonGames ?? []) as Array<{ id: string }>).map((g) => g.id);
 

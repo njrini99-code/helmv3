@@ -164,7 +164,7 @@ export function GamesList({
             </p>
           )}
           {recordError && !seasonRecord && (
-            <p className={`text-sm text-red-600/90 ${title ? 'mt-0.5' : ''}`}>
+            <p className={`text-sm text-destructive/90 ${title ? 'mt-0.5' : ''}`}>
               Season record unavailable
             </p>
           )}

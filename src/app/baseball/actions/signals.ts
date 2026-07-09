@@ -484,11 +484,25 @@ async function materializeActionObject(
       // effort (non-fatal): the session itself is the canonical target and
       // already committed, so an exercise-row failure is logged, not thrown.
       try {
-        const { data: existingSe } = (await fromUntyped(supabase, 'helm_lifting_session_exercises')
+        // fromUntyped() never throws for a failed select/insert — it resolves
+        // to a { data, error } result object — so the outer try/catch alone
+        // never actually caught a real query failure here. Both `.error`
+        // values must be checked explicitly for this best-effort seed to stay
+        // genuinely non-fatal (logged) rather than silently swallowed.
+        const { data: existingSe, error: existingSeError } = (await fromUntyped(
+          supabase,
+          'helm_lifting_session_exercises',
+        )
           .select('id')
           .eq('session_id', sessionId)
-          .limit(1)) as { data: Array<{ id: string }> | null };
-        if (!existingSe || existingSe.length === 0) {
+          .limit(1)) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+
+        if (existingSeError) {
+          await logServerError(
+            `convertSignalToAction lift_modification session-exercise seed lookup failed: ${existingSeError.message}`,
+            { action: 'convertSignalToAction.lift_modification.sessionExercise', featureArea: 'baseball-lifting', handled: true },
+          );
+        } else if (!existingSe || existingSe.length === 0) {
           const sePayload: HelmLiftingSessionExerciseInsert = {
             session_id: sessionId,
             exercise_id: null,
@@ -496,7 +510,15 @@ async function materializeActionObject(
             order_index: 0,
             status: 'assigned',
           };
-          await fromUntyped(supabase, 'helm_lifting_session_exercises').insert(sePayload);
+          const { error: insertSeError } = await fromUntyped(supabase, 'helm_lifting_session_exercises').insert(
+            sePayload,
+          );
+          if (insertSeError) {
+            await logServerError(
+              `convertSignalToAction lift_modification session-exercise seed insert failed: ${insertSeError.message}`,
+              { action: 'convertSignalToAction.lift_modification.sessionExercise', featureArea: 'baseball-lifting', handled: true },
+            );
+          }
         }
       } catch (exerciseErr) {
         await logServerError(

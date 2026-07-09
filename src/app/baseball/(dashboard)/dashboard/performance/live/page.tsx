@@ -248,7 +248,13 @@ async function buildLiveRoomData(
   const liveAthletes: HelmLiftingLiveAthleteRow[] = sessions.map((session) => {
     const athlete = athleteMap.get(session.athlete_id);
     const seList = exercisesBySession.get(session.id) ?? [];
-    const currentSe = seList.find((e) => e.status === 'assigned' || e.status === 'completed');
+    // Prefer the (order-first) assigned exercise over any completed one — the
+    // old `assigned || completed` find picked whichever came first in order,
+    // so once exercise 1 was completed and exercise 2 assigned, the row could
+    // keep showing exercise 1 as "current" instead of advancing.
+    const currentSe =
+      seList.find((e) => e.status === 'assigned') ??
+      [...seList].reverse().find((e) => e.status === 'completed');
     const latestSet = currentSe ? latestSetBySeId.get(currentSe.id) : undefined;
     const checkin = checkinMap.get(session.athlete_id);
     const completedCount = seList.filter((e) => e.status === 'completed').length;
@@ -296,9 +302,31 @@ export default async function LiveWeightRoomPage() {
   const canViewReadiness = caps.can_view_readiness;
 
   const liftCtx = await resolveBaseballLiftingOrg(teamId);
-  const liveRoomResult: LiveRoomResult = liftCtx
-    ? await buildLiveRoomData(liftCtx.organizationId, teamId, canViewReadiness)
-    : { ok: true, athletes: [], exerciseLibrary: [] };
+
+  // A missing lifting context is a setup gap, not a healthy empty room — it
+  // must never fall through to LiveWeightRoomClient with orgId="" (which
+  // would render the WRITABLE live surface pointed at no real org). Fail
+  // closed with the same explicit "not set up" card the programs list page
+  // uses, instead of degrading to `{ ok: true, athletes: [], ... }`.
+  if (!liftCtx) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        <div className="rounded-2xl border border-warm-200/60 bg-cream-50 px-6 py-10 text-center">
+          <h2 className="text-h3 font-semibold text-warm-900">Lift Lab access not set up</h2>
+          <p className="mx-auto mt-2 max-w-md text-body-sm text-warm-500">
+            This team isn&apos;t linked to a Lifting Lab organization yet. Ask an admin to link it
+            before the live weight room can be used.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const liveRoomResult: LiveRoomResult = await buildLiveRoomData(
+    liftCtx.organizationId,
+    teamId,
+    canViewReadiness,
+  );
 
   if (!liveRoomResult.ok) {
     return (
@@ -312,7 +340,7 @@ export default async function LiveWeightRoomPage() {
     <LiveWeightRoomClient
       initialAthletes={liveRoomResult.athletes}
       exerciseLibrary={liveRoomResult.exerciseLibrary}
-      orgId={liftCtx?.organizationId ?? ''}
+      orgId={liftCtx.organizationId}
       canEdit={caps.can_manage_lifting}
     />
   );

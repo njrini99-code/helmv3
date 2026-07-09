@@ -61,6 +61,10 @@ interface LiftProgramTree {
 interface AssignContext {
   athletes: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>>;
   groups: Array<Pick<HelmLiftingGroupRow, 'id' | 'name' | 'group_type'>>;
+  // Mirrors ProgramTreeResult.error — a failed athletes/groups read must stay
+  // distinguishable from "this team has no athletes/groups yet" so the page
+  // can surface it instead of rendering a silently blank assign roster.
+  error?: boolean;
 }
 
 interface ProgramTreeResult {
@@ -240,7 +244,7 @@ async function getAssignContext(organizationId: string, teamId: string): Promise
     );
   }
 
-  return { athletes: athletes ?? [], groups: groups ?? [] };
+  return { athletes: athletes ?? [], groups: groups ?? [], error: Boolean(athletesError || groupsError) };
 }
 
 export default async function ProgramEditorPage({
@@ -278,6 +282,12 @@ export default async function ProgramEditorPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
+      {assign.error && (
+        <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+          Couldn&apos;t load the athlete/group roster for assigning this program. The program
+          itself loaded fine — try refreshing to retry the roster.
+        </div>
+      )}
       <ProgramEditorClient
         programTree={tree}
         assignContext={assign}

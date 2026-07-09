@@ -124,6 +124,7 @@ async function fetchPlayerSessions(athleteId: string): Promise<{
     fromUntyped(supabase, 'helm_lifting_sessions')
       .select('*')
       .eq('athlete_id', athleteId)
+      .in('status', OPEN_STATUSES)
       .gte('scheduled_date', today)
       .order('scheduled_date', { ascending: true })
       .limit(20),

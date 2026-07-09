@@ -181,7 +181,7 @@ interface PlayerTask {
 }
 
 type MainTab = 'overview' | 'stats' | 'videos' | 'performance' | 'passport' | 'timeline' | 'notes' | 'tasks';
-type StatFilter = 'all' | 'game' | 'practice';
+type StatFilter = 'all' | 'game' | 'scrimmage';
 type VideoFilter = 'all' | 'game' | 'scrimmage' | 'practice';
 type StatSortKey = 'date' | 'ab' | 'h' | 'hr' | 'rbi' | 'bb' | 'so' | 'avg';
 type SortDir = 'asc' | 'desc';
@@ -413,11 +413,10 @@ export function PlayerProfileClient({
 
   // ── Stats table logic (box-score game log) ──────────────────────────────────
   const filteredStats = useMemo(() => {
-    const wantType = statFilter === 'practice' ? 'scrimmage' : statFilter;
     const base =
       statFilter === 'all'
         ? battingLog
-        : battingLog.filter((s) => s.game?.game_type === wantType);
+        : battingLog.filter((s) => s.game?.game_type === statFilter);
 
     return [...base].sort((a, b) => {
       const mult = sortDir === 'asc' ? 1 : -1;
@@ -452,8 +451,7 @@ export function PlayerProfileClient({
 
   // Summary row for stats tab
   const statSummary = useMemo(() => {
-    const wantType = statFilter === 'practice' ? 'scrimmage' : statFilter;
-    const subset = statFilter === 'all' ? battingLog : battingLog.filter((s) => s.game?.game_type === wantType);
+    const subset = statFilter === 'all' ? battingLog : battingLog.filter((s) => s.game?.game_type === statFilter);
     const ab = subset.reduce((s, r) => s + (r.ab ?? 0), 0);
     const h = subset.reduce((s, r) => s + (r.h ?? 0), 0);
     const hr = subset.reduce((s, r) => s + (r.hr ?? 0), 0);
@@ -1036,7 +1034,7 @@ export function PlayerProfileClient({
             {/* Filter toggle */}
             <div className="flex items-center gap-2">
               <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Filter games by type">
-                {(['all', 'game', 'practice'] as const).map((f) => (
+                {(['all', 'game', 'scrimmage'] as const).map((f) => (
                   <Button variant="ghost"
                     key={f}
                     onClick={() => setStatFilter(f)}

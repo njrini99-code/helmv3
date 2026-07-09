@@ -171,9 +171,9 @@ export default function DevPlanDetailPage() {
           </div>
         </div>
         <div className="p-6 lg:p-8">
-          <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-sm text-red-700">
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive">
             <p className="font-medium">Couldn&apos;t load this plan</p>
-            <p className="mt-1 text-red-600/90">{fetchError}</p>
+            <p className="mt-1 text-destructive/80">{fetchError}</p>
             <Button
               variant="secondary"
               size="sm"

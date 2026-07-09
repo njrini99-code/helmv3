@@ -114,6 +114,14 @@ export default async function BaseballCalendarPage() {
         .maybeSingle(),
     ]);
 
+    // A DB/RLS/schema failure on the primary events read must not collapse
+    // into `events = []` — that renders identically to a genuinely empty
+    // calendar. Throw so the dashboard's error.tsx boundary renders an
+    // honest failure instead.
+    if (eventsResult.error) {
+      throw new Error('Could not load calendar events.');
+    }
+
     // Map baseball_events → CalendarEvent. Row is annotated because the query
     // uses fromUntyped (the generated types drift from the live schema).
     // All-day events are normalized to local midnight so the week/day grid
