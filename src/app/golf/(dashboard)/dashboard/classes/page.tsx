@@ -1,10 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { IconBook, IconPlus, IconUpload, IconClock, IconMapPin, IconCalendar } from '@/components/icons';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/sonner';
 import { useGolfUser } from '@/contexts/golf-user-context';
@@ -12,14 +8,10 @@ import { AddClassModal, type ClassFormData } from '@/components/golf/classes/Add
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
-import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { PageHeader } from '@/components/ui/page-header';
-import { Reveal } from '@/components/ui/reveal';
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayGolfClasses } from '@/components/fairway/pages/player-game';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 
@@ -407,15 +399,6 @@ export default function GolfClassesPage() {
     });
   });
 
-  const dayOrder = ['M', 'T', 'W', 'Th', 'F'];
-  const dayNames: Record<string, string> = {
-    M: 'Monday',
-    T: 'Tuesday',
-    W: 'Wednesday',
-    Th: 'Thursday',
-    F: 'Friday',
-  };
-
   // Helper to parse class_name into code and name parts for display
   const parseClassName = (className: string): { code: string; name: string } => {
     if (className.includes(' - ')) {
@@ -439,431 +422,29 @@ export default function GolfClassesPage() {
   // Calculate total credits
   const totalCredits = classes.reduce((sum, cls) => sum + (cls.credits ?? 0), 0);
 
-  // ── Fairway redesign fork (ADDITIVE) ────────────────────────────────────────
-  // Presentation-only re-skin. Reuses the SAME state + verbatim handlers (the
-  // golf_player_classes writes + calendar-sync actions are untouched). The
-  // modals below are the SAME instances the legacy path mounts, so add/edit/
-  // import/detail/delete-all all flow exactly as the legacy page wired them.
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayGolfClasses
-          classes={classes}
-          loading={loading}
-          isWrongRole={golfUser.role !== 'player'}
-          hasTeam={Boolean(teamId)}
-          classesByDay={classesByDay}
-          totalCredits={totalCredits}
-          parseClassName={parseClassName}
-          getLocationDisplay={getLocationDisplay}
-          formatTimeDisplay={formatTimeDisplay}
-          formatDaysDisplay={formatDaysDisplay}
-          onAddClass={() => { setEditingClass(null); setShowAddModal(true); }}
-          onImportSchedule={() => setShowUploadModal(true)}
-          onClassClick={handleClassClick}
-          onDeleteAll={handleDeleteAllClasses}
-        />
-
-        {/* Modals — the SAME instances + props the legacy return mounts. */}
-        <AddClassModal
-          isOpen={showAddModal}
-          onClose={() => { setShowAddModal(false); setEditingClass(null); }}
-          onSave={editingClass?.id ? handleUpdateClass : handleAddClass}
-          editingClass={editingClass}
-          existingClasses={classes.map(cls => ({
-            id: cls.id,
-            days: cls.days,
-            start_time: cls.start_time,
-            end_time: cls.end_time,
-            class_name: cls.class_name,
-          }))}
-        />
-
-        <UploadScheduleModal
-          isOpen={showUploadModal}
-          onClose={() => setShowUploadModal(false)}
-          onParsed={handleParsedClasses}
-        />
-
-        <ConfirmClassesModal
-          isOpen={showConfirmModal}
-          onClose={() => { setShowConfirmModal(false); setParsedClasses([]); }}
-          onConfirm={handleConfirmClasses}
-          parsedClasses={parsedClasses}
-        />
-
-        <ConfirmDialog
-          open={showDeleteAllConfirm}
-          title="Delete all classes?"
-          message={`This will remove all ${classes.length} class${classes.length === 1 ? '' : 'es'} from your schedule and your calendar. This action cannot be undone.`}
-          confirmLabel="Delete All"
-          cancelLabel="Cancel"
-          variant="danger"
-          isLoading={deletingAll}
-          onConfirm={confirmDeleteAllClasses}
-          onCancel={() => setShowDeleteAllConfirm(false)}
-        />
-
-        <ClassDetailModal
-          isOpen={showDetailModal}
-          onClose={() => { setShowDetailModal(false); setSelectedClass(null); }}
-          onEdit={handleEditFromDetail}
-          onDelete={handleDeleteClass}
-          classData={selectedClass ? (() => {
-            const { code, name } = parseClassName(selectedClass.class_name);
-            const location = getLocationDisplay(selectedClass);
-            return {
-              ...selectedClass,
-              course_code: code,
-              course_name: name,
-              instructor: selectedClass.instructor || '',
-              days: selectedClass.days || [],
-              start_time: selectedClass.start_time || '',
-              end_time: selectedClass.end_time || '',
-              location: location || '',
-              building: selectedClass.building || '',
-              room: selectedClass.room || '',
-              credits: selectedClass.credits,
-              semester: '', // Not stored in DB
-              color: selectedClass.color || 'var(--color-primary-600)',
-              notes: selectedClass.notes || '',
-            };
-          })() : null}
-        />
-      </div>
-    );
-  }
-
-  // No team — show helpful empty state instead of silently failing on add/edit
-  if (!teamId) {
-    return (
-      <AnimatedPage className="p-4 md:p-6 max-w-[1536px] mx-auto">
-        <AnimatedItem className="min-h-[60vh] flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconBook size={32} className="text-warm-400" />
-            </div>
-            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">Join a Team First</h2>
-            <p className="text-warm-500 mb-6">
-              You need to be on a team before you can add your class schedule. Ask your coach for a join code.
-            </p>
-            <a
-              href="/golf/join"
-              className="inline-block px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Join a Team
-            </a>
-          </div>
-        </AnimatedItem>
-      </AnimatedPage>
-    );
-  }
-
+  // Presentation-only Fairway surface. Reuses the SAME state + verbatim
+  // handlers (the golf_player_classes writes + calendar-sync actions are
+  // untouched). `isWrongRole`/`hasTeam` are the ONLY guards for this route —
+  // Fairway is the only tree (Wave W1).
   return (
-    <AnimatedPage className="min-h-full">
-      {/* Header */}
-      <AnimatedItem>
-        <LargeTitleHeader
-          title="My Classes"
-          subtitle={
-            classes.length > 0
-              ? `${classes.length} class${classes.length !== 1 ? 'es' : ''} • ${totalCredits} credits`
-              : 'Academic schedule'
-          }
-        >
-          {classes.length > 0 && (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={handleDeleteAllClasses}
-              className="gap-2"
-            >
-              <span className="hidden sm:inline">Delete All</span>
-              <span className="sm:hidden">Delete</span>
-            </Button>
-          )}
-          <Button variant="secondary" size="sm" onClick={() => setShowUploadModal(true)} className="gap-2">
-            <IconUpload size={16} />
-            <span className="hidden sm:inline">Import Schedule</span>
-            <span className="sm:hidden">Import</span>
-          </Button>
-          <Button size="sm" onClick={() => { setEditingClass(null); setShowAddModal(true); }} className="gap-2">
-            <IconPlus size={16} />
-            <span className="hidden sm:inline">Add Class</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
-        </LargeTitleHeader>
-      </AnimatedItem>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayGolfClasses
+        classes={classes}
+        loading={loading}
+        isWrongRole={golfUser.role !== 'player'}
+        hasTeam={Boolean(teamId)}
+        classesByDay={classesByDay}
+        totalCredits={totalCredits}
+        parseClassName={parseClassName}
+        getLocationDisplay={getLocationDisplay}
+        formatTimeDisplay={formatTimeDisplay}
+        formatDaysDisplay={formatDaysDisplay}
+        onAddClass={() => { setEditingClass(null); setShowAddModal(true); }}
+        onImportSchedule={() => setShowUploadModal(true)}
+        onClassClick={handleClassClick}
+        onDeleteAll={handleDeleteAllClasses}
+      />
 
-      <div className="p-4 md:p-6 max-w-[1536px] mx-auto">
-
-      <Reveal>
-        <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
-          <PageHeader
-            eyebrow="Academic Schedule"
-            eyebrowAccent="primary"
-            title="Your classes this semester."
-            subtitle={
-              classes.length > 0
-                ? `${classes.length} class${classes.length === 1 ? '' : 'es'} · ${totalCredits} credit${totalCredits === 1 ? '' : 's'}`
-                : 'Add your schedule so coaches plan around your academics.'
-            }
-          />
-        </div>
-      </Reveal>
-
-      <AnimatedItem>
-      {loading ? (
-        <Card variant="glass">
-          <CardContent className="py-12 text-center">
-            <div className="space-y-3 w-48 mx-auto">
-              <div className="h-4 w-full bg-warm-200 rounded skeleton-shimmer" />
-              <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
-              <div className="h-4 w-1/2 bg-warm-200 rounded skeleton-shimmer" />
-            </div>
-            <p className="text-warm-500 mt-4">Loading classes...</p>
-          </CardContent>
-        </Card>
-      ) : classes.length === 0 ? (
-        /* Empty State */
-        <Card variant="glass">
-          <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconBook size={32} className="text-warm-300" />
-            </div>
-            <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
-              No Classes Added
-            </h3>
-            <p className="text-warm-500 mb-6 max-w-md mx-auto">
-              Add your class schedule to help your coaches plan practices around your academic commitments
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button variant="secondary" onClick={() => setShowUploadModal(true)} className="gap-2">
-                <IconUpload size={18} />
-                Import Schedule
-              </Button>
-              <Button onClick={() => setShowAddModal(true)} className="gap-2">
-                <IconPlus size={18} />
-                Add First Class
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        /* Schedule View */
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Card variant="glass" className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                  <IconBook size={20} className="text-primary-600" />
-                </div>
-                <div>
-                  <AnimatedNumber
-                    value={classes.length}
-                    decimals={0}
-                    staggerIndex={0}
-                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
-                  />
-                  <p className="text-xs text-warm-500">Classes</p>
-                </div>
-              </div>
-            </Card>
-            <Card variant="glass" className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center">
-                  <IconCalendar size={20} className="text-warm-600" />
-                </div>
-                <div>
-                  <AnimatedNumber
-                    value={totalCredits}
-                    decimals={0}
-                    staggerIndex={1}
-                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
-                  />
-                  <p className="text-xs text-warm-500">Credits</p>
-                </div>
-              </div>
-            </Card>
-            <Card variant="glass" className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center">
-                  <IconClock size={20} className="text-warm-600" />
-                </div>
-                <div>
-                  <AnimatedNumber
-                    value={Object.keys(classesByDay).length}
-                    decimals={0}
-                    staggerIndex={2}
-                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
-                  />
-                  <p className="text-xs text-warm-500">Days/Week</p>
-                </div>
-              </div>
-            </Card>
-            <Card variant="glass" className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                  <IconMapPin size={20} className="text-amber-600" />
-                </div>
-                <div>
-                  <AnimatedNumber
-                    value={
-                      classes && classes.length > 0
-                        ? new Set(classes.map(c => c.building).filter(Boolean)).size
-                        : 0
-                    }
-                    decimals={0}
-                    staggerIndex={3}
-                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
-                  />
-                  <p className="text-xs text-warm-500">Buildings</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Schedule Grid */}
-          <Card variant="glass">
-            <div className="p-6">
-              <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-4">Weekly Schedule</h2>
-
-              {Object.keys(classesByDay).length > 0 ? (
-                <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-2 px-2 md:grid md:grid-cols-5 md:gap-4 md:overflow-x-visible md:snap-none md:pb-0 md:mx-0 md:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  {dayOrder.map(day => (
-                    <div key={day} className="min-w-[70vw] snap-center flex-shrink-0 md:min-w-0 md:flex-shrink">
-                      <div className="text-center mb-3">
-                        <span className="text-sm font-medium text-warm-500">{dayNames[day]}</span>
-                      </div>
-                      <div className="space-y-2 min-h-[200px]">
-                        {classesByDay[day] && classesByDay[day].length > 0 ? (
-                          classesByDay[day]!.map(cls => {
-                            const { code, name } = parseClassName(cls.class_name);
-                            const location = getLocationDisplay(cls);
-                            return (
-                              <Button variant="ghost"
-                                key={`${cls.id}-${day}`}
-                                onClick={() => handleClassClick(cls)}
-                                className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-warm-200/55 hover:active:bg-warm-50 transition-all bg-cream-100/68 backdrop-blur-sm"
-                                style={{ borderLeftColor: cls.color || 'var(--color-primary-600)', borderLeftWidth: '3px' }}
-                              >
-                                {code && (
-                                  <p className="font-mono text-xs font-medium text-primary-600 mb-0.5">
-                                    {code}
-                                  </p>
-                                )}
-                                <p className="text-sm font-medium text-warm-900 truncate">
-                                  {name}
-                                </p>
-                                {cls.start_time && (
-                                  <p className="text-xs text-warm-500 mt-1">
-                                    {formatTimeDisplay(cls.start_time)}
-                                    {cls.end_time && ` - ${formatTimeDisplay(cls.end_time)}`}
-                                  </p>
-                                )}
-                                {location && (
-                                  <p className="text-xs text-warm-400 mt-0.5">{location}</p>
-                                )}
-                              </Button>
-                            );
-                          })
-                        ) : (
-                          <div className="h-full flex items-center justify-center text-xs text-warm-300 py-8">
-                            No classes
-                          </div>
-                        )}
-                      </div>
-                  </div>
-                ))}
-              </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mb-3">
-                    <IconCalendar size={24} className="text-warm-400" />
-                  </div>
-                  <p className="text-sm text-warm-500">No scheduled classes this week</p>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* All Classes List */}
-          <Card variant="glass">
-            <div className="p-6">
-              <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-4">All Classes</h2>
-
-              <div className="space-y-3">
-                {classes && classes.length > 0 ? classes.map(cls => {
-                  const { code, name } = parseClassName(cls.class_name);
-                  const location = getLocationDisplay(cls);
-                  return (
-                    <Button variant="ghost"
-                      key={cls.id}
-                      onClick={() => handleClassClick(cls)}
-                      className="w-full text-left p-4 min-h-[72px] rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm active:bg-warm-50 transition-all bg-cream-50 flex items-center gap-4"
-                    >
-                      <div
-                        className="w-2 h-12 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: cls.color || 'var(--color-primary-600)' }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {code && (
-                            <span className="font-mono text-sm font-medium text-primary-600">
-                              {code}
-                            </span>
-                          )}
-                          <span className="text-warm-900 font-medium truncate">
-                            {name}
-                          </span>
-                          {cls.credits && (
-                            <span className="px-2 py-0.5 bg-warm-100 rounded text-xs text-warm-500 flex-shrink-0">
-                              {cls.credits} cr
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-warm-500">
-                          {(cls.days || []).length > 0 && (
-                            <span className="font-medium">
-                              {formatDaysDisplay(cls.days || [])}
-                            </span>
-                          )}
-                          {cls.start_time && cls.end_time && (
-                            <span>
-                              {formatTimeDisplay(cls.start_time)} - {formatTimeDisplay(cls.end_time)}
-                            </span>
-                          )}
-                          {location && (
-                            <span className="flex items-center gap-1">
-                              <IconMapPin size={14} />
-                              {location}
-                            </span>
-                          )}
-                          {cls.instructor && (
-                            <span className="text-warm-400">{cls.instructor}</span>
-                          )}
-                        </div>
-                      </div>
-                    </Button>
-                  );
-                }) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mb-3">
-                      <IconBook size={24} className="text-warm-400" />
-                    </div>
-                    <p className="text-sm text-warm-500">No classes to display</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-      </AnimatedItem>
-      </div>
-
-      {/* Modals */}
       <AddClassModal
         isOpen={showAddModal}
         onClose={() => { setShowAddModal(false); setEditingClass(null); }}
@@ -929,6 +510,6 @@ export default function GolfClassesPage() {
           };
         })() : null}
       />
-    </AnimatedPage>
+    </div>
   );
 }

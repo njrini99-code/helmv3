@@ -2,9 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { PlayerInsightClient } from './player-insight-client';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
@@ -364,62 +363,45 @@ export default async function PlayerInsightPage({
   // the fetch failed or returned no data (themesResult may be null on throw).
   const themes = themesResult?.data?.themes ?? [];
 
-  // Fairway (warm-premium) fork — flag-gated re-skin of the coach Player Insight
-  // surface. Same loaded data + same server actions (the client widget reuses
-  // them verbatim). Legacy below stays byte-for-byte when flag-off.
-  if (isRedesignEnabled()) {
-    // P410 — this surface now mounts the CoachHelm shell as a Players-tab leaf,
-    // so it needs the SAME urgent/high open-signal count the rest of the cluster
-    // shows on the Signals badge (ONE source: getAlertCounts().counts.critical).
-    // Degrades to null (no badge) on failure — never a fabricated "0".
-    // Honest signal-vs-noise trends (FairwayTrendBrain) for THIS player — the
-    // "individual players" trend layer that previously rendered only on the
-    // player's own cockpit, never on the coach's per-player view. Best-effort:
-    // null on failure → the component renders its own honest-empty state.
-    const [countsRes, trendRes] = await Promise.all([
-      getAlertCounts(coach.id),
-      getPlayerTrendAnalysis(playerId).catch(() => null),
-    ]);
-    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
-    const trendData =
-      trendRes && trendRes.success
-        ? (trendRes.data as unknown as Record<string, unknown>)
-        : null;
-
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayPlayerInsight
-          player={player}
-          compositeRating={compositeRating}
-          categoryBreakdown={categoryBreakdown}
-          trendSummary={trendSummary}
-          playerStatus={playerStatus}
-          rounds={rounds}
-          patterns={patterns}
-          insights={insights}
-          focusAreas={focusAreas}
-          predictions={predictions}
-          themes={themes}
-          trendData={trendData}
-          signalCount={signalCount}
-        />
-      </div>
-    );
-  }
+  // The warm Fairway re-skin of the coach Player Insight surface. Same
+  // loaded data + same server actions (the client widget reuses them
+  // verbatim).
+  //
+  // P410 — this surface mounts the CoachHelm shell as a Players-tab leaf, so
+  // it needs the SAME urgent/high open-signal count the rest of the cluster
+  // shows on the Signals badge (ONE source: getAlertCounts().counts.critical).
+  // Degrades to null (no badge) on failure — never a fabricated "0".
+  // Honest signal-vs-noise trends (FairwayTrendBrain) for THIS player. Best-
+  // effort: null on failure → the component renders its own honest-empty
+  // state.
+  const [countsRes, trendRes] = await Promise.all([
+    getAlertCounts(coach.id),
+    getPlayerTrendAnalysis(playerId).catch(() => null),
+  ]);
+  const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+  const trendData =
+    trendRes && trendRes.success
+      ? (trendRes.data as unknown as Record<string, unknown>)
+      : null;
 
   return (
-    <PlayerInsightClient
-      player={player}
-      compositeRating={compositeRating}
-      categoryBreakdown={categoryBreakdown}
-      trendSummary={trendSummary}
-      playerStatus={playerStatus}
-      rounds={rounds}
-      patterns={patterns}
-      insights={insights}
-      focusAreas={focusAreas}
-      predictions={predictions}
-    />
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayPlayerInsight
+        player={player}
+        compositeRating={compositeRating}
+        categoryBreakdown={categoryBreakdown}
+        trendSummary={trendSummary}
+        playerStatus={playerStatus}
+        rounds={rounds}
+        patterns={patterns}
+        insights={insights}
+        focusAreas={focusAreas}
+        predictions={predictions}
+        themes={themes}
+        trendData={trendData}
+        signalCount={signalCount}
+      />
+    </div>
   );
 }
 

@@ -10,15 +10,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persistence';
-import { ChatHistoryClient } from './ChatHistoryClient';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { Breadcrumb } from '@/components/ui/breadcrumb';
-import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
-import { Reveal } from '@/components/ui/reveal';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
-import { AskWorkspace } from '@/components/fairway';
+import { fairwayScope } from '@/lib/redesign/flag';
+import { AskWorkspace, InlineNotice, Button } from '@/components/fairway';
+import Link from 'next/link';
 
 interface PageProps {
   searchParams: Promise<{ c?: string }>;
@@ -28,13 +23,26 @@ export default async function ChatHistoryPage({ searchParams }: PageProps) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
   if (!session.coach) {
+    // Un-gated role gate (hit regardless of the redesign fork): a minimal
+    // Fairway-styled equivalent of the legacy `FeatureUnavailable` — same
+    // copy, same behavior.
     return (
-      <FeatureUnavailable
-        title="Chat History"
-        message="Coach chat history is part of the coach toolkit. Players can chat directly with their coach from the Messages tab."
-        actionHref="/golf/dashboard/messages"
-        actionLabel="Open Messages"
-      />
+      <div className={fairwayScope('flex min-h-full items-center justify-center bg-canvas px-4 py-16 md:px-6')}>
+        <div className="w-full max-w-md">
+          <InlineNotice
+            tone="info"
+            title="Chat History"
+            action={
+              <Button asChild variant="primary" size="sm">
+                <Link href="/golf/dashboard/messages">Open Messages</Link>
+              </Button>
+            }
+          >
+            Coach chat history is part of the coach toolkit. Players can chat directly with
+            their coach from the Messages tab.
+          </InlineNotice>
+        </div>
+      </div>
     );
   }
 
@@ -45,73 +53,20 @@ export default async function ChatHistoryPage({ searchParams }: PageProps) {
   const initialId = selectedId ?? conversations[0]?.id ?? null;
   const initialMessages = initialId ? await listMessages(sb, initialId) : [];
 
-  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
-  // Flag ON → the warm "Ask" two-pane inbox (CoachHelmShell active='ask'). The
-  // SSR conversations + resolved ?c= thread + its messages are passed UNCHANGED;
+  // The warm "Ask" two-pane inbox (CoachHelmShell active='ask'). The SSR
+  // conversations + resolved ?c= thread + its messages are passed UNCHANGED;
   // sending goes through the shared useCoachChatSend → POST /chat/send (same
-  // endpoint, same optimistic stub). Coach gate above stays. Flag OFF (default)
-  // → ChatHistoryClient renders EXACTLY as today.
-  if (isRedesignEnabled()) {
-    const countsRes = await getAlertCounts(session.coach.id);
-    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-        <AskWorkspace
-          conversations={conversations}
-          initialConversationId={initialId}
-          initialMessages={initialMessages}
-          signalCount={signalCount}
-        />
-      </div>
-    );
-  }
-
+  // endpoint, same optimistic stub). Coach gate above stays.
+  const countsRes = await getAlertCounts(session.coach.id);
+  const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
   return (
-    <AnimatedPage className="min-h-full bg-transparent">
-      <AnimatedItem>
-        <MobileNavHeader
-          title="Chat history"
-          backHref="/golf/dashboard/coachhelm"
-          backLabel="CoachHelm"
-          breadcrumb={
-            <Breadcrumb
-              items={[
-                { label: 'Dashboard', href: '/golf/dashboard' },
-                { label: 'CoachHelm', href: '/golf/dashboard/coachhelm' },
-                { label: 'Chat' },
-              ]}
-            />
-          }
-        />
-      </AnimatedItem>
-      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-10">
-        <Reveal>
-          <header className="mb-7">
-            <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
-              CoachHelm
-            </p>
-            {/* a11y W3D: page h1 comes from the consolidated PageHeader
-                (MobileNavHeader) above; this in-content title is demoted to
-                <h2> so the page has exactly one semantic <h1>. Visual look is
-                unchanged — sizing comes from the className, not the tag. */}
-            <h2 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">
-              Chat history
-            </h2>
-            <p className="mt-2 text-sm text-warm-500">
-              {conversations.length === 0
-                ? 'No conversations yet — start one from any dashboard page.'
-                : `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`}
-            </p>
-          </header>
-        </Reveal>
-        <Reveal staggerIndex={1}>
-          <ChatHistoryClient
-            conversations={conversations}
-            initialConversationId={initialId}
-            initialMessages={initialMessages}
-          />
-        </Reveal>
-      </div>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+      <AskWorkspace
+        conversations={conversations}
+        initialConversationId={initialId}
+        initialMessages={initialMessages}
+        signalCount={signalCount}
+      />
+    </div>
   );
 }

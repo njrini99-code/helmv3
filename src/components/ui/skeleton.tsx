@@ -1013,31 +1013,21 @@ function MessageThreadSkeleton({ delay = 0 }: { delay?: number }) {
   );
 }
 
-export function AnnouncementCardSkeleton({ delay = 0 }: { delay?: number }) {
+/** Used internally by GolfSkeletonGrid's 'announcement' type variant. */
+function AnnouncementCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl overflow-clip border-l-[3px] border-l-warm-200"
+      className="relative surface-matte rounded-2xl p-4 overflow-clip"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-
-      <div className="relative px-5 py-4 space-y-3">
-        <div className="flex items-start gap-4">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-48 bg-warm-200/60 rounded skeleton-shimmer" />
-              <div className="h-4 w-10 bg-primary-100/40 rounded-full skeleton-shimmer" />
-            </div>
-            <div className="h-3 w-full bg-warm-100/60 rounded skeleton-shimmer" />
-            <div className="h-3 w-4/5 bg-warm-100/60 rounded skeleton-shimmer" />
-            <div className="flex items-center gap-3 mt-1">
-              <div className="h-3 w-20 bg-warm-100/60 rounded skeleton-shimmer" />
-              <div className="h-4 w-14 bg-warm-100/60 rounded skeleton-shimmer" />
-              <div className="h-3 w-16 bg-warm-100/60 rounded skeleton-shimmer" />
-            </div>
-          </div>
-          <div className="w-4 h-4 bg-warm-200/40 rounded skeleton-shimmer flex-shrink-0 mt-1" />
+      <div className="relative space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
+          <div className="h-3 w-12 bg-warm-100/60 rounded skeleton-shimmer" />
         </div>
+        <div className="h-3 w-full bg-warm-100/60 rounded skeleton-shimmer" />
+        <div className="h-3 w-2/3 bg-warm-100/60 rounded skeleton-shimmer" />
       </div>
     </div>
   );
@@ -1153,246 +1143,6 @@ export function DashboardSkeleton() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function CalendarSkeleton() {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const hours = Array.from({ length: 12 }, (_, i) => i + 7); // 7am to 6pm
-
-  return (
-    <div className="h-full flex flex-col">
-      {/* Calendar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-warm-200/60 bg-cream-100/60 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <div className="h-8 w-32 bg-warm-200/60 rounded-lg skeleton-shimmer" />
-          <div className="flex items-center gap-1">
-            <div className="h-8 w-8 bg-warm-100/60 rounded-lg skeleton-shimmer" />
-            <div className="h-8 w-8 bg-warm-100/60 rounded-lg skeleton-shimmer" />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-24 bg-warm-100/60 rounded-lg skeleton-shimmer" />
-          <div className="h-8 w-24 bg-warm-100/60 rounded-lg skeleton-shimmer" />
-        </div>
-      </div>
-
-      {/* Week View Grid */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Time column */}
-        <div className="w-16 flex-shrink-0 border-r border-warm-200/60">
-          <div className="h-12 border-b border-warm-200/60" /> {/* Header spacer */}
-          {hours.map((hour) => (
-            <div
-              key={hour}
-              className="h-16 flex items-start justify-end pr-2 pt-1"
-            >
-              <div className="h-3 w-10 bg-warm-200/60 rounded skeleton-shimmer" />
-            </div>
-          ))}
-        </div>
-
-        {/* Days grid */}
-        <div className="flex-1 grid grid-cols-7">
-          {days.map((day, dayIndex) => (
-            <div key={day} className="border-r border-warm-200/60 last:border-r-0">
-              {/* Day header */}
-              <div className="h-12 border-b border-warm-200/60 flex flex-col items-center justify-center p-2">
-                <div className="h-3 w-8 bg-warm-200/60 rounded skeleton-shimmer mb-1" />
-                <div className="h-6 w-6 bg-warm-100/60 rounded-full skeleton-shimmer" />
-              </div>
-
-              {/* Hour slots */}
-              {hours.map((hour, hourIndex) => (
-                <div
-                  key={hour}
-                  className="h-16 border-b border-warm-100/60 relative"
-                >
-                  {/* Random event placeholders */}
-                  {((dayIndex + hourIndex) % 5 === 0) && (
-                    <div
-                      className="absolute left-1 right-1 top-1 rounded-lg bg-warm-100/60 skeleton-shimmer"
-                      style={{ height: ((dayIndex + hourIndex) % 3 === 0) ? '28px' : '44px' }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function RoundsListSkeleton() {
-  return (
-    <div className="min-h-full bg-transparent">
-      <div className="max-w-5xl mx-auto px-6 py-6 md:py-8 space-y-8">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-7 w-24 bg-warm-200/60 rounded skeleton-shimmer" />
-            <div className="h-4 w-32 bg-warm-100/60 rounded skeleton-shimmer" />
-          </div>
-          <div className="h-10 w-28 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
-        </div>
-
-        {/* Month group */}
-        {[1, 2].map((group) => (
-          <div key={group}>
-            <div className="h-3.5 w-32 bg-warm-200/60 rounded mb-3 skeleton-shimmer" />
-            <div className="space-y-2">
-              {Array.from({ length: group === 1 ? 4 : 3 }).map((_, i) => (
-                <RoundRowSkeleton key={i} delay={i * 40} showPlayer={false} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function StatsPageSkeleton() {
-  return (
-    <div className="min-h-full bg-transparent">
-      <div className="max-w-6xl mx-auto p-4 md:p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="space-y-2">
-            <div className="h-7 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
-            <div className="h-4 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
-          </div>
-          <div className="h-10 w-28 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="surface-matte rounded-3xl p-5 overflow-clip relative">
-              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-              <div className="relative space-y-2">
-                <div className="h-3 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
-                <div className="h-8 w-20 bg-warm-200/60 rounded skeleton-shimmer" />
-                <div className="h-2.5 w-28 bg-warm-100/60 rounded skeleton-shimmer" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="surface-matte rounded-3xl p-4 mb-4 ">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[200px] h-11 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
-            <div className="h-11 w-40 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="relative surface-matte rounded-3xl overflow-clip "
-              style={{ animationDelay: `${i * 40}ms` }}
-            >
-              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-              <div className="relative flex items-center gap-4 p-4">
-                {/* Avatar */}
-                <div className="w-12 h-12 rounded-xl bg-warm-200/60 skeleton-shimmer" />
-
-                {/* Player info */}
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-36 bg-warm-200/60 rounded skeleton-shimmer" />
-                  <div className="h-3 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
-                </div>
-
-                {/* Stats columns */}
-                <div className="hidden md:flex items-center gap-6">
-                  {[1, 2, 3].map((stat) => (
-                    <div key={stat} className="text-center px-3">
-                      <div className="h-2.5 w-12 bg-warm-100/60 rounded mb-1.5 skeleton-shimmer" />
-                      <div className="h-5 w-8 bg-warm-200/60 rounded skeleton-shimmer mx-auto" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function DetailedStatsSkeleton() {
-  return (
-    <div className="min-h-full bg-transparent print:bg-white">
-      <div className="max-w-4xl mx-auto px-4 py-6 print:max-w-none print:px-8">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between gap-4 mb-3">
-            <div>
-              <div className="h-7 w-48 bg-warm-200/60 rounded skeleton-shimmer" />
-              <div className="h-4 w-32 bg-warm-100/60 rounded mt-2 skeleton-shimmer" />
-            </div>
-            <div className="h-10 w-48 rounded-lg bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
-          </div>
-        </div>
-
-        {/* Category Pills */}
-        <div className="pills-scroll pb-4 mb-4 -mx-4 px-4">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-9 w-24 rounded-full bg-cream-100/80 border border-warm-200/55 skeleton-shimmer flex-shrink-0"
-              style={{ animationDelay: `${i * 30}ms` }}
-            />
-          ))}
-        </div>
-
-        <div className="h-4 w-56 bg-warm-100/60 rounded mb-4 skeleton-shimmer" />
-
-        {/* Stats Content */}
-        <div className="space-y-4">
-          {/* Key Metrics Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="relative surface-matte rounded-xl overflow-clip p-4 "
-                style={{ animationDelay: `${i * 50}ms` }}
-              >
-                <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-                <div className="relative">
-                  <div className="h-3 w-20 bg-warm-200/60 rounded mb-2 skeleton-shimmer" />
-                  <div className="h-8 w-16 bg-warm-200/60 rounded skeleton-shimmer" />
-                  <div className="h-2 w-12 bg-warm-100/60 rounded mt-1 skeleton-shimmer" />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Stats Sections */}
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="relative surface-matte rounded-3xl overflow-clip p-4 "
-              style={{ animationDelay: `${(i + 4) * 50}ms` }}
-            >
-              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-              <div className="relative">
-                <div className="h-4 w-32 bg-warm-200/60 rounded mb-4 skeleton-shimmer" />
-                <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, j) => (
-                    <div key={j} className="flex justify-between items-center py-2 border-b border-warm-100 last:border-0">
-                      <div className="h-3 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
-                      <div className="h-3 w-16 bg-warm-200/60 rounded skeleton-shimmer" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>
@@ -1707,47 +1457,6 @@ export function DetailPageSkeleton() {
   );
 }
 
-export function DevelopmentPageSkeleton() {
-  return (
-    <div className="min-h-full bg-transparent">
-      <div className="max-w-5xl mx-auto px-6 py-6 md:py-8 space-y-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="space-y-2">
-            <div className="h-7 w-44 bg-warm-200/60 rounded skeleton-shimmer" />
-            <div className="h-4 w-64 bg-warm-100/60 rounded skeleton-shimmer" />
-          </div>
-          <div className="h-10 w-36 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
-        </div>
-
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="relative surface-matte rounded-3xl p-5 overflow-clip "
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-warm-200/60 skeleton-shimmer" />
-                <div className="space-y-1.5">
-                  <div className="h-4 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
-                  <div className="h-3 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
-                </div>
-              </div>
-              {/* Focus area pills */}
-              <div className="flex gap-2 flex-wrap">
-                {[1, 2, 3].map((j) => (
-                  <div key={j} className="h-7 w-24 bg-warm-100/60 rounded-full skeleton-shimmer" />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function AlertsPageSkeleton() {
   return (
     <div className="min-h-full bg-transparent">
@@ -1779,45 +1488,6 @@ export function AlertsPageSkeleton() {
                   <div className="h-3 w-1/2 bg-warm-100/60 rounded skeleton-shimmer" />
                 </div>
                 <div className="h-3 w-16 bg-warm-100/60 rounded skeleton-shimmer" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ClassesPageSkeleton() {
-  return (
-    <div className="min-h-full bg-transparent">
-      <div className="max-w-5xl mx-auto px-6 py-6 md:py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-7 w-28 bg-warm-200/60 rounded skeleton-shimmer" />
-            <div className="h-4 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
-          </div>
-          <div className="h-10 w-32 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="relative surface-matte rounded-3xl p-5 overflow-clip "
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-              <div className="relative space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="h-5 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
-                  <div className="h-6 w-16 bg-warm-100/60 rounded-full skeleton-shimmer" />
-                </div>
-                <div className="h-3 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-20 bg-warm-100/60 rounded skeleton-shimmer" />
-                  <div className="h-3 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
-                </div>
               </div>
             </div>
           ))}

@@ -1,32 +1,27 @@
 /**
  * ============================================================================
- * Fairway redesign feature flag (FOUNDATION — ADDITIVE)
+ * Fairway redesign feature flag (WAVE W1 — FAIRWAY IS NOW THE ONLY TREE)
  * ----------------------------------------------------------------------------
- * Gates the "Fairway" warm-premium design system so redesigned components/pages
- * can opt in WITHOUT changing the current app. Default = OFF: with the flag off,
- * nothing here changes any rendered output — the design tokens and fonts are
- * merely *available*; only opted-in Fairway components consume them.
+ * Historically this gated the "Fairway" warm-premium design system behind
+ * `NEXT_PUBLIC_REDESIGN` so redesigned components/pages could opt in without
+ * changing the legacy app. As of Wave W1 (2026-07-09), Fairway has shipped as
+ * the ONLY dashboard tree in prod for 5+ weeks — the legacy
+ * `GolfDashboardShell` / `GolfSidebar` fork has been deleted, and
+ * `isRedesignEnabled()` / `useRedesign()` below are hardcoded to `true`.
  *
- * ── How a future redesigned component opts in ──────────────────────────────
+ * `fairwayScope()` / `FAIRWAY_SCOPE` remain fully live — they are the
+ * class-name helper used everywhere to opt a subtree into the `.fairway-ds`
+ * token scope and are NOT deprecated.
  *
- *  1. Gate on the flag (server or client — `NEXT_PUBLIC_*` is readable in both):
+ * ── Fairway scoping (still the live pattern) ───────────────────────────────
  *
- *       import { isRedesignEnabled, useRedesign, FAIRWAY_SCOPE } from '@/lib/redesign/flag';
- *
- *       // server component / module scope:
- *       if (isRedesignEnabled()) return <FairwayDashboard … />;
- *       return <LegacyDashboard … />;
- *
- *       // client component:
- *       const redesign = useRedesign();
- *
- *  2. Wrap the redesigned subtree in the `.fairway-ds` scope class so the
- *     Fairway tokens/fonts apply only inside it (use the FAIRWAY_SCOPE constant
- *     or the `fairwayScope()` helper to also merge extra classes):
+ *  1. Wrap a subtree in the `.fairway-ds` scope class so the Fairway
+ *     tokens/fonts apply only inside it (use the FAIRWAY_SCOPE constant or
+ *     the `fairwayScope()` helper to also merge extra classes):
  *
  *       <div className={fairwayScope('min-h-screen')}> … </div>
  *
- *  3. Inside that scope, build with the Fairway Tailwind utilities (which
+ *  2. Inside that scope, build with the Fairway Tailwind utilities (which
  *     resolve to the --fw-* tokens) and the Fairway type roles:
  *
  *       bg-canvas / bg-surface / bg-surface-tint / bg-inset / bg-elevated
@@ -41,8 +36,6 @@
  * live on :root (always defined); the scope class is a marker for redesigned
  * subtrees and a future hook point for scoped base styles (e.g. setting the
  * Fairway body font on the scope only).
- *
- * Enable by setting `NEXT_PUBLIC_REDESIGN=true` (or 1 / on / yes) in the env.
  * ============================================================================
  */
 
@@ -51,26 +44,33 @@ import { useMemo } from 'react';
 /** The scope class redesigned Fairway subtrees opt into. */
 export const FAIRWAY_SCOPE = 'fairway-ds' as const;
 
-/** Truthy string forms accepted for the env flag. */
+/** Truthy string forms accepted for the (still-live) `NEXT_PUBLIC_REDESIGN_THEMES` kill-switch below. */
 const TRUTHY = new Set(['1', 'true', 'on', 'yes']);
 
 /**
- * Whether the Fairway redesign is enabled. Reads `NEXT_PUBLIC_REDESIGN`
- * (must be statically referenced so Next.js inlines it for the client bundle).
- * Defaults to `false` (redesign off — current app unchanged).
+ * @deprecated Fairway is now the only golf dashboard tree (Wave W1,
+ * 2026-07-09) — the legacy GolfDashboardShell/GolfSidebar fork this flag used
+ * to gate has been deleted, and every `src/app/golf` / `src/components/golf`
+ * call site has been removed. Hardcoded to `true`.
+ *
+ * NOT dead: `src/components/layout/header.tsx` (a shared BASEBALL component,
+ * still rendered by ~15 `src/app/baseball/**` routes) calls this directly to
+ * suppress its own legacy chrome under the baseball Fairway shell — baseball
+ * never had its own Wave-W1-equivalent cleanup for this call site. Do not
+ * delete this function (or {@link useRedesign}) without first migrating that
+ * caller off the flag (out of scope for the golf-only Wave W1 mission).
  */
 export function isRedesignEnabled(): boolean {
-  const raw = process.env.NEXT_PUBLIC_REDESIGN;
-  return typeof raw === 'string' && TRUTHY.has(raw.trim().toLowerCase());
+  return true;
 }
 
 /**
- * React hook returning the redesign flag. Stable across renders. Safe in client
- * components; the underlying value is build-time-inlined so it does not change
- * at runtime, but the hook gives redesigned components a conventional API.
+ * @deprecated See {@link isRedesignEnabled} — hardcoded to `true`. All
+ * `src/app/golf` / `src/components/golf` call sites have been removed as of
+ * Wave W1; kept only for any remaining non-golf client call sites.
  */
 export function useRedesign(): boolean {
-  return useMemo(() => isRedesignEnabled(), []);
+  return useMemo(() => true, []);
 }
 
 /**

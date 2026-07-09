@@ -1,10 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { GolfDashboardShell } from './GolfDashboardShell';
 import { FairwayDashboardShell } from './FairwayDashboardShell';
 import { resolveCoachActiveTeamId, getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
-import { isRedesignEnabled } from '@/lib/redesign/flag';
 import { getActiveTeamCookie } from '@/app/golf/actions/team-switcher';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
@@ -15,7 +13,7 @@ import type { GolfUserData } from '@/contexts/golf-user-context';
  * This eliminates the client-side loading spinner and multi-stage
  * data-fetching waterfall that previously added 1.5–3s of latency.
  *
- * All interactive UI (sidebar, providers, nav) lives in GolfDashboardShell
+ * All interactive UI (sidebar, providers, nav) lives in FairwayDashboardShell
  * which is a client component receiving the resolved userData as props.
  *
  * Auth strategy:
@@ -192,12 +190,11 @@ export default async function GolfDashboardLayout({
   }
 
   // 4. Render the client shell with resolved data — no loading spinner needed.
-  //    Flag ON → the premium Fairway shell (AppShell rail + glass top bar +
-  //    hamburger drawer). Flag OFF → the legacy shell, byte-for-byte unchanged.
-  const DashboardShell = isRedesignEnabled() ? FairwayDashboardShell : GolfDashboardShell;
+  //    Fairway is now the only dashboard shell (AppShell rail + glass top bar +
+  //    hamburger drawer) — the legacy GolfDashboardShell fork was removed.
   return (
-    <DashboardShell userData={userData}>
+    <FairwayDashboardShell userData={userData}>
       {children}
-    </DashboardShell>
+    </FairwayDashboardShell>
   );
 }

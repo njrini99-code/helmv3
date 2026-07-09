@@ -20,8 +20,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
-import { PlayerGameFingerprint } from './PlayerGameFingerprint';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerGameFingerprint } from '@/components/fairway/pages/player-game';
 
 export const metadata: Metadata = {
@@ -68,12 +67,9 @@ export default async function PlayerGamePage({
   const fingerprint = await getPlayerFingerprint(playerId);
   if (!fingerprint) notFound();
 
-  if (isRedesignEnabled())
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayPlayerGameFingerprint fingerprint={fingerprint} />
-      </div>
-    );
-
-  return <PlayerGameFingerprint fingerprint={fingerprint} />;
+  return (
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayPlayerGameFingerprint fingerprint={fingerprint} />
+    </div>
+  );
 }

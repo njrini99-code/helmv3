@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamHubWrapper } from '@/components/fairway/pages/team-hub';
 import { EmptyState, Button } from '@/components/fairway';
 
@@ -24,11 +24,6 @@ export default async function TeamHubPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  // Team Hub is a redesign-only consolidation. With the flag OFF the four
-  // surfaces remain on their own routes (and the rail entry is hidden), so a
-  // direct hit falls back to the player Hub. Nothing legacy changes.
-  if (!isRedesignEnabled()) redirect('/golf/dashboard/hub');
-
   // Deep-link target (Cmd+K / bookmarks): /team-hub?tab=travel etc.
   const initialTab = (await searchParams)?.tab;
 

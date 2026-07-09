@@ -1,16 +1,13 @@
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
 /**
- * P325 — the Suspense fallback for the Qualifying selection workspace must match
+ * P325 — the Suspense fallback for the Qualifying selection workspace matches
  * the LIVE FairwayQualifyingWorkspace, not arbitrary `glass-subtle` glass blocks.
- * The previous skeleton used `glass-subtle` 40%-glass pulses that mismatched the
- * bg-canvas matte Fairway surfaces it precedes. This reserves the ACTUAL layout:
- * a max-w-[960px] shell with a ViewHeader-shaped title + breadcrumb, then the
- * StateBar / Leaderboard / Coach-picks Surfaces, in Fairway tokens only.
- * isRedesignEnabled() is build-time-inlined and safe to read in a loading
- * boundary; the legacy fallback (centered glass blocks) stays gated off.
+ * This reserves the ACTUAL layout: a max-w-[960px] shell with a ViewHeader-shaped
+ * title + breadcrumb, then the StateBar / Leaderboard / Coach-picks Surfaces, in
+ * Fairway tokens only.
  */
 function FairwayQualifyingWorkspaceLoading() {
   return (
@@ -82,21 +79,6 @@ function FairwayQualifyingWorkspaceLoading() {
   );
 }
 
-/**
- * Legacy (flag-off) fallback — the original centered glass blocks, kept only
- * for the flag-off path so the redesign no longer renders glass tokens.
- */
-function LegacyQualifyingWorkspaceLoading() {
-  return (
-    <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">
-      <div className="h-24 glass-subtle rounded-2xl animate-pulse mb-6" />
-      <div className="h-12 glass-subtle rounded-2xl animate-pulse mb-4" />
-      <div className="h-80 glass-subtle rounded-2xl animate-pulse" />
-    </div>
-  );
-}
-
 export default function Loading() {
-  if (isRedesignEnabled()) return <FairwayQualifyingWorkspaceLoading />;
-  return <LegacyQualifyingWorkspaceLoading />;
+  return <FairwayQualifyingWorkspaceLoading />;
 }

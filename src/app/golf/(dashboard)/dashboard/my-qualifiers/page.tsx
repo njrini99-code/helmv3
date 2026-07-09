@@ -2,8 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
-import { MyQualifiersClient } from './my-qualifiers-client';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayMyQualifiers } from '@/components/fairway/pages/my-qualifiers';
 
 /**
@@ -41,13 +40,11 @@ export default async function MyQualifiersPage() {
     const { coach } = session;
     if (coach) {
       const coachError = 'This feature is for players only. Coaches can view qualifier results from the qualifiers page.';
-      if (isRedesignEnabled())
-        return (
-          <div className={fairwayScope('min-h-full bg-canvas')}>
-            <FairwayMyQualifiers qualifiers={[]} error={coachError} />
-          </div>
-        );
-      return <MyQualifiersClient qualifiers={[]} error={coachError} />;
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayMyQualifiers qualifiers={[]} error={coachError} />
+        </div>
+      );
     }
     return redirect('/golf/player');
   }
@@ -80,24 +77,20 @@ export default async function MyQualifiersPage() {
   // cheerful "No qualifiers yet" empty state. A genuine empty result is
   // `entries.length === 0` with no error.
   if (entriesError || !entries) {
-    if (isRedesignEnabled())
-      return (
-        <div className={fairwayScope('min-h-full bg-canvas')}>
-          <FairwayMyQualifiers qualifiers={[]} loadError />
-        </div>
-      );
-    return <MyQualifiersClient qualifiers={[]} />;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayMyQualifiers qualifiers={[]} loadError />
+      </div>
+    );
   }
 
   // Genuine empty — the player simply has no qualifier entries yet.
   if (entries.length === 0) {
-    if (isRedesignEnabled())
-      return (
-        <div className={fairwayScope('min-h-full bg-canvas')}>
-          <FairwayMyQualifiers qualifiers={[]} />
-        </div>
-      );
-    return <MyQualifiersClient qualifiers={[]} />;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayMyQualifiers qualifiers={[]} />
+      </div>
+    );
   }
 
   // Get all qualifier rounds for this player
@@ -193,12 +186,9 @@ export default async function MyQualifiersPage() {
       };
     });
 
-  if (isRedesignEnabled())
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayMyQualifiers qualifiers={qualifiers} />
-      </div>
-    );
-
-  return <MyQualifiersClient qualifiers={qualifiers} />;
+  return (
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayMyQualifiers qualifiers={qualifiers} />
+    </div>
+  );
 }

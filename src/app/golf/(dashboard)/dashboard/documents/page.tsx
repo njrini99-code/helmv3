@@ -2,11 +2,10 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { DocumentsClient } from './documents-client';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayDocuments } from '@/components/fairway/pages/documents';
+import { EmptyState } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'Documents | Helm Golf',
@@ -39,12 +38,11 @@ export default async function GolfDocumentsPage() {
   }
 
   if (!teamId) {
+    // Un-gated role/team gate (hit regardless of the redesign fork): a minimal
+    // Fairway-styled equivalent — same copy, same behavior.
     return (
-      <div className="min-h-full bg-transparent flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h1>
-          <p className="text-warm-600">You must be on a team to access documents.</p>
-        </div>
+      <div className={fairwayScope('flex min-h-full items-center justify-center bg-canvas px-4 py-16 md:px-6')}>
+        <EmptyState title="No Team Found" description="You must be on a team to access documents." />
       </div>
     );
   }
@@ -101,33 +99,16 @@ export default async function GolfDocumentsPage() {
   // Cast to correct type (database has player_visible, not is_public)
   const documents = rawDocuments as unknown as DocumentRow[] | null;
 
-  // ── Fairway redesign fork (flag-gated, additive) ──────────────────────────
   // Reuses the SAME role + golf_documents list resolved above (players already
-  // filtered to public server-side); re-skins onto the warm-matte Fairway
-  // system. Legacy branch below is byte-identical when the flag is off.
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-        <FairwayDocuments
-          documents={documents || []}
-          coachId={coach?.id || ''}
-          teamId={teamId}
-          isCoach={isCoach}
-        />
-      </div>
-    );
-  }
-
+  // filtered to public server-side); renders onto the warm-matte Fairway system.
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <DocumentsClient
-          documents={documents || []}
-          coachId={coach?.id || ''}
-          teamId={teamId}
-          isCoach={isCoach}
-        />
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+      <FairwayDocuments
+        documents={documents || []}
+        coachId={coach?.id || ''}
+        teamId={teamId}
+        isCoach={isCoach}
+      />
+    </div>
   );
 }

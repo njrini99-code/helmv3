@@ -93,7 +93,7 @@ import type {
   TodayEvent,
   ActionItem,
 } from '@/app/golf/actions/dashboard-data';
-import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/CoachDashboard';
+import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { deriveCoachSignal } from './coach-signal';
 
 /* ──────────────────────────────────────────────────────────────────────────

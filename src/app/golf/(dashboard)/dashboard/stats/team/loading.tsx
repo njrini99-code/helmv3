@@ -1,21 +1,17 @@
-import { StatsPageSkeleton } from '@/components/ui/skeleton';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 /**
  * Route-level loading state for the coach Team Stats overview.
  *
- * Must shape-match whichever fork team/page.tsx renders so the skeleton→content
- * handoff is a quiet fade, not a layout jump:
- *   • flag ON  → mirrors <FairwayTeamStats/> inside fairwayScope('min-h-full
- *     bg-canvas …'): the SAME max-w-[1536px] column, a ViewHeader band, a 2fr/1fr
- *     SG-hero row, a 2-col leak-map row, and a 3-col per-player tile grid — built
- *     from the token-correct Fairway Skeleton primitive (bg-surface-sunken /
- *     rounded-card / border-border-subtle), never the legacy warm-chrome set.
- *   • flag OFF → the legacy <StatsPageSkeleton/> (unchanged).
+ * Shape-matches <FairwayTeamStats/> inside fairwayScope('min-h-full
+ * bg-canvas …'): the SAME max-w-[1536px] column, a ViewHeader band, a 2fr/1fr
+ * SG-hero row, a 2-col leak-map row, and a 3-col per-player tile grid — built
+ * from the token-correct Fairway Skeleton primitive (bg-surface-sunken /
+ * rounded-card / border-border-subtle) — so the skeleton→content handoff is a
+ * quiet fade, not a layout jump.
  */
 export default function TeamStatsLoading() {
-  if (isRedesignEnabled()) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <div
@@ -112,7 +108,4 @@ export default function TeamStatsLoading() {
         </div>
       </div>
     );
-  }
-
-  return <StatsPageSkeleton />;
 }

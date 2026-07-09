@@ -2,17 +2,13 @@
 
 /**
  * ============================================================================
- * FairwayDashboardShell  (ADDITIVE · FLAG-GATED)
+ * FairwayDashboardShell  (WAVE W1 — THE ONLY DASHBOARD FRAME)
  * ----------------------------------------------------------------------------
- * The flag-ON dashboard frame. Mirrors GolfDashboardShell's provider stack
- * VERBATIM (every page depends on useSidebar / useGolfUser / notification
- * badges / offline / presence), but renders the premium Fairway `AppShell` —
- * the warm-black recessive rail on desktop, a slide-in glass drawer on mobile
- * (the hamburger), and the one glass top bar — instead of the legacy
- * GolfSidebar.
- *
- * Mounted ONLY behind isRedesignEnabled() in (dashboard)/layout.tsx. Flag OFF
- * renders the legacy GolfDashboardShell, byte-for-byte unchanged.
+ * The dashboard frame mounted unconditionally by (dashboard)/layout.tsx.
+ * Renders the premium Fairway `AppShell` — the warm-black recessive rail on
+ * desktop, a slide-in glass drawer on mobile (the hamburger), and the one
+ * glass top bar. The legacy GolfDashboardShell / GolfSidebar fork it used to
+ * be gated against was deleted in Wave W1 (2026-07-09).
  *
  * The AppShell drawer (`mobileOpen`) is BRIDGED to SidebarContext, so a
  * not-yet-migrated page's own menu button — which calls `setMobileOpen` — opens

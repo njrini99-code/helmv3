@@ -16,13 +16,7 @@ import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
 import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
-import { GenomeRadar, type RadarSeries } from '@/components/golf/coachhelm/v3/Genome/GenomeRadar';
-import { GenomePersonaPanel } from '@/components/golf/coachhelm/v3/Genome/GenomePersonaPanel';
-import { GenomeDimensionGrid } from '@/components/golf/coachhelm/v3/Genome/GenomeDimensionGrid';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { Reveal } from '@/components/ui/reveal';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayMyGameProfile } from '@/components/fairway/pages/player-game';
 import type { Metadata } from 'next';
 
@@ -41,150 +35,47 @@ export default async function MyGameProfilePage() {
   const persona = genome ? derivePersona(genome.vector) : null;
   const firstName = session.player.first_name ?? 'Your';
 
-  if (isRedesignEnabled()) {
-    // Pure transforms over the SAME already-loaded genome + persona (no fetch):
-    // build the serializable radar axes + dimension cells + persona text the
-    // Fairway surface consumes. Locked dimensions (normalize → null) are kept
-    // honest — no fabricated score.
-    const cells = genome
-      ? GENOME_DIMENSIONS.map((dim) => {
-          const r = genome.vector[dim.id];
-          const norm = r ? normalizeForRadar(dim.id, r) : null;
-          return {
-            id: dim.id,
-            label: dim.label,
-            score: norm == null ? null : Math.round(norm * 100),
-            qualitative: r?.label ?? null,
-          };
-        })
-      : [];
-    const axes = cells
-      .filter((c): c is typeof c & { score: number } => c.score != null)
-      .map((c) => ({ label: c.label, value: c.score }));
-    const strengths = (persona?.strengths ?? []).map((s) => ({
-      id: s.dim_id,
-      label: s.label,
-      qualitative: s.qualitative,
-    }));
-    const watchouts = (persona?.watchouts ?? []).map((w) => ({
-      id: w.dim_id,
-      label: w.label,
-      qualitative: w.qualitative,
-    }));
-
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayMyGameProfile
-          firstName={firstName}
-          axes={axes}
-          dimensions={cells}
-          strengths={strengths}
-          watchouts={watchouts}
-          courseProfile={persona?.course_profile ?? null}
-          roundsBasis={genome?.rounds_basis ?? null}
-        />
-      </div>
-    );
-  }
-
-  // Gate the radar render: a genome row can exist with rounds_basis=0 / an
-  // all-null vector (the orchestrator upserts a stub before there's data).
-  // Require ≥3 non-null dimension components OR ≥8 rounds basis so an empty
-  // genome shows the warming-up state instead of a fake radar.
-  const nonNullComponents = genome
-    ? Object.values(genome.vector).filter((r) => r != null && r.value != null).length
-    : 0;
-  const genomeReady =
-    genome != null && (nonNullComponents >= 3 || genome.rounds_basis >= 8);
+  // Pure transforms over the SAME already-loaded genome + persona (no fetch):
+  // build the serializable radar axes + dimension cells + persona text the
+  // Fairway surface consumes. Locked dimensions (normalize → null) are kept
+  // honest — no fabricated score.
+  const cells = genome
+    ? GENOME_DIMENSIONS.map((dim) => {
+        const r = genome.vector[dim.id];
+        const norm = r ? normalizeForRadar(dim.id, r) : null;
+        return {
+          id: dim.id,
+          label: dim.label,
+          score: norm == null ? null : Math.round(norm * 100),
+          qualitative: r?.label ?? null,
+        };
+      })
+    : [];
+  const axes = cells
+    .filter((c): c is typeof c & { score: number } => c.score != null)
+    .map((c) => ({ label: c.label, value: c.score }));
+  const strengths = (persona?.strengths ?? []).map((s) => ({
+    id: s.dim_id,
+    label: s.label,
+    qualitative: s.qualitative,
+  }));
+  const watchouts = (persona?.watchouts ?? []).map((w) => ({
+    id: w.dim_id,
+    label: w.label,
+    qualitative: w.qualitative,
+  }));
 
   return (
-    <AnimatedPage className="min-h-full bg-transparent">
-      <AnimatedItem>
-        <MobileNavHeader
-          title="Game profile"
-          backHref="/golf/dashboard/hub"
-          backLabel="Hub"
-        />
-      </AnimatedItem>
-
-      <div className="max-w-xl mx-auto px-4 md:px-6 py-6 md:py-10">
-        <Reveal>
-          <header className="mb-6">
-            <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
-              Your game profile
-            </p>
-            {/* a11y W3D: page h1 is supplied by the consolidated PageHeader
-                (MobileNavHeader) above; demote this in-content title to <h2>
-                so the page exposes exactly one semantic <h1>. The className
-                drives the look, so the visual treatment is unchanged. */}
-            <h2 className="text-3xl font-medium text-warm-900 tracking-tight">
-              {firstName}&apos;s genome
-            </h2>
-            {genomeReady && genome && (
-              <p className="mt-2 text-sm text-warm-600">
-                {genome.rounds_basis} rounds in your window.
-              </p>
-            )}
-          </header>
-        </Reveal>
-
-        {genomeReady && genome && persona ? (
-          <>
-            <Reveal staggerIndex={1}>
-              <section className="surface-stone rounded-3xl p-5 md:p-7 mb-6 flex items-center justify-center">
-                <GenomeRadar
-                  series={
-                    [
-                      {
-                        label: firstName,
-                        colorClass: 'primary-600',
-                        hex: 'var(--color-primary-600)',
-                        vector: genome.vector,
-                      },
-                    ] satisfies RadarSeries[]
-                  }
-                />
-              </section>
-            </Reveal>
-
-            <Reveal staggerIndex={2}>
-              <section className="surface-matte rounded-3xl p-6 mb-6">
-                <GenomePersonaPanel persona={persona} />
-              </section>
-            </Reveal>
-
-            <Reveal staggerIndex={3}>
-              <section>
-                <h2 className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-3">
-                  Dimensions
-                </h2>
-                <GenomeDimensionGrid vector={genome.vector} />
-              </section>
-            </Reveal>
-          </>
-        ) : (
-          <Reveal staggerIndex={1}>
-            <section className="surface-stone rounded-3xl p-10 text-center">
-              <span
-                aria-hidden
-                className="inline-flex h-12 w-12 rounded-full bg-primary-50 text-primary-700 items-center justify-center mb-4"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M12 7 v5 l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </span>
-              <h2 className="text-lg font-medium text-warm-900 tracking-tight">
-                Your genome is warming up
-              </h2>
-              <p className="mt-2 text-sm text-warm-600 leading-relaxed max-w-xs mx-auto">
-                It needs 8+ completed rounds before the radar lights up. Keep playing —
-                we&apos;ll surface your shape automatically.
-              </p>
-            </section>
-          </Reveal>
-        )}
-      </div>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayMyGameProfile
+        firstName={firstName}
+        axes={axes}
+        dimensions={cells}
+        strengths={strengths}
+        watchouts={watchouts}
+        courseProfile={persona?.course_profile ?? null}
+        roundsBasis={genome?.rounds_basis ?? null}
+      />
+    </div>
   );
 }

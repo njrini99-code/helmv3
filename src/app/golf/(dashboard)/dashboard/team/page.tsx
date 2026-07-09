@@ -2,11 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { redirect } from 'next/navigation';
-import { TeamSettingsClient } from './team-settings-client';
-import { TeamInfoPlayer } from './team-info-player';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeam } from '@/components/fairway/pages/team';
 import type { Metadata } from 'next';
 
@@ -83,31 +80,19 @@ export default async function TeamSettingsPage() {
     const team = coachData.golf_teams
       ? { ...coachData.golf_teams, created_at: coachData.golf_teams.created_at ?? '' }
       : null;
-    if (isRedesignEnabled()) {
-      return (
-        <div className={fairwayScope('min-h-full bg-canvas')}>
-          <FairwayTeam
-            // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
-            role="coach"
-            coach={{
-              id: coachData.id,
-              team_id: coachData.team_id,
-              full_name: coachData.full_name,
-            }}
-            team={team}
-          />
-        </div>
-      );
-    }
     return (
-      <AnimatedPage>
-        <AnimatedItem>
-          <TeamSettingsClient
-            coach={coachData}
-            team={team}
-          />
-        </AnimatedItem>
-      </AnimatedPage>
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayTeam
+          // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
+          role="coach"
+          coach={{
+            id: coachData.id,
+            team_id: coachData.team_id,
+            full_name: coachData.full_name,
+          }}
+          team={team}
+        />
+      </div>
     );
   }
 
@@ -227,33 +212,17 @@ export default async function TeamSettingsPage() {
     };
   });
 
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayTeam
-          // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
-          role="player"
-          team={team}
-          coach={teamCoach}
-          roster={roster ?? []}
-          announcements={announcements ?? []}
-          tasks={tasks}
-        />
-      </div>
-    );
-  }
-
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <TeamInfoPlayer
-          team={team}
-          coach={teamCoach}
-          roster={roster ?? []}
-          announcements={announcements ?? []}
-          tasks={tasks}
-        />
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayTeam
+        // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
+        role="player"
+        team={team}
+        coach={teamCoach}
+        roster={roster ?? []}
+        announcements={announcements ?? []}
+        tasks={tasks}
+      />
+    </div>
   );
 }

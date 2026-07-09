@@ -129,10 +129,8 @@ test.describe('Cloud Course Library — authenticated flow', () => {
   });
 
   // Capture screenshots of the premium course picker for review as CI artifacts
-  // (uploaded by .github/workflows/playwright.yml). Requires
-  // NEXT_PUBLIC_REDESIGN=true so the redesign FairwayCoursePicker renders
-  // (otherwise this shoots the legacy TeePickerDrawer). Best-effort — the point
-  // is the image, not a gate; a missing affordance skips rather than fails.
+  // (uploaded by .github/workflows/playwright.yml). Best-effort — the point is
+  // the image, not a gate; a missing affordance skips rather than fails.
   test('capture: premium course picker screenshots', async ({ page }) => {
     const dir = 'e2e-screenshots';
 

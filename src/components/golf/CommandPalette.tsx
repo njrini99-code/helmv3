@@ -34,7 +34,6 @@ import {
   getCommandPaletteData,
   type CommandPaletteData,
 } from '@/app/golf/actions/command-palette';
-import { useRedesign } from '@/lib/redesign/flag';
 
 interface CommandItemSpec {
   id: string;
@@ -111,34 +110,31 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
-  // Fairway redesign: the player's Tasks / Announcements / Travel / Classes are
-  // consolidated into the Team Hub, so the palette deep-links into the matching
-  // sub-tab (and gains a top-level "Team Hub" command) instead of the old
-  // scattered routes. Flag OFF → the original entries, unchanged.
-  const redesign = useRedesign();
-  const playerActions: CommandItemSpec[] = redesign
-    ? (() => {
-        const TAB_FOR_ID: Record<string, 'tasks' | 'announcements' | 'travel' | 'classes'> = {
-          tasks: 'tasks',
-          announcements: 'announcements',
-          travel: 'travel',
-          classes: 'classes',
-        };
-        const remapped = playerQuickActions.map((a) => {
-          const tab = TAB_FOR_ID[a.id];
-          return tab ? { ...a, href: `/golf/dashboard/team-hub?tab=${tab}` } : a;
-        });
-        const teamHubEntry: CommandItemSpec = {
-          id: 'team-hub',
-          label: 'Team Hub',
-          description: 'Tasks, announcements, travel & your classes',
-          icon: <IconLayoutGrid size={18} />,
-          href: '/golf/dashboard/team-hub',
-          keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
-        };
-        return [teamHubEntry, ...remapped];
-      })()
-    : playerQuickActions;
+  // The player's Tasks / Announcements / Travel / Classes are consolidated
+  // into the Team Hub, so the palette deep-links into the matching sub-tab
+  // (and gains a top-level "Team Hub" command) instead of the old scattered
+  // routes.
+  const playerActions: CommandItemSpec[] = (() => {
+    const TAB_FOR_ID: Record<string, 'tasks' | 'announcements' | 'travel' | 'classes'> = {
+      tasks: 'tasks',
+      announcements: 'announcements',
+      travel: 'travel',
+      classes: 'classes',
+    };
+    const remapped = playerQuickActions.map((a) => {
+      const tab = TAB_FOR_ID[a.id];
+      return tab ? { ...a, href: `/golf/dashboard/team-hub?tab=${tab}` } : a;
+    });
+    const teamHubEntry: CommandItemSpec = {
+      id: 'team-hub',
+      label: 'Team Hub',
+      description: 'Tasks, announcements, travel & your classes',
+      icon: <IconLayoutGrid size={18} />,
+      href: '/golf/dashboard/team-hub',
+      keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
+    };
+    return [teamHubEntry, ...remapped];
+  })();
 
   const quickActions = isCoach ? coachQuickActions : playerActions;
 

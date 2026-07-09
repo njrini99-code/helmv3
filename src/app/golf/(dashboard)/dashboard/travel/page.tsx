@@ -2,12 +2,10 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { TravelClient } from './travel-client';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import Link from 'next/link';
 import { Plane } from 'lucide-react';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTravel } from '@/components/fairway/pages/travel';
 import { ViewHeader, Surface, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -43,43 +41,31 @@ export default async function GolfTravelPage() {
   const teamId = coachTeamId || playerTeamId;
 
   if (!teamId) {
-    // Fairway redesign fork: keep the no-team edge case visually consistent with
-    // the rest of the flag-on travel surface (canvas + masthead + EmptyState) and
-    // give it a next action instead of a dead end (P320). Legacy fallback below
-    // is unchanged when the flag is off.
-    if (isRedesignEnabled()) {
-      return (
-        <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-          <div className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6 md:py-8 pb-24">
-            <ViewHeader
-              eyebrow="Travel"
-              title="Trips on the calendar."
-              description="Travel itineraries live with your team — join one to see and manage trips."
-            />
-            <div className="mt-8">
-              <Surface elevation="shadow" padding="lg">
-                <EmptyState
-                  icon={<Plane strokeWidth={1.75} />}
-                  title="You're not on a team yet"
-                  description="Travel itineraries are scoped to a team. Join your program to view and manage tournament trips, lodging, and expenses."
-                  action={
-                    <Button asChild variant="primary">
-                      <Link href="/golf/join">Join a team</Link>
-                    </Button>
-                  }
-                />
-              </Surface>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
+    // Keep the no-team edge case visually consistent with the rest of the
+    // travel surface (canvas + masthead + EmptyState) and give it a next
+    // action instead of a dead end (P320).
     return (
-      <div className="min-h-full bg-transparent flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h1>
-          <p className="text-warm-600">You must be on a team to access travel itineraries.</p>
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <div className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6 md:py-8 pb-24">
+          <ViewHeader
+            eyebrow="Travel"
+            title="Trips on the calendar."
+            description="Travel itineraries live with your team — join one to see and manage trips."
+          />
+          <div className="mt-8">
+            <Surface elevation="shadow" padding="lg">
+              <EmptyState
+                icon={<Plane strokeWidth={1.75} />}
+                title="You're not on a team yet"
+                description="Travel itineraries are scoped to a team. Join your program to view and manage tournament trips, lodging, and expenses."
+                action={
+                  <Button asChild variant="primary">
+                    <Link href="/golf/join">Join a team</Link>
+                  </Button>
+                }
+              />
+            </Surface>
+          </div>
         </div>
       </div>
     );
@@ -146,34 +132,17 @@ export default async function GolfTravelPage() {
     created_at: item.created_at,
   }));
 
-  // ── Fairway redesign fork (flag-gated, additive) ──────────────────────────
-  // Reuses the SAME mapped golf_travel_itineraries rows + role resolved above;
-  // re-skins onto the warm-matte Fairway system. Legacy branch below is
-  // unchanged when the flag is off.
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-        <FairwayTravel
-          itineraries={itineraries}
-          coachId={coach?.id || ''}
-          teamId={teamId}
-          isCoach={isCoach}
-          nowISO={new Date().toISOString().slice(0, 10)}
-        />
-      </div>
-    );
-  }
-
+  // Reuses the SAME mapped golf_travel_itineraries rows + role resolved
+  // above; renders onto the warm-matte Fairway system.
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <TravelClient
-          itineraries={itineraries}
-          coachId={coach?.id || ''}
-          teamId={teamId}
-          isCoach={isCoach}
-        />
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+      <FairwayTravel
+        itineraries={itineraries}
+        coachId={coach?.id || ''}
+        teamId={teamId}
+        isCoach={isCoach}
+        nowISO={new Date().toISOString().slice(0, 10)}
+      />
+    </div>
   );
 }

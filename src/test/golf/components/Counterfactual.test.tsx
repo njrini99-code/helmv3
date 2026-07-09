@@ -1,15 +1,19 @@
 /**
- * Counterfactual (W17) — pure compute + line formatter + component tests.
+ * Counterfactual (W17) — pure compute + line formatter tests.
+ *
+ * The `<CounterfactualLine />` component (legacy-only, superseded by the
+ * inline counterfactual text rendered by the Fairway my-standing surface)
+ * was deleted in Wave W1 (golf legacy-tree deletion) — its render tests went
+ * with it. The pure compute/format functions below are still live (consumed
+ * by the Fairway my-standing page), so those tests remain.
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
 
 import {
   computeCounterfactual,
   formatCounterfactualLine,
 } from '@/lib/coachhelm/v3/counterfactual/compute';
-import { CounterfactualLine } from '@/components/golf/coachhelm/v3/CounterfactualLine';
 import { COUNTERFACTUAL_SUPPRESS_THRESHOLD } from '@/lib/coachhelm/v3/counterfactual/types';
 
 describe('computeCounterfactual', () => {
@@ -149,49 +153,5 @@ describe('formatCounterfactualLine', () => {
       suppressed: false,
     });
     expect(line).toContain('(≈1 wk)');
-  });
-});
-
-describe('<CounterfactualLine />', () => {
-  it('renders nothing when projection is suppressed', () => {
-    const { container } = render(
-      <CounterfactualLine
-        metric_id="sg_total"
-        direction="higher_better"
-        player_value={1.0}
-        pga_value={0}
-        player_30d_scoring_avg={null}
-      />,
-    );
-    expect(container.firstChild).toBeNull();
-  });
-
-  it('renders the line when projection is valid', () => {
-    render(
-      <CounterfactualLine
-        metric_id="sg_putting"
-        direction="higher_better"
-        player_value={-0.5}
-        pga_value={0}
-        player_30d_scoring_avg={75.2}
-      />,
-    );
-    expect(screen.getByTestId('counterfactual-line').textContent).toContain('Closing this gap');
-    expect(screen.getByTestId('counterfactual-line').textContent).toContain('75.2');
-  });
-
-  it('honors size prop for text sizing', () => {
-    render(
-      <CounterfactualLine
-        metric_id="sg_putting"
-        direction="higher_better"
-        player_value={-0.5}
-        pga_value={0}
-        player_30d_scoring_avg={75.2}
-        size="hero"
-      />,
-    );
-    const el = screen.getByTestId('counterfactual-line');
-    expect(el.className).toContain('text-sm');
   });
 });

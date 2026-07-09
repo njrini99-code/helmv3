@@ -8,13 +8,15 @@ import {
     type CoachDashboardPayload,
     type PlayerDashboardPayload,
 } from '@/app/golf/actions/dashboard-data';
-import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
-import { PlayerDashboard, type PlayerDashboardData } from './components/PlayerDashboard';
+// The legacy `CoachDashboard` JSX component was deleted in Wave W1 (Fairway is
+// the only tree); `CoachDashboardData` was extracted to its own module so
+// FairwayCoachDashboard and this route can both keep importing the type.
+import type { CoachDashboardData } from './components/coach-dashboard-types';
 import type { GolfCoach, GolfTeam, GolfPlayer } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/FairwayCoachDashboard';
-import { FairwayPlayerDashboard } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
+import { FairwayPlayerDashboard, type PlayerDashboardData } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 export const dynamic = 'force-dynamic';
@@ -22,49 +24,40 @@ export const dynamic = 'force-dynamic';
 const VALID_RANGES = new Set(['7d', '30d', '90d', 'season', 'all']);
 
 /**
- * Thin flag fork (ADDITIVE): when the Fairway redesign is ON, render the
- * rebuilt coach dashboard inside the `.fairway-ds` scope on `bg-canvas`. When
- * OFF (default), render the existing CoachDashboard EXACTLY as today — this
- * helper returns the identical legacy element in that path so the live app is
- * byte-for-byte unchanged with the flag off.
+ * Renders the coach dashboard inside the `.fairway-ds` scope on `bg-canvas`.
+ * Fairway is the only tree (Wave W1) — the legacy CoachDashboard fork has
+ * been removed.
  */
 function renderCoachDashboard(props: {
     data: CoachDashboardData;
     enhancedData?: CoachDashboardPayload | null;
     dateRange: DashboardDateRange;
 }) {
-    if (isRedesignEnabled()) {
-        return (
-            <div className={fairwayScope('min-h-full')}>
-                <FairwayCoachDashboard
-                    data={props.data}
-                    enhancedData={props.enhancedData ?? undefined}
-                    dateRange={props.dateRange}
-                />
-            </div>
-        );
-    }
-    return <CoachDashboard data={props.data} enhancedData={props.enhancedData} dateRange={props.dateRange} />;
+    return (
+        <div className={fairwayScope('min-h-full')}>
+            <FairwayCoachDashboard
+                data={props.data}
+                enhancedData={props.enhancedData ?? undefined}
+                dateRange={props.dateRange}
+            />
+        </div>
+    );
 }
 
 /**
- * Thin flag fork (ADDITIVE) for the PLAYER dashboard. Flag ON → the rebuilt
- * Fairway player dashboard inside the `.fairway-ds` scope on `bg-canvas`. Flag
- * OFF (default) → the existing PlayerDashboard EXACTLY as today, so the live app
- * is byte-for-byte unchanged. Both branches receive the SAME data + payload.
+ * Renders the PLAYER dashboard inside the `.fairway-ds` scope on `bg-canvas`.
+ * Fairway is the only tree (Wave W1) — the legacy PlayerDashboard fork has
+ * been removed.
  */
 function renderPlayerDashboard(props: {
     data: PlayerDashboardData;
     enhancedData?: PlayerDashboardPayload | null;
 }) {
-    if (isRedesignEnabled()) {
-        return (
-            <div className={fairwayScope('min-h-full')}>
-                <FairwayPlayerDashboard data={props.data} enhancedData={props.enhancedData ?? undefined} />
-            </div>
-        );
-    }
-    return <PlayerDashboard data={props.data} enhancedData={props.enhancedData} />;
+    return (
+        <div className={fairwayScope('min-h-full')}>
+            <FairwayPlayerDashboard data={props.data} enhancedData={props.enhancedData ?? undefined} />
+        </div>
+    );
 }
 
 export default async function GolfDashboardPage({
@@ -90,14 +83,15 @@ export default async function GolfDashboardPage({
 
     // ── Coach dashboard ──
     if (coach) {
-        // Get team via organization (deterministic: handles orgs with >1 team)
+        // Get team via organization (deterministic: handles orgs with >1 team).
+        // P002/P426: a real DB/network outage must SURFACE to the route
+        // error.tsx (RouteErrorBoundary), not be swallowed into a fake "coach
+        // without team" empty state indistinguishable from a genuine new coach.
+        // A genuine no-team coach resolves to `undefined` WITHOUT throwing, so
+        // letting this throw only fires on a true failure.
         let teamId: string | undefined;
         if (coach.organization_id) {
-            try {
-                teamId = (await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id)) ?? undefined;
-            } catch {
-                // Network failure — fall through to empty state
-            }
+            teamId = (await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id)) ?? undefined;
         }
 
         if (teamId) {
@@ -170,19 +164,12 @@ export default async function GolfDashboardPage({
             // Network failure — proceed with null teamId
         }
 
-        let payload;
-        try {
-            payload = await getCachedPlayerDashboardData(player.id, userId, teamId);
-        } catch {
-            // Network/DB failure — render empty state
-            const emptyData: PlayerDashboardData = {
-                player: { id: player.id, user_id: userId, first_name: player.first_name, last_name: player.last_name, avatar_url: player.avatar_url || null, handicap: null, created_at: '' } as GolfPlayer,
-                team: teamId ? ({ id: teamId, name: '', season: null, join_code: null, created_at: '' } as unknown as GolfTeam) : null,
-                stats: { roundsPlayed: 0, scoringAverage: null, bestRound: null, handicap: null },
-                recentRounds: [],
-            };
-            return renderPlayerDashboard({ data: emptyData });
-        }
+        // P002/P426: a real DB/network outage must SURFACE to the route
+        // error.tsx (RouteErrorBoundary) instead of being swallowed into a
+        // fake-empty player dashboard indistinguishable from a healthy new
+        // player. A genuine new player returns empty arrays/zero counts
+        // WITHOUT throwing, so letting this throw only fires on a true failure.
+        const payload = await getCachedPlayerDashboardData(player.id, userId, teamId);
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
         const data: PlayerDashboardData = {

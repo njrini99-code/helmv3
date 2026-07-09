@@ -2,31 +2,15 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
-import { InvitePlayerButton } from '@/components/golf/roster/InvitePlayerButton';
-import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
-import { YearBadge } from '@/components/golf/roster/YearBadge';
-import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
-import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
-import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
-import { RosterIntentControl } from '@/components/golf/roster/RosterIntentControl';
-import { PlayerRosterView } from '@/components/golf/roster/PlayerRosterView';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { AlertCircle, Users } from 'lucide-react';
+import { fairwayScope } from '@/lib/redesign/flag';
+import { Button, EmptyState, InlineNotice } from '@/components/fairway';
 import { FairwayCoachRoster } from '@/components/fairway/pages/roster/FairwayCoachRoster';
 import { FairwayPlayerRoster } from '@/components/fairway/pages/roster/FairwayPlayerRoster';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
-import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { IconUsers, IconAlertCircle } from '@/components/icons';
-import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
-import { PageHeader } from '@/components/ui/page-header';
-import { Reveal } from '@/components/ui/reveal';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { ContainerGrid } from '@/components/ui/containers';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -52,15 +36,6 @@ interface PlayerWithStats {
   last_seen?: string | null;
 }
 
-// Helper function to check if user is online (active within last 5 minutes)
-function isUserOnline(lastSeen: string | null | undefined): boolean {
-  if (!lastSeen) return false;
-  const lastSeenDate = new Date(lastSeen);
-  const now = new Date();
-  const diffMinutes = (now.getTime() - lastSeenDate.getTime()) / (1000 * 60);
-  return diffMinutes < 5;
-}
-
 // `formatHandicap` was removed in the 2026-05-28 IA trim — the roster card
 // now exposes only Avg Score inline; handicap surfaces on the player detail
 // page. Re-add here if a future card revision restores the metric.
@@ -77,18 +52,18 @@ export default async function GolfRosterPage() {
 
     if (!player) {
       return (
-        <div className="min-h-full flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <IconAlertCircle size={32} className="text-amber-500" />
-            </div>
-            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">Profile Not Found</h2>
-            <p className="text-warm-500 mb-6">
-              Unable to find your profile. Please complete onboarding or contact support.
-            </p>
-            <Link href="/golf/coach">
-              <Button>Complete Onboarding</Button>
-            </Link>
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <div className="mx-auto flex min-h-full w-full max-w-md items-center justify-center px-4 py-16">
+            <EmptyState
+              icon={<AlertCircle strokeWidth={1.75} />}
+              title="Profile Not Found"
+              description="Unable to find your profile. Please complete onboarding or contact support."
+              action={
+                <Button asChild variant="primary">
+                  <Link href="/golf/coach">Complete Onboarding</Link>
+                </Button>
+              }
+            />
           </div>
         </div>
       );
@@ -102,20 +77,22 @@ export default async function GolfRosterPage() {
 
     if (!teamMember?.team_id) {
       return (
-        <div className="min-h-full flex items-center justify-center">
-          <EmptyState
-            icon={<IconUsers size={36} />}
-            title="No Team Found"
-            description="You haven't joined a team yet. Ask your coach for a join code."
-          />
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <div className="mx-auto flex min-h-full w-full max-w-md items-center justify-center px-4 py-16">
+            <EmptyState
+              icon={<Users strokeWidth={1.75} />}
+              title="No Team Found"
+              description="You haven't joined a team yet. Ask your coach for a join code."
+            />
+          </div>
         </div>
       );
     }
 
-    // Player roster is its own page. The redesign renders the Fairway player
-    // roster (FairwayPlayerRoster); flag-off keeps the legacy PlayerRosterView.
-    // (Previously the redesign path redirected into the Team Hub Teammates tab,
-    // which made the "Roster" nav item a dead bounce — fixed 2026-06-18.)
+    // Player roster is its own page — renders the Fairway player roster
+    // (FairwayPlayerRoster). (The redesign path used to redirect into the Team
+    // Hub Teammates tab, which made the "Roster" nav item a dead bounce — fixed
+    // 2026-06-18.)
 
     // Fetch team info and teammates for player view
     const { data: playerTeam } = await supabase
@@ -162,15 +139,11 @@ export default async function GolfRosterPage() {
       })
       .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
 
-    if (isRedesignEnabled()) {
-      return (
-        <div className={fairwayScope('min-h-full bg-canvas')}>
-          <FairwayPlayerRoster players={teammates} teamName={playerTeam?.name || 'Team'} />
-        </div>
-      );
-    }
-
-    return <PlayerRosterView players={teammates} teamName={playerTeam?.name || 'Team'} />;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayPlayerRoster players={teammates} teamName={playerTeam?.name || 'Team'} />
+      </div>
+    );
   }
 
   // Get team_id from organization (deterministic: handles orgs with >1 team)
@@ -178,13 +151,19 @@ export default async function GolfRosterPage() {
 
   if (!teamId) {
     return (
-      <div className="min-h-full flex items-center justify-center">
-        <EmptyState
-          icon={<IconUsers size={36} />}
-          title="No Team Assigned"
-          description="You haven't created or joined a team yet. Create a team to start building your roster."
-          action={{ label: 'Go to Team Settings', href: '/golf/dashboard/team' }}
-        />
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <div className="mx-auto flex min-h-full w-full max-w-md items-center justify-center px-4 py-16">
+          <EmptyState
+            icon={<Users strokeWidth={1.75} />}
+            title="No Team Assigned"
+            description="You haven't created or joined a team yet. Create a team to start building your roster."
+            action={
+              <Button asChild variant="primary">
+                <Link href="/golf/dashboard/team">Go to Team Settings</Link>
+              </Button>
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -198,14 +177,13 @@ export default async function GolfRosterPage() {
 
   if (teamError) {
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto text-center">
-          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">Team Not Found</h2>
-          <p className="text-warm-500 mb-4">
-            Unable to load team information. The team may have been deleted.
-          </p>
-          <p className="text-xs text-warm-400">Team ID: {teamId}</p>
-          <p className="text-xs text-warm-400">Error: {teamError.message}</p>
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
+          <InlineNotice tone="danger" title="Team Not Found">
+            <p>Unable to load team information. The team may have been deleted.</p>
+            <p className="mt-1 text-body-sm text-text-tertiary">Team ID: {teamId}</p>
+            <p className="text-body-sm text-text-tertiary">Error: {teamError.message}</p>
+          </InlineNotice>
         </div>
       </div>
     );
@@ -270,13 +248,12 @@ export default async function GolfRosterPage() {
 
   if (playersError) {
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto text-center">
-          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">Error Loading Roster</h2>
-          <p className="text-warm-500 mb-4">
-            Unable to load team roster. Please try refreshing the page.
-          </p>
-          <p className="text-xs text-warm-400">Error: {playersError.message}</p>
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
+          <InlineNotice tone="danger" title="Error Loading Roster">
+            <p>Unable to load team roster. Please try refreshing the page.</p>
+            <p className="mt-1 text-body-sm text-text-tertiary">Error: {playersError.message}</p>
+          </InlineNotice>
         </div>
       </div>
     );
@@ -339,9 +316,6 @@ export default async function GolfRosterPage() {
 
   const teamName = team?.name || 'Team';
   const inviteCode = team?.join_code || null;
-  const activeCount = playersWithStats.filter(
-    (p) => p.status === 'active' || p.status === null,
-  ).length;
 
   // Coach intent (CoachHelm v3): load every intent row this coach has
   // authored for their roster, keyed by player_id. The table is honestly
@@ -350,211 +324,17 @@ export default async function GolfRosterPage() {
   // This is the coach view only; the player roster path returned earlier.
   const coachIntents = await loadCoachIntents(coach.id);
 
-  if (isRedesignEnabled()) {
-    const jrRes = await getTeamJoinRequests();
-    const joinRequests = jrRes.success && jrRes.data ? jrRes.data : [];
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayCoachRoster
-          players={playersWithStats}
-          teamName={teamName}
-          inviteCode={inviteCode}
-          intents={Object.fromEntries(coachIntents)}
-          joinRequests={joinRequests}
-        />
-      </div>
-    );
-  }
-
+  const jrRes = await getTeamJoinRequests();
+  const joinRequests = jrRes.success && jrRes.data ? jrRes.data : [];
   return (
-    <RosterPageClient players={playersWithStats}>
-    <AnimatedPage className="min-h-full bg-transparent">
-      {/* Header Section */}
-      <AnimatedItem>
-      <LargeTitleHeader
-        title="Team Roster"
-        subtitle={`${playersWithStats.length} ${playersWithStats.length === 1 ? 'player' : 'players'} on ${teamName}`}
-      >
-        <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
-      </LargeTitleHeader>
-      </AnimatedItem>
-
-      {/* Main Content */}
-      <AnimatedItem>
-      <ContainerGrid wide className="py-6 md:py-8">
-        {/* Editorial hero plinth — magazine-cover framing for the
-            roster, sitting beneath the sticky LargeTitleHeader. */}
-        <Reveal>
-          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
-            <PageHeader
-              eyebrow="Roster"
-              eyebrowAccent="primary"
-              title="Your players."
-              subtitle={
-                playersWithStats.length === 0
-                  ? `Build your roster on ${teamName} by inviting players to join.`
-                  : `${playersWithStats.length} ${playersWithStats.length === 1 ? 'player' : 'players'}${
-                      activeCount !== playersWithStats.length ? ` · ${activeCount} active` : ''
-                    } on ${teamName}.`
-              }
-            />
-          </div>
-        </Reveal>
-
-        {/* Pending Join Requests */}
-        <PendingJoinRequests />
-
-        {playersWithStats.length === 0 ? (
-          /* Enhanced Empty State */
-          <div className="surface-matte rounded-3xl p-12 md:p-16 text-center shadow-sm relative overflow-hidden">
-            {/* Decorative background pattern */}
-            <div className="absolute inset-0 opacity-[0.03]">
-              <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                <pattern id="roster-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <circle cx="20" cy="20" r="2" fill="currentColor" />
-                </pattern>
-                <rect fill="url(#roster-pattern)" width="100%" height="100%" />
-              </svg>
-            </div>
-            <div className="relative z-10">
-              <div className="w-20 h-20 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-6 shadow-sm">
-                <IconUsers size={36} className="text-primary-500" />
-              </div>
-              <h3 className="text-2xl font-medium text-warm-900 mb-3">Build Your Team</h3>
-              <p className="text-warm-500 mb-4 max-w-md mx-auto leading-relaxed">
-                Start building your team by inviting players to join your roster.
-                Players will receive a code they can use to join.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
-                <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
-              </div>
-              {inviteCode && (
-                <p className="text-xs text-warm-400 mt-4">
-                  Team code: <span className="font-mono font-medium text-warm-500">{inviteCode}</span>
-                </p>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Player Cards Grid - 1 column on mobile, 2 columns on desktop */
-          <Reveal staggerIndex={1} className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-            {playersWithStats.map((player) => (
-              <div
-                key={player.id}
-                className="group surface-matte rounded-3xl hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
-              >
-                {/* Card Header with Avatar and Name */}
-                <div className="p-5 md:p-6">
-                  <div className="flex items-start gap-4">
-                    {/* Large Avatar - 72px mobile, 80px desktop */}
-                    <div className="relative flex-shrink-0">
-                      {player.avatar_url ? (
-                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl overflow-hidden ring-1 ring-warm-200 shadow-sm">
-                          <Image
-                            src={player.avatar_url}
-                            alt={`${player.first_name} ${player.last_name}`}
-                            width={80}
-                            height={80}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl bg-warm-100/65 flex items-center justify-center">
-                          <span className="text-2xl font-medium text-warm-500">
-                            {(player.first_name?.[0] || '')}{(player.last_name?.[0] || '')}
-                          </span>
-                        </div>
-                      )}
-                      {/* Online status indicator */}
-                      <div className={cn(
-                        'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-[3px] border-white shadow-sm',
-                        isUserOnline(player.last_seen) ? 'bg-primary-500' : 'bg-warm-300',
-                      )} title={isUserOnline(player.last_seen) ? 'Online' : 'Offline'} />
-                    </div>
-
-                    {/* Player Info */}
-                    <div className="flex-1 min-w-0 pt-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg md:text-h3 font-medium text-warm-900 tracking-[-0.015em] truncate">
-                          {player.first_name} {player.last_name}
-                        </h3>
-                        <YearBadge year={player.graduation_year} />
-                      </div>
-
-                      {player.hometown && player.state && (
-                        <p className="text-sm text-warm-500 mt-1">
-                          {player.hometown}, {player.state}
-                        </p>
-                      )}
-
-                      <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
-                        {/* Coach intent (CoachHelm v3) — click opens the
-                            IntentDrawer to author narrative posture + alert
-                            sensitivity. Coach view only; the player roster
-                            view (PlayerRosterView) never renders this. */}
-                        <RosterIntentControl
-                          playerId={player.id}
-                          playerName={`${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player'}
-                          current={coachIntents.get(player.id) ?? null}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Actions Menu */}
-                    <div className="flex-shrink-0">
-                      <PlayerActionsMenu
-                        playerId={player.id}
-                        playerName={`${player.first_name} ${player.last_name}`}
-                        currentStatus={player.status}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Anchor stat — Avg Score is the single number a coach scans
-                    when planning today's lineup. Rounds count + handicap moved
-                    to the player detail page (one click away). IA audit
-                    2026-05-28 collapsed the 3-stat row to reduce per-card
-                    visual weight from 6 numbers + 3 buttons to 1 + 1 + menu. */}
-                <div className="px-5 md:px-6 pb-4 md:pb-5">
-                  <div className="flex items-baseline justify-between gap-3 bg-warm-50/80 rounded-xl px-5 py-4">
-                    <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
-                      Avg Score
-                    </p>
-                    <p className={cn(
-                      'text-h1 md:text-h1 font-light tracking-[-0.025em] tabular-nums leading-none',
-                      player.avg_score && player.avg_score > 0
-                        ? 'text-warm-900'
-                        : 'text-warm-400'
-                    )}>
-                      {player.avg_score && player.avg_score > 0
-                        ? player.avg_score.toFixed(1)
-                        : '—'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Primary CTA — single action; secondary actions (Stats,
-                    Message) live inside the PlayerActionsMenu kebab in the
-                    card header. IA audit 2026-05-28: a 20-player roster
-                    previously rendered 60 buttons. */}
-                <div className="px-5 md:px-6 pb-5 md:pb-6">
-                  <Link
-                    href={`/golf/dashboard/players/${player.id}`}
-                    className="flex w-full items-center justify-center gap-2 px-4 py-3 min-h-[48px] bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 active:scale-[0.98] transition-all"
-                  >
-                    <IconUsers size={16} />
-                    View Player
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </Reveal>
-        )}
-      </ContainerGrid>
-      </AnimatedItem>
-    </AnimatedPage>
-    </RosterPageClient>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayCoachRoster
+        players={playersWithStats}
+        teamName={teamName}
+        inviteCode={inviteCode}
+        intents={Object.fromEntries(coachIntents)}
+        joinRequests={joinRequests}
+      />
+    </div>
   );
 }

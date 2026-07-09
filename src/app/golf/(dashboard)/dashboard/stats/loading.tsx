@@ -1,29 +1,17 @@
-import { DetailedStatsSkeleton } from '@/components/ui/skeleton';
 import { Skeleton } from '@/components/fairway';
-import { fairwayScope, isRedesignEnabled } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 
 /**
  * Route Suspense fallback for /golf/dashboard/stats.
  *
- * The fallback must mirror whichever fork the page will render, so the skeleton
- * matches the real content's tokens, width, and shape — no two-stage flash, no
- * layout shift.
- *
- *  • Flag-ON (Fairway): the live surface is FairwayPlayerStats → the shared
- *    FairwayStatsCockpit. We reproduce that exact container chain here
- *    (.fairway-ds · bg-canvas · mx-auto max-w-[1200px] · px-4 py-2 md:px-6) and a
- *    skeleton mirroring the cockpit's own StatsLoading shape (hero · 4-up vitals ·
- *    tabbed body), so the loading shape lands where the content will. This
- *    replaces the legacy DetailedStatsSkeleton (warm-200/cream-100, max-w-4xl,
- *    category-pills) that mismatched both the design language and the 1200px width.
- *
- *  • Flag-OFF (legacy): unchanged — the legacy StatsClient skeleton.
+ * The fallback mirrors the live surface (FairwayPlayerStats → the shared
+ * FairwayStatsCockpit), so the skeleton matches the real content's tokens,
+ * width, and shape — no two-stage flash, no layout shift. Reproduces the
+ * exact container chain (.fairway-ds · bg-canvas · mx-auto max-w-[1200px] ·
+ * px-4 py-2 md:px-6) and a skeleton mirroring the cockpit's own StatsLoading
+ * shape (hero · 4-up vitals · tabbed body).
  */
 export default function Loading() {
-  if (!isRedesignEnabled()) {
-    return <DetailedStatsSkeleton />;
-  }
-
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">

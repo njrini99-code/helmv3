@@ -1,5 +1,4 @@
-import { DetailPageSkeleton } from '@/components/ui/skeleton';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
@@ -8,10 +7,8 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * ----------------------------------------------------------------------------
  * The live page (FairwayPlayerGameFingerprint) is a max-w-[1100px] column with a
  * ViewHeader masthead, then an InstrumentCluster composite-rating hero (focal),
- * then 2-up dimension sections — NOT the generic DetailPageSkeleton (max-w-5xl,
- * bg-white/30 3-col grid). The generic skeleton only matches the flag-off page,
- * so it stays behind the flag. This reserves the real slots with Fairway tokens
- * to remove the shape/token swap on hydrate (CLS / gate B3).
+ * then 2-up dimension sections. This reserves the real slots with Fairway
+ * tokens to remove the shape/token swap on hydrate (CLS / gate B3).
  */
 function FairwayGameLoading() {
   return (
@@ -80,6 +77,5 @@ function FairwayGameLoading() {
 }
 
 export default function Loading() {
-  if (isRedesignEnabled()) return <FairwayGameLoading />;
-  return <DetailPageSkeleton />;
+  return <FairwayGameLoading />;
 }

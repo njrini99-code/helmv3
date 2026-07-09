@@ -27,6 +27,11 @@ export type { EmptyStateProps, EmptyStateVariant } from './EmptyState';
 export { InsufficientData } from './InsufficientData';
 export type { InsufficientDataProps } from './InsufficientData';
 
+export { FeatureUnavailable } from './FeatureUnavailable';
+export type { FeatureUnavailableProps } from './FeatureUnavailable';
+
+export { FairwayGenericPageSkeleton } from './GenericPageSkeleton';
+
 export {
   Skeleton,
   SkeletonText,

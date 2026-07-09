@@ -2,10 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import NewQualifierClient from './new-qualifier-client';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/FairwayNewQualifier';
 
 export const metadata: Metadata = {
@@ -49,19 +47,9 @@ export default async function NewQualifierPage() {
     }
   }
 
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayNewQualifier players={players} />
-      </div>
-    );
-  }
-
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <NewQualifierClient players={players} />
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayNewQualifier players={players} />
+    </div>
   );
 }

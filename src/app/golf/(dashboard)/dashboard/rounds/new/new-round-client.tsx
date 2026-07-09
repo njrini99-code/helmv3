@@ -2,7 +2,6 @@
 
 import { startTransition, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import {
   submitGolfRoundComprehensive,
@@ -20,8 +19,6 @@ import {
   type RecentPlayedCourse,
   type PartialRoundData,
 } from '@/app/golf/actions/golf';
-import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
-import { TeePickerDrawer } from '@/components/golf/courses/TeePickerDrawer';
 import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
 import { contributeCourseFromRound, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
@@ -32,20 +29,7 @@ import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { OfflineWarningBanner } from '@/components/golf';
-import { IconBookmark, IconCheck, IconChartBar, IconFlag, IconMapPin, IconPlus, IconSearch, IconTrophy, IconWarning } from '@/components/icons';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
-import { PageHeader } from '@/components/ui/page-header';
-import { Reveal } from '@/components/ui/reveal';
-import { GolfTabBar } from '@/components/golf/GolfTabBar';
-
-import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
-import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
+import { IconWarning } from '@/components/icons';
 import { FairwaySaveRoundModal } from '@/components/fairway/pages/rounds-new/FairwaySaveRoundModal';
 import { FairwayRoundSubmitOverlay } from '@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay';
 import { useToast } from '@/components/ui/sonner';
@@ -53,10 +37,6 @@ import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, type SelectOption } from '@/components/ui/select';
 import {
   emergencySave,
   loadEmergencySave,
@@ -64,7 +44,7 @@ import {
   isRecoverableRoundSubmitError,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
-import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { Button as FwButton } from '@/components/fairway/controls/button';
@@ -83,21 +63,6 @@ interface RoundSetupForm {
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
 }
-
-const ROUND_TYPE_OPTIONS: SelectOption[] = [
-  { value: 'practice', label: 'Practice' },
-  { value: 'tournament', label: 'Tournament' },
-  { value: 'qualifier', label: 'Qualifier' },
-];
-
-const TEES_PLAYED_OPTIONS: SelectOption[] = [
-  { value: 'Championship', label: 'Championship' },
-  { value: 'Black', label: 'Black' },
-  { value: 'Blue', label: 'Blue' },
-  { value: 'White', label: 'White' },
-  { value: 'Gold', label: 'Gold' },
-  { value: 'Red', label: 'Red' },
-];
 
 /** What handleHoleComplete should do immediately after recording/editing a hole's score. */
 export type PostHoleCompleteAction =
@@ -141,12 +106,8 @@ export function decidePostHoleCompleteAction(params: {
 }
 
 export default function NewRoundClient() {
-  const prefersReducedMotion = useReducedMotion();
-  const redesign = useRedesign();
-  // Flag-gated overlay swaps — Fairway versions share the legacy prop contracts
-  // exactly, so flag-off renders the legacy components byte-for-byte.
-  const ExitRoundModal = redesign ? FairwaySaveRoundModal : SaveRoundModal;
-  const SubmitOverlay = redesign ? FairwayRoundSubmitOverlay : RoundSubmitOverlay;
+  const ExitRoundModal = FairwaySaveRoundModal;
+  const SubmitOverlay = FairwayRoundSubmitOverlay;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -834,14 +795,14 @@ export default function NewRoundClient() {
     if (d.holesCount === 9 || d.holesCount === 18) setHolesPerRound(d.holesCount);
   }, []);
 
-  // Redesign: the course picker IS the first screen of a new round. Auto-open
-  // it once on a fresh start (not resuming, nothing chosen yet) so picking a
-  // course is the landing action; "Browse course library" stays as the reopen
+  // The course picker IS the first screen of a new round. Auto-open it once
+  // on a fresh start (not resuming, nothing chosen yet) so picking a course
+  // is the landing action; "Browse course library" stays as the reopen
   // affordance. Closing it without picking falls back to the setup screen and
   // does not reopen (the ref latches).
   const autoOpenedPickerRef = useRef(false);
   useEffect(() => {
-    if (!redesign || step !== 'setup') return;
+    if (step !== 'setup') return;
     if (autoOpenedPickerRef.current) return;
     // A `_new` emergency save is pending recovery — let the "Recover Unsaved
     // Progress?" dialog surface instead of burying it under the course picker.
@@ -855,7 +816,7 @@ export default function NewRoundClient() {
       !selectedCourseId && selectedTeeIdRef.current == null && !setupData.courseName;
     autoOpenedPickerRef.current = true;
     if (nothingChosenYet) setTeePickerOpen(true);
-  }, [redesign, step, selectedCourseId, setupData.courseName, connectionStatus.isOnline]);
+  }, [step, selectedCourseId, setupData.courseName, connectionStatus.isOnline]);
 
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
@@ -1635,32 +1596,6 @@ export default function NewRoundClient() {
     ? savedCourses.find(course => course.id === selectedCourseId) || null
     : null;
 
-  // Relative time formatter for course cards
-  const formatRelativeTime = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    const diffWeeks = Math.floor(diffDays / 7);
-    const diffMonths = Math.floor(diffDays / 30);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffWeeks < 5) return `${diffWeeks}w ago`;
-    if (diffMonths < 12) return `${diffMonths}mo ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-  };
-
-  // Compute total par from hole configs
-  const computeTotalPar = (configs: SavedCourseHoleConfig[]): number => {
-    return configs.reduce((sum, h) => sum + h.par, 0);
-  };
-
   // Filtered courses for search
   const filteredSavedCourses = courseSearchQuery.trim()
     ? savedCourses.filter(c => {
@@ -1675,51 +1610,13 @@ export default function NewRoundClient() {
     : savedCourses;
 
   // ============================================================================
-  // STEP PROGRESS INDICATOR
+  // ENTRY SCREENS (setup + holes) — the tracking and submitting steps fall
+  // through to the render below. No mutation/autosave/optimistic-lock logic
+  // moves; this is presentation only. The resume prompt is never shown here
+  // (it lives on /rounds), so the entry component doesn't carry any
+  // resume-gate props or a discarded query.
   // ============================================================================
-  const stepConfig = [
-    { key: 'setup', label: 'Course Setup', shortLabel: 'Setup' },
-    { key: 'holes', label: 'Hole Config', shortLabel: 'Holes' },
-    { key: 'tracking', label: 'Shot Tracking', shortLabel: 'Track' },
-    { key: 'submitting', label: 'Submit', shortLabel: 'Done' },
-  ];
-  const currentStepIndex = stepConfig.findIndex(s => s.key === step);
-
-  const StepProgressBar = () => (
-    <div className="flex items-center gap-1 mb-6">
-      {stepConfig.map((s, i) => {
-        const isActive = i === currentStepIndex;
-        const isComplete = i < currentStepIndex;
-        return (
-          <div key={s.key} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full h-1.5 rounded-full overflow-hidden bg-warm-200">
-              <div
-                className={`h-full rounded-full transition-[width] duration-500 ${
-                  isComplete ? 'bg-primary-500 w-full' : isActive ? 'bg-primary-400 w-1/2' : 'w-0'
-                }`}
-                style={{ width: isComplete ? '100%' : isActive ? '50%' : '0%' }}
-              />
-            </div>
-            <span className={`text-xs font-medium ${isActive ? 'text-primary-600' : isComplete ? 'text-warm-600' : 'text-warm-400'}`}>
-              <span className="hidden sm:inline">{s.label}</span>
-              <span className="sm:hidden">{s.shortLabel}</span>
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  // ============================================================================
-  // FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned ENTRY screens
-  // (setup + holes) from the SAME state + handlers. The tracking and submitting
-  // steps still fall through to the legacy render below (a later phase). Flag
-  // OFF → every legacy branch below is byte-for-byte unchanged. No
-  // mutation/autosave/optimistic-lock logic moves; this is presentation only.
-  // The resume prompt is never shown here (it lives on /rounds), so the entry
-  // component no longer carries any resume-gate props or a discarded query.
-  // ============================================================================
-  if (redesign && (step === 'setup' || step === 'holes')) {
+  if (step === 'setup' || step === 'holes') {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayNewRoundEntry
@@ -1819,692 +1716,6 @@ export default function NewRoundClient() {
     );
   }
 
-  // ============================================================================
-  // SETUP STEP
-  // ============================================================================
-  if (step === 'setup') {
-    return (
-      <>
-        <MobileNavHeader title="New Round" backHref="/golf/dashboard" backLabel="Dashboard" />
-        <div className="min-h-dvh bg-transparent flex items-start justify-center p-4 py-8">
-          <div className="w-full max-w-2xl space-y-5">
-          {/* PRIMARY course source: the shared Cloud Course Library (course + tee,
-              pre-fills pars/yards and links the round to the catalog). */}
-          <Button
-            variant="primary"
-            onClick={() => setTeePickerOpen(true)}
-            className="w-full justify-center"
-          >
-            <IconMapPin size={16} aria-hidden /> Browse course library
-          </Button>
-          {/* This legacy setup block is only reached with redesign OFF — the
-              redesign path returns early above (the `redesign && step==='setup'`
-              guard) and renders FairwayCoursePicker there. So this is always the
-              legacy drawer; the old `redesign ? …` ternary here was dead. */}
-          <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
-
-          {/* Fallback: courses you've played before (per-player). Hidden when empty. */}
-          {recentCourses.length > 0 && (
-            <RecentCoursesQuickPick
-              courses={recentCourses}
-              onConfirmCourse={handleQuickPickConfirm}
-            />
-          )}
-
-          <Reveal>
-            <div className="surface-stone rounded-3xl p-6 md:p-10">
-              <PageHeader
-                eyebrow="New Round · Setup"
-                eyebrowAccent="primary"
-                title="Track every shot of this round."
-                subtitle="Pick a course, set up your scorecard, then start tracking."
-              />
-            </div>
-          </Reveal>
-
-          <div className="relative surface-matte rounded-3xl overflow-clip p-5 sm:p-8">
-            <StepProgressBar />
-
-            <form onSubmit={handleSetupSubmit} className="space-y-6">
-              {/* Offline Warning Banner - inline variant for setup step */}
-              {!connectionStatus.isOnline && (
-                <OfflineWarningBanner
-                  variant="inline"
-                  showForSlowConnection={true}
-                  dismissable={true}
-                  context="Starting a round"
-                />
-              )}
-
-              {/* ── Course Selection ── */}
-              {!loadingSavedCourses && savedCourses.length > 0 && (
-                <div className="rounded-2xl border border-warm-200/45 bg-cream-100/68 backdrop-blur-sm p-5 shadow-sm">
-                  {/* Header with mode toggle */}
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-primary-500/10 text-primary-600 flex items-center justify-center">
-                        {courseMode === 'saved' ? <IconBookmark size={18} /> : <IconPlus size={18} />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-warm-900">Course</p>
-                        <p className="text-xs text-warm-500">
-                          {courseMode === 'saved'
-                            ? `${savedCourses.length} saved course${savedCourses.length !== 1 ? 's' : ''}`
-                            : 'Enter new course details'}
-                        </p>
-                      </div>
-                    </div>
-                    <GolfTabBar<'saved' | 'new'>
-                      ariaLabel="Course source"
-                      compact
-                      tabs={[
-                        { id: 'saved', label: 'Saved', icon: <IconBookmark size={13} /> },
-                        { id: 'new', label: 'New', icon: <IconPlus size={13} /> },
-                      ]}
-                      value={courseMode}
-                      onChange={(next) => {
-                        if (next === 'saved') {
-                          setCourseMode('saved');
-                          setCourseSearchQuery('');
-                          if (!selectedCourseId && savedCourses.length > 0) {
-                            handleSavedCourseSelect(savedCourses[0]!.id);
-                          }
-                        } else {
-                          setCourseMode('new');
-                          setSelectedCourseId(null);
-                          resolvedCourseIdRef.current = null;
-                          selectedTeeIdRef.current = null;
-                          setPreloadedHoleConfigs(null);
-                          setCourseSearchQuery('');
-                          setSetupData(prev => ({
-                            ...prev,
-                            courseName: '',
-                            courseCity: '',
-                            courseState: '',
-                            courseRating: '',
-                            courseSlope: '',
-                            teesPlayed: 'White',
-                          }));
-                        }
-                      }}
-                    />
-                  </div>
-
-                  {/* ── Saved Course: Card Selector ── */}
-                  {courseMode === 'saved' && (
-                    <div className="mt-4 space-y-3">
-                      {/* Search bar — only if 4+ courses */}
-                      {savedCourses.length >= 4 && (
-                        <div className="relative">
-                          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                          <Input
-                            type="search"
-                            value={courseSearchQuery}
-                            onChange={(e) => setCourseSearchQuery(e.target.value)}
-                            placeholder="Search saved courses..."
-                            enterKeyHint="search"
-                            autoComplete="off"
-                            className="pl-9 pr-4 py-2 text-base md:text-sm text-warm-700 placeholder:text-warm-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-                          />
-                        </div>
-                      )}
-
-                      {/* Course cards */}
-                      <div className="space-y-2 max-h-[280px] overflow-y-auto scrollbar-hide pr-0.5">
-                        {filteredSavedCourses.length === 0 ? (
-                          <div className="text-center py-6 text-sm text-warm-400">
-                            No courses match &ldquo;{courseSearchQuery}&rdquo;
-                          </div>
-                        ) : (
-                          filteredSavedCourses.map((course) => {
-                            const isSelected = selectedCourseId === course.id;
-                            const totalPar = course.holeConfigs.length > 0 ? computeTotalPar(course.holeConfigs) : null;
-                            const location = [course.courseCity, course.courseState].filter(Boolean).join(', ');
-
-                            return (
-                              <Button variant="primary"
-                                key={course.id}
-                                type="button"
-                                onClick={() => handleSavedCourseSelect(isSelected ? null : course.id)}
-                                className={`w-full text-left rounded-xl border p-3.5 transition-[color,background-color,border-color,box-shadow] duration-150 ${
-                                  isSelected
-                                    ? 'border-primary-400/60 bg-primary-50/60 ring-2 ring-primary-500/20 shadow-sm'
-                                    : 'border-warm-200/70 bg-cream-100/75 hover:border-warm-300 hover:bg-cream-50/92 hover:shadow-sm'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0 flex-1">
-                                    {/* Course name */}
-                                    <div className="flex items-center gap-2">
-                                      {isSelected && (
-                                        <span className="flex-shrink-0 h-5 w-5 rounded-full bg-primary-500 flex items-center justify-center">
-                                          <IconCheck size={12} className="text-white" />
-                                        </span>
-                                      )}
-                                      <p className={`text-sm font-medium truncate ${isSelected ? 'text-primary-900' : 'text-warm-900'}`}>
-                                        {course.courseName}
-                                      </p>
-                                    </div>
-
-                                    {/* Location + tees */}
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                      {location && (
-                                        <span className="text-xs text-warm-500 flex items-center gap-1">
-                                          <IconMapPin size={11} className="text-warm-400 flex-shrink-0" />
-                                          {location}
-                                        </span>
-                                      )}
-                                      {location && course.teesPlayed && (
-                                        <span className="text-warm-300">·</span>
-                                      )}
-                                      {course.teesPlayed && (
-                                        <span className="text-xs text-warm-500">{course.teesPlayed} tees</span>
-                                      )}
-                                    </div>
-
-                                    {/* Stats row */}
-                                    <div className="flex items-center gap-2 mt-2">
-                                      {totalPar !== null && (
-                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
-                                          isSelected ? 'bg-primary-100/80 text-primary-700' : 'bg-warm-100 text-warm-600'
-                                        }`}>
-                                          Par {totalPar}
-                                        </span>
-                                      )}
-                                      {course.holeConfigs.length > 0 && (
-                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
-                                          isSelected ? 'bg-primary-100/80 text-primary-700' : 'bg-warm-100 text-warm-600'
-                                        }`}>
-                                          {course.holeConfigs.length} holes
-                                        </span>
-                                      )}
-                                      {course.courseRating !== null && (
-                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
-                                          isSelected ? 'bg-primary-100/80 text-primary-700' : 'bg-warm-100 text-warm-600'
-                                        }`}>
-                                          {course.courseRating}/{course.courseSlope ?? '—'}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Last played */}
-                                  <span className="text-xs text-warm-400 whitespace-nowrap flex-shrink-0 pt-0.5">
-                                    {formatRelativeTime(course.lastUsedAt)}
-                                  </span>
-                                </div>
-                              </Button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── Course Details: Compact summary when saved, full form when new ── */}
-              {courseMode === 'saved' && selectedCourse ? (
-                /* Compact summary card for selected saved course */
-                <div className="rounded-2xl border border-primary-200/50 bg-primary-50/55 backdrop-blur-sm p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-medium text-warm-900 flex items-center gap-2">
-                      <IconCheck size={16} className="text-primary-600" />
-                      Course ready
-                    </h2>
-                    <Button variant="ghost"
-                      type="button"
-                      onClick={() => {
-                        setSelectedCourseId(null);
-                        setPreloadedHoleConfigs(null);
-                        setSetupData(prev => ({
-                          ...prev,
-                          courseName: '',
-                          courseCity: '',
-                          courseState: '',
-                          courseRating: '',
-                          courseSlope: '',
-                          teesPlayed: 'White',
-                        }));
-                      }}
-                      className="text-xs text-warm-500 hover:text-warm-700 transition-colors"
-                    >
-                      Change
-                    </Button>
-                  </div>
-                  <p className="text-body font-medium text-warm-900 tracking-[-0.005em]">{selectedCourse.courseName}</p>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-warm-500">
-                    {selectedCourse.courseCity && (
-                      <span className="flex items-center gap-1">
-                        <IconMapPin size={11} className="text-warm-400" />
-                        {selectedCourse.courseCity}{selectedCourse.courseState ? `, ${selectedCourse.courseState}` : ''}
-                      </span>
-                    )}
-                    {selectedCourse.teesPlayed && <span>{selectedCourse.teesPlayed} tees</span>}
-                    {selectedCourse.courseRating !== null && <span>Rating {selectedCourse.courseRating}</span>}
-                    {selectedCourse.courseSlope !== null && <span>Slope {selectedCourse.courseSlope}</span>}
-                    {selectedCourse.holeConfigs.length > 0 && (
-                      <span className="text-primary-600 font-medium">
-                        {selectedCourse.holeConfigs.length} holes · Par {computeTotalPar(selectedCourse.holeConfigs)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* Full form for new course entry */
-                <div>
-                  <h2 className="text-lg font-medium text-warm-900 mb-4">Course Information</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="courseName" className="text-sm font-medium text-warm-700 block mb-2">
-                        Course Name *
-                      </label>
-                      <Input
-                        id="courseName"
-                        type="text"
-                        value={setupData.courseName}
-                        onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
-                        enterKeyHint="next"
-                        autoComplete="off"
-                        className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                        placeholder="Pebble Beach Golf Links"
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="courseCity" className="text-sm font-medium text-warm-700 block mb-2">
-                          City
-                        </label>
-                        <Input
-                          id="courseCity"
-                          type="text"
-                          value={setupData.courseCity}
-                          onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
-                          enterKeyHint="next"
-                          autoComplete="off"
-                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                          placeholder="Pebble Beach"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="courseState" className="text-sm font-medium text-warm-700 block mb-2">
-                          State
-                        </label>
-                        <Input
-                          id="courseState"
-                          type="text"
-                          value={setupData.courseState}
-                          onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
-                          enterKeyHint="next"
-                          autoComplete="off"
-                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                          placeholder="CA"
-                          maxLength={2}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      <div>
-                        <label htmlFor="courseRating" className="text-sm font-medium text-warm-700 block mb-2">
-                          Rating
-                        </label>
-                        <Input
-                          id="courseRating"
-                          type="number"
-                          step="0.1"
-                          inputMode="decimal"
-                          enterKeyHint="next"
-                          value={setupData.courseRating}
-                          onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
-                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                          placeholder="72.1"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="courseSlope" className="text-sm font-medium text-warm-700 block mb-2">
-                          Slope
-                        </label>
-                        <Input
-                          id="courseSlope"
-                          type="number"
-                          inputMode="numeric"
-                          enterKeyHint="next"
-                          value={setupData.courseSlope}
-                          onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
-                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                          className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                          placeholder="133"
-                          aria-label="Course slope rating"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="teesPlayed" className="text-sm font-medium text-warm-700 block mb-2">
-                          Tees
-                        </label>
-                        <Select
-                          options={TEES_PLAYED_OPTIONS}
-                          value={setupData.teesPlayed}
-                          onChange={(value) => setSetupData({ ...setupData, teesPlayed: value })}
-                          className="focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Save Course — premium toggle callout for new courses */}
-                    {courseMode === 'new' && (
-                      <Button variant="primary"
-                        type="button"
-                        onClick={() => setSaveCourseChecked(!saveCourseChecked)}
-                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-150 ${
-                          saveCourseChecked
-                            ? 'border-primary-300/60 bg-primary-50/50'
-                            : 'border-warm-200/70 bg-cream-100/60 hover:bg-cream-100/75'
-                        }`}
-                      >
-                        <div className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors ${
-                          saveCourseChecked
-                            ? 'border-primary-500 bg-primary-500'
-                            : 'border-warm-300'
-                        }`}>
-                          {saveCourseChecked && <IconCheck size={12} className="text-white" />}
-                        </div>
-                        <div className="text-left">
-                          <p className={`text-sm font-medium ${saveCourseChecked ? 'text-primary-900' : 'text-warm-700'}`}>
-                            Save for quick access next round
-                          </p>
-                          <p className="text-xs text-warm-500 mt-0.5">
-                            Remembers hole pars, yardages & course details
-                          </p>
-                        </div>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Active Qualifiers — quick-select cards */}
-              {!loadingActiveQualifiers && allActiveQualifiers.length > 0 && setupData.roundType !== 'qualifier' && (
-                <div className="rounded-2xl border border-purple-200/60 bg-purple-50/40 p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <IconTrophy size={18} className="text-purple-600" />
-                    <h3 className="text-sm font-medium text-purple-900">Active Qualifiers</h3>
-                  </div>
-                  <p className="text-xs text-purple-700/70 mb-3">Tap to start a qualifier round</p>
-                  <div className="space-y-2 max-h-[220px] overflow-y-auto">
-                    {allActiveQualifiers.map(q => (
-                      <Button variant="ghost"
-                        key={q.id}
-                        type="button"
-                        onClick={() => {
-                          setSetupData(prev => ({ ...prev, roundType: 'qualifier' }));
-                          setSelectedQualifierId(q.id);
-                        }}
-                        className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-purple-200/60 bg-cream-100/82 hover:bg-cream-50 hover:shadow-sm active:scale-[0.98] transition-all duration-150 text-left"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-warm-900 truncate">{q.name}</p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-warm-500">
-                            {q.courseName && (
-                              <span className="flex items-center gap-1 truncate">
-                                <IconMapPin size={11} />
-                                {q.courseName}
-                              </span>
-                            )}
-                            <span>{q.roundsCompleted}/{q.numRounds} rounds</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700">
-                            Play
-                          </span>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Round Info */}
-              <div>
-                <h2 className="text-lg font-medium text-warm-900 mb-4">Round Details</h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="roundType" className="text-sm font-medium text-warm-700 block mb-2">
-                        Round Type
-                      </label>
-                      <Select
-                        options={ROUND_TYPE_OPTIONS}
-                        value={setupData.roundType}
-                        onChange={(value) => setSetupData({ ...setupData, roundType: value as 'practice' | 'tournament' | 'qualifier' })}
-                        className="focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="roundDate" className="text-sm font-medium text-warm-700 block mb-2">
-                        Date
-                      </label>
-                      <Input
-                        id="roundDate"
-                        type="date"
-                        value={setupData.roundDate}
-                        onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
-                        className="px-4 py-2.5 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Holes per round toggle */}
-                  <div>
-                    <p className="text-sm font-medium text-warm-700 block mb-2">
-                      Holes
-                    </p>
-                    <GolfTabBar<'9' | '18'>
-                      ariaLabel="Holes per round"
-                      compact
-                      tabs={[
-                        { id: '9', label: '9 Holes' },
-                        { id: '18', label: '18 Holes' },
-                      ]}
-                      value={holesPerRound === 9 ? '9' : '18'}
-                      onChange={(next) => setHolesPerRound(next === '9' ? 9 : 18)}
-                    />
-
-                    {/* Front/Back Nine selector — shown when 9 holes on an 18-hole saved course */}
-                    {holesPerRound === 9 && preloadedHoleConfigs && preloadedHoleConfigs.length >= 18 && (
-                      <div className="mt-2">
-                        <GolfTabBar<'front' | 'back'>
-                          ariaLabel="Nine selection"
-                          compact
-                          tabs={[
-                            { id: 'front', label: 'Front 9' },
-                            { id: 'back', label: 'Back 9' },
-                          ]}
-                          value={nineSelection}
-                          onChange={(next) => setNineSelection(next)}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Qualifier Selection (shown when round type is qualifier) */}
-              {setupData.roundType === 'qualifier' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <h3 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
-                    <IconTrophy size={18} className="text-amber-600" />
-                    Qualifier Round
-                  </h3>
-
-                  {loadingQualifiers ? (
-                    <div className="flex items-center gap-2 text-sm text-amber-700">
-                      <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                      </span>
-                      Loading your qualifiers...
-                    </div>
-                  ) : qualifierError ? (
-                    <p className="text-sm text-amber-700">{qualifierError}</p>
-                  ) : qualifiers.length === 0 ? (
-                    <p className="text-sm text-amber-700">
-                      You are not entered in any active qualifiers. Please contact your coach.
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Qualifier Selection */}
-                      <div>
-                        <label htmlFor="qualifier" className="text-sm font-medium text-amber-800 block mb-2">
-                          Select Qualifier *
-                        </label>
-                        <Select
-                          options={qualifiers.map(q => ({
-                            value: q.id,
-                            label: `${q.name} (${q.roundsCompleted}/${q.numRounds} rounds completed)`,
-                          }))}
-                          value={selectedQualifierId || ''}
-                          onChange={(value) => setSelectedQualifierId(value || null)}
-                          placeholder="Choose a qualifier..."
-                          className="border-amber-300 bg-cream-50 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      {/* Round Number Selection */}
-                      {selectedQualifierId && availableRounds.length > 0 && (
-                        <div>
-                          <label htmlFor="roundNumber" className="text-sm font-medium text-amber-800 block mb-2">
-                            Round Number *
-                          </label>
-                          <Select
-                            options={availableRounds.map(num => ({
-                              value: String(num),
-                              label: `Round ${num}`,
-                            }))}
-                            value={selectedRoundNumber ? String(selectedRoundNumber) : ''}
-                            onChange={(value) => setSelectedRoundNumber(Number(value) || null)}
-                            placeholder="Select round..."
-                            className="border-amber-300 bg-cream-50 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                          />
-                          <p className="text-xs text-amber-600 mt-1">
-                            This is round {selectedRoundNumber} of {qualifiers.find(q => q.id === selectedQualifierId)?.numRounds || '?'}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Show selected qualifier info */}
-                      {selectedQualifierId && (
-                        <div className="bg-cream-100/60 rounded-lg p-3 mt-2">
-                          {(() => {
-                            const selected = qualifiers.find(q => q.id === selectedQualifierId);
-                            if (!selected) return null;
-                            return (
-                              <>
-                                <p className="text-sm text-amber-800">
-                                  <span className="font-medium">{selected.name}</span>
-                                </p>
-                                {selected.courseName && (
-                                  <p className="text-xs text-amber-700 mt-1">Course: {selected.courseName}</p>
-                                )}
-                                <p className="text-xs text-amber-700 mt-1">
-                                  Progress: {selected.roundsCompleted} of {selected.numRounds} rounds completed
-                                  {selected.completedRoundNumbers.length > 0 && (
-                                    <> (Rounds: {selected.completedRoundNumbers.join(', ')})</>
-                                  )}
-                                </p>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Stats Info Box */}
-              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
-                <h3 className="font-medium text-primary-800 mb-2 flex items-center gap-2">
-                  <IconChartBar size={18} className="text-primary-600" />
-                  Comprehensive Stats Tracking
-                </h3>
-                <p className="text-sm text-primary-700">
-                  This round will track 50+ statistics including driving distance, approach proximity,
-                  putting efficiency, scrambling, and more. Use your rangefinder for accurate distances.
-                </p>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-4">
-                <Button variant="ghost"
-                  type="button"
-                  onClick={() => router.back()}
-                  disabled={isStartingRound}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-warm-200 font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </Button>
-                <Button variant="primary"
-                  type="submit"
-                  disabled={isStartingRound}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-primary-600 font-medium text-white hover:bg-primary-700 transition-colors shadow-sm shadow-primary-950/10 ring-1 ring-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isStartingRound ? (
-                    <>
-                      <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-cream-50 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                      </span>
-                      Starting...
-                    </>
-                  ) : preloadedHoleConfigs && preloadedHoleConfigs.length > 0
-                    ? 'Start Round →'
-                    : 'Next: Configure Holes →'}
-                </Button>
-              </div>
-            </form>
-          </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // ============================================================================
-  // HOLES CONFIGURATION STEP
-  // ============================================================================
-  if (step === 'holes') {
-    return (
-      <>
-        <MobileNavHeader title="Configure Holes" backHref="/golf/dashboard" backLabel="Dashboard" />
-        <div className="min-h-full bg-transparent flex items-start justify-center p-4 pt-6">
-          <div className="w-full max-w-2xl">
-            <div className="relative surface-matte rounded-3xl overflow-clip p-5 sm:p-8">
-              <StepProgressBar />
-              <HoleConfigurationForm
-                courseName={setupData.courseName}
-                onSave={handleHolesSave}
-                onBack={() => setStep('setup')}
-                holesPerRound={holesPerRound}
-              />
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   // Submitting overlay stats (computed once, used by overlay)
   const submittingTotalScore = completedHoleStats.reduce((sum, h) => sum + (h?.score ?? 0), 0);
@@ -2519,9 +1730,8 @@ export default function NewRoundClient() {
   const activeHoleShots = completedStatsForHole?.shots ?? inProgressShots;
   const activeShotNumber = activeHoleShots.length > 0 ? activeHoleShots.length + 1 : 1;
 
-  // Shared dialog handlers (identical in legacy + redesign renders) — hoisted so
-  // the Fairway-token (ModalShell) and legacy (Drawer) variants can both call
-  // them without duplicating the recovery/reset logic.
+  // Dialog handlers for the recovery/reset flows — hoisted above the single
+  // Fairway (ModalShell) render below.
   const recoveredHoleCount =
     newRoundRecoveryData?.completedHoleStats?.filter(h => h != null).length || 0;
   const handleDiscardRecovery = () => {
@@ -2560,67 +1770,36 @@ export default function NewRoundClient() {
     <>
       {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
       {pendingFinalStats && !showFinishConfirm && step === 'tracking' && (
-        redesign ? (
-          <div className={fairwayScope('sticky top-[var(--golf-mobile-header-offset)] z-20 flex items-center justify-between gap-3 bg-accent-600 px-4 py-3 text-text-on-accent lg:top-[49px]')}>
-            <p className="font-fw-sans text-sm font-medium">All holes completed — ready to submit!</p>
-            <FwButton
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowFinishConfirm(true)}
-              className="flex-shrink-0"
-            >
-              Submit Round
-            </FwButton>
-          </div>
-        ) : (
-          <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">All holes completed — ready to submit!</p>
-            <Button variant="primary"
-              onClick={() => setShowFinishConfirm(true)}
-              className="px-4 py-2 rounded-lg bg-cream-50 text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
-            >
-              Submit Round
-            </Button>
-          </div>
-        )
+        <div className={fairwayScope('sticky top-[var(--golf-mobile-header-offset)] z-20 flex items-center justify-between gap-3 bg-accent-600 px-4 py-3 text-text-on-accent lg:top-[49px]')}>
+          <p className="font-fw-sans text-sm font-medium">All holes completed — ready to submit!</p>
+          <FwButton
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowFinishConfirm(true)}
+            className="flex-shrink-0"
+          >
+            Submit Round
+          </FwButton>
+        </div>
       )}
 
-      {/* FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned shot-tracking
-          screen from the SAME props; flag OFF keeps the legacy component
-          byte-for-byte. Presentation only — no mutation/autosave logic moves. */}
-      {redesign ? (
-        <div className={fairwayScope('min-h-full bg-canvas')}>
-          <FairwayShotTracking
-            holes={holes}
-            currentHoleIndex={currentHoleIndex}
-            onHoleComplete={handleHoleComplete}
-            onHoleStatsUpdate={handleHoleStatsUpdate}
-            onSaveShot={handleSaveShot}
-            onExit={() => setShowExitModal(true)}
-            onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
-            initialShots={activeHoleShots}
-            initialShotNumber={activeShotNumber}
-            onAutoSave={handleAutoSave}
-            autoSaveInterval={15000}
-            autoSaveDisabled={step === 'submitting' || !!completedRoundId}
-          />
-        </div>
-      ) : (
-      <ShotTrackingComprehensive
-        holes={holes}
-        currentHoleIndex={currentHoleIndex}
-        onHoleComplete={handleHoleComplete}
-        onHoleStatsUpdate={handleHoleStatsUpdate}
-        onSaveShot={handleSaveShot}
-        onExit={() => setShowExitModal(true)}
-        onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
-        initialShots={activeHoleShots}
-        initialShotNumber={activeShotNumber}
-        onAutoSave={handleAutoSave}
-        autoSaveInterval={15000}
-        autoSaveDisabled={step === 'submitting' || !!completedRoundId}
-      />
-      )}
+      {/* Shot-tracking screen — presentation only, no mutation/autosave logic moves. */}
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayShotTracking
+          holes={holes}
+          currentHoleIndex={currentHoleIndex}
+          onHoleComplete={handleHoleComplete}
+          onHoleStatsUpdate={handleHoleStatsUpdate}
+          onSaveShot={handleSaveShot}
+          onExit={() => setShowExitModal(true)}
+          onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
+          initialShots={activeHoleShots}
+          initialShotNumber={activeShotNumber}
+          onAutoSave={handleAutoSave}
+          autoSaveInterval={15000}
+          autoSaveDisabled={step === 'submitting' || !!completedRoundId}
+        />
+      </div>
 
       {/* Offline Warning Banner - shows when offline or has slow connection */}
       {step === 'tracking' && showOfflineWarning && (
@@ -2637,36 +1816,14 @@ export default function NewRoundClient() {
 
       {/* Draft Auto-Save Indicator removed - was too noisy */}
 
-      {/* Back to Setup — legacy-only floating control. In the redesign path this is
-          REMOVED: FairwayScorecardHeader already provides a single sticky Exit/Prev/Next
-          control row in the same top region, so a second cream-styled Back here would
-          overlap and compete with it (Nielsen #4 consistency / #8 minimalist). */}
-      {!redesign && (
-        <div className="fixed left-4 z-40 top-[max(1rem,env(safe-area-inset-top,0px))]">
-          <Button variant="ghost"
-            onClick={() => {
-              const hasCompletedHoles = completedHoleStats.some(s => s?.score != null);
-              if (hasCompletedHoles) {
-                setShowBackToSetupModal(true);
-              } else {
-                setStep(preloadedHoleConfigs ? 'setup' : 'holes');
-                setCurrentHoleIndex(0);
-                activeProgressHoleRef.current = 0;
-              }
-            }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-cream-50 transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </Button>
-        </div>
-      )}
+      {/* Note: there is no floating "Back to Setup" control here — the
+          FairwayScorecardHeader already provides a single sticky
+          Exit/Prev/Next control row in the same top region, so a second
+          cream-styled Back here would overlap and compete with it
+          (Nielsen #4 consistency / #8 minimalist). */}
 
       {/* Emergency Save Recovery Dialog (new round) */}
-      {redesign ? (
-        <ModalShell
+      <ModalShell
           open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
           onOpenChange={(next) => {
             if (!next) setShowNewRoundRecovery(false);
@@ -2697,46 +1854,6 @@ export default function NewRoundClient() {
             </div>
           </div>
         </ModalShell>
-      ) : (
-      <Drawer
-        open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
-        onOpenChange={(next) => {
-          if (!next) setShowNewRoundRecovery(false);
-        }}
-      >
-        <DrawerContent className="sm:max-w-sm sm:mx-auto sm:rounded-3xl">
-          <div className="px-6 pb-6 pt-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <DrawerTitle className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
-              Recover Unsaved Progress?
-            </DrawerTitle>
-            <p className="text-sm text-warm-500 text-center mb-6">
-              Found locally saved data with{' '}
-              {recoveredHoleCount} completed holes.
-              This data may have been saved when the app was interrupted.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="ghost"
-                onClick={handleDiscardRecovery}
-                className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 transition-colors"
-              >
-                Discard
-              </Button>
-              <Button variant="primary"
-                onClick={handleRestoreRecovery}
-                className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
-              >
-                Restore
-              </Button>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
-      )}
 
       {/* Save Round Modal */}
       <ExitRoundModal
@@ -2749,86 +1866,43 @@ export default function NewRoundClient() {
       />
 
       {/* Back to Setup Confirmation Modal */}
-      {redesign ? (
-        <ModalShell
-          open={showBackToSetupModal}
-          onOpenChange={(next) => {
-            if (!next) setShowBackToSetupModal(false);
-          }}
-          size="sm"
-          title="Go back to setup?"
-          hideTitle
-          hideClose
-        >
-          <div className="px-6 pb-6 pt-6">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md bg-fw-warning-bg">
-                <IconWarning size={20} className="text-fw-warning" />
-              </div>
-              <div>
-                <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">
-                  Go back to setup?
-                </h2>
-                <p className="mt-0.5 font-fw-sans text-sm text-text-tertiary">
-                  Your progress and shot data will be lost.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <FwButton variant="secondary" className="flex-1" onClick={() => setShowBackToSetupModal(false)}>
-                Keep Playing
-              </FwButton>
-              <FwButton variant="danger" className="flex-1" onClick={handleConfirmBackToSetup}>
-                Reset &amp; Go Back
-              </FwButton>
-            </div>
-          </div>
-        </ModalShell>
-      ) : (
-      <Drawer
+      <ModalShell
         open={showBackToSetupModal}
         onOpenChange={(next) => {
           if (!next) setShowBackToSetupModal(false);
         }}
+        size="sm"
+        title="Go back to setup?"
+        hideTitle
+        hideClose
       >
-        <DrawerContent
-          className="sm:max-w-sm sm:mx-auto sm:rounded-3xl"
-          aria-labelledby="back-setup-title"
-        >
-          <div className="px-6 pb-6 pt-2">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <IconWarning size={20} className="text-amber-600" />
-              </div>
-              <div>
-                <DrawerTitle id="back-setup-title" className="text-body font-medium text-warm-900 tracking-[-0.005em]">
-                  Go back to setup?
-                </DrawerTitle>
-                <p className="text-sm text-warm-500 mt-0.5">Your progress and shot data will be lost.</p>
-              </div>
+        <div className="px-6 pb-6 pt-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md bg-fw-warning-bg">
+              <IconWarning size={20} className="text-fw-warning" />
             </div>
-            <div className="flex gap-3">
-              <Button variant="ghost"
-                onClick={() => setShowBackToSetupModal(false)}
-                className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-[44px]"
-              >
-                Keep Playing
-              </Button>
-              <Button variant="danger"
-                onClick={handleConfirmBackToSetup}
-                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 active:bg-red-700 transition-colors min-h-[44px]"
-              >
-                Reset & Go Back
-              </Button>
+            <div>
+              <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">
+                Go back to setup?
+              </h2>
+              <p className="mt-0.5 font-fw-sans text-sm text-text-tertiary">
+                Your progress and shot data will be lost.
+              </p>
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
-      )}
+          <div className="flex gap-3">
+            <FwButton variant="secondary" className="flex-1" onClick={() => setShowBackToSetupModal(false)}>
+              Keep Playing
+            </FwButton>
+            <FwButton variant="danger" className="flex-1" onClick={handleConfirmBackToSetup}>
+              Reset &amp; Go Back
+            </FwButton>
+          </div>
+        </div>
+      </ModalShell>
 
       {/* Finish Round — Premium Round Summary */}
-      {redesign ? (
-        <FairwayRoundSummarySheet
+      <FairwayRoundSummarySheet
           open={Boolean(showFinishConfirm && pendingFinalStats)}
           onOpenChange={(next) => {
             if (!next) setShowFinishConfirm(false);
@@ -2842,199 +1916,6 @@ export default function NewRoundClient() {
             await handleRoundSubmit(pendingFinalStats);
           }}
         />
-      ) : (
-      <LazyMotion features={domAnimation}>
-        <AnimatePresence>
-          {showFinishConfirm && pendingFinalStats && (() => {
-            const fs = pendingFinalStats;
-            const totalScore = fs.reduce((sum, h) => sum + (h?.score ?? 0), 0);
-            const totalPar = fs.reduce((sum, h) => sum + (h?.par ?? 0), 0);
-            const toPar = totalScore - totalPar;
-            const totalPutts = fs.reduce((sum, h) => sum + (h?.putts ?? 0), 0);
-            const fairwaysHit = fs.filter(h => h?.fairwayHit === true).length;
-            const fairwayEligible = fs.filter(h => h?.fairwayHit !== null).length;
-            const girCount = fs.filter(h => h?.greenInRegulation === true).length;
-            const colCount = Math.min(fs.length, 9);
-
-            const ScoreCell = ({ h }: { h: HoleStats }) => {
-              const diff = (h?.score ?? 0) - (h?.par ?? 0);
-              const cls = diff <= -2 ? 'text-primary-700 bg-primary-100 font-medium'
-                : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-medium'
-                : diff === 0 ? 'text-warm-700 bg-white font-medium'
-                : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-medium'
-                : 'text-red-600 bg-red-50/70 font-medium';
-              return (
-                <div className={`text-center py-1.5 ${cls}`}>
-                  <span className="text-xs">{h?.score}</span>
-                </div>
-              );
-            };
-
-            const toParLabel = toPar === 0 ? 'E' : `${toPar > 0 ? '+' : ''}${toPar}`;
-
-            return (
-              <Drawer
-                key="round-summary-overlay"
-                open={true}
-                onOpenChange={(next) => {
-                  if (!next) setShowFinishConfirm(false);
-                }}
-              >
-                <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl p-0 overflow-y-auto">
-                  <DrawerTitle className="sr-only">Round Complete</DrawerTitle>
-                  <m.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
-                  >
-                  {/* Celebration Header */}
-                  <div className="relative overflow-hidden rounded-t-2xl bg-primary-600 px-6 pt-6 pb-5 text-center">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
-                    <m.div
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 })}
-                      className="relative"
-                    >
-                      <div className="w-12 h-12 rounded-xl glass-standard flex items-center justify-center mx-auto mb-3">
-                        <IconFlag size={24} className="text-white" />
-                      </div>
-                      <h3 className="text-lg font-medium text-white/90 mb-1">Round Complete</h3>
-                      <div className="flex items-baseline justify-center gap-2">
-                        <m.span
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: 0.3 })}
-                          className="text-display font-light tracking-[-0.025em] text-white tabular-nums"
-                        >
-                          {totalScore}
-                        </m.span>
-                        <m.span
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35 })}
-                          className={`text-lg font-medium ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
-                        >
-                          ({toParLabel})
-                        </m.span>
-                      </div>
-                      <p className="text-sm text-white/70 mt-1">{setupData.courseName}</p>
-                    </m.div>
-                  </div>
-
-                  <div className="p-6">
-                    {/* Key Stats */}
-                    <m.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.3 })}
-                      className="grid grid-cols-3 gap-3 mb-5"
-                    >
-                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-h3 font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{totalPutts}</p>
-                        <p className="text-xs text-warm-500 font-medium">Putts</p>
-                      </div>
-                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-h3 font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{fairwaysHit}/{fairwayEligible}</p>
-                        <p className="text-xs text-warm-500 font-medium">Fairways</p>
-                      </div>
-                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-h3 font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{girCount}/{fs.length}</p>
-                        <p className="text-xs text-warm-500 font-medium">GIR</p>
-                      </div>
-                    </m.div>
-
-                    {/* Mini Scorecard */}
-                    <m.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.3 })}
-                      className="mb-6"
-                    >
-                      <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Scorecard</p>
-                      <div className="rounded-xl border border-warm-200/35 overflow-x-auto overflow-hidden">
-                        {/* Front 9 (or all 9 for 9-hole round) */}
-                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
-                          {fs.slice(0, 9).map((_, i) => (
-                            <div key={`h${i}`} className="bg-warm-50 text-center py-1">
-                              <span className="text-eyebrow font-medium text-warm-400">{i + 1}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
-                          {fs.slice(0, 9).map((h, i) => (
-                            <div key={`p${i}`} className="bg-cream-50 text-center py-1">
-                              <span className="text-eyebrow text-warm-400">{h?.par}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
-                          {fs.slice(0, 9).map((h, i) => (
-                            <ScoreCell key={`s${i}`} h={h} />
-                          ))}
-                        </div>
-
-                        {/* Back 9 */}
-                        {fs.length > 9 && (
-                          <>
-                            <div className="h-px bg-warm-300/40" />
-                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
-                              {fs.slice(9, 18).map((_, i) => (
-                                <div key={`h2${i}`} className="bg-warm-50 text-center py-1">
-                                  <span className="text-eyebrow font-medium text-warm-400">{i + 10}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
-                              {fs.slice(9, 18).map((h, i) => (
-                                <div key={`p2${i}`} className="bg-cream-50 text-center py-1">
-                                  <span className="text-eyebrow text-warm-400">{h?.par}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
-                              {fs.slice(9, 18).map((h, i) => (
-                                <ScoreCell key={`s2${i}`} h={h} />
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </m.div>
-
-                    {/* Action Buttons */}
-                    <m.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.3 })}
-                      className="flex gap-3"
-                    >
-                      <Button variant="ghost"
-                        onClick={() => setShowFinishConfirm(false)}
-                        className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
-                      >
-                        Go Back
-                      </Button>
-                      <Button variant="primary"
-                        onClick={async () => {
-                          if (!pendingFinalStats) return;
-                          setShowFinishConfirm(false);
-                          await handleRoundSubmit(pendingFinalStats);
-                        }}
-                        className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm shadow-primary-950/10"
-                      >
-                        Submit Round
-                      </Button>
-                    </m.div>
-                  </div>
-                  </m.div>
-                </DrawerContent>
-              </Drawer>
-            );
-          })()}
-        </AnimatePresence>
-      </LazyMotion>
-      )}
 
       {/* Submit Overlay — shows during submission, success celebration, and errors */}
       <SubmitOverlay

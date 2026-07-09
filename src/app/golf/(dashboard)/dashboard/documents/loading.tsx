@@ -1,16 +1,13 @@
-import { GenericPageSkeleton } from '@/components/ui/skeleton';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
 /**
- * P433 — purpose-built loading state for the Documents grid (redesign path). The
- * generic 4-card list skeleton did not match FairwayDocuments (max-w-[1100px]
- * ViewHeader masthead → folder tiles → category filter pills + search → a
- * `grid md:grid-cols-2 xl:grid-cols-3` document-card grid), causing a layout
- * swap / CLS on hydrate. This reserves the real slots with Fairway tokens so the
- * grid paints in place. The legacy GenericPageSkeleton stays behind the flag-off
- * fork. isRedesignEnabled() is build-time-inlined and safe in a loading boundary.
+ * P433 — purpose-built loading state for the Documents grid. Matches
+ * FairwayDocuments (max-w-[1100px] ViewHeader masthead → folder tiles →
+ * category filter pills + search → a `grid md:grid-cols-2 xl:grid-cols-3`
+ * document-card grid) so the real surface paints into the same slots with no
+ * layout swap / CLS on hydrate.
  */
 function FairwayDocumentsLoading() {
   return (
@@ -84,6 +81,5 @@ function FairwayDocumentsLoading() {
 }
 
 export default function Loading() {
-  if (isRedesignEnabled()) return <FairwayDocumentsLoading />;
-  return <GenericPageSkeleton />;
+  return <FairwayDocumentsLoading />;
 }

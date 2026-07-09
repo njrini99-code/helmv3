@@ -47,7 +47,10 @@ const CATALOG_PATH = join(UI_DIR, "catalog.json");
 const CROSSCUT_PATH = join(PARTS_V2_DIR, "_crosscut.json");
 const DESIGNSYSTEM_PATH = join(PARTS_REMEDIATION_DIR, "_designsystem.json");
 const DESIGN_SYSTEM_DOC = "ui-intelligence/DESIGN-SYSTEM.md";
-const SIDEBAR_PATH = join(REPO_ROOT, "src", "components", "golf", "layout", "GolfSidebar.tsx");
+// Wave W1 (2026-07-09): the legacy GolfSidebar.tsx fork was deleted — Fairway
+// is the only golf dashboard tree now. Nav data lives in
+// FairwayDashboardShell.tsx's buildNavSections()/buildBottomNavItems().
+const SIDEBAR_PATH = join(REPO_ROOT, "src", "app", "golf", "(dashboard)", "FairwayDashboardShell.tsx");
 const OUT_MD = join(UI_DIR, "ROUTE-ATLAS.md");
 const OUT_HTML = join(UI_DIR, "atlas.html");
 
@@ -652,6 +655,17 @@ function parseSidebarNav(): { coach: NavItem[]; player: NavItem[] } {
     src = readFileSync(SIDEBAR_PATH, "utf8");
   } catch {
     return empty;
+  }
+  // FairwayDashboardShell.tsx also defines buildBottomNavItems() (mobile tab
+  // bar) further down the SAME file, with its own coach/player Dashboard-first
+  // entries — scanning the whole file would double the "second Dashboard
+  // occurrence" split below. Scope the scan to buildNavSections()'s body only
+  // (the full desktop rail nav) by slicing from its declaration to the next
+  // top-level `function` declaration.
+  const navFnStart = src.indexOf("function buildNavSections");
+  if (navFnStart !== -1) {
+    const nextFnStart = src.indexOf("\nfunction ", navFnStart + 1);
+    src = nextFnStart !== -1 ? src.slice(navFnStart, nextFnStart) : src.slice(navFnStart);
   }
   const items: { label: string; href: string; pos: number }[] = [];
   const objRe = /\{[^{}]*href:\s*['"`]([^'"`]+)['"`][^{}]*\}/g;

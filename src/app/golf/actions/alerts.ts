@@ -7,13 +7,37 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { coachHelmIntelligence } from '@/lib/coachhelm/v2';
-import type { CoachAlert } from '@/components/golf/coachhelm/alerts/AlertCard';
 import { logServerError } from '@/lib/server-error-logger';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 
 type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
+
+/**
+ * Alert level + row shape returned by this action file. Extracted here (Wave
+ * W1, 2026-07-09) when the legacy `AlertCard`/`CoachAlertCenter` components
+ * that used to co-own this type were deleted — Fairway's `FairwayCoachHelmSignals`
+ * is now the only renderer of the coach alerts surface and reads evidence-backed
+ * insights directly (`getInsightsForCoachWithMeta`), not this shape. This file
+ * keeps constructing `CoachAlert` rows for `generateAlerts`/`getAlertCounts`.
+ */
+export type AlertLevel = 'critical' | 'warning' | 'info' | 'suggestion';
+
+export interface CoachAlert {
+  id: string;
+  playerId: string;
+  playerName: string;
+  playerAvatarUrl?: string | null;
+  level: AlertLevel;
+  title: string;
+  message: string;
+  callToAction?: string;
+  createdAt: string;
+  acknowledgedAt?: string | null;
+  insightType?: string;
+  metadata?: Record<string, unknown>;
+}
 
 // ============================================================================
 // GET COACH ALERTS (internal — consumed only by generateAlerts below)
