@@ -106,7 +106,7 @@ function SortableRow({
       whileHover={hoverLift(reduce, { scale: 1, y: -1 })}
       className={[
         'flex items-center gap-2 rounded-xl border px-3 py-2 transition-all',
-        isDragging ? 'opacity-40 shadow-xl ring-2 ring-primary-400/40' : 'bg-white',
+        isDragging ? 'opacity-40 shadow-xl ring-2 ring-primary-400/40' : 'bg-cream-50',
         isSelected
           ? 'border-primary-300 bg-primary-50/60'
           : 'border-warm-100 hover:border-warm-200',

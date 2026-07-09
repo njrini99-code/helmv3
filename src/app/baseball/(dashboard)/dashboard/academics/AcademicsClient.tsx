@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -232,7 +231,10 @@ export default function AcademicsPage() {
   if (!selectedTeamId) {
     return (
       <>
-        <Header title="Academics" subtitle="Track student-athlete academic progress" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress</p>
+        </div>
         <div className="p-8">
           <EmptyState
             icon={<IconGraduationCap size={24} />}
@@ -248,7 +250,10 @@ export default function AcademicsPage() {
   if (loading) {
     return (
       <>
-        <Header title="Academics" subtitle="Track student-athlete academic progress" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress</p>
+        </div>
         <div className="p-4 lg:p-8 space-y-6">
           {/* Summary skeleton */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -302,7 +307,10 @@ export default function AcademicsPage() {
   if (students.length === 0) {
     return (
       <>
-        <Header title="Academics" subtitle="Track student-athlete academic progress" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress</p>
+        </div>
         <div className="p-8">
           <EmptyState
             icon={<IconGraduationCap size={24} />}
@@ -357,10 +365,10 @@ export default function AcademicsPage() {
 
   return (
     <>
-      <Header
-        title="Academics"
-        subtitle="Track student-athlete academic progress and eligibility"
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+        <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
+        <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
+      </div>
 
       <div className="p-4 lg:p-8 space-y-6">
         {/* Error alert */}

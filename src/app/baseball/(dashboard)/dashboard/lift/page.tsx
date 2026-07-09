@@ -26,6 +26,7 @@ import { redirect } from 'next/navigation';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 import { getPlayerLiftOnboardingState } from '@/lib/baseball/read-models/player-lift';
 import { PlayerLiftHomeClient } from '@/components/lifting/players/PlayerLiftHomeClient';
 import { LiftOnboardingGate } from '@/components/baseball/performance/lift-onboarding';
@@ -37,13 +38,17 @@ const OPEN_STATUSES: HelmLiftingSessionStatus[] = ['assigned', 'started', 'modif
 async function fetchPlayerSessions(
   athleteId: string,
   organizationId: string,
-): Promise<{ upcoming: HelmLiftingSessionRow[]; recent: HelmLiftingSessionRow[] }> {
+  teamId: string,
+): Promise<{ upcoming: HelmLiftingSessionRow[]; recent: HelmLiftingSessionRow[]; error: boolean }> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
   // Upcoming: today + future, plus overdue-but-still-open (mirrors the
   // canonical /lifting/dashboard/lift resolution exactly).
-  const { data: upcomingRows } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+  const { data: upcomingRows, error: upcomingError } = (await fromUntyped(
+    supabase,
+    'helm_lifting_sessions',
+  )
     .select('*')
     .eq('athlete_id', athleteId)
     .eq('organization_id', organizationId)
@@ -52,21 +57,33 @@ async function fetchPlayerSessions(
         `and(status.in.(assigned,started,modified),scheduled_date.lt.${today})`,
     )
     .order('scheduled_date', { ascending: true })
-    .limit(20)) as { data: HelmLiftingSessionRow[] | null };
+    .limit(20)) as { data: HelmLiftingSessionRow[] | null; error: unknown };
+
+  if (upcomingError) {
+    console.error('[lift/page] fetchPlayerSessions upcoming query failed', upcomingError);
+  }
 
   const upcoming = (upcomingRows ?? []).filter(
     (s) => s.scheduled_date >= today || OPEN_STATUSES.includes(s.status),
   );
 
-  const { data: recentRows } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+  const { data: recentRows, error: recentError } = (await fromUntyped(supabase, 'helm_lifting_sessions')
     .select('*')
     .eq('athlete_id', athleteId)
     .eq('organization_id', organizationId)
     .eq('status', 'completed')
     .order('completed_at', { ascending: false })
-    .limit(10)) as { data: HelmLiftingSessionRow[] | null };
+    .limit(10)) as { data: HelmLiftingSessionRow[] | null; error: unknown };
 
-  return { upcoming, recent: recentRows ?? [] };
+  if (recentError) {
+    console.error('[lift/page] fetchPlayerSessions recent query failed', recentError);
+  }
+
+  return {
+    upcoming,
+    recent: recentRows ?? [],
+    error: Boolean(upcomingError || recentError),
+  };
 }
 
 export default async function PlayerLiftPage() {
@@ -88,13 +105,27 @@ export default async function PlayerLiftPage() {
     );
   }
 
-  const { organizationId, athleteId } = athleteCtx;
+  const { organizationId, teamId, athleteId } = athleteCtx;
 
-  const [{ upcoming, recent }, readinessSubmittedToday, onboarding] = await Promise.all([
-    fetchPlayerSessions(athleteId, organizationId),
-    hasReadinessCheckinToday(athleteId, organizationId),
-    getPlayerLiftOnboardingState(context.activePlayerId),
-  ]);
+  const [{ upcoming, recent, error: sessionsError }, readinessSubmittedToday, onboarding] =
+    await Promise.all([
+      fetchPlayerSessions(athleteId, organizationId, teamId),
+      hasReadinessCheckinToday(athleteId, organizationId, teamId),
+      getPlayerLiftOnboardingState(context.activePlayerId),
+    ]);
+
+  if (sessionsError) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-6">
+        <div className="glass-standard rounded-2xl border border-cream-400/40 p-8 shadow-glass">
+          <h2 className="text-h3 text-warm-900">Unable to load your lift sessions</h2>
+          <p className="mt-2 text-body text-warm-500">
+            Something went wrong loading your Lift Lab data. Please refresh the page to try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">

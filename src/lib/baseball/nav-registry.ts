@@ -318,6 +318,15 @@ export interface BaseballNavContext {
 // Showcase-style org surfaces (#367) — hidden from college/HS/JUCO program types.
 const SHOWCASE_ORG_PROGRAM_TYPES = ['showcase', 'academy', 'club'] as const satisfies readonly BaseballProgramType[];
 
+// College/JUCO-only surfaces — hidden from HS/Showcase/Academy/Club program
+// types. Postgame Review's page has always hard-redirected non-college/juco
+// coaches (box-score-driven review only makes sense for those programs), but
+// the nav entry itself was shown to ALL coach types, so HS/Showcase/Academy/
+// Club coaches saw the tab, clicked it, and got silently bounced back to
+// Command Center. Gating the entry here hides the tab for those program
+// types instead; the page's own guard stays as defense-in-depth.
+const COLLEGE_JUCO_PROGRAM_TYPES = ['college', 'juco'] as const satisfies readonly BaseballProgramType[];
+
 export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   // --- Daily loops (no capability gate beyond role) ----------------------------
   {
@@ -478,7 +487,6 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // subtab), and Upload + Import Center are CTAs on the Stats Center page
     // header — so all three routes must still resolve to this hub + subtab.
     matchPrefixes: [
-      '/baseball/dashboard/stats/season',
       '/baseball/dashboard/stats/upload',
       '/baseball/dashboard/import',
     ],
@@ -541,6 +549,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     requiredCapability: 'can_manage_stats',
     section: 'primary',
     hub: 'stats-performance',
+    allowedProgramTypes: COLLEGE_JUCO_PROGRAM_TYPES,
   },
   {
     id: 'performance',

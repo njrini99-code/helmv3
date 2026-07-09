@@ -26,7 +26,6 @@ import * as React from 'react';
 import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
-import { Header } from '@/components/layout/header';
 import { VideoUpload } from '@/components/features/video-upload';
 import { VideoPlayer } from '@/components/features/video-player';
 import { Card, CardContent } from '@/components/ui/card';
@@ -1283,7 +1282,12 @@ export function VideoLibraryClient({
 
   return (
     <>
-      <Header title="Video Library" subtitle={headerSubtitle} />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Video Library</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{headerSubtitle}</p>
+        </div>
+      </div>
 
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Tab bar */}

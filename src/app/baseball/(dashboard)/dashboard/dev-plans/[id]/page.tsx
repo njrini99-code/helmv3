@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
-import { Header } from '@/components/layout/header';
+import Link from 'next/link';
 import { PageLoading } from '@/components/ui/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlanDetail } from '@/components/baseball/dev-plans/PlanDetail';
 import { BreadcrumbLabel } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
+import { IconChevronLeft } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import {
@@ -86,7 +87,19 @@ export default function DevPlanDetailPage() {
   if (authLoading || loading) {
     return (
       <>
-        <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
+          <Link
+            href="/baseball/dashboard/dev-plans"
+            aria-label="Go back"
+            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+          >
+            <IconChevronLeft size={20} aria-hidden="true" />
+          </Link>
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
+          </div>
+        </div>
         <div className="p-6 lg:p-8">
           <PageLoading />
         </div>
@@ -97,7 +110,19 @@ export default function DevPlanDetailPage() {
   if (user?.role !== 'coach') {
     return (
       <>
-        <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
+          <Link
+            href="/baseball/dashboard/dev-plans"
+            aria-label="Go back"
+            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+          >
+            <IconChevronLeft size={20} aria-hidden="true" />
+          </Link>
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
+          </div>
+        </div>
         <div className="p-6 lg:p-8">
           <Card variant="glass">
             <CardContent className="p-12 text-center">
@@ -112,7 +137,19 @@ export default function DevPlanDetailPage() {
   if (notFound || !plan) {
     return (
       <>
-        <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
+          <Link
+            href="/baseball/dashboard/dev-plans"
+            aria-label="Go back"
+            className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+          >
+            <IconChevronLeft size={20} aria-hidden="true" />
+          </Link>
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
+          </div>
+        </div>
         <div className="p-6 lg:p-8">
           <div className="rounded-xl border border-warm-200 bg-cream-50 p-6 text-sm text-warm-600">
             This development plan could not be found.
@@ -128,7 +165,19 @@ export default function DevPlanDetailPage() {
           dynamic plan id — this supplies the real plan title so the trail
           never falls back to a raw UUID segment. */}
       <BreadcrumbLabel name={plan.title} />
-      <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center gap-3">
+        <Link
+          href="/baseball/dashboard/dev-plans"
+          aria-label="Go back"
+          className="rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+        >
+          <IconChevronLeft size={20} aria-hidden="true" />
+        </Link>
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Development Plan</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Detailed plan view</p>
+        </div>
+      </div>
       <div className="p-6 lg:p-8">
         <PlanDetail
           plan={plan}

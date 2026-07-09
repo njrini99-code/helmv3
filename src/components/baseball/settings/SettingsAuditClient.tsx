@@ -22,7 +22,6 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -161,10 +160,12 @@ export function SettingsAuditClient({ teamName, entries }: Props) {
 
   return (
     <>
-      <Header
-        title="Settings Audit Log"
-        subtitle={`${teamName} • append-only history`}
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Settings Audit Log</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{`${teamName} • append-only history`}</p>
+        </div>
+      </div>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600">

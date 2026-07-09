@@ -56,10 +56,9 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     expect(hub?.tabs.some((t) => t.id === 'games')).toBe(true);
   });
 
-  it('resolves Stats Center Upload + Import Center + Season into the Stats hub (Ruling 2: CTAs/view inside Stats Center, not their own tabs)', () => {
+  it('resolves Stats Center Upload + Import Center into the Stats hub (Ruling 2: CTAs/view inside Stats Center, not their own tabs)', () => {
     for (const pathname of [
       '/baseball/dashboard/stats/upload',
-      '/baseball/dashboard/stats/season',
       '/baseball/dashboard/import',
     ]) {
       const hub = resolveActiveHub({

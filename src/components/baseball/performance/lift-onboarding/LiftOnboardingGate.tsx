@@ -30,6 +30,7 @@ export function LiftOnboardingGate({ athleteId, eligibleForOnboarding }: LiftOnb
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!athleteId) return;
     if (!eligibleForOnboarding) return;
     if (readLiftOnboardingFlag(athleteId)) return;
     setOpen(true);

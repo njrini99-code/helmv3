@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { GamesList } from '@/components/baseball/games/GamesList';
+import { getTeamGames, getTeamSeasonRecord } from '@/app/baseball/actions/games';
 
 export default async function GamesPage() {
   const supabase = await createClient();
@@ -26,9 +27,25 @@ export default async function GamesPage() {
 
   if (!team) redirect('/baseball/dashboard/program');
 
+  // Fetch the initial games + season record server-side (matching GamesList's
+  // default filters: all game types, current season year, no limit) so a
+  // revalidated RSC payload after a box-score save actually reaches the
+  // client — see GamesList's initialGames/initialRecord sync effect.
+  const defaultSeasonYear = new Date().getFullYear();
+  const [gamesResult, recordResult] = await Promise.all([
+    getTeamGames(team.id, { seasonYear: defaultSeasonYear }),
+    getTeamSeasonRecord(team.id, defaultSeasonYear),
+  ]);
+
   return (
     <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8">
-      <GamesList teamId={team.id} title="Games & Scrimmages" showAddButton={true} />
+      <GamesList
+        teamId={team.id}
+        title="Games & Scrimmages"
+        showAddButton={true}
+        initialGames={gamesResult.success ? (gamesResult.data ?? []) : []}
+        initialRecord={recordResult.success ? (recordResult.data ?? null) : null}
+      />
     </div>
   );
 }

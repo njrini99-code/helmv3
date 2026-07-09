@@ -160,6 +160,8 @@ async function main() {
 
   console.log(`\n${DRY ? '[DRY RUN] ' : ''}Done. scanned=${scanned} changed=${changed} unchanged=${unchanged} errors=${errors}`);
 
+  if (errors > 0) process.exitCode = 1;
+
   if (samples.length > 0) {
     console.log('\nSample before/after:');
     for (const s of samples) {

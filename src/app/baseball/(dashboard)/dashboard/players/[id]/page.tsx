@@ -2,11 +2,12 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { PlayerProfileClient } from '@/components/baseball/player-profile/PlayerProfileClient';
 import { BreadcrumbLabel } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
-import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+import type { BaseballCoachInsight } from '@/lib/types';
 import { getPlayerSnapshotCards } from '@/lib/baseball/read-models/player-snapshot-cards';
 import { getPlayerTimeline, getTimelineAcksForSubjectPlayer } from '@/lib/baseball/read-models/timeline';
 import { getPlayerCoachNotes } from '@/lib/baseball/read-models/coach-notes';
 import { getPlayerTasks } from '@/app/baseball/actions/tasks';
+import { getPlayerSeasonStats } from '@/app/baseball/actions/games';
 import { resolveBaseballLiftingOrg, resolveBaseballAthleteIds } from '@/lib/lifting/resolve-baseball-context';
 
 interface PageProps {
@@ -95,25 +96,6 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  // Get player stats (using type assertion to avoid deep instantiation)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: stats } = await (supabase as any)
-    .from('baseball_player_stats')
-    .select('*')
-    .eq('player_id', playerId)
-    .eq('team_id', team.id)
-    .order('session_date', { ascending: false })
-    .limit(50) as { data: BaseballPlayerStats[] | null };
-
-  // Get aggregates
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: aggregates } = await (supabase as any)
-    .from('baseball_player_aggregates')
-    .select('*')
-    .eq('player_id', playerId)
-    .eq('team_id', team.id)
-    .single() as { data: BaseballPlayerAggregates | null };
-
   // Get insights
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: insights } = await (supabase as any)
@@ -124,13 +106,18 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .eq('status', 'active')
     .order('priority', { ascending: true }) as { data: BaseballCoachInsight[] | null };
 
+  const currentSeasonYear = new Date().getFullYear();
+
   // Parallel fetch: snapshot cards + timeline + coach notes + player tasks +
-  // Helm Lifting Lab context (org + athlete mapping for the Performance tab).
-  const [snapshotResult, timelineResult, notesResult, tasksResult, liftingContext] = await Promise.all([
+  // box-score-canonical season stats (mirrors /players/[id]/stats — the
+  // source of truth a box-score save actually updates) + Helm Lifting Lab
+  // context (org + athlete mapping for the Performance tab).
+  const [snapshotResult, timelineResult, notesResult, tasksResult, seasonStatsResult, liftingContext] = await Promise.all([
     getPlayerSnapshotCards(team.id, playerId),
     getPlayerTimeline(team.id, playerId),
     getPlayerCoachNotes(team.id, playerId),
     getPlayerTasks(playerId),
+    getPlayerSeasonStats(playerId, team.id, currentSeasonYear),
     (async (): Promise<{ liftingOrgId: string | null; liftingAthleteId: string | null }> => {
       const liftingCtx = await resolveBaseballLiftingOrg(team.id).catch(() => null);
       if (!liftingCtx) return { liftingOrgId: null, liftingAthleteId: null };
@@ -220,8 +207,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           team_status: membership.status,
           joined_at: membership.joined_at,
         }}
-        stats={stats || []}
-        aggregates={aggregates}
+        seasonStats={seasonStatsResult.success ? (seasonStatsResult.data ?? null) : null}
+        battingLog={seasonStatsResult.success ? (seasonStatsResult.gameLog ?? []) : []}
         insights={insights || []}
         notes={transformedNotes}
         notesCanAuthor={notesResult.canAuthor}

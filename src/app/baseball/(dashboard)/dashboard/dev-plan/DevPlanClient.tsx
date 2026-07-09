@@ -66,12 +66,20 @@ import {
   type DevPlanGoal,
 } from '@/app/baseball/actions/dev-plans';
 
+// Parses a date-only 'YYYY-MM-DD' string as LOCAL midnight (not UTC midnight),
+// avoiding the off-by-one that `new Date('YYYY-MM-DD')` + setHours(0,0,0,0)
+// produces for negative-UTC-offset users.
+function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  if (y === undefined || m === undefined || d === undefined) return new Date(s);
+  return new Date(y, m - 1, d);
+}
+
 // Helper to calculate days until/since a date
 function getDaysUntil(dateStr: string): { days: number; label: string; isOverdue: boolean; isUpcoming: boolean } {
-  const target = new Date(dateStr);
+  const target = parseLocalDate(dateStr);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  target.setHours(0, 0, 0, 0);
 
   const diffTime = target.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -390,8 +398,7 @@ export default function DevPlanClient() {
     const upcoming = notCompleted.filter((g) => {
       if (g.status !== 'not_started') return false;
       if (!g.target_date) return false;
-      const targetDate = new Date(g.target_date);
-      targetDate.setHours(0, 0, 0, 0);
+      const targetDate = parseLocalDate(g.target_date);
       const diffDays = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       return diffDays > 7;
     });

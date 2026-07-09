@@ -76,11 +76,22 @@ async function resolvePlayerTeam(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
 ): Promise<string | null> {
-  const { data: member } = await supabase
+  // A player can legitimately hold TWO active baseball_team_members rows
+  // (JUCO + Showcase). Without the status filter + explicit limit(1),
+  // .maybeSingle() errors with PGRST116 on a >1-row result rather than
+  // returning the first active membership.
+  const { data: member, error } = await supabase
     .from('baseball_team_members')
     .select('team_id')
     .eq('player_id', playerId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle();
+  if (error) {
+    console.error('[player-lift] resolvePlayerTeam query failed', error);
+    return null;
+  }
   return member?.team_id ?? null;
 }
 

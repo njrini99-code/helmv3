@@ -44,13 +44,28 @@ import type {
 const STATS_PATHS = [
   '/baseball/dashboard/stats-center',
   '/baseball/dashboard/stats/games',
-  '/baseball/dashboard/stats/season',
   '/baseball/dashboard/my-stats',
   '/baseball/dashboard/calendar',
 ];
 
 function revalidateStatsPaths() {
   STATS_PATHS.forEach((p) => revalidatePath(p));
+}
+
+/**
+ * Revalidates the dynamic routes a coach actually lands on after a box-score
+ * save: the specific game's detail page and each affected player's dashboard
+ * + stats pages. The literal STATS_PATHS list above never covers these
+ * dynamic `[id]` segments, so without this a coach viewing a game or player
+ * page right after saving sees stale data until the route's own revalidation
+ * window elapses.
+ */
+function revalidateGameAndPlayerPaths(gameId: string, playerIds: string[]) {
+  revalidatePath(`/baseball/dashboard/stats/games/${gameId}`);
+  for (const playerId of playerIds) {
+    revalidatePath(`/baseball/dashboard/players/${playerId}`);
+    revalidatePath(`/baseball/dashboard/players/${playerId}/stats`);
+  }
 }
 
 function mapGameActionError(error: unknown): { success: false; error: string } {
@@ -663,7 +678,7 @@ async function completeGameAndRecalculate(
 
   const { data: game } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
-    .select('team_id')
+    .select('team_id, game_date')
     .eq('id', gameId)
     .single();
 
@@ -702,7 +717,11 @@ async function completeGameAndRecalculate(
     ]),
   ];
 
-  const currentYear = new Date().getFullYear();
+  // Derive the season-year bucket from the game's own date, not "today" —
+  // a backdated or cross-New-Year game must recalc into the season it was
+  // actually played in, mirroring the fix already applied in the
+  // `save_baseball_full_box_score` RPC.
+  const seasonYear = new Date(game.game_date).getFullYear();
 
   const db2 = supabase as unknown as SupabaseClient;
   const recalcResults = await Promise.all(
@@ -710,13 +729,14 @@ async function completeGameAndRecalculate(
       db2.rpc('recalculate_baseball_season_stats', {
         p_player_id: playerId,
         p_team_id: game.team_id,
-        p_season_year: currentYear,
+        p_season_year: seasonYear,
       })
     )
   );
 
   revalidateStatsPaths();
   revalidatePath(`/baseball/dashboard/players`);
+  revalidateGameAndPlayerPaths(gameId, allPlayerIds);
 
   const recalcError = recalcResults.find((r) => r.error)?.error;
   if (recalcError) {
@@ -810,8 +830,16 @@ async function saveCsvBoxScoreViaRpc(
     return { success: false, error: result?.error ?? 'Box score save failed' };
   }
 
+  const affectedPlayerIds = [
+    ...new Set([
+      ...finalBatting.map((line) => line.player_id),
+      ...finalPitching.map((line) => line.player_id),
+    ]),
+  ];
+
   revalidateStatsPaths();
   revalidatePath(`/baseball/dashboard/players`);
+  revalidateGameAndPlayerPaths(gameId, affectedPlayerIds);
   return { success: true };
 }
 
@@ -893,8 +921,16 @@ const saveFullBoxScoreAction = withBaseballAction(
       return { success: false, error: result?.error ?? 'Box score save failed' };
     }
 
+    const affectedPlayerIds = [
+      ...new Set([
+        ...batting.map((line) => line.player_id),
+        ...pitching.map((line) => line.player_id),
+      ]),
+    ];
+
     revalidateStatsPaths();
     revalidatePath(`/baseball/dashboard/players`);
+    revalidateGameAndPlayerPaths(gameId, affectedPlayerIds);
     return { success: true };
   },
 );

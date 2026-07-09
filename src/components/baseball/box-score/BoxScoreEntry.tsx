@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveFullBoxScore } from '@/app/baseball/actions/games';
 import type {
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { IconSave, IconUser, IconTrendingUp } from '@/components/icons';
 import { sumInningsPitched } from '@/lib/baseball/innings';
+import { formatAvg, formatOps, formatEra, formatWhip } from './format-stat';
 
 interface PlayerRow {
   id: string;
@@ -42,28 +43,25 @@ const DEFAULT_PITCHING = (playerId: string): BoxScorePitchingInput => ({
 });
 
 function calcAvg(h: number, ab: number) {
-  if (ab === 0) return '---';
-  return (h / ab).toFixed(3).replace(/^0/, '');
+  return formatAvg(ab === 0 ? null : h / ab);
 }
 
 function calcOPS(b: BoxScoreBattingInput) {
   const { ab, h, doubles, triples, hr, bb, hbp, sf } = b;
-  if (ab === 0) return '---';
+  if (ab === 0) return formatOps(null);
   const singles = h - doubles - triples - hr;
   const slg = (singles + 2 * doubles + 3 * triples + 4 * hr) / ab;
   const pa = ab + bb + hbp + sf;
   const obp = pa > 0 ? (h + bb + hbp) / pa : 0;
-  return (obp + slg).toFixed(3);
+  return formatOps(obp + slg);
 }
 
 function calcERA(er: number, ip: number) {
-  if (ip === 0) return '---';
-  return (9 * er / ip).toFixed(2);
+  return formatEra(ip === 0 ? null : (9 * er) / ip);
 }
 
 function calcWHIP(h: number, bb: number, ip: number) {
-  if (ip === 0) return '---';
-  return ((h + bb) / ip).toFixed(3);
+  return formatWhip(ip === 0 ? null : (h + bb) / ip);
 }
 
 const PITCHING_RESULTS: BaseballPitchingResult[] = ['W', 'L', 'S', 'H', 'BS', 'ND'];
@@ -91,6 +89,24 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
   });
 
   const [selectedPitcherId, setSelectedPitcherId] = useState('');
+
+  // Re-sync local editing state whenever the persisted data changes
+  // underneath us (e.g. router.refresh() after a save re-fetches the
+  // server component and passes new props into this already-mounted
+  // client component — the lazy useState seed above only runs once, so
+  // without this effect the form keeps showing stale/pre-save values
+  // and "Saving…" can appear stuck).
+  useEffect(() => {
+    setBattingRows(
+      initialBatting && initialBatting.length > 0
+        ? initialBatting
+        : teamPlayers.map((p) => DEFAULT_BATTING(p.id))
+    );
+    setPitchingRows(initialPitching && initialPitching.length > 0 ? initialPitching : []);
+    setOurScore(game.our_score ?? 0);
+    setOppScore(game.opponent_score ?? 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialBatting, initialPitching, game]);
 
   const updateBatting = useCallback(
     (playerId: string, field: keyof BoxScoreBattingInput, value: number) => {
@@ -125,28 +141,45 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
     setSaving(true);
     setSaveError(null);
 
-    // Retain a batting row if ANY counting stat is non-zero — not just the
-    // narrow ab/h/bb/r check. That narrow check dropped valid preloaded or
-    // edited rows whose only stats were e.g. hbp/sac/sf/cs/lob, silently
-    // wiping them from the saved box score on the next save (#433).
-    const nonZeroBatting = battingRows.filter((r) =>
-      (
+    // Auto-assign batting_order from row position (1-indexed) whenever the
+    // coach hasn't set one explicitly, so BoxScoreView's sort-by-order
+    // doesn't fall back to arbitrary ordering for manually-entered rows.
+    const orderedBatting = battingRows.map((r, idx) => ({
+      ...r,
+      batting_order: r.batting_order ?? idx + 1,
+    }));
+
+    // A player who was already part of the persisted box score (present
+    // in initialBatting) is kept regardless of stats — the coach may have
+    // intentionally zeroed out an all-zero line (e.g. 0-for-4), and that's
+    // a real, explicit entry, not an empty placeholder row. Only rows that
+    // were never part of the saved box score (e.g. default zero rows for
+    // roster players who didn't play) are dropped when every counting stat
+    // is zero — not just the narrow ab/h/bb/r check. That narrow check
+    // dropped valid preloaded or edited rows whose only stats were e.g.
+    // hbp/sac/sf/cs/lob, silently wiping them from the saved box score on
+    // the next save (#433).
+    const initialBattingIds = new Set((initialBatting ?? []).map((r) => r.player_id));
+    const retainedBatting = orderedBatting.filter((r) => {
+      if (initialBattingIds.has(r.player_id)) return true;
+      return (
         [
           'ab', 'r', 'h', 'doubles', 'triples', 'hr', 'rbi',
           'bb', 'k', 'sb', 'cs', 'hbp', 'sac', 'sf', 'lob',
         ] as (keyof BoxScoreBattingInput)[]
-      ).some((field) => (r[field] as number) > 0)
-    );
+      ).some((field) => (r[field] as number) > 0);
+    });
 
     const result = await saveFullBoxScore(
       game.id,
-      nonZeroBatting,
+      retainedBatting,
       pitchingRows,
       ourScore,
       oppScore
     );
 
     if (result.success) {
+      setSaving(false);
       router.push(`/baseball/dashboard/stats/games/${game.id}`);
       router.refresh();
     } else {

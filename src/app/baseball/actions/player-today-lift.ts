@@ -22,6 +22,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 import {
   resolveBaseballLiftingOrg,
   resolveMyBaseballAthleteId,
@@ -35,10 +36,6 @@ import type {
   HelmLiftingSessionRow,
   HelmLiftingReadinessCheckinRow,
 } from '@/lib/types/helm-lifting-data';
-
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 const OPEN_STATUSES = ['assigned', 'started', 'modified'] as const;
 
@@ -107,7 +104,9 @@ export const getPlayerLiftTodaySummary = withBaseballAction(
     const playerId = playerRow?.id ?? athleteId;
     const athleteToPlayer: Record<string, string> = { [athleteId]: playerId };
 
-    const today = todayStr();
+    // Team-local calendar day (not server-UTC) so an evening check-in in a
+    // negative-UTC-offset timezone isn't mis-dated to tomorrow.
+    const today = todayIsoInTz(await resolveTeamTimezone(supabase, ctx.activeTeamId));
 
     const [openRes, todayAllRes, checkinRes] = await Promise.all([
       // Open (overdue or ongoing) sessions up through today.

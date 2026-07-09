@@ -16,6 +16,14 @@ interface GamesListProps {
   title?: string;
   showAddButton?: boolean;
   limit?: number;
+  // Server-fetched initial data (from the parent Server Component). When
+  // provided, a change to these props (e.g. a fresh RSC payload delivered by
+  // router.refresh() after a box-score save) is synced into client state —
+  // see the effect below. Without this, a revalidated payload with unchanged
+  // teamId/activeTab/seasonYear/limit would never reach the client, leaving
+  // the list showing stale pre-edit data until a hard reload.
+  initialGames?: BaseballGame[];
+  initialRecord?: TeamSeasonRecord | null;
 }
 
 type TabFilter = 'all' | 'game' | 'scrimmage';
@@ -25,10 +33,17 @@ const SEASON_YEARS = (() => {
   return [current, current - 1, current - 2];
 })();
 
-export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton = true, limit }: GamesListProps) {
+export function GamesList({
+  teamId,
+  title = 'Games & Scrimmages',
+  showAddButton = true,
+  limit,
+  initialGames,
+  initialRecord,
+}: GamesListProps) {
   const { showToast } = useToast();
-  const [games, setGames] = useState<BaseballGame[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [games, setGames] = useState<BaseballGame[]>(initialGames ?? []);
+  const [loading, setLoading] = useState(!initialGames);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
@@ -37,7 +52,26 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
   // Season record is computed over the FULL season (all completed games) via a
   // dedicated selector — never over the possibly limit-truncated display list —
   // so this header matches the Games & Scrimmages page exactly on every surface.
-  const [seasonRecord, setSeasonRecord] = useState<TeamSeasonRecord | null>(null);
+  const [seasonRecord, setSeasonRecord] = useState<TeamSeasonRecord | null>(initialRecord ?? null);
+
+  // Sync client state whenever the parent Server Component delivers a fresh
+  // initialGames/initialRecord pair — this is what actually surfaces a
+  // revalidated RSC payload (e.g. after a box-score save + router.refresh())
+  // when teamId/activeTab/seasonYear/limit haven't changed and the
+  // tab/filter fetchGames effect below wouldn't otherwise re-run.
+  useEffect(() => {
+    if (initialGames !== undefined) {
+      setGames(initialGames);
+      setLoading(false);
+      setError(null);
+    }
+  }, [initialGames]);
+
+  useEffect(() => {
+    if (initialRecord !== undefined) {
+      setSeasonRecord(initialRecord);
+    }
+  }, [initialRecord]);
 
   const fetchGames = useCallback(
     async (isRefresh = false) => {

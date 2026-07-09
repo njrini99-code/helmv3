@@ -86,7 +86,7 @@ import {
   useBreadcrumbLabel,
 } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
 import { buildBreadcrumbs } from '@/app/baseball/(dashboard)/_components/breadcrumbs';
-import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar } from '@/components/icons';
+import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar, IconArrowLeft } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -111,7 +111,15 @@ type Role = 'coach' | 'player';
  * hamburger covers every remaining hub.
  */
 function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem[] {
-  const items = sections.flatMap((section) => section.items);
+  // Exclude the showcase "Back to Organization" row (buildShowcaseTeamSections)
+  // from the mobile bottom-tab bar — it's a rail-only affordance, not a
+  // top-3 destination, and would otherwise leak into the slice(0, 5) fallback
+  // below when a showcase coach's dashboard hub tab is capability-hidden.
+  // Matched by label (not href) since the org rail's own "Dashboard" row
+  // legitimately shares the same destination href and must stay eligible.
+  const items = sections
+    .flatMap((section) => section.items)
+    .filter((item) => item.label !== 'Back to Organization');
   const preferredLabels =
     role === 'coach'
       ? (['Dashboard', 'Team', 'Stats & Performance'] as const)
@@ -125,12 +133,14 @@ function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem
   return items.slice(0, 5);
 }
 
-/** Next <Link> adapter for the shell's link contract (module scope = stable identity). */
-const ShellLink: ShellLinkComponent = ({ href, children, ...rest }) => (
-  <Link href={href} prefetch {...rest}>
-    {children}
-  </Link>
-);
+/**
+ * Showcase org-level home route — the destination for BOTH the org rail's own
+ * "Dashboard" row (buildShowcaseOrgSections) and the team rail's "Back to
+ * Organization" row (buildShowcaseTeamSections). Shared so the team-store
+ * intercept in the `shellLink` adapter (BaseballFairwayContent) matches
+ * exactly one route.
+ */
+const SHOWCASE_ORG_HOME_HREF = '/baseball/dashboard/organization';
 
 /** Segment-boundary route match — shared by rail items and hub cluster rows. */
 function matchesRoutePrefix(pathname: string, prefix: string): boolean {
@@ -300,7 +310,7 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
     {
       heading: 'Organization',
       items: [
-        { label: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
+        { label: 'Dashboard', href: SHOWCASE_ORG_HOME_HREF, icon: IconHome },
         { label: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
         { label: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
         messagesNavItem(unreadCount),
@@ -315,9 +325,18 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
  * / Development only (no Recruiting/Academics/Management — those are org-level
  * or not part of the showcase team surface), plus Dashboard + Messages so the
  * rail is never just three orphaned sections with no way back to Today.
+ *
+ * The FIRST row is always "Back to Organization" — without it a showcase
+ * coach who lands in team scope (auto-selected on mount by the team store)
+ * has no control anywhere to clear the selection and return to the org-level
+ * rail (Organization/Teams/Events). The row's href is intercepted by the
+ * `shellLink` adapter in BaseballFairwayContent, which clears the store's
+ * selectedTeamId before navigating.
  */
 function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
-  const items: NavItem[] = [];
+  const items: NavItem[] = [
+    { label: 'Back to Organization', href: SHOWCASE_ORG_HOME_HREF, icon: IconArrowLeft },
+  ];
   const dashboardTabs = filterHubTabsByCapabilities(COACH_HUB_DEFS.dashboard.tabs, 'coach', ctx.capabilities);
   if (dashboardTabs.length) {
     items.push(
@@ -455,7 +474,7 @@ function BaseballFairwayContent({
   // Same team-identity source the legacy Sidebar's TeamSwitcher reads.
   const coachTeams = useTeams();
   const playerTeams = usePlayerTeams();
-  const { selectedTeam } = role === 'coach' ? coachTeams : playerTeams;
+  const { selectedTeam, setSelectedTeamId } = role === 'coach' ? coachTeams : playerTeams;
 
   // Fail-closed fallback (empty capability map) mirrors BaseballDashboardShell
   // when navContext hasn't resolved yet — gated verticals stay hidden, never
@@ -512,6 +531,35 @@ function BaseballFairwayContent({
     window.dispatchEvent(new Event('helm:open-command-palette'));
   }, []);
 
+  // Showcase-aware <Link> adapter: the AppShell nav model (NavItem) has no
+  // per-row onClick, so the "Back to Organization" row built by
+  // buildShowcaseTeamSections can only signal the team-store reset through
+  // its href. This intercepts clicks on that one route and clears
+  // selectedTeamId before/alongside the normal navigation — a no-op for every
+  // other row (college/HS/JUCO nav never uses this href) and a no-op if the
+  // org rail's own "Dashboard" row (same href) is clicked while already
+  // org-scoped.
+  const shellLink: ShellLinkComponent = useCallback(
+    ({ href, children, onClick, ...rest }) => (
+      <Link
+        href={href}
+        prefetch
+        onClick={
+          isShowcaseCoach && href === SHOWCASE_ORG_HOME_HREF
+            ? () => {
+                setSelectedTeamId(null);
+                onClick?.();
+              }
+            : onClick
+        }
+        {...rest}
+      >
+        {children}
+      </Link>
+    ),
+    [isShowcaseCoach, setSelectedTeamId],
+  );
+
   // Same "Skip to main content" anchor the legacy BaseballDashboardShell
   // renders (and GolfHelm's FairwayDashboardShell mirrors) — keyboard/SR users
   // must keep skip-nav when the flag is ON, not just flag-OFF.
@@ -539,7 +587,7 @@ function BaseballFairwayContent({
         sidebarFooter={<ShellFooter role={role} />}
         topBarActions={<NotificationBell />}
         pathname={pathname}
-        linkComponent={ShellLink}
+        linkComponent={shellLink}
         breadcrumbs={breadcrumbs}
         collapsible
         mobileOpen={mobileOpen}
@@ -549,7 +597,7 @@ function BaseballFairwayContent({
         // P413-equivalent: persistent mobile bottom-tab bar for the core
         // destinations (md:hidden; drawer keeps the long tail).
         bottomNav={
-          <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} />
+          <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={shellLink} />
         }
         // Pages own their own gutters + titles (the legacy <main> in
         // dashboard-shell.tsx had no content padding either) — the shell keeps

@@ -85,6 +85,14 @@ interface PerformanceDashboardClientProps {
   /** Show skeleton loaders while data is loading. */
   isLoading?: boolean;
   /**
+   * Team-local "today" as an ISO date (YYYY-MM-DD), resolved server-side via
+   * todayIsoInTz(resolveTeamTimezone(...)). Optional — no server parent
+   * threads this yet, so it falls back to the browser-local date
+   * (toLocaleDateString('en-CA')), which still beats UTC for the acute
+   * midnight-rollover case but is not team-timezone-correct.
+   */
+  today?: string;
+  /**
    * Rendered as a section BELOW the PerformanceCommandCenter (default on the
    * main Performance page). In embedded mode this drops the duplicate
    * "Performance" hero header, the duplicate KPI summary strip, and the
@@ -210,6 +218,7 @@ export function PerformanceDashboardClient({
   groups,
   isLoading = false,
   embedded = false,
+  today,
 }: PerformanceDashboardClientProps) {
   void teamId; // team scope is enforced server-side; kept for prop-contract clarity.
 
@@ -273,9 +282,9 @@ export function PerformanceDashboardClient({
   );
 
   const reportedToday = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return readiness.filter((r) => r.latest_checkin?.check_date === today).length;
-  }, [readiness]);
+    const todayIso = today ?? new Date().toLocaleDateString('en-CA');
+    return readiness.filter((r) => r.latest_checkin?.check_date === todayIso).length;
+  }, [readiness, today]);
 
   // The "Lift Trend" ClimbArc (PR/lift trends → ClimbArc + StatReadout). Reads
   // the SAME `assignments` prop already on the surface — no new data path —

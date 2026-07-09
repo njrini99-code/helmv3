@@ -214,7 +214,7 @@ function MessagesContent() {
 export default function MessagesPage() {
   return (
     <Suspense fallback={
-      <div className="h-[calc(100dvh-64px)] flex items-center justify-center bg-[#FAF6F1]">
+      <div className="h-[calc(100dvh-64px)] flex items-center justify-center bg-cream-100">
         <Loading />
       </div>
     }>

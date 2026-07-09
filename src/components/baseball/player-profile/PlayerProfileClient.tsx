@@ -28,7 +28,6 @@ import {
   IconX,
   IconPlay,
   IconTarget,
-  IconBolt,
   IconClock,
   IconPlus,
   IconChevronRight,
@@ -38,7 +37,12 @@ import {
   IconList,
   IconCheck,
 } from '@/components/icons';
-import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+import type {
+  BaseballCoachInsight,
+  BaseballPlayerSeasonStats,
+  BaseballBoxScoreBatting,
+  BaseballGame,
+} from '@/lib/types';
 import type { BaseballNoteScope } from '@/lib/types/baseball-extended';
 import type { SnapshotHeader } from '@/lib/baseball/read-models/player-snapshot-cards';
 import type { TimelineEventView } from '@/lib/baseball/read-models/timeline';
@@ -78,8 +82,22 @@ interface PlayerProfileClientProps {
     team_status: string | null;
     joined_at: string | null;
   };
-  stats: BaseballPlayerStats[];
-  aggregates: BaseballPlayerAggregates | null;
+  /**
+   * Box-score-canonical season totals (baseball_player_season_stats via
+   * recalculate_baseball_season_stats), current season year. Null when the
+   * player has no season row yet (no box score saved this season). This is
+   * the SAME source /players/[id]/stats reads — a coach's box-score save
+   * updates this and the profile now reflects it immediately.
+   */
+  seasonStats: BaseballPlayerSeasonStats | null;
+  /**
+   * Box-score-canonical per-game batting log for the current season
+   * (baseball_box_score_batting joined to baseball_games), most-recent-first
+   * from getPlayerSeasonStats(). Drives the trend chart, game/scrimmage
+   * split, last-5 average, and the Stats tab's session table — all derived
+   * from real saved box scores instead of the deprecated flat stat log.
+   */
+  battingLog: Array<BaseballBoxScoreBatting & { game: Partial<BaseballGame> }>;
   insights: BaseballCoachInsight[];
   notes: Array<{
     id: string;
@@ -252,8 +270,8 @@ function TrendTooltip({ active, payload, label }: TrendTooltipProps) {
 
 export function PlayerProfileClient({
   player,
-  stats,
-  aggregates,
+  seasonStats,
+  battingLog,
   insights,
   notes,
   videos,
@@ -298,92 +316,130 @@ export function PlayerProfileClient({
       ? `${player.city}, ${player.state}`
       : player.city ?? player.state ?? null;
 
-  // ── Career aggregate computations ──────────────────────────────────────────
-  const careerHR = useMemo(
-    () => stats.reduce((sum, s) => sum + (s.home_runs ?? 0), 0),
-    [stats]
-  );
-  const careerRBI = useMemo(
-    () => stats.reduce((sum, s) => sum + (s.rbis ?? 0), 0),
-    [stats]
-  );
-  const totalAB = useMemo(
-    () => stats.reduce((sum, s) => sum + (s.at_bats ?? 0), 0),
-    [stats]
-  );
-  const totalHits = useMemo(
-    () => stats.reduce((sum, s) => sum + (s.hits ?? 0), 0),
-    [stats]
-  );
+  // ── Season totals (box-score canonical) ─────────────────────────────────────
+  // Straight field reads off baseball_player_season_stats — no client-side
+  // summing needed, that's what recalculate_baseball_season_stats already did.
+  const seasonAB = seasonStats?.ab ?? 0;
+  const seasonHits = seasonStats?.h ?? 0;
+  const seasonHR = seasonStats?.hr ?? 0;
+  const seasonRBI = seasonStats?.rbi ?? 0;
+  const seasonGames = seasonStats?.g ?? battingLog.length;
 
+  // Game vs. scrimmage AVG split — computed from the box-score game log
+  // (baseball_games.game_type is 'game' | 'scrimmage') since the season-stats
+  // row doesn't carry a per-context breakdown.
+  const { gameAvg, scrimmageAvg } = useMemo(() => {
+    let gAb = 0, gH = 0, sAb = 0, sH = 0;
+    for (const row of battingLog) {
+      if (row.game?.game_type === 'game') {
+        gAb += row.ab ?? 0;
+        gH += row.h ?? 0;
+      } else if (row.game?.game_type === 'scrimmage') {
+        sAb += row.ab ?? 0;
+        sH += row.h ?? 0;
+      }
+    }
+    return {
+      gameAvg: gAb > 0 ? gH / gAb : null,
+      scrimmageAvg: sAb > 0 ? sH / sAb : null,
+    };
+  }, [battingLog]);
+
+  // Last 5 games AVG — most recent 5 box-score batting rows by game date.
+  const last5Avg = useMemo(() => {
+    const sorted = [...battingLog].sort(
+      (a, b) => (b.game?.game_date ?? '').localeCompare(a.game?.game_date ?? '')
+    );
+    const recent = sorted.slice(0, 5);
+    const ab = recent.reduce((s, r) => s + (r.ab ?? 0), 0);
+    const h = recent.reduce((s, r) => s + (r.h ?? 0), 0);
+    return ab > 0 ? h / ab : null;
+  }, [battingLog]);
+
+  // Pressure index — same "game vs. scrimmage AVG gap" semantics the
+  // deprecated aggregates.pressure_gap used to carry, now sourced from the
+  // box-score game log so it actually reflects saved box scores.
+  const pressureGap = gameAvg != null && scrimmageAvg != null ? gameAvg - scrimmageAvg : null;
   const pressureIndex =
-    aggregates?.pressure_gap != null
-      ? aggregates.pressure_gap > 0
+    pressureGap != null
+      ? pressureGap > 0
         ? 'Clutch'
-        : aggregates.pressure_gap < -0.03
+        : pressureGap < -0.03
         ? 'Struggles'
         : 'Consistent'
       : null;
 
-  // ── Trend chart data ────────────────────────────────────────────────────────
-  const trendData = useMemo(() => {
-    return [...stats]
-      .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
-      .map((s) => ({
-        date: formatShortDate(s.session_date),
-        avg: s.at_bats > 0 ? s.hits / s.at_bats : null,
-        hits: s.hits,
-        atBats: s.at_bats,
-        type: s.stat_type,
-      }));
-  }, [stats]);
+  // Trend velocity (rate-of-change) has no box-score-canonical equivalent —
+  // it was a deprecated-aggregates-only derived metric. Always null; the
+  // Advanced Metrics section below renders its honest "not yet available"
+  // state for this card rather than a stale/never-synced number.
+  const trendMagnitude: number | null = null;
 
-  // ── Stats table logic ───────────────────────────────────────────────────────
+  // ── Trend chart data — one point per box-score game, chronological ─────────
+  const trendData = useMemo(() => {
+    return [...battingLog]
+      .filter((s) => s.game?.game_date)
+      .sort((a, b) => new Date(a.game!.game_date!).getTime() - new Date(b.game!.game_date!).getTime())
+      .map((s) => ({
+        date: formatShortDate(s.game!.game_date!),
+        avg: (s.ab ?? 0) > 0 ? (s.h ?? 0) / (s.ab ?? 0) : null,
+        hits: s.h,
+        atBats: s.ab,
+        type: s.game?.game_type,
+      }));
+  }, [battingLog]);
+
+  // ── Stats table logic (box-score game log) ──────────────────────────────────
   const filteredStats = useMemo(() => {
+    const wantType = statFilter === 'practice' ? 'scrimmage' : statFilter;
     const base =
       statFilter === 'all'
-        ? stats
-        : stats.filter((s) => s.stat_type === statFilter);
+        ? battingLog
+        : battingLog.filter((s) => s.game?.game_type === wantType);
 
     return [...base].sort((a, b) => {
       const mult = sortDir === 'asc' ? 1 : -1;
       switch (sortKey) {
-        case 'date':
-          return mult * (new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
+        case 'date': {
+          const aTime = a.game?.game_date ? new Date(a.game.game_date).getTime() : 0;
+          const bTime = b.game?.game_date ? new Date(b.game.game_date).getTime() : 0;
+          return mult * (aTime - bTime);
+        }
         case 'ab':
-          return mult * ((a.at_bats ?? 0) - (b.at_bats ?? 0));
+          return mult * ((a.ab ?? 0) - (b.ab ?? 0));
         case 'h':
-          return mult * ((a.hits ?? 0) - (b.hits ?? 0));
+          return mult * ((a.h ?? 0) - (b.h ?? 0));
         case 'hr':
-          return mult * ((a.home_runs ?? 0) - (b.home_runs ?? 0));
+          return mult * ((a.hr ?? 0) - (b.hr ?? 0));
         case 'rbi':
-          return mult * ((a.rbis ?? 0) - (b.rbis ?? 0));
+          return mult * ((a.rbi ?? 0) - (b.rbi ?? 0));
         case 'bb':
-          return mult * ((a.walks ?? 0) - (b.walks ?? 0));
+          return mult * ((a.bb ?? 0) - (b.bb ?? 0));
         case 'so':
-          return mult * ((a.strikeouts ?? 0) - (b.strikeouts ?? 0));
+          return mult * ((a.k ?? 0) - (b.k ?? 0));
         case 'avg': {
-          const aAvg = a.at_bats > 0 ? a.hits / a.at_bats : -1;
-          const bAvg = b.at_bats > 0 ? b.hits / b.at_bats : -1;
+          const aAvg = (a.ab ?? 0) > 0 ? (a.h ?? 0) / (a.ab ?? 0) : -1;
+          const bAvg = (b.ab ?? 0) > 0 ? (b.h ?? 0) / (b.ab ?? 0) : -1;
           return mult * (aAvg - bAvg);
         }
         default:
           return 0;
       }
     });
-  }, [stats, statFilter, sortKey, sortDir]);
+  }, [battingLog, statFilter, sortKey, sortDir]);
 
   // Summary row for stats tab
   const statSummary = useMemo(() => {
-    const subset = statFilter === 'all' ? stats : stats.filter((s) => s.stat_type === statFilter);
-    const ab = subset.reduce((s, r) => s + (r.at_bats ?? 0), 0);
-    const h = subset.reduce((s, r) => s + (r.hits ?? 0), 0);
-    const hr = subset.reduce((s, r) => s + (r.home_runs ?? 0), 0);
-    const rbi = subset.reduce((s, r) => s + (r.rbis ?? 0), 0);
-    const bb = subset.reduce((s, r) => s + (r.walks ?? 0), 0);
-    const so = subset.reduce((s, r) => s + (r.strikeouts ?? 0), 0);
+    const wantType = statFilter === 'practice' ? 'scrimmage' : statFilter;
+    const subset = statFilter === 'all' ? battingLog : battingLog.filter((s) => s.game?.game_type === wantType);
+    const ab = subset.reduce((s, r) => s + (r.ab ?? 0), 0);
+    const h = subset.reduce((s, r) => s + (r.h ?? 0), 0);
+    const hr = subset.reduce((s, r) => s + (r.hr ?? 0), 0);
+    const rbi = subset.reduce((s, r) => s + (r.rbi ?? 0), 0);
+    const bb = subset.reduce((s, r) => s + (r.bb ?? 0), 0);
+    const so = subset.reduce((s, r) => s + (r.k ?? 0), 0);
     return { ab, h, hr, rbi, bb, so, avg: ab > 0 ? h / ab : null };
-  }, [stats, statFilter]);
+  }, [battingLog, statFilter]);
 
   // ── Video logic ─────────────────────────────────────────────────────────────
   const videosByFilter = useMemo(() => {
@@ -430,7 +486,15 @@ export function PlayerProfileClient({
   }
 
   // ── Trend badge ─────────────────────────────────────────────────────────────
-  const trend = aggregates?.recent_trend;
+  // Derived from box-score data: last-5-games AVG vs. season AVG, replacing
+  // the deprecated aggregates.recent_trend (which box-score saves never updated).
+  const trend: 'improving' | 'declining' | 'stable' | undefined = useMemo(() => {
+    if (last5Avg == null || seasonStats?.avg == null) return undefined;
+    const diff = last5Avg - seasonStats.avg;
+    if (diff > 0.02) return 'improving';
+    if (diff < -0.02) return 'declining';
+    return 'stable';
+  }, [last5Avg, seasonStats]);
   const trendBadge = {
     improving: { label: 'Improving', icon: <IconTrendingUp size={14} />, cls: 'bg-primary-100 text-primary-700' },
     declining: { label: 'Declining', icon: <IconTrendingDown size={14} />, cls: 'bg-red-100 text-red-700' },
@@ -559,39 +623,33 @@ export function PlayerProfileClient({
                   {badge.icon}
                   {badge.label}
                 </div>
-                {aggregates?.avg_exit_velocity && (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-700">
-                    <IconBolt size={13} />
-                    {aggregates.avg_exit_velocity.toFixed(1)} mph EV
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* ── Key stat row ─────────────────────────────────────────── */}
+            {/* ── Key stat row — season totals, box-score canonical ───────── */}
             <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-warm-100">
               <div className="text-center">
                 <p className="text-eyebrow text-warm-400 uppercase tracking-wide">AVG</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {formatAvg(aggregates?.career_avg)}
+                  {formatAvg(seasonStats?.avg)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-eyebrow text-warm-400 uppercase tracking-wide">OBP</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {formatAvg(aggregates?.career_obp)}
+                  {formatAvg(seasonStats?.obp)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-eyebrow text-warm-400 uppercase tracking-wide">HR</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {careerHR}
+                  {seasonHR}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">Sessions</p>
+                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">Games</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
-                  {aggregates?.total_sessions ?? stats.length}
+                  {seasonGames}
                 </p>
               </div>
             </div>
@@ -663,28 +721,22 @@ export function PlayerProfileClient({
             {/* Main column */}
             <div className="lg:col-span-2 space-y-6">
 
-              {/* Career stats grid */}
+              {/* Season stats grid — box-score canonical (baseball_player_season_stats) */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-warm-900 mb-4">Career Statistics</h3>
+                <h3 className="font-semibold text-warm-900 mb-4">Season Statistics</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
-                  <StatCard label="Career AVG" value={formatAvg(aggregates?.career_avg)} />
-                  <StatCard label="OBP" value={formatAvg(aggregates?.career_obp)} />
-                  <StatCard label="SLG" value={formatAvg(aggregates?.career_slg)} />
-                  <StatCard label="Game AVG" value={formatAvg(aggregates?.game_avg)} />
-                  <StatCard label="Scrimmage AVG" value={formatAvg(aggregates?.practice_avg)} />
-                  <StatCard label="Last 5 AVG" value={formatAvg(aggregates?.last_5_avg)} />
-                  <StatCard label="Total AB" value={String(totalAB)} />
-                  <StatCard label="Total Hits" value={String(totalHits)} />
-                  <StatCard label="Career HR" value={String(careerHR)} />
-                  <StatCard label="Career RBI" value={String(careerRBI)} />
-                  <StatCard label="Sessions" value={String(aggregates?.total_sessions ?? stats.length)} />
-                  {aggregates?.avg_exit_velocity && (
-                    <StatCard
-                      label="Avg Exit Velo"
-                      value={`${aggregates.avg_exit_velocity.toFixed(1)}`}
-                      sub="mph"
-                    />
-                  )}
+                  <StatCard label="AVG" value={formatAvg(seasonStats?.avg)} />
+                  <StatCard label="OBP" value={formatAvg(seasonStats?.obp)} />
+                  <StatCard label="SLG" value={formatAvg(seasonStats?.slg)} />
+                  <StatCard label="OPS" value={seasonStats?.ops != null ? seasonStats.ops.toFixed(3) : '—'} />
+                  <StatCard label="Game AVG" value={formatAvg(gameAvg)} />
+                  <StatCard label="Scrimmage AVG" value={formatAvg(scrimmageAvg)} />
+                  <StatCard label="Last 5 AVG" value={formatAvg(last5Avg)} />
+                  <StatCard label="AB" value={String(seasonAB)} />
+                  <StatCard label="Hits" value={String(seasonHits)} />
+                  <StatCard label="HR" value={String(seasonHR)} />
+                  <StatCard label="RBI" value={String(seasonRBI)} />
+                  <StatCard label="Games" value={String(seasonGames)} />
                 </div>
               </div>
 
@@ -694,7 +746,7 @@ export function PlayerProfileClient({
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-semibold text-warm-900">Performance Trend</h3>
-                      <p className="text-xs text-warm-400 mt-0.5">Batting average per session</p>
+                      <p className="text-xs text-warm-400 mt-0.5">Batting average per game</p>
                     </div>
                     <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${badge.cls}`}>
                       {badge.icon}
@@ -751,10 +803,10 @@ export function PlayerProfileClient({
               {/* Advanced metrics — always shown; individual cards appear when data exists */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                 <h3 className="font-semibold text-warm-900 mb-4">Advanced Metrics</h3>
-                {!pressureIndex && aggregates?.trend_magnitude == null && aggregates?.avg_exit_velocity == null ? (
-                  <p className="text-sm text-warm-400 italic">Trend data not yet available — metrics populate after multiple sessions are logged.</p>
+                {!pressureIndex && trendMagnitude == null ? (
+                  <p className="text-sm text-warm-400 italic">Trend data not yet available — metrics populate once box scores are logged for both game and scrimmage contexts.</p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {pressureIndex ? (
                       <div className="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200/45 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
@@ -763,9 +815,9 @@ export function PlayerProfileClient({
                         <div>
                           <p className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Pressure</p>
                           <p className="text-base font-bold text-warm-900">{pressureIndex}</p>
-                          {aggregates?.pressure_gap != null && (
+                          {pressureGap != null && (
                             <p className="text-eyebrow text-warm-400">
-                              {aggregates.pressure_gap > 0 ? '+' : ''}{(aggregates.pressure_gap * 1000).toFixed(0)} pts game vs scrimmage
+                              {pressureGap > 0 ? '+' : ''}{(pressureGap * 1000).toFixed(0)} pts game vs scrimmage
                             </p>
                           )}
                         </div>
@@ -781,7 +833,7 @@ export function PlayerProfileClient({
                         </div>
                       </div>
                     )}
-                    {aggregates?.trend_magnitude != null ? (
+                    {trendMagnitude != null ? (
                       <div className="flex items-center gap-3 p-3.5 bg-amber-50 border border-amber-200/45 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
                           <IconActivity size={18} className="text-amber-600" />
@@ -789,7 +841,7 @@ export function PlayerProfileClient({
                         <div>
                           <p className="text-eyebrow font-semibold text-amber-500 uppercase tracking-wide">Trend Velocity</p>
                           <p className="text-base font-bold text-warm-900">
-                            {(aggregates.trend_magnitude * 100).toFixed(1)}%
+                            {(trendMagnitude * 100).toFixed(1)}%
                           </p>
                           <p className="text-eyebrow text-warm-400">Rate of change</p>
                         </div>
@@ -801,34 +853,6 @@ export function PlayerProfileClient({
                         </div>
                         <div>
                           <p className="text-eyebrow font-semibold text-amber-400 uppercase tracking-wide">Trend Velocity</p>
-                          <p className="text-sm text-warm-400">Not yet available</p>
-                        </div>
-                      </div>
-                    )}
-                    {aggregates?.avg_exit_velocity != null ? (
-                      <div className="flex items-center gap-3 p-3.5 bg-primary-50 border border-primary-200/45 rounded-xl">
-                        <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-                          <IconBolt size={18} className="text-primary-600" />
-                        </div>
-                        <div>
-                          <p className="text-eyebrow font-semibold text-primary-600 uppercase tracking-wide">Exit Velocity</p>
-                          <p className="text-base font-bold text-warm-900">
-                            {aggregates.avg_exit_velocity.toFixed(1)} mph
-                          </p>
-                          {aggregates.max_exit_velocity && (
-                            <p className="text-eyebrow text-warm-400">
-                              Max {aggregates.max_exit_velocity.toFixed(1)} mph
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 p-3.5 bg-primary-50/50 border border-primary-200/25 rounded-xl opacity-50">
-                        <div className="w-10 h-10 rounded-xl bg-primary-100/60 flex items-center justify-center flex-shrink-0">
-                          <IconBolt size={18} className="text-primary-400" />
-                        </div>
-                        <div>
-                          <p className="text-eyebrow font-semibold text-primary-400 uppercase tracking-wide">Exit Velocity</p>
                           <p className="text-sm text-warm-400">Not yet available</p>
                         </div>
                       </div>
@@ -919,14 +943,13 @@ export function PlayerProfileClient({
                 <PlayerNotesSection notes={notes.slice(0, 3)} compact />
               </div>
 
-              {/* Session breakdown */}
+              {/* Games breakdown — box-score canonical (baseball_games.game_type) */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-warm-900 mb-4">Sessions</h3>
+                <h3 className="font-semibold text-warm-900 mb-4">Games</h3>
                 <div className="space-y-3">
                   {[
-                    { label: 'Game', count: stats.filter((s) => s.stat_type === 'game').length, color: 'bg-primary-500' },
-                    { label: 'Practice / Scrimmage', count: stats.filter((s) => s.stat_type === 'practice').length, color: 'bg-primary-300' },
-                    { label: 'Other', count: stats.filter((s) => s.stat_type !== 'game' && s.stat_type !== 'practice').length, color: 'bg-warm-300' },
+                    { label: 'Game', count: battingLog.filter((s) => s.game?.game_type === 'game').length, color: 'bg-primary-500' },
+                    { label: 'Scrimmage', count: battingLog.filter((s) => s.game?.game_type === 'scrimmage').length, color: 'bg-primary-300' },
                   ].map(({ label, count, color }) => (
                     <div key={label} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -938,7 +961,7 @@ export function PlayerProfileClient({
                   ))}
                   <div className="flex items-center justify-between pt-2 border-t border-warm-100">
                     <span className="text-sm font-medium text-warm-700">Total</span>
-                    <span className="text-sm font-bold text-primary-600">{stats.length}</span>
+                    <span className="text-sm font-bold text-primary-600">{battingLog.length}</span>
                   </div>
                 </div>
                 <Button variant="primary"
@@ -990,7 +1013,7 @@ export function PlayerProfileClient({
 
             {/* Filter toggle */}
             <div className="flex items-center gap-2">
-              <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Filter sessions by type">
+              <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Filter games by type">
                 {(['all', 'game', 'practice'] as const).map((f) => (
                   <Button variant="ghost"
                     key={f}
@@ -1006,14 +1029,14 @@ export function PlayerProfileClient({
                   </Button>
                 ))}
               </div>
-              <span className="text-xs text-warm-400">{filteredStats.length} sessions</span>
+              <span className="text-xs text-warm-400">{filteredStats.length} games</span>
             </div>
 
             {/* Summary row */}
             {filteredStats.length > 0 && (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4">
                 <p className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wide mb-3">
-                  Totals — {statFilter === 'all' ? 'All Sessions' : statFilter === 'game' ? 'Game Sessions' : 'Scrimmage Sessions'}
+                  Totals — {statFilter === 'all' ? 'All Games' : statFilter === 'game' ? 'Games' : 'Scrimmages'}
                 </p>
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
                   {[
@@ -1041,7 +1064,7 @@ export function PlayerProfileClient({
                   <IconActivity size={28} />
                 </div>
                 <p className="font-semibold text-warm-900">No stats for this filter</p>
-                <p className="mt-1 text-sm leading-relaxed text-warm-500">Switch to “All” to see every session.</p>
+                <p className="mt-1 text-sm leading-relaxed text-warm-500">Switch to “All” to see every game.</p>
               </div>
             ) : (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
@@ -1062,38 +1085,38 @@ export function PlayerProfileClient({
                     </thead>
                     <tbody>
                       {filteredStats.map((stat) => {
-                        const sessionAvg =
-                          stat.at_bats > 0 ? stat.hits / stat.at_bats : null;
+                        const gameAvgForRow =
+                          (stat.ab ?? 0) > 0 ? (stat.h ?? 0) / (stat.ab ?? 0) : null;
                         return (
                           <tr
                             key={stat.id}
                             className="border-b border-warm-50 last:border-0 hover:bg-warm-50/80 transition-colors"
                           >
                             <td className="px-3 py-3 text-sm text-warm-700 whitespace-nowrap">
-                              {formatDate(stat.session_date)}
+                              {stat.game?.game_date ? formatDate(stat.game.game_date) : '—'}
                             </td>
                             <td className="px-3 py-3">
                               <span
                                 className={`px-2 py-0.5 text-eyebrow font-semibold rounded-md whitespace-nowrap ${
-                                  stat.stat_type === 'game'
+                                  stat.game?.game_type === 'game'
                                     ? 'bg-primary-100 text-primary-700'
-                                    : stat.stat_type === 'practice'
+                                    : stat.game?.game_type === 'scrimmage'
                                     ? 'bg-amber-100 text-amber-700'
                                     : 'bg-warm-100 text-warm-600'
                                 }`}
                               >
-                                {stat.stat_type === 'practice' ? 'Scrimmage' : stat.stat_type}
+                                {stat.game?.game_type === 'scrimmage' ? 'Scrimmage' : stat.game?.game_type ?? '—'}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.at_bats ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.hits ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.ab ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.h ?? '—'}</td>
                             <td className="px-3 py-3 text-center text-sm font-semibold text-warm-900 tabular-nums">
-                              {formatAvg(sessionAvg)}
+                              {formatAvg(gameAvgForRow)}
                             </td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.home_runs ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.rbis ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.walks ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.strikeouts ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.hr ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.rbi ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.bb ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.k ?? '—'}</td>
                           </tr>
                         );
                       })}

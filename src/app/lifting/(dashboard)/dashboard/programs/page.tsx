@@ -80,6 +80,7 @@ export default async function ProgramsPage() {
       programs={programs}
       orgId={orgId}
       canEdit={access.canEdit}
+      basePath="/lifting/dashboard/programs"
     />
   );
 }

@@ -98,6 +98,7 @@ export default async function ProgramsPage() {
         programs={programs}
         orgId={liftCtx?.organizationId ?? ''}
         canEdit={caps.can_manage_lifting}
+        basePath="/baseball/dashboard/performance/programs"
       />
     </div>
   );

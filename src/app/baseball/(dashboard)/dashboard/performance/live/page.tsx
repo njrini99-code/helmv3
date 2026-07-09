@@ -40,6 +40,11 @@ import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
+import {
+  resolveTeamTimezone,
+  todayIsoInTz,
+} from '@/lib/baseball/daily-contract/contract-day';
+import { logServerError } from '@/lib/server-error-logger';
 import { LiveWeightRoomClient } from '@/components/lifting/sessions/LiveWeightRoomClient';
 import type {
   HelmLiftingSessionRow,
@@ -51,6 +56,19 @@ import type {
 } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
 
+const LIVE_ROOM_ACTION = 'baseball.performance.live.buildLiveRoomData';
+
+type UntypedQueryError = { message: string } | null;
+
+async function logQueryError(table: string, error: UntypedQueryError, teamId: string) {
+  if (!error) return;
+  await logServerError(`Failed to load ${table}: ${error.message}`, {
+    action: LIVE_ROOM_ACTION,
+    sport: 'baseball',
+    teamId,
+  });
+}
+
 async function buildLiveRoomData(
   organizationId: string,
   teamId: string,
@@ -60,53 +78,63 @@ async function buildLiveRoomData(
   exerciseLibrary: Array<{ id: string; name: string; category: string | null }>;
 }> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
-  const { data: sessions } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+  const { data: sessions, error: sessionsError } = (await fromUntyped(supabase, 'helm_lifting_sessions')
     .select('*')
     .eq('organization_id', organizationId)
     .eq('team_id', teamId)
     .eq('scheduled_date', today)
-    .order('athlete_id', { ascending: true })) as { data: HelmLiftingSessionRow[] | null };
+    .order('athlete_id', { ascending: true })) as { data: HelmLiftingSessionRow[] | null; error: UntypedQueryError };
+  await logQueryError('helm_lifting_sessions', sessionsError, teamId);
 
   if (!sessions || sessions.length === 0) {
-    const { data: exercises } = (await fromUntyped(supabase, 'helm_lifting_exercises')
+    const { data: exercises, error: exercisesError } = (await fromUntyped(supabase, 'helm_lifting_exercises')
       .select('id, name, category')
       .eq('sport', 'baseball')
       .eq('is_active', true)
       .or(`organization_id.eq.${organizationId},is_global.eq.true`)
       .order('name', { ascending: true })
-      .limit(200)) as { data: Array<{ id: string; name: string; category: string | null }> | null };
+      .limit(200)) as { data: Array<{ id: string; name: string; category: string | null }> | null; error: UntypedQueryError };
+    await logQueryError('helm_lifting_exercises', exercisesError, teamId);
     return { athletes: [], exerciseLibrary: exercises ?? [] };
   }
 
   const sessionIds = sessions.map((s) => s.id);
   const athleteIds = [...new Set(sessions.map((s) => s.athlete_id))];
 
+  // Fetched ahead of the Promise.all batch below because helm_lifting_set_results
+  // has no session_id column (only session_exercise_id) — the set-results query
+  // must filter on the exercise ids derived from this result, not sessionIds.
+  const { data: sessionExercises, error: sessionExercisesError } = (await fromUntyped(supabase, 'helm_lifting_session_exercises')
+    .select('*')
+    .in('session_id', sessionIds)
+    .order('order_index', { ascending: true })) as { data: HelmLiftingSessionExerciseRow[] | null; error: UntypedQueryError };
+  await logQueryError('helm_lifting_session_exercises', sessionExercisesError, teamId);
+
+  const exerciseIds = (sessionExercises ?? []).map((se) => se.id);
+  type LatestSetRow = Pick<HelmLiftingSetResultRow, 'session_exercise_id' | 'athlete_id' | 'set_number' | 'actual_load' | 'rpe'> & { created_at: string };
+
   const [
-    { data: athletes },
-    { data: sessionExercises },
-    { data: setResults },
+    { data: athletes, error: athletesError },
+    { data: setResults, error: setResultsError },
     checkinsResult,
-    { data: availabilities },
-    { data: groupMembers },
-    { data: exercises },
+    { data: availabilities, error: availabilitiesError },
+    { data: groupMembers, error: groupMembersError },
+    { data: exercises, error: exercisesError },
   ] = await Promise.all([
     fromUntyped(supabase, 'helm_lifting_athletes')
       .select('id, first_name, last_name, position, sport, user_id')
       .in('id', athleteIds) as Promise<{
-        data: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport' | 'user_id'>> | null
+        data: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport' | 'user_id'>> | null;
+        error: UntypedQueryError;
       }>,
-    fromUntyped(supabase, 'helm_lifting_session_exercises')
-      .select('*')
-      .in('session_id', sessionIds)
-      .order('order_index', { ascending: true }) as Promise<{ data: HelmLiftingSessionExerciseRow[] | null }>,
-    fromUntyped(supabase, 'helm_lifting_set_results')
-      .select('session_exercise_id, athlete_id, set_number, actual_load, rpe, created_at')
-      .in('session_id', sessionIds)
-      .order('created_at', { ascending: false }) as Promise<{
-        data: Array<Pick<HelmLiftingSetResultRow, 'session_exercise_id' | 'athlete_id' | 'set_number' | 'actual_load' | 'rpe'> & { created_at: string }> | null
-      }>,
+    exerciseIds.length > 0
+      ? (fromUntyped(supabase, 'helm_lifting_set_results')
+          .select('session_exercise_id, athlete_id, set_number, actual_load, rpe, created_at')
+          .in('session_exercise_id', exerciseIds)
+          .order('created_at', { ascending: false }) as Promise<{ data: LatestSetRow[] | null; error: UntypedQueryError }>)
+      : Promise.resolve({ data: [] as LatestSetRow[], error: null as UntypedQueryError }),
     // Readiness check-ins are only fetched at all when the caller holds
     // can_view_readiness — an unauthorized caller never sees the data,
     // rather than the component just hiding a value it was handed.
@@ -115,21 +143,24 @@ async function buildLiveRoomData(
           .select('athlete_id, readiness_score, readiness_band')
           .in('athlete_id', athleteIds)
           .eq('checkin_date', today) as Promise<{
-            data: Array<{ athlete_id: string; readiness_score: number | null; readiness_band: string | null }> | null
+            data: Array<{ athlete_id: string; readiness_score: number | null; readiness_band: string | null }> | null;
+            error: UntypedQueryError;
           }>)
-      : Promise.resolve({ data: [] as Array<{ athlete_id: string; readiness_score: number | null; readiness_band: string | null }> }),
+      : Promise.resolve({ data: [] as Array<{ athlete_id: string; readiness_score: number | null; readiness_band: string | null }>, error: null as UntypedQueryError }),
     fromUntyped(supabase, 'helm_lifting_availability_statuses')
       .select('athlete_id, status')
       .in('athlete_id', athleteIds)
       .lte('starts_at', today)
       .or(`ends_at.is.null,ends_at.gte.${today}`) as Promise<{
-        data: Array<{ athlete_id: string; status: string }> | null
+        data: Array<{ athlete_id: string; status: string }> | null;
+        error: UntypedQueryError;
       }>,
     fromUntyped(supabase, 'helm_lifting_group_members')
       .select('athlete_id, helm_lifting_groups(name)')
       .in('athlete_id', athleteIds)
       .is('ends_at', null) as Promise<{
-        data: Array<{ athlete_id: string; helm_lifting_groups: { name: string } | null }> | null
+        data: Array<{ athlete_id: string; helm_lifting_groups: { name: string } | null }> | null;
+        error: UntypedQueryError;
       }>,
     fromUntyped(supabase, 'helm_lifting_exercises')
       .select('id, name, category')
@@ -138,8 +169,18 @@ async function buildLiveRoomData(
       .or(`organization_id.eq.${organizationId},is_global.eq.true`)
       .order('name', { ascending: true })
       .limit(200) as Promise<{
-        data: Array<{ id: string; name: string; category: string | null }> | null
+        data: Array<{ id: string; name: string; category: string | null }> | null;
+        error: UntypedQueryError;
       }>,
+  ]);
+
+  await Promise.all([
+    logQueryError('helm_lifting_athletes', athletesError, teamId),
+    logQueryError('helm_lifting_set_results', setResultsError, teamId),
+    logQueryError('helm_lifting_readiness_checkins', checkinsResult.error, teamId),
+    logQueryError('helm_lifting_availability_statuses', availabilitiesError, teamId),
+    logQueryError('helm_lifting_group_members', groupMembersError, teamId),
+    logQueryError('helm_lifting_exercises (live-room)', exercisesError, teamId),
   ]);
 
   const checkins = checkinsResult.data;

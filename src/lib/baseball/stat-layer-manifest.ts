@@ -235,12 +235,6 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
 
   // --- Pages / components -----------------------------------------------------
   {
-    path: 'src/app/baseball/(dashboard)/dashboard/players/[id]/page.tsx',
-    group: 'page-or-component',
-    status: 'pending migration',
-    note: 'Player profile page queries baseball_player_stats and baseball_player_aggregates directly for the page-level data fetch.',
-  },
-  {
     path: 'src/app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx',
     group: 'page-or-component',
     status: 'pending migration',

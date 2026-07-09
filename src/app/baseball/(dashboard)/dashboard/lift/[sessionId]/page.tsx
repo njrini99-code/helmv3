@@ -32,38 +32,78 @@ import type {
   HelmLiftingSessionWithExercises,
 } from '@/lib/types/helm-lifting-data';
 
+interface SessionFetchResult {
+  session: HelmLiftingSessionWithExercises | null;
+  /** True when a query genuinely errored (backend/RLS) — distinct from a
+   * clean 0-rows result, which must NOT be treated as an error. */
+  error: boolean;
+}
+
 async function fetchSessionWithExercises(
   sessionId: string,
   athleteId: string,
   organizationId: string,
-): Promise<HelmLiftingSessionWithExercises | null> {
+): Promise<SessionFetchResult> {
   const supabase = await createClient();
 
   // athlete_id filter is an extra UX guard on top of RLS (helm_lifting_is_my_athlete).
-  const { data: rawSession } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+  const { data: rawSession, error: sessionError } = (await fromUntyped(
+    supabase,
+    'helm_lifting_sessions',
+  )
     .select('*')
     .eq('id', sessionId)
     .eq('athlete_id', athleteId)
     .eq('organization_id', organizationId)
-    .maybeSingle()) as { data: HelmLiftingSessionRow | null };
+    .maybeSingle()) as { data: HelmLiftingSessionRow | null; error: unknown };
 
-  if (!rawSession) return null;
+  if (sessionError) {
+    console.error('[lift/[sessionId]] fetchSessionWithExercises session query failed', sessionError);
+    return { session: null, error: true };
+  }
 
-  const { data: exerciseRows } = (await fromUntyped(supabase, 'helm_lifting_session_exercises')
+  if (!rawSession) return { session: null, error: false };
+
+  const { data: exerciseRows, error: exercisesError } = (await fromUntyped(
+    supabase,
+    'helm_lifting_session_exercises',
+  )
     .select('*')
     .eq('session_id', sessionId)
-    .order('order_index', { ascending: true })) as { data: HelmLiftingSessionExerciseRow[] | null };
+    .order('order_index', { ascending: true })) as {
+    data: HelmLiftingSessionExerciseRow[] | null;
+    error: unknown;
+  };
+
+  if (exercisesError) {
+    console.error(
+      '[lift/[sessionId]] fetchSessionWithExercises exercises query failed',
+      exercisesError,
+    );
+    return { session: null, error: true };
+  }
 
   const exercises = exerciseRows ?? [];
   const exerciseIds = exercises.map((ex) => ex.id);
   const setsByExercise = new Map<string, HelmLiftingSetResultRow[]>();
 
   if (exerciseIds.length > 0) {
-    const { data: setResults } = (await fromUntyped(supabase, 'helm_lifting_set_results')
+    const { data: setResults, error: setsError } = (await fromUntyped(
+      supabase,
+      'helm_lifting_set_results',
+    )
       .select('*')
       .in('session_exercise_id', exerciseIds)
       .eq('athlete_id', athleteId)
-      .order('set_number', { ascending: true })) as { data: HelmLiftingSetResultRow[] | null };
+      .order('set_number', { ascending: true })) as {
+      data: HelmLiftingSetResultRow[] | null;
+      error: unknown;
+    };
+
+    if (setsError) {
+      console.error('[lift/[sessionId]] fetchSessionWithExercises sets query failed', setsError);
+      return { session: null, error: true };
+    }
 
     for (const result of setResults ?? []) {
       const arr = setsByExercise.get(result.session_exercise_id) ?? [];
@@ -73,8 +113,11 @@ async function fetchSessionWithExercises(
   }
 
   return {
-    ...rawSession,
-    exercises: exercises.map((ex) => ({ ...ex, sets: setsByExercise.get(ex.id) ?? [] })),
+    session: {
+      ...rawSession,
+      exercises: exercises.map((ex) => ({ ...ex, sets: setsByExercise.get(ex.id) ?? [] })),
+    },
+    error: false,
   };
 }
 
@@ -96,12 +139,25 @@ export default async function PlayerLiftSessionPage({
     redirect('/baseball/dashboard/lift');
   }
 
-  const { organizationId, athleteId } = athleteCtx;
+  const { organizationId, teamId, athleteId } = athleteCtx;
 
-  const [session, readinessSubmittedToday] = await Promise.all([
+  const [{ session, error: sessionFetchError }, readinessSubmittedToday] = await Promise.all([
     fetchSessionWithExercises(sessionId, athleteId, organizationId),
-    hasReadinessCheckinToday(athleteId, organizationId),
+    hasReadinessCheckinToday(athleteId, organizationId, teamId),
   ]);
+
+  if (sessionFetchError) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-6 pb-28">
+        <div className="glass-standard rounded-2xl border border-cream-400/40 p-8 shadow-glass">
+          <h2 className="text-h3 text-warm-900">Unable to load this session</h2>
+          <p className="mt-2 text-body text-warm-500">
+            Something went wrong loading this lift session. Please refresh the page to try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!session) notFound();
 

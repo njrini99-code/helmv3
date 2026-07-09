@@ -64,6 +64,10 @@ describe('baseball nav capability gating (context-wiring regression)', () => {
     const headCoach: BaseballNavContext = {
       role: 'coach',
       capabilities: allCaps(true),
+      // postgame-review is now college/JUCO-only gated (its page hard-redirects
+      // other program types), so a concrete program type is required for it to
+      // appear alongside the five capability-only gated entries.
+      programType: 'college',
     };
     const ids = visibleIds(headCoach);
     for (const id of GATED_ENTRY_IDS) {
@@ -87,6 +91,9 @@ describe('baseball nav capability gating (context-wiring regression)', () => {
     const analyst: BaseballNavContext = {
       role: 'coach',
       capabilities: { ...allCaps(false), can_manage_stats: true },
+      // college stats analyst: postgame-review needs both can_manage_stats and
+      // a college/JUCO program type to surface.
+      programType: 'college',
     };
     const ids = visibleIds(analyst);
     expect(ids.has('postgame-review')).toBe(true);

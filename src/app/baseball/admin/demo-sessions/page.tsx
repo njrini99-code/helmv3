@@ -49,7 +49,7 @@ export default async function BaseballDemoSessionsPage() {
   const total = result?.total ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA] p-6 md:p-10">
+    <div className="min-h-screen bg-cream-50 p-6 md:p-10">
       {/* ── Breadcrumb ─────────────────────────────────────────────────── */}
       {/* NOTE: BaseballHelm has no `/baseball/admin` index page yet (unlike
           GolfHelm's `/golf/admin`), so this links straight to the dashboard

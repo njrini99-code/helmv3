@@ -57,23 +57,11 @@ export function StatsOverviewCards({ aggregates, className }: StatsOverviewCards
 
       <div className="mt-8">
         <KPIContentsStrip
-          columns={4}
+          columns={2}
           items={[
             {
               label: 'Last 5',
               value: aggregates.last_5_avg != null ? formatRate(aggregates.last_5_avg, 3) : '—',
-            },
-            {
-              label: 'Exit Velo',
-              value: aggregates.avg_exit_velocity ?? '—',
-              unit: 'MPH',
-              decimals: 1,
-            },
-            {
-              label: 'Max Exit Velo',
-              value: aggregates.max_exit_velocity ?? '—',
-              unit: 'MPH',
-              decimals: 1,
             },
             { label: 'Sessions', value: aggregates.total_sessions },
           ]}

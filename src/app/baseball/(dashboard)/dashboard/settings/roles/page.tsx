@@ -16,7 +16,6 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { getRoleTemplates } from '@/app/baseball/actions/roles-permissions';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { IconUsers, IconChevronRight, IconShield } from '@/components/icons';
 
@@ -45,10 +44,12 @@ export default async function RolesPage() {
 
   return (
     <>
-      <Header
-        title="Roles"
-        subtitle={`Role templates for ${data.programLabel} programs`}
-      />
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Roles</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{`Role templates for ${data.programLabel} programs`}</p>
+        </div>
+      </div>
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <Card variant="glass">
           <CardHeader>

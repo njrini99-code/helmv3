@@ -3,7 +3,6 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -565,7 +564,10 @@ export default function TeamsPage() {
   if (!coach) {
     return (
       <>
-        <Header title="Teams" subtitle="Showcase coach access required" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
+          <h1 className="text-h2 font-semibold text-warm-900">Teams</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Showcase coach access required</p>
+        </div>
         <div className="p-6">
           <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
             <p className="text-warm-500">Please log in as a showcase coach to manage teams.</p>
@@ -577,15 +579,16 @@ export default function TeamsPage() {
 
   return (
     <>
-      <Header
-        title="Teams"
-        subtitle={`Manage your ${teams.length} team${teams.length !== 1 ? 's' : ''}`}
-      >
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">Teams</h1>
+          <p className="mt-1 text-body-sm text-warm-500">{`Manage your ${teams.length} team${teams.length !== 1 ? 's' : ''}`}</p>
+        </div>
         <Button onClick={() => setShowCreateModal(true)}>
           <IconPlus size={16} />
           New Team
         </Button>
-      </Header>
+      </div>
 
       <div className="p-6">
         {teams.length === 0 ? (

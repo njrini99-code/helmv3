@@ -86,6 +86,31 @@ test.describe('Coach - Create New Game', () => {
   // created, never touching the seeded fixture games.
   const createdOpponents: string[] = [];
 
+  // Pre-run sweep: a previous CANCELLED/timed-out run (Playwright's
+  // cancel-in-progress) skips the afterAll teardown below, leaving orphaned
+  // "E2E Created Opponent …" games (and their linked calendar events) behind
+  // on the shared/demo team. Delete any such leftovers before this run so junk
+  // can't accumulate across cancelled runs, regardless of whether this run
+  // reaches its own afterAll.
+  test.beforeAll(async () => {
+    const supabase = getServiceRoleClient();
+    if (!supabase) return;
+    const { data: games } = await supabase
+      .from('baseball_games')
+      .select('id, event_id')
+      .ilike('opponent_name', 'E2E Created Opponent%');
+    const gameIds = (games ?? []).map((g) => g.id);
+    const eventIds = (games ?? [])
+      .map((g) => g.event_id)
+      .filter((id): id is string => Boolean(id));
+    if (gameIds.length > 0) {
+      await supabase.from('baseball_games').delete().in('id', gameIds);
+    }
+    if (eventIds.length > 0) {
+      await supabase.from('baseball_events').delete().in('id', eventIds);
+    }
+  });
+
   test.beforeEach(async ({ page }) => {
     await loginCoachOrSkip(page);
     await page.goto('/baseball/dashboard/stats/games/create');

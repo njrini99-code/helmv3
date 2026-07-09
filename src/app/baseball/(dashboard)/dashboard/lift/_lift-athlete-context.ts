@@ -23,6 +23,7 @@ import {
   resolveBaseballLiftingOrg,
   resolveMyBaseballAthleteId,
 } from '@/lib/lifting/resolve-baseball-context';
+import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 
 export interface PlayerLiftAthleteContext {
   organizationId: string;
@@ -30,16 +31,30 @@ export interface PlayerLiftAthleteContext {
   athleteId: string;
 }
 
-/** baseball_players.id -> baseball_teams.id (first active membership). */
+/**
+ * baseball_players.id -> baseball_teams.id (first active membership).
+ *
+ * A player can legitimately hold TWO active baseball_team_members rows
+ * (JUCO + Showcase). Without the status filter + explicit limit(1),
+ * .maybeSingle() errors with PGRST116 on a >1-row result and silently
+ * degrades the entire Lift Lab to empty for that athlete.
+ */
 async function resolvePlayerTeamId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
 ): Promise<string | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('baseball_team_members')
     .select('team_id')
     .eq('player_id', playerId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle();
+  if (error) {
+    console.error('[lift-athlete-context] resolvePlayerTeamId query failed', error);
+    return null;
+  }
   return (data?.team_id as string | undefined) ?? null;
 }
 
@@ -71,16 +86,21 @@ export async function resolvePlayerLiftAthleteContext(
 export async function hasReadinessCheckinToday(
   athleteId: string,
   organizationId: string,
+  teamId: string,
 ): Promise<boolean> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
-  const { data } = (await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
+  const { data, error } = (await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
     .select('id')
     .eq('athlete_id', athleteId)
     .eq('organization_id', organizationId)
     .eq('checkin_date', today)
-    .maybeSingle()) as { data: { id: string } | null };
+    .maybeSingle()) as { data: { id: string } | null; error: unknown };
+
+  if (error) {
+    console.error('[lift-athlete-context] hasReadinessCheckinToday query failed', error);
+  }
 
   return data !== null;
 }

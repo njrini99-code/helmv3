@@ -247,8 +247,6 @@ export interface BaseballPlayerAggregates {
   last_10_avg: number | null;
   season_avg: number | null;
 
-  avg_exit_velocity: number | null;
-  max_exit_velocity: number | null;
   avg_pitch_velocity: number | null;
   max_pitch_velocity: number | null;
 

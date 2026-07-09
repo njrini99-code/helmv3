@@ -729,7 +729,7 @@ export function LiftCanvas({
             className={[
               'flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors',
               activeTab === id
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-500 hover:text-warm-700',
             ].join(' ')}
           >
@@ -747,7 +747,7 @@ export function LiftCanvas({
         {/* ── LEFT PANE: body-region filter + exercise bin ──────────────── */}
         <aside
           className={[
-            'flex-col rounded-2xl border border-warm-100 bg-white/70 p-3',
+            'flex-col rounded-2xl border border-warm-100 glass-standard p-3',
             'lg:w-64 lg:flex-shrink-0',
             activeTab === 'library' ? 'flex' : 'hidden lg:flex',
           ].join(' ')}

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -202,7 +201,12 @@ export default function JourneyPage() {
   if (loading) {
     return (
       <>
-        <Header title="My Journey" subtitle="Track your recruiting progress" />
+        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-h2 font-semibold text-warm-900">My Journey</h1>
+            <p className="mt-1 text-body-sm text-warm-500">Track your recruiting progress</p>
+          </div>
+        </div>
         <PageLoading />
       </>
     );
@@ -212,17 +216,18 @@ export default function JourneyPage() {
 
   return (
     <>
-      <Header
-        title="My Journey"
-        subtitle="Track your recruiting progress with schools"
-      >
+      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-semibold text-warm-900">My Journey</h1>
+          <p className="mt-1 text-body-sm text-warm-500">Track your recruiting progress with schools</p>
+        </div>
         <Link href="/baseball/dashboard/colleges">
           <Button>
             <IconPlus size={18} className="mr-2" />
             Add Schools
           </Button>
         </Link>
-      </Header>
+      </div>
 
       <div className="p-6 lg:p-8">
         {/* Stats Overview */}

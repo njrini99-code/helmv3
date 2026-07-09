@@ -65,9 +65,15 @@ interface PlayerLiftTodayProps {
   /** Optional — the integration phase may pass these; otherwise resolved here. */
   playerId?: string;
   teamId?: string;
+  /**
+   * Team-local "today" as an ISO date (YYYY-MM-DD), resolved server-side via
+   * todayIsoInTz(resolveTeamTimezone(...)). Optional — no server parent
+   * threads this yet, so it falls back to the browser-local date
+   * (toLocaleDateString('en-CA')), which still beats UTC for the acute
+   * midnight-rollover case but is not team-timezone-correct.
+   */
+  today?: string;
 }
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
 
 /** Sessions a player still owes attention to: today's, plus overdue + open. */
 const OPEN_STATUSES: BaseballLiftSessionStatus[] = ['assigned', 'started', 'modified'];
@@ -95,12 +101,14 @@ function statusBadge(status: BaseballLiftSessionStatus): {
 export default function PlayerLiftToday({
   playerId: playerIdProp,
   teamId: teamIdProp,
+  today: todayProp,
 }: PlayerLiftTodayProps) {
   const { player } = useAuth();
   const { selectedTeamId } = useTeamStore();
 
   const playerId = playerIdProp ?? player?.id ?? null;
   const teamId = teamIdProp ?? selectedTeamId ?? null;
+  const today = todayProp ?? new Date().toLocaleDateString('en-CA');
 
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<BaseballLiftSessionRow[]>([]);
@@ -165,7 +173,7 @@ export default function PlayerLiftToday({
     setSavingReadiness(true);
     try {
       const res = await submitReadinessCheckin({
-        checkDate: todayStr(),
+        checkDate: today,
         sleepHours: sleep ? Number(sleep) : null,
         energyLevel: energy ? Number(energy) : null,
         sorenessLevel: soreness ? Number(soreness) : null,
@@ -181,7 +189,7 @@ export default function PlayerLiftToday({
         id: res.id ?? prev?.id ?? '',
         team_id: teamId,
         player_id: playerId,
-        check_date: todayStr(),
+        check_date: today,
         sleep_hours: sleep ? Number(sleep) : null,
         energy_level: energy ? Number(energy) : null,
         soreness_level: soreness ? Number(soreness) : null,
@@ -244,8 +252,6 @@ export default function PlayerLiftToday({
   if (!playerId || !teamId) {
     return null; // Nothing to show for a non-player / no active team.
   }
-
-  const today = todayStr();
 
   return (
     <div className="space-y-4">

@@ -131,9 +131,10 @@ describe("convertSignalToAction 'lift_modification' — Helm Lifting Lab bridge"
     const result = await convert(ctx, convertInput());
     expect(result.success).toBe(true);
 
-    // The legacy coach-board row still exists (still read by the coach's
-    // Lifting-Lite board — out of scope for this fix).
-    expect(tables.baseball_lift_assignments).toHaveLength(1);
+    // The graveyarded legacy baseball_lift_assignments table is no longer
+    // written (it was moved out of `public`, so any write 500s) — the
+    // conversion now lands ONLY in helm_lifting_sessions.
+    expect(tables.baseball_lift_assignments).toHaveLength(0);
 
     // The player-visible bridge now lands in helm_lifting_sessions.
     expect(tables.helm_lifting_sessions).toHaveLength(1);

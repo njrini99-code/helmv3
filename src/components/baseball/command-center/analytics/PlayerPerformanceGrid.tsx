@@ -9,7 +9,7 @@ interface PlayerPerformanceGridProps {
   players: BaseballRosterPlayer[];
 }
 
-type MetricKey = 'avg' | 'obp' | 'slg' | 'ops' | 'exitVelo' | 'sessions';
+type MetricKey = 'avg' | 'obp' | 'slg' | 'ops' | 'sessions';
 
 interface MetricConfig {
   key: MetricKey;
@@ -60,15 +60,6 @@ const METRICS: MetricConfig[] = [
     },
     format: (v) => v.toFixed(3),
     thresholds: { excellent: 0.9, good: 0.77, average: 0.65 },
-    higherIsBetter: true,
-  },
-  {
-    key: 'exitVelo',
-    label: 'Avg Exit Velocity',
-    shortLabel: 'EV',
-    getValue: (p) => p.aggregates?.avg_exit_velocity ?? null,
-    format: (v) => `${v.toFixed(1)}`,
-    thresholds: { excellent: 88, good: 82, average: 75 },
     higherIsBetter: true,
   },
   {
