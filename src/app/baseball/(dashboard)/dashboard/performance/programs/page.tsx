@@ -39,6 +39,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
 import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { ProgramListClient } from '@/components/lifting/programs/ProgramListClient';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 import type { HelmLiftingProgramRow } from '@/lib/types/helm-lifting-data';
 
 interface ProgramWithCounts extends HelmLiftingProgramRow {
@@ -121,14 +122,14 @@ export default async function ProgramsPage() {
   if (!liftCtx || !access?.canView) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="rounded-2xl border border-warm-200/60 bg-cream-50 px-6 py-10 text-center">
-          <h2 className="text-h3 font-semibold text-warm-900">Lift Lab access not set up</h2>
-          <p className="mx-auto mt-2 max-w-md text-body-sm text-warm-500">
-            {liftCtx
+        <EditorsLetter
+          title="Lift Lab access not set up"
+          body={
+            liftCtx
               ? "You have programming access on the baseball side, but you haven't been onboarded into this team's Lifting Lab yet. Ask a Lift Lab admin to add you as a coach or org viewer to see programs here."
-              : "This team isn't linked to a Lifting Lab organization yet. Ask an admin to link it before programs can be created."}
-          </p>
-        </div>
+              : "This team isn't linked to a Lifting Lab organization yet. Ask an admin to link it before programs can be created."
+          }
+        />
       </div>
     );
   }

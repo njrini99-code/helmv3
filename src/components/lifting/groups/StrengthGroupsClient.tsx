@@ -425,7 +425,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-warm-400 hover:text-red-600"
+                    className="text-warm-400 hover:text-destructive"
                     disabled={isPending}
                     onClick={() => handleArchive(selectedGroup.id)}
                   >
@@ -475,7 +475,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="text-red-500 hover:text-red-700"
+                                  className="text-destructive/80 hover:text-destructive"
                                   disabled={isPending}
                                   onClick={() => handleRemoveMember(a.id)}
                                 >
@@ -611,7 +611,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
               </div>
             )}
 
-            {createError && <p className="text-sm text-red-600">{createError}</p>}
+            {createError && <p className="text-sm text-destructive">{createError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
               <Button onClick={handleCreate} disabled={isPending || !newName.trim()}>

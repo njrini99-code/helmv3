@@ -1,5 +1,11 @@
 export const BASEBALL_PROGRAM_SETTINGS_PATH = '/baseball/dashboard/settings/program';
 
+// The Settings hub root (the list of Program/Staff/Team Settings links) —
+// used as the fallback redirect target for a spec route whose section was
+// fully removed (no page, no anchor to land on), so the coach lands somewhere
+// real and navigable instead of a removed/dead sub-page.
+export const BASEBALL_SETTINGS_HUB_PATH = '/baseball/dashboard/settings';
+
 export const BASEBALL_SETTINGS_ALIASES = {
   appearance: `${BASEBALL_PROGRAM_SETTINGS_PATH}#appearance`,
   ai: `${BASEBALL_PROGRAM_SETTINGS_PATH}#ai`,

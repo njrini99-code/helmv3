@@ -25,6 +25,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { PlayerLiftSessionClient } from '@/components/lifting/players/PlayerLiftSessionClient';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 import { resolvePlayerLiftAthleteContext, hasReadinessCheckinToday } from '../_lift-athlete-context';
 import type {
   HelmLiftingSessionRow,
@@ -171,12 +172,10 @@ export default async function PlayerLiftSessionPage({
   if (sessionFetchError) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-6 pb-28">
-        <div className="glass-standard rounded-2xl border border-cream-400/40 p-8 shadow-glass">
-          <h2 className="text-h3 text-warm-900">Unable to load this session</h2>
-          <p className="mt-2 text-body text-warm-500">
-            Something went wrong loading this lift session. Please refresh the page to try again.
-          </p>
-        </div>
+        <EditorsLetter
+          title="Unable to load this session"
+          body="Something went wrong loading this lift session. Please refresh the page to try again."
+        />
       </div>
     );
   }

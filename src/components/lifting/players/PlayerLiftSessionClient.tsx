@@ -225,7 +225,7 @@ export function PlayerLiftSessionClient({
 
       {/* Readiness gate */}
       {!readinessSubmittedToday && (
-        <Card className="border-amber-200 bg-amber-50/60">
+        <Card className="border-warning/30 bg-warning/10">
           <CardContent className="flex items-center justify-between gap-3 py-4">
             <p className="text-sm text-warm-700">
               Complete your daily check-in before logging sets.
@@ -244,7 +244,7 @@ export function PlayerLiftSessionClient({
       {error && (
         <div
           role="alert"
-          className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
         >
           <IconAlertCircle size={15} className="shrink-0" />
           <span>{error}</span>
@@ -353,7 +353,7 @@ function ExerciseBlock({
       <div className="flex items-center justify-between">
         <p className="font-medium text-warm-900">{name}</p>
         {modified && (
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-micro font-medium text-amber-700">
+          <span className="rounded-full bg-warning/10 px-2 py-0.5 text-micro font-medium text-warning">
             Modified
           </span>
         )}

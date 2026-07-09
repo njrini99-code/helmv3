@@ -207,12 +207,58 @@ const legacyRedirectEntries: NavManifestEntry[] = [
     status: 'deprecated',
     target: '/baseball/dashboard/stats-center',
   },
+  // Demo Mode was removed from Program Settings (PKT-12) with no replacement
+  // section, so there is no canonical anchor to alias onto (see the settings
+  // aliases' NOTE above — it deliberately has no 'demo-mode' key). This route
+  // is kept reachable by redirecting to the Settings hub root rather than a
+  // dead Program Settings anchor.
+  {
+    href: '/baseball/dashboard/settings/demo-mode',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings',
+  },
   // Dead target — no page.tsx exists. A scoped staff member was previously
   // dropped here post-login (see auth-redirects-resolve.test.ts); kept as a
   // 'removed' tombstone so a future redirect literal pointing here fails the
   // manifest's on-disk assertions instead of users hitting a 404.
   {
     href: '/baseball/dashboard/staff',
+    source: 'legacy-redirect',
+    status: 'removed',
+  },
+  // Pre-consolidation settings sub-pages (W5 dead-code sweep, 2026-07-09):
+  // zero inbound links from nav-registry/hub-definitions/command palettes and
+  // no readiness-matrix citation, unlike 'notifications' and 'demo-mode'
+  // above — deleted outright rather than kept as redirect stubs. Tombstoned
+  // so a future re-add doesn't silently resurrect a dead link.
+  {
+    href: '/baseball/dashboard/settings/ai',
+    source: 'legacy-redirect',
+    status: 'removed',
+  },
+  {
+    href: '/baseball/dashboard/settings/appearance',
+    source: 'legacy-redirect',
+    status: 'removed',
+  },
+  {
+    href: '/baseball/dashboard/settings/data-retention',
+    source: 'legacy-redirect',
+    status: 'removed',
+  },
+  {
+    href: '/baseball/dashboard/settings/guardian-access',
+    source: 'legacy-redirect',
+    status: 'removed',
+  },
+  {
+    href: '/baseball/dashboard/settings/player-access',
+    source: 'legacy-redirect',
+    status: 'removed',
+  },
+  {
+    href: '/baseball/dashboard/settings/showcase-profile',
     source: 'legacy-redirect',
     status: 'removed',
   },

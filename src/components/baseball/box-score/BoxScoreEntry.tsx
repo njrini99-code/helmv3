@@ -68,6 +68,53 @@ const PITCHING_RESULTS: BaseballPitchingResult[] = ['W', 'L', 'S', 'H', 'BS', 'N
 
 type ActiveTab = 'batting' | 'pitching';
 
+// Human-readable stat names for the per-row input aria-labels below — every
+// box-score cell is a bare number-only <Input> with no visible label, so a
+// screen reader announcing just "spinbutton, 0" gives no idea which stat or
+// player it belongs to (#a11y-sweep P1). Composed as "{player} {stat}", e.g.
+// "Marcus Rivera at-bats".
+const BATTING_FIELD_LABELS: Record<
+  keyof Pick<
+    BoxScoreBattingInput,
+    'ab' | 'r' | 'h' | 'doubles' | 'triples' | 'hr' | 'rbi' | 'bb' | 'k' | 'sb' | 'cs' | 'hbp' | 'sac' | 'sf' | 'lob'
+  >,
+  string
+> = {
+  ab: 'at-bats',
+  r: 'runs',
+  h: 'hits',
+  doubles: 'doubles',
+  triples: 'triples',
+  hr: 'home runs',
+  rbi: 'RBIs',
+  bb: 'walks',
+  k: 'strikeouts',
+  sb: 'stolen bases',
+  cs: 'caught stealing',
+  hbp: 'hit by pitch',
+  sac: 'sacrifice bunts',
+  sf: 'sacrifice flies',
+  lob: 'left on base',
+};
+
+const PITCHING_FIELD_LABELS: Record<
+  keyof Pick<BoxScorePitchingInput, 'ip' | 'h' | 'r' | 'er' | 'bb' | 'k' | 'hr'>,
+  string
+> = {
+  ip: 'innings pitched',
+  h: 'hits allowed',
+  r: 'runs allowed',
+  er: 'earned runs',
+  bb: 'walks allowed',
+  k: 'strikeouts',
+  hr: 'home runs allowed',
+};
+
+function playerFullName(player: PlayerRow | undefined): string {
+  if (!player) return 'Unknown player';
+  return [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Unknown player';
+}
+
 export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitching }: BoxScoreEntryProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('batting');
@@ -235,6 +282,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 max={99}
                 value={ourScore}
                 onChange={(e) => setOurScore(Number(e.target.value))}
+                aria-label="Our score"
                 className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
               />
             </div>
@@ -249,6 +297,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 max={99}
                 value={oppScore}
                 onChange={(e) => setOppScore(Number(e.target.value))}
+                aria-label={`${game.opponent_name ?? 'Opponent'} score`}
                 className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
               />
             </div>
@@ -285,12 +334,12 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-warm-100 bg-warm-50/80">
-                  <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Player</th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Player</th>
                   {['AB','R','H','2B','3B','HR','RBI','BB','K','SB','CS','HBP','SAC','SF','LOB'].map((h) => (
-                    <th key={h} className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[44px]">{h}</th>
+                    <th key={h} scope="col" className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[44px]">{h}</th>
                   ))}
-                  <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">AVG</th>
-                  <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">OPS</th>
+                  <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">AVG</th>
+                  <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">OPS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-warm-50">
@@ -309,7 +358,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                         ) : 'Unknown'}
                       </td>
                       {(
-                        ['ab','r','h','doubles','triples','hr','rbi','bb','k','sb','cs','hbp','sac','sf','lob'] as (keyof BoxScoreBattingInput)[]
+                        ['ab','r','h','doubles','triples','hr','rbi','bb','k','sb','cs','hbp','sac','sf','lob'] as (keyof typeof BATTING_FIELD_LABELS)[]
                       ).map((field) => (
                         <td key={field} className="px-1 py-1.5 text-center">
                           <Input
@@ -318,6 +367,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             max={99}
                             value={row[field] as number}
                             onChange={(e) => updateBatting(row.player_id, field, Number(e.target.value))}
+                            aria-label={`${playerFullName(player)} ${BATTING_FIELD_LABELS[field]}`}
                             className="w-10 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
                           />
                         </td>
@@ -397,13 +447,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-warm-100 bg-warm-50/80">
-                      <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Pitcher</th>
+                      <th scope="col" className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Pitcher</th>
                       {['IP','H','R','ER','BB','K','HR','PC','Result'].map((h) => (
-                        <th key={h} className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[52px]">{h}</th>
+                        <th key={h} scope="col" className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[52px]">{h}</th>
                       ))}
-                      <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">ERA</th>
-                      <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">WHIP</th>
-                      <th className="px-2 py-3" />
+                      <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">ERA</th>
+                      <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">WHIP</th>
+                      <th scope="col" className="px-2 py-3"><span className="sr-only">Remove pitcher</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-warm-50">
@@ -415,7 +465,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             {player ? `${player.first_name?.[0]}. ${player.last_name}` : 'Unknown'}
                           </td>
                           {(
-                            ['ip','h','r','er','bb','k','hr'] as (keyof BoxScorePitchingInput)[]
+                            ['ip','h','r','er','bb','k','hr'] as (keyof typeof PITCHING_FIELD_LABELS)[]
                           ).map((field) => (
                             <td key={field} className="px-1 py-1.5 text-center">
                               <Input
@@ -427,6 +477,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                                 onChange={(e) =>
                                   updatePitching(row.player_id, field, Number(e.target.value))
                                 }
+                                aria-label={`${playerFullName(player)} ${PITCHING_FIELD_LABELS[field]}`}
                                 className="w-12 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
                               />
                             </td>
@@ -441,6 +492,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               onChange={(e) =>
                                 updatePitching(row.player_id, 'pitch_count', Number(e.target.value))
                               }
+                              aria-label={`${playerFullName(player)} pitch count`}
                               className="w-14 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 tabular-nums"
                             />
                           </td>
