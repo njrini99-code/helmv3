@@ -1,9 +1,16 @@
 import { Suspense } from 'react';
+import { requireRecruitingCoachRoute } from '@/lib/baseball/server-route-guards';
 import { getSavedComparisons } from '../compare/actions';
 import { SavedComparisonsList } from '@/components/features/saved-comparisons-list';
 import { IconBookmark } from '@/components/icons';
 
 export default async function SavedComparisonsPage() {
+  // SECURITY: previously relied on getSavedComparisons()'s internal
+  // { error: 'Unauthorized' } string, which just rendered as an inline error
+  // banner (no redirect) — the page shell still rendered for an unauthorized
+  // caller. Match the sibling /compare route's guard instead.
+  await requireRecruitingCoachRoute();
+
   const { comparisons, error } = await getSavedComparisons();
 
   return (

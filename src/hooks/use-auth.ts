@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { useAuthStore } from '@/stores/auth-store';
+import { invalidateAuthCache } from '@/hooks/use-baseball-auth';
 import type { Player, CoachWithOrganization } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -132,6 +133,14 @@ export function useAuth() {
             org_name: undefined,
           });
           useAuthStore.getState().clear();
+          // SECURITY: use-baseball-auth's short-lived (5s) verified-session
+          // cache must never outlive the session it verified — otherwise a
+          // back/forward nav within that window re-authorizes the dashboard
+          // shell from stale "signed in" state even though the user just
+          // signed out. Covers SIGNED_OUT firing from ANY source (this tab's
+          // signOut() below, another tab, or session expiry), not just the
+          // explicit button click.
+          invalidateAuthCache();
           latestRouter?.push('/baseball/login');
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           loadAuthUser(supabase);
@@ -156,17 +165,46 @@ export function useAuth() {
   const signOut = async () => {
     await supabase.auth.signOut();
     clear();
+    // SECURITY: also invalidate directly here (not just via the SIGNED_OUT
+    // listener below) so the verified-session cache is cleared even in the
+    // window before/if that event handler runs — belt-and-suspenders against
+    // the back-nav-within-5s stale-reauthorization bug. Safe to call twice
+    // (idempotent Map.clear()).
+    invalidateAuthCache();
     if (typeof document !== 'undefined') {
       document.cookie = 'coach_mode=; Path=/; Max-Age=0; SameSite=Lax';
     }
     router.push('/baseball/login');
   };
 
+  // SECURITY: RLS on baseball_players only checks `user_id = auth.uid()` — it
+  // has no per-column guard, so a raw browser UPDATE through this client can
+  // write ANY column on the player's own row, including authorization-
+  // relevant ones. `recruiting_activated` in particular gates the
+  // recruiting_exposure_enabled program toggle enforced server-side by
+  // `activateRecruitingExposure()` (see player-access.ts) — a client write to
+  // it bypasses that gate entirely. Strip every authorization-relevant column
+  // here so this function can only ever be used for benign profile-field
+  // edits (bio, stats, contact info, …), never identity or access-control
+  // state. Any caller that legitimately needs to change one of these MUST go
+  // through a gated server action instead.
+  const PLAYER_UPDATE_DENYLIST = [
+    'id',
+    'user_id',
+    'player_type',
+    'recruiting_activated',
+    'recruiting_activated_at',
+  ] as const satisfies readonly (keyof Player)[];
+
   const updatePlayer = async (updates: Partial<Player>) => {
     if (!player) return;
+    const safeUpdates = { ...updates };
+    for (const key of PLAYER_UPDATE_DENYLIST) {
+      delete safeUpdates[key];
+    }
     const { data, error } = await supabase
       .from('baseball_players')
-      .update(updates)
+      .update(safeUpdates)
       .eq('id', player.id)
       .select()
       .single();

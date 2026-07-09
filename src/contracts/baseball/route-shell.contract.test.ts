@@ -23,10 +23,16 @@ describe('Baseball route/shell contracts (#374)', () => {
   });
 
   it('legacy pages use ReadModelStateNotice for explicit load failures (#413)', () => {
+    // Production-Readiness Mission W0a: these three routes were whole-file
+    // 'use client' pages with NO server-side auth check at all. Each is now
+    // a thin server page.tsx (getSessionProfile + redirect) that renders a
+    // sibling *Client.tsx carrying the ORIGINAL unchanged body — including
+    // the ReadModelStateNotice usage this contract checks for — so the
+    // check now points at the client file the UI actually lives in.
     for (const path of [
-      'src/app/baseball/(dashboard)/dashboard/announcements/page.tsx',
-      'src/app/baseball/(dashboard)/dashboard/travel/page.tsx',
-      'src/app/baseball/(dashboard)/dashboard/camps/page.tsx',
+      'src/app/baseball/(dashboard)/dashboard/announcements/AnnouncementsClient.tsx',
+      'src/app/baseball/(dashboard)/dashboard/travel/TravelPageClient.tsx',
+      'src/app/baseball/(dashboard)/dashboard/camps/CampsClient.tsx',
     ]) {
       const src = read(path);
       expect(src).toContain('ReadModelStateNotice');

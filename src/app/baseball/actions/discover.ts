@@ -101,6 +101,40 @@ async function getDiscoverableTeamPlayerIds(
 }
 
 /**
+ * Get player IDs whose `baseball_player_settings.profile_visibility` is
+ * `'private'` — the SAME semantics `assertCoachCanRecruitPlayer` in
+ * recruitability.ts uses (only an explicit `'private'` row denies; a
+ * missing settings row, or any other value, defaults to visible/public).
+ * Returned as a Set so callers can exclude these players from Discover
+ * search/map results (P0 privacy fix — these rows were never checked here).
+ */
+async function getPrivatePlayerIds(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('baseball_player_settings')
+    .select('player_id')
+    .eq('profile_visibility', 'private');
+
+  if (error) {
+    await logServerError(`Error fetching private player settings: ${error instanceof Error ? error.message : String(error)}`, { action: 'discover.getPrivatePlayerIds' });
+    // Fail closed would hide everyone; fail open here matches the pattern of
+    // the other discoverability helpers (getCoachRosterPlayerIds) which
+    // silently return an empty set on error. This side-query failing does
+    // NOT disable the other discoverability filters (own-team / discoverable
+    // team) still applied by the caller.
+    return new Set();
+  }
+
+  return new Set((data ?? []).map((s) => s.player_id).filter(Boolean));
+}
+
+/** Format a set of player IDs as a PostgREST `.not(col, 'in', ...)` value. */
+function formatIdListForNotIn(ids: Set<string>): string {
+  return `(${[...ids].join(',')})`;
+}
+
+/**
  * Get player IDs on the coach's own team (to exclude from discover - they see them in roster)
  */
 async function getCoachRosterPlayerIds(
@@ -169,10 +203,13 @@ async function getDiscoverPlayersImpl(
   const page = filters.page || 1;
   const offset = (page - 1) * perPage;
 
-  // Run pre-queries in parallel: coach's own roster to exclude + all discoverable team player IDs
-  const [coachRosterIds, discoverablePlayerIds] = await Promise.all([
+  // Run pre-queries in parallel: coach's own roster to exclude + all discoverable
+  // team player IDs + players whose profile_visibility is 'private' (P0 privacy —
+  // must exclude these the same way assertCoachCanRecruitPlayer does).
+  const [coachRosterIds, discoverablePlayerIds, privatePlayerIds] = await Promise.all([
     getCoachRosterPlayerIds(supabase, serverCoachId),
     getDiscoverableTeamPlayerIds(supabase),
+    getPrivatePlayerIds(supabase),
   ]);
 
   // If no players are on any discoverable team, return early
@@ -224,6 +261,14 @@ async function getDiscoverPlayersImpl(
   // CORE RULE: only players assigned to a discoverable team (HS/showcase/JUCO)
   if (discoverablePlayerIds && discoverablePlayerIds.length > 0) {
     query = query.in('id', discoverablePlayerIds);
+  }
+
+  // P0 PRIVACY: exclude players with profile_visibility = 'private' (same
+  // semantics as assertCoachCanRecruitPlayer). Applied at the DB level (not a
+  // post-fetch JS filter) so pagination/count stay correct even when many
+  // players are private.
+  if (privatePlayerIds.size > 0) {
+    query = query.not('id', 'in', formatIdListForNotIn(privatePlayerIds));
   }
 
   // Apply filters at DB level
@@ -364,7 +409,13 @@ async function getDiscoverTeamsImpl(
   // Resolved up front so it can be pushed into the DB query (`.in`) rather
   // than filtered in JS after pagination, which would corrupt both the
   // returned page and the count used to compute total pages.
-  const orgIdsWithHeadCoach = await getOrgIdsWithNamedHeadCoach(supabase);
+  // Also fetch private players (P0 privacy) so they never surface in an
+  // org's player_count/recruiting_active_count/top_prospects below — same
+  // vulnerability class as getDiscoverPlayers/getStateCounts, same fix.
+  const [orgIdsWithHeadCoach, privatePlayerIds] = await Promise.all([
+    getOrgIdsWithNamedHeadCoach(supabase),
+    getPrivatePlayerIds(supabase),
+  ]);
 
   if (orgIdsWithHeadCoach !== null && orgIdsWithHeadCoach.length === 0) {
     return { teams: [], count: 0, pages: 0 };
@@ -537,7 +588,9 @@ async function getDiscoverTeamsImpl(
             recruiting_activated: boolean | null;
           } | null;
 
-          if (orgId && player) {
+          // P0 PRIVACY: never surface a player whose profile_visibility is
+          // 'private' via an org's player_count/top_prospects.
+          if (orgId && player && !privatePlayerIds.has(player.id)) {
             addPlayerToOrg(orgId, player);
           }
         });
@@ -679,10 +732,12 @@ async function getStateCountsImpl(
         ? (['high_school', 'showcase'] as const)
         : (['high_school', 'showcase', 'juco'] as const);
 
-    // Run pre-queries in parallel
-    const [coachRosterIds, discoverablePlayerIds] = await Promise.all([
+    // Run pre-queries in parallel (incl. P0 privacy: profile_visibility='private'
+    // players must never contribute to the map counts either).
+    const [coachRosterIds, discoverablePlayerIds, privatePlayerIds] = await Promise.all([
       getCoachRosterPlayerIds(supabase, coachId),
       getDiscoverableTeamPlayerIds(supabase),
+      getPrivatePlayerIds(supabase),
     ]);
 
     if (discoverablePlayerIds !== null && discoverablePlayerIds.length === 0) {
@@ -698,6 +753,10 @@ async function getStateCountsImpl(
 
     if (discoverablePlayerIds && discoverablePlayerIds.length > 0) {
       stateQuery = stateQuery.in('id', discoverablePlayerIds);
+    }
+
+    if (privatePlayerIds.size > 0) {
+      stateQuery = stateQuery.not('id', 'in', formatIdListForNotIn(privatePlayerIds));
     }
 
     const { data } = await stateQuery;

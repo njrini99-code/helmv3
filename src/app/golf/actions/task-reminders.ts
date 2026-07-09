@@ -10,6 +10,7 @@ import {
   sendWebPush as v3SendWebPush,
   isWebPushAvailable,
 } from '@/lib/coachhelm/v3/foundation/push';
+import { getUserNotificationPreferences } from '@/lib/notifications/email';
 
 // Email service configuration
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -571,7 +572,20 @@ async function sendEmailNotification(task: GolfTask, client?: TaskReminderClient
   // not users) and errored out, so no task email ever sent.
   const supabase = client ?? (await createClient());
   const resolved = await resolveTaskRecipients(supabase, task);
-  const recipients = [...new Set(resolved.map((r) => r.email).filter((e): e is string => !!e))];
+
+  // Honor each recipient's email_task_reminders notification preference
+  // before sending — this cron previously emailed unconditionally, ignoring
+  // the opt-out every other task/reminder email path (src/lib/notifications
+  // /email.ts + push.ts) already respects.
+  const recipients: string[] = [];
+  const seenEmails = new Set<string>();
+  for (const recipient of resolved) {
+    if (!recipient.email || seenEmails.has(recipient.email)) continue;
+    const prefs = await getUserNotificationPreferences(recipient.userId);
+    if (!prefs.email_task_reminders) continue;
+    seenEmails.add(recipient.email);
+    recipients.push(recipient.email);
+  }
 
   if (recipients.length === 0) {
     return;

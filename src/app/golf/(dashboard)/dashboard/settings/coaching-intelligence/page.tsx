@@ -25,6 +25,7 @@ import {
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
 import { FairwaySettingsCoachingIntelligence } from '@/components/fairway/pages/settings';
+import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 
 type PriorityValues = Pick<
     CoachPhilosophy,
@@ -39,9 +40,30 @@ type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
 export default function CoachingIntelligenceSettingsPage() {
+    // Both hooks called unconditionally, in the same order every render,
+    // BEFORE any early return (Rules of Hooks) — the coach-only guard below
+    // must not skip either call for a player render.
+    const golfUser = useGolfUser();
+    const redesignEnabled = useRedesign();
+
+    // Coach-only guard. The wrapping layout.tsx already gates this route
+    // server-side (redirect('/golf/login') / FeatureUnavailable for players),
+    // but this page is a client component that also independently resolves
+    // coachId and fires coach-scoped Supabase reads — mirror the guard here
+    // too, defense-in-depth, matching every other coach-only golf route.
+    if (golfUser.role === 'player') {
+        return (
+            <FeatureUnavailable
+                title="Coaching Philosophy"
+                message="Coaching Intelligence settings are part of the coach toolkit. Your personal AI surfaces live on the CoachHelm dashboard."
+                actionHref="/golf/dashboard/coachhelm"
+                actionLabel="Open CoachHelm"
+            />
+        );
+    }
+
     // Fairway redesign fork (ADDITIVE). Flag off ⇒ identical legacy output.
-    // Hooks live inside each branch component, so rules-of-hooks are preserved.
-    if (useRedesign()) {
+    if (redesignEnabled) {
         return (
             <div className={fairwayScope('min-h-full bg-canvas')}>
                 <FairwaySettingsCoachingIntelligence />

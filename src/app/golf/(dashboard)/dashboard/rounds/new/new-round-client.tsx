@@ -99,6 +99,47 @@ const TEES_PLAYED_OPTIONS: SelectOption[] = [
   { value: 'Red', label: 'Red' },
 ];
 
+/** What handleHoleComplete should do immediately after recording/editing a hole's score. */
+export type PostHoleCompleteAction =
+  | { type: 'finish' }
+  | { type: 'return-to-frontier' }
+  | { type: 'advance'; nextHoleIndex: number };
+
+/**
+ * Pure decision logic for handleHoleComplete's post-save navigation —
+ * exported for unit testing. Mirrors continue-round-client.tsx's identical
+ * `allHolesScored` gate inside the `isReEdit` branch (P1 fix, production-
+ * readiness mission 2026-07-09): re-editing a completed hole that turns out
+ * to be the LAST unscored hole in the round must surface the finish
+ * confirmation with the freshly-updated stats, not silently return to the
+ * active frontier with a stale scorecard and no path to submit.
+ */
+export function decidePostHoleCompleteAction(params: {
+  allHolesScored: boolean;
+  isReEdit: boolean;
+  holeIndex: number;
+  totalHoles: number;
+}): PostHoleCompleteAction {
+  const { allHolesScored, isReEdit, holeIndex, totalHoles } = params;
+
+  // Last hole (re-)completed and all holes scored — always show finish confirmation.
+  if (allHolesScored && holeIndex === totalHoles - 1) {
+    return { type: 'finish' };
+  }
+  if (isReEdit) {
+    // All holes scored after re-edit — show finish confirmation.
+    if (allHolesScored) return { type: 'finish' };
+    // Re-editing a previously completed hole — return to the active frontier.
+    return { type: 'return-to-frontier' };
+  }
+  if (holeIndex < totalHoles - 1) {
+    // Normal progression — advance to next hole.
+    return { type: 'advance', nextHoleIndex: holeIndex + 1 };
+  }
+  // Last hole completed for the first time — show finish confirmation.
+  return { type: 'finish' };
+}
+
 export default function NewRoundClient() {
   const prefersReducedMotion = useReducedMotion();
   const redesign = useRedesign();
@@ -1255,22 +1296,24 @@ export default function NewRoundClient() {
     // Check if every hole now has a score (all completed)
     const allHolesScored = updatedStats.length === holes.length && updatedStats.every(s => s?.score != null);
 
-    if (allHolesScored && holeIndex === holes.length - 1) {
-      // Last hole (re-)completed and all holes scored — always show finish confirmation
-      setPendingFinalStats(updatedStats);
-      setShowFinishConfirm(true);
-    } else if (isReEdit) {
-      // Re-editing a previously completed hole — return to the active frontier
-      setCurrentHoleIndex(activeProgressHoleRef.current);
-    } else if (holeIndex < holes.length - 1) {
-      // Normal progression — advance to next hole
-      const nextHole = holeIndex + 1;
-      setCurrentHoleIndex(nextHole);
-      activeProgressHoleRef.current = nextHole;
-    } else {
-      // Last hole completed for the first time — show finish confirmation
-      setPendingFinalStats(updatedStats);
-      setShowFinishConfirm(true);
+    const decision = decidePostHoleCompleteAction({
+      allHolesScored,
+      isReEdit,
+      holeIndex,
+      totalHoles: holes.length,
+    });
+    switch (decision.type) {
+      case 'finish':
+        setPendingFinalStats(updatedStats);
+        setShowFinishConfirm(true);
+        break;
+      case 'return-to-frontier':
+        setCurrentHoleIndex(activeProgressHoleRef.current);
+        break;
+      case 'advance':
+        setCurrentHoleIndex(decision.nextHoleIndex);
+        activeProgressHoleRef.current = decision.nextHoleIndex;
+        break;
     }
   };
 

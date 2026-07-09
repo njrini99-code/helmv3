@@ -117,14 +117,19 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
       }
 
       // Log profile view engagement
-      await fromUntyped(supabase, 'baseball_player_engagement_events')
+      const { error: engagementError } = await fromUntyped(supabase, 'baseball_player_engagement_events')
         .insert({ // nosemgrep: helmv3-action-missing-revalidate -- fire-and-forget telemetry, no UI cache
           player_id: playerId,
           coach_id: coach.id,
           engagement_type: 'profile_view',
-          is_anonymous: false,
           metadata: { source: 'peek_panel' },
         });
+      if (engagementError) {
+        await logServerError(
+          `Failed to record profile_view engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+          { action: 'player_peek.getPlayerPeekData.engagementEvent' },
+        );
+      }
 
       // Notify the player of the profile view (fire-and-forget)
       try {

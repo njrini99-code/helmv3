@@ -30,6 +30,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { withBaseballAction, BaseballActionError } from '@/lib/baseball/with-baseball-action';
 
 const ACTIVATE_PATH = '/baseball/dashboard/activate';
@@ -79,7 +80,14 @@ export const activateRecruitingExposure = withBaseballAction(
       return { success: true };
     }
 
-    const { error } = await fromUntyped(supabase, 'baseball_players')
+    // Trigger 20260709010200 blocks authenticated-role writes to
+    // recruiting_activated (closes the raw-browser RLS bypass), so this fully
+    // gated action performs the write via the service-role client. All
+    // authorization above (withBaseballAction gate on
+    // recruiting_exposure_enabled + college check + self-row read via RLS)
+    // has already passed by this point.
+    const admin = createAdminClient();
+    const { error } = await fromUntyped(admin, 'baseball_players')
       .update({
         recruiting_activated: true,
         recruiting_activated_at: new Date().toISOString(),
@@ -110,8 +118,10 @@ export const deactivateRecruitingExposure = withBaseballAction(
     if (!ctx.activePlayerId) {
       throw new BaseballActionError('Only a player can change recruiting exposure.');
     }
-    const supabase = await createClient();
-    const { error } = await fromUntyped(supabase, 'baseball_players')
+    // Same service-role requirement as activation (trigger 20260709010200);
+    // withdrawal stays ungated by policy — a player can always opt out.
+    const admin = createAdminClient();
+    const { error } = await fromUntyped(admin, 'baseball_players')
       .update({ recruiting_activated: false, updated_at: new Date().toISOString() })
       .eq('id', ctx.activePlayerId);
     if (error) throw error;

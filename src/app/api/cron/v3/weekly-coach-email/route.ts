@@ -31,6 +31,8 @@ interface SendSummary {
   sent: number;
   skipped_no_email: number;
   skipped_provider_unset: number;
+  /** Coach has explicitly opted out of the CoachHelm email digest. */
+  skipped_opted_out: number;
   errors: number;
   duration_ms: number;
 }
@@ -54,6 +56,7 @@ async function handle(): Promise<NextResponse> {
     sent: 0,
     skipped_no_email: 0,
     skipped_provider_unset: 0,
+    skipped_opted_out: 0,
     errors: 0,
     duration_ms: 0,
   };
@@ -74,6 +77,23 @@ async function handle(): Promise<NextResponse> {
         .limit(1)
         .maybeSingle();
       if (!staff?.coach_id) continue;
+
+      // Opt-out gate: there is no dedicated `email_weekly_recap` preference
+      // column, so this recap (a CoachHelm digest email, same as the daily
+      // coach-morning-digest cron) is gated on the CLOSEST existing coach
+      // preference — `golf_coach_philosophy.email_digest_enabled` — the same
+      // column /api/cron/coach-morning-digest already honors. Missing row →
+      // opted-in by default (mirrors that cron's convention: the flag only
+      // records explicit opt-outs).
+      const { data: philosophyRow } = await sb
+        .from('golf_coach_philosophy')
+        .select('email_digest_enabled')
+        .eq('coach_id', staff.coach_id)
+        .maybeSingle();
+      if (philosophyRow && philosophyRow.email_digest_enabled === false) {
+        summary.skipped_opted_out += 1;
+        continue;
+      }
 
       const recap = await buildWeeklyRecap(sb, {
         coach_id: staff.coach_id,

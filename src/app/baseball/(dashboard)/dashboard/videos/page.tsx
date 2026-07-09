@@ -14,6 +14,7 @@
 // =============================================================================
 
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import {
@@ -59,7 +60,14 @@ async function VideoLibraryPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const context = user ? await getActiveBaseballContext() : null;
+  // SECURITY: this page previously proceeded with `context = null` for an
+  // unauthenticated request and still rendered VideoLibraryClient (with
+  // empty/graceful read-model defaults) instead of redirecting — no data
+  // leaked, but there was no server-side auth gate at all. Redirect like
+  // every other guarded dashboard route.
+  if (!user) redirect('/baseball/login');
+
+  const context = await getActiveBaseballContext();
 
   // Determine role from context
   const isCoach = context?.activeRole === 'coach';
