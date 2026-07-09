@@ -751,10 +751,17 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Camps',
     href: '/baseball/dashboard/camps',
     icon: IconMapPin,
-    // Camp creation and management (CreateCampModal from coach components).
-    // Ungated by specific capability — coaches manage their own camp listings;
-    // the page's Supabase queries scope to the session coach.
-    role: 'coach',
+    // Camp creation/management (coaches) AND camp registration (players) —
+    // CampsClient is a genuinely SHARED surface (spec: ui-migration-map.md
+    // `camps` row), same pattern as Travel/Documents. The route guard
+    // (camps/page.tsx) only requires a signed-in session — no role check —
+    // and CampsClient branches its entire UI on `useAuth()`'s role (coach:
+    // create/manage; player: browse + register for camps). This entry was
+    // previously `role: 'coach'` only, which hid a fully-implemented player
+    // flow from the player nav even though the page already supported it.
+    // Ungated by capability — coaches manage their own camp listings; the
+    // page's Supabase queries scope to the session coach/player.
+    role: 'both',
     requiredCapability: null,
     section: 'primary',
     hub: 'recruiting',

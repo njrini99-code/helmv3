@@ -536,7 +536,7 @@ features:
         - src/components/golf/coachhelm/v3/IntentPill/**
         - src/components/golf/coachhelm/v3/IntentDrawer/**
         - src/components/golf/coachhelm/v3/StandingBar/**
-        - src/components/golf/coachhelm/v3/CounterfactualLine.tsx
+        - src/app/golf/(dashboard)/dashboard/my-standing/page.tsx
         - src/components/golf/coachhelm/v3/HeroNarrativeCard.tsx
       api:
         - src/app/api/coachhelm/v3/**
@@ -720,7 +720,7 @@ features:
         - src/app/golf/(dashboard)/dashboard/team/**
       components:
         - src/components/golf/roster/**
-        - src/components/golf/dashboard/team-pulse-card.tsx
+        - src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx
       api:
         - src/app/api/roster/**
         - src/app/api/team/**
@@ -736,7 +736,7 @@ features:
         - supabase/migrations/*coach_staff*.sql
       tests:
         - e2e/roster.spec.ts
-        - src/components/golf/dashboard/__tests__/team-pulse-card.test.tsx
+        - src/app/golf/actions/__tests__/dashboard-data.test.ts
     integrations:
       - supabase
       - team_access_control
@@ -938,7 +938,7 @@ features:
         - supabase/migrations/*task*.sql
         - supabase/migrations/*event*.sql
       tests:
-        - src/components/golf/dashboard/__tests__/team-pulse-card.test.tsx
+        - src/lib/golf/nav-registry.test.ts
     integrations:
       - team_operations
       - calendar

@@ -350,7 +350,7 @@ function ItineraryCard({
                     {[0, 1, 2].map((i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-4 rounded-xl border border-warm-200 bg-cream-50 p-4"
+                        className="flex items-center gap-4 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-4"
                       >
                         <Skeleton variant="circular" width={40} height={40} />
                         <div className="flex-1 space-y-2">

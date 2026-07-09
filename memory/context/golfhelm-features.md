@@ -43,7 +43,7 @@
 18. Coaching Intelligence Settings ✅
 
 **Player-Facing Features:**
-19. Player Hub (Home) ✅
+19. Player Hub (merged into Dashboard Action Center, 2026-07-09) ✅
 20. Player CoachHelm Dashboard ✅
 21. My Development ✅
 22. My Qualifiers ✅
@@ -433,7 +433,7 @@ createTravelItinerary()
   → INSERT golf_travel_itineraries (transport, hotel, flight, gear list, room assignments)
   → Links to golf_events via event_id
 
-Player view (via Player Hub):
+Player view (via the Dashboard's Action Center, formerly the standalone Player Hub — see Feature 19):
   → Trip cards with destination, transport type, dates
   → Hotel info (name, address, phone, confirmation #)
   → Packing list, room assignments, uniform requirements
@@ -796,49 +796,70 @@ golf_coach_philosophy (all philosophy columns)
 
 ## 19. PLAYER HUB (HOME) ✅
 
+> **2026-07-09 — merged into the Dashboard.** The standalone "Hub" front door
+> described below no longer exists as its own destination. Wave W2 nav
+> consolidation (Target IA, `PRODUCTION_READINESS_MISSION_2026-07-09.md`)
+> folded its triage content into the Player Dashboard as an "Action Center"
+> section, one home instead of two. `/golf/dashboard/hub` is now a permanent
+> server-redirect to `/golf/dashboard` (old links/bookmarks still land
+> somewhere real). Full create/edit/manage surfaces for tasks and travel —
+> the Hub was always read-mostly for those — remain in the **Team Hub**
+> (`/golf/dashboard/team-hub`, tasks + travel tabs); full RSVP/scheduling
+> remains in Calendar. `PlayerHub.tsx` / `PlayerHubWrapper.tsx` were deleted
+> in Wave W1 (golf legacy-tree deletion); this section documents the current
+> Action Center surface that replaced them.
+
 ### What It Does
-Personal action center for players. Central dashboard showing upcoming travel, assigned tasks, and event invitations with inline RSVP.
+A "needs you now" triage section on the player's Dashboard: top pending
+tasks, events awaiting RSVP, recent announcements, and upcoming trips —
+plus the player's top CoachHelm signal. Renders only the first few items of
+each (3 tasks, 3 events, 2 trips) with a link out to the Team Hub / Calendar
+for the full list; renders nothing at all when there's genuinely nothing to
+triage (honest-empty, not a placeholder).
 
 ### Data Flow
 ```
-/golf/dashboard/hub → PlayerHubWrapper → PlayerHub
-  Section 1: TRAVEL
-    → Query golf_travel_itineraries WHERE team_id = player's team
-    → Display: destination, transport type (✈🚌🚐🚗), dates, hotel, packing list
-    → Status: upcoming, in transit, completed, days away
+/golf/dashboard → page.tsx (Dashboard route)
+  → getPlayerHubSummaryData(teamId, playerId) [player-hub-data.ts]
+    → golf_travel_itineraries WHERE team_id, departure_date >= now-120d
+    → golf_task_assignments WHERE player_id (status, completed_at)
+       joined to golf_tasks for title/description/due_date/category
+       (same table completeTask() writes to — no dual-table read/write
+       mismatch in this data path)
+    → RPC get_player_hub_events(team_id, player_id, since) → golf_events +
+       golf_event_attendance (RSVP status, going/maybe counts)
+    → getPlayerHubAnnouncements() → RPC get_player_hub_announcements()
+    → getTopInsightForPlayer() → top evidence-backed CoachHelm insight
+  → passed as the `actionCenter` prop into FairwayPlayerDashboard
+  → <PlayerActionCenter> renders:
+      Tasks (top 3, "Open Team Hub" → team-hub?tab=tasks)
+      Awaiting RSVP (top 3, "View calendar" → /golf/dashboard/calendar)
+        Action: respondToEvent(eventId, status) → UPSERT golf_event_attendance
+      Announcements (AnnouncementsList)
+      Upcoming trips (top 2, "Open Team Hub" → team-hub?tab=travel)
+      Action: completeTask(taskId) → golf_task_assignments (optimistic)
 
-  Section 2: TASKS
-    → Query golf_tasks + golf_task_assignments WHERE player_id
-    → Display: title, due date, category, upload requirement
-    → ⚠️ DUAL TABLE BUG: Hub page READS from golf_task_completions, but
-       completeTask() action WRITES to golf_task_assignments (status + completed_at)
-       These two tables can get out of sync.
-    → Status: pending, overdue, completed (color-coded)
-
-  Section 3: EVENTS
-    → Query golf_events WHERE team_id, start_time >= now - 24h
-    → Query golf_event_attendance for RSVP status
-    → Display: event name, type badge, time, location, mandatory flag, going/maybe counts
-    → Action: respondToEvent(eventId, status) → UPSERT golf_event_attendance
-    → RSVP buttons: Accept | Decline | Maybe
+/golf/dashboard/hub → PlayerHubRedirectPage → redirect('/golf/dashboard')
 ```
 
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/(dashboard)/dashboard/hub/page.tsx` |
-| Components | `src/components/golf/player-hub/PlayerHub.tsx` (40KB), `PlayerHubWrapper.tsx` |
+| Route (Dashboard, fetches the data) | `src/app/golf/(dashboard)/dashboard/page.tsx` |
+| Redirect (former Hub route) | `src/app/golf/(dashboard)/dashboard/hub/page.tsx` |
+| Data | `src/app/golf/actions/player-hub-data.ts` (`getPlayerHubSummaryData`) |
+| Component | `src/components/fairway/pages/dashboard/PlayerActionCenter.tsx` |
+| Host component | `src/components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx` |
+| Shared presentational parts | `src/components/fairway/pages/hub/hub-parts.tsx` (TaskRow, RSVPRow, TripRow, TripDetailSheet, AnnouncementsList) |
+| Management surface | `src/app/golf/(dashboard)/dashboard/team-hub/**` (full tasks/travel CRUD) |
 
 ### DB Tables
-golf_travel_itineraries, golf_tasks, golf_task_assignments, golf_task_completions (⚠️ read here but writes go to golf_task_assignments), golf_events, golf_event_attendance
-
-### Known Gaps
-| Gap | Severity | Details |
-|-----|----------|---------|
-| Task completion dual-table bug | **High** | Hub page reads `golf_task_completions` for completion status, but `completeTask()` action writes to `golf_task_assignments`. Tasks may appear incomplete in the Hub even after completion. |
+golf_travel_itineraries, golf_tasks, golf_task_assignments, golf_events, golf_event_attendance, golf_announcements (via RPC)
 
 ### Dependencies
 - **Depends on**: Travel, Tasks, Calendar & Events
+- **Feeds into**: nothing feeds off it directly — it is a read-mostly triage
+  view over Team Hub / Calendar data
 
 ---
 
@@ -1293,7 +1314,7 @@ Reads from ALL major tables: users, golf_coaches, golf_players, golf_teams, golf
 | 16 | Intelligence Dashboard | Coach | ✅ | 90% | — | — |
 | 17 | CoachHelm Analytics | Coach | ⚠️ | 70% | — | Effectiveness data sparse |
 | 18 | Coaching Intel Settings | Coach | ✅ | 100% | — | — |
-| 19 | Player Hub (Home) | Player | ✅ | 100% | — | — |
+| 19 | Player Hub (merged into Dashboard Action Center) | Player | ✅ | 100% | — | Standalone Hub route now redirects; management in Team Hub |
 | 20 | Player CoachHelm | Player | ✅ | 95% | — | — |
 | 21 | My Development | Player | ✅ | 100% | — | — |
 | 22 | My Qualifiers | Player | ✅ | 100% | — | — |
@@ -1309,7 +1330,7 @@ Reads from ALL major tables: users, golf_coaches, golf_players, golf_teams, golf
 ## PRIORITY GAPS (by business impact)
 
 ### High Priority
-1. **Player Hub task completion bug** — Hub reads `golf_task_completions` but `completeTask()` writes to `golf_task_assignments`. Tasks show as incomplete in Hub after completion. Needs unified to one table.
+1. ~~Player Hub task completion bug~~ — **RESOLVED / stale.** `golf_task_completions` does not exist in the live schema; the current Action Center data layer (`player-hub-data.ts`, post-2026-07-09 Hub→Dashboard merge) reads `golf_task_assignments`, the same table `completeTask()` writes to. No dual-table mismatch in this path.
 2. **CoachHelm effectiveness tracking** — DB ready, needs server actions + UI. Without this, coaches can't measure if AI insights are working.
 3. **CoachHelm outcome measurement** — No way to close the feedback loop (mark insights as improved/no_change/worsened).
 4. **Strokes Gained calculation** — Framework exists, data exists (shots table), but SG columns in stats cache are null. This is the most important golf statistic.

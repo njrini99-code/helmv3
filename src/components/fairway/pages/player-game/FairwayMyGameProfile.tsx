@@ -38,7 +38,6 @@
 import Link from 'next/link';
 
 import {
-  ViewHeader,
   InstrumentPanel,
   Readout,
   Surface,
@@ -46,6 +45,7 @@ import {
   Chip,
   Button,
 } from '@/components/fairway';
+import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — fully-resolved, serializable data from the server page.
@@ -111,159 +111,156 @@ export function FairwayMyGameProfile({
 
   return (
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6">
-      <div className="flex flex-col gap-8">
-        {/* ════════════════ 1 · MASTHEAD (the ONE masthead) ═════════════════ */}
-        <ViewHeader
-          eyebrow="My Game Profile"
-          title={`${firstName}'s genome`}
-          description={
-            hasGenome && roundsBasis != null
-              ? `Your game shape, built from ${roundsBasis} ${roundsBasis === 1 ? 'round' : 'rounds'} in your window.`
-              : 'An 8-dimension fingerprint of your game, built as you log rounds.'
-          }
-          secondaryActions={
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/golf/dashboard">Back to dashboard</Link>
-            </Button>
-          }
-        />
+      <CoachHelmShell
+        active="effectiveness"
+        // eslint-disable-next-line jsx-a11y/aria-role
+        role="player"
+        eyebrow="My Game Profile"
+        title={`${firstName}'s genome`}
+        description={
+          hasGenome && roundsBasis != null
+            ? `Your game shape, built from ${roundsBasis} ${roundsBasis === 1 ? 'round' : 'rounds'} in your window.`
+            : 'An 8-dimension fingerprint of your game, built as you log rounds.'
+        }
+      >
+        <div className="flex flex-col gap-8">
+          {hasGenome ? (
+            <>
+              {/* ════════ 2 · HERO — the genome radar (flat data-viz polygon) ═══ */}
+              <InstrumentPanel
+                depth="raised"
+                tone="accent"
+                padding="lg"
+                eyebrow="Your shape"
+                header="Genome"
+                as="section"
+              >
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:items-center">
+                  <div className="w-full min-w-0">
+                    <GenomeRadar
+                      title={`${firstName}'s shape`}
+                      seriesName="Score"
+                      data={axes}
+                      max={100}
+                      height={300}
+                    />
+                  </div>
 
-        {hasGenome ? (
-          <>
-            {/* ════════ 2 · HERO — the genome radar (flat data-viz polygon) ═══ */}
+                  {/* Persona — strengths + watchouts + course profile (all real). */}
+                  <div className="flex flex-col gap-5">
+                    {courseProfile ? (
+                      <p className="max-w-[44ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
+                        {courseProfile}
+                      </p>
+                    ) : null}
+
+                    {strengths.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
+                          Strengths
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {strengths.map((s) => (
+                            <Chip key={s.id} tone="success" size="md">
+                              {s.qualitative ? `${s.label} · ${s.qualitative}` : s.label}
+                            </Chip>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {watchouts.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
+                          Watchouts
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {watchouts.map((w) => (
+                            <Chip key={w.id} tone="warning" size="md">
+                              {w.qualitative ? `${w.label} · ${w.qualitative}` : w.label}
+                            </Chip>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </InstrumentPanel>
+
+              {/* ════════ 3 · DIMENSIONS — the real per-axis readouts ══════════ */}
+              {dimensions.length > 0 ? (
+                <section className="flex flex-col gap-3">
+                  <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                    Dimensions
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {dimensions.map((dim) => {
+                      const locked = dim.score == null;
+                      return (
+                        <InstrumentPanel key={dim.id} depth="base" padding="md" className="h-full">
+                          {locked ? (
+                            <Readout
+                              label={dim.label}
+                              size="md"
+                              state="awaiting"
+                              awaitingLabel={dim.qualitative ?? 'Locked'}
+                            />
+                          ) : (
+                            <Readout
+                              value={dim.score ?? 0}
+                              format={{ maximumFractionDigits: 0 }}
+                              label={dim.label}
+                              size="md"
+                              state="live"
+                            />
+                          )}
+                        </InstrumentPanel>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
+            </>
+          ) : (
+            /* ════════ WARMING-UP — honest awaiting state (no fabricated radar) ═ */
             <InstrumentPanel
               depth="raised"
-              tone="accent"
               padding="lg"
               eyebrow="Your shape"
-              header="Genome"
+              header="Your genome is warming up"
               as="section"
             >
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:items-center">
-                <div className="w-full min-w-0">
-                  <GenomeRadar
-                    title={`${firstName}'s shape`}
-                    seriesName="Score"
-                    data={axes}
-                    max={100}
-                    height={300}
-                  />
-                </div>
-
-                {/* Persona — strengths + watchouts + course profile (all real). */}
-                <div className="flex flex-col gap-5">
-                  {courseProfile ? (
-                    <p className="max-w-[44ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
-                      {courseProfile}
-                    </p>
-                  ) : null}
-
-                  {strengths.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
-                        Strengths
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {strengths.map((s) => (
-                          <Chip key={s.id} tone="success" size="md">
-                            {s.qualitative ? `${s.label} · ${s.qualitative}` : s.label}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {watchouts.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
-                        Watchouts
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {watchouts.map((w) => (
-                          <Chip key={w.id} tone="warning" size="md">
-                            {w.qualitative ? `${w.label} · ${w.qualitative}` : w.label}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+              <div className="flex flex-col items-center gap-6 py-4 text-center">
+                <Readout
+                  value={roundsBasis ?? undefined}
+                  format={{ maximumFractionDigits: 0 }}
+                  label="Rounds logged"
+                  size="hero"
+                  state="awaiting"
+                  samples={{ have: roundsBasis ?? 0, need: GENOME_ROUND_FLOOR }}
+                  awaitingLabel="Awaiting"
+                />
+                <p className="max-w-[44ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">
+                  Your genome needs {GENOME_ROUND_FLOOR}+ completed rounds before the
+                  radar lights up. Keep logging rounds — we&rsquo;ll surface your
+                  shape automatically.
+                </p>
+                <Button asChild variant="primary">
+                  <Link href="/golf/dashboard/rounds/new">Log a round</Link>
+                </Button>
               </div>
             </InstrumentPanel>
+          )}
 
-            {/* ════════ 3 · DIMENSIONS — the real per-axis readouts ══════════ */}
-            {dimensions.length > 0 ? (
-              <section className="flex flex-col gap-3">
-                <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-                  Dimensions
-                </h2>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {dimensions.map((dim) => {
-                    const locked = dim.score == null;
-                    return (
-                      <InstrumentPanel key={dim.id} depth="base" padding="md" className="h-full">
-                        {locked ? (
-                          <Readout
-                            label={dim.label}
-                            size="md"
-                            state="awaiting"
-                            awaitingLabel={dim.qualitative ?? 'Locked'}
-                          />
-                        ) : (
-                          <Readout
-                            value={dim.score ?? 0}
-                            format={{ maximumFractionDigits: 0 }}
-                            label={dim.label}
-                            size="md"
-                            state="live"
-                          />
-                        )}
-                      </InstrumentPanel>
-                    );
-                  })}
-                </div>
-              </section>
-            ) : null}
-          </>
-        ) : (
-          /* ════════ WARMING-UP — honest awaiting state (no fabricated radar) ═ */
-          <InstrumentPanel
-            depth="raised"
-            padding="lg"
-            eyebrow="Your shape"
-            header="Your genome is warming up"
-            as="section"
-          >
-            <div className="flex flex-col items-center gap-6 py-4 text-center">
-              <Readout
-                value={roundsBasis ?? undefined}
-                format={{ maximumFractionDigits: 0 }}
-                label="Rounds logged"
-                size="hero"
-                state="awaiting"
-                samples={{ have: roundsBasis ?? 0, need: GENOME_ROUND_FLOOR }}
-                awaitingLabel="Awaiting"
-              />
-              <p className="max-w-[44ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">
-                Your genome needs {GENOME_ROUND_FLOOR}+ completed rounds before the
-                radar lights up. Keep logging rounds — we&rsquo;ll surface your
-                shape automatically.
-              </p>
-              <Button asChild variant="primary">
-                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
-              </Button>
-            </div>
-          </InstrumentPanel>
-        )}
-
-        {/* A quiet note tying the genome back to the coach loop. */}
-        <Surface elevation="border" padding="md">
-          <p className="font-fw-sans text-caption leading-5 text-text-tertiary">
-            Your coach sees this exact profile. It updates automatically as you
-            log rounds — no extra steps.
-          </p>
-        </Surface>
-      </div>
+          {/* A quiet note tying the genome back to the coach loop. */}
+          <Surface elevation="border" padding="md">
+            <p className="font-fw-sans text-caption leading-5 text-text-tertiary">
+              Your coach sees this exact profile. It updates automatically as you
+              log rounds — no extra steps.
+            </p>
+          </Surface>
+        </div>
+      </CoachHelmShell>
     </div>
   );
 }

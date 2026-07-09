@@ -1,33 +1,35 @@
 import { Skeleton } from '@/components/ui/skeleton';
-import { Header } from '@/components/layout/header';
+import { PaperCard } from '@/components/baseball/living-annual';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 /**
- * Route-level loading skeleton for the Saved Comparisons surface.
- * Mirrors the real page layout (header + grid of comparison cards) so there is
- * no layout shift when data lands. The Suspense fallback inside the page covers
- * list-level streaming; this skeleton covers the entire page shell.
+ * Route-level loading skeleton for Saved Comparisons (Lane 4 · THE WAR ROOM,
+ * clay ink). Mirrors the page's Living Annual masthead + PaperCard grid
+ * (spec: docs/baseball/design-system-living-annual.md §7) so there is no
+ * legacy chrome flash on navigation.
  */
 export default function ComparisonsLoading() {
   return (
-    <>
-      <Header title="Saved Comparisons" subtitle="View and manage your saved player comparisons" />
-      <div className="p-6 lg:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="bg-cream-50 rounded-xl border border-warm-200 p-6"
-            >
-              <Skeleton className="h-4 w-3/4 mb-3" />
-              <Skeleton className="h-3 w-1/2 mb-4" />
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-5/6" />
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className={PAGE_SHELL}>
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="text" width={230} height={11} />
+        <Skeleton variant="text" width={210} height={36} />
+        <Skeleton className="h-[3px] w-16 rounded-full" />
       </div>
-    </>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <PaperCard key={i} className="p-6">
+            <Skeleton variant="text" width="75%" height={16} className="mb-3" />
+            <Skeleton variant="text" width="50%" height={12} className="mb-4" />
+            <div className="space-y-2">
+              <Skeleton variant="text" width="100%" height={12} />
+              <Skeleton variant="text" width="85%" height={12} />
+            </div>
+          </PaperCard>
+        ))}
+      </div>
+    </div>
   );
 }

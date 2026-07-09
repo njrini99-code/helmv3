@@ -11,7 +11,7 @@
 **Nav counts today** (primary+secondary rail destinations, Settings footer excluded):
 | Surface | Today | Target |
 |---|---|---|
-| Baseball coach | **8 hubs** ✅ (Dashboard, Messages, Team, Stats & Performance, Development, Recruiting, Academics, Management) | keep |
+| Baseball coach | **≤8 hubs** ✅ (8 standard: Dashboard, Messages, Team, Stats & Performance, Development, Recruiting, Academics, Management; 7 for High School — Recruiting hidden by design, `RECRUITING_PROGRAM_TYPES`; showcase variant has its own two-level org→team rail) | keep |
 | Baseball player | **9** (7 primary + exposureNoun + Settings-in-rail) | **8** — move Settings to pinned footer (parity with coach shell) |
 | Golf coach (Fairway, live) | **15** (7 primary + 8 secondary) | **8 hubs** |
 | Golf player (Fairway, live) | **12** (8 primary + 4 secondary) | **8** |
@@ -101,7 +101,7 @@ policies on hot golf tables, 199 unindexed FKs, 256 unused indexes).
 
 ## Target IA (~8 tabs, owner directive)
 
-### Baseball coach — unchanged (8 hubs) ✅
+### Baseball coach — unchanged (≤8 hubs: 8 standard; 7 for HS — Recruiting hidden by design; showcase variant has its own two-level rail) ✅
 ### Baseball player — 8 (move Settings out of rail to pinned footer)
 Today · Schedule · My Profile · Stats · Development · Team · Messages · [exposureNoun]
 
@@ -114,7 +114,7 @@ Today · Schedule · My Profile · Stats · Development · Team · Messages · [
 6. **Messages** (Messages · Announcements)
 7. **Operations** (Tasks · Documents)
 8. **Courses**
-Footer: Settings · Sign out. Mobile bottom bar: Home, CoachHelm, Roster, Calendar, Messages (unchanged).
+Footer: Settings · Sign out. Mobile bottom bar: Home, CoachHelm, Team, Calendar, Messages (code renders label "Team", opening the Team hub — not "Roster"; unchanged from live behavior).
 
 ### Golf player — 8
 1. **Dashboard** (merge Hub into Dashboard landing — two "homes" is duplicative)

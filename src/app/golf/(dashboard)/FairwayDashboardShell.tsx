@@ -36,6 +36,7 @@ import {
   buildPlayerBottomNavItems,
   resolveActiveGolfHub,
   isCoachHelmCoachCluster,
+  COACHHELM_COACH_CLUSTER_PREFIXES,
   type GolfNavBadgeCounts,
 } from '@/lib/golf/nav-registry';
 
@@ -79,19 +80,18 @@ const PushPermissionSoftAsk = dynamic(
 type Role = 'coach' | 'player';
 
 /** First dashboard segments that belong to the CoachHelm cluster (breadcrumb).
- *  Kept local to the shell (breadcrumb presentation only) — cluster
- *  MEMBERSHIP (which prefixes count, and the rail/bottom-nav activeMatch
- *  built from it) is the single source of truth in
- *  src/lib/golf/nav-registry.ts (isCoachHelmCoachCluster). */
-const COACHHELM_CLUSTER_SEGMENTS = new Set([
-  'intelligence',
-  'alerts',
-  'insights',
-  'patterns',
-  'development',
-  'analytics',
-  'coachhelm',
-]);
+ *  DERIVED from `COACHHELM_COACH_CLUSTER_PREFIXES` — the single source of
+ *  truth in src/lib/golf/nav-registry.ts (also feeds isCoachHelmCoachCluster
+ *  and the rail/bottom-nav activeMatch) — so this breadcrumb segment set can
+ *  never drift from what the rail highlights or CoachHelmSubNav renders as
+ *  tabs (P410: `/golf/dashboard/players` previously highlighted the rail but
+ *  showed a bare "Dashboard / Players" breadcrumb because this set was a
+ *  hand-maintained duplicate that omitted it). */
+const COACHHELM_CLUSTER_SEGMENTS = new Set(
+  COACHHELM_COACH_CLUSTER_PREFIXES.map(
+    (prefix) => prefix.replace(/^\/golf\/dashboard\//, '').split('/')[0],
+  ),
+);
 
 /** Top-bar breadcrumb labels for the first dashboard segment (desktop only). */
 const SEGMENT_LABELS: Record<string, string> = {

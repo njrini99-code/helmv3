@@ -118,6 +118,21 @@ BEGIN
   -- `BEFORE UPDATE OF recruiting_activated` below); a same-value write that
   -- happens to include the column must not be blocked — the spec scope is
   -- "when recruiting_activated changes value".
+  -- Phase-D P0 hardening (2026-07-09): guard player_type as well. Without
+  -- this, a player could flip their own player_type from the browser (the
+  -- RLS user_id self-update policy has no column guard) — e.g.
+  -- college → high_school — and THEN activate recruiting, laundering past
+  -- both the CHECK constraints and this trigger's college test.
+  -- player_type changes are administrative: service-role only, same rule as
+  -- recruiting_activated (and same no-JWT console/migration exemption).
+  IF NEW.player_type IS DISTINCT FROM OLD.player_type
+     AND current_setting('request.jwt.claims', true) IS NOT NULL
+     AND coalesce(auth.role(), '') <> 'service_role'
+  THEN
+    RAISE EXCEPTION 'player_type can only be changed via the service-role server path.'
+      USING ERRCODE = '42501';
+  END IF;
+
   IF NEW.recruiting_activated IS NOT DISTINCT FROM OLD.recruiting_activated THEN
     RETURN NEW;
   END IF;
@@ -164,7 +179,7 @@ COMMENT ON FUNCTION public.baseball_players_guard_recruiting_activated() IS
 REVOKE ALL ON FUNCTION public.baseball_players_guard_recruiting_activated() FROM PUBLIC;
 
 CREATE OR REPLACE TRIGGER baseball_players_guard_recruiting_activated_trg
-BEFORE UPDATE OF recruiting_activated ON public.baseball_players
+BEFORE UPDATE OF recruiting_activated, player_type ON public.baseball_players
 FOR EACH ROW
 EXECUTE FUNCTION public.baseball_players_guard_recruiting_activated();
 
