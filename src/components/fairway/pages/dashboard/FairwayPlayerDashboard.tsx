@@ -52,11 +52,13 @@ import {
 } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
+import { HubInsightSignalCard } from '@/components/golf/player-hub/HubInsightSignalCard';
 import type {
   PlayerDashboardPayload,
   SparklineStatCard,
 } from '@/app/golf/actions/dashboard-data';
 import type { GolfPlayer, GolfTeam } from '@/lib/types/golf';
+import type { PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 
 import {
   SectionTitle,
@@ -65,6 +67,7 @@ import {
   RecentRoundsList,
   StandingCard,
 } from './player-dashboard-parts';
+import { PlayerActionCenter } from './PlayerActionCenter';
 
 // Fairway TrendChart, lazy + ssr:false — preserves the legacy load contract
 // (the recharts bundle stays out of the server render path / first paint).
@@ -102,6 +105,14 @@ export interface PlayerDashboardData {
 interface FairwayPlayerDashboardProps {
   data: PlayerDashboardData;
   enhancedData?: PlayerDashboardPayload | null;
+  /**
+   * WAVE W2 (2026-07-09): the former standalone Hub's triage data (tasks /
+   * RSVP events / announcements / trips + top CoachHelm signal), merged onto
+   * this page as the "Action center" section — see PlayerActionCenter. Absent
+   * (undefined) for a teamless player, exactly like the Hub was skipped for
+   * teamless players before.
+   */
+  hubData?: PlayerHubSummaryData | null;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -212,7 +223,7 @@ function metricEmpty(card: SparklineStatCard | undefined, value: number | null):
  * Component
  * ──────────────────────────────────────────────────────────────────────── */
 
-export function FairwayPlayerDashboard({ data, enhancedData }: FairwayPlayerDashboardProps) {
+export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayPlayerDashboardProps) {
   const { player, team, stats, recentRounds } = data;
   const firstName = player.first_name?.trim() || 'there';
 
@@ -522,6 +533,24 @@ export function FairwayPlayerDashboard({ data, enhancedData }: FairwayPlayerDash
             </section>
           </div>
         )}
+
+        {/* ── Action center (WAVE W2: merged from the former standalone Hub) ──
+            Renders nothing when there's genuinely nothing to triage (honest-
+            empty — see PlayerActionCenter). The CoachHelm signal card sits
+            above it as a secondary matte signal, exactly as it did on the
+            Hub — never a second glass hero. */}
+        {hubData ? (
+          <div className="mt-10 flex flex-col gap-6">
+            <HubInsightSignalCard insight={hubData.topInsight} />
+            <PlayerActionCenter
+              trips={hubData.trips}
+              tasks={hubData.tasks}
+              events={hubData.events}
+              announcements={hubData.announcements}
+              announcementsLoadError={hubData.announcementsLoadError}
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   );

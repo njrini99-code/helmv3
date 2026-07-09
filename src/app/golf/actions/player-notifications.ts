@@ -281,7 +281,9 @@ async function markAnnouncementsSeenImpl(): Promise<ActionResult> {
 
     if (error) return { success: false, error: 'Failed to update notification state' };
 
-    revalidatePath('/golf/dashboard/hub');
+    // WAVE W2: the Hub's triage content lives on /golf/dashboard now (the
+    // standalone /hub route is a redirect stub) — revalidate the real surface.
+    revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/announcements');
     return { success: true };
   } catch (error) {
@@ -339,7 +341,9 @@ async function markTravelSeenImpl(): Promise<ActionResult> {
 
     if (error) return { success: false, error: 'Failed to update notification state' };
 
-    revalidatePath('/golf/dashboard/hub');
+    // WAVE W2: the Hub's triage content lives on /golf/dashboard now (the
+    // standalone /hub route is a redirect stub) — revalidate the real surface.
+    revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/travel');
     return { success: true };
   } catch (error) {

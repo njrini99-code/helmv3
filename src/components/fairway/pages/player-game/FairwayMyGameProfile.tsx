@@ -123,7 +123,7 @@ export function FairwayMyGameProfile({
           }
           secondaryActions={
             <Button asChild variant="ghost" size="sm">
-              <Link href="/golf/dashboard/hub">Back to hub</Link>
+              <Link href="/golf/dashboard">Back to dashboard</Link>
             </Button>
           }
         />

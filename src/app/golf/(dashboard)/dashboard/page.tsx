@@ -18,6 +18,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/FairwayCoachDashboard';
 import { FairwayPlayerDashboard, type PlayerDashboardData } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,10 +53,15 @@ function renderCoachDashboard(props: {
 function renderPlayerDashboard(props: {
     data: PlayerDashboardData;
     enhancedData?: PlayerDashboardPayload | null;
+    hubData?: PlayerHubSummaryData | null;
 }) {
     return (
         <div className={fairwayScope('min-h-full')}>
-            <FairwayPlayerDashboard data={props.data} enhancedData={props.enhancedData ?? undefined} />
+            <FairwayPlayerDashboard
+                data={props.data}
+                enhancedData={props.enhancedData ?? undefined}
+                hubData={props.hubData ?? undefined}
+            />
         </div>
     );
 }
@@ -169,7 +175,14 @@ export default async function GolfDashboardPage({
         // fake-empty player dashboard indistinguishable from a healthy new
         // player. A genuine new player returns empty arrays/zero counts
         // WITHOUT throwing, so letting this throw only fires on a true failure.
-        const payload = await getCachedPlayerDashboardData(player.id, userId, teamId);
+        //
+        // WAVE W2: fetch the former Hub's triage data (tasks/RSVP/announcements/
+        // trips) in parallel — teamless players get `null` (skip), exactly like
+        // the standalone Hub page skipped them before.
+        const [payload, hubData] = await Promise.all([
+            getCachedPlayerDashboardData(player.id, userId, teamId),
+            teamId ? getPlayerHubSummaryData(teamId, player.id) : Promise.resolve(null),
+        ]);
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
         const data: PlayerDashboardData = {
@@ -189,7 +202,7 @@ export default async function GolfDashboardPage({
             recentRounds: payload.recentRounds,
         };
 
-        return renderPlayerDashboard({ data, enhancedData: payload });
+        return renderPlayerDashboard({ data, enhancedData: payload, hubData });
     }
 
     // No role found — redirect to onboarding

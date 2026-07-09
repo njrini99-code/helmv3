@@ -206,8 +206,11 @@ export function TodayCard({
             ? `${actionItems.length} item${actionItems.length === 1 ? '' : 's'} to action`
             : 'Your action center'}
         </span>
+        {/* WAVE W2: the standalone Hub route is gone (merged into this page —
+            see PlayerActionCenter below on this same Dashboard); jump to the
+            merged section instead of navigating to a redirect. */}
         <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
-          <Link href="/golf/dashboard/hub">Open Hub</Link>
+          <Link href="#action-center">See details</Link>
         </Button>
       </Surface.Footer>
     </Surface>

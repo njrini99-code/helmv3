@@ -48,9 +48,12 @@ const CROSSCUT_PATH = join(PARTS_V2_DIR, "_crosscut.json");
 const DESIGNSYSTEM_PATH = join(PARTS_REMEDIATION_DIR, "_designsystem.json");
 const DESIGN_SYSTEM_DOC = "ui-intelligence/DESIGN-SYSTEM.md";
 // Wave W1 (2026-07-09): the legacy GolfSidebar.tsx fork was deleted — Fairway
-// is the only golf dashboard tree now. Nav data lives in
-// FairwayDashboardShell.tsx's buildNavSections()/buildBottomNavItems().
-const SIDEBAR_PATH = join(REPO_ROOT, "src", "app", "golf", "(dashboard)", "FairwayDashboardShell.tsx");
+// is the only golf dashboard tree now. Wave W2 (2026-07-09) then extracted the
+// 8-hub coach/player nav definitions OUT of FairwayDashboardShell.tsx into a
+// dedicated registry module (src/lib/golf/nav-registry.ts —
+// buildCoachRailSections()/buildPlayerRailSections()), so THAT is now the
+// single source of truth this atlas parser must read.
+const SIDEBAR_PATH = join(REPO_ROOT, "src", "lib", "golf", "nav-registry.ts");
 const OUT_MD = join(UI_DIR, "ROUTE-ATLAS.md");
 const OUT_HTML = join(UI_DIR, "atlas.html");
 
@@ -648,6 +651,91 @@ interface NavItem {
   label: string;
   href: string;
 }
+/** Extract every literal `{ ... label: '...' ... href: '...' ... }` object
+ *  from an arbitrary source slice (flat objects only — no nested `{}` between
+ *  the label/href keys, which is exactly the GolfSubTab / NavItem-arg shape
+ *  nav-registry.ts declares). */
+function extractNavItemObjects(body: string): { label: string; href: string }[] {
+  const items: { label: string; href: string }[] = [];
+  const objRe = /\{[^{}]*href:\s*['"`]([^'"`]+)['"`][^{}]*\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = objRe.exec(body)) !== null) {
+    const block = m[0];
+    const href = m[1];
+    const lm = block.match(/label:\s*['"`]([^'"`]+)['"`]/);
+    items.push({ label: lm ? lm[1] : href, href });
+  }
+  return items;
+}
+
+/** Slice a named function's body: declaration → next top-level `export function`. */
+function extractFnBody(src: string, fnName: string): string {
+  const fnStart = src.indexOf(`function ${fnName}`);
+  if (fnStart === -1) return "";
+  const nextFnStart = src.indexOf("\nexport function ", fnStart + 1);
+  return nextFnStart !== -1 ? src.slice(fnStart, nextFnStart) : src.slice(fnStart);
+}
+
+/** Bracket-depth-matched slice of a top-level `const NAME: ... = [ … ];` array
+ *  literal (handles the NESTED braces inside each GolfSubTab entry, unlike
+ *  extractNavItemObjects's flat-object regex — this only finds the outer
+ *  array's span; extractNavItemObjects then walks the flat entries inside). */
+function extractConstArrayBody(src: string, constName: string): string {
+  const declIdx = src.indexOf(`const ${constName}`);
+  if (declIdx === -1) return "";
+  const bracketStart = src.indexOf("[", declIdx);
+  if (bracketStart === -1) return "";
+  let depth = 0;
+  for (let i = bracketStart; i < src.length; i++) {
+    if (src[i] === "[") depth++;
+    else if (src[i] === "]") {
+      depth--;
+      if (depth === 0) return src.slice(bracketStart, i + 1);
+    }
+  }
+  return src.slice(bracketStart);
+}
+
+/**
+ * WAVE W2's nav-registry.ts declares the 8-item coach/player rail in TWO
+ * SEPARATE functions (buildCoachRailSections / buildPlayerRailSections) — a
+ * real architectural improvement over the old single-function-with-a-role-
+ * switch shape this parser used to split heuristically (second
+ * "/golf/dashboard" occurrence). BUT the composite hub rail items (Team,
+ * Calendar, Rounds & Stats, Messages, Operations) pass their `href` as a
+ * DERIVED expression (`team.tabs[0]!.href`), not a string literal — the flat-
+ * object regex can't resolve that, so those rail items are unioned in from
+ * their own hub's tab-array constant instead (COACH_TEAM_TABS, etc.), which
+ * always uses literal hrefs. Dedup by href keeps a hub's rail entry from
+ * appearing twice when its landing tab is also its first array member.
+ */
+function extractRoleNav(
+  src: string,
+  railFnName: string,
+  tabConstNames: readonly string[],
+): NavItem[] {
+  const seen = new Set<string>();
+  const items: NavItem[] = [];
+  const sources = [extractFnBody(src, railFnName), ...tabConstNames.map((n) => extractConstArrayBody(src, n))];
+  for (const source of sources) {
+    for (const item of extractNavItemObjects(source)) {
+      if (seen.has(item.href)) continue;
+      seen.add(item.href);
+      items.push(item);
+    }
+  }
+  return items;
+}
+
+const COACH_TAB_CONSTS = [
+  "COACH_TEAM_TABS",
+  "COACH_CALENDAR_TABS",
+  "COACH_ROUNDS_STATS_TABS",
+  "COACH_MESSAGES_TABS",
+  "COACH_OPERATIONS_TABS",
+] as const;
+const PLAYER_TAB_CONSTS = ["PLAYER_TEAM_TABS"] as const;
+
 function parseSidebarNav(): { coach: NavItem[]; player: NavItem[] } {
   const empty = { coach: [] as NavItem[], player: [] as NavItem[] };
   let src = "";
@@ -656,42 +744,9 @@ function parseSidebarNav(): { coach: NavItem[]; player: NavItem[] } {
   } catch {
     return empty;
   }
-  // FairwayDashboardShell.tsx also defines buildBottomNavItems() (mobile tab
-  // bar) further down the SAME file, with its own coach/player Dashboard-first
-  // entries — scanning the whole file would double the "second Dashboard
-  // occurrence" split below. Scope the scan to buildNavSections()'s body only
-  // (the full desktop rail nav) by slicing from its declaration to the next
-  // top-level `function` declaration.
-  const navFnStart = src.indexOf("function buildNavSections");
-  if (navFnStart !== -1) {
-    const nextFnStart = src.indexOf("\nfunction ", navFnStart + 1);
-    src = nextFnStart !== -1 ? src.slice(navFnStart, nextFnStart) : src.slice(navFnStart);
-  }
-  const items: { label: string; href: string; pos: number }[] = [];
-  const objRe = /\{[^{}]*href:\s*['"`]([^'"`]+)['"`][^{}]*\}/g;
-  let m: RegExpExecArray | null;
-  while ((m = objRe.exec(src)) !== null) {
-    const block = m[0];
-    const href = m[1];
-    const lm = block.match(/(?:label|name|title):\s*['"`]([^'"`]+)['"`]/);
-    items.push({ label: lm ? lm[1] : href, href, pos: m.index });
-  }
-  if (items.length === 0) return empty;
-  // The file lists the coach group first, then the player group. Both groups
-  // begin with a Dashboard item, so split on the SECOND occurrence of /golf/dashboard.
-  let splitIdx = items.length;
-  let dashSeen = 0;
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].href === "/golf/dashboard") {
-      dashSeen++;
-      if (dashSeen === 2) {
-        splitIdx = i;
-        break;
-      }
-    }
-  }
-  const coach = items.slice(0, splitIdx).map((i) => ({ label: i.label, href: i.href }));
-  const player = items.slice(splitIdx).map((i) => ({ label: i.label, href: i.href }));
+  const coach = extractRoleNav(src, "buildCoachRailSections", COACH_TAB_CONSTS);
+  const player = extractRoleNav(src, "buildPlayerRailSections", PLAYER_TAB_CONSTS);
+  if (coach.length === 0 && player.length === 0) return empty;
   return { coach, player };
 }
 const sidebarNav = parseSidebarNav();
@@ -1640,7 +1695,7 @@ function buildMarkdown(): string {
   // Cross-page navigation map
   out.push("## Cross-page navigation map");
   out.push("");
-  out.push("Primary navigation comes from `GolfSidebar.tsx`. Two role-scoped nav groups:");
+  out.push("Primary navigation comes from `src/lib/golf/nav-registry.ts`. Two role-scoped nav groups:");
   out.push("");
   out.push("**Coach sidebar**");
   if (sidebarNav.coach.length) {

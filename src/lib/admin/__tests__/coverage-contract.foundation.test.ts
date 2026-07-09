@@ -227,6 +227,8 @@ describe('global tripwire', () => {
     total += golfMessageExports.length;
 
     expect(golfMessageExports.length).toBe(10);
-    expect(total).toBe(424);
+    // 425 as of W2 (2026-07-09): +getPlayerHubSummaryData (player-hub-data.ts,
+    // withAdminObserved-wrapped) — the Hub→Dashboard merge's extracted read.
+    expect(total).toBe(425);
   });
 });
