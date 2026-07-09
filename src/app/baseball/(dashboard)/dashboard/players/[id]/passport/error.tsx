@@ -13,10 +13,10 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/dashboard/players/[id]/stats"
-      component="PlayerStatsPage"
-      title="Failed to load player stats"
-      message="We couldn't load the statistics for this player. This might be a temporary issue. Please try again."
+      route="/baseball/dashboard/players/[id]/passport"
+      component="CoachPlayerPassportPage"
+      title="Passport couldn't load"
+      message="We couldn't load this player's passport. Please try again."
       homePath="/baseball/dashboard/roster"
     />
   );

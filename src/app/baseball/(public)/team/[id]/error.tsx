@@ -13,10 +13,10 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/dashboard/messages"
-      component="MessagesPage"
-      title="Failed to load messages"
-      message="We couldn't load your conversations. This might be a temporary connection issue. Please try again."
+      route="/baseball/team/[id]"
+      component="PublicTeamProfile"
+      title="Failed to load team profile"
+      message="We couldn't load this team's profile. The team may not exist or there might be a connection issue."
       homePath="/baseball/dashboard"
     />
   );

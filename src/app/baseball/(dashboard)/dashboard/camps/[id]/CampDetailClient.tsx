@@ -1,15 +1,23 @@
 'use client';
 
+// =============================================================================
+// CampDetailClient — the coach's camp roster / check-in surface, migrated onto
+// "The Living Annual" kit (Lane 2 · THE WAR ROOM, clay ink — a recruiting
+// event's roster, sibling to Discover/Compare in this same wave).
+//
+// PRESENTATION ONLY. `fetchCampData`, `handleCheckIn`/`handleMarkNoShow`, and
+// the ownership check are unchanged — only the render moved to the kit. The
+// 13 off-palette blue/purple/amber/red hits (info-bar icon chips, quick-stat
+// figures, and the status pill map) are replaced with lane-ink `<InkBadge>`/
+// `<RuledStatLine>` — status now reads by LABEL, not by a chrome color map.
+// =============================================================================
+
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
-import { PageLoading } from '@/components/ui/loading';
-import { EmptyState } from '@/components/ui/empty-state';
-import { ShineEffect } from '@/components/ui/shine-effect';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconArrowLeft,
   IconCalendar,
@@ -18,7 +26,6 @@ import {
   IconCheck,
   IconX,
   IconClock,
-  IconAlertCircle,
 } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -26,6 +33,18 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { cn, getFullName, formatRelativeTime } from '@/lib/utils';
 import { formatCampDate } from '@/lib/baseball/camp-utils';
+import {
+  SectionMasthead,
+  PaperCard,
+  Eyebrow,
+  RuledStatLine,
+  InkBadge,
+  PositionChip,
+  EditorsLetter,
+  Reveal,
+} from '@/components/baseball/living-annual';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 interface CampRegistration {
   id: string;
@@ -73,14 +92,95 @@ const CAMP_DETAIL_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
-const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  interested: { label: 'Interested', color: 'text-warm-600', bg: 'bg-warm-100' },
-  registered: { label: 'Registered', color: 'text-blue-600', bg: 'bg-blue-100' },
-  confirmed: { label: 'Confirmed', color: 'text-primary-600', bg: 'bg-primary-100' },
-  attended: { label: 'Checked In', color: 'text-primary-600', bg: 'bg-primary-100' },
-  no_show: { label: 'No Show', color: 'text-amber-600', bg: 'bg-amber-100' },
-  cancelled: { label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-100' },
+// Status reads by LABEL + tone, never a bespoke color map — no blue/amber/red
+// (spec §4.2 rule 2: clay only for stamps/seals/hot signals, never generic
+// chrome). `attended` is the one genuinely positive outcome and gets the
+// lane-ink solid treatment; everything else stays quiet neutral.
+const STATUS_BADGE: Record<string, { tone: 'pursuit' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  interested: { tone: 'neutral', variant: 'soft' },
+  registered: { tone: 'neutral', variant: 'solid' },
+  confirmed: { tone: 'pursuit', variant: 'soft' },
+  attended: { tone: 'pursuit', variant: 'solid' },
+  no_show: { tone: 'neutral', variant: 'soft' },
+  cancelled: { tone: 'neutral', variant: 'soft' },
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  interested: 'Interested',
+  registered: 'Registered',
+  confirmed: 'Confirmed',
+  attended: 'Checked In',
+  no_show: 'No Show',
+  cancelled: 'Cancelled',
+};
+
+const FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'registered', label: 'Pending' },
+  { value: 'attended', label: 'Checked In' },
+  { value: 'no_show', label: 'No Show' },
+] as const;
+
+// Segmented filter control — the same clay-ink `<Button variant="ghost">`
+// pattern CollegeInterestClient/StatsCenterClient use for a button-group
+// toggle (spec §7.1: `<Button>` already owns press/haptics).
+function RosterFilterControl({
+  value,
+  onChange,
+}: {
+  value: (typeof FILTERS)[number]['value'];
+  onChange: (v: (typeof FILTERS)[number]['value']) => void;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Roster filter"
+      className="inline-flex flex-wrap gap-1 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1"
+    >
+      {FILTERS.map((f) => {
+        const active = f.value === value;
+        return (
+          <Button
+            key={f.value}
+            type="button"
+            variant="ghost"
+            role="radio"
+            aria-checked={active}
+            haptic="none"
+            onClick={() => onChange(f.value)}
+            className={cn(
+              'min-h-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium',
+              active
+                ? 'bg-pursuit text-white shadow-sm hover:bg-pursuit'
+                : 'text-text-secondary hover:bg-[color:var(--paper-canvas)]',
+            )}
+          >
+            {f.label}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CampDetailSkeleton() {
+  return (
+    <div className={cn(PAGE_SHELL, 'space-y-6')}>
+      <SectionMasthead eyebrow="THE WAR ROOM · CAMP ROSTER" title="Camp Details" ink="pursuit" />
+      <PaperCard className="p-6">
+        <Skeleton variant="text" width="40%" height={18} />
+      </PaperCard>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <PaperCard key={i} className="p-4">
+            <Skeleton variant="text" width="60%" height={11} className="mb-2" />
+            <Skeleton variant="text" width="40%" height={28} />
+          </PaperCard>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function CampDetailClient() {
   const params = useParams();
@@ -88,9 +188,9 @@ export default function CampDetailClient() {
   const { coach, user } = useAuth();
   const { showToast } = useToast();
   const supabase = createClient();
-  
+
   const campId = params.id as string;
-  
+
   const [camp, setCamp] = useState<Camp | null>(null);
   const [registrations, setRegistrations] = useState<CampRegistration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +201,7 @@ export default function CampDetailClient() {
 
   const fetchCampData = useCallback(async () => {
     setLoading(true);
-    
+
     // Fetch camp details
     const { data: campData, error: campError } = await supabase
       .from('baseball_camps')
@@ -164,7 +264,7 @@ export default function CampDetailClient() {
 
   const handleCheckIn = async (registrationId: string) => {
     setCheckingIn(registrationId);
-    
+
     const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
       .update({
         status: 'attended',
@@ -175,16 +275,16 @@ export default function CampDetailClient() {
     if (error) {
       showToast('Failed to check in player', 'error');
     } else {
-      setRegistrations(prev => 
-        prev.map(r => 
-          r.id === registrationId 
+      setRegistrations(prev =>
+        prev.map(r =>
+          r.id === registrationId
             ? { ...r, status: 'attended' as const, attended_at: new Date().toISOString() }
             : r
         )
       );
       showToast('Player checked in', 'success');
     }
-    
+
     setCheckingIn(null);
   };
 
@@ -219,27 +319,18 @@ export default function CampDetailClient() {
   };
 
   if (loading) {
-    return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Camp Details</h1>
-        </div>
-        <PageLoading />
-      </>
-    );
+    return <CampDetailSkeleton />;
   }
 
   if (!camp) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Camp Not Found</h1>
-        </div>
-        <div className="p-6">
-          <EmptyState
-            icon={<IconAlertCircle size={24} />}
-            title="Camp not found"
-            description="This camp may have been deleted or you don't have access."
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE WAR ROOM · CAMP ROSTER" title="Camp Not Found" ink="pursuit" />
+        <div className="mt-6">
+          <EditorsLetter
+            ink="pursuit"
+            title="Camp not found."
+            body="This camp may have been deleted or you don't have access."
             action={
               <Link href="/baseball/dashboard/camps">
                 <Button>Back to Camps</Button>
@@ -247,196 +338,147 @@ export default function CampDetailClient() {
             }
           />
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">{camp.name}</h1>
-          {camp.organization?.name && (
-            <p className="mt-1 text-body-sm text-warm-500">{camp.organization.name}</p>
+    <div className={cn(PAGE_SHELL, 'space-y-6')}>
+      <SectionMasthead
+        eyebrow="THE WAR ROOM · CAMP ROSTER"
+        title={camp.name}
+        ink="pursuit"
+        actions={
+          <Link href="/baseball/dashboard/camps">
+            <Button variant="secondary" size="sm">
+              <IconArrowLeft size={16} className="mr-1.5" />
+              Back
+            </Button>
+          </Link>
+        }
+      >
+        {camp.organization?.name && (
+          <p className="font-annual text-body-sm text-text-secondary">{camp.organization.name}</p>
+        )}
+      </SectionMasthead>
+
+      {/* Camp Info */}
+      <PaperCard className="p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-8">
+          <div>
+            <Eyebrow ink="muted" className="inline-flex items-center gap-1"><IconCalendar size={12} />Date</Eyebrow>
+            <p className="mt-1 font-annual text-body-sm font-medium text-text-primary">
+              {formatCampDate(camp.start_date, CAMP_DETAIL_DATE_OPTIONS)}
+              {camp.end_date !== camp.start_date && ` - ${formatCampDate(camp.end_date, CAMP_DETAIL_DATE_OPTIONS)}`}
+            </p>
+          </div>
+
+          {camp.location && (
+            <div>
+              <Eyebrow ink="muted" className="inline-flex items-center gap-1"><IconMapPin size={12} />Location</Eyebrow>
+              <p className="mt-1 font-annual text-body-sm font-medium text-text-primary">{camp.location}</p>
+            </div>
           )}
+
+          <div>
+            <Eyebrow ink="muted" className="inline-flex items-center gap-1"><IconUsers size={12} />Capacity</Eyebrow>
+            <p className="mt-1 font-annual text-body-sm font-medium text-text-primary">
+              {stats.total}{camp.capacity ? ` / ${camp.capacity}` : ''} registered
+            </p>
+          </div>
         </div>
-        <Link href="/baseball/dashboard/camps">
-          <Button variant="secondary" size="sm">
-            <IconArrowLeft size={16} className="mr-1.5" />
-            Back
-          </Button>
-        </Link>
+      </PaperCard>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-7 md:grid-cols-4">
+        <RuledStatLine label="Total" value={stats.total} ink="pursuit" size="row" />
+        <RuledStatLine label="Checked In" value={stats.attended} ink="pursuit" size="row" leader={stats.attended > 0} />
+        <RuledStatLine label="Pending" value={stats.pending} ink="pursuit" size="row" />
+        <RuledStatLine label="No Show" value={stats.noShow} ink="pursuit" size="row" />
       </div>
 
-      <div className="p-6 lg:p-8 space-y-6">
-        {/* Camp Info */}
-        <div className="relative glass-standard rounded-2xl p-6 overflow-clip">
-          <ShineEffect />
-          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-            <div className="flex items-center gap-3 text-warm-600">
-              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                <IconCalendar size={20} className="text-primary-600" />
-              </div>
-              <div>
-                <p className="text-sm text-warm-500">Date</p>
-                <p className="font-medium text-warm-900">
-                  {formatCampDate(camp.start_date, CAMP_DETAIL_DATE_OPTIONS)}
-                  {camp.end_date !== camp.start_date && ` - ${formatCampDate(camp.end_date, CAMP_DETAIL_DATE_OPTIONS)}`}
-                </p>
-              </div>
-            </div>
-            
-            {camp.location && (
-              <div className="flex items-center gap-3 text-warm-600">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <IconMapPin size={20} className="text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-warm-500">Location</p>
-                  <p className="font-medium text-warm-900">{camp.location}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-3 text-warm-600">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                <IconUsers size={20} className="text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-warm-500">Capacity</p>
-                <p className="font-medium text-warm-900">
-                  {stats.total}{camp.capacity ? ` / ${camp.capacity}` : ''} registered
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Roster */}
+      <PaperCard className="p-0">
+        <div className="flex flex-col gap-4 border-b border-[color:var(--hairline)] p-5 sm:flex-row sm:items-center sm:justify-between">
+          <Eyebrow as="h2" ink="pursuit">Roster ({filteredRegistrations.length})</Eyebrow>
+          <RosterFilterControl value={filter} onChange={setFilter} />
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card variant="glass" className="p-4">
-            <p className="text-sm text-warm-500">Total</p>
-            <p className="text-2xl font-semibold text-warm-900 tabular-nums">{stats.total}</p>
-          </Card>
-          <Card variant="glass" className="p-4">
-            <p className="text-sm text-warm-500">Checked In</p>
-            <p className="text-2xl font-semibold text-primary-600 tabular-nums">{stats.attended}</p>
-          </Card>
-          <Card variant="glass" className="p-4">
-            <p className="text-sm text-warm-500">Pending</p>
-            <p className="text-2xl font-semibold text-blue-600 tabular-nums">{stats.pending}</p>
-          </Card>
-          <Card variant="glass" className="p-4">
-            <p className="text-sm text-warm-500">No Show</p>
-            <p className="text-2xl font-semibold text-amber-600 tabular-nums">{stats.noShow}</p>
-          </Card>
-        </div>
-
-        {/* Roster */}
-        <div className="relative glass-standard rounded-2xl overflow-clip">
-          <ShineEffect />
-          <div className="px-6 py-4 border-b border-warm-100/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="font-semibold text-warm-900">Roster ({filteredRegistrations.length})</h2>
-            
-            {/* Filter Tabs */}
-            <div className="flex gap-1 p-1 bg-warm-100 rounded-lg">
-              {(['all', 'registered', 'attended', 'no_show'] as const).map(f => (
-                <Button variant="ghost"
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={cn(
-                    'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                    filter === f
-                      ? 'bg-cream-50 text-warm-900 shadow-sm'
-                      : 'text-warm-600 hover:text-warm-900'
-                  )}
-                >
-                  {f === 'all' ? 'All' : f === 'registered' ? 'Pending' : f === 'attended' ? 'Checked In' : 'No Show'}
-                </Button>
-              ))}
-            </div>
+        {filteredRegistrations.length === 0 ? (
+          <div className="p-8">
+            <EditorsLetter ink="pursuit" title="No registrations yet." body="Players who sign up for this camp will appear here." />
           </div>
+        ) : (
+          <div className="divide-y divide-[color:var(--hairline)]">
+            {filteredRegistrations.map((reg, i) => {
+              const badge = STATUS_BADGE[reg.status] ?? { tone: 'neutral' as const, variant: 'soft' as const };
+              return (
+                <Reveal key={reg.id} staggerIndex={Math.min(i, 10)}>
+                  <div className="flex items-center gap-4 px-5 py-4">
+                    <Avatar
+                      name={getFullName(reg.player?.first_name, reg.player?.last_name)}
+                      src={reg.player?.avatar_url}
+                      size="md"
+                    />
 
-          {filteredRegistrations.length === 0 ? (
-            <div className="p-8 text-center">
-              <IconUsers size={32} className="text-warm-300 mx-auto mb-3" />
-              <p className="text-warm-500">No registrations yet</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-warm-100/50">
-              {filteredRegistrations.map(reg => (
-                <div
-                  key={reg.id}
-                  className="px-6 py-4 flex items-center gap-4 hover:bg-warm-50/50 transition-colors"
-                >
-                  <Avatar
-                    name={getFullName(reg.player?.first_name, reg.player?.last_name)}
-                    src={reg.player?.avatar_url}
-                    size="md"
-                  />
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-warm-900 truncate">
-                        {getFullName(reg.player?.first_name, reg.player?.last_name)}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-annual text-body-sm font-medium text-text-primary">
+                          {getFullName(reg.player?.first_name, reg.player?.last_name)}
+                        </p>
+                        {reg.player?.primary_position && (
+                          <PositionChip label={reg.player.primary_position} size="sm" />
+                        )}
+                      </div>
+                      <p className="truncate font-annual text-body-sm text-text-tertiary">
+                        {reg.player?.high_school_name && `${reg.player.high_school_name} • `}
+                        {reg.player?.grad_year && `Class of ${reg.player.grad_year}`}
+                        {reg.player?.city && reg.player?.state && ` • ${reg.player.city}, ${reg.player.state}`}
                       </p>
-                      {reg.player?.primary_position && (
-                        <Badge variant="secondary" className="text-xs">
-                          {reg.player.primary_position}
-                        </Badge>
+                      {reg.attended_at && (
+                        <p className="mt-1 flex items-center gap-1 font-annual text-eyebrow uppercase tracking-[0.1em] text-pursuit">
+                          <IconCheck size={12} />
+                          Checked in {formatRelativeTime(reg.attended_at)}
+                        </p>
                       )}
                     </div>
-                    <p className="text-sm text-warm-500 truncate">
-                      {reg.player?.high_school_name && `${reg.player.high_school_name} • `}
-                      {reg.player?.grad_year && `Class of ${reg.player.grad_year}`}
-                      {reg.player?.city && reg.player?.state && ` • ${reg.player.city}, ${reg.player.state}`}
-                    </p>
-                    {reg.attended_at && (
-                      <p className="text-xs text-primary-600 mt-1 flex items-center gap-1">
-                        <IconCheck size={12} />
-                        Checked in {formatRelativeTime(reg.attended_at)}
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <Badge className={cn(statusConfig[reg.status]?.bg ?? 'bg-warm-100', statusConfig[reg.status]?.color ?? 'text-warm-600')}>
-                      {statusConfig[reg.status]?.label ?? reg.status}
-                    </Badge>
-                    
-                    {isCoach && (reg.status === 'registered' || reg.status === 'confirmed') && (
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          onClick={() => handleCheckIn(reg.id)}
-                          disabled={checkingIn === reg.id}
-                          className="gap-1"
-                        >
-                          {checkingIn === reg.id ? (
-                            <IconClock size={14} className="animate-spin" />
-                          ) : (
-                            <IconCheck size={14} />
-                          )}
-                          Check In
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleMarkNoShow(reg.id)}
-                          className="text-amber-600"
-                          aria-label="Mark no-show"
-                        >
-                          <IconX size={14} />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <InkBadge label={(STATUS_LABEL[reg.status] ?? reg.status).toUpperCase()} tone={badge.tone} variant={badge.variant} />
+
+                      {isCoach && (reg.status === 'registered' || reg.status === 'confirmed') && (
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            onClick={() => handleCheckIn(reg.id)}
+                            disabled={checkingIn === reg.id}
+                            className="gap-1"
+                          >
+                            {checkingIn === reg.id ? (
+                              <IconClock size={14} className="animate-spin" />
+                            ) : (
+                              <IconCheck size={14} />
+                            )}
+                            Check In
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleMarkNoShow(reg.id)}
+                            aria-label="Mark no-show"
+                          >
+                            <IconX size={14} />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
+      </PaperCard>
+    </div>
   );
 }

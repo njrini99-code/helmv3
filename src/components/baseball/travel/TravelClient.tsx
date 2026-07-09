@@ -13,7 +13,7 @@ import {
   IconChevronDown,
   IconChevronUp,
 } from '@/components/icons';
-import { SectionMasthead, EmptyIssue } from '@/components/baseball/living-annual';
+import { SectionMasthead, EmptyIssue, PaperCard, InkBadge, Eyebrow } from '@/components/baseball/living-annual';
 import { CreateItineraryModal } from './CreateItineraryModal';
 import { ExpenseForm } from './ExpenseForm';
 import { ExpenseList } from './ExpenseList';
@@ -157,7 +157,7 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
       {/* Upcoming Trips */}
       {upcoming.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-warm-900 mb-4">Upcoming Trips</h2>
+          <h2 className="mb-4 font-annual text-h3 font-semibold text-text-primary">Upcoming Trips</h2>
           <div className="space-y-4">
             {upcoming.map(itin => (
               <ItineraryCard
@@ -183,7 +183,7 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
       {/* Past Trips */}
       {past.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-warm-500 mb-4">Past Trips</h2>
+          <h2 className="mb-4 font-annual text-h3 font-semibold text-text-tertiary">Past Trips</h2>
           <div className="space-y-4 opacity-80">
             {past.map(itin => (
               <ItineraryCard
@@ -263,12 +263,12 @@ function ItineraryCard({
 }: ItineraryCardProps) {
   const prefersReducedMotion = useReducedMotion();
   return (
-    <div className="glass-standard rounded-2xl overflow-clip">
+    <PaperCard className="overflow-hidden p-0">
       {/* Header Row */}
       <div
         role="button"
         tabIndex={0}
-        className="p-5 flex items-center gap-4 cursor-pointer hover:bg-cream-100/82 transition-colors"
+        className="flex cursor-pointer items-center gap-4 p-5 transition-colors hover:bg-[color:var(--paper-canvas)]"
         onClick={onToggleExpand}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleExpand(); } }}
       >
@@ -276,9 +276,9 @@ function ItineraryCard({
           <IconMapPin size={24} className="text-primary-600" />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-warm-900 truncate">{itinerary.event_name}</h3>
-          <div className="flex items-center gap-3 text-sm text-warm-500 mt-0.5">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-annual text-h3 font-semibold text-text-primary">{itinerary.event_name}</h3>
+          <div className="mt-0.5 flex items-center gap-3 font-annual text-body-sm text-text-secondary">
             {itinerary.location && <span>{itinerary.location}</span>}
             <span className="flex items-center gap-1">
               <IconCalendar size={14} />
@@ -289,12 +289,12 @@ function ItineraryCard({
         </div>
 
         {itinerary.transportation && (
-          <span className="hidden sm:inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-warm-100 text-warm-600">
-            {itinerary.transportation}
+          <span className="hidden sm:inline-flex">
+            <InkBadge tone="neutral" label={itinerary.transportation.toUpperCase()} />
           </span>
         )}
 
-        <div className="text-warm-400">
+        <div className="text-text-tertiary">
           {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
         </div>
       </div>
@@ -309,34 +309,34 @@ function ItineraryCard({
             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 border-t border-warm-100 pt-4 space-y-6">
+            <div className="space-y-6 border-t border-[color:var(--hairline)] px-5 pb-5 pt-4">
               {/* Trip Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                 {itinerary.accommodation && (
                   <div>
-                    <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Accommodation</p>
-                    <p className="text-warm-900">{itinerary.accommodation}</p>
+                    <Eyebrow ink="muted" className="mb-1">Accommodation</Eyebrow>
+                    <p className="text-text-primary">{itinerary.accommodation}</p>
                   </div>
                 )}
                 {itinerary.transportation && (
                   <div>
-                    <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Transportation</p>
-                    <p className="text-warm-900">{itinerary.transportation}</p>
+                    <Eyebrow ink="muted" className="mb-1">Transportation</Eyebrow>
+                    <p className="text-text-primary">{itinerary.transportation}</p>
                   </div>
                 )}
               </div>
 
               {itinerary.notes && (
                 <div>
-                  <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Notes</p>
-                  <p className="text-warm-700 text-sm whitespace-pre-line">{itinerary.notes}</p>
+                  <Eyebrow ink="muted" className="mb-1">Notes</Eyebrow>
+                  <p className="whitespace-pre-line text-sm text-text-secondary">{itinerary.notes}</p>
                 </div>
               )}
 
               {/* Expenses Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-warm-900">Expenses</h4>
+                  <h4 className="font-annual text-h3 font-semibold text-text-primary">Expenses</h4>
                   {isCoach && (
                     <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onAddExpense(); }} className="gap-1">
                       <IconPlus size={14} />
@@ -379,12 +379,12 @@ function ItineraryCard({
 
               {/* Actions */}
               {isCoach && (
-                <div className="flex items-center gap-2 pt-4 border-t border-warm-100">
+                <div className="flex items-center gap-2 border-t border-[color:var(--hairline)] pt-4">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                    className="gap-2 text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200"
+                    className="gap-2 text-text-secondary hover:bg-[color:var(--paper-canvas)] hover:text-text-primary"
                   >
                     <IconEdit size={14} />
                     Edit Trip
@@ -404,6 +404,6 @@ function ItineraryCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </PaperCard>
   );
 }

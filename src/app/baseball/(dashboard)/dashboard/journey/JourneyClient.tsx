@@ -1,25 +1,45 @@
 'use client';
 
+// =============================================================================
+// JourneyClient — the player's "recruiting journey" surface, migrated onto
+// "The Living Annual" kit (Lane 3 · THE PASSPORT, green ink — spec §5, §6
+// alongside Analytics / College Interest; ui-migration-map.md `timeline` row).
+//
+// PRESENTATION ONLY. `useJourney()` (the schools + events + stats query) and
+// the validated `updateInterestStatus` server action are byte-for-byte
+// unchanged — only the render moved to the kit. Off-palette status colors
+// (blue/purple/amber funnel badges) are replaced with lane-ink `<InkBadge>`
+// tones; the funnel still reads left-to-right, it just never leaves green.
+// =============================================================================
+
 import { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { PageLoading } from '@/components/ui/loading';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconTarget,
   IconEye,
-  IconStar,
   IconVideo,
   IconMessage,
   IconCalendar,
   IconPlus,
-  IconChevronRight
+  IconChevronRight,
 } from '@/components/icons';
 import { useJourney, type JourneySchool, type JourneyEvent } from '@/hooks/use-journey';
 import { updateInterestStatus } from '@/app/baseball/actions/interests';
-import { cn } from '@/lib/utils';
+import { cn, formatRelativeTime } from '@/lib/utils';
+import {
+  SectionMasthead,
+  Eyebrow,
+  RuledStatLine,
+  KPIContentsStrip,
+  PaperCard,
+  InkBadge,
+  EditorsLetter,
+  Reveal,
+} from '@/components/baseball/living-annual';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 const statusOptions = [
   { value: 'interested', label: 'Interested' },
@@ -30,73 +50,51 @@ const statusOptions = [
   { value: 'committed', label: 'Committed' },
 ];
 
-function getStatusColor(status: string): string {
-  switch (status) {
-    case 'interested':
-    case 'researching':
-      return 'bg-warm-100 text-warm-700';
-    case 'contacted':
-      return 'bg-blue-100 text-blue-700';
-    case 'visited':
-      return 'bg-purple-100 text-purple-700';
-    case 'offered':
-      return 'bg-amber-100 text-amber-700';
-    case 'committed':
-      return 'bg-primary-100 text-primary-700';
-    default:
-      return 'bg-warm-100 text-warm-700';
-  }
-}
+// Funnel progression reads in ONE ink (green, Passport lane) — never the
+// legacy blue/purple/amber map. Later funnel stages simply get more presence
+// (solid vs. soft), and `committed` — the one genuinely celebratory moment —
+// is the sole `sodium` accent in this surface (spec §4.2 rule 4).
+const STATUS_BADGE: Record<string, { tone: 'team' | 'sodium'; variant: 'soft' | 'solid' }> = {
+  interested: { tone: 'team', variant: 'soft' },
+  researching: { tone: 'team', variant: 'soft' },
+  contacted: { tone: 'team', variant: 'solid' },
+  visited: { tone: 'team', variant: 'solid' },
+  offered: { tone: 'team', variant: 'solid' },
+  committed: { tone: 'sodium', variant: 'solid' },
+};
 
+// Icons carry the read via SHAPE, not chrome color (spec §4.2 rule 2) — every
+// timeline icon stays in lane ink (green), matching CollegeInterestClient's
+// established pattern for the same kind of activity feed.
 function getEventIcon(type: JourneyEvent['type']) {
+  const cls = 'text-grade-plus';
   switch (type) {
     case 'profile_view':
-      return <IconEye size={16} className="text-blue-600" />;
+      return <IconEye size={14} className={cls} aria-hidden />;
     case 'watchlist_add':
-      return <IconStar size={16} className="text-amber-600" />;
+      return <IconTarget size={14} className={cls} aria-hidden />;
     case 'video_view':
-      return <IconVideo size={16} className="text-purple-600" />;
+      return <IconVideo size={14} className={cls} aria-hidden />;
     case 'message':
-      return <IconMessage size={16} className="text-primary-600" />;
+      return <IconMessage size={14} className={cls} aria-hidden />;
     case 'added_interest':
-      return <IconPlus size={16} className="text-primary-600" />;
+      return <IconPlus size={14} className={cls} aria-hidden />;
     case 'status_change':
-      return <IconTarget size={16} className="text-warm-600" />;
+      return <IconTarget size={14} className={cls} aria-hidden />;
     default:
-      return <IconEye size={16} className="text-warm-600" />;
+      return <IconEye size={14} className={cls} aria-hidden />;
   }
 }
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return 'Today';
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays} days ago`;
-  } else if (diffDays < 30) {
-    const weeks = Math.floor(diffDays / 7);
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-  } else {
-    return formatDate(dateString);
-  }
-}
-
-function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatusChange: (id: string, status: string) => void }) {
+function SchoolCard({
+  school,
+  index,
+  onStatusChange,
+}: {
+  school: JourneySchool;
+  index: number;
+  onStatusChange: (id: string, status: string) => void;
+}) {
   const handleStatusChange = async (newStatus: string) => {
     try {
       await updateInterestStatus(school.id, newStatus);
@@ -106,63 +104,58 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
     }
   };
 
+  const badge: { tone: 'team' | 'sodium'; variant: 'soft' | 'solid' } =
+    STATUS_BADGE[school.status] ?? { tone: 'team', variant: 'soft' };
+  const statusLabel = statusOptions.find((s) => s.value === school.status)?.label || school.status;
+
   return (
-    <Card variant="glass">
-      <CardContent className="p-5">
+    <Reveal staggerIndex={Math.min(index, 10)}>
+      <PaperCard className="p-4 lg:p-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-warm-900 truncate">{school.school_name}</h3>
-              <Badge className={cn('text-xs', getStatusColor(school.status))}>
-                {statusOptions.find(s => s.value === school.status)?.label || school.status}
-              </Badge>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <h3 className="truncate font-annual text-h3 font-semibold leading-tight text-text-primary">
+                {school.school_name}
+              </h3>
+              <InkBadge label={statusLabel.toUpperCase()} tone={badge.tone} variant={badge.variant} />
             </div>
-            <div className="flex items-center gap-3 text-sm text-warm-500">
-              {school.division && <span>{school.division}</span>}
-              {school.conference && <span>• {school.conference}</span>}
-            </div>
+            <Eyebrow ink="muted" items={[school.division, school.conference]} />
           </div>
           <Select
             options={statusOptions}
             value={school.status}
             onChange={handleStatusChange}
-            className="w-36 text-sm"
+            className="w-36 shrink-0 text-sm"
           />
         </div>
 
-        {/* Engagement Stats */}
-        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-warm-100">
-          <div className="flex items-center gap-1.5 text-sm">
-            <IconEye size={14} className="text-warm-400" />
-            <span className="text-warm-600">{school.profile_views} views</span>
-          </div>
-          {school.watchlist_added && (
-            <div className="flex items-center gap-1.5 text-sm">
-              <IconStar size={14} className="text-amber-500" />
-              <span className="text-warm-600">On watchlist</span>
-            </div>
-          )}
+        {/* Engagement */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-[color:var(--hairline)] pt-3">
+          <RuledStatLine label="Views" value={school.profile_views} ink="team" size="row" />
+          {school.watchlist_added ? <InkBadge label="On Watchlist" tone="team" variant="soft" /> : null}
         </div>
 
         {school.notes && (
-          <p className="text-sm leading-relaxed text-warm-500 mt-3 italic">"{school.notes}"</p>
+          <p className="mt-3 font-annual text-body-sm italic leading-relaxed text-text-tertiary">
+            &ldquo;{school.notes}&rdquo;
+          </p>
         )}
 
-        <div className="flex items-center justify-between mt-4">
-          <span className="text-xs text-warm-400">
-            Added {formatDate(school.created_at)}
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+            Added {formatRelativeTime(school.created_at)}
           </span>
           {school.organization_id && (
             <Link
               href={`/baseball/program/${school.organization_id}`}
-              className="text-sm leading-relaxed text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+              className="inline-flex items-center gap-1 font-annual text-body-sm font-medium text-grade-plus hover:underline"
             >
               View Program <IconChevronRight size={14} />
             </Link>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </PaperCard>
+    </Reveal>
   );
 }
 
@@ -170,14 +163,48 @@ function TimelineEvent({ event }: { event: JourneyEvent }) {
   return (
     <div className="flex gap-3">
       <div className="flex flex-col items-center">
-        <div className="w-8 h-8 rounded-full bg-warm-100 flex items-center justify-center">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--paper)]">
           {getEventIcon(event.type)}
         </div>
-        <div className="w-0.5 flex-1 bg-warm-100 mt-2" />
+        <div className="mt-2 w-px flex-1 bg-[color:var(--hairline)]" />
       </div>
       <div className="flex-1 pb-6">
-        <p className="text-sm leading-relaxed text-warm-900">{event.description}</p>
-        <p className="text-xs text-warm-400 mt-1">{formatRelativeTime(event.timestamp)}</p>
+        <p className="font-annual text-body-sm leading-relaxed text-text-secondary">{event.description}</p>
+        <p className="mt-1 text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+          {formatRelativeTime(event.timestamp)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function JourneySkeleton() {
+  return (
+    <div className={cn(PAGE_SHELL, 'space-y-8')}>
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="text" width={220} height={11} />
+        <Skeleton variant="text" width={200} height={36} />
+        <Skeleton className="h-[3px] w-16 rounded-full" />
+      </div>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          {[0, 1, 2].map((i) => (
+            <PaperCard key={i} className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 space-y-2">
+                  <Skeleton variant="text" width="40%" height={18} />
+                  <Skeleton variant="text" width="30%" height={11} />
+                </div>
+              </div>
+            </PaperCard>
+          ))}
+        </div>
+        <PaperCard className="space-y-4 p-5">
+          <Skeleton variant="text" width="40%" height={14} />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} variant="text" width="100%" height={22} />
+          ))}
+        </PaperCard>
       </div>
     </div>
   );
@@ -193,156 +220,105 @@ export default function JourneyClient() {
   }
 
   const handleStatusChange = (id: string, newStatus: string) => {
-    setSchoolList(prev =>
-      prev.map(s => s.id === id ? { ...s, status: newStatus } : s)
-    );
+    setSchoolList((prev) => prev.map((s) => (s.id === id ? { ...s, status: newStatus } : s)));
   };
 
   if (loading) {
-    return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">My Journey</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Track your recruiting progress</p>
-          </div>
-        </div>
-        <PageLoading />
-      </>
-    );
+    return <JourneySkeleton />;
   }
 
   const displaySchools = schoolList.length > 0 ? schoolList : schools;
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">My Journey</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Track your recruiting progress with schools</p>
-        </div>
-        <Link href="/baseball/dashboard/colleges">
-          <Button>
-            <IconPlus size={18} className="mr-2" />
+    <div className={cn(PAGE_SHELL, 'space-y-8')}>
+      <SectionMasthead
+        eyebrow="THE PASSPORT · RECRUITING JOURNEY"
+        title="My Journey"
+        ink="team"
+        actions={
+          <Link
+            href="/baseball/dashboard/colleges"
+            className="inline-flex items-center gap-2 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-1.5 font-annual text-sm font-medium text-text-primary hover:bg-[color:var(--paper-canvas)]"
+          >
+            <IconPlus size={16} />
             Add Schools
-          </Button>
-        </Link>
-      </div>
+          </Link>
+        }
+      >
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          Track your recruiting progress with schools.
+        </p>
+      </SectionMasthead>
 
-      <div className="p-6 lg:p-8">
-        {/* Stats Overview */}
-        {stats && stats.total_interests > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <Card variant="glass">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">{stats.total_interests}</p>
-                <p className="text-xs text-warm-500">Total Schools</p>
-              </CardContent>
-            </Card>
-            <Card variant="glass">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">{stats.schools_interested}</p>
-                <p className="text-xs text-warm-500">Interested</p>
-              </CardContent>
-            </Card>
-            <Card variant="glass">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-blue-600 tabular-nums">{stats.schools_contacted}</p>
-                <p className="text-xs text-warm-500">Contacted</p>
-              </CardContent>
-            </Card>
-            <Card variant="glass">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-purple-600 tabular-nums">{stats.schools_visited}</p>
-                <p className="text-xs text-warm-500">Visited</p>
-              </CardContent>
-            </Card>
-            <Card variant="glass">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-amber-600 tabular-nums">{stats.schools_offered}</p>
-                <p className="text-xs text-warm-500">Offers</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+      {stats && stats.total_interests > 0 && (
+        <KPIContentsStrip
+          columns={5}
+          items={[
+            { label: 'Total Schools', value: stats.total_interests },
+            { label: 'Interested', value: stats.schools_interested },
+            { label: 'Contacted', value: stats.schools_contacted },
+            { label: 'Visited', value: stats.schools_visited },
+            { label: 'Offers', value: stats.schools_offered, leader: stats.schools_offered > 0 },
+          ]}
+        />
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Schools List */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-semibold tracking-tight text-warm-900 mb-4">Your Schools</h2>
-            {displaySchools.length === 0 ? (
-              <Card variant="glass">
-                <CardContent className="p-8 text-center">
-                  <IconTarget size={40} className="mx-auto mb-4 text-warm-400" />
-                  <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">No schools in your journey</h3>
-                  <p className="text-sm leading-relaxed text-warm-600 mb-6">
-                    Start by adding schools you're interested in from the Discover Colleges page.
-                  </p>
-                  <Link href="/baseball/dashboard/colleges">
-                    <Button>
-                      <IconPlus size={18} className="mr-2" />
-                      Discover Colleges
-                    </Button>
-                  </Link>
+      <div className="grid grid-cols-1 gap-8 border-t border-[color:var(--hairline)] pt-6 lg:grid-cols-3">
+        {/* Schools List */}
+        <div className="space-y-4 lg:col-span-2">
+          <Eyebrow as="h2" ink="team">Your Schools</Eyebrow>
+          {displaySchools.length === 0 ? (
+            <EditorsLetter
+              ink="team"
+              live
+              title="No schools in your journey yet."
+              body="Start by adding schools you're interested in from the Discover Colleges page."
+              action={
+                <Link
+                  href="/baseball/dashboard/colleges"
+                  className="inline-flex items-center gap-2 rounded-fw-md bg-grade-plus px-4 py-2 font-annual text-sm font-medium text-white hover:opacity-90"
+                >
+                  <IconPlus size={16} />
+                  Discover Colleges
+                </Link>
+              }
+            />
+          ) : (
+            <div className="space-y-4">
+              {displaySchools.map((school, i) => (
+                <SchoolCard key={school.id} school={school} index={i} onStatusChange={handleStatusChange} />
+              ))}
+            </div>
+          )}
+        </div>
 
-                  {/* Visual Preview - Empty Journey Cards */}
-                  <div className="mt-8 space-y-3 opacity-30">
-                    {[1, 2, 3].map((slot) => (
-                      <div key={slot} className="border-2 border-dashed border-warm-300 rounded-xl p-4 text-left">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-warm-200" />
-                          <div className="flex-1">
-                            <div className="h-4 bg-warm-200 rounded mb-2 w-2/3" />
-                            <div className="h-3 bg-warm-200 rounded w-1/2" />
-                          </div>
-                          <div className="w-20 h-6 bg-warm-200 rounded-full" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+        {/* Activity Timeline */}
+        <div>
+          <Eyebrow as="h2" ink="team" className="mb-4">Recent Activity</Eyebrow>
+          <PaperCard className="p-5">
+            {events.length === 0 ? (
+              <div className="py-8 text-center">
+                <IconCalendar size={28} className="mx-auto mb-2 text-text-tertiary" />
+                <p className="font-annual text-body-sm text-text-secondary">No activity yet</p>
+                <p className="mt-1 text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+                  Activity from coaches will appear here
+                </p>
+              </div>
             ) : (
-              displaySchools.map(school => (
-                <SchoolCard
-                  key={school.id}
-                  school={school}
-                  onStatusChange={handleStatusChange}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Activity Timeline */}
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-warm-900 mb-4">Recent Activity</h2>
-            <Card variant="glass">
-              <CardContent className="p-5">
-                {events.length === 0 ? (
-                  <div className="text-center py-8">
-                    <IconCalendar size={32} className="mx-auto text-warm-300 mb-2" />
-                    <p className="text-sm leading-relaxed text-warm-500">No activity yet</p>
-                    <p className="text-xs text-warm-400 mt-1">
-                      Activity from coaches will appear here
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    {events.slice(0, 10).map(event => (
-                      <TimelineEvent key={event.id} event={event} />
-                    ))}
-                    {events.length > 10 && (
-                      <p className="text-sm leading-relaxed text-warm-500 text-center pt-4">
-                        + {events.length - 10} more events
-                      </p>
-                    )}
-                  </div>
+              <div>
+                {events.slice(0, 10).map((event) => (
+                  <TimelineEvent key={event.id} event={event} />
+                ))}
+                {events.length > 10 && (
+                  <p className="pt-2 text-center font-annual text-body-sm text-text-tertiary">
+                    + {events.length - 10} more events
+                  </p>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            )}
+          </PaperCard>
         </div>
       </div>
-    </>
+    </div>
   );
 }

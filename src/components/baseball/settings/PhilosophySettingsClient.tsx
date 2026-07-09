@@ -29,6 +29,7 @@ import {
 } from '@/components/icons';
 import { savePhilosophySettings } from '@/app/baseball/actions/philosophy';
 import type { BaseballCoachPhilosophy } from '@/lib/types';
+import { SectionMasthead } from '@/components/baseball/living-annual';
 
 const SETTINGS_PATH = '/baseball/dashboard/settings';
 
@@ -236,23 +237,27 @@ export function PhilosophySettingsClient({
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Coaching Philosophy</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{`${coachName} • how AI insights are tuned`}</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          leftIcon={<IconArrowLeft size={16} />}
-          aria-label="Back to settings"
-          onClick={() => router.push(SETTINGS_PATH)}
+      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead
+          eyebrow="THE PRESSBOX · SETTINGS"
+          title="Coaching Philosophy"
+          ink="team"
+          actions={
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<IconArrowLeft size={16} />}
+              aria-label="Back to settings"
+              onClick={() => router.push(SETTINGS_PATH)}
+            >
+              Settings
+            </Button>
+          }
         >
-          Settings
-        </Button>
-      </div>
+          <p className="font-annual text-body-sm text-text-secondary">{`${coachName} • how AI insights are tuned`}</p>
+        </SectionMasthead>
 
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+        <div className="space-y-6">
         {/* Welcome message for new users */}
         {isNew && (
           <m.div
@@ -455,6 +460,7 @@ export function PhilosophySettingsClient({
           >
             {saving ? 'Saving…' : saved ? 'Saved' : 'Save Philosophy'}
           </Button>
+        </div>
         </div>
       </div>
     </LazyMotion>

@@ -17,6 +17,7 @@ import {
   IconTrash,
 } from '@/components/icons';
 import { SectionMasthead, EditorsLetter, EmptyIssue } from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
 import { createBaseballEvent, deleteBaseballEvent } from '@/app/baseball/actions/calendar';
 
 interface Event {
@@ -514,15 +515,10 @@ export default function EventsPage() {
               </h2>
             </div>
             <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
-              {/* Inline create error */}
-              {createError && (
-                <div
-                  role="alert"
-                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                >
-                  {createError}
-                </div>
-              )}
+              {/* Inline create error — the shared InlineNotice component (danger
+                  tone), not an ad-hoc red box; matches the fetchError treatment
+                  above via EditorsLetter for the composed page-level case. */}
+              {createError && <InlineNotice tone="danger">{createError}</InlineNotice>}
               <Select
                 label="Team"
                 placeholder="Select team"

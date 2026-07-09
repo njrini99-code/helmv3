@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getRoleTemplates } from '@/app/baseball/actions/roles-permissions';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { IconUsers, IconChevronRight, IconShield } from '@/components/icons';
+import { SectionMasthead } from '@/components/baseball/living-annual';
 
 export const metadata = {
   title: 'Roles | Helm Baseball',
@@ -43,14 +44,16 @@ export default async function RolesPage() {
   const data = await getRoleTemplates();
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Roles</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{`Role templates for ${data.programLabel} programs`}</p>
-        </div>
-      </div>
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Shared LA masthead — same component + eyebrow grammar as Settings and
+          Program Settings (ui-migration-map settings row). */}
+      <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Roles" ink="team">
+        <p className="font-annual text-body-sm text-text-secondary">
+          {`Role templates for ${data.programLabel} programs`}
+        </p>
+      </SectionMasthead>
+
+      <div className="space-y-6">
         <Card variant="glass">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -127,6 +130,6 @@ export default async function RolesPage() {
           </Link>
         )}
       </div>
-    </>
+    </div>
   );
 }

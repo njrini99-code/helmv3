@@ -1,12 +1,24 @@
 'use client';
 
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+// =============================================================================
+// CampsClient — the shared coach + player camps/showcases surface, migrated
+// onto "The Living Annual" kit. This is a recruiting-events surface: the
+// coach's view (create/manage/roster) reads in Lane 2 · THE WAR ROOM clay ink;
+// the player's own registration view reads in Lane 3 · THE PASSPORT green ink
+// — the SAME pattern CollegeInterestClient (coach, clay) / AnalyticsClient
+// (player, green) already established for role-branched surfaces.
+//
+// PRESENTATION ONLY. `loadCamps`/`attachActiveCounts`, the register/unregister/
+// delete server-action calls, and the create/edit modal wiring are unchanged
+// — only the render moved to the kit (skeleton instead of a spinner, a shared
+// `<SectionMasthead>` instead of the bespoke `CampsPageHeader`, `<InkBadge>`
+// instead of colored status pills).
+// =============================================================================
+
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { PageLoading } from '@/components/ui/loading';
-import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconCalendar, IconMapPin, IconUsers, IconPlus, IconHeart, IconHeartFilled, IconEdit, IconTrash, IconEye } from '@/components/icons';
@@ -16,6 +28,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { registerForCamp, unregisterFromCamp, deleteCamp } from '@/app/baseball/actions/camps';
 import { activeCampCountsByCamp, formatCampDate } from '@/lib/baseball/camp-utils';
+import { cn } from '@/lib/utils';
+import { SectionMasthead, PaperCard, InkBadge, EditorsLetter, Reveal } from '@/components/baseball/living-annual';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 interface Camp {
   id: string;
@@ -77,6 +93,7 @@ async function loadCamps(
 
 function CampCard({
   camp,
+  ink,
   isPlayer,
   isCoach,
   isRegistered,
@@ -86,6 +103,7 @@ function CampCard({
   onDelete
 }: {
   camp: Camp;
+  ink: 'team' | 'pursuit';
   isPlayer: boolean;
   isCoach: boolean;
   isRegistered: boolean;
@@ -96,154 +114,143 @@ function CampCard({
 }) {
   const registrationCount = camp.registrations?.[0]?.count || 0;
   const isFull = camp.capacity ? registrationCount >= camp.capacity : false;
+  const inkText = ink === 'team' ? 'text-grade-plus' : 'text-pursuit';
 
   return (
-    <Card variant="glass" className="overflow-hidden" data-testid="camp-card">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-warm-900 mb-1">{camp.name}</h3>
-            {camp.organization && (
-              <p className="text-sm leading-relaxed text-warm-600 mb-2">{camp.organization.name}</p>
+    <PaperCard className="p-5" data-testid="camp-card">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-1 font-annual text-body-lg font-semibold text-text-primary">{camp.name}</h3>
+          {camp.organization && (
+            <p className="mb-2 font-annual text-body-sm text-text-secondary">{camp.organization.name}</p>
+          )}
+          <div className="flex flex-col gap-1.5 font-annual text-body-sm text-text-tertiary">
+            <div className="flex items-center gap-1.5">
+              <IconCalendar size={14} />
+              <span>
+                {formatCampDate(camp.start_date)}
+                {camp.end_date && ` - ${formatCampDate(camp.end_date)}`}
+              </span>
+            </div>
+            {camp.location && (
+              <div className="flex items-center gap-1.5">
+                <IconMapPin size={14} />
+                <span>{camp.location}</span>
+              </div>
             )}
-            <div className="flex flex-col gap-1.5 text-sm text-warm-500">
-              <div className="flex items-center gap-1.5">
-                <IconCalendar size={14} />
-                <span>
-                  {formatCampDate(camp.start_date)}
-                  {camp.end_date && ` - ${formatCampDate(camp.end_date)}`}
-                </span>
-              </div>
-              {camp.location && (
-                <div className="flex items-center gap-1.5">
-                  <IconMapPin size={14} />
-                  <span>{camp.location}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <IconUsers size={14} />
-                <span>
-                  {registrationCount}{camp.capacity ? ` / ${camp.capacity}` : ''} registered
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <IconUsers size={14} />
+              <span>
+                {registrationCount}{camp.capacity ? ` / ${camp.capacity}` : ''} registered
+              </span>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <Badge
-              variant={camp.status === 'published' ? 'success' : 'secondary'}
-            >
-              {camp.status === 'published' ? 'Open' : camp.status || 'Pending'}
-            </Badge>
-            {camp.price_cents && !camp.is_free && (
-              <p className="text-lg font-semibold tracking-tight text-warm-900">
-                ${(camp.price_cents / 100).toFixed(0)}
-              </p>
-            )}
-            {camp.is_free && (
-              <p className="text-lg font-semibold tracking-tight text-primary-600">
-                Free
-              </p>
-            )}
-          </div>
         </div>
+        <div className="flex flex-col items-end gap-2">
+          <InkBadge
+            label={(camp.status === 'published' ? 'Open' : camp.status || 'Pending').toUpperCase()}
+            tone={camp.status === 'published' ? ink : 'neutral'}
+            variant={camp.status === 'published' ? 'solid' : 'soft'}
+          />
+          {camp.price_cents && !camp.is_free && (
+            <p className="font-annual text-h3 font-semibold text-text-primary">
+              ${(camp.price_cents / 100).toFixed(0)}
+            </p>
+          )}
+          {camp.is_free && (
+            <p className={cn('font-annual text-h3 font-semibold', inkText)}>Free</p>
+          )}
+        </div>
+      </div>
 
-        {camp.description && (
-          <p className="text-sm leading-relaxed text-warm-600 mt-3 line-clamp-2">{camp.description}</p>
-        )}
+      {camp.description && (
+        <p className="mt-3 line-clamp-2 font-annual text-body-sm text-text-secondary">{camp.description}</p>
+      )}
 
-        {/* Player Actions */}
-        {isPlayer && (
-          <div className="mt-4 pt-4 border-t border-warm-100 flex justify-end">
-            {isRegistered ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => onUnregister(camp.id)}
-              >
-                <IconHeartFilled size={16} className="mr-1.5 text-red-500" />
-                Registered
-              </Button>
-            ) : isFull ? (
-              <Button variant="secondary" size="sm" disabled>
-                Camp Full
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={() => onRegister(camp.id)}
-              >
-                <IconHeart size={16} className="mr-1.5" />
-                Register
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Coach Actions */}
-        {isCoach && (
-          <div className="mt-4 pt-4 border-t border-warm-100 flex justify-end gap-2">
-            <Link href={`/baseball/dashboard/camps/${camp.id}`}>
-              <Button
-                variant="secondary"
-                size="sm"
-                aria-label={`View roster for ${camp.name}`}
-              >
-                <IconEye size={16} className="mr-1.5" />
-                Roster
-              </Button>
-            </Link>
+      {/* Player Actions */}
+      {isPlayer && (
+        <div className="mt-4 flex justify-end border-t border-[color:var(--hairline)] pt-4">
+          {isRegistered ? (
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => onEdit(camp)}
-              aria-label={`Edit ${camp.name}`}
+              onClick={() => onUnregister(camp.id)}
             >
-              <IconEdit size={16} className="mr-1.5" />
-              Edit
+              <IconHeartFilled size={16} className={cn('mr-1.5', inkText)} />
+              Registered
             </Button>
+          ) : isFull ? (
+            <Button variant="secondary" size="sm" disabled>
+              Camp Full
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => onRegister(camp.id)}
+            >
+              <IconHeart size={16} className="mr-1.5" />
+              Register
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Coach Actions */}
+      {isCoach && (
+        <div className="mt-4 flex justify-end gap-2 border-t border-[color:var(--hairline)] pt-4">
+          <Link href={`/baseball/dashboard/camps/${camp.id}`}>
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => onDelete(camp.id)}
-              aria-label={`Delete ${camp.name}`}
+              aria-label={`View roster for ${camp.name}`}
             >
-              <IconTrash size={16} className="mr-1.5 text-red-500" />
-              Delete
+              <IconEye size={16} className="mr-1.5" />
+              Roster
             </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </Link>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onEdit(camp)}
+            aria-label={`Edit ${camp.name}`}
+          >
+            <IconEdit size={16} className="mr-1.5" />
+            Edit
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onDelete(camp.id)}
+            aria-label={`Delete ${camp.name}`}
+          >
+            <IconTrash size={16} className="mr-1.5 text-destructive" />
+            Delete
+          </Button>
+        </div>
+      )}
+    </PaperCard>
   );
 }
 
-// Lightweight editorial page header. The dashboard shell already renders the
-// global top bar (notifications + command palette), so this page must NOT mount
-// the legacy layout <Header> — doing so stacked a second search box + avatar
-// under the shell bar. This mirrors the premium Scout Packets header pattern:
-// eyebrow → title → subtitle, with the primary action inline on the right.
-function CampsPageHeader({
-  isCoach,
-  subtitle,
-  action,
-}: {
-  isCoach: boolean;
-  subtitle: string;
-  action?: ReactNode;
-}) {
+function CampsSkeleton({ ink }: { ink: 'team' | 'pursuit' }) {
   return (
-    <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-eyebrow font-semibold uppercase tracking-wide text-primary-600">
-          Recruiting
-        </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">
-          {isCoach ? 'My Camps' : 'Camps'}
-        </h1>
-        <p className="mt-1 text-warm-500">{subtitle}</p>
+    <div className={cn(PAGE_SHELL, 'space-y-8')}>
+      <SectionMasthead
+        eyebrow={ink === 'pursuit' ? 'THE WAR ROOM · CAMPS & SHOWCASES' : 'THE PASSPORT · CAMPS & SHOWCASES'}
+        title="Camps"
+        ink={ink}
+      />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <PaperCard key={i} className="p-5">
+            <Skeleton variant="text" width="70%" height={18} className="mb-2" />
+            <Skeleton variant="text" width="50%" height={12} className="mb-3" />
+            <Skeleton variant="text" width="60%" height={12} className="mb-1.5" />
+            <Skeleton variant="text" width="40%" height={12} />
+          </PaperCard>
+        ))}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
-    </header>
+    </div>
   );
 }
 
@@ -263,6 +270,10 @@ export default function CampsClient() {
 
   const isCoach = user?.role === 'coach';
   const isPlayer = user?.role === 'player';
+  // Lane ink follows the viewer's role: the coach's own camp management reads
+  // clay (War Room recruiting-events), the player's registration view reads
+  // green (Passport) — same dual-ink pattern as CollegeInterestClient/AnalyticsClient.
+  const ink: 'team' | 'pursuit' = isCoach ? 'pursuit' : 'team';
 
   useEffect(() => {
     async function fetchCamps() {
@@ -372,25 +383,18 @@ export default function CampsClient() {
   };
 
   if (loading) {
-    return (
-      <div className="p-6 lg:p-8">
-        <CampsPageHeader
-          isCoach={isCoach}
-          subtitle={isCoach ? 'Manage your camps and events' : 'Browse and register for camps'}
-        />
-        <PageLoading />
-      </div>
-    );
+    return <CampsSkeleton ink={ink} />;
   }
 
   if (loadError) {
     return (
-      <div className="p-6 lg:p-8">
-        <CampsPageHeader
-          isCoach={isCoach}
-          subtitle={isCoach ? 'Manage your camps and events' : 'Browse and register for camps'}
+      <div className={PAGE_SHELL}>
+        <SectionMasthead
+          eyebrow={ink === 'pursuit' ? 'THE WAR ROOM · CAMPS & SHOWCASES' : 'THE PASSPORT · CAMPS & SHOWCASES'}
+          title="Camps"
+          ink={ink}
         />
-        <div>
+        <div className="mt-6">
           <ReadModelStateNotice
             state="error"
             title="Camps unavailable"
@@ -418,11 +422,34 @@ export default function CampsClient() {
   }
 
   return (
-    <>
-      <div className="p-6 lg:p-8">
-        <CampsPageHeader
-          isCoach={isCoach}
-          subtitle={isCoach ? `${camps.length} camps` : `${camps.length} available camps`}
+    <div className={cn(PAGE_SHELL, 'space-y-8')}>
+      <SectionMasthead
+        eyebrow={ink === 'pursuit' ? 'THE WAR ROOM · CAMPS & SHOWCASES' : 'THE PASSPORT · CAMPS & SHOWCASES'}
+        title={isCoach ? 'My Camps' : 'Camps'}
+        ink={ink}
+        actions={
+          isCoach ? (
+            <Button onClick={() => setShowCreateModal(true)}>
+              <IconPlus size={18} className="mr-2" />
+              Create Camp
+            </Button>
+          ) : undefined
+        }
+      >
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          {isCoach ? `${camps.length} camps` : `${camps.length} available camps`}
+        </p>
+      </SectionMasthead>
+
+      {camps.length === 0 ? (
+        <EditorsLetter
+          ink={ink}
+          title={isCoach ? 'No camps yet.' : 'No camps available.'}
+          body={
+            isCoach
+              ? 'Create your first camp to start recruiting players.'
+              : 'Check back later for upcoming camps and events.'
+          }
           action={
             isCoach ? (
               <Button onClick={() => setShowCreateModal(true)}>
@@ -432,30 +459,13 @@ export default function CampsClient() {
             ) : undefined
           }
         />
-        {camps.length === 0 ? (
-          <EmptyState
-            icon={<IconCalendar size={24} />}
-            title={isCoach ? 'No camps yet' : 'No camps available'}
-            description={
-              isCoach
-                ? 'Create your first camp to start recruiting players.'
-                : 'Check back later for upcoming camps and events.'
-            }
-            action={
-              isCoach ? (
-                <Button onClick={() => setShowCreateModal(true)}>
-                  <IconPlus size={18} className="mr-2" />
-                  Create Camp
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="camps-grid">
-            {camps.map(camp => (
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="camps-grid">
+          {camps.map((camp, i) => (
+            <Reveal key={camp.id} staggerIndex={Math.min(i, 10)}>
               <CampCard
-                key={camp.id}
                 camp={camp}
+                ink={ink}
                 isPlayer={isPlayer}
                 isCoach={isCoach}
                 isRegistered={registeredCamps.has(camp.id)}
@@ -464,10 +474,10 @@ export default function CampsClient() {
                 onEdit={handleEdit}
                 onDelete={(id) => setDeleteConfirm(id)}
               />
-            ))}
-          </div>
-        )}
-      </div>
+            </Reveal>
+          ))}
+        </div>
+      )}
 
       {/* Create/Edit Camp Modal */}
       <CreateCampModal
@@ -496,6 +506,6 @@ export default function CampsClient() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm(null)}
       />
-    </>
+    </div>
   );
 }

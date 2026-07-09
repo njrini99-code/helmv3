@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
@@ -7,6 +8,8 @@ import { getCommandCenter } from '@/lib/baseball/read-models/command-center';
 import { assembleCommandCenterClientProps } from '@/lib/baseball/read-models/command-center-adapter';
 import { getCoachDailyContracts } from '@/lib/baseball/read-models/coach-daily-contracts';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
+import { Button } from '@/components/fairway';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 
 export default async function CommandCenterPage() {
   const supabase = await createClient();
@@ -19,22 +22,19 @@ export default async function CommandCenterPage() {
 
   if (!coach.organization_id) {
     return (
-      <div className="min-h-dvh bg-cream-100">
-        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-12">
-          <div className="glass-standard rounded-2xl p-8 text-center">
-            <h1 className="text-2xl font-semibold text-warm-900 mb-4">
-              Set Up Your Program
-            </h1>
-            <p className="text-warm-600 mb-6">
-              Before you can use the Command Center, you need to complete your program setup.
-            </p>
-            <a
-              href="/baseball/dashboard/program"
-              className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-lg font-medium transition-colors"
-            >
-              Complete Setup
-            </a>
-          </div>
+      <div className={fairwayScope('min-h-full')}>
+        <div className="mx-auto w-full max-w-xl px-4 py-16 sm:px-6">
+          <EditorsLetter
+            ink="team"
+            title="Set up your program"
+            body="Before you can use the Command Center, you need to complete your program setup."
+            signoff="— From the desk of CoachHelm"
+            action={
+              <Button asChild variant="primary" size="sm">
+                <Link href="/baseball/dashboard/program">Complete setup</Link>
+              </Button>
+            }
+          />
         </div>
       </div>
     );

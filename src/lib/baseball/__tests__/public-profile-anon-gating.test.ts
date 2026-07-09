@@ -15,6 +15,14 @@
 // This is a static, no-DB-connection guard against the unconditional
 // logged-out block reappearing, and against the roster/PII fields leaking
 // into the anon-safe read paths.
+//
+// UPDATE (W4d, docs/baseball/ui-migration-map.md): the `isPublicViewer = !user`
+// derivation (plus the coach-type gate around it) that used to be duplicated
+// near-verbatim in both pages was extracted into one shared helper,
+// `resolveRecruitingViewerAccess` (src/lib/baseball/recruiting-viewer-access.ts).
+// Presentation/behavior are unchanged — the invariant just moved. Each page is
+// now checked for delegating to that one shared gate; the underlying
+// `isPublicViewer: !user` derivation is guarded directly on the helper below.
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
@@ -38,8 +46,9 @@ describe.each(PAGE_FILES)('public profile page — anon visitors are not hard-bl
     expect(source).not.toMatch(/if\s*\(\s*!user\s*\)\s*\{\s*\n?\s*notFound\(\)/);
   });
 
-  it('derives a public-viewer flag from the auth check', () => {
-    expect(source).toMatch(/isPublicViewer\s*=\s*!user/);
+  it('derives its public-viewer flag through the one shared recruiting-viewer gate', () => {
+    expect(source).toMatch(/resolveRecruitingViewerAccess/);
+    expect(source).toMatch(/isPublicViewer/);
   });
 
   it('reads through the anon-safe public views, not raw base tables, for the org/team read', () => {
@@ -72,5 +81,23 @@ describe.each(PAGE_FILES)('public profile page — anon visitors are not hard-bl
       if (!selectedColumns) continue;
       expect(selectedColumns).not.toMatch(/join_code/);
     }
+  });
+});
+
+describe('resolveRecruitingViewerAccess — shared gate extracted from team/[id] + program/[id] (W4d)', () => {
+  const helperFile = join(REPO_ROOT, 'src', 'lib', 'baseball', 'recruiting-viewer-access.ts');
+  const source = readFileSync(helperFile, 'utf8');
+
+  it('derives isPublicViewer from the absence of an authenticated user', () => {
+    expect(source).toMatch(/isPublicViewer:\s*!user/);
+  });
+
+  it('does not unconditionally notFound() a logged-out visitor', () => {
+    expect(source).not.toMatch(/if\s*\(\s*!user\s*\)\s*\{\s*\n?\s*notFound\(\)/);
+  });
+
+  it('blocks non-recruiting authenticated users via notFound()', () => {
+    expect(source).toMatch(/notFound\(\)/);
+    expect(source).toMatch(/\[.college.,\s*.juco.\]/);
   });
 });

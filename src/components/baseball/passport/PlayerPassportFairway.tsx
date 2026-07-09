@@ -10,10 +10,15 @@
 //
 // PRESENTATION ONLY. Takes the SAME `PassportReadModel` the page already
 // assembles (`getPlayerPassport(teamId, { mode: 'full' })`) and re-skins it —
-// no read-model, action, RLS, or query is touched here. `PlayerPassportCard`
-// (the legacy component this replaces on THIS route) is left completely
-// untouched: it is still the compact embed on Player Today
-// (`PlayerTodayClient:93`) until that surface's own migration decouples it.
+// no read-model, action, RLS, or query is touched here.
+//
+// COMPACT MODE (P4.2 Player Today migration): `compact` renders just the
+// cover — masthead, exposure state, and the Verified Measurables spread —
+// plus a "View full passport" link to `fullHref`. The Performance /
+// Development Story / Media / completeness-footer blocks (full-mode only)
+// are omitted, mirroring the legacy `PlayerPassportCard`'s compact contract
+// it replaces on the Player Today embed. `PlayerPassportCard` itself is left
+// completely untouched — it may still be reused elsewhere.
 //
 // HONESTY (binding, carried over verbatim):
 //   - Every measurable is `source:'manual'` / `verified:false` at the read-
@@ -31,6 +36,7 @@
 //     gaps and fills, not a progress bar.
 // =============================================================================
 
+import Link from 'next/link';
 import {
   Masthead,
   Eyebrow,
@@ -53,6 +59,7 @@ import {
   IconClock,
   IconExternalLink,
   IconCalendar,
+  IconArrowRight,
 } from '@/components/icons';
 import type {
   PassportReadModel,
@@ -70,6 +77,13 @@ import type { PassportVisibilityState } from '@/lib/types/baseball-passport';
 
 export interface PlayerPassportFairwayProps {
   model: PassportReadModel;
+  /** Compact embed (e.g. on Player Today) vs full (dedicated passport surface). */
+  compact?: boolean;
+  /**
+   * When set on a COMPACT card, renders a "View full passport" affordance that
+   * links into the dedicated full surface. Ignored on a full card.
+   */
+  fullHref?: string;
 }
 
 // -----------------------------------------------------------------------------
@@ -446,7 +460,7 @@ function PerformanceBlock({ performance }: { performance: PassportPerformance })
 // Main
 // -----------------------------------------------------------------------------
 
-export function PlayerPassportFairway({ model }: PlayerPassportFairwayProps) {
+export function PlayerPassportFairway({ model, compact = false, fullHref }: PlayerPassportFairwayProps) {
   if (!model.authorized) {
     return (
       <EditorsLetter
@@ -476,6 +490,59 @@ export function PlayerPassportFairway({ model }: PlayerPassportFairwayProps) {
 
   const exposure = EXPOSURE_META[model.visibilityState];
   const measurableRows = buildMeasurableRows(model.measurables);
+
+  // ── Compact embed (Player Today) — cover only: masthead + measurables +
+  // a link out to the full proof packet. Mirrors the legacy
+  // PlayerPassportCard's compact contract it replaces on that surface.
+  if (compact) {
+    return (
+      <PaperCard className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <Masthead
+            given={given}
+            surname={surname}
+            dateline={datelineItems.length > 0 ? <Eyebrow items={datelineItems} ink="team" /> : undefined}
+            ink="team"
+            accentRule
+          />
+          <InkBadge label={exposure.label} tone={exposure.tone} variant={exposure.variant} />
+        </div>
+
+        {model.headline ? (
+          <p className="mt-3 max-w-prose font-annual text-body-sm italic leading-relaxed text-text-secondary">
+            {model.headline}
+          </p>
+        ) : null}
+
+        {model.error ? (
+          <EditorsLetter className="mt-5" ink="team" title="Signals are catching up." body={model.error} />
+        ) : null}
+
+        <HairlineRule ink="hairline" className="my-5" />
+
+        <SubSectionHeader title="Verified Measurables" meta={`${model.completeness.percent}% on the record`} />
+        <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+          {measurableRows.map((row, i) => (
+            <MeasurableRowLine key={row.key} row={row} index={i} />
+          ))}
+        </div>
+
+        {fullHref ? (
+          <Link
+            href={fullHref}
+            className={pressableClass({
+              ink: 'team',
+              className:
+                'mt-6 flex items-center justify-between rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-4 py-3 font-annual text-body-sm font-medium text-grade-plus',
+            })}
+          >
+            <span>View full passport — story, video &amp; performance</span>
+            <IconArrowRight size={16} aria-hidden />
+          </Link>
+        ) : null}
+      </PaperCard>
+    );
+  }
 
   return (
     <div className="space-y-8">

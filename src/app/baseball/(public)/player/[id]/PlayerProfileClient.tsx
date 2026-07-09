@@ -69,18 +69,6 @@ interface RecruitingInterest {
   } | null;
 }
 
-interface PlayerStats {
-  season?: string;
-  batting_avg?: number;
-  home_runs?: number | null;
-  rbis?: number | null;
-  stolen_bases?: number | null;
-  era?: number;
-  strikeouts?: number | null;
-  fb_velo_avg?: number;
-  [key: string]: unknown;
-}
-
 interface PlayerAchievement {
   id: string;
   achievement_text: string;
@@ -154,7 +142,6 @@ interface PlayerData {
   player_settings: PlayerSettings | null;
   videos: PlayerVideo[];
   recruiting_interests: RecruitingInterest[];
-  player_stats: PlayerStats[];
   player_achievements: PlayerAchievement[];
   team_members: TeamMembership[];
   high_school_org: Organization | null;

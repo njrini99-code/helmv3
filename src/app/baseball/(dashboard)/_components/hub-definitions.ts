@@ -371,3 +371,45 @@ export const HUB_ICONS = {
   calendar: IconCalendar,
   messages: IconMessage,
 } as const;
+
+// -----------------------------------------------------------------------------
+// PLAYER RAIL SHAPE (Owner directive, wave W3, 2026-07-09: "~8 tabs" for the
+// player rail) — the single source of truth for WHICH destinations render in
+// each player-rail section, and in what order. BaseballFairwayShell.tsx's
+// buildPlayerNavSections consumes these id lists to select from a map of
+// renderable NavItems (it owns the icon/href/badge for each); nav-player-rail
+// test pins the shape here without needing to import that 'use client' module.
+//
+// Three of the ids below (stats/development/team/recruiting "hub" rows) are
+// NOT individual BASEBALL_NAV_REGISTRY entries — they're synthetic hub-landing
+// rows built from the PLAYER_*_TABS arrays above, so they need their own
+// stable id here. The other four ids (player-today, calendar, player-profile,
+// messages) ARE real registry/BASEBALL_MESSAGES_NAV ids.
+//
+// Settings is deliberately ABSENT from both lists: it moved OUT of the
+// secondary "More" section and INTO the shell's pinned rail FOOTER
+// (ShellFooter in BaseballFairwayShell.tsx), matching the coach shell, so it
+// no longer competes for a rail-section slot. That is what takes the player
+// rail from 9 destinations (7 primary + exposureNoun + Settings) down to the
+// owner-directed ~8 (7 primary + exposureNoun; Settings lives in the footer).
+// -----------------------------------------------------------------------------
+export const PLAYER_HUB_ROW_IDS = {
+  stats: 'player-stats-hub',
+  development: 'player-development-hub',
+  team: 'player-team-hub',
+  recruiting: 'player-recruiting-hub',
+} as const;
+
+/** PRIMARY ("My Baseball") section — 7 daily-loop destinations, in render order. */
+export const PLAYER_RAIL_PRIMARY_IDS: readonly string[] = [
+  'player-today',
+  'calendar',
+  'player-profile',
+  PLAYER_HUB_ROW_IDS.stats,
+  PLAYER_HUB_ROW_IDS.development,
+  PLAYER_HUB_ROW_IDS.team,
+  BASEBALL_MESSAGES_NAV.id,
+];
+
+/** SECONDARY ("More") section — just the recruiting/exposure hub now. */
+export const PLAYER_RAIL_SECONDARY_IDS: readonly string[] = [PLAYER_HUB_ROW_IDS.recruiting];

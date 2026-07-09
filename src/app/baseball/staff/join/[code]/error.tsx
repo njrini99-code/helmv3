@@ -13,10 +13,10 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/dashboard/messages"
-      component="MessagesPage"
-      title="Failed to load messages"
-      message="We couldn't load your conversations. This might be a temporary connection issue. Please try again."
+      route="/baseball/staff/join/[code]"
+      component="StaffJoinPage"
+      title="Failed to load invitation"
+      message="We couldn't load this staff invitation. The link may have expired."
       homePath="/baseball/dashboard"
     />
   );

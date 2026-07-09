@@ -27,6 +27,7 @@ import {
   IconWarning,
 } from '@/components/icons';
 import { createTeam, updateTeam, deleteTeam, leaveTeamAsCoach, createTeamInvitation, revokeTeamInvitation } from '@/app/baseball/actions/teams';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface Team {
   id: string;
@@ -563,48 +564,48 @@ export default function TeamsPage() {
 
   if (!coach) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Teams</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Showcase coach access required</p>
-        </div>
-        <div className="p-6">
-          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
-            <p className="text-warm-500">Please log in as a showcase coach to manage teams.</p>
-          </div>
-        </div>
-      </>
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE PRESSBOX · TEAMS" title="Teams" ink="team">
+          <p className="font-annual text-body-sm text-text-secondary">Showcase coach access required</p>
+        </SectionMasthead>
+        <EditorsLetter
+          ink="team"
+          title="Coaches only."
+          body="Please log in as a showcase coach to manage teams."
+        />
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Teams</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{`Manage your ${teams.length} team${teams.length !== 1 ? 's' : ''}`}</p>
-        </div>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <IconPlus size={16} />
-          New Team
-        </Button>
-      </div>
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <SectionMasthead
+        eyebrow="THE PRESSBOX · TEAMS"
+        title="Teams"
+        ink="team"
+        actions={
+          <Button onClick={() => setShowCreateModal(true)}>
+            <IconPlus size={16} />
+            New Team
+          </Button>
+        }
+      >
+        <p className="font-annual text-body-sm text-text-secondary">{`Manage your ${teams.length} team${teams.length !== 1 ? 's' : ''}`}</p>
+      </SectionMasthead>
 
-      <div className="p-6">
+      <div>
         {teams.length === 0 ? (
-          <div className="bg-cream-50 rounded-2xl border border-warm-200 p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
-              <IconUsers size={24} className="text-warm-400" />
-            </div>
-            <h3 className="text-lg font-medium text-warm-900 mb-2">No teams yet</h3>
-            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
-              Create your first team to start managing rosters, videos, and development plans.
-            </p>
-            <Button onClick={() => setShowCreateModal(true)}>
-              <IconPlus size={16} />
-              Create Your First Team
-            </Button>
-          </div>
+          <EditorsLetter
+            ink="team"
+            title="No teams yet."
+            body="Create your first team to start managing rosters, videos, and development plans."
+            action={
+              <Button onClick={() => setShowCreateModal(true)}>
+                <IconPlus size={16} />
+                Create Your First Team
+              </Button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teams.map((team) => {
@@ -830,6 +831,6 @@ export default function TeamsPage() {
         onConfirm={handleConfirmLeave}
         onCancel={() => setLeavingTeam(null)}
       />
-    </>
+    </div>
   );
 }
