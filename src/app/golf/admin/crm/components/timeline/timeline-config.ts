@@ -47,9 +47,9 @@ export const TIMELINE_CONFIG: Record<TimelineSource, TimelineSourceConfig> = {
     label: 'Email',
   },
   crm_event: {
-    color: 'text-emerald-600',
-    ringColor: 'ring-emerald-200',
-    bgColor: 'bg-emerald-500',
+    color: 'text-primary-600',
+    ringColor: 'ring-primary-200',
+    bgColor: 'bg-primary-500',
     iconKey: 'IconCalendar',
     label: 'Event',
   },

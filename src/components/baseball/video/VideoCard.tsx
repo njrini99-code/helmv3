@@ -134,7 +134,7 @@ function VideoThumb({ src, thumbnail, title, duration, onClick }: ThumbProps) {
         {/* Play overlay */}
         {(src || thumbnail) && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
-            <div className="w-14 h-14 rounded-full glass-standard flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 rounded-full bg-[color:var(--paper)]/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
               <IconPlay size={24} className="text-warm-900 ml-0.5" />
             </div>
           </div>

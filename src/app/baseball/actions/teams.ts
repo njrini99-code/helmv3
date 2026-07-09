@@ -386,7 +386,15 @@ async function joinTeamImpl(playerId: string, teamId: string) {
     const shouldAutoEnable = !settings || settings.profile_visibility !== 'private';
 
     if (shouldAutoEnable) {
-      await supabase
+      // Trigger 20260709010200 blocks authenticated-role writes to
+      // recruiting_activated (BEFORE UPDATE OF recruiting_activated,
+      // player_type on public.baseball_players), so this write must go
+      // through the service-role client, matching activateRecruitingExposure
+      // / deactivateRecruitingExposure in player-access.ts. Eligibility
+      // (JUCO team type, non-'private' profile_visibility) is already
+      // verified above via the regular RLS-scoped client.
+      const admin = createAdminClient();
+      const { error: activateError } = await admin
         .from('baseball_players')
         .update({
           recruiting_activated: true,
@@ -394,13 +402,24 @@ async function joinTeamImpl(playerId: string, teamId: string) {
         })
         .eq('id', playerId);
 
-      // Also ensure player_settings has profile_visibility = 'public'
-      await supabase
-        .from('baseball_player_settings')
-        .upsert({
-          player_id: playerId,
-          profile_visibility: 'public',
-        }, { onConflict: 'player_id' });
+      if (activateError) {
+        await logServerError(
+          `Error auto-enabling recruiting for JUCO join: ${activateError instanceof Error ? activateError.message : String(activateError)}`,
+          { action: 'teams.joinTeam' },
+        );
+        // Do NOT proceed to the profile_visibility upsert below — leaving it
+        // unset keeps state consistent (no public visibility promised while
+        // recruiting_activated failed to flip).
+      } else {
+        // Also ensure player_settings has profile_visibility = 'public',
+        // only after the activation write above has actually succeeded.
+        await supabase
+          .from('baseball_player_settings')
+          .upsert({
+            player_id: playerId,
+            profile_visibility: 'public',
+          }, { onConflict: 'player_id' });
+      }
     }
   }
 

@@ -9,10 +9,10 @@
  * This is the reading stock: passport, roster spread, postgame, command
  * center. No hooks — safe in a server component.
  */
-import type { ElementType, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ElementType, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface PaperCardProps {
+export interface PaperCardProps extends Omit<ComponentPropsWithoutRef<'div'>, 'className' | 'children'> {
   children: ReactNode;
   /** Die-cut registration crop-mark at the top-right corner (hero cards). */
   registrationTick?: boolean;
@@ -38,7 +38,7 @@ function RegistrationTick() {
   );
 }
 
-export function PaperCard({ children, registrationTick = false, grain = true, as, className }: PaperCardProps) {
+export function PaperCard({ children, registrationTick = false, grain = true, as, className, ...rest }: PaperCardProps) {
   const Comp: ElementType = as ?? 'div';
   return (
     <Comp
@@ -47,6 +47,7 @@ export function PaperCard({ children, registrationTick = false, grain = true, as
         LETTERPRESS,
         className,
       )}
+      {...rest}
     >
       {grain ? (
         <span

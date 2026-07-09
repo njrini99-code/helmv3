@@ -46,7 +46,7 @@ export const NARRATIVE_GOAL_PRESENTATION: Record<NarrativeGoal, {
   pillClass: string;
 }> = {
   bubble:        { label: 'Bubble',        emoji: '🔴', pillClass: 'bg-red-50 text-red-700 border-red-200' },
-  maintain:      { label: 'Maintain',      emoji: '🟢', pillClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  maintain:      { label: 'Maintain',      emoji: '🟢', pillClass: 'bg-primary-50 text-primary-700 border-primary-200' },
   develop:       { label: 'Develop',       emoji: '🟡', pillClass: 'bg-amber-50 text-amber-700 border-amber-200' },
   breakout:      { label: 'Breakout',      emoji: '⭐', pillClass: 'bg-violet-50 text-violet-700 border-violet-200' },
   rehabilitate:  { label: 'Rehab',         emoji: '🔵', pillClass: 'bg-blue-50 text-blue-700 border-blue-200' },

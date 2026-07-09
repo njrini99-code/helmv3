@@ -6,6 +6,8 @@ import { createGame } from '@/app/baseball/actions/games';
 import type { BaseballGameType, BaseballHomeAway } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PaperCard } from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
 
 interface NewGameClientProps {
   teamId: string;
@@ -61,7 +63,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
         <p className="text-warm-500 mt-1 text-sm">{teamName}</p>
       </div>
 
-      <div className="glass-standard rounded-2xl p-6 shadow-sm">
+      <PaperCard className="p-6 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Game type */}
           <div>
@@ -175,11 +177,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
             )}
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          {error && <InlineNotice tone="danger">{error}</InlineNotice>}
 
           <div className="flex gap-3 pt-2">
             <Button
@@ -200,7 +198,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
             </Button>
           </div>
         </form>
-      </div>
+      </PaperCard>
     </div>
   );
 }

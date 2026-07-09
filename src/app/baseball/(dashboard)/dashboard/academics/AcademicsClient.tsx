@@ -19,6 +19,7 @@ import {
   RuledStatLine,
   InkBadge,
   PositionChip,
+  PaperCard,
 } from '@/components/baseball/living-annual';
 import { InlineNotice } from '@/components/fairway';
 
@@ -432,8 +433,8 @@ export default function AcademicsPage() {
                 <motion.div
                   key={student.id}
                   layout
-                  className="glass-standard rounded-xl p-4 shadow-sm"
                 >
+                <PaperCard className="p-4 shadow-sm">
                   <div className="flex items-start gap-3 mb-3">
                     <Avatar
                       name={getFullName(student.first_name, student.last_name)}
@@ -548,6 +549,7 @@ export default function AcademicsPage() {
                       <IconEdit size={14} className="mr-1" /> Edit
                     </Button>
                   )}
+                </PaperCard>
                 </motion.div>
               ))}
             </div>

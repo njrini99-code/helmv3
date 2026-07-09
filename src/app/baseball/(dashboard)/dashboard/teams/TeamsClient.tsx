@@ -225,7 +225,7 @@ function DeleteTeamDialog({
         onKeyDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-warm-100 px-6 py-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <IconWarning size={20} aria-hidden />
           </div>
           <h2 className="text-lg font-semibold tracking-tight text-warm-900">Delete {team.name}?</h2>
@@ -731,7 +731,7 @@ export default function TeamsPage() {
                             disabled={inviteBusy}
                             isLoading={inviteBusy}
                             onClick={() => handleRevokeInvite(team.id, invite)}
-                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center text-warm-500 hover:text-red-500"
+                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-destructive/10 active:bg-destructive/20 transition-colors flex items-center justify-center text-warm-500 hover:text-destructive"
                             title="Revoke invite link"
                           >
                             <IconX size={16} />

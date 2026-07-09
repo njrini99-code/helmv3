@@ -221,7 +221,7 @@ function FilterBar({
                 'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all',
                 hasFilter
                   ? 'bg-primary-50 text-primary-700 border-primary-200'
-                  : 'glass-subtle text-warm-600 hover:border-warm-300',
+                  : 'border-[color:var(--hairline)] bg-[color:var(--paper)] text-warm-600 hover:border-warm-300',
               )}
               aria-expanded={showPanel}
             >

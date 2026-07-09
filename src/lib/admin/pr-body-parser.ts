@@ -50,7 +50,22 @@ const AREA_ALIASES: Record<string, WorkArea> = {
 };
 
 function stripHtmlComments(text: string): string {
-  return text.replace(/<!--[\s\S]*?-->/g, '');
+  let result = text;
+  let previous: string;
+  // Loop until stable rather than a single pass: removing one comment pair
+  // can expose a sequence that only becomes a matchable `<!--...-->` once
+  // the markers around it are gone (the classic incomplete-multi-character-
+  // sanitization failure mode for single-pass strips of nested/overlapping
+  // comment-like input).
+  do {
+    previous = result;
+    result = result.replace(/<!--[\s\S]*?-->/g, '');
+  } while (result !== previous);
+  // Defense-in-depth: an UNTERMINATED opener (`<!--` with no matching `-->`
+  // anywhere after it in the input) is never matched by the pair-based regex
+  // above and would otherwise survive verbatim into the parsed output —
+  // strip any remaining bare markers outright so `<!--` can never survive.
+  return result.replace(/<!--/g, '').replace(/-->/g, '');
 }
 
 function cleanSectionText(raw: string): string {

@@ -286,6 +286,57 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
     });
   });
 
+  describe('bottom-nav activeMatch stays lit on every sibling tab (kills the whole class)', () => {
+    // Regression: buildCoachBottomNavItems' Messages item and
+    // buildPlayerBottomNavItems' Team item used to omit `tabs` when building
+    // the NavItem, so their activeMatch only matched the item's own href —
+    // navigating to a SIBLING tab (announcements; team/team-hub/my-qualifiers)
+    // left the bottom tab dark even though the equivalent RAIL item (which did
+    // pass `tabs`) stayed lit. Every multi-tab hub represented on either
+    // bottom nav is asserted here so the whole class of bug can't recur.
+    it('coach bottom-nav Team item covers every Team sub-tab (roster, recruiting)', () => {
+      const items = buildCoachBottomNavItems(ZERO_BADGES);
+      const team = items.find((i) => i.label === 'Team')!;
+      const teamHub = GOLF_COACH_HUBS.find((h) => h.id === 'team')!;
+      for (const tab of teamHub.tabs) {
+        expect(team.activeMatch?.(tab.href), `Team bottom-nav item should stay lit on ${tab.href}`).toBe(true);
+      }
+    });
+
+    it('coach bottom-nav Calendar item covers every Calendar sub-tab (calendar, travel)', () => {
+      const items = buildCoachBottomNavItems(ZERO_BADGES);
+      const calendar = items.find((i) => i.label === 'Calendar')!;
+      const calendarHub = GOLF_COACH_HUBS.find((h) => h.id === 'calendar')!;
+      for (const tab of calendarHub.tabs) {
+        expect(calendar.activeMatch?.(tab.href), `Calendar bottom-nav item should stay lit on ${tab.href}`).toBe(true);
+      }
+    });
+
+    it('coach bottom-nav Messages item covers every Messages sub-tab (messages, announcements)', () => {
+      const items = buildCoachBottomNavItems(ZERO_BADGES);
+      const messages = items.find((i) => i.label === 'Messages')!;
+      const messagesHub = GOLF_COACH_HUBS.find((h) => h.id === 'messages')!;
+      for (const tab of messagesHub.tabs) {
+        expect(messages.activeMatch?.(tab.href), `Messages bottom-nav item should stay lit on ${tab.href}`).toBe(true);
+      }
+      // Explicit regression pin — announcements previously went dark.
+      expect(messages.activeMatch?.('/golf/dashboard/announcements')).toBe(true);
+    });
+
+    it('player bottom-nav Team item covers every Team sub-tab (roster, team-info, team-hub, my-qualifiers)', () => {
+      const items = buildPlayerBottomNavItems();
+      const team = items.find((i) => i.label === 'Team')!;
+      const teamHub = GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!;
+      for (const tab of teamHub.tabs) {
+        expect(team.activeMatch?.(tab.href), `Team bottom-nav item should stay lit on ${tab.href}`).toBe(true);
+      }
+      // Explicit regression pins — these previously went dark.
+      expect(team.activeMatch?.('/golf/dashboard/team')).toBe(true);
+      expect(team.activeMatch?.('/golf/dashboard/team-hub')).toBe(true);
+      expect(team.activeMatch?.('/golf/dashboard/my-qualifiers')).toBe(true);
+    });
+  });
+
   describe('resolveActiveGolfHub — sub-tab strip resolution', () => {
     it('resolves the coach Rounds & Stats hub on a deep round detail route, with Rounds as the tab', () => {
       const hub = resolveActiveGolfHub('/golf/dashboard/rounds/round-1', 'coach');

@@ -168,7 +168,10 @@ const HUE_SOFT: Record<HueFamily, string> = {
   warm: 'border-warm-200 text-warm-700 bg-warm-50',
   primary: 'border-primary-200 text-primary-700 bg-primary-50',
   green: 'border-green-200 text-green-700 bg-green-50',
-  emerald: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+  // `emerald` is a "success/brand green" alias — resolves to primary-* tokens
+  // (never raw emerald-* utilities) so it stays palette-compliant while
+  // preserving the tone name for existing call sites.
+  emerald: 'border-primary-200 text-primary-700 bg-primary-50',
   amber: 'border-amber-200 text-amber-700 bg-amber-50',
   orange: 'border-orange-200 text-orange-700 bg-orange-50',
   rose: 'border-rose-200 text-rose-700 bg-rose-50',
@@ -183,7 +186,7 @@ const HUE_SOLID: Record<HueFamily, string> = {
   warm: 'border-transparent text-white bg-warm-700',
   primary: 'border-transparent text-white bg-primary-600',
   green: 'border-transparent text-white bg-green-600',
-  emerald: 'border-transparent text-white bg-emerald-500',
+  emerald: 'border-transparent text-white bg-primary-600',
   amber: 'border-transparent text-white bg-amber-500',
   orange: 'border-transparent text-white bg-orange-500',
   rose: 'border-transparent text-white bg-rose-500',
@@ -198,7 +201,7 @@ const HUE_OUTLINE: Record<HueFamily, string> = {
   warm: 'border-warm-300 text-warm-600 bg-transparent',
   primary: 'border-primary-300 text-primary-700 bg-transparent',
   green: 'border-green-300 text-green-700 bg-transparent',
-  emerald: 'border-emerald-300 text-emerald-700 bg-transparent',
+  emerald: 'border-primary-300 text-primary-700 bg-transparent',
   amber: 'border-amber-300 text-amber-700 bg-transparent',
   orange: 'border-orange-300 text-orange-700 bg-transparent',
   rose: 'border-rose-300 text-rose-700 bg-transparent',
@@ -213,7 +216,7 @@ const HUE_DOT: Record<HueFamily, string> = {
   warm: 'bg-warm-500',
   primary: 'bg-primary-500',
   green: 'bg-green-500',
-  emerald: 'bg-emerald-500',
+  emerald: 'bg-primary-500',
   amber: 'bg-amber-500',
   orange: 'bg-orange-500',
   rose: 'bg-rose-500',

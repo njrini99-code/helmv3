@@ -41,7 +41,7 @@ export interface GoalCardProps {
 const STATE_CHIP: Record<Goal['state'], { label: string; cls: string }> = {
   active:            { label: 'Active',            cls: 'bg-primary-50 text-primary-700' },
   paused:            { label: 'Paused',            cls: 'bg-warm-100 text-warm-700' },
-  achieved:          { label: 'Achieved',          cls: 'bg-emerald-50 text-emerald-700' },
+  achieved:          { label: 'Achieved',          cls: 'bg-primary-100 text-primary-800' },
   missed:            { label: 'Missed',            cls: 'bg-red-50 text-red-700' },
   partial:           { label: 'Partial',           cls: 'bg-amber-50 text-amber-700' },
   abandoned:         { label: 'Abandoned',         cls: 'bg-warm-100 text-warm-500' },

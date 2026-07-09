@@ -24,7 +24,7 @@ const STAGE_CONFIG: Record<PipelineStage, {
   watchlist: { label: 'Watching', variant: 'default', color: 'bg-warm-500', glow: 'shadow-warm-500/20' },
   high_priority: { label: 'High Priority', variant: 'warning', color: 'bg-amber-500', glow: 'shadow-amber-500/30' },
   offer_extended: { label: 'Offer Extended', variant: 'primary', color: 'bg-primary-500', glow: 'shadow-primary-500/30' },
-  committed: { label: 'Committed', variant: 'success', color: 'bg-emerald-500', glow: 'shadow-emerald-500/40' },
+  committed: { label: 'Committed', variant: 'success', color: 'bg-primary-700', glow: 'shadow-primary-700/40' },
   uninterested: { label: 'Not Interested', variant: 'secondary', color: 'bg-warm-400', glow: '' },
 };
 
@@ -418,7 +418,9 @@ function MetricCard({
   const colorClasses = {
     primary: 'from-primary-50/80 to-primary-100/50 border-primary-200/50 text-primary-700',
     amber: 'from-amber-50/80 to-amber-100/50 border-amber-200/50 text-amber-700',
-    emerald: 'from-emerald-50/80 to-emerald-100/50 border-emerald-200/50 text-emerald-700',
+    // Deeper primary tint (not a second green hue) — stays distinct from the
+    // `primary` card above while remaining palette-compliant.
+    emerald: 'from-primary-100/80 to-primary-200/50 border-primary-300/50 text-primary-800',
   };
 
   return (

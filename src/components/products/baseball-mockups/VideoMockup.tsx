@@ -91,7 +91,7 @@ export function VideoMockup() {
 
           <div className="grid grid-cols-3 gap-2">
             <VideoThumb
-              color="from-emerald-700 to-emerald-900"
+              color="from-primary-700 to-primary-900"
               label="Bullpen"
               duration="2:30"
               isNew

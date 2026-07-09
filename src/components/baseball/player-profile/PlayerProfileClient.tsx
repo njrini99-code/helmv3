@@ -1195,14 +1195,14 @@ export function PlayerProfileClient({
                       {label}
                       {key !== 'all' && (videoTypeCounts[key] ?? 0) > 0 && (
                         <span className={`ml-1.5 text-eyebrow px-1.5 py-0.5 rounded-full ${
-                          videoFilter === key ? 'glass-standard text-white' : 'bg-warm-100 text-warm-500'
+                          videoFilter === key ? 'bg-[rgba(255,255,255,0.2)] text-white' : 'bg-warm-100 text-warm-500'
                         }`}>
                           {videoTypeCounts[key]}
                         </span>
                       )}
                       {key === 'all' && (
                         <span className={`ml-1.5 text-eyebrow px-1.5 py-0.5 rounded-full ${
-                          videoFilter === 'all' ? 'glass-standard text-white' : 'bg-warm-100 text-warm-500'
+                          videoFilter === 'all' ? 'bg-[rgba(255,255,255,0.2)] text-white' : 'bg-warm-100 text-warm-500'
                         }`}>
                           {videos.length}
                         </span>

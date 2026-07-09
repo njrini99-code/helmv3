@@ -46,7 +46,7 @@ const LEGEND_ITEMS = [
   { color: 'bg-warm-400', label: 'Watching', glow: 'shadow-warm-400/30' },
   { color: 'bg-amber-500', label: 'Priority', glow: 'shadow-amber-500/30' },
   { color: 'bg-primary-500', label: 'Offer', glow: 'shadow-primary-500/30' },
-  { color: 'bg-emerald-500', label: 'Committed', glow: 'shadow-emerald-500/40' },
+  { color: 'bg-primary-700', label: 'Committed', glow: 'shadow-primary-700/40' },
 ];
 
 export function PositionPlanner({
@@ -450,7 +450,7 @@ function PositionEmptyMarker({
               'shadow-md'
             ]
           : [
-              'glass-subtle',
+              'bg-[color:var(--paper)]/70 backdrop-blur-sm',
               'text-warm-400',
               'border-warm-200/60',
               'hover:bg-cream-100/68',

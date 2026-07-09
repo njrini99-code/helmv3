@@ -34,6 +34,7 @@ import { ActionRail } from '@/components/baseball/ui/ActionRail';
 import type { ActionRailAction } from '@/components/baseball/ui/ActionRail';
 import { readinessBandLabel, readinessBandTone } from '@/lib/baseball/lifting/readiness-compute';
 import { Button } from '@/components/ui/button';
+import { PaperCard } from '@/components/baseball/living-annual';
 import {
   IconX,
   IconDumbbell,
@@ -341,13 +342,13 @@ export function PlayerInspectorPanel({
                   An empty value ({}) renders the neutral body silhouette shape.
                   Region-level data requires a dedicated per-player fetch
                   (not available in the board-row payload). */}
-              <div className="overflow-hidden rounded-xl glass-standard border border-warm-100">
+              <PaperCard className="rounded-xl">
                 <SorenessBodyMap
                   value={{}}
                   onChange={() => {}}
                   readOnly={true}
                 />
-              </div>
+              </PaperCard>
               {sorenessOverall == null && (
                 <p className="mt-2 text-center text-xs text-warm-400 italic">
                   No soreness check-in recorded today.

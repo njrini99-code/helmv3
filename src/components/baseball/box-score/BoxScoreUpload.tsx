@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { IconUpload, IconCheck, IconRefresh } from '@/components/icons';
 import { BoxScoreEntry } from './BoxScoreEntry';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 interface PlayerRow {
   id: string;
@@ -185,7 +186,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
       {activeTab === 'csv' && (
         <div className="space-y-5">
           {/* CSV type + template download */}
-          <div className="glass-standard rounded-2xl p-5 space-y-4">
+          <PaperCard className="p-5 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-warm-800">Upload Stats CSV</h3>
@@ -285,11 +286,11 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
                 </>
               )}
             </Button>
-          </div>
+          </PaperCard>
 
           {/* Results */}
           {(matched.length > 0 || unmatched.length > 0) && (
-            <div className="glass-standard rounded-2xl p-5 space-y-4">
+            <PaperCard className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-warm-800">Player Matching Results</h3>
                 {allMatched && (
@@ -367,7 +368,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
                   </Button>
                 </div>
               )}
-            </div>
+            </PaperCard>
           )}
         </div>
       )}

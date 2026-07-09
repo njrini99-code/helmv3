@@ -14,6 +14,7 @@ import {
 } from '@/app/baseball/actions/calendar';
 import { toast } from '@/components/ui/sonner';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 // Uses primary-* (Helm green) and warm-* from the project design system.
@@ -124,8 +125,9 @@ const baseballActionHandlers = {
  */
 function BaseballCalendarSkeleton() {
   return (
-    <div
-      className="flex flex-col h-full w-full rounded-2xl glass-standard backdrop-blur-xl border border-white/20 shadow-glass overflow-hidden"
+    <PaperCard
+      className="flex flex-col h-full w-full"
+      grain={false}
       role="status"
       aria-label="Loading calendar"
       aria-busy="true"
@@ -167,7 +169,7 @@ function BaseballCalendarSkeleton() {
           </div>
         ))}
       </div>
-    </div>
+    </PaperCard>
   );
 }
 

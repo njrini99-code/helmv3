@@ -86,10 +86,12 @@ const STATUS_META: Record<'won' | 'lost' | 'nurture', { title: string; descripti
     title: 'Move to Nurture',
     description: 'They’re not closing today — note why so the follow-up shows up in your queue.',
     Icon: Sprout,
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
+    // Deeper primary tint than `won` (not a second green hue) — keeps the
+    // two "closed" outcomes visually distinct while staying in one family.
+    iconBg: 'bg-primary-100',
+    iconColor: 'text-primary-700',
     submitLabel: 'Move to nurture',
-    submitClass: 'bg-emerald-600 hover:bg-emerald-700',
+    submitClass: 'bg-primary-700 hover:bg-primary-800',
   },
 };
 

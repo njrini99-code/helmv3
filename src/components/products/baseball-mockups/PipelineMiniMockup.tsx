@@ -58,7 +58,7 @@ function PipelineBar({
     slate: 'from-warm-500 to-warm-600',
     amber: 'from-amber-500 to-orange-500',
     blue: 'from-blue-500 to-indigo-500',
-    emerald: 'from-emerald-500 to-teal-500'
+    emerald: 'from-primary-500 to-teal-500'
   };
 
   return (

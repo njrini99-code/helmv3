@@ -10,6 +10,7 @@ import { IconPlus, IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface GamesListProps {
   teamId: string;
@@ -223,13 +224,14 @@ export function GamesList({
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div
+            <PaperCard
               key={i}
-              className="relative h-28 glass-standard rounded-2xl overflow-clip"
+              className="relative h-28"
+              grain={false}
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-            </div>
+            </PaperCard>
           ))}
         </div>
       ) : error ? (
@@ -241,24 +243,21 @@ export function GamesList({
           </Button>
         </div>
       ) : games.length === 0 ? (
-        <div className="glass-standard rounded-2xl p-10 text-center animate-fade-in">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80 mx-auto mb-5">
-            <IconPlus size={28} />
-          </div>
-          <h3 className="text-body-lg font-semibold text-warm-900 tracking-tight mb-2">No games yet</h3>
-          <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto mb-6">
-            Add your first game to start tracking box scores and season stats.
-          </p>
-          {showAddButton && (
-            <Link
-              href={getBaseballStatsGameCreateHref()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
-            >
-              <IconPlus size={16} />
-              Add First Game
-            </Link>
-          )}
-        </div>
+        <EditorsLetter
+          title="No games yet"
+          body="Add your first game to start tracking box scores and season stats."
+          action={
+            showAddButton ? (
+              <Link
+                href={getBaseballStatsGameCreateHref()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                <IconPlus size={16} />
+                Add First Game
+              </Link>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="space-y-3">
           {games.map((game) => (

@@ -287,7 +287,7 @@ export function getAdminInitials(admin: AdminPresenceInfo): string {
  */
 export function getAdminColor(id: string): string {
   const colors = [
-    'bg-emerald-500',
+    'bg-primary-500',
     'bg-blue-500',
     'bg-purple-500',
     'bg-amber-500',

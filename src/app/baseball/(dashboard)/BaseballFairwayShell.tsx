@@ -479,7 +479,7 @@ export function ShellFooter() {
         onClick={handleSignOut}
         aria-label={collapsed ? 'Sign out' : undefined}
         title={collapsed ? 'Sign out' : undefined}
-        className={cn(rowBase, 'min-h-0 p-0 justify-start rounded-none text-nav-text-dim hover:bg-red-500/10 hover:text-red-400')}
+        className={cn(rowBase, 'min-h-0 p-0 justify-start rounded-none text-nav-text-dim hover:bg-destructive/10 hover:text-destructive')}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0 text-nav-text-dim" />
         {!collapsed && <span className="min-w-0 flex-1 truncate text-left">Sign out</span>}

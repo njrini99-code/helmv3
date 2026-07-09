@@ -43,12 +43,15 @@ const STAGE_COLORS: Record<PipelineStage, StageColorConfig> = {
     gradient: 'from-primary-100/50 to-primary-50/30',
   },
   committed: {
-    bg: 'bg-emerald-50/90',
-    border: 'border-emerald-300/60',
-    text: 'text-emerald-800',
-    dot: 'bg-emerald-500',
-    glow: 'shadow-[0_0_24px_rgba(16,185,129,0.45)]',
-    gradient: 'from-emerald-100/50 to-emerald-50/30',
+    // Deepest tone in the funnel (watchlist → high_priority → offer_extended
+    // → committed) — one hue family (primary) at increasing intensity, never
+    // a second "success green" (emerald-*).
+    bg: 'bg-primary-100/90',
+    border: 'border-primary-400/60',
+    text: 'text-primary-900',
+    dot: 'bg-primary-700',
+    glow: 'shadow-[0_0_24px_rgba(22,101,52,0.45)]',
+    gradient: 'from-primary-200/50 to-primary-100/30',
   },
   uninterested: {
     bg: 'bg-warm-50/80',

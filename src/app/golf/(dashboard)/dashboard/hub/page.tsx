@@ -9,7 +9,7 @@ import { redirect } from 'next/navigation';
  * of the Hub's triage content the Dashboard lacked (pending tasks, awaiting-
  * RSVP events, recent announcements, upcoming trips, the top CoachHelm
  * signal) now renders as an "Action center" section on /golf/dashboard itself
- * (see getPlayerHubSummaryData + FairwayPlayerDashboard's actionCenter prop).
+ * (see getPlayerHubSummaryData + FairwayPlayerDashboard's hubData prop).
  *
  * This route is kept ONLY as a permanent redirect so old links/bookmarks/the
  * command palette's stale entries still land somewhere real, rather than

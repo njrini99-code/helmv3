@@ -22,6 +22,7 @@ import {
   IconRefresh,
 } from '@/components/icons';
 import { uploadStatsCSV } from '@/app/baseball/actions/stats';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 import {
   parseCSV,
   findBestPlayerMatch,
@@ -582,7 +583,7 @@ export function StatsUploadClient({
         {step === 'preview' && (
           <div className="space-y-6">
             {/* File Info */}
-            <div className="glass-standard rounded-2xl p-6">
+            <PaperCard className="p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
                   <IconFile size={24} className="text-primary-600" />
@@ -597,10 +598,10 @@ export function StatsUploadClient({
                   Change File
                 </Button>
               </div>
-            </div>
+            </PaperCard>
 
             {/* Auto-detected Mappings Summary */}
-            <div className="glass-standard rounded-2xl p-6">
+            <PaperCard className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <IconSettings size={18} className="text-warm-400" />
                 <h3 className="font-semibold text-warm-900">
@@ -639,10 +640,10 @@ export function StatsUploadClient({
                   ))}
                 </div>
               )}
-            </div>
+            </PaperCard>
 
             {/* Data Preview */}
-            <div className="glass-standard rounded-2xl p-6 overflow-clip">
+            <PaperCard className="overflow-hidden p-6">
               <h3 className="font-semibold text-warm-900 mb-4">Data Preview</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -681,7 +682,7 @@ export function StatsUploadClient({
                   </p>
                 )}
               </div>
-            </div>
+            </PaperCard>
 
             <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={resetUpload}>
@@ -698,7 +699,7 @@ export function StatsUploadClient({
         {/* Step: Column Mapping */}
         {step === 'columns' && (
           <div className="space-y-6">
-            <div className="glass-standard rounded-2xl p-6">
+            <PaperCard className="p-6">
               <h3 className="font-semibold text-warm-900 mb-2">
                 Map CSV Columns
               </h3>
@@ -784,7 +785,7 @@ export function StatsUploadClient({
                   </p>
                 </div>
               )}
-            </div>
+            </PaperCard>
 
             <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setStep('preview')}>
@@ -807,7 +808,7 @@ export function StatsUploadClient({
           <div className="space-y-6">
             {/* Good Matches Summary */}
             {goodMatches.length > 0 && (
-              <div className="glass-standard rounded-2xl p-6">
+              <PaperCard className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
                     <IconCheck size={16} className="text-primary-600" />
@@ -838,12 +839,12 @@ export function StatsUploadClient({
                     )}
                   </div>
                 </div>
-              </div>
+              </PaperCard>
             )}
 
             {/* Poor Matches - Need Review */}
             {poorMatches.length > 0 && (
-              <div className="glass-standard rounded-2xl p-6">
+              <PaperCard className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
                     <IconAlertCircle size={16} className="text-amber-600" />
@@ -990,7 +991,7 @@ export function StatsUploadClient({
                     );
                   })}
                 </div>
-              </div>
+              </PaperCard>
             )}
 
             {/* All Matched Summary */}
@@ -1010,18 +1011,10 @@ export function StatsUploadClient({
 
             {/* No Players Found */}
             {playerMatches.length === 0 && (
-              <div className="glass-standard rounded-2xl p-8 text-center">
-                <IconAlertCircle
-                  size={32}
-                  className="text-amber-500 mx-auto mb-3"
-                />
-                <h3 className="font-semibold text-warm-900 mb-1">
-                  No Player Names Found
-                </h3>
-                <p className="text-sm text-warm-500">
-                  Check that the player name column is correctly mapped
-                </p>
-              </div>
+              <EditorsLetter
+                title="No player names found"
+                body="Check that the player name column is correctly mapped."
+              />
             )}
 
             <div className="flex justify-end gap-3">
@@ -1043,7 +1036,7 @@ export function StatsUploadClient({
         {/* Step: Configure */}
         {step === 'configure' && (
           <div className="space-y-6">
-            <div className="glass-standard rounded-2xl p-6">
+            <PaperCard className="p-6">
               <h3 className="font-semibold text-warm-900 mb-4">
                 Session Details
               </h3>
@@ -1101,7 +1094,7 @@ export function StatsUploadClient({
                   />
                 </div>
               </div>
-            </div>
+            </PaperCard>
 
             {/* Summary */}
             <div className="bg-primary-50 border border-primary-200 rounded-2xl p-6">
@@ -1167,7 +1160,7 @@ export function StatsUploadClient({
 
         {/* Step: Processing */}
         {step === 'processing' && (
-          <div className="glass-standard rounded-2xl p-12 text-center">
+          <PaperCard className="p-12 text-center">
             <div className="relative w-14 h-14 mx-auto mb-5">
               <div className="absolute inset-0 rounded-full border-[3px] border-primary-100" />
               <div className="absolute inset-0 rounded-full border-[3px] border-primary-600 border-t-transparent border-l-transparent animate-spin" />
@@ -1181,7 +1174,7 @@ export function StatsUploadClient({
             <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
               Matching players and calculating statistics…
             </p>
-          </div>
+          </PaperCard>
         )}
 
         {/* Step: Complete */}

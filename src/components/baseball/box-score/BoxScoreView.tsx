@@ -4,6 +4,7 @@ import type { BaseballGame, BaseballBoxScoreBatting, BaseballBoxScorePitching } 
 import { IconCalendar, IconMapPin } from '@/components/icons';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 import { EMPTY_STAT, formatAvg, formatEra, formatWhip } from './format-stat';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface BoxScoreViewProps {
   game: BaseballGame;
@@ -78,7 +79,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
   return (
     <div className="space-y-5">
       {/* Game header */}
-      <div className="glass-standard rounded-2xl p-5">
+      <PaperCard className="p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -127,11 +128,11 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
             </div>
           )}
         </div>
-      </div>
+      </PaperCard>
 
       {/* Batting */}
       {batting.length > 0 && (
-        <div className="glass-standard rounded-2xl overflow-clip" data-testid="batting-table">
+        <PaperCard className="overflow-hidden" data-testid="batting-table">
           <div className="px-5 py-3 border-b border-warm-100">
             <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Batting</h2>
           </div>
@@ -206,12 +207,12 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
               </tfoot>
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
 
       {/* Pitching */}
       {pitching.length > 0 && (
-        <div className="glass-standard rounded-2xl overflow-clip" data-testid="pitching-table">
+        <PaperCard className="overflow-hidden" data-testid="pitching-table">
           <div className="px-5 py-3 border-b border-warm-100">
             <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Pitching</h2>
           </div>
@@ -281,14 +282,12 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
               )}
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
 
       {/* Empty states */}
       {batting.length === 0 && pitching.length === 0 && (
-        <div className="glass-standard rounded-2xl p-10 text-center">
-          <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">No stats recorded for this game yet.</p>
-        </div>
+        <EditorsLetter title="No stats recorded for this game yet" />
       )}
     </div>
   );

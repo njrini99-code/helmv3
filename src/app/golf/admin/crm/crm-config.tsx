@@ -175,7 +175,9 @@ export const STATUS_CONFIG: Record<CoachStatus, {
   proposal:  { label: 'Proposal',   color: 'text-amber-700',   bgColor: 'bg-amber-50',    ringColor: 'ring-amber-300',   icon: <FileCheck size={14} />,     iconLabel: <FileCheck size={14} className="text-amber-600" />, order: 4, gradient: 'from-amber-400 to-amber-500',     stage: 'closing' },
   won:       { label: 'Customer',   color: 'text-primary-700', bgColor: 'bg-primary-50',  ringColor: 'ring-primary-400', icon: <Trophy size={14} />,        iconLabel: <Trophy size={14} className="text-primary-600" />, order: 5, gradient: 'from-primary-400 to-primary-500', stage: 'closed' },
   lost:      { label: 'Lost',       color: 'text-red-700',     bgColor: 'bg-red-50',      ringColor: 'ring-red-300',     icon: <CircleX size={14} />,       iconLabel: <CircleX size={14} className="text-red-600" />,  order: 6, gradient: 'from-red-400 to-red-500',         stage: 'closed' },
-  nurture:   { label: 'Nurture',    color: 'text-emerald-700', bgColor: 'bg-emerald-50',  ringColor: 'ring-emerald-300', icon: <Sprout size={14} />,        iconLabel: <Sprout size={14} className="text-primary-600" />, order: 7, gradient: 'from-emerald-400 to-emerald-500', stage: 'closed' },
+  // Deeper primary tint than `won` (not a second green hue) — keeps the two
+  // "closed" stages visually distinct while staying inside the primary family.
+  nurture:   { label: 'Nurture',    color: 'text-primary-900', bgColor: 'bg-primary-100', ringColor: 'ring-primary-600', icon: <Sprout size={14} />,        iconLabel: <Sprout size={14} className="text-primary-700" />, order: 7, gradient: 'from-primary-600 to-primary-700', stage: 'closed' },
 };
 
 // ============================================================================

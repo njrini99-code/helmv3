@@ -9,6 +9,7 @@ import { ReminderBadge } from './ReminderBadge';
 import { completeTask, uncompleteTask, deleteTask } from '@/app/baseball/actions/tasks';
 import { useToast } from '@/components/ui/sonner';
 import { Button, IconButton } from '@/components/ui/button';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 const categoryColors: Record<string, string> = {
   general: 'bg-warm-100 text-warm-600',
@@ -141,8 +142,8 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
       initial="hidden"
       animate="visible"
       layout
-      className="relative glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
     >
+      <PaperCard className="transition-shadow duration-300 hover:shadow-lg">
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
@@ -323,6 +324,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
           )}
         </AnimatePresence>
       </div>
+      </PaperCard>
     </motion.div>
   );
 }

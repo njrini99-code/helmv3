@@ -4,6 +4,7 @@ import {
   PlayerPerformanceGridSkeleton,
   TrendAnalysisPanelSkeleton,
 } from '@/components/baseball/command-center/analytics';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 export default function CommandCenterLoading() {
   return (
@@ -24,16 +25,17 @@ export default function CommandCenterLoading() {
         {/* Stats Overview Skeleton */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div
+            <PaperCard
               key={i}
-              className="glass-standard rounded-xl p-4"
+              className="p-4"
+              grain={false}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="w-8 h-8 bg-warm-200 rounded-lg animate-pulse" />
               </div>
               <div className="h-8 w-16 bg-warm-200 rounded animate-pulse" />
               <div className="h-4 w-24 bg-warm-200 rounded animate-pulse mt-2" />
-            </div>
+            </PaperCard>
           ))}
         </div>
 
@@ -58,16 +60,17 @@ export default function CommandCenterLoading() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <div className="lg:col-span-2 space-y-4">
             {/* Search Skeleton */}
-            <div className="glass-standard rounded-xl p-4">
+            <PaperCard className="p-4" grain={false}>
               <div className="h-10 bg-warm-200 rounded-lg animate-pulse" />
-            </div>
+            </PaperCard>
 
             {/* Cards Skeleton */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
+                <PaperCard
                   key={i}
-                  className="glass-standard rounded-xl p-4"
+                  className="p-4"
+                  grain={false}
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-warm-200 rounded-full animate-pulse" />
@@ -84,14 +87,14 @@ export default function CommandCenterLoading() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </PaperCard>
               ))}
             </div>
           </div>
 
           {/* Sidebar Skeleton */}
           <div className="space-y-4">
-            <div className="glass-standard rounded-2xl p-6">
+            <PaperCard className="p-6" grain={false}>
               <div className="h-5 w-24 bg-warm-200 rounded animate-pulse mb-4" />
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
@@ -109,7 +112,7 @@ export default function CommandCenterLoading() {
                   </div>
                 ))}
               </div>
-            </div>
+            </PaperCard>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import type { BaseballPlayerSeasonStats } from '@/lib/types';
 import { IconTrendingUp, IconUser, IconDownload } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/select';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface SeasonStatsTableProps {
   stats: BaseballPlayerSeasonStats[];
@@ -183,13 +184,12 @@ export function SeasonStatsTable({
 
       {/* Stats table */}
       {sorted.length === 0 ? (
-        <div className="glass-standard rounded-2xl p-10 text-center">
-          <p className="text-sm leading-relaxed text-warm-500 max-w-md mx-auto">
-            No {activeTab} stats for {seasonYear}. Enter game box scores to populate stats.
-          </p>
-        </div>
+        <EditorsLetter
+          title={`No ${activeTab} stats for ${seasonYear}`}
+          body="Enter game box scores to populate stats."
+        />
       ) : (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <PaperCard className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -279,7 +279,7 @@ export function SeasonStatsTable({
               </tbody>
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
     </div>
   );

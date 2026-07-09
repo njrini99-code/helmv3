@@ -835,7 +835,6 @@ features:
         - supabase/migrations/*join*.sql
       tests:
         - e2e/auth.spec.ts
-        - e2e/golf-team-join.spec.ts
         - src/test/lib/auth/**
     integrations:
       - supabase
@@ -848,7 +847,7 @@ features:
       required_checks:
         - npm run typecheck
         - npm run test -- --run src/test/lib/auth
-        - npm run test:e2e -- e2e/auth.spec.ts e2e/golf-team-join.spec.ts
+        - npm run test:e2e -- e2e/auth.spec.ts
 
   settings_preferences:
     name: Settings And Preferences

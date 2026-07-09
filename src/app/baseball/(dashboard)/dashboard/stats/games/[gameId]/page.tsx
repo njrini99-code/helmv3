@@ -8,6 +8,7 @@ import { GameDetailHeader } from '@/components/baseball/games/GameDetailHeader';
 import { mapBattingToInput, mapPitchingToInput } from '@/components/baseball/box-score/mappers';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import type { BaseballGame } from '@/lib/types';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 interface PageProps {
   params: Promise<{ gameId: string }>;
@@ -104,7 +105,7 @@ export default async function GameDetailPage({ params }: PageProps) {
             pitching={pitching}
           />
           {/* Option to re-enter stats */}
-          <div className="glass-standard rounded-2xl p-5 shadow-sm">
+          <PaperCard className="p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-warm-700 mb-3">Update Box Score</h3>
             <BoxScoreUpload
               game={game as BaseballGame}
@@ -112,7 +113,7 @@ export default async function GameDetailPage({ params }: PageProps) {
               initialBatting={initialBatting}
               initialPitching={initialPitching}
             />
-          </div>
+          </PaperCard>
         </div>
       ) : (
         /* Not completed or no stats: show entry form */

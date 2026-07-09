@@ -184,7 +184,9 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
 
 function ratingColor(rating: number | null): string {
   if (rating == null) return 'text-warm-400';
-  if (rating >= 80) return 'text-emerald-600';
+  // Deeper primary tint than the 60-79 tier (not a second green hue) — keeps
+  // the top tier visually distinct while staying in the primary family.
+  if (rating >= 80) return 'text-primary-800';
   if (rating >= 60) return 'text-primary-600';
   if (rating >= 40) return 'text-amber-600';
   return 'text-red-500';

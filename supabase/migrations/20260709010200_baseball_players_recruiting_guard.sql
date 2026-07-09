@@ -94,6 +94,19 @@
 --   (or this migration held until W0a ships) or legitimate players will be
 --   unable to activate/deactivate recruiting exposure at all.
 --
+--   SECOND REQUIRED COMPANION CHANGE (Phase-D round-2 verify, 2026-07-09):
+--   `joinTeamImpl` in src/app/baseball/actions/teams.ts (~L389, the JUCO
+--   auto-enable-recruiting write triggered on team join) has the exact same
+--   dependency — it also does `.update({ recruiting_activated: true, ... })`
+--   on baseball_players via the regular `createClient()` (authenticated)
+--   client. Once this migration is applied, that write would 42501 too if
+--   left unfixed. Fixed alongside this migration: it now performs the write
+--   via `createAdminClient()` (already imported in teams.ts), AFTER the
+--   existing eligibility checks (JUCO team_type + non-'private'
+--   profile_visibility), checks `{ error }` and logs+aborts (does NOT proceed
+--   to the baseball_player_settings profile_visibility='public' upsert) on
+--   failure, keeping the two writes from landing in a contradictory state.
+--
 -- FIX (this file): additive BEFORE UPDATE OF recruiting_activated trigger on
 -- public.baseball_players. Idempotent (CREATE OR REPLACE FUNCTION,
 -- CREATE OR REPLACE TRIGGER — PG17 live, supports OR REPLACE TRIGGER).
@@ -170,7 +183,7 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.baseball_players_guard_recruiting_activated() IS
-  'BEFORE UPDATE OF recruiting_activated guard on public.baseball_players. Blocks any non-service-role change to recruiting_activated (closes the raw-browser-write bypass of the recruiting_exposure_enabled toggle — CONFIRMED P1, gap-fill 2026-07-09) and restates the college-player-never-activates rule already enforced by CHECK constraints. Requires the W0a companion change: activateRecruitingExposure/deactivateRecruitingExposure in src/app/baseball/actions/player-access.ts must write this column via createAdminClient() (src/lib/supabase/admin.ts), not the anon-key authenticated client, or those actions will 42501.';
+  'BEFORE UPDATE OF recruiting_activated guard on public.baseball_players. Blocks any non-service-role change to recruiting_activated (closes the raw-browser-write bypass of the recruiting_exposure_enabled toggle — CONFIRMED P1, gap-fill 2026-07-09) and restates the college-player-never-activates rule already enforced by CHECK constraints. Requires two companion changes, both already landed alongside this migration: (1) W0a — activateRecruitingExposure/deactivateRecruitingExposure in src/app/baseball/actions/player-access.ts write this column via createAdminClient() (src/lib/supabase/admin.ts); (2) joinTeamImpl (JUCO auto-enable) in src/app/baseball/actions/teams.ts does the same. Without both, the affected writes 42501.';
 
 -- Trigger function is invoked only by the trigger machinery; no EXECUTE grant
 -- is needed by any role (PostgreSQL bypasses privilege checks when firing a

@@ -10,6 +10,12 @@ import { test, expect } from '@playwright/test';
  * run against real CI (no such account) failed at login. Set E2E_GOLF_EMAIL
  * / E2E_GOLF_PASSWORD to a seeded golf coach/player login to run these;
  * otherwise they self-skip instead of failing.
+ *
+ * UI: assertions target the current Fairway redesign (Wave W1 — Fairway is
+ * the only dashboard tree; see src/lib/redesign/flag.ts), not the legacy
+ * emerald/`bg-emerald-600` UI. Selectors use accessible roles/names rather
+ * than color utility classes, which are an implementation detail that
+ * changes with the design system, not the user-facing contract.
  */
 
 const GOLF_EMAIL = process.env.E2E_GOLF_EMAIL;
@@ -36,8 +42,8 @@ test.describe('Golf Dashboard - Player Flow', () => {
     // Verify dashboard loaded
     await expect(page).toHaveURL(/\/golf\/dashboard/);
 
-    // Should see dashboard heading
-    await expect(page.locator('h1')).toContainText(/Good (morning|afternoon|evening)/);
+    // Should see dashboard heading (FairwayPlayerDashboard's ViewHeader greeting)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Good (morning|afternoon|evening)/);
   });
 
   test('should navigate to rounds page', async ({ page }) => {
@@ -47,16 +53,18 @@ test.describe('Golf Dashboard - Player Flow', () => {
     // Should navigate to rounds page
     await expect(page).toHaveURL(/\/golf\/dashboard\/rounds/);
 
-    // Should see rounds heading
-    await expect(page.locator('h1')).toContainText('Rounds');
+    // Should see the rounds masthead (FairwayRoundsLibrary's ViewHeader title
+    // is "Your rounds." for a player, "The library." for a coach).
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/rounds/i);
   });
 
   test('should access new round page and see all steps', async ({ page }) => {
     // Navigate to new round page
     await page.goto('/golf/dashboard/rounds/new');
 
-    // Step 1: Setup - Should see course setup form
-    await expect(page.locator('h1')).toContainText('New Round');
+    // Step 1: Setup - Should see course setup form (FairwayNewRoundEntry's
+    // cockpit band h1, not a literal "New Round" string).
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/track every shot/i);
     await expect(page.locator('#courseName')).toBeVisible();
 
     // Fill in course setup
@@ -64,10 +72,10 @@ test.describe('Golf Dashboard - Player Flow', () => {
     await page.fill('#courseCity', 'Test City');
     await page.fill('#courseState', 'CA');
 
-    // Should see emerald-colored button (modern design)
-    const nextButton = page.locator('button:has-text("Next: Configure Holes")');
+    // Manual entry (no course-library/saved-course pick) → the primary CTA
+    // submits straight to hole configuration.
+    const nextButton = page.getByRole('button', { name: 'Next: configure holes →' });
     await expect(nextButton).toBeVisible();
-    await expect(nextButton).toHaveClass(/bg-emerald-600/);
 
     // Click next
     await nextButton.click();
@@ -76,31 +84,34 @@ test.describe('Golf Dashboard - Player Flow', () => {
     await expect(page.locator('text=E2E Test Course')).toBeVisible();
     await expect(page.locator('text=Total Par')).toBeVisible();
 
-    // Should see hole configuration grid
-    await expect(page.locator('text=Hole')).toBeVisible();
-    await expect(page.locator('text=Par')).toBeVisible();
-    await expect(page.locator('text=Yardage')).toBeVisible();
+    // Should see hole configuration grid headers (FairwayHoleConfig: "Yards",
+    // not the legacy "Yardage"). Exact match — "Par"/"Total Par" and
+    // "Yards"/"Total Yards" both appear on this screen, so a bare substring
+    // match would hit more than one element (strict-mode violation).
+    await expect(page.getByText('Hole', { exact: true })).toBeVisible();
+    await expect(page.getByText('Par', { exact: true })).toBeVisible();
+    await expect(page.getByText('Yards', { exact: true })).toBeVisible();
 
-    // Should see Front 9 / Back 9 tabs
-    await expect(page.locator('button:has-text("Front 9")')).toBeVisible();
-    await expect(page.locator('button:has-text("Back 9")')).toBeVisible();
+    // Should see Front 9 / Back 9 segmented options (rendered as role="radio",
+    // labeled "Front 9 · <par>" / "Back 9 · <par>").
+    await expect(page.getByRole('radio', { name: /^Front 9/ })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /^Back 9/ })).toBeVisible();
 
-    // Should see par selector buttons with modern styling
-    const parButtons = page.locator('button:has-text("3"), button:has-text("4"), button:has-text("5")').first();
-    await expect(parButtons).toBeVisible();
+    // Should see the per-hole par selector chips (accessible name "Hole N par P").
+    const parButton = page.getByRole('button', { name: /^Hole 1 par (3|4|5)$/ }).first();
+    await expect(parButton).toBeVisible();
 
-    // Should see save button with emerald styling
-    const saveButton = page.locator('button:has-text("Save Course & Start Round")');
+    // Should see the primary action to start tracking
+    const saveButton = page.getByRole('button', { name: 'Start round →' });
     await expect(saveButton).toBeVisible();
-    await expect(saveButton).toHaveClass(/bg-emerald-600/);
 
     // Click save to proceed to shot tracking
     await saveButton.click();
 
-    // Step 3: Shot Tracking - Should see ShotTrackingComprehensive
+    // Step 3: Shot Tracking - Should see the tracking surface for hole 1
     await expect(page.locator('text=Hole 1')).toBeVisible({ timeout: 5000 });
 
-    // Should see shot tracking interface
+    // Should see the shot entry interface
     // (Note: Full shot tracking test would be more complex,
     // this just verifies the component loaded)
   });
@@ -109,39 +120,42 @@ test.describe('Golf Dashboard - Player Flow', () => {
     // Navigate to stats page
     await page.goto('/golf/dashboard/stats');
 
-    // Should see stats page
-    await expect(page.locator('h1')).toContainText('Stats');
+    // Should see stats page (FairwayPlayerStats' title is "Your stats" for a
+    // player viewing their own page).
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/stats/i);
 
-    // Should see category pills (modern design)
-    await expect(page.locator('button:has-text("Scoring")')).toBeVisible();
-    await expect(page.locator('button:has-text("Driving")')).toBeVisible();
-    await expect(page.locator('button:has-text("Approach")')).toBeVisible();
-    await expect(page.locator('button:has-text("Putting")')).toBeVisible();
-    await expect(page.locator('button:has-text("Scrambling")')).toBeVisible();
+    // Should see category tabs (FairwayStatsCockpit renders these as
+    // role="tab" via the Fairway Tabs/Radix primitive, not plain buttons).
+    await expect(page.getByRole('tab', { name: 'Scoring' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Driving' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Approach' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Putting' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Scrambling' })).toBeVisible();
   });
 
-  test('should verify emerald color scheme throughout', async ({ page }) => {
+  test('should keep the primary setup/holes CTAs keyboard-accessible', async ({ page }) => {
     // Go to new round page
     await page.goto('/golf/dashboard/rounds/new');
 
-    // Check for emerald focus rings on inputs
+    // The primary CTA must be a real, named, focusable control — not just a
+    // colored div. (This replaces the old bg-emerald-600 color-scheme check,
+    // which asserted on an implementation-detail utility class rather than
+    // the accessible contract.)
     const courseNameInput = page.locator('#courseName');
     await courseNameInput.click();
+    await courseNameInput.fill('Accessibility Test Course');
 
-    // Check button has emerald background
-    const nextButton = page.locator('button:has-text("Next: Configure Holes")');
-    await expect(nextButton).toHaveClass(/bg-emerald-600/);
+    const nextButton = page.getByRole('button', { name: 'Next: configure holes →' });
+    await expect(nextButton).toBeEnabled();
 
     // Navigate to holes step
-    await page.fill('#courseName', 'Color Test Course');
     await nextButton.click();
 
-    // Verify hole configuration uses emerald colors
+    // Verify hole configuration loaded and its primary action is likewise a
+    // real, named, focusable control.
     await expect(page.locator('text=Total Par')).toBeVisible();
-
-    // Check save button uses emerald
-    const saveButton = page.locator('button:has-text("Save Course & Start Round")');
-    await expect(saveButton).toHaveClass(/bg-emerald-600/);
+    const saveButton = page.getByRole('button', { name: 'Start round →' });
+    await expect(saveButton).toBeEnabled();
   });
 });
 

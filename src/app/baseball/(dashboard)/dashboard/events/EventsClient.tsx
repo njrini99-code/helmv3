@@ -16,7 +16,7 @@ import {
   IconClock,
   IconTrash,
 } from '@/components/icons';
-import { SectionMasthead, EditorsLetter, EmptyIssue } from '@/components/baseball/living-annual';
+import { SectionMasthead, EditorsLetter, EmptyIssue, PaperCard } from '@/components/baseball/living-annual';
 import { InlineNotice } from '@/components/fairway';
 import { createBaseballEvent, deleteBaseballEvent } from '@/app/baseball/actions/calendar';
 
@@ -468,7 +468,7 @@ export default function EventsPage() {
                             <IconButton
                               variant="default"
                               onClick={() => handleDeleteEvent(event.id)}
-                              className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
+                              className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20 transition-colors flex items-center justify-center"
                               aria-label="Delete event"
                               disabled={isPending}
                             >
@@ -481,7 +481,7 @@ export default function EventsPage() {
                       {deleteErrors[event.id] && (
                         <p
                           role="alert"
-                          className="mt-1 px-2 text-xs text-red-600"
+                          className="mt-1 px-2 text-xs text-destructive"
                         >
                           {deleteErrors[event.id]}
                         </p>
@@ -508,7 +508,7 @@ export default function EventsPage() {
           >
             {''}
           </Button>
-          <div className="relative glass-prominent rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+          <PaperCard className="shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" grain={false}>
             <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-cream-50">
               <h2 className="text-lg font-semibold tracking-tight text-warm-900">
                 Create New Event
@@ -608,7 +608,7 @@ export default function EventsPage() {
                 </Button>
               </div>
             </form>
-          </div>
+          </PaperCard>
         </div>
       )}
     </>

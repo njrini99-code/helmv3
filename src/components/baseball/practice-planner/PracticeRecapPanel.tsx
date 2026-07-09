@@ -603,7 +603,7 @@ function RecapTaskComposer({
   }
 
   return (
-    <div className="space-y-2 rounded-lg glass-standard p-2.5">
+    <div className="space-y-2 rounded-lg border border-[color:var(--hairline)] bg-[var(--paper)] p-2.5">
       <label className="block" htmlFor={`task-title-${objective.id}`}>
         <span className="mb-1 block text-micro font-medium text-warm-600">Task title</span>
         <Input

@@ -12,6 +12,7 @@ import {
   IconUpload,
   IconAlertCircle,
 } from '@/components/icons';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 // ============================================================================
 // TYPES
@@ -114,20 +115,20 @@ export function UploadHistory({
   // Loading state with skeleton
   if (loading) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
+      <PaperCard className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
           <IconRefresh size={16} className="text-warm-400 animate-spin" aria-hidden />
         </div>
         <UploadSkeleton />
-      </div>
+      </PaperCard>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
+      <PaperCard className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
           <IconButton variant="default" aria-label="Refresh"
@@ -153,14 +154,14 @@ export function UploadHistory({
             Try again
           </Button>
         </div>
-      </div>
+      </PaperCard>
     );
   }
 
   // Empty state
   if (uploads.length === 0) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
+      <PaperCard className="p-6">
         <h3 className="font-semibold text-warm-900 mb-4">Recent Uploads</h3>
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
@@ -171,13 +172,13 @@ export function UploadHistory({
             Upload a CSV file to start tracking stats
           </p>
         </div>
-      </div>
+      </PaperCard>
     );
   }
 
   // Normal state with data
   return (
-    <div className="glass-standard rounded-2xl p-6">
+    <PaperCard className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
         <IconButton variant="default" aria-label="Refresh"
@@ -259,6 +260,6 @@ export function UploadHistory({
           View all uploads
         </Button>
       )}
-    </div>
+    </PaperCard>
   );
 }

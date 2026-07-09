@@ -277,7 +277,7 @@ export function TimeRailBuilder({
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
                   selected
                     ? 'border-primary-400 bg-primary-50/90 shadow-card'
-                    : 'border-warm-200 glass-standard hover:bg-cream-100',
+                    : 'border-warm-200 bg-[color:var(--paper)] hover:bg-cream-100',
                   hasError && 'border-red-400 bg-red-50/80',
                 )}
                 style={{

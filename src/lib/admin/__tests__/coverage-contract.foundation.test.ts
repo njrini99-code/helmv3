@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { scanActionFile } from './coverage-scanner';
 import { assertAreaFullyWrapped } from './coverage-contract.shared';
@@ -138,6 +138,12 @@ const CRM_ADJACENT_FILES = new Set<string>(['src/app/golf/actions/resend-activit
  * types/shim file that happens to live in this directory — genuine new
  * action files are picked up automatically and must be wrapped or this
  * test fails.
+ *
+ * Uses `readdirSync(dir, { withFileTypes: true })` so directory-vs-file is
+ * read directly off the same listing (no separate `statSync` check-then-act
+ * on the path — CodeQL js/file-system-race), and tolerates a file vanishing
+ * between the listing and the read (ENOENT) instead of crashing the test on
+ * a benign TOCTOU race with a concurrent build/editor write.
  */
 function discoverGolfActionFiles(): string[] {
   const root = process.cwd();
@@ -145,22 +151,27 @@ function discoverGolfActionFiles(): string[] {
   const found: string[] = [];
 
   const walk = (dir: string) => {
-    for (const entry of readdirSync(dir)) {
-      if (entry === '__tests__') continue;
-      const abs = join(dir, entry);
-      const st = statSync(abs);
-      if (st.isDirectory()) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === '__tests__') continue;
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) {
         walk(abs);
         continue;
       }
-      if (!entry.endsWith('.ts') || entry.endsWith('.d.ts')) continue;
+      if (!entry.name.endsWith('.ts') || entry.name.endsWith('.d.ts')) continue;
 
       const rel = relative(root, abs).split('\\').join('/');
-      if (CRM_PREFIX_RE.test(entry)) continue;
+      if (CRM_PREFIX_RE.test(entry.name)) continue;
       if (CRM_ADJACENT_FILES.has(rel)) continue;
       if (NOT_ACTION_BOUNDARY_FILES.has(rel)) continue;
 
-      const source = readFileSync(abs, 'utf8');
+      let source: string;
+      try {
+        source = readFileSync(abs, 'utf8');
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw err;
+      }
       if (!source.includes("'use server'") && !source.includes('"use server"')) continue;
 
       found.push(rel);

@@ -6,6 +6,7 @@ import type { BaseballBoxScoreBatting, BaseballBoxScorePitching, BaseballGame } 
 import { IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 type BattingWithGame = BaseballBoxScoreBatting & { game: Partial<BaseballGame> };
 type PitchingWithGame = BaseballBoxScorePitching & { game: Partial<BaseballGame> };
@@ -76,9 +77,10 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
   if (!hasBatting && !hasPitching) {
     return (
-      <div className="glass-standard rounded-2xl p-8 text-center">
-        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">No game log yet. Stats will appear here after box scores are entered.</p>
-      </div>
+      <EditorsLetter
+        title="No game log yet"
+        body="Stats will appear here after box scores are entered."
+      />
     );
   }
 
@@ -126,7 +128,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Batting log */}
       {activeTab === 'batting' && (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <PaperCard className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -219,12 +221,12 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               )}
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
 
       {/* Pitching log */}
       {activeTab === 'pitching' && (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <PaperCard className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -317,7 +319,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               )}
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
     </div>
   );

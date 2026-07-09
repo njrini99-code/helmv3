@@ -461,7 +461,7 @@ function DiscoverContent() {
             >
               {''}
             </Button>
-            <div className="absolute inset-y-0 left-0 w-full max-w-sm glass-prominent shadow-xl overflow-y-auto animate-slide-in-left">
+            <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-[var(--paper)] shadow-xl overflow-y-auto animate-slide-in-left">
               <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-warm-200 bg-cream-50">
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-warm-900">Filters</h2>

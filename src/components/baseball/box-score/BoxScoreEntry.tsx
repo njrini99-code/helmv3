@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/select';
 import { IconSave, IconUser, IconTrendingUp } from '@/components/icons';
 import { sumInningsPitched } from '@/lib/baseball/innings';
 import { formatAvg, formatOps, formatEra, formatWhip } from './format-stat';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface PlayerRow {
   id: string;
@@ -257,7 +258,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
   return (
     <div className="space-y-5">
       {/* Game header / score input */}
-      <div className="glass-standard rounded-2xl p-5">
+      <PaperCard className="p-5">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-lg font-bold text-warm-900">
@@ -303,7 +304,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
             </div>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
@@ -329,7 +330,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
 
       {/* Batting table */}
       {activeTab === 'batting' && (
-        <div className="glass-standard rounded-2xl overflow-clip" data-testid="batting-entry-table">
+        <PaperCard className="overflow-hidden" data-testid="batting-entry-table">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -405,7 +406,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               </tfoot>
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
 
       {/* Pitching table */}
@@ -436,13 +437,9 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
           </div>
 
           {pitchingRows.length === 0 ? (
-            <div className="glass-standard rounded-2xl p-8 text-center">
-              <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
-                Add pitchers using the selector above to record pitching lines.
-              </p>
-            </div>
+            <EditorsLetter title="Add pitchers using the selector above to record pitching lines." />
           ) : (
-            <div className="glass-standard rounded-2xl overflow-clip" data-testid="pitching-entry-table">
+            <PaperCard className="overflow-hidden" data-testid="pitching-entry-table">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
@@ -544,13 +541,16 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                         <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.er, 0)}</td>
                         <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.bb, 0)}</td>
                         <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.k, 0)}</td>
-                        <td colSpan={5} />
+                        {/* Remaining header columns: HR, PC, Result, ERA, WHIP, Remove = 6
+                            (header total is 13: Pitcher + 9 stat/meta headers + ERA + WHIP +
+                            Remove; this row already renders TOTALS + IP/H/R/ER/BB/K = 7). */}
+                        <td colSpan={6} />
                       </tr>
                     </tfoot>
                   )}
                 </table>
               </div>
-            </div>
+            </PaperCard>
           )}
         </div>
       )}

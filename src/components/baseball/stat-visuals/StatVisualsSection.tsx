@@ -34,10 +34,10 @@ import {
   IconStar,
   IconStarFilled,
   IconBookmark,
-  IconChartBar,
   IconArrowRight,
 } from '@/components/icons';
 import { TabStrip } from './chart-primitives';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 import {
   // hitting
   EvLaContactMatrix,
@@ -190,40 +190,35 @@ function familyHasData(family: Family, data: StatVisualsData): boolean {
 }
 
 /**
- * One honest, on-brand empty surface for a whole family — a single glass card
+ * One honest, on-brand empty surface for a whole family — an `EditorsLetter`
  * that teaches what unlocks the charts, instead of a dead grid of empty frames.
  */
 function FamilyEmptyState({ label, scope }: { label: string; scope: Scope }) {
   return (
     <div className="xl:col-span-2">
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-warm-200/70 bg-cream-100/70 px-6 py-14 text-center shadow-glass backdrop-blur-glass">
-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600/10 text-primary-600">
-          <IconChartBar size={22} aria-hidden />
-        </span>
-        <div className="max-w-md space-y-1.5">
-          <h3 className="text-lg font-semibold tracking-tight text-warm-900">
-            {label} charts light up with captured events
-          </h3>
-          <p className="text-sm leading-relaxed text-warm-500">
-            {scope === 'player'
-              ? 'Pitch-by-pitch, batted-ball, and workload events for this player render here as they’re captured from a connected source or uploaded box score.'
-              : 'These source-backed visuals draw from pitch-by-pitch, batted-ball, and workload events. Import a box score or connect a source and they populate automatically.'}
-          </p>
-        </div>
-        {scope === 'team' && (
-          <Link
-            href="/baseball/dashboard/import"
-            className="group mt-1 inline-flex items-center gap-1.5 rounded-full border border-warm-200 glass-standard px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
-          >
-            Import stats
-            <IconArrowRight
-              size={15}
-              className="transition-transform group-hover:translate-x-0.5"
-              aria-hidden
-            />
-          </Link>
-        )}
-      </div>
+      <EditorsLetter
+        title={`${label} charts light up with captured events`}
+        body={
+          scope === 'player'
+            ? 'Pitch-by-pitch, batted-ball, and workload events for this player render here as they’re captured from a connected source or uploaded box score.'
+            : 'These source-backed visuals draw from pitch-by-pitch, batted-ball, and workload events. Import a box score or connect a source and they populate automatically.'
+        }
+        action={
+          scope === 'team' ? (
+            <Link
+              href="/baseball/dashboard/import"
+              className="group inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-[var(--paper)] px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            >
+              Import stats
+              <IconArrowRight
+                size={15}
+                className="transition-transform group-hover:translate-x-0.5"
+                aria-hidden
+              />
+            </Link>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

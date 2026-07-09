@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { acknowledgeAnnouncement } from '@/app/baseball/actions/announcements';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -42,7 +43,7 @@ interface AnnouncementsPlayerViewProps {
 
 function AnnouncementSkeleton() {
   return (
-    <div className="glass-standard rounded-2xl border-l-[3px] border-l-warm-200 overflow-clip animate-pulse">
+    <PaperCard className="border-l-[3px] border-l-warm-200 animate-pulse" grain={false}>
       <div className="px-5 py-4 flex items-start gap-4">
         <div className="flex-1 min-w-0 space-y-2">
           <div className="h-4 bg-warm-100 rounded w-3/5" />
@@ -51,7 +52,7 @@ function AnnouncementSkeleton() {
         </div>
         <div className="h-4 w-4 bg-warm-100 rounded flex-shrink-0 mt-1" />
       </div>
-    </div>
+    </PaperCard>
   );
 }
 
@@ -119,13 +120,12 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
   const needsAck = !hasAcknowledged;
 
   return (
-    <div
+    <PaperCard
       className={cn(
-        'glass-standard rounded-2xl overflow-clip',
         'border-l-[3px]',
         urgencyBorder,
         needsAck && 'ring-1 ring-amber-200/50',
-        'transition-all hover:shadow-md'
+        'transition-shadow hover:shadow-md'
       )}
     >
       {/* Card header */}
@@ -219,6 +219,6 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </PaperCard>
   );
 }

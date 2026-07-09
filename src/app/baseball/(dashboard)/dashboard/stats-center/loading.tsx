@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 /**
  * Stats Center loading skeleton — mirrors the real layout:
@@ -27,7 +28,7 @@ export default function StatsCenterLoading() {
         {/* Summary strip — 5 tiles */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="rounded-2xl glass-standard p-4">
+            <PaperCard key={i} className="p-4" grain={false}>
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <Skeleton className="h-3 w-16" />
@@ -35,12 +36,12 @@ export default function StatsCenterLoading() {
                 </div>
                 <Skeleton className="h-10 w-10 rounded-xl" />
               </div>
-            </div>
+            </PaperCard>
           ))}
         </div>
 
         {/* Filter bar */}
-        <div className="mb-6 rounded-2xl glass-standard px-4 py-3">
+        <PaperCard className="mb-6 px-4 py-3" grain={false}>
           <div className="flex flex-wrap items-center gap-4">
             <Skeleton className="h-5 w-16" />
             <Skeleton className="h-9 w-36 rounded-xl" />
@@ -51,12 +52,12 @@ export default function StatsCenterLoading() {
               <Skeleton key={i} className="h-7 w-14 rounded-full" />
             ))}
           </div>
-        </div>
+        </PaperCard>
 
         {/* Player stat card grid — 3 columns × 2 rows */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl glass-standard p-4 space-y-4">
+            <PaperCard key={i} className="p-4 space-y-4" grain={false}>
               {/* Card header — player identity */}
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-2">
@@ -88,7 +89,7 @@ export default function StatsCenterLoading() {
                 <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-4 w-20" />
               </div>
-            </div>
+            </PaperCard>
           ))}
         </div>
 

@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 /**
  * New game form loading skeleton.
@@ -11,7 +12,7 @@ export default function NewGameLoading() {
         <Skeleton className="h-4 w-32" />
       </div>
 
-      <div className="glass-standard rounded-2xl p-6 shadow-sm space-y-5">
+      <PaperCard className="p-6 shadow-sm space-y-5" grain={false}>
         {/* Type row */}
         <div className="space-y-2">
           <Skeleton className="h-4 w-8" />
@@ -51,7 +52,7 @@ export default function NewGameLoading() {
           <Skeleton className="h-10 flex-1 rounded-xl" />
           <Skeleton className="h-10 flex-1 rounded-xl" />
         </div>
-      </div>
+      </PaperCard>
     </div>
   );
 }

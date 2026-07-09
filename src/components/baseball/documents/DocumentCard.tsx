@@ -20,6 +20,7 @@ import {
 } from '@/components/icons';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
 import { Button, IconButton } from '@/components/ui/button';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 // Document categories for display
 const DOCUMENT_CATEGORIES: Record<string, string> = {
@@ -124,10 +125,10 @@ export function DocumentCard({
   }, [document, onPreview]);
 
   return (
-    <div
+    <PaperCard
       role="button"
       tabIndex={0}
-      className="group relative glass-standard rounded-2xl overflow-clip hover:shadow-md hover:bg-cream-100/82 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+      className="group hover:shadow-md hover:bg-cream-100/82 transition-shadow duration-200 cursor-pointer active:scale-[0.98]"
       onClick={handlePreview}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePreview(); } }}
     >
@@ -197,7 +198,7 @@ export function DocumentCard({
                     >
                       {null}
                     </Button>
-                    <div role="menu" className="absolute right-0 top-8 z-40 w-48 glass-prominent rounded-xl shadow-xl py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <PaperCard role="menu" className="absolute right-0 top-8 z-40 w-48 shadow-xl py-1.5 animate-in fade-in slide-in-from-top-1 duration-150" grain={false}>
                       <Button
                         variant="ghost"
                         role="menuitem"
@@ -279,7 +280,7 @@ export function DocumentCard({
                           </Button>
                         </>
                       )}
-                    </div>
+                    </PaperCard>
                   </>
                 )}
               </div>
@@ -357,7 +358,7 @@ export function DocumentCard({
           </div>
         </div>
       </div>
-    </div>
+    </PaperCard>
   );
 }
 

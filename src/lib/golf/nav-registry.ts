@@ -413,6 +413,7 @@ export function buildPlayerRailSections(badges: GolfNavBadgeCounts): NavSection[
 export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] {
   const team = GOLF_COACH_HUBS.find((h) => h.id === 'team')!;
   const calendar = GOLF_COACH_HUBS.find((h) => h.id === 'calendar')!;
+  const messages = GOLF_COACH_HUBS.find((h) => h.id === 'messages')!;
 
   return [
     hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
@@ -433,14 +434,17 @@ export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] 
     }),
     hubToNavItem({
       label: 'Messages',
-      href: '/golf/dashboard/messages',
+      href: messages.tabs[0]!.href,
       icon: IconMessage,
+      tabs: messages.tabs,
       badge: navBadge(badges.messages),
     }),
   ];
 }
 
 export function buildPlayerBottomNavItems(): NavItem[] {
+  const team = GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!;
+
   return [
     hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
     hubToNavItem({
@@ -451,6 +455,6 @@ export function buildPlayerBottomNavItems(): NavItem[] {
     }),
     hubToNavItem({ label: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf }),
     hubToNavItem({ label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar }),
-    hubToNavItem({ label: 'Team', href: '/golf/dashboard/roster', icon: IconUsers }),
+    hubToNavItem({ label: 'Team', href: team.tabs[0]!.href, icon: IconUsers, tabs: team.tabs }),
   ];
 }

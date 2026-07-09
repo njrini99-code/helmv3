@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 export default function PlayerStatsLoading() {
   return (
@@ -19,30 +20,30 @@ export default function PlayerStatsLoading() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="glass-standard rounded-xl p-4">
+            <PaperCard key={i} className="p-4" grain={false}>
               <Skeleton className="h-3 w-16 mb-2" />
               <Skeleton className="h-6 w-20" />
-            </div>
+            </PaperCard>
           ))}
         </div>
 
         {/* Stats Overview Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-4">
+            <PaperCard key={i} className="p-4" grain={false}>
               <Skeleton className="h-3 w-12 mb-2" />
               <Skeleton className="h-8 w-16 mb-2" />
               <div className="pt-2 border-t border-warm-100">
                 <Skeleton className="h-3 w-16 mb-1" />
                 <Skeleton className="h-4 w-12" />
               </div>
-            </div>
+            </PaperCard>
           ))}
         </div>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="glass-standard rounded-2xl p-6">
+          <PaperCard className="p-6" grain={false}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <Skeleton className="h-6 w-40 mb-1" />
@@ -51,8 +52,8 @@ export default function PlayerStatsLoading() {
               <Skeleton className="h-8 w-32" />
             </div>
             <Skeleton className="h-64 w-full rounded-lg" />
-          </div>
-          <div className="glass-standard rounded-2xl p-6">
+          </PaperCard>
+          <PaperCard className="p-6" grain={false}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <Skeleton className="h-6 w-40 mb-1" />
@@ -60,11 +61,11 @@ export default function PlayerStatsLoading() {
               </div>
             </div>
             <Skeleton className="h-64 w-full rounded-lg" />
-          </div>
+          </PaperCard>
         </div>
 
         {/* Session History */}
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <PaperCard className="overflow-hidden" grain={false}>
           <div className="px-6 py-4 border-b border-warm-100">
             <div className="flex items-center justify-between">
               <div>
@@ -85,7 +86,7 @@ export default function PlayerStatsLoading() {
               </div>
             ))}
           </div>
-        </div>
+        </PaperCard>
       </div>
     </div>
   );

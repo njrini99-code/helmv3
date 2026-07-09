@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 export default function PostgameReviewLoading() {
   return (
@@ -21,23 +22,23 @@ export default function PostgameReviewLoading() {
         </div>
 
         {/* Review header card */}
-        <div className="mb-6 glass-standard rounded-2xl p-6 space-y-2">
+        <PaperCard className="mb-6 p-6 space-y-2" grain={false}>
           <Skeleton className="h-5 w-64" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-3 w-40" />
-        </div>
+        </PaperCard>
 
         {/* Item cards */}
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-4 space-y-2">
+            <PaperCard key={i} className="p-4 space-y-2" grain={false}>
               <div className="flex items-center gap-2">
                 <Skeleton className="h-5 w-48" />
                 <Skeleton className="h-5 w-16 rounded-full" />
               </div>
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-6 w-32" />
-            </div>
+            </PaperCard>
           ))}
         </div>
       </div>

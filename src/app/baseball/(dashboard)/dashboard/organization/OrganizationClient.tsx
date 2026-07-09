@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { TeamSelector } from '@/components/baseball/showcase/TeamSelector';
 import { OrgDashboard } from '@/components/baseball/showcase/OrgDashboard';
 import { IconUsers, IconFlag, IconChevronRight } from '@/components/icons';
-import { SectionMasthead } from '@/components/baseball/living-annual';
+import { SectionMasthead, PaperCard } from '@/components/baseball/living-annual';
 
 const ORGANIZATION_LANDING_CARDS = [
   {
@@ -38,7 +38,7 @@ export default function OrganizationDashboardPage() {
               href={href}
               className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
             >
-              <div className="glass-standard border border-cream-400/40 rounded-2xl shadow-glass flex h-full items-start gap-4 p-5 transition-all duration-200 group-hover:shadow-card-hover group-hover:-translate-y-0.5">
+              <PaperCard className="flex h-full items-start gap-4 p-5 transition-shadow duration-200 group-hover:shadow-card-hover group-hover:-translate-y-0.5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-600/10 text-primary-600">
                   <Icon size={20} />
                 </span>
@@ -50,7 +50,7 @@ export default function OrganizationDashboardPage() {
                   size={18}
                   className="mt-1 shrink-0 text-warm-500 transition-transform duration-200 group-hover:translate-x-0.5"
                 />
-              </div>
+              </PaperCard>
             </Link>
           ))}
         </div>
