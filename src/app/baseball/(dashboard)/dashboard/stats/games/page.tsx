@@ -68,6 +68,7 @@ export default async function GamesPage() {
         initialGames={gamesResult.success ? (gamesResult.data ?? []) : []}
         initialRecord={recordResult.success ? (recordResult.data ?? null) : null}
         initialError={gamesResult.success ? null : (gamesResult.error ?? 'Failed to load games')}
+        initialRecordError={recordResult.success ? null : (recordResult.error ?? 'Failed to load season record')}
       />
     </div>
   );

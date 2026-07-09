@@ -1,5 +1,6 @@
 'use server';
 
+import { z } from 'zod';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -50,6 +51,31 @@ interface CreateEventInput {
    */
   timezoneOffset?: number;
 }
+
+// Validates the raw CreateEventInput before it reaches Supabase — an
+// unvalidated eventType/date string could otherwise silently violate a
+// baseball_events CHECK constraint and surface as a raw sanitized DB error
+// instead of a clean validation message.
+const createEventInputSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(200),
+  eventType: z.string().trim().min(1, 'Event type is required'),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate must be YYYY-MM-DD'),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate must be YYYY-MM-DD').nullable().optional(),
+  startTime: z.string().nullable().optional(),
+  endTime: z.string().nullable().optional(),
+  allDay: z.boolean().optional(),
+  location: z.string().max(500).nullable().optional(),
+  description: z.string().max(5000).nullable().optional(),
+  isMandatory: z.boolean().optional(),
+  maxAttendees: z.number().int().positive().nullable().optional(),
+  rsvpDeadline: z.string().nullable().optional(),
+  attendeeIds: z.array(z.string().uuid()).optional(),
+  requiresRsvp: z.boolean().optional(),
+  opponentName: z.string().max(200).nullable().optional(),
+  homeAway: z.enum(['home', 'away', 'neutral']).nullable().optional(),
+  teamId: z.string().uuid().optional(),
+  timezoneOffset: z.number().optional(),
+});
 
 interface UpdateEventInput {
   title?: string;
@@ -145,6 +171,9 @@ function buildRsvpDeadline(deadline?: string | null, timezoneOffset?: number): s
 }
 
 function mapCalendarActionError(error: unknown): ActionResult {
+  if (error instanceof z.ZodError) {
+    return { success: false, error: error.issues[0]?.message ?? 'Invalid event input' };
+  }
   if (error instanceof BaseballUnauthorizedError) {
     return { success: false, error: 'Not authenticated' };
   }
@@ -179,7 +208,8 @@ async function getPlayerInfo(supabase: Awaited<ReturnType<typeof createClient>>,
 const createBaseballEventAction = withBaseballAction(
   'createBaseballEvent',
   { featureArea: 'baseball-calendar', requiredCapability: 'can_manage_calendar' },
-  async (ctx, input: CreateEventInput): Promise<ActionResult> => {
+  async (ctx, rawInput: CreateEventInput): Promise<ActionResult> => {
+    const input = createEventInputSchema.parse(rawInput);
     const supabase = await createClient();
     const coachId = ctx.activeCoachId;
     if (!coachId) return { success: false, error: 'Coach or team not found' };

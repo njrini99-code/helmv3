@@ -86,6 +86,13 @@ export default async function PerformancePage() {
 
   const supabase = await createClient();
 
+  // Team-local "today" computed ONCE here so both the readiness 7-day lookback
+  // window below and the client's check-in day math (passed as the `today`
+  // prop) use the exact same value — a server-UTC `new Date()` for one and a
+  // team-local ISO string for the other let the readiness window silently
+  // drift a day at the UTC boundary for teams west of Greenwich.
+  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
+
   // Roster (RLS scopes to viewable players for this staff member).
   const { data: members } = await supabase
     .from('baseball_team_members')
@@ -162,9 +169,8 @@ export default async function PerformancePage() {
   // ---------------------------------------------------------------------------
   let readiness: BaseballReadinessSummary[] = [];
   if (canViewReadiness && liftCtx) {
-    const today = new Date();
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
+    const sevenDaysAgo = new Date(`${today}T00:00:00Z`);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
     const fromDate = sevenDaysAgo.toISOString().slice(0, 10);
 
     // Build the set of athlete ids for this team's roster.
@@ -232,10 +238,6 @@ export default async function PerformancePage() {
     .eq('id', teamId)
     .maybeSingle();
   const teamName = (teamRow as { name?: string } | null)?.name ?? 'Team';
-
-  // Team-local "today" so the client's readiness/check-in day math can't
-  // drift across the UTC boundary for teams west of Greenwich.
-  const today = todayIsoInTz(await resolveTeamTimezone(supabase, teamId));
 
   return (
     <div className={fairwayScope('mx-auto max-w-7xl space-y-8 px-4 py-6')}>

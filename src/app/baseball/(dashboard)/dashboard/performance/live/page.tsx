@@ -126,6 +126,15 @@ async function buildLiveRoomData(
     .order('order_index', { ascending: true })) as { data: HelmLiftingSessionExerciseRow[] | null; error: UntypedQueryError };
   await logQueryError('helm_lifting_session_exercises', sessionExercisesError, teamId);
 
+  if (sessionExercisesError) {
+    // This is the load-bearing query for the write surface: a hard failure
+    // here yields exerciseIds = [] and every athlete rendering with
+    // exercises: [], total_exercises: 0 — indistinguishable from "athletes
+    // have no assigned work" (same error-vs-empty conflation `sessionsError`
+    // above already guards against). Surface it, don't degrade.
+    return { ok: false };
+  }
+
   const exerciseIds = (sessionExercises ?? []).map((se) => se.id);
   type LatestSetRow = Pick<HelmLiftingSetResultRow, 'session_exercise_id' | 'athlete_id' | 'set_number' | 'actual_load' | 'rpe'> & { created_at: string };
 
@@ -196,6 +205,13 @@ async function buildLiveRoomData(
     logQueryError('helm_lifting_group_members', groupMembersError, teamId),
     logQueryError('helm_lifting_exercises (live-room)', exercisesError, teamId),
   ]);
+
+  if (athletesError) {
+    // A failed athletes read silently drops every name/position (athleteMap
+    // stays empty) and every row falls back to null fields — same
+    // error-vs-empty conflation as sessionsError/sessionExercisesError above.
+    return { ok: false };
+  }
 
   const checkins = checkinsResult.data;
 

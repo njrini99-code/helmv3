@@ -193,12 +193,22 @@ function formatAvg(v: number | null | undefined): string {
   return v.toFixed(3).replace(/^0\./, '.');
 }
 
+// baseball_games.game_date is a `date` column — a bare YYYY-MM-DD value.
+// `new Date(iso)` parses a bare date as UTC midnight, which renders a day
+// early in any US timezone. Parse it as LOCAL midnight instead (matches
+// BoxScoreView.tsx / BoxScoreEntry.tsx). Other callers here (e.g. video
+// created_at) pass full timestamps, which already carry an explicit offset
+// and parse correctly as-is.
+function parseGameOrLocalDate(iso: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso);
+}
+
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return parseGameOrLocalDate(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return parseGameOrLocalDate(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────

@@ -36,7 +36,7 @@ export interface PlayerLiftAthleteContext {
  * baseball_players.id -> ALL active baseball_teams.id memberships.
  *
  * A player can legitimately hold TWO active baseball_team_members rows
- * (JUCO + Showcase). Previously this collapsed the set to the earliest row
+ * (High School + Showcase). Previously this collapsed the set to the earliest row
  * via `.limit(1).maybeSingle()`; if THAT team's org had no Lift Lab athlete
  * seeded, resolution failed even though the player's other active team
  * would have resolved fine. Return the full ordered list so the caller can
@@ -66,7 +66,7 @@ async function resolvePlayerTeamIds(
 
 /**
  * Full resolution chain: baseball playerId -> teamId -> organizationId ->
- * helm_lifting_athletes.id. Tries EVERY active team membership (JUCO +
+ * helm_lifting_athletes.id. Tries EVERY active team membership (High School +
  * Showcase dual-team players) before giving up, since a Lift Lab athlete row
  * may only be seeded for one of the player's active teams/orgs. Returns null
  * only once all active memberships have been exhausted (degrade-gracefully

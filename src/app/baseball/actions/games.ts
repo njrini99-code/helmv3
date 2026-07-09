@@ -216,7 +216,17 @@ const createGameAction = withBaseballAction(
       .select()
       .single();
 
-    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+    if (error) {
+      // Roll back the calendar event we just created above so we don't
+      // strand an event on the calendar with no backing game (mirrors the
+      // rollback pattern in importScheduleImpl below). Only the event WE
+      // created — never a caller-supplied input.event_id — is eligible for
+      // rollback here.
+      if (input.create_calendar_event && !input.event_id && eventId) {
+        await supabase.from('baseball_events').delete().eq('id', eventId);
+      }
+      return { success: false, error: sanitizeDbError(error, 'games') };
+    }
 
     revalidateStatsPaths();
     return { success: true, data: game as BaseballGame };
@@ -1413,10 +1423,21 @@ async function getPlayerSeasonStatsImpl(
     .eq('season_year', year)
     .single();
 
+  // `.single()` on the stats query legitimately errors with PGRST116 ("no
+  // rows") for a player who simply has no season-stats row yet — that is NOT
+  // a query failure and must keep rendering as honest "no stats" rather than
+  // a false-positive error banner. Any OTHER error code is a real DB/RLS
+  // failure and must not be swallowed into a silent `data: undefined`.
+  const isRealStatsError = (error: { code?: string } | null) =>
+    Boolean(error) && error?.code !== 'PGRST116';
+
   // Short-circuit when there are no games in the season — an empty `.in()`
   // would otherwise still round-trip to the database for no rows.
   if (seasonGameIds.length === 0) {
     const statsResult = await statsPromise;
+    if (isRealStatsError(statsResult.error)) {
+      return { success: false, error: sanitizeDbError(statsResult.error, 'games') };
+    }
     return {
       success: true,
       data: statsResult.data as BaseballPlayerSeasonStats | undefined,
@@ -1446,6 +1467,15 @@ async function getPlayerSeasonStatsImpl(
       .eq('team_id', teamId)
       .in('game_id', seasonGameIds),
   ]);
+
+  // The two log queries have no `.single()` — any error on them is a real
+  // failure (never a "no rows" false positive), same as the stats query.
+  if (isRealStatsError(statsResult.error) || battingLogResult.error || pitchingLogResult.error) {
+    const firstError = isRealStatsError(statsResult.error)
+      ? statsResult.error
+      : (battingLogResult.error ?? pitchingLogResult.error);
+    return { success: false, error: sanitizeDbError(firstError, 'games') };
+  }
 
   // PostgREST cannot reliably order a parent list by a to-many embedded
   // column, so sort by the joined game's date descending in-memory.

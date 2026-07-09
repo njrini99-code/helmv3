@@ -30,6 +30,8 @@ import {
 import { savePhilosophySettings } from '@/app/baseball/actions/philosophy';
 import type { BaseballCoachPhilosophy } from '@/lib/types';
 
+const SETTINGS_PATH = '/baseball/dashboard/settings';
+
 interface PhilosophySettingsClientProps {
   coachId: string;
   coachName: string;
@@ -244,7 +246,7 @@ export function PhilosophySettingsClient({
           size="sm"
           leftIcon={<IconArrowLeft size={16} />}
           aria-label="Back to settings"
-          onClick={() => router.push('/baseball/dashboard/settings')}
+          onClick={() => router.push(SETTINGS_PATH)}
         >
           Settings
         </Button>
@@ -443,7 +445,7 @@ export function PhilosophySettingsClient({
 
         {/* Save Button */}
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => router.push('/baseball/dashboard/settings')}>
+          <Button variant="secondary" onClick={() => router.push(SETTINGS_PATH)}>
             Cancel
           </Button>
           <Button

@@ -434,11 +434,30 @@ async function materializeActionObject(
         const { data: session, error: sessionErr } = (await fromUntyped(supabase, 'helm_lifting_sessions')
           .insert(sessionPayload)
           .select('id')
-          .maybeSingle()) as { data: { id: string } | null; error: unknown };
-        if (sessionErr || !session) {
+          .maybeSingle()) as { data: { id: string } | null; error: { code?: string } | null };
+
+        if (sessionErr?.code === '23505') {
+          // Lost the race to a concurrent conversion for the same (athlete,
+          // date, title) — the DB-level partial unique index
+          // (helm_lifting_sessions_null_program_dedupe_uq, migration
+          // 20260709000000) backstops the app-code check-then-insert dedupe
+          // above, which has a race window between the check and the
+          // insert. Re-query for the row the other request just created
+          // instead of erroring — this IS the dedupe working as intended.
+          const { data: existing } = (await fromUntyped(supabase, 'helm_lifting_sessions')
+            .select('id')
+            .eq('athlete_id', athleteId)
+            .eq('scheduled_date', scheduledDate)
+            .eq('title', sessionTitle)
+            .is('program_assignment_id', null)
+            .maybeSingle()) as { data: { id: string } | null };
+          if (!existing) throw new Error('Could not write the lift modification.');
+          sessionId = existing.id;
+        } else if (sessionErr || !session) {
           throw new Error('Could not write the lift modification.');
+        } else {
+          sessionId = session.id;
         }
-        sessionId = session.id;
       } else if (coachNote) {
         // Existing dedup'd session — refresh its coach_note/status so a
         // re-conversion still surfaces the latest "why" to the player. Plain

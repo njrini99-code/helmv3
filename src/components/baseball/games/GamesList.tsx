@@ -29,6 +29,11 @@ interface GamesListProps {
   // states stay distinguishable instead of a failed load rendering as an
   // ordinary "No games yet" empty season.
   initialError?: string | null;
+  // Set when the season-record fetch (separate query from games) failed
+  // server-side. Rendered as its own small notice near the record line —
+  // NOT folded into `initialError`/the full-page "Couldn't load games"
+  // banner, since the games list itself may have loaded fine.
+  initialRecordError?: string | null;
 }
 
 type TabFilter = 'all' | 'game' | 'scrimmage';
@@ -46,6 +51,7 @@ export function GamesList({
   initialGames,
   initialRecord,
   initialError,
+  initialRecordError,
 }: GamesListProps) {
   const { showToast } = useToast();
   const [games, setGames] = useState<BaseballGame[]>(initialGames ?? []);
@@ -61,6 +67,11 @@ export function GamesList({
   // dedicated selector — never over the possibly limit-truncated display list —
   // so this header matches the Games & Scrimmages page exactly on every surface.
   const [seasonRecord, setSeasonRecord] = useState<TeamSeasonRecord | null>(initialRecord ?? null);
+  // Distinct from `error` (which drives the full-page "Couldn't load games"
+  // state) — a failed record fetch should surface even when games loaded fine.
+  const [recordError, setRecordError] = useState<string | null>(
+    initialRecord !== undefined ? (initialRecordError ?? null) : null,
+  );
 
   // Sync client state whenever the parent Server Component delivers a fresh
   // initialGames/initialRecord pair — this is what actually surfaces a
@@ -78,8 +89,9 @@ export function GamesList({
   useEffect(() => {
     if (initialRecord !== undefined) {
       setSeasonRecord(initialRecord);
+      setRecordError(initialRecordError ?? null);
     }
-  }, [initialRecord]);
+  }, [initialRecord, initialRecordError]);
 
   const fetchGames = useCallback(
     async (isRefresh = false) => {
@@ -98,7 +110,13 @@ export function GamesList({
       } else {
         setError(result.error ?? 'Failed to load games');
       }
-      setSeasonRecord(recordResult.success ? (recordResult.data ?? null) : null);
+      if (recordResult.success) {
+        setSeasonRecord(recordResult.data ?? null);
+        setRecordError(null);
+      } else {
+        setSeasonRecord(null);
+        setRecordError(recordResult.error ?? 'Failed to load season record');
+      }
       setLoading(false);
       setRefreshing(false);
     },
@@ -143,6 +161,11 @@ export function GamesList({
             <p className={`text-sm text-warm-500 ${title ? 'mt-0.5' : ''}`}>
               {seasonRecord.played} played · {seasonRecord.wins}W-{seasonRecord.losses}L
               {seasonRecord.ties > 0 ? `-${seasonRecord.ties}T` : ''}
+            </p>
+          )}
+          {recordError && !seasonRecord && (
+            <p className={`text-sm text-red-600/90 ${title ? 'mt-0.5' : ''}`}>
+              Season record unavailable
             </p>
           )}
         </div>

@@ -217,10 +217,7 @@ export const updateProgram = withLiftingAction(
       .eq('organization_id', ctx.orgId);
 
     if (error) throw error;
-    revalidatePath(`${LAB_PATH}/${programId}`);
-    revalidatePath(LAB_PATH);
-    revalidatePath(`${BASEBALL_PROGRAMS_PATH}/${programId}`);
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
+    revalidateProgramPaths(programId);
     return { success: true, id: programId };
   },
 );
@@ -606,9 +603,8 @@ export const publishProgram = withLiftingAction(
         .eq('id', programId);
     }
 
-    revalidatePath(LAB_PATH);
+    revalidateProgramPaths(programId);
     revalidatePath('/lifting/dashboard/sessions');
-    revalidatePath(BASEBALL_PROGRAMS_PATH);
     revalidatePath(BASEBALL_LIVE_PATH);
     revalidatePath(BASEBALL_LIFT_PATH);
     return { success: true, count: sessionCount };

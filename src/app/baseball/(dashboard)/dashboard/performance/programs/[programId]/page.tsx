@@ -210,22 +210,35 @@ async function getProgramTree(
 async function getAssignContext(organizationId: string, teamId: string): Promise<AssignContext> {
   const supabase = await createClient();
 
-  const [{ data: athletes }, { data: groups }] = await Promise.all([
+  const [{ data: athletes, error: athletesError }, { data: groups, error: groupsError }] = await Promise.all([
     fromUntyped(supabase, 'helm_lifting_athletes')
       .select('id, first_name, last_name, position, sport')
       .eq('organization_id', organizationId)
       .eq('team_id', teamId)
       .eq('is_active', true)
       .order('last_name', { ascending: true })
-      .limit(500) as Promise<{ data: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>> | null }>,
+      .limit(500) as Promise<{ data: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>> | null; error: unknown }>,
     fromUntyped(supabase, 'helm_lifting_groups')
       .select('id, name, group_type')
       .eq('organization_id', organizationId)
       .eq('team_id', teamId)
       .eq('is_active', true)
       .order('name', { ascending: true })
-      .limit(100) as Promise<{ data: Array<Pick<HelmLiftingGroupRow, 'id' | 'name' | 'group_type'>> | null }>,
+      .limit(100) as Promise<{ data: Array<Pick<HelmLiftingGroupRow, 'id' | 'name' | 'group_type'>> | null; error: unknown }>,
   ]);
+
+  // getProgramTree (above) surfaces DB/RLS failures honestly; this read must
+  // not silently degrade to an empty assign roster with no signal — that
+  // would render as "no athletes/groups exist" and block the coach from
+  // assigning the program with nothing to explain why.
+  if (athletesError || groupsError) {
+    await logServerError(
+      `[performance/programs] getAssignContext query failed: ${
+        (athletesError as Error)?.message ?? (groupsError as Error)?.message ?? 'unknown'
+      }`,
+      { action: 'baseball.programEditor.getAssignContext', metadata: { organizationId, teamId } },
+    );
+  }
 
   return { athletes: athletes ?? [], groups: groups ?? [] };
 }

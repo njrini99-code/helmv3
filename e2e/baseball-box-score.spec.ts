@@ -392,27 +392,15 @@ test.describe('Coach - Games List and Box Score View', () => {
 
 // ---------------------------------------------------------------------------
 // Group 5: Coach - Season stats summary page
+//
+// REMOVED (not repointed): /baseball/dashboard/stats/season is a 404 — the
+// season stats flow now lives at /baseball/dashboard/stats-center
+// (/baseball/dashboard/stats redirects there), which renders a card/"plate"
+// magazine layout (StatSpread/PlayerRowPlate), not a heading matching
+// `/— Stats$/` or a `<table>` element. The old assertions here don't
+// translate 1:1 onto that surface, so this block is removed rather than
+// repointed at selectors that were never verified against the real page.
 // ---------------------------------------------------------------------------
-
-test.describe('Coach - Season Stats Dashboard', () => {
-  test.skip(!SEEDED, 'no seeded baseball team fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
-
-  test.beforeEach(async ({ page }) => {
-    await loginCoachOrSkip(page);
-    await page.goto('/baseball/dashboard/stats/season');
-    await waitForPageLoad(page);
-  });
-
-  test('should display the season stats page with the team name', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /— Stats$/ })).toBeVisible();
-  });
-
-  test('should show the seeded batting stats in the season stats table', async ({ page }) => {
-    await expect(page.locator('table').first()).toBeVisible({ timeout: 8000 });
-    // Bench players from the seeded completed game must show up with non-zero AB.
-    await expect(page.getByText('Bennett').or(page.getByText('Ortiz'))).toBeVisible();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // Group 6: Player views their personal stats

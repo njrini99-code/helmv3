@@ -98,7 +98,10 @@ export default async function BaseballCalendarPage() {
         .gte('start_time', eventsWindowStart.toISOString())
         .lte('start_time', eventsWindowEnd.toISOString())
         .order('start_time', { ascending: true })
-        .limit(500),
+        // Matches PostgREST's own max-rows=1000 cap — 500 was leaving rows on
+        // the table for teams with >500 events in this 455-day window even
+        // though the server would happily return up to 1000.
+        .limit(1000),
       supabase
         .from('baseball_team_members')
         .select('player_id, baseball_players!inner(id, first_name, last_name, avatar_url)')

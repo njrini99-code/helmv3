@@ -35,6 +35,7 @@ import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
 import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { ProgramListClient } from '@/components/lifting/programs/ProgramListClient';
@@ -59,23 +60,37 @@ async function getPrograms(organizationId: string, teamId: string): Promise<Prog
 
   const ids = programs.map((p) => p.id);
 
-  const { data: weeks } = (await fromUntyped(supabase, 'helm_lifting_weeks')
-    .select('id, program_id')
-    .in('program_id', ids)) as { data: Array<{ id: string; program_id: string }> | null };
+  // Paginated (not a single unpaginated .in()) — a program list page can
+  // easily have >1000 total week/day rows across all its programs, and an
+  // unpaginated read would silently undercount week_count/day_count past the
+  // PostgREST row cap.
+  const { data: weeksData } = await fetchAllRowsResult<{ id: string; program_id: string }>(
+    (from, to) =>
+      fromUntyped(supabase, 'helm_lifting_weeks')
+        .select('id, program_id')
+        .in('program_id', ids)
+        .order('id', { ascending: true })
+        .range(from, to),
+  );
+  const weeks = weeksData ?? [];
 
   const weekCountByProgram = new Map<string, number>();
   const programByWeek = new Map<string, string>();
-  for (const w of weeks ?? []) {
+  for (const w of weeks) {
     weekCountByProgram.set(w.program_id, (weekCountByProgram.get(w.program_id) ?? 0) + 1);
     programByWeek.set(w.id, w.program_id);
   }
 
   const dayCountByProgram = new Map<string, number>();
-  if ((weeks ?? []).length > 0) {
-    const { data: days } = (await fromUntyped(supabase, 'helm_lifting_days')
-      .select('week_id')
-      .in('week_id', (weeks ?? []).map((w) => w.id))) as { data: Array<{ week_id: string }> | null };
-    for (const d of days ?? []) {
+  if (weeks.length > 0) {
+    const { data: daysData } = await fetchAllRowsResult<{ week_id: string }>((from, to) =>
+      fromUntyped(supabase, 'helm_lifting_days')
+        .select('week_id')
+        .in('week_id', weeks.map((w) => w.id))
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    for (const d of daysData ?? []) {
       const progId = programByWeek.get(d.week_id);
       if (progId) dayCountByProgram.set(progId, (dayCountByProgram.get(progId) ?? 0) + 1);
     }

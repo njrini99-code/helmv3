@@ -86,7 +86,6 @@ export function buildBreadcrumbs(
   // ("Settings" for both /settings and /settings/roles). Only trust it when
   // the pathname IS that entry's own href; otherwise the URL's own trailing
   // segment names the actual current page more specifically than its hub.
-  const isHubLandingPage = best !== null && pathname === best.href;
-  const label = overrideLabel ?? (isHubLandingPage ? best!.label : toTitle(lastSegment));
+  const label = overrideLabel ?? (best && pathname === best.href ? best.label : toTitle(lastSegment));
   return [{ label: 'Dashboard', href: homeHref }, { label }];
 }
