@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   isCurrentSessionBaseballDemo: vi.fn(async () => false),
   logServerException: vi.fn(async (..._args: unknown[]) => undefined),
   logServerError: vi.fn(async (..._args: unknown[]) => undefined),
+  logServerEvent: vi.fn(async (..._args: unknown[]) => undefined),
   scope: {
     setTag: vi.fn(),
     setUser: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock('@/lib/demo/baseball-config.server', () => ({
 vi.mock('@/lib/server-error-logger', () => ({
   logServerException: mocks.logServerException,
   logServerError: mocks.logServerError,
+  logServerEvent: mocks.logServerEvent,
 }));
 
 vi.mock('@sentry/nextjs', () => ({
@@ -50,6 +52,10 @@ import {
   BaseballNoActiveTeamError,
   withBaseballAction,
 } from '../with-baseball-action';
+// Intentionally NOT mocked (see the "RLS-denial capture" describe block
+// below) — the real isRlsDenial/maybeCaptureRlsDenial logic is exercised
+// against the (real) `logServerEvent` mock above.
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -180,5 +186,84 @@ describe('withBaseballAction observability', () => {
       source: 'server_action',
       handled: true,
     });
+  });
+});
+
+// =============================================================================
+// Wrapper-level RLS-denial capture (with-baseball-action.ts:506-517).
+//
+// This branch was previously untested here: the module mock above didn't
+// even export `logServerEvent` (the function `maybeCaptureRlsDenial` calls),
+// so any RLS-shaped throw silently no-op'd inside `maybeCaptureRlsDenial`'s
+// try/catch instead of asserting anything. `@/lib/admin/rls-denial` is
+// intentionally left UNMOCKED below so the real `isRlsDenial` /
+// `maybeCaptureRlsDenial` logic runs against our (now real) `logServerEvent`
+// mock.
+// =============================================================================
+
+describe('withBaseballAction RLS-denial capture', () => {
+  it('fires the generic fallback (table=featureArea, verb=rpc) when the action body throws an RLS-shaped error directly', async () => {
+    const action = withBaseballAction(
+      'recomputeDynamicGroup',
+      { featureArea: 'baseball-lifting', feature: 'baseball_lifting' },
+      async () => {
+        throw { code: '42501', message: 'new row violates row-level security policy' };
+      },
+    );
+
+    await expect(action()).rejects.toBeInstanceOf(BaseballActionError);
+
+    const rlsCalls = mocks.logServerEvent.mock.calls.filter(
+      (call) => typeof call[0] === 'string' && call[0].startsWith('RLS denial:'),
+    );
+    expect(rlsCalls).toHaveLength(1);
+    expect(rlsCalls[0]?.[0]).toBe('RLS denial: rpc on baseball-lifting');
+  });
+
+  it('does not double-fire when the action body already captured a precise denial and rethrows a generic BaseballActionError', async () => {
+    // Mirrors the fixed logSetResult pattern (lifting-v11.ts) and
+    // watchlist.ts's addToWatchlist: capture a precise denial at the swallow
+    // site, then rethrow a *generic* BaseballActionError (not the raw error)
+    // so the wrapper's own fallback below doesn't see an RLS-shaped error and
+    // fire a second, bogus (table=featureArea) denial on top of it.
+    const action = withBaseballAction(
+      'logSetResult',
+      { featureArea: 'baseball-lifting', feature: 'baseball_lifting' },
+      async () => {
+        maybeCaptureRlsDenial(
+          { code: '42501', message: 'new row violates row-level security policy' },
+          {
+            table: 'helm_lifting_set_results',
+            verb: 'insert',
+            action: 'logSetResult',
+            sport: 'baseball',
+          },
+        );
+        throw new BaseballActionError();
+      },
+    );
+
+    await expect(action()).rejects.toBeInstanceOf(BaseballActionError);
+
+    const rlsCalls = mocks.logServerEvent.mock.calls.filter(
+      (call) => typeof call[0] === 'string' && call[0].startsWith('RLS denial:'),
+    );
+    expect(rlsCalls).toHaveLength(1);
+    expect(rlsCalls[0]?.[0]).toBe('RLS denial: insert on helm_lifting_set_results');
+    expect(rlsCalls.some((call) => call[0] === 'RLS denial: rpc on baseball-lifting')).toBe(false);
+  });
+
+  it('does not fire for a non-RLS error (no over-suppression / false positives)', async () => {
+    const action = withBaseballAction(
+      'someAction',
+      { featureArea: 'baseball-lifting', feature: 'baseball_lifting' },
+      async () => {
+        throw new Error('unexpected null pointer');
+      },
+    );
+
+    await expect(action()).rejects.toBeInstanceOf(BaseballActionError);
+    expect(mocks.logServerEvent).not.toHaveBeenCalled();
+    expect(mocks.logServerException).toHaveBeenCalledTimes(1);
   });
 });

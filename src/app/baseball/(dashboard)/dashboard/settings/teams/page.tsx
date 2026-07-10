@@ -14,6 +14,8 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { getTeamJoinSettings } from '@/app/baseball/actions/team-season-settings';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { TeamSettingsClient } from '@/components/baseball/settings/TeamSettingsClient';
 
 export const metadata = {
@@ -31,7 +33,16 @@ export default async function TeamSettingsPage() {
     redirect('/baseball/login?returnTo=/baseball/dashboard/settings/teams');
   }
 
-  const data = await getTeamJoinSettings();
+  // getTeamJoinSettings independently re-resolves auth (withBaseballAction).
+  // A session that expires in the narrow window between the check above and
+  // this call throws BaseballUnauthorizedError, which must redirect to login
+  // rather than raw-throw to error.tsx/Sentry. Any OTHER failure keeps
+  // propagating.
+  const data = await redirectOnUnauthorized(
+    () => getTeamJoinSettings(),
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/settings/teams',
+  );
 
   return <TeamSettingsClient data={data} />;
 }

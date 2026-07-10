@@ -47,7 +47,21 @@ import 'server-only';
 
 type TriggerPlayerInsightsFn = (
   playerId: string,
-) => Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }>;
+) => Promise<{
+  success: boolean;
+  insights_created?: number;
+  error?: string;
+  partial?: boolean;
+  /**
+   * Stable, non-message-derived classification mirrored from
+   * triggerPlayerInsightsAfterRoundImpl (src/app/golf/actions/insights.ts) —
+   * BOTH consumers of this result (the withAdminObserved-wrapped path via
+   * observeActionSoftFailure, AND postRoundTrigger below in
+   * post-round-trigger.ts) must classify severity off this same field so
+   * they don't disagree on the same signal.
+   */
+  code?: 'engine_no_recent_rounds' | 'engine_session_expired';
+}>;
 
 let impl: TriggerPlayerInsightsFn | null = null;
 
@@ -69,7 +83,13 @@ export function __registerTriggerPlayerInsightsAfterRound(fn: TriggerPlayerInsig
  */
 export async function triggerPlayerInsightsAfterRound(
   playerId: string,
-): Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }> {
+): Promise<{
+  success: boolean;
+  insights_created?: number;
+  error?: string;
+  partial?: boolean;
+  code?: 'engine_no_recent_rounds' | 'engine_session_expired';
+}> {
   if (!impl) {
     // Load insights.ts so its registration side effect runs. Cheap after the
     // first call — subsequent imports hit the module cache.

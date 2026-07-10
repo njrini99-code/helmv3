@@ -18,6 +18,7 @@ import { redirect } from 'next/navigation';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { getScoutPacketRoster } from '@/app/baseball/actions/scout-packet';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
 import { ScoutPacketsFairway } from '@/components/baseball/passport/ScoutPacketsFairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -35,7 +36,23 @@ export default async function ScoutPacketsHubPage() {
     redirect('/baseball/dashboard/command-center');
   }
 
-  const roster = await getScoutPacketRoster();
+  // getScoutPacketRoster independently re-resolves auth (withBaseballAction),
+  // so a session that expires in the narrow window between the checks above
+  // and this call throws BaseballUnauthorizedError here. Left uncaught, that
+  // raw-throws through this Server Component's render straight to error.tsx
+  // and the error tracker (Sentry/Vercel) instead of the honest "please sign
+  // in again" redirect — the same class of bug fixed on the baseball
+  // announcements page. Redirect on that specific case; any other thrown
+  // error (a real failure for a signed-in coach) keeps propagating to error.tsx.
+  let roster: Awaited<ReturnType<typeof getScoutPacketRoster>>;
+  try {
+    roster = await getScoutPacketRoster();
+  } catch (error) {
+    if (error instanceof BaseballUnauthorizedError) {
+      redirect('/baseball/login?returnTo=/baseball/dashboard/scout-packets');
+    }
+    throw error;
+  }
 
   return (
     <div className={fairwayScope('min-h-dvh bg-[var(--paper-canvas)]')}>

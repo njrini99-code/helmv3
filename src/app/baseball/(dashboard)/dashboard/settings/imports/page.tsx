@@ -22,6 +22,8 @@ import {
   getProgramSettings,
   listImportSources,
 } from '@/app/baseball/actions/program-settings';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { ImportSourcesClient } from '@/components/baseball/settings/ImportSourcesClient';
 
 export const metadata = {
@@ -41,8 +43,20 @@ export default async function ImportSourcesPage() {
 
   // Viewer caps drive edit affordances; the list is staff-only (the action
   // re-checks can_manage_imports server-side regardless of what the UI shows).
-  const settings = await getProgramSettings();
-  const sources = await listImportSources();
+  // Both getters independently re-resolve auth (withBaseballAction). A
+  // session that expires in the narrow window between the check above and
+  // these calls throws BaseballUnauthorizedError, which must redirect to
+  // login rather than raw-throw to error.tsx/Sentry. Any OTHER failure keeps
+  // propagating.
+  const { settings, sources } = await redirectOnUnauthorized(
+    async () => {
+      const settings = await getProgramSettings();
+      const sources = await listImportSources();
+      return { settings, sources };
+    },
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/settings/imports',
+  );
 
   return (
     <ImportSourcesClient

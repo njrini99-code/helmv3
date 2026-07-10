@@ -14,6 +14,7 @@ import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -74,6 +75,7 @@ async function isBaseballMessageNotificationEnabled(conversationId: string): Pro
  * @param sport - The sport context (for revalidation paths)
  * @param createNotifications - Whether to create notifications for other participants (default: true)
  */
+// nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidatePath caused a full reload on every send (see note above the return)
 export async function sendMessage({
   conversationId,
   content,
@@ -148,6 +150,14 @@ export async function sendMessage({
           hint: messageError.hint,
         },
       });
+      maybeCaptureRlsDenial(messageError, {
+        table: messagesTable,
+        verb: 'insert',
+        action: 'messages.sendMessage',
+        feature: sport === 'golf' ? 'messaging' : 'baseball_messages',
+        sport,
+        userId: user.id,
+      });
       throw new Error(`Failed to send message: ${messageError.message}`);
     }
 
@@ -205,7 +215,7 @@ export async function sendMessage({
 
     // NOTE: Removed revalidatePath calls - messages page uses real-time subscriptions
     // Revalidation was causing unnecessary page reloads on every message send
-    // SEMGREP-ALLOW: realtime-subscribed messages UI; revalidate would cause reload loop
+    // (the nosemgrep suppression for this lives on the function declaration)
 
     return { success: true };
   } catch (err) {
@@ -305,6 +315,14 @@ export async function createConversation({
         insertData,
       },
     });
+    maybeCaptureRlsDenial(convError, {
+      table: conversationsTable,
+      verb: 'insert',
+      action: 'messages.createConversation',
+      feature: sport === 'golf' ? 'messaging' : 'baseball_messages',
+      sport,
+      userId: user.id,
+    });
     throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
   }
 
@@ -331,6 +349,14 @@ export async function createConversation({
         conversationId,
         userId: user.id,
       },
+    });
+    maybeCaptureRlsDenial(participantsError, {
+      table: participantsTable,
+      verb: 'insert',
+      action: 'messages.createConversation',
+      feature: sport === 'golf' ? 'messaging' : 'baseball_messages',
+      sport,
+      userId: user.id,
     });
     await supabase.from(conversationsTable as any).delete().eq('id', conversationId);
     throw new Error(`Failed to add participants: ${participantsError.message}`);
@@ -375,6 +401,14 @@ export async function markMessagesAsRead({
 
   if (participantError) {
     await logServerError(`[Messages] Failed to update last_read_at: ${participantError instanceof Error ? participantError.message : String(participantError)}`, { action: 'messages.markMessagesAsRead' });
+    maybeCaptureRlsDenial(participantError, {
+      table: participantsTable,
+      verb: 'update',
+      action: 'messages.markMessagesAsRead',
+      feature: sport === 'golf' ? 'messaging' : 'baseball_messages',
+      sport,
+      userId: user.id,
+    });
     throw new Error('Failed to mark messages as read');
   }
 
@@ -393,6 +427,14 @@ export async function markMessagesAsRead({
 
   if (messagesError) {
     await logServerError(`[Messages] Failed to mark messages as read: ${messagesError instanceof Error ? messagesError.message : String(messagesError)}`, { action: 'messages.markMessagesAsRead' });
+    maybeCaptureRlsDenial(messagesError, {
+      table: messagesTable,
+      verb: 'update',
+      action: 'messages.markMessagesAsRead',
+      feature: sport === 'golf' ? 'messaging' : 'baseball_messages',
+      sport,
+      userId: user.id,
+    });
   }
 
   revalidatePath(`/${sport}/dashboard/messages/${conversationId}`);

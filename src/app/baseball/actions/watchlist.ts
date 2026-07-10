@@ -10,6 +10,7 @@ import { logSecurityEvent } from '@/lib/validation/server-action-validator';
 import { notifyWatchlistAdd, notifyPipelineStageChange } from '@/lib/notifications';
 import { WatchlistSchemas } from '@/lib/validation/action-schemas';
 import { logServerError } from '@/lib/server-error-logger';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { assertCoachCanRecruitPlayer } from '@/lib/baseball/recruitability';
 import { BaseballCapabilityError } from '@/lib/baseball/capabilities';
 import {
@@ -134,6 +135,14 @@ const addToWatchlistAction = withBaseballAction(
       });
 
     if (error) {
+      maybeCaptureRlsDenial(error, {
+        table: 'baseball_watchlists',
+        verb: 'insert',
+        action: 'addToWatchlist',
+        feature: 'baseball_watchlist',
+        sport: 'baseball',
+        userId: ctx.user.id,
+      });
       throw new BaseballActionError();
     }
 

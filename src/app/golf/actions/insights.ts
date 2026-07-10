@@ -3733,7 +3733,21 @@ export async function dismissComposedInsight(
  */
 async function triggerPlayerInsightsAfterRoundImpl(
   playerId: string
-): Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }> {
+): Promise<{
+  success: boolean;
+  insights_created?: number;
+  error?: string;
+  partial?: boolean;
+  /**
+   * Stable, non-message-derived classification for the observability layer
+   * (observeActionSoftFailure / severityForSoftFailure in
+   * src/lib/admin/observe-action-result.ts). Set on the two `success: false`
+   * outcomes below that are routine, expected states — not incidents — so
+   * they're classified by this code instead of regex-matching the
+   * user-facing `error` string.
+   */
+  code?: 'engine_no_recent_rounds' | 'engine_session_expired';
+}> {
   const startTime = Date.now();
   // P0-04: track whether any mandatory generator failed so the caller
   // (postRoundTrigger) can mark the round PARTIAL rather than fully clean.
@@ -3833,7 +3847,16 @@ async function triggerPlayerInsightsAfterRoundImpl(
         philosophyGate,
       });
     } catch {
-      return { success: false, error: 'Player analysis failed (likely session expired in background context)' };
+      // Expected in fire-and-forget/cron contexts (roster-sweep, post-round
+      // trigger) — analyzePlayer()'s user-scoped client has no session to
+      // scope to once the originating request has finished. `code` lets the
+      // observability layer classify this without regex-matching the
+      // message (see EXPECTED_SOFT_FAILURE_CODES in observe-action-result.ts).
+      return {
+        success: false,
+        error: 'Player analysis failed (likely session expired in background context)',
+        code: 'engine_session_expired',
+      };
     }
 
     if (!analysis) {
@@ -3856,9 +3879,14 @@ async function triggerPlayerInsightsAfterRoundImpl(
       // real failure, but the caller (analyze-player API) treats it as 200
       // since there's no actual error to surface to ops. The dashboard
       // consumer uses optional chaining and degrades gracefully.
+      // `code: 'engine_no_recent_rounds'` marks this as an expected
+      // empty-state for observeActionSoftFailure (not a regex on this
+      // message) — the nightly roster-sweep cron hits this constantly for
+      // inactive players and it must stay out of the Errors tab / Sentry.
       return {
         success: false,
         error: 'No completed rounds in the last 90 days yet — insights will populate after the next round',
+        code: 'engine_no_recent_rounds',
       };
     }
 

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { isExpectedAuthNoise } from '@/lib/admin/data/triage';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 export type ActionSoftFailureContext = NonNullable<Parameters<typeof logServerError>[1]> & {
   action: string;
@@ -21,6 +21,37 @@ const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
   /^choose a valid/i,
   /^please (enter|select|provide)/i,
 ];
+
+/**
+ * Structural (code-based) counterpart to EXPECTED_SOFT_FAILURE_PATTERNS.
+ * Prefer giving an action's `{ success: false }` envelope a stable `code`
+ * over adding a new message regex above — codes survive copy edits to the
+ * user-facing string, and don't require this shared module to know every
+ * caller's exact wording. Same severity bucket as the message patterns
+ * ('warning', skipSentry): still a soft failure, just an expected one.
+ */
+const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
+  // Fire-and-forget / cron engine calls run without a user session by
+  // design (triggerPlayerInsightsAfterRound's analyzePlayer() call uses a
+  // user-scoped client that has nothing to scope to once the request that
+  // spawned the background work has completed). Same class as the
+  // "not authenticated" patterns above, just engine-side.
+  'engine_session_expired',
+]);
+
+/**
+ * Genuinely empty, nothing-failed outcomes — there is simply no data yet
+ * (e.g. a player with no completed rounds in the lookback window). Distinct
+ * from EXPECTED_SOFT_FAILURE_CODES: those are still benign soft *failures*;
+ * these were never a failure to begin with. Classified one tier quieter
+ * ('info', skipSentry) so they land in job telemetry without counting
+ * toward the Errors tab / Sentry — see admin/data/incident-feed.ts (default
+ * view excludes only 'info') and admin/data/overview.ts (KPI counts key off
+ * severity IN ('error','critical')).
+ */
+const EXPECTED_EMPTY_STATE_CODES: ReadonlySet<string> = new Set([
+  'engine_no_recent_rounds',
+]);
 
 export function extractActionSoftFailure(
   result: unknown,
@@ -58,13 +89,22 @@ export function extractActionSoftFailure(
   return null;
 }
 
-export function isExpectedSoftFailureMessage(message: string): boolean {
+export function isExpectedSoftFailureMessage(message: string, code?: string | null): boolean {
+  if (code && EXPECTED_SOFT_FAILURE_CODES.has(code)) return true;
   if (isExpectedAuthNoise(message)) return true;
   return EXPECTED_SOFT_FAILURE_PATTERNS.some((pattern) => pattern.test(message.trim()));
 }
 
-function severityForSoftFailure(message: string): 'warning' | 'error' {
-  return isExpectedSoftFailureMessage(message) ? 'warning' : 'error';
+/** True for a stable `code` marking a routine empty-state, not a failure. */
+export function isExpectedEmptyStateCode(code: string | null): boolean {
+  return code != null && EXPECTED_EMPTY_STATE_CODES.has(code);
+}
+
+type SoftFailureSeverity = 'info' | 'warning' | 'error';
+
+function severityForSoftFailure(message: string, code: string | null): SoftFailureSeverity {
+  if (isExpectedEmptyStateCode(code)) return 'info';
+  return isExpectedSoftFailureMessage(message, code) ? 'warning' : 'error';
 }
 
 /**
@@ -82,29 +122,35 @@ export function observeActionSoftFailure(
   if (!shouldEmit(throttleKey)) return;
 
   const collapsedCount = drainCollapsedCount(throttleKey);
-  const expected = isExpectedSoftFailureMessage(failure.message);
-  const severity = severityForSoftFailure(failure.message);
+  const severity = severityForSoftFailure(failure.message, failure.code);
+  // 'info' (expected empty-state) and 'warning' (expected soft failure) are
+  // both routine — never worth a Sentry capture. Only real 'error' outcomes
+  // get sent.
+  const skipSentry = severity !== 'error';
+  const logContext = {
+    ...context,
+    title: `[${context.action}] ${failure.message}`.slice(0, 500),
+    handled: true,
+    skipSentry,
+    errorCode: failure.code ?? undefined,
+    fingerprint: ['server_action_soft', context.feature ?? context.featureArea ?? 'unknown', context.action],
+    metadata: {
+      ...(context.metadata ?? {}),
+      soft_failure: true,
+      ...(collapsedCount > 0 ? { collapsed_count: collapsedCount } : {}),
+    },
+  };
 
   try {
-    void Promise.resolve(
-      logServerError(
-        failure.message,
-        {
-          ...context,
-          title: `[${context.action}] ${failure.message}`.slice(0, 500),
-          handled: true,
-          skipSentry: expected,
-          errorCode: failure.code ?? undefined,
-          fingerprint: ['server_action_soft', context.feature ?? context.featureArea ?? 'unknown', context.action],
-          metadata: {
-            ...(context.metadata ?? {}),
-            soft_failure: true,
-            ...(collapsedCount > 0 ? { collapsed_count: collapsedCount } : {}),
-          },
-        },
-        severity,
-      ),
-    ).catch(() => {});
+    // logServerError's severity param intentionally excludes 'info' (that
+    // tier belongs to logServerEvent) — route empty-state outcomes there so
+    // they land in admin_events at 'info' without widening logServerError's
+    // contract for every other caller of this shared capture class.
+    const capture =
+      severity === 'info'
+        ? logServerEvent(failure.message, logContext, 'info')
+        : logServerError(failure.message, logContext, severity);
+    void Promise.resolve(capture).catch(() => {});
   } catch {
     // Fire-and-forget: observability must never change action results.
   }

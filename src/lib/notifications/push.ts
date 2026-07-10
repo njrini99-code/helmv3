@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
+import { logServerEvent } from '@/lib/server-error-logger';
 
 /**
  * Check if user wants push notifications for a specific type
@@ -167,34 +168,38 @@ export async function sendPushNotification(
 
     const payload = generatePushPayload(type, data);
 
-    // Send to each device token via Edge Function
+    // Send to each device token via the Edge Function — invoked through the
+    // admin client so the service-role auth travels inside the client instead
+    // of a raw key in a hand-built header (helmv3-service-role-outside-admin).
     for (const deviceToken of tokens) {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-apns-push`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({
-              deviceToken: deviceToken.token,
-              platform: deviceToken.platform,
-              title: payload.title,
-              body: payload.body,
-              data: payload.data,
-            }),
-          }
-        );
+        const { error: invokeError } = await supabase.functions.invoke('send-apns-push', {
+          body: {
+            deviceToken: deviceToken.token,
+            platform: deviceToken.platform,
+            title: payload.title,
+            body: payload.body,
+            data: payload.data,
+          },
+        });
 
-        if (!response.ok) {
-          const errorText = await response.text();
+        if (invokeError) {
           // send-apns-push returns { success: false, error, shouldDeactivateToken? }
           // on 410 (Unregistered) / 400 (BadDeviceToken) — Apple's own "this token
           // is dead" signal. Parse it so a permanently-dead token stops being
           // retried on every cron sweep instead of accumulating failed_count
-          // forever with zero corrective action.
+          // forever with zero corrective action. On a non-2xx the error's
+          // `context` is the raw Response (FunctionsHttpError); network-level
+          // failures have no readable body and fall back to the message.
+          let errorText = invokeError.message;
+          const errorContext = (invokeError as { context?: Response }).context;
+          if (errorContext && typeof errorContext.text === 'function') {
+            try {
+              errorText = await errorContext.text();
+            } catch {
+              /* body unreadable — keep the generic error message */
+            }
+          }
           let shouldDeactivateToken = false;
           try {
             const parsed = JSON.parse(errorText) as { shouldDeactivateToken?: boolean };
@@ -212,13 +217,31 @@ export async function sendPushNotification(
             .single() as { data: { failed_count: number } | null };
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
+          const { error: deactivateError } = await (supabase as any)
             .from('device_tokens')
             .update({
               failed_count: (currentToken?.failed_count || 0) + 1,
               ...(shouldDeactivateToken ? { active: false } : {}),
             })
-            .eq('token', deviceToken.token);
+            .eq('token', deviceToken.token) as { error: { message: string } | null };
+
+          // Prune confirmation: the row's `active: true` gate on the token
+          // read above means a deactivated token is never selected again, so
+          // this fires exactly once per dead token. Logged at info (not
+          // error/warning) so it surfaces as a routine Sentry message / admin
+          // feed entry, not an Error issue competing with real incidents.
+          if (shouldDeactivateToken && !deactivateError) {
+            await logServerEvent(
+              `device_tokens pruned: dead APNs token deactivated (user=${userId}, platform=${deviceToken.platform})`,
+              {
+                action: 'push.sendPushNotification.pruneDeadToken',
+                featureArea: 'notifications',
+                userId,
+                extra: { tokenPrefix: deviceToken.token.slice(0, 8), platform: deviceToken.platform },
+              },
+              'info',
+            );
+          }
         } else {
           // Update last_push_at
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
