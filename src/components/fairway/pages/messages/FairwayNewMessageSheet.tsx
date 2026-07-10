@@ -28,6 +28,7 @@ import { Check, Users, Search } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input } from '@/components/fairway/forms/Input';
 import { Button } from '@/components/fairway/controls/button';
@@ -250,13 +251,23 @@ export function FairwayNewMessageSheet({
 
   const noun = currentUserRole === 'coach' ? 'player' : 'team member';
 
+  // Doctrine rule 4: every input/create flow under `md` is a bottom sheet —
+  // never the desktop "docked" side="right" panel (which was rendering
+  // centered/clipped on phone: the SIDE_CLASS right-panel math is tuned for
+  // wide desktop viewports and collapses badly on a ~390px phone width).
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   return (
     <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
-      side="right"
+      side={isDesktop ? 'right' : 'bottom'}
+      // Search auto-focuses on open (below), so the keyboard shows
+      // immediately — open straight to full height instead of the 50% peek
+      // detent so the search field + results stay usable with the keyboard up.
+      peek={false}
       title="New message"
       description={
         currentUserRole === 'coach'

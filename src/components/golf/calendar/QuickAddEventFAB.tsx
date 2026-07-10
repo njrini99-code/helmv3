@@ -24,7 +24,7 @@ import {
   ClipboardList,
   Plane,
 } from 'lucide-react';
-import { useSafeAreaInsets, useHapticFeedback } from '@/hooks/use-mobile-detection';
+import { useHapticFeedback } from '@/hooks/use-mobile-detection';
 import { Button } from '@/components/ui/button';
 
 type QuickEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
@@ -89,7 +89,6 @@ export function QuickAddEventFAB({
   const [isExpanded, setIsExpanded] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { bottom: safeAreaBottom } = useSafeAreaInsets();
   const { triggerHaptic } = useHapticFeedback();
 
   const allActions = [...QUICK_ACTIONS, { type: 'other' as QuickEventType, label: 'Other Event', icon: Calendar, color: 'text-warm-700', bgColor: 'bg-warm-100' }];
@@ -172,15 +171,18 @@ export function QuickAddEventFAB({
         </Button>
       )}
 
-      {/* FAB Container */}
+      {/* FAB Container. Bottom offset rides --golf-mobile-bottom-nav-offset
+          (56px bar + safe-area below md, 0 at md+) so the FAB always CLEARS
+          FairwayBottomNav — a raw safe-area calc here put it on top of the
+          bar's More tab on the baseball calendar (2026-07-10 screenshot).
+          +2rem preserves the previous ~32px desktop resting offset. z-50
+          stays: the closed FAB no longer overlaps the bar, and the expanded
+          menu's backdrop (z-40) must still cover all chrome like any modal. */}
       <div
         className={cn(
-          'fixed right-4 z-50',
+          'fixed right-4 z-50 bottom-[calc(var(--golf-mobile-bottom-nav-offset,0px)+2rem)]',
           className
         )}
-        style={{
-          bottom: Math.max(safeAreaBottom, 16) + 16,
-        }}
       >
         {/* Quick actions menu */}
         <div

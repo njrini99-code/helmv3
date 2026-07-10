@@ -27,6 +27,7 @@ import * as React from 'react';
 import { Check, Users, Search, Mail } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input } from '@/components/fairway/forms/Input';
 import { FormField } from '@/components/fairway/forms/FormField';
@@ -188,13 +189,22 @@ export function FairwayTeamBroadcastSheet({
   const allSelected =
     selectedPlayerIds.size === filteredPlayers.length && filteredPlayers.length > 0;
 
+  // Doctrine rule 4: input/create flows are a bottom sheet under `md` — the
+  // desktop-only docked side="right" panel is what was rendering
+  // centered/clipped on phone (same defect as the sibling FairwayNewMessageSheet).
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   return (
     <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
-      side="right"
+      side={isDesktop ? 'right' : 'bottom'}
+      // Recipients step auto-focuses the search field — open to full height
+      // immediately rather than the 50% peek detent so it stays usable once
+      // the keyboard is up.
+      peek={false}
       title={step === 'recipients' ? 'New team message' : 'Group details'}
       description={
         step === 'recipients'

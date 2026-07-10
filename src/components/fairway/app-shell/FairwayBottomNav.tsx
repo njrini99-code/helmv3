@@ -103,11 +103,23 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
       className={cn(
         // Mobile-only; the desktop rail owns navigation on >=md.
         'fixed inset-x-0 bottom-0 z-[var(--fw-z-nav)] md:hidden',
-        // Near-opaque matte chrome on the canvas; a hairline top border
-        // separates it from the scrolling content. No backdrop-blur (cheap
-        // chrome) — a `fixed` bar this size sits over moving content on
-        // every scroll frame, so it stays a flat, cheap-to-composite matte.
-        'border-t border-border-subtle bg-surface/95',
+        // FULLY opaque matte chrome on the canvas (fab-vs-nav fix, 2026-07-10):
+        // was `bg-surface/95` — a `/95` alpha modifier is NOT opaque, it's 95%,
+        // and Tailwind resolves that via `color-mix()` against whatever sits
+        // behind this `fixed` bar. On routes with a saturated instrument chart
+        // in the last scroll position under the bar (e.g. the Ribbon area
+        // chart on CoachHelm Brief), the 5% show-through read as the bar being
+        // "transparent" — the exact bug this fixes. `--fw-color-surface`'s own
+        // header comment already declares surfaces "OPAQUE at rest — not
+        // translucent" (design-tokens.css), and the sibling FairwayHubSubNav
+        // and FairwayTopBar (<md) chrome already made this same opaque-at-rest
+        // call for the identical reason (see FairwayHubSubNav.tsx's own
+        // comment) — this bar was the one sibling that hadn't been fixed yet.
+        // A hairline top border separates it from the scrolling content. No
+        // backdrop-blur (cheap chrome) — a `fixed` bar this size sits over
+        // moving content on every scroll frame, so it stays a flat,
+        // cheap-to-composite matte.
+        'border-t border-border-subtle bg-surface',
         // Clear the iOS home indicator.
         'pb-[env(safe-area-inset-bottom,0px)]',
         className,

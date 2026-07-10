@@ -64,7 +64,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           "bg-surface-sunken border border-border-subtle",
           "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
           "hover:border-border-strong",
-          "focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-1 focus-within:ring-offset-canvas",
+          // Solid accent-600 ring — matches fieldControlBase's AA-fixed recipe
+          // (the old accent-500/70 composited to ~2:1 over cream and failed the
+          // WCAG 2.2 3:1 focus-indicator floor; keep the two rings in sync).
+          "focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-600 focus-within:ring-offset-1 focus-within:ring-offset-canvas",
           "has-[[data-invalid]]:border-fw-danger/60 has-[[data-invalid]]:focus-within:ring-fw-danger/40",
           "has-[:disabled]:opacity-50 has-[:disabled]:hover:border-border-subtle",
           sizeClasses[size],
@@ -84,8 +87,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           data-slot="input"
           className={cn(
-            "min-w-0 flex-1 bg-transparent font-fw-sans text-text-primary outline-none",
+            "min-w-0 flex-1 bg-transparent font-fw-sans text-text-primary",
             "placeholder:text-text-tertiary",
+            // The WRAPPER above is the single source of truth for the focus
+            // ring (focus-within). This inner control must categorically
+            // opt out of its own ring/outline — otherwise a legacy global
+            // `input:focus-visible` rule (src/app/globals.css, pre-dates the
+            // Fairway design system) paints a second ring directly on the
+            // bare <input>, nested inside the wrapper's ring (the reported
+            // "double focus ring" — green wrapper ring + stray global ring).
+            "outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
             // match the wrapper's vertical rhythm
             size === "sm" ? "py-1.5 text-body-sm" : size === "lg" ? "py-2.5 text-body-lg" : "py-2 text-body",
           )}

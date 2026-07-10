@@ -17,6 +17,7 @@
 import * as React from 'react';
 import { Trash2 } from 'lucide-react';
 
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/fairway/controls/button';
 import { FilterPill } from '@/components/fairway/controls/filter-pill';
@@ -144,13 +145,18 @@ export function FairwayRecruitFormSheet({
 
   const canSave = Boolean(form.first_name?.trim()) && !saving;
 
+  // Doctrine rule 4: create/edit flows are a bottom sheet under `md` — the
+  // desktop-only docked side="right" panel is what was rendering
+  // centered/clipped on phone (same defect as FairwayNewMessageSheet).
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   return (
     <Sheet
       open={open}
       onOpenChange={(next) => {
         if (!next && !saving) onClose();
       }}
-      side="right"
+      side={isDesktop ? 'right' : 'bottom'}
       title={isEditing ? 'Edit prospect' : 'Add to Recruiting HQ'}
       description={
         isEditing ? 'Update this prospect’s record.' : 'Add a high-school golfer you’re tracking.'

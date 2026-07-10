@@ -14,6 +14,19 @@
  *
  * Persistence is server-side — this component only stores the active
  * conversation_id + the message stream.
+ *
+ * fab-vs-nav (2026-07-10): the launcher is desktop-only (`hidden md:flex`).
+ * Below `md` it used to float at `bottom-6 right-6` — the SAME bottom-right
+ * corner as FairwayBottomNav's 5th ("More") column, and at `z-40` (above the
+ * bar's `z-[var(--fw-z-nav)]`=20), so it sat directly on top of the tab,
+ * occluding it. Rather than re-offset it to clear the bar, it's removed on
+ * phone: "Ask" already has a one-tap nav destination there (bottom nav →
+ * CoachHelm tab → CoachHelmSubNav's own "Ask" tab, nav-registry.ts), and on
+ * CoachHelm cluster routes (e.g. the Brief) "Ask" is already a visible tab in
+ * that page's own sub-nav strip — a second, redundant floating entry point
+ * competing with the SAME bar's chrome fails Doctrine Rule 7 (no desktop
+ * chrome on phones) as much as it fails the FAB-collision rule. Desktop keeps
+ * the launcher unchanged (no bottom nav there to collide with).
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -98,7 +111,11 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
             transition={badgeTransition}
             whileHover={prefersReducedMotion ? undefined : liftHover}
             whileTap={prefersReducedMotion ? undefined : tapPress}
-            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-40 h-14 w-14 rounded-full bg-primary-600 text-white shadow-[0_10px_24px_-12px_rgba(22,163,74,0.55)] hover:bg-primary-700 flex items-center justify-center"
+            // Desktop-only (see file header "fab-vs-nav"): below `md` this
+            // collided with FairwayBottomNav's More tab in the same corner.
+            // "Ask" already has a bottom-nav destination on phone, so the
+            // launcher is hidden there rather than re-offset to clear the bar.
+            className="hidden md:flex fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-primary-600 text-white shadow-[0_10px_24px_-12px_rgba(22,163,74,0.55)] hover:bg-primary-700 items-center justify-center"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path

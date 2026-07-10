@@ -96,19 +96,33 @@
 
   /* Shared Golf mobile shell sizing */
   --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
-  /* Bottom nav was removed May 2026 — single hamburger lives in the page
-     header now. The var is kept (instead of deleted) so every existing
-     `pb-[var(--golf-mobile-bottom-nav-offset)]` / `100dvh - var(...)` site
-     keeps compiling without churn; it now resolves to the iOS home-indicator
-     safe area only, so nothing reserves dead pixels for a bar that no
-     longer exists. */
-  --golf-mobile-bottom-nav-offset: env(safe-area-inset-bottom, 0px);
+  /* REINTRODUCED (P413/M1, docs/MOBILE_DOCTRINE.md Rule 10, 2026-07-10):
+     the comment this replaces said the bottom nav was retired May 2026 and
+     that this var resolved to the safe-area only "so nothing reserves dead
+     pixels for a bar that no longer exists" — but FairwayBottomNav.tsx now
+     ships a persistent 56px mobile tab bar again, and that stale value was
+     silently under-reserving space for it, so every consumer (fab-vs-nav
+     sweep: KeyboardShortcutHint.tsx, InsightBulkActions.tsx, the round
+     review page's scroll padding) sat ON TOP OF / behind the bar instead of
+     clearing it. Height = FairwayBottomNav's `min-h-[56px]` tab column plus
+     the safe-area padding the bar applies to itself. */
+  --golf-mobile-bottom-nav-offset: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Zeroes at `md` (768px) — the SAME breakpoint FairwayBottomNav uses for
+   `md:hidden` (and AppShell's rail offset flips at `md:pl-[...]`), not `lg`
+   (1024px) below — those two chrome pieces change on different axes
+   (header content density vs. the bottom bar existing at all), so they no
+   longer share one media query. */
+@media (min-width: 768px) {
+  :root {
+    --golf-mobile-bottom-nav-offset: 0px;
+  }
 }
 
 @media (min-width: 1024px) {
   :root {
     --golf-mobile-header-offset: 0px;
-    --golf-mobile-bottom-nav-offset: 0px;
   }
 }
 
