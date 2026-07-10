@@ -4,7 +4,7 @@
 -- bb-performance-liftlab packet — Decision Room ledger writes (P0).
 --
 -- ROOT CAUSE: 20260624000310_baseball_decision_log.sql's
--- `CREATE TABLE IF NOT EXISTS public.baseball_decision_log` no-op'd in prod
+-- create-if-not-exists for baseball_decision_log no-op'd in prod
 -- because a table by that name already existed under an OLDER, unrelated
 -- "decision log" schema (meeting_item_id/signal_id/rationale/decided_at/
 -- participants/outcome_summary/tags/created_by — a general program/player/

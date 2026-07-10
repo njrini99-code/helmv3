@@ -2,7 +2,7 @@
 --
 -- Same class of bug as 20260702095900_baseball_651_column_reconcile and
 -- 20260703050000_baseball_651_settings_os_reconcile: 20260624000090's
--- `CREATE TABLE IF NOT EXISTS public.baseball_settings_audit_log` no-op'd
+-- 20260624000090's create-if-not-exists for baseball_settings_audit_log no-op'd
 -- because a table with this name already existed in prod under an OLDER
 -- schema — (id, team_id, changed_by, setting_key, old_value, new_value,
 -- created_at) — so the intended settings-OS column set never landed here
