@@ -981,7 +981,9 @@ async function submitRoundDirectFallback({
   }
   const restoreSnapshot = async (): Promise<void> => {
     try {
+      // nosemgrep: helmv3-destructive-write-pattern -- this IS the rollback: re-seating the snapshot captured (and null-guarded) above after a failed swap
       await supabase.from('golf_shots').delete().eq('round_id', roundId);
+      // nosemgrep: helmv3-destructive-write-pattern -- rollback path, see above
       await supabase.from('golf_holes').delete().eq('round_id', roundId);
       if (Array.isArray(holeSnapshot) && holeSnapshot.length > 0) {
         await supabase.from('golf_holes').insert(holeSnapshot);
@@ -994,6 +996,7 @@ async function submitRoundDirectFallback({
     }
   };
 
+  // nosemgrep: helmv3-destructive-write-pattern -- guarded swap: snapshot captured + null-checked BEFORE any delete, every failure path restores it (restoreSnapshot above); this is the manual fallback for the atomic RPC
   const { error: deleteShotsError } = await supabase
     .from('golf_shots')
     .delete()
@@ -1004,6 +1007,7 @@ async function submitRoundDirectFallback({
     return { success: false, error: `Fallback failed while clearing shots: ${deleteShotsError.message}` };
   }
 
+  // nosemgrep: helmv3-destructive-write-pattern -- same guarded swap (snapshot + restore on every failure path), see the shots delete above
   const { error: deleteHolesError } = await supabase
     .from('golf_holes')
     .delete()

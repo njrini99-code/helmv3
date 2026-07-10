@@ -460,27 +460,35 @@ async function setTaskReminderImpl(
     // set." — the hourly cron (task-reminders.ts getDueReminders/
     // processReminders) reads EXCLUSIVELY from golf_task_reminders; a task
     // whose reminder_at is set but has no golf_task_reminders row is never
-    // dispatched. Clear any not-yet-sent row first so re-setting/updating a
-    // reminder doesn't leave a stale duplicate armed at the old time.
-    const { error: clearQueueError } = await supabase
+    // dispatched. Update-or-insert (never delete-then-insert — the
+    // no-destructive-writes rule): re-arm any existing unsent row in place so
+    // a transient failure can never leave the task with NO armed reminder.
+    const { data: existingQueueRow, error: queueLookupError } = await supabase
       .from('golf_task_reminders')
-      .delete()
+      .select('id')
       .eq('task_id', taskId)
-      .eq('sent', false);
+      .eq('sent', false)
+      .limit(1)
+      .maybeSingle();
 
-    if (clearQueueError) {
-      await logServerError(`[setTaskReminder Error]: ${clearQueueError instanceof Error ? clearQueueError.message : String(clearQueueError)}`, { action: 'tasks.setTaskReminder' });
-      return { success: false, error: clearQueueError.message };
+    if (queueLookupError) {
+      await logServerError(`[setTaskReminder Error]: ${queueLookupError instanceof Error ? queueLookupError.message : String(queueLookupError)}`, { action: 'tasks.setTaskReminder' });
+      return { success: false, error: queueLookupError.message };
     }
 
-    const { error: queueError } = await supabase
-      .from('golf_task_reminders')
-      .insert({
-        task_id: taskId,
-        scheduled_for: reminderAt,
-        reminder_type: 'in_app',
-        sent: false,
-      });
+    const { error: queueError } = existingQueueRow
+      ? await supabase
+          .from('golf_task_reminders')
+          .update({ scheduled_for: reminderAt, reminder_type: 'in_app' })
+          .eq('id', existingQueueRow.id)
+      : await supabase
+          .from('golf_task_reminders')
+          .insert({
+            task_id: taskId,
+            scheduled_for: reminderAt,
+            reminder_type: 'in_app',
+            sent: false,
+          });
 
     if (queueError) {
       await logServerError(`[setTaskReminder Error]: ${queueError instanceof Error ? queueError.message : String(queueError)}`, { action: 'tasks.setTaskReminder' });

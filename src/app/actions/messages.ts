@@ -72,6 +72,7 @@ async function isBaseballMessageNotificationEnabled(conversationId: string): Pro
  * @param sport - The sport context (for revalidation paths)
  * @param createNotifications - Whether to create notifications for other participants (default: true)
  */
+// nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidatePath caused a full reload on every send (see note above the return)
 export async function sendMessage({
   conversationId,
   content,
