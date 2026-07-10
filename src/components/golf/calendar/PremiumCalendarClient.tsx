@@ -1133,7 +1133,8 @@ export function PremiumCalendarClient({
             )}
 
             {/* Header. NOTE: no desktop NotificationCenter here — the global
-                bell in GolfDashboardShell already covers desktop; mounting a
+                bell in FairwayDashboardShell (successor to the deleted
+                GolfDashboardShell) already covers desktop; mounting a
                 second one doubled the 30s notification poller (audit #32). */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-white/20">
               <CalendarHeader

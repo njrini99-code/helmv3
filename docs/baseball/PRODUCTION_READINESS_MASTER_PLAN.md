@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Dated 2026-07-01, "Status: NOT production-ready today." Superseded a week later by docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md, whose commit message explicitly states it supersedes in-flight notes.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 <!-- BaseballHelm — PRODUCTION READINESS MASTER PLAN.
      Supersedes-by-absorption: docs/baseball/ui-migration-execution-plan.md is the WS-UI workstream (referenced, not duplicated).
      Author: Fable 5 lead planner · 2026-07-01 · Branch: batch/baseball-fixes · Deploy vehicle: PR #650.

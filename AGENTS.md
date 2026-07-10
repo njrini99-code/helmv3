@@ -1,5 +1,19 @@
 # AGENTS.md
 
+## Repo map
+
+- `docs/REPO_MAP.md` is the structural map of this repo for agents: the
+  resolved route atlas for BaseballHelm/GolfHelm/Lift Lab/Admin (route
+  groups resolved, per-role rails), the canonical idioms table (action
+  wrappers, toast, data access, design tokens per product, nav
+  registries, error-boundary pattern — each with a file:line anchor),
+  the known traps list, and a before-you-write-code checklist.
+- Read it before adding a new route, a new action wrapper/toast/data-access
+  call, or a new design-token consumer — it exists so you don't have to
+  re-derive these conventions by grepping from scratch.
+- It maps *shape and convention*, not feature behavior — for feature
+  behavior, use the Feature awareness routing below.
+
 ## Feature awareness
 
 - Treat `memory/registry.yml` as the feature routing table for AI work.

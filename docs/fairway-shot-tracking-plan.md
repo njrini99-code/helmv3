@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Self-declared "Status: PLAN ONLY (not built). Locked 2026-05-31" — but src/components/fairway/pages/rounds-tracking/{FairwayShotTracking,FairwayShotEntry,FairwayShotPills}.tsx (plus a conversion test) are all built and shipped.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Fairway redesign plan — Shot-tracking / round-entry flow
 
 _Status: PLAN ONLY (not built). Locked 2026-05-31._

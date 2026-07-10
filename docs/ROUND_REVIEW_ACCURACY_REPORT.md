@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Feb/March 2026 point-in-time report; the ground it covers has since had a dedicated, later remediation pass (project memory: "Golf stats correctness audit").
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Round Review Accuracy & Enhancement Report
 
 > **Date:** February 2026

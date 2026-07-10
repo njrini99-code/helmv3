@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Dated 2026-03-13. Prescribes a "bg-white/65 backdrop-blur-[16px]" glass pattern now explicitly banned by eslint-rules/no-arbitrary-bg-white.mjs. Superseded in spirit by the unified /admin Helm Bridge command center (docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md).
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Admin Dashboard Upgrade Plan
 
 > Compiled from 11 parallel research agents analyzing UI/UX design + data pipelines across all 5 admin tabs.

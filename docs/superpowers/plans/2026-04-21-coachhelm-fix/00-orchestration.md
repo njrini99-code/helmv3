@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Entry point for the whole docs/superpowers/plans/2026-04-21-coachhelm-fix/ directory (17 files: team plans, HANDOFF, PHASE-3/4-DONE, TEAM-A..F-DONE, typecheck-baseline.txt) — a completed-wave April CoachHelm fix effort ("close all 33 review findings"), absorbed into and superseded by docs/audits/COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md and COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21.md. This header applies to the entire directory.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm Fix — Multi-Team Orchestration
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement these plans. Each team plan uses checkbox (`- [ ]`) syntax for tracking.

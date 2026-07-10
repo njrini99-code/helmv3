@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Generated "February 2025" (likely meant 2026) — long predates docs/audits/BASEBALLHELM_CANONICAL_SPEC.md, docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md, and docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md, which cover identical ground with current data.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # BaseballHelm Dashboard Audit Report
 ## Comprehensive Analysis: UI, UX, Features, Database, and Wiring
 

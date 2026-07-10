@@ -17,13 +17,22 @@ const GOLF_PASSWORD = process.env.E2E_GOLF_PASSWORD;
 const hasSeededAuth = Boolean(GOLF_EMAIL && GOLF_PASSWORD);
 
 test.describe('Golf Qualifier - Coach Flow', () => {
-  test.skip('should create a new qualifier', async ({ page }) => {
-    // Skip if coach login not available
-    // This test requires a coach account
+  // Was `test.skip('should create a new qualifier', ...)` — Playwright's
+  // (name, fn) skip signature, which unconditionally skips forever
+  // regardless of env vars. That predates the env-gating documented in the
+  // file header above and never actually adopted it, unlike the Player
+  // Flow / Leaderboard blocks below. Converted to the same conditional
+  // skip so this runs whenever seeded creds are present. Verified
+  // 2026-07-09: E2E_GOLF_EMAIL/E2E_GOLF_PASSWORD are still unset in this
+  // repo's environment (no seeded-auth CI fixture exists yet), so this
+  // remains skipped today — the true current blocker is the missing env
+  // vars, not the test itself.
+  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach) to run.');
 
+  test('should create a new qualifier', async ({ page }) => {
     await page.goto('/golf/login');
-    await page.fill('input[type="email"]', GOLF_EMAIL ?? '');
-    await page.fill('input[type="password"]', GOLF_PASSWORD ?? '');
+    await page.fill('input[type="email"]', GOLF_EMAIL as string);
+    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
     await page.click('button[type="submit"]');
 
     // Navigate to qualifiers

@@ -9,10 +9,11 @@
  *
  * Mounted in the dashboard layout as a pure side-effect leaf (renders null).
  * Placement decision: the dashboard layout (src/app/golf/(dashboard)/layout.tsx)
- * is a server component that renders GolfDashboardShell (a client component).
- * Rather than converting the layout to a client component or adding state to
- * the shell, DemoEnterTracker is rendered as a sibling to {children} inside
- * GolfDashboardShell (see mounting instructions below).  If that proves
+ * is a server component that renders FairwayDashboardShell (a client
+ * component; successor to the deleted GolfDashboardShell). Rather than
+ * converting the layout to a client component or adding state to the shell,
+ * DemoEnterTracker is rendered as a sibling to {children} inside
+ * FairwayDashboardShell (see mounting instructions below).  If that proves
  * awkward during shell refactors, it can alternatively be placed in the
  * dashboard index page — the effect is identical since `?demo=1` only appears
  * on the initial landing URL.

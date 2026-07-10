@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Generated 2026-01-01, describes "TWO separate calendar implementations (Golf premium + Baseball legacy)". The golf calendar has since been remediated (docs/audits/GOLFHELM_CALENDAR_AUDIT_2026-06-10.md + PR #259); BaseballHelm now has its own Fairway calendar (src/components/fairway/calendar/).
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # COMPREHENSIVE CALENDAR SYSTEM IMPLEMENTATION PLAN
 
 > **Generated**: January 1, 2026

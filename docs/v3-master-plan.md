@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Zero memory/registry.yml references (unlike sibling v3-*.md docs). "Locked 2026-05-24 ... every wave PR must reference its section here" — a wave-execution tracker for a sequence that project memory confirms has run past W35 into the later clean-slate/production-readiness passes.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm v3 — The Final All-In-One Plan
 *Schema-verified · Decision-locked · Ultra-organized · Zero hand-waving*
 

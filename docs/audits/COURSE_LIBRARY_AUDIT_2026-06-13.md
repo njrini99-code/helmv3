@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Self-described pre-implementation decision doc for the Cloud Course Library build. That build has since shipped (#290/#291 — "Cloud Course Library LIVE" per project memory); this doc's job is done.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm Cloud Course Library — System Audit (2026-06-13)
 
 > Produced by a 7-agent parallel audit of the live repo before any implementation.

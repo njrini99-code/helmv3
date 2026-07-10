@@ -1,3 +1,10 @@
+<!--
+STATUS: PARKED
+DATE: 2026-07-10
+PARKING DECISION: Self-declared "Status: designed, NOT built. Parked for a future session (\"when I have more tokens\")." Matches project memory's own note verbatim.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Fairway CoachHelm Rebuild — Hierarchical Insight Model (saved plan)
 
 > **Status:** designed, NOT built. Parked for a future session ("when I have more tokens").

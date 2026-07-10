@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Entry point for the docs/superpowers/plans/2026-04-22-insight-delivery/ directory (with FOUNDATION-DONE.md) — a completed-wave April planning doc, absorbed into and superseded by the later 2026-06 CoachHelm audits (COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md, COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21.md).
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Insight Delivery Phase — Design Contract
 
 > **Read this BEFORE writing any code.** Every team plan in this directory references this contract.

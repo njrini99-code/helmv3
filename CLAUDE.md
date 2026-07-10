@@ -40,6 +40,7 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
 | **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all action files, component directories |
 | **Baseball features** | `memory/context/baseballhelm-features.md` — feature-by-feature data flow, files, tables, gaps; `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` — canonical spec (source of truth for what baseball should be) |
+| **Cross-product structure** (route trees, canonical action-wrapper/toast/data-access/design-token/nav-registry/error-boundary idioms, known traps) | `docs/REPO_MAP.md` — resolved route atlas for BaseballHelm/GolfHelm/Lift Lab/Admin, idioms table with file:line anchors, 7 traps, pre-code checklist |
 
 ### By Role Context
 

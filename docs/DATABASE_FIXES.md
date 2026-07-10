@@ -1,3 +1,10 @@
+<!--
+STATUS: PARKED
+DATE: 2026-07-10
+PARKING DECISION: Committed 2026-02-16 ("docs: add overnight build reports") — an accurately-dated point-in-time fix log, not a current-state claim. Parked as historical record.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Database & Backend Fixes Report
 
 > **Generated**: 2026-02-17 00:10 EST

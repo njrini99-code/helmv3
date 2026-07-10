@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Committed 2026-03-05 ("comprehensive app stability overhaul"), iOS App Store submission scope. Not confirmed against current App Store Connect status in the 2026-07-10 sweep — re-verify before relying on this; treat as historical if the submission has since moved forward.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Security Audit Report - Helm Sports Labs (GolfHelm iOS App)
 
 **Date:** 2026-03-05

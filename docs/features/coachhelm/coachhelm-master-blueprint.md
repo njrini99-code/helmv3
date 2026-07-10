@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Part of the pre-build docs/features/coachhelm/ implementation-guide package (untouched since 2026-01-14), superseded by the shipped V2 engine and its 2026-06 audits. Live reference: memory/context/coachhelm-ai.md.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm Master Blueprint v2.0
 ## Intelligence-First Design with Deep Configurability
 

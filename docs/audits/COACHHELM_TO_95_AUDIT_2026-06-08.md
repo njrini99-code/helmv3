@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Superseded by docs/audits/COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21.md (302-finding scrub, 13 days later). Its direct sequel COACHHELM_TO_95_REGRADE_2026-06-09.md already lives in docs/archive/2026-06/audits/ — this file was left behind.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm 55-to-95 Audit
 
 Date: 2026-06-08

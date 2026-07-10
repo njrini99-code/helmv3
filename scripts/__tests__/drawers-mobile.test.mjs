@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
  * mobile responsiveness fixes.
  *
  * Background (ultra-audit master synthesis, mobile surface wave): on
- * short iOS / Capacitor viewports the IntentDrawer + GoalCreationModal
+ * short iOS / Capacitor viewports the GoalCreationModal
  * panels could push their action buttons off-screen with no scroll, the
  * ChatDrawer FAB + composer sat under the home indicator, the
  * ShotTrackingComprehensive putt quick-select packed six <44pt targets
@@ -18,7 +18,8 @@ import { join, resolve } from 'node:path';
  * past the card edge with no horizontal scroll.
  *
  * The fixes:
- *   - IntentDrawer / GoalCreationModal panels: `max-h-[90dvh]` +
+ *   - GoalCreationModal panel: `max-h-[90dvh]` +
+ *     (IntentDrawer was deleted 2026-07-10 in the agent-legibility dead-code sweep)
  *     `overflow-y-auto` so the form scrolls within the dynamic viewport.
  *   - ChatDrawer FAB: bottom calc that adds `env(safe-area-inset-bottom)`.
  *   - ChatComposer: bottom padding adds `env(safe-area-inset-bottom)`.
@@ -39,7 +40,6 @@ const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 const COMPONENTS = resolve(REPO_ROOT, 'src', 'components');
 
 const FILES = {
-  intentDrawer: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'IntentDrawer', 'index.tsx'),
   goalModal: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'GoalCreationModal', 'index.tsx'),
   chatDrawer: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'Chat', 'ChatDrawer.tsx'),
   chatComposer: join(COMPONENTS, 'golf', 'coachhelm', 'v3', 'Chat', 'ChatComposer.tsx'),
@@ -60,12 +60,6 @@ function assertContains(content, needle, file, why) {
     `${file}\n  Expected to find: ${JSON.stringify(needle)}\n  Reason: ${why}`,
   );
 }
-
-test('IntentDrawer panel is dvh-capped and scrolls', async () => {
-  const src = await read(FILES.intentDrawer);
-  assertContains(src, 'max-h-[90dvh]', FILES.intentDrawer, 'panel must cap to 90% of the dynamic viewport on short screens');
-  assertContains(src, 'overflow-y-auto', FILES.intentDrawer, 'panel content must scroll instead of pushing actions off-screen');
-});
 
 test('GoalCreationModal panel is dvh-capped and scrolls', async () => {
   const src = await read(FILES.goalModal);

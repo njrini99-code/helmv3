@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Same-day (2026-02-22) point-in-time audit cluster, superseded many times over by the 06-2026/07-2026 audit cadence (docs/audits/GOLFHELM_E2E_TAB_AUDIT_2026-06-20.md, docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md, RLS Wave A #327).
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm Architectural Review
 
 **Date:** 2026-02-22

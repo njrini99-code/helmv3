@@ -1,3 +1,10 @@
+<!--
+STATUS: PARKED
+DATE: 2026-07-10
+PARKING DECISION: Self-described session/continuation report ("save Part 2 continuation report before computer restart") — an accurately-dated point-in-time log, not a live-state claim. Parked as historical record.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Session Report — 2026-05-27 (Part 2: Codex Security review + cleanup)
 
 This continues `docs/SESSION_REPORT_2026-05-27.md`. Read that first if you want the full backstory; this file captures everything that happened **after** Codex Security ran its own review and produced `docs/security/CODEX_SECURITY_RELEASE_RESCUE_PLAN_2026-05-27.md`.

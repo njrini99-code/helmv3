@@ -23,6 +23,18 @@ function makeChain(table: string) {
     gte: () => chain,
     order: () => chain,
     limit: () => chain,
+    // fetchAllRowsResult-driven queries (team-detail.ts's CoachHelm cost30d
+    // paginate-past-1000-cap fix) terminate on `.range(from, to)` instead of
+    // `.then()` — mirror dashboard-data.test.ts's idiom (slice by the actual
+    // from/to bounds) so a page shorter than the requested size correctly
+    // ends the loop instead of throwing `range is not a function`.
+    range: (from: number, to: number) => {
+      const r = nextResult(table);
+      return Promise.resolve({
+        data: Array.isArray(r.data) ? r.data.slice(from, to + 1) : r.data,
+        error: r.error,
+      });
+    },
     maybeSingle: () => Promise.resolve(nextResult(table)),
     then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
       Promise.resolve(nextResult(table)).then(resolve, reject),
