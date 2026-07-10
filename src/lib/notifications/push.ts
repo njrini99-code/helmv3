@@ -168,34 +168,38 @@ export async function sendPushNotification(
 
     const payload = generatePushPayload(type, data);
 
-    // Send to each device token via Edge Function
+    // Send to each device token via the Edge Function — invoked through the
+    // admin client so the service-role auth travels inside the client instead
+    // of a raw key in a hand-built header (helmv3-service-role-outside-admin).
     for (const deviceToken of tokens) {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-apns-push`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({
-              deviceToken: deviceToken.token,
-              platform: deviceToken.platform,
-              title: payload.title,
-              body: payload.body,
-              data: payload.data,
-            }),
-          }
-        );
+        const { error: invokeError } = await supabase.functions.invoke('send-apns-push', {
+          body: {
+            deviceToken: deviceToken.token,
+            platform: deviceToken.platform,
+            title: payload.title,
+            body: payload.body,
+            data: payload.data,
+          },
+        });
 
-        if (!response.ok) {
-          const errorText = await response.text();
+        if (invokeError) {
           // send-apns-push returns { success: false, error, shouldDeactivateToken? }
           // on 410 (Unregistered) / 400 (BadDeviceToken) — Apple's own "this token
           // is dead" signal. Parse it so a permanently-dead token stops being
           // retried on every cron sweep instead of accumulating failed_count
-          // forever with zero corrective action.
+          // forever with zero corrective action. On a non-2xx the error's
+          // `context` is the raw Response (FunctionsHttpError); network-level
+          // failures have no readable body and fall back to the message.
+          let errorText = invokeError.message;
+          const errorContext = (invokeError as { context?: Response }).context;
+          if (errorContext && typeof errorContext.text === 'function') {
+            try {
+              errorText = await errorContext.text();
+            } catch {
+              /* body unreadable — keep the generic error message */
+            }
+          }
           let shouldDeactivateToken = false;
           try {
             const parsed = JSON.parse(errorText) as { shouldDeactivateToken?: boolean };

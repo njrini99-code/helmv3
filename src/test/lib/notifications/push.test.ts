@@ -30,6 +30,26 @@ vi.mock('@/lib/server-error-logger', () => ({
 
 type TokenRow = { token: string; platform: string };
 
+/**
+ * Mirror of `supabase.functions.invoke` failure semantics: non-2xx responses
+ * surface as an error whose `context` is the raw Response (FunctionsHttpError
+ * shape — push.ts duck-types `context.text()` rather than instanceof so the
+ * mock only needs the shape).
+ */
+function makeFunctionsInvokeMock(failureResponse: Response | null) {
+  return vi.fn(async () =>
+    failureResponse
+      ? {
+          data: null,
+          error: {
+            message: 'Edge Function returned a non-2xx status code',
+            context: failureResponse,
+          },
+        }
+      : { data: { success: true }, error: null },
+  );
+}
+
 function makeDeviceTokensFromMock(opts: {
   tokens: TokenRow[];
   currentFailedCount?: number;
@@ -70,8 +90,6 @@ function makeDeviceTokensFromMock(opts: {
 }
 
 describe('sendPushNotification — APNs failure-response parsing', () => {
-  const originalFetch = global.fetch;
-
   beforeEach(() => {
     getUserNotificationPreferencesMock.mockClear();
     logServerEventMock.mockClear();
@@ -80,7 +98,6 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
     vi.unstubAllEnvs();
     vi.resetModules();
   });
@@ -92,11 +109,7 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
       currentFailedCount: 130,
       updateSpy,
     });
-    vi.doMock('@/lib/supabase/admin', () => ({
-      createAdminClient: () => ({ from: fromMock }),
-    }));
-
-    global.fetch = vi.fn(async () =>
+    const invokeMock = makeFunctionsInvokeMock(
       new Response(
         JSON.stringify({
           success: false,
@@ -105,12 +118,21 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
         }),
         { status: 410 },
       ),
-    ) as unknown as typeof fetch;
+    );
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
+    }));
 
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
 
     expect(result.success).toBe(true);
+    expect(invokeMock).toHaveBeenCalledWith(
+      'send-apns-push',
+      expect.objectContaining({
+        body: expect.objectContaining({ deviceToken: 'dead-token-1234567890', platform: 'ios' }),
+      }),
+    );
     expect(updateSpy).toHaveBeenCalledTimes(1);
     expect(updateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ active: false, failed_count: 131 }),
@@ -136,16 +158,15 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
       currentFailedCount: 2,
       updateSpy,
     });
-    vi.doMock('@/lib/supabase/admin', () => ({
-      createAdminClient: () => ({ from: fromMock }),
-    }));
-
-    global.fetch = vi.fn(async () =>
+    const invokeMock = makeFunctionsInvokeMock(
       new Response(
         JSON.stringify({ success: false, error: 'APNs error 502: upstream timeout' }),
         { status: 502 },
       ),
-    ) as unknown as typeof fetch;
+    );
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
+    }));
 
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
@@ -165,11 +186,10 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
       currentFailedCount: 0,
       updateSpy,
     });
+    const invokeMock = makeFunctionsInvokeMock(new Response('Internal Server Error', { status: 500 }));
     vi.doMock('@/lib/supabase/admin', () => ({
-      createAdminClient: () => ({ from: fromMock }),
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
     }));
-
-    global.fetch = vi.fn(async () => new Response('Internal Server Error', { status: 500 })) as unknown as typeof fetch;
 
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
@@ -189,11 +209,7 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
       updateSpy,
       updateError: { message: 'connection reset' },
     });
-    vi.doMock('@/lib/supabase/admin', () => ({
-      createAdminClient: () => ({ from: fromMock }),
-    }));
-
-    global.fetch = vi.fn(async () =>
+    const invokeMock = makeFunctionsInvokeMock(
       new Response(
         JSON.stringify({
           success: false,
@@ -202,7 +218,10 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
         }),
         { status: 410 },
       ),
-    ) as unknown as typeof fetch;
+    );
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({ from: fromMock, functions: { invoke: invokeMock } }),
+    }));
 
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
