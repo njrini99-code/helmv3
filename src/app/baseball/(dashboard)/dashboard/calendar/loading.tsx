@@ -1,9 +1,11 @@
+import { PaperCard } from '@/components/baseball/living-annual';
+
 export default function CalendarLoading() {
   return (
     <div className="h-[calc(100dvh-64px)] p-6" style={{
       background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
     }}>
-      <div className="glass-standard rounded-2xl overflow-clip h-full animate-pulse">
+      <PaperCard className="h-full animate-pulse" grain={false}>
         {/* Calendar header skeleton */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-3">
@@ -45,7 +47,7 @@ export default function CalendarLoading() {
             </div>
           ))}
         </div>
-      </div>
+      </PaperCard>
     </div>
   );
 }

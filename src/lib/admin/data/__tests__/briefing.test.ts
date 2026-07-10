@@ -22,6 +22,13 @@ function makeChain(table: string) {
     order: () => chain,
     limit: () => chain,
     maybeSingle: () => Promise.resolve(result()),
+    // Terminal call for fetchAllRowsResult-driven queries (checkNewlyDormantTeams):
+    // resolves directly to { data, error } (matching PostgREST's `.range()`),
+    // slicing when the mocked data is an array so pagination still terminates.
+    range: () => {
+      const r = result();
+      return { data: Array.isArray(r.data) ? r.data.slice() : r.data, error: r.error };
+    },
     gte: (column: string, value: unknown) => {
       mocks.gteCalls.push({ table, column, value });
       return chain;

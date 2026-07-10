@@ -37,6 +37,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 import type { TimelineEventView } from '@/lib/baseball/read-models/timeline';
 import type { BaseballTimelineVisibility } from '@/lib/types';
 
@@ -111,8 +112,11 @@ const VISIBILITY_META: Record<
     icon: <IconEye size={11} />,
   },
   staff_only: {
+    // Ink system (Living Annual doctrine — no raw amber): restricted-visibility
+    // reads pursuit clay soft, the same lane the Classes snapshot card uses for
+    // "Academics restricted" (see snapshot-cards/shared.tsx ToneChip warning).
     label: 'Staff only',
-    cls: 'bg-amber-50 text-amber-700 border-amber-200/60',
+    cls: 'bg-pursuit/10 text-pursuit border-pursuit/20',
     icon: <IconLock size={11} />,
   },
 };
@@ -315,12 +319,13 @@ export function ProfileTimeline({
   return (
     <LazyMotion features={domAnimation}>
       <div className="space-y-6">
-        {/* Hidden-events honesty banner (staff context). */}
+        {/* Hidden-events honesty banner (staff context). PaperCard idiom —
+            opaque paper + hairline, no glass/blur (Living Annual doctrine). */}
         {hiddenCount > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cream-100/75 backdrop-blur-glass border border-warm-200/45 text-sm text-warm-600">
+          <PaperCard grain={false} className="flex items-center gap-2 px-4 py-2.5 text-sm text-warm-600">
             <IconLock size={14} />
             {hiddenCount} event{hiddenCount === 1 ? '' : 's'} hidden by visibility rules.
-          </div>
+          </PaperCard>
         )}
 
         {grouped.map(([day, dayEvents], groupIdx) => (

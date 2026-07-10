@@ -3,9 +3,9 @@
  * ============================================================================
  * refresh-landed — "once a page lands, replace its screenshot with the new one"
  * ----------------------------------------------------------------------------
- * As each route's redesign LANDS, re-capture it against the REDESIGN-ON app and
- * swap its screenshot in the inventory the atlas reads from — so the visual
- * inventory tracks the rollout instead of going stale on the legacy shots.
+ * As each route's redesign LANDS, re-capture it against the app and swap its
+ * screenshot in the inventory the atlas reads from — so the visual inventory
+ * tracks the rollout instead of going stale on the legacy shots.
  *
  *   node scripts/ui-intelligence/refresh-landed.mjs <route-or-folder> [...more]
  *   # examples:
@@ -14,7 +14,7 @@
  *   #   node scripts/ui-intelligence/refresh-landed.mjs --redesigned   # re-shoot every already-tagged route
  *
  * What it does, per matched route:
- *   1. ensures a NEXT_PUBLIC_REDESIGN=1 dev server is up (boots one if needed),
+ *   1. ensures a dev server is up (boots one if needed),
  *   2. refreshes the player/coach auth states (npm run ui:auth),
  *   3. re-captures ONLY the matched routes (UI_ROUTE_FILTER → ui:screenshots:capture),
  *      overwriting ui-intelligence/screenshots/desktop/<folder>/full-page.png,
@@ -78,13 +78,13 @@ function httpOk(url) {
 
 async function ensureServer() {
   if (await httpOk(READY_URL)) {
-    console.log('• dev server already up (assuming NEXT_PUBLIC_REDESIGN=1)');
+    console.log('• dev server already up');
     return null;
   }
-  console.log('• no server on :3000 — booting NEXT_PUBLIC_REDESIGN=1 dev …');
+  console.log('• no server on :3000 — booting dev …');
   const child = spawn('npm', ['run', 'dev'], {
     cwd: ROOT,
-    env: { ...process.env, NEXT_PUBLIC_REDESIGN: '1' },
+    env: { ...process.env },
     detached: true,
     stdio: 'ignore',
   });

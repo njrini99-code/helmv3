@@ -277,8 +277,9 @@ export function TimeRailBuilder({
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
                   selected
                     ? 'border-primary-400 bg-primary-50/90 shadow-card'
-                    : 'border-warm-200 glass-standard hover:bg-cream-100',
-                  hasError && 'border-red-400 bg-red-50/80',
+                    : 'border-warm-200 bg-[color:var(--paper)] hover:bg-cream-100',
+                  // Living Annual ink: true error reads --notice-error-ink, never raw red.
+                  hasError && 'border-[color:var(--notice-error-ink)] bg-[var(--notice-error-ink)]/10',
                 )}
                 style={{
                   top: b.startOffsetMin * PX_PER_MIN,
@@ -317,14 +318,16 @@ export function TimeRailBuilder({
                         </span>
                       )}
                     </div>
+                    {/* Living Annual ink: clay (`pursuit`) warning, never raw amber. */}
                     {hasOwnerWarn && (
-                      <span className="mt-0.5 inline-flex items-center gap-1 text-micro text-amber-600">
+                      <span className="mt-0.5 inline-flex items-center gap-1 text-micro text-pursuit">
                         <UserX className="h-2.5 w-2.5" />
                         {codes.has('owner_conflict') ? 'Owner double-booked' : 'No owner'}
                       </span>
                     )}
+                    {/* True error — reads --notice-error-ink, never raw red. */}
                     {codes.has('overlap') && (
-                      <span className="mt-0.5 inline-flex items-center gap-1 text-micro text-red-600">
+                      <span className="mt-0.5 inline-flex items-center gap-1 text-micro text-[color:var(--notice-error-ink)]">
                         <AlertTriangle className="h-2.5 w-2.5" /> Overlaps another block
                       </span>
                     )}

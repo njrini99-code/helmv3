@@ -36,8 +36,13 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   const [loading, setLoading] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // Tracks which playerId is the "current" one so a fetch/check for a player
+  // the user has already navigated away from can't paint stale data over the
+  // newer selection (fast entity switching resolving out of order).
+  const activePlayerIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    activePlayerIdRef.current = playerId;
     if (playerId) {
       fetchPlayer(playerId);
       checkWatchlistStatus(playerId);
@@ -57,6 +62,10 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
       .select('*')
       .eq('id', id)
       .single()) as { data: Player | null; error: { message: string } | null };
+
+    // Stale-response guard: the panel has already moved on to a different
+    // player — don't paint this response or touch loading state for it.
+    if (activePlayerIdRef.current !== id) return;
 
     if (error) {
       console.error('Error fetching player:', error);
@@ -87,6 +96,10 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
       .eq('coach_id', coach.id)
       .eq('player_id', id)
       .maybeSingle();
+
+    // Stale-response guard: don't flip the watchlist star for a player the
+    // panel is no longer showing.
+    if (activePlayerIdRef.current !== id) return;
 
     setIsInWatchlist(!!data);
   };

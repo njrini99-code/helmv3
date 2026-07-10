@@ -17,7 +17,7 @@
 // It is NOT a commit/offer/milestone ticker — no `<CommitSeal>` anywhere on
 // this surface. Triage + convert-to-action wire to the SAME signals server
 // actions as before; the page re-renders via `router.refresh()`. Every
-// zero/degraded state renders through `<EditorsLetter>` / `<InlineNotice>` —
+// zero/degraded state renders through `<EditorsLetter>` / `<InkNotice>` —
 // never a yellow/amber box. NO golf labels.
 // =============================================================================
 
@@ -32,8 +32,9 @@ import {
   StatReadout,
   EditorsLetter,
   LiveDot,
+  InkNotice,
 } from '@/components/baseball/living-annual';
-import { Button, InlineNotice, Segmented, SelectablePill } from '@/components/fairway';
+import { Button, Segmented, SelectablePill } from '@/components/fairway';
 import {
   IconShieldAlert,
   IconList,
@@ -41,6 +42,7 @@ import {
   IconLayers,
   IconRefresh,
 } from '@/components/icons';
+import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import { SignalCard } from './SignalCard';
 import {
@@ -149,7 +151,12 @@ export function SignalInboxClient({
     async (id: string, fn: () => Promise<{ success: boolean; error?: string }>) => {
       setPendingId(id);
       try {
-        await fn();
+        const result = await fn();
+        if (!result.success) {
+          toast.error('Could not update the signal', result.error ?? 'Please try again.');
+        }
+      } catch {
+        toast.error('Could not update the signal', 'Please try again.');
       } finally {
         setPendingId(null);
         router.refresh();
@@ -197,7 +204,7 @@ export function SignalInboxClient({
   const handleConvert = async (signalId: string, options: ConvertOption[]) => {
     setConvertPending(true);
     try {
-      await convertSignalToAction({
+      const result = await convertSignalToAction({
         signalId,
         actions: options.map((o) => ({
           actionType: o.actionType,
@@ -210,7 +217,15 @@ export function SignalInboxClient({
           visibility: o.visibility,
         })),
       });
-      setConvertTarget(null);
+      if (result.success) {
+        setConvertTarget(null);
+      } else {
+        // Keep the dialog open so the coach can retry — closing it here would
+        // read as success when no action was created.
+        toast.error('Could not create the action', result.error ?? 'Please try again.');
+      }
+    } catch {
+      toast.error('Could not create the action', 'Please try again.');
     } finally {
       setConvertPending(false);
       router.refresh();
@@ -327,9 +342,9 @@ export function SignalInboxClient({
 
       {/* ── Honest degraded-feed error ───────────────────────────── */}
       {model.error && (
-        <InlineNotice tone="warning" className="mt-4">
+        <InkNotice ink="pursuit" className="mt-4">
           {model.error}
-        </InlineNotice>
+        </InkNotice>
       )}
 
       {/* ── View toggle ──────────────────────────────────────────── */}

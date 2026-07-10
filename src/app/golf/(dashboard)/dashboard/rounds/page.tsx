@@ -1,17 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { IconPlus, IconGolf } from '@/components/icons';
 import type { GolfRound } from '@/lib/types/golf';
 import type { Metadata } from 'next';
-import { UnfinishedRoundsSection } from './unfinished-rounds-section';
-import { RoundLibraryClient, type RoundLibraryRound } from '@/components/golf/rounds/RoundLibraryClient';
-import { Button } from '@/components/ui/button';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   FairwayRoundsLibrary,
@@ -206,86 +199,17 @@ export default async function RoundsPage() {
     return { avg, best, avgToPar, underParPct, totalRounds: scoredRounds.length, trend };
   })();
 
-  const hasUnfinished = inProgressRounds.length > 0 && userRole === 'player';
-
-  // Flag-on: the redesigned Fairway rounds library. Reuses the SAME server
-  // queries + roundStats computed above verbatim — this is a re-skin only.
-  // Renders in its own `.fairway-ds` scope on bg-canvas. Flag-off is unchanged.
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayRoundsLibrary
-          rounds={rounds as unknown as FairwayRoundLibraryRound[]}
-          inProgressRounds={inProgressRounds as unknown as FairwayRoundLibraryRound[]}
-          userRole={userRole as 'coach' | 'player'}
-          stats={roundStats}
-        />
-      </div>
-    );
-  }
-
+  // Reuses the SAME server queries + roundStats computed above verbatim —
+  // this is a re-skin only. Renders in its own `.fairway-ds` scope on
+  // bg-canvas.
   return (
-    <AnimatedPage className="min-h-full">
-      {/* Header Section */}
-      <AnimatedItem>
-        <LargeTitleHeader
-          title="Rounds"
-          subtitle={`${rounds.length} round${rounds.length !== 1 ? 's' : ''} recorded`}
-        >
-          {userRole === 'player' && (
-            <Link href="/golf/dashboard/rounds/new">
-              <Button variant="primary" className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
-                <IconPlus size={16} />
-                New Round
-              </Button>
-            </Link>
-          )}
-        </LargeTitleHeader>
-      </AnimatedItem>
-
-      {/* Unfinished rounds — banner-style, sits above the library */}
-      {hasUnfinished && (
-        <AnimatedItem>
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 pt-4">
-            <UnfinishedRoundsSection rounds={inProgressRounds} />
-          </div>
-        </AnimatedItem>
-      )}
-
-      {/* Empty state — when neither completed nor in-progress rounds exist */}
-      {rounds.length === 0 && inProgressRounds.length === 0 ? (
-        <AnimatedItem>
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-12">
-            <div className="surface-stone rounded-3xl p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-primary-50/65 flex items-center justify-center mx-auto mb-6">
-                <IconGolf size={26} className="text-primary-700" />
-              </div>
-              <h3 className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-warm-900 mb-2.5">
-                No rounds yet
-              </h3>
-              <p className="text-warm-500 mb-8 max-w-sm mx-auto leading-relaxed">
-                {userRole === 'coach'
-                  ? "Your players haven't submitted any rounds yet. Rounds will appear here as they're recorded."
-                  : 'Start tracking your golf rounds to see stats and improvement over time.'}
-              </p>
-              {userRole === 'player' && (
-                <Link href="/golf/dashboard/rounds/new">
-                  <Button variant="primary" className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
-                    <IconPlus size={16} />
-                    Submit First Round
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </AnimatedItem>
-      ) : (
-        <RoundLibraryClient
-          rounds={rounds as unknown as RoundLibraryRound[]}
-          userRole={userRole as 'coach' | 'player'}
-          stats={roundStats}
-        />
-      )}
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayRoundsLibrary
+        rounds={rounds as unknown as FairwayRoundLibraryRound[]}
+        inProgressRounds={inProgressRounds as unknown as FairwayRoundLibraryRound[]}
+        userRole={userRole as 'coach' | 'player'}
+        stats={roundStats}
+      />
+    </div>
   );
 }

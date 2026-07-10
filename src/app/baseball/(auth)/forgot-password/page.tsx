@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
+import { CheckCircle2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,6 +12,7 @@ import {
   BaseballAuthShell,
   humanizeAuthError,
 } from '@/components/auth/baseball-auth-shell';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 function humanizeResetRequestError(message: string): string {
   const lower = message.toLowerCase();
@@ -113,15 +114,7 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
-            {error && (
-              <div
-                className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
-                role="alert"
-              >
-                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
-                <span>{error}</span>
-              </div>
-            )}
+            {error && <InkNotice>{error}</InkNotice>}
 
             <Input
               id="forgot-email"

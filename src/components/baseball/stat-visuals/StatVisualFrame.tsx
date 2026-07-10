@@ -176,7 +176,8 @@ const CONFIDENCE_LABEL: Record<BaseballMetricConfidence, string> = {
 const CONFIDENCE_TONE: Record<BaseballMetricConfidence, string> = {
   high: 'bg-green-50 text-green-700 ring-green-600/20',
   medium: 'bg-warm-100 text-warm-700 ring-warm-500/20',
-  low: 'bg-amber-50 text-amber-700 ring-amber-600/20',
+  // 'low' confidence is a caution status — pursuit (clay) SOFT, not raw amber.
+  low: 'bg-pursuit/10 text-pursuit ring-pursuit/20',
   insufficient: 'bg-warm-100 text-warm-500 ring-warm-400/20',
 };
 
@@ -254,10 +255,11 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className={cn(
-            // Cream/green glass surface — matches the baseball Stats Center cards.
-            'group/stat relative flex flex-col gap-4 rounded-2xl bg-cream-100/75 backdrop-blur-glass',
-            'border border-warm-200/60 shadow-glass',
-            'transition-shadow duration-300 hover:shadow-card-hover',
+            // Paper surface (Living Annual ink system) — cream card, hairline
+            // border, letterpress inset depth. No glass blur, no drop shadow;
+            // this is reading stock, not a floating panel (spec §4.3).
+            'group/stat relative flex flex-col gap-4 rounded-2xl bg-[var(--paper)]',
+            'border border-[color:var(--hairline)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06)]',
             padding === 'hero' ? 'p-8' : 'p-6',
             className,
           )}
@@ -301,7 +303,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
             ))}
 
             {isBlended ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-600/20">
+              <span className="inline-flex items-center gap-1 rounded-full bg-pursuit/10 px-2.5 py-1 text-xs font-medium text-pursuit ring-1 ring-pursuit/20">
                 Blended — separate with the context filter
               </span>
             ) : null}
@@ -343,7 +345,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
         {lowConfidenceCaveat && resolvedState === 'ready' ? (
           <div
             role="note"
-            className="flex items-start gap-2 rounded-xl bg-amber-50/70 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-600/20"
+            className="flex items-start gap-2 rounded-xl bg-pursuit/10 px-3 py-2 text-xs text-pursuit ring-1 ring-pursuit/20"
           >
             <IconInfo size={14} className="mt-0.5 shrink-0" aria-hidden />
             <span>{lowConfidenceCaveat}</span>
@@ -454,11 +456,13 @@ const STATE_META: Record<
     iconColor: 'text-primary-600',
     tone: 'border-warm-200 bg-cream-50/70',
   },
+  // 'error' is the true error surface (role="alert") — pursuit (clay) SOLID,
+  // never raw amber/red (Living Annual doctrine).
   error: {
     Icon: IconWarning,
-    iconWrap: 'bg-amber-500/12',
-    iconColor: 'text-amber-600',
-    tone: 'border-amber-200/70 bg-amber-50/40',
+    iconWrap: 'bg-pursuit/15',
+    iconColor: 'text-pursuit',
+    tone: 'border-pursuit/30 bg-pursuit/10',
   },
 };
 

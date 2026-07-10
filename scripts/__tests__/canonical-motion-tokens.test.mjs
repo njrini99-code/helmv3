@@ -44,7 +44,10 @@ process.chdir(repoRoot);
 const TARGETS = [
   'src/components/ui/reveal.tsx',
   'src/components/golf/dashboard/premium-components.tsx',
-  'src/app/golf/(dashboard)/dashboard/coachhelm/components/PlayerCoachHelmDashboard.tsx',
+  // The legacy `PlayerCoachHelmDashboard.tsx` this target used to cover was
+  // deleted in Wave W1 (2026-07-09, Fairway-unconditional cutover) — the
+  // Fairway-only CoachHelm player surface (FairwayPlayerCoachHelm) is the
+  // live replacement and was never part of this Tier-1 motion-vocabulary set.
 ];
 
 const CANONICAL_IMPORT = '@/lib/coachhelm/v3/motion';

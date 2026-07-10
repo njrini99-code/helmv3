@@ -648,7 +648,12 @@ async function getCoachDashboardDataImpl(
 
     // Build action items
     const actionItems: ActionItem[] = [];
-    const today = new Date().toISOString().split('T')[0] ?? '';
+    // `today` for the overdue comparison must agree with the team's own local
+    // day (already resolved above as teamTimezone for todayStart/todayEnd) —
+    // not the server's UTC day, or a task due "today" in a non-UTC timezone
+    // reads as overdue (or not) a day early/late. todayStart is already
+    // `${dateStr}T00:00:00` in that timezone, so its date portion IS today.
+    const today = todayStart.split('T')[0] ?? '';
 
     // Tasks
     if (pendingTasksResult.data) {
@@ -755,7 +760,11 @@ async function getPlayerDashboardDataImpl(
 
     const playerTeamTimezone = (playerTimezoneResult.data as { timezone?: string } | null)?.timezone || 'America/New_York';
     const { start: todayStart, end: todayEnd } = getTodayRange(playerTeamTimezone);
-    const today = new Date().toISOString().split('T')[0] ?? '';
+    // `today` for the overdue comparison must agree with the player's own
+    // team-local day (playerTeamTimezone, resolved above) — not the server's
+    // UTC day. todayStart is already `${dateStr}T00:00:00` in that timezone,
+    // so its date portion IS today.
+    const today = todayStart.split('T')[0] ?? '';
 
     // ── Parallel batch: team, rounds, handicap, stats cache, today events, tasks, announcements ──
     const [

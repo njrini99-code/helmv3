@@ -68,9 +68,13 @@ export function StandingStrip(props: StandingStripProps) {
   // Women's teams get "LPGA" instead of "PGA" for non-SG metrics.
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
+  // ONE "behind-benchmark" hue: 'bad' reads as the neutral/amber system tone
+  // (fw-warning) everywhere a strip renders — not red — so it never collides
+  // with a genuinely-red error state, and matches the amber "behind Tour"
+  // read used elsewhere on the same stats surfaces.
   const deltaToneClass =
     delta.tone === 'good' ? 'text-accent-600' :
-    delta.tone === 'bad'  ? 'text-danger' :
+    delta.tone === 'bad'  ? 'text-fw-warning' :
                             'text-text-tertiary';
 
   return (
@@ -93,7 +97,7 @@ export function StandingStrip(props: StandingStripProps) {
               delta.tone === 'good'
                 ? 'bg-accent-500 text-text-on-accent'
                 : delta.tone === 'bad'
-                  ? 'bg-fw-danger-bg text-fw-danger'
+                  ? 'bg-fw-warning-bg text-fw-warning'
                   : 'bg-inset text-text-secondary',
             )}
           >
@@ -261,7 +265,7 @@ function Readout({
       <span className="font-fw-mono text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</span>
       <span
         className={cn(
-          'font-fw-display text-body font-semibold tabular-nums',
+          'font-fw-mono text-body font-semibold tabular-nums',
           tone === 'accent' ? 'text-accent-600' : tone === 'muted' ? 'text-text-tertiary' : 'text-text-primary',
         )}
       >

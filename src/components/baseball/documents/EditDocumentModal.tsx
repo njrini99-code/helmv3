@@ -6,6 +6,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { InkNotice } from '@/components/baseball/living-annual';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
 
 export interface EditDocumentModalCategory {
@@ -106,11 +107,7 @@ export function EditDocumentModal({ open, document, categories, onClose, onSave 
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          {error && <InkNotice>{error}</InkNotice>}
 
           <Input
             label="Title"

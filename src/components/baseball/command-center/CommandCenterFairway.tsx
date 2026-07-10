@@ -46,6 +46,7 @@ import {
   HairlineRule,
   Eyebrow,
   InkBadge,
+  SectionMasthead,
   type KPIContentsItem,
 } from '@/components/baseball/living-annual';
 import { BaseballInviteButton } from './BaseballInviteButton';
@@ -95,6 +96,34 @@ const OPPONENT_EVENT = /game|scrimmage|tournament/i;
 /** Ink for an event-type stamp — games/tournaments read green, the rest quiet. */
 function eventInk(type: string): 'team' | 'neutral' {
   return /game|tournament/i.test(type) ? 'team' : 'neutral';
+}
+
+/** Known `event_type` values → their editorial label (Title Case, spaced). */
+const EVENT_TYPE_LABEL: Record<string, string> = {
+  game: 'Game',
+  practice: 'Practice',
+  scrimmage: 'Scrimmage',
+  showcase: 'Showcase',
+  tryout: 'Tryout',
+  tournament: 'Tournament',
+  meeting: 'Meeting',
+  other: 'Other',
+};
+
+/**
+ * Friendly label for a raw `event_type` — the This-week InkBadge must never
+ * print the raw enum/snake_case value. Falls back to humanizing anything not
+ * in the lookup (`team_meeting` → `Team Meeting`) so an unrecognized type
+ * still reads as a word, not chrome leaking a DB value.
+ */
+function eventLabel(type: string): string {
+  const known = EVENT_TYPE_LABEL[type];
+  if (known) return known;
+  return type
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 /** Friendly weekday + time label for an ISO timestamp (this-week strip). */
@@ -200,22 +229,26 @@ export function CommandCenterFairway({
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* ── Masthead line + quick actions (the CoverHero is the header) ─────── */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <Eyebrow as="h1" items={[team.name, 'Command Center']} ink="team" />
-        <div className="flex items-center gap-2">
-          {team.id ? (
-            <BaseballInviteButton
-              teamId={team.id}
-              teamName={team.name}
-              existingCode={team.inviteCode}
-            />
-          ) : null}
-          <Button asChild variant="secondary" size="sm" leftIcon={<IconChartBar size={16} />}>
-            <Link href="/baseball/dashboard/stats/upload">Upload stats</Link>
-          </Button>
-        </div>
-      </header>
+      {/* ── The masthead: team dateline, page title, green accent rule ──────── */}
+      <SectionMasthead
+        eyebrow={team.name}
+        title="Command Center"
+        ink="team"
+        actions={
+          <>
+            {team.id ? (
+              <BaseballInviteButton
+                teamId={team.id}
+                teamName={team.name}
+                existingCode={team.inviteCode}
+              />
+            ) : null}
+            <Button asChild variant="secondary" size="sm" leftIcon={<IconChartBar size={16} />}>
+              <Link href="/baseball/dashboard/stats/upload">Upload stats</Link>
+            </Button>
+          </>
+        }
+      />
 
       {/* ── The cover: this week's opponent (or an honest standing-by letter) ─ */}
       <CoverHero
@@ -287,7 +320,7 @@ export function CommandCenterFairway({
                         {fmtEventWhen(event.start_time)}
                       </p>
                     </div>
-                    <InkBadge label={event.event_type} tone={eventInk(event.event_type)} />
+                    <InkBadge label={eventLabel(event.event_type)} tone={eventInk(event.event_type)} />
                   </li>
                 ))}
               </ul>

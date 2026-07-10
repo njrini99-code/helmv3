@@ -593,17 +593,24 @@ export function EventImportWizard({ teamId, teamName, players, eventSources }: P
                       variant="primary"
                       busy={busy}
                       onClick={async () => {
-                        await reviewEventImportRun({
-                          teamId,
-                          importRunId: result.importRunId,
-                          decision: 'approve',
-                        });
-                        addToast({
-                          type: 'success',
-                          title: 'Approved',
-                          description: 'The held events were written.',
-                        });
-                        reset();
+                        setBusy(true);
+                        try {
+                          await reviewEventImportRun({
+                            teamId,
+                            importRunId: result.importRunId,
+                            decision: 'approve',
+                          });
+                          addToast({
+                            type: 'success',
+                            title: 'Approved',
+                            description: 'The held events were written.',
+                          });
+                          reset();
+                        } catch {
+                          addToast({ type: 'error', title: 'Approval failed', description: 'Please try again.' });
+                        } finally {
+                          setBusy(false);
+                        }
                       }}
                     >
                       Approve now

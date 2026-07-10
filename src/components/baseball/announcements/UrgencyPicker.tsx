@@ -27,26 +27,31 @@ const urgencyOptions = [
     dot: 'bg-primary-400',
   },
   {
+    // Warning-weight: pursuit ink at "soft" intensity (mirrors <InkBadge variant="soft">).
     value: 'high' as const,
     label: 'High',
     description: 'Important',
-    color: 'text-amber-600',
-    bg: 'bg-amber-50/50',
-    border: 'border-amber-200',
-    activeBg: 'bg-amber-50',
-    activeBorder: 'border-amber-400',
-    dot: 'bg-amber-400',
+    color: 'text-pursuit',
+    bg: 'bg-pursuit/5',
+    border: 'border-pursuit/25',
+    activeBg: 'bg-pursuit/10',
+    activeBorder: 'border-pursuit/40',
+    // Soft-weight dot — one rung below 'urgent' on the clay ramp so the
+    // at-a-glance dot cue stays distinct between the two severities.
+    dot: 'bg-pursuit/55',
   },
   {
+    // Error-weight: pursuit ink at "solid" intensity (mirrors <InkBadge variant="solid">) —
+    // deliberately more saturated than 'high' so the two stay visually distinct.
     value: 'urgent' as const,
     label: 'Urgent',
     description: 'Immediate',
-    color: 'text-red-600',
-    bg: 'bg-red-50/50',
-    border: 'border-red-200',
-    activeBg: 'bg-red-50',
-    activeBorder: 'border-red-400',
-    dot: 'bg-red-400',
+    color: 'text-pursuit',
+    bg: 'bg-pursuit/10',
+    border: 'border-pursuit/35',
+    activeBg: 'bg-pursuit/20',
+    activeBorder: 'border-pursuit/60',
+    dot: 'bg-pursuit',
   },
 ];
 

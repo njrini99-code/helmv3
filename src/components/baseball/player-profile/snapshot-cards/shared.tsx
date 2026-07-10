@@ -7,9 +7,28 @@
 // what they're handed (incl. honest empty/stale states). No I/O, no fetch.
 // =============================================================================
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
 import type { SourceTrust } from '@/components/baseball/source-trust/source-trust-types';
+import { PaperCard } from '@/components/baseball/living-annual';
+
+/**
+ * Inline background (+ optional hairline border) for the one true-error ink
+ * used below (`--notice-error-ink` — see src/styles/baseball-living-annual.css
+ * and <InkNotice>'s header doc). Not a registered Tailwind color, so —
+ * matching InkBadge/InkNotice's own pattern — it's mixed via `color-mix()` in
+ * a style prop rather than a `bg-notice-error-ink/NN` utility class that
+ * Tailwind can't generate. `border` mirrors InkBadge's soft(8%)/solid(16%+
+ * 32%-mix hairline) split so a true error reads as a firmer stamp than the
+ * pursuit/10 "soft" warning tone it sits beside — a non-color cue, not just a
+ * deeper tint (meaning is never color alone).
+ */
+function errorInkStyle(pct: number, border = false): CSSProperties {
+  return {
+    backgroundColor: `color-mix(in oklch, var(--notice-error-ink) ${pct}%, transparent)`,
+    ...(border ? { borderColor: 'color-mix(in oklch, var(--notice-error-ink) 32%, transparent)' } : null),
+  };
+}
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
 
@@ -84,11 +103,18 @@ export interface SnapshotCardShellProps {
   className?: string;
 }
 
+// Ink system, not raw Tailwind status colors (Living Annual doctrine — no raw
+// red/amber outside the performance legend): `primary`/`warm` were already
+// tokenized (primary-* = --grade-plus team green, warm-* = graphite neutral)
+// so they're unchanged. `amber` (a role/category accent, not a warning state)
+// reads pursuit clay instead of raw amber. `red` is reserved for a true error
+// accent — it text-only here; its background is mixed from --notice-error-ink
+// in the header span below (see errorInkStyle).
 const ACCENT: Record<NonNullable<SnapshotCardShellProps['accent']>, string> = {
   primary: 'bg-primary-100 text-primary-700',
-  amber: 'bg-amber-100 text-amber-700',
+  amber: 'bg-pursuit/10 text-pursuit',
   warm: 'bg-warm-100 text-warm-600',
-  red: 'bg-red-100 text-red-700',
+  red: 'text-[color:var(--notice-error-ink)]',
 };
 
 export function SnapshotCardShell({
@@ -105,11 +131,12 @@ export function SnapshotCardShell({
 }: SnapshotCardShellProps) {
   const fresh = fmtFreshness(asOf);
   return (
-    <section
-      className={`bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5 flex flex-col ${className}`}
-    >
+    <PaperCard as="section" className={`flex flex-col p-5 ${className}`}>
       <header className="flex items-center gap-2.5 mb-4">
-        <span className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${ACCENT[accent]}`}>
+        <span
+          className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${ACCENT[accent]}`}
+          style={accent === 'red' ? errorInkStyle(14) : undefined}
+        >
           {icon}
         </span>
         <h3 className="font-semibold text-warm-900 text-sm leading-tight flex-1 min-w-0 truncate">{title}</h3>
@@ -125,12 +152,12 @@ export function SnapshotCardShell({
       )}
 
       {!empty && (trust || fresh) && (
-        <footer className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-warm-100">
+        <footer className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-[color:var(--hairline)]">
           {trust ? <SourceTrustBadge trust={trust} size="sm" /> : <span />}
           {fresh && <span className="text-eyebrow text-warm-400 tabular-nums">as of {fresh}</span>}
         </footer>
       )}
-    </section>
+    </PaperCard>
   );
 }
 
@@ -160,10 +187,16 @@ export function StatTile({
 
 // ─── Tone chip (status / readiness) ──────────────────────────────────────────
 
+// Ink system (Living Annual doctrine — no raw red/amber): `success`/`neutral`
+// were already tokenized (team green / graphite) so they're unchanged.
+// `warning` reads pursuit clay soft; `error` is the one TRUE-error state
+// (overdue tasks, high soreness, declining trend, ineligible) so it reads the
+// dedicated `--notice-error-ink` (mixed in errorInkStyle below), never raw
+// red, matching <InkBadge>/<InkNotice>'s "solid" weight.
 const TONE: Record<'success' | 'warning' | 'error' | 'info' | 'neutral', string> = {
   success: 'bg-primary-100 text-primary-700',
-  warning: 'bg-amber-100 text-amber-700',
-  error: 'bg-red-100 text-red-700',
+  warning: 'bg-pursuit/10 text-pursuit',
+  error: 'text-[color:var(--notice-error-ink)]',
   info: 'bg-primary-50 text-primary-700',
   neutral: 'bg-warm-100 text-warm-600',
 };
@@ -178,7 +211,10 @@ export function ToneChip({
   icon?: ReactNode;
 }) {
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${TONE[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${TONE[tone]} ${tone === 'error' ? 'border' : ''}`}
+      style={tone === 'error' ? errorInkStyle(16, true) : undefined}
+    >
       {icon}
       {children}
     </span>

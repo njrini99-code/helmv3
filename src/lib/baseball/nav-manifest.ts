@@ -207,6 +207,17 @@ const legacyRedirectEntries: NavManifestEntry[] = [
     status: 'deprecated',
     target: '/baseball/dashboard/stats-center',
   },
+  // Demo Mode was removed from Program Settings (PKT-12) with no replacement
+  // section, so there is no canonical anchor to alias onto (see the settings
+  // aliases' NOTE above — it deliberately has no 'demo-mode' key). This route
+  // is kept reachable by redirecting to the Settings hub root rather than a
+  // dead Program Settings anchor.
+  {
+    href: '/baseball/dashboard/settings/demo-mode',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings',
+  },
   // Dead target — no page.tsx exists. A scoped staff member was previously
   // dropped here post-login (see auth-redirects-resolve.test.ts); kept as a
   // 'removed' tombstone so a future redirect literal pointing here fails the
@@ -215,6 +226,50 @@ const legacyRedirectEntries: NavManifestEntry[] = [
     href: '/baseball/dashboard/staff',
     source: 'legacy-redirect',
     status: 'removed',
+  },
+  // Pre-consolidation settings sub-pages — restored 2026-07-09: the W5
+  // dead-code sweep (above) had misjudged these as zero-inbound and deleted
+  // the redirect stubs outright, but each was a previously-live, linked URL
+  // (see git log --diff-filter=D on this path for the wrongly-removed
+  // page.tsx trio). Recreated identically to the accepted-consolidation
+  // pattern (same as 'notifications' above) and reclassified 'deprecated' —
+  // 'removed' would now fail this suite's own "must not resolve on disk"
+  // assertion since the redirect page exists again.
+  {
+    href: '/baseball/dashboard/settings/ai',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
+  },
+  {
+    href: '/baseball/dashboard/settings/appearance',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
+  },
+  {
+    href: '/baseball/dashboard/settings/data-retention',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
+  },
+  {
+    href: '/baseball/dashboard/settings/guardian-access',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
+  },
+  {
+    href: '/baseball/dashboard/settings/player-access',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
+  },
+  {
+    href: '/baseball/dashboard/settings/showcase-profile',
+    source: 'legacy-redirect',
+    status: 'deprecated',
+    target: '/baseball/dashboard/settings/program',
   },
 ];
 

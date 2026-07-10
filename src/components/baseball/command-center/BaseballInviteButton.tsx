@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { IconPlus, IconCopy, IconCheck, IconX, IconRefresh } from '@/components/icons';
+import { IconPlus, IconCopy, IconCheck, IconRefresh } from '@/components/icons';
 import { generateTeamInviteCode, regenerateTeamInviteCode } from '@/app/baseball/actions/teams';
 import { useToast } from '@/components/ui/sonner';
+import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 interface BaseballInviteButtonProps {
   teamId: string;
@@ -14,6 +15,13 @@ interface BaseballInviteButtonProps {
   existingCode: string | null;
 }
 
+// Rebuilt on the shared Fairway <ModalShell> (Radix Dialog) — the previous
+// version had real ARIA (role="dialog"/aria-modal/aria-labelledby) and a
+// manual Escape handler + scroll-lock, but no Tab focus trap and no focus
+// restore to the "Invite Player" trigger on close (#a11y-sweep P1). Radix
+// gives us the trap + restore + Escape + scroll-lock for free, so the manual
+// keydown/overflow effect and the `createPortal`/`mounted` scaffolding it
+// needed are dropped along with it.
 export function BaseballInviteButton({
   teamId,
   teamName,
@@ -27,11 +35,6 @@ export function BaseballInviteButton({
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState(existingCode);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (existingCode && typeof window !== 'undefined') {
@@ -39,24 +42,6 @@ export function BaseballInviteButton({
       setInviteLink(`${window.location.origin}/baseball/join/${existingCode}`);
     }
   }, [existingCode]);
-
-  // Close on Escape + lock body scroll while the modal is open.
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-        setError(null);
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [isOpen]);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -136,76 +121,33 @@ export function BaseballInviteButton({
     }
   };
 
-  const handleOpen = () => {
-    setIsOpen(true);
+  // Single open/close entry point so the dialog's own Escape / scrim-click /
+  // close-button paths (routed through ModalShell's onOpenChange) behave
+  // identically to clicking the trigger or footer Close button.
+  const handleOpenChange = (next: boolean) => {
+    setIsOpen(next);
     setError(null);
-
-    if (!inviteLink) {
+    if (next && !inviteLink) {
       handleGenerate();
     }
   };
 
-  const handleClose = () => {
-    setIsOpen(false);
-    setError(null);
-  };
+  return (
+    <>
+      <Button onClick={() => handleOpenChange(true)} className="gap-2">
+        <IconPlus size={18} />
+        <span className="hidden sm:inline">Invite Player</span>
+        <span className="sm:hidden">Invite</span>
+      </Button>
 
-  const modalContent = (
-    <div
-      role="presentation"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(28, 25, 23, 0.45)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') handleClose();
-      }}
-    >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="invite-modal-title"
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          maxWidth: '32rem',
-          width: '100%',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          maxHeight: 'calc(100vh - 32px)',
-          overflow: 'auto',
-        }}
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+      <ModalShell
+        open={isOpen}
+        onOpenChange={handleOpenChange}
+        size="md"
+        title={`Invite Player to ${teamName}`}
+        description="Share this link with players to invite them to your team. They'll be able to join by clicking the link and creating an account."
       >
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-warm-200">
-          <h2 id="invite-modal-title" className="text-lg font-semibold text-warm-900">
-            Invite Player to {teamName}
-          </h2>
-        </div>
-
-        {/* Content */}
-        <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-warm-600">
-            Share this link with players to invite them to your team. They&apos;ll
-            be able to join by clicking the link and creating an account.
-          </p>
-
+        <ModalShell.Body className="space-y-4">
           {/* Loading State */}
           {loading && (
             <div className="flex items-center justify-center py-8" role="status" aria-live="polite">
@@ -218,25 +160,20 @@ export function BaseballInviteButton({
 
           {/* Error State */}
           {error && !loading && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <IconX size={12} className="text-red-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-red-800">
-                  Failed to generate invite
-                </p>
-                <p className="text-sm text-red-600 mt-1">{error}</p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleGenerate}
-                  className="mt-3"
-                >
-                  Try Again
-                </Button>
-              </div>
-            </div>
+            <InkNotice>
+              <p className="text-sm font-medium text-text-primary">
+                Failed to generate invite
+              </p>
+              <p className="text-sm text-text-secondary mt-1">{error}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleGenerate}
+                className="mt-3"
+              >
+                Try Again
+              </Button>
+            </InkNotice>
           )}
 
           {/* Success State */}
@@ -310,27 +247,13 @@ export function BaseballInviteButton({
               </div>
             </>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-200 flex justify-end">
-          <Button variant="secondary" onClick={handleClose}>
+        </ModalShell.Body>
+        <ModalShell.Footer>
+          <Button variant="secondary" onClick={() => handleOpenChange(false)}>
             Close
           </Button>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      <Button onClick={handleOpen} className="gap-2">
-        <IconPlus size={18} />
-        <span className="hidden sm:inline">Invite Player</span>
-        <span className="sm:hidden">Invite</span>
-      </Button>
-
-      {isOpen && mounted && createPortal(modalContent, document.body)}
+        </ModalShell.Footer>
+      </ModalShell>
     </>
   );
 }

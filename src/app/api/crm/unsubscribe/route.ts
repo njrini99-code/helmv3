@@ -14,38 +14,74 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUnsubToken } from '@/lib/crm/unsubscribe-token';
+import { logServerError } from '@/lib/server-error-logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Returns true only once the suppression row exists (or already existed) —
+// that row is the source of truth senders consult before sending. A failed
+// crm_coaches status update is logged but doesn't flip the result to false,
+// since the suppression itself already landed.
 async function suppress(coachId: string): Promise<boolean> {
   const supa = createAdminClient();
-  const { data: coach } = await supa
+  const { data: coach, error: coachError } = await supa
     .from('crm_coaches')
     .select('email')
     .eq('id', coachId)
     .maybeSingle();
+  if (coachError) {
+    await logServerError(`unsubscribe.suppress coach lookup failed: ${coachError.message}`, {
+      action: 'crm.unsubscribe.suppress',
+      errorCode: coachError.code,
+      extra: { coachId },
+    });
+    return false;
+  }
   const email = coach?.email?.toLowerCase().trim();
   if (!email) return false;
 
   // check-then-insert (no reliance on a unique constraint existing)
-  const { data: existing } = await supa
+  const { data: existing, error: existingError } = await supa
     .from('crm_email_suppressions')
     .select('id')
     .eq('email', email)
     .maybeSingle();
+  if (existingError) {
+    await logServerError(`unsubscribe.suppress suppression lookup failed: ${existingError.message}`, {
+      action: 'crm.unsubscribe.suppress',
+      errorCode: existingError.code,
+      extra: { coachId },
+    });
+    return false;
+  }
   if (!existing) {
-    await supa.from('crm_email_suppressions').insert({
+    const { error: insertError } = await supa.from('crm_email_suppressions').insert({
       email,
       reason: 'unsubscribed',
       source: 'system',
       metadata: { via: 'list-unsubscribe', coach_id: coachId },
     });
+    if (insertError) {
+      await logServerError(`unsubscribe.suppress insert failed: ${insertError.message}`, {
+        action: 'crm.unsubscribe.suppress',
+        errorCode: insertError.code,
+        extra: { coachId },
+      });
+      return false;
+    }
   }
-  await supa
+  const { error: updateError } = await supa
     .from('crm_coaches')
     .update({ email_status: 'unsubscribed', updated_at: new Date().toISOString() })
     .eq('id', coachId);
+  if (updateError) {
+    await logServerError(`unsubscribe.suppress crm_coaches update failed: ${updateError.message}`, {
+      action: 'crm.unsubscribe.suppress',
+      errorCode: updateError.code,
+      extra: { coachId },
+    });
+  }
   return true;
 }
 
@@ -59,7 +95,10 @@ export async function POST(request: Request) {
   const c = searchParams.get('c');
   const t = searchParams.get('t');
   if (!verifyUnsubToken(c, t)) return NextResponse.json({ error: 'invalid' }, { status: 400 });
-  await suppress(c);
+  const ok = await suppress(c);
+  // Non-2xx tells RFC 8058 senders to retry the one-click POST — silently
+  // 200-ing a failed suppress() would leave the coach un-suppressed forever.
+  if (!ok) return NextResponse.json({ error: 'failed' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 

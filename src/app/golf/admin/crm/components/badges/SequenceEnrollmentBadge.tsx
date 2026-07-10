@@ -6,7 +6,7 @@ import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
  * teammates working the list by hand can see who's already handled:
  *   Queued  (blue)   — enrolled, not yet emailed (safe to work)
  *   Step N  (amber)  — in the sequence, touch N already sent
- *   Done    (emerald)— sequence complete (already emailed)
+ *   Done    (primary)— sequence complete (already emailed)
  *   Paused  (warm)   — temporarily held
  *   —                — not in the queue (stopped / sold / never enrolled)
  */

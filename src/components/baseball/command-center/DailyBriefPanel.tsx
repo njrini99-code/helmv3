@@ -166,7 +166,7 @@ export function DailyBriefPanel({
   return (
     <section
       aria-label="AI daily brief"
-      className="relative overflow-hidden rounded-2xl border border-primary-200/50 bg-gradient-to-br from-primary-50/80 via-cream-100/75 to-cream-100/75 backdrop-blur-glass shadow-glass p-5 sm:p-6"
+      className="relative overflow-hidden rounded-2xl border border-primary-200/50 bg-gradient-to-br from-primary-50/80 via-cream-100/75 to-cream-100/75 p-5 sm:p-6"
     >
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-4">
@@ -206,9 +206,9 @@ export function DailyBriefPanel({
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-center">
-          <IconInfo size={18} className="text-amber-500 mx-auto mb-1.5" />
-          <p className="text-sm text-amber-800 font-medium">{error}</p>
+        <div className="rounded-xl border border-pursuit/20 bg-pursuit/10 p-4 text-center">
+          <IconInfo size={18} className="text-pursuit mx-auto mb-1.5" />
+          <p className="text-sm text-pursuit font-medium">{error}</p>
         </div>
       ) : aiItems.length === 0 ? (
         // HONEST empty — the engine has not produced a brief yet.
@@ -332,7 +332,7 @@ export function DailyBriefPanel({
                               onClick={() => void onFeedback(item.id, 'not_helpful')}
                               aria-label="Mark insight not helpful"
                               title="Not helpful"
-                              className="text-warm-400 hover:text-amber-600"
+                              className="text-warm-400 hover:text-pursuit"
                             >
                               <IconX size={14} />
                             </Button>

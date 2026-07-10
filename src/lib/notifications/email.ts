@@ -190,6 +190,22 @@ const ICONS: Record<string, string> = {
   bell: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a6 6 0 0 1 6 6v3l1.5 2.5H2.5L4 11V8a6 6 0 0 1 6-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 15.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 };
 
+/**
+ * Escapes HTML special characters to prevent stored HTML injection.
+ * Every value below flows from user-controlled data (sender/coach display
+ * names, message previews, announcement titles/bodies, school/task text)
+ * into raw template-literal HTML, so it must be escaped at render time
+ * rather than trusted from the DB/caller.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /** Renders an icon in a circle on dark bg for use in the body */
 function iconCircle(iconKey: string, size = 48): string {
   const svg = ICONS[iconKey] ?? ICONS['bell']!;
@@ -232,6 +248,13 @@ function emailShell(opts: {
 }): string {
   const { previewText, headerLabel, headerIconKey, iconKey, title, body, cta, greeting, footerNote } = opts;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+  // `title`, `previewText`, and `greeting` are always plain sentences built
+  // from user-controlled data (names, message/announcement text) — escape
+  // once here so every call site is covered without re-escaping at each of
+  // the ~10 template cases that construct them.
+  const escTitle = escapeHtml(title);
+  const escPreviewText = escapeHtml(previewText);
+  const escGreeting = greeting ? escapeHtml(greeting) : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -239,7 +262,7 @@ function emailShell(opts: {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <meta name="color-scheme" content="light" />
-  <title>${title}</title>
+  <title>${escTitle}</title>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
     @media only screen and (max-width:620px){
@@ -255,7 +278,7 @@ function emailShell(opts: {
 <body style="margin:0;padding:0;background-color:${BRAND.subtle};-webkit-text-size-adjust:100%;" bgcolor="${BRAND.subtle}">
 
   <!-- Preheader -->
-  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${BRAND.subtle};">${previewText}&#8203;&#65279;&#65279;&#65279;&#65279;&#65279;&#65279;</div>
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${BRAND.subtle};">${escPreviewText}&#8203;&#65279;&#65279;&#65279;&#65279;&#65279;&#65279;</div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
@@ -298,12 +321,12 @@ function emailShell(opts: {
           <tr>
             <td class="body-pad" style="background-color:${BRAND.cream};padding:36px 36px 28px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
 
-              ${greeting ? `<p style="margin:0 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:500;color:${BRAND.muted};">${greeting}</p>` : ''}
+              ${greeting ? `<p style="margin:0 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:500;color:${BRAND.muted};">${escGreeting}</p>` : ''}
 
               ${iconCircle(iconKey)}
 
               <!-- Title -->
-              <h1 style="margin:0 0 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${BRAND.dark};">${title}</h1>
+              <h1 style="margin:0 0 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${BRAND.dark};">${escTitle}</h1>
 
               <!-- Body -->
               ${body}
@@ -358,13 +381,16 @@ function emailShell(opts: {
 
 /** Renders a key-value detail row used in several templates */
 function detailRow(label: string, value: string): string {
+  // `value` is frequently user/coach-supplied (dates, locations, round
+  // counts entered on a form) — escape both sides at this shared render
+  // point rather than at every call site.
   return `
     <tr>
       <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};">
-        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${BRAND.muted};">${label}</span>
+        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${BRAND.muted};">${escapeHtml(label)}</span>
       </td>
       <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};text-align:right;">
-        <span style="font-size:14px;font-weight:500;color:${BRAND.dark};">${value}</span>
+        <span style="font-size:14px;font-weight:500;color:${BRAND.dark};">${escapeHtml(value)}</span>
       </td>
     </tr>`;
 }
@@ -380,11 +406,14 @@ function detailTable(rows: string): string {
 
 /** Quote block for message previews */
 function quoteBlock(text: string): string {
+  // `text` is the raw message preview a recipient's counterpart typed —
+  // escape it here so message content can never inject markup into the email.
+  const esc = escapeHtml(text);
   return `
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
       <tr>
         <td style="border-left:3px solid ${BRAND.green};padding:12px 20px;background:${BRAND.greenLight};border-radius:0 8px 8px 0;">
-          <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.dark};font-style:italic;">"${text}"</p>
+          <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.dark};font-style:italic;">"${esc}"</p>
         </td>
       </tr>
     </table>`;
@@ -392,7 +421,10 @@ function quoteBlock(text: string): string {
 
 /** Badge pill (for urgency, stage labels, etc.) */
 function badge(text: string, color: string, bg: string): string {
-  return `<span style="display:inline-block;padding:3px 10px;background:${bg};color:${color};border-radius:12px;font-size:12px;font-weight:600;letter-spacing:0.2px;">${text}</span>`;
+  // Most callers pass fixed dictionary labels, but the pipeline-stage and
+  // dev-plan-area fallbacks can pass through a raw, unmapped value — escape
+  // unconditionally so an unrecognized stage/area string can't inject markup.
+  return `<span style="display:inline-block;padding:3px 10px;background:${bg};color:${color};border-radius:12px;font-size:12px;font-weight:600;letter-spacing:0.2px;">${escapeHtml(text)}</span>`;
 }
 
 // ── Urgency config ────────────────────────────────────────────────────────────
@@ -428,7 +460,7 @@ function generateEmailTemplate(
           title: `Message from ${senderName}`,
           body: `
             <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-              <strong style="color:${BRAND.dark};">${senderName}</strong> sent you a message.
+              <strong style="color:${BRAND.dark};">${escapeHtml(senderName)}</strong> sent you a message.
             </p>
             ${quoteBlock(preview + (preview.length >= 200 ? '\u2026' : ''))}
             <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};line-height:1.5;">Reply directly in Helm to keep the conversation going.</p>
@@ -463,13 +495,13 @@ function generateEmailTemplate(
               <tr>
                 <td>
                   <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">From&nbsp;&nbsp;</span>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${escapeHtml(coachName)}</span>
                   <span style="margin-left:10px;">${badge(urg.label, urg.color, urg.bg)}</span>
                 </td>
               </tr>
             </table>
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:20px 22px;">
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:${BRAND.darkMid};">${content}</p>
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:${BRAND.darkMid};">${escapeHtml(content)}</p>
             </div>
           `,
           greeting: String(data._greeting || ''),
@@ -551,7 +583,7 @@ function generateEmailTemplate(
           title: "You're on a coach\u2019s watchlist",
           body: `
             <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-              <strong style="color:${BRAND.dark};">${coachName}</strong> from <strong style="color:${BRAND.dark};">${schoolName}</strong> added you to their recruiting watchlist.
+              <strong style="color:${BRAND.dark};">${escapeHtml(coachName)}</strong> from <strong style="color:${BRAND.dark};">${escapeHtml(schoolName)}</strong> added you to their recruiting watchlist.
             </p>
             <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;">
               <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">What this means</p>
@@ -622,7 +654,7 @@ function generateEmailTemplate(
           title: 'Your profile was viewed',
           body: `
             <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-              <strong style="color:${BRAND.dark};">${viewerInfo}</strong> viewed your recruiting profile. This is a signal of interest \u2014 make sure your profile is complete.
+              <strong style="color:${BRAND.dark};">${escapeHtml(viewerInfo)}</strong> viewed your recruiting profile. This is a signal of interest \u2014 make sure your profile is complete.
             </p>
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;">
               <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">Pro tip</p>
@@ -658,13 +690,13 @@ function generateEmailTemplate(
               <tr>
                 <td>
                   <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">Assigned by&nbsp;&nbsp;</span>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${escapeHtml(coachName)}</span>
                 </td>
               </tr>
             </table>
             ${taskDescription ? `
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin-bottom:20px;">
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.7;color:${BRAND.darkMid};">${taskDescription}</p>
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.7;color:${BRAND.darkMid};">${escapeHtml(taskDescription)}</p>
             </div>` : ''}
             ${dueDate ? detailTable(detailRow('Due Date', dueDate)) : ''}
           `,
@@ -697,7 +729,7 @@ function generateEmailTemplate(
               <tr>
                 <td>
                   <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">From&nbsp;&nbsp;</span>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${escapeHtml(coachName)}</span>
                   ${areaLabel ? `<span style="margin-left:10px;">${badge(areaLabel, BRAND.green, BRAND.greenXLight)}</span>` : ''}
                 </td>
               </tr>

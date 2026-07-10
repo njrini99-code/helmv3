@@ -12,9 +12,10 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { IconSave, IconUser, IconTrendingUp } from '@/components/icons';
+import { IconSave, IconUser, IconTrendingUp, IconX } from '@/components/icons';
 import { sumInningsPitched } from '@/lib/baseball/innings';
 import { formatAvg, formatOps, formatEra, formatWhip } from './format-stat';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface PlayerRow {
   id: string;
@@ -67,6 +68,53 @@ function calcWHIP(h: number, bb: number, ip: number) {
 const PITCHING_RESULTS: BaseballPitchingResult[] = ['W', 'L', 'S', 'H', 'BS', 'ND'];
 
 type ActiveTab = 'batting' | 'pitching';
+
+// Human-readable stat names for the per-row input aria-labels below — every
+// box-score cell is a bare number-only <Input> with no visible label, so a
+// screen reader announcing just "spinbutton, 0" gives no idea which stat or
+// player it belongs to (#a11y-sweep P1). Composed as "{player} {stat}", e.g.
+// "Marcus Rivera at-bats".
+const BATTING_FIELD_LABELS: Record<
+  keyof Pick<
+    BoxScoreBattingInput,
+    'ab' | 'r' | 'h' | 'doubles' | 'triples' | 'hr' | 'rbi' | 'bb' | 'k' | 'sb' | 'cs' | 'hbp' | 'sac' | 'sf' | 'lob'
+  >,
+  string
+> = {
+  ab: 'at-bats',
+  r: 'runs',
+  h: 'hits',
+  doubles: 'doubles',
+  triples: 'triples',
+  hr: 'home runs',
+  rbi: 'RBIs',
+  bb: 'walks',
+  k: 'strikeouts',
+  sb: 'stolen bases',
+  cs: 'caught stealing',
+  hbp: 'hit by pitch',
+  sac: 'sacrifice bunts',
+  sf: 'sacrifice flies',
+  lob: 'left on base',
+};
+
+const PITCHING_FIELD_LABELS: Record<
+  keyof Pick<BoxScorePitchingInput, 'ip' | 'h' | 'r' | 'er' | 'bb' | 'k' | 'hr'>,
+  string
+> = {
+  ip: 'innings pitched',
+  h: 'hits allowed',
+  r: 'runs allowed',
+  er: 'earned runs',
+  bb: 'walks allowed',
+  k: 'strikeouts',
+  hr: 'home runs allowed',
+};
+
+function playerFullName(player: PlayerRow | undefined): string {
+  if (!player) return 'Unknown player';
+  return [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Unknown player';
+}
 
 export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitching }: BoxScoreEntryProps) {
   const router = useRouter();
@@ -210,7 +258,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
   return (
     <div className="space-y-5">
       {/* Game header / score input */}
-      <div className="glass-standard rounded-2xl p-5">
+      <PaperCard className="p-5">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-lg font-bold text-warm-900">
@@ -235,7 +283,8 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 max={99}
                 value={ourScore}
                 onChange={(e) => setOurScore(Number(e.target.value))}
-                className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
+                aria-label="Our score"
+                className="w-16 min-h-[44px] text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82 font-annual tabular-nums"
               />
             </div>
             <span className="text-2xl font-bold text-warm-300 mt-4">—</span>
@@ -249,12 +298,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 max={99}
                 value={oppScore}
                 onChange={(e) => setOppScore(Number(e.target.value))}
-                className="w-16 min-h-0 text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82"
+                aria-label={`${game.opponent_name ?? 'Opponent'} score`}
+                className="w-16 min-h-[44px] text-center text-2xl font-bold p-2 rounded-xl bg-cream-100/82 font-annual tabular-nums"
               />
             </div>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
@@ -280,17 +330,17 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
 
       {/* Batting table */}
       {activeTab === 'batting' && (
-        <div className="glass-standard rounded-2xl overflow-clip" data-testid="batting-entry-table">
+        <PaperCard className="overflow-hidden" data-testid="batting-entry-table">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-warm-100 bg-warm-50/80">
-                  <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Player</th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Player</th>
                   {['AB','R','H','2B','3B','HR','RBI','BB','K','SB','CS','HBP','SAC','SF','LOB'].map((h) => (
-                    <th key={h} className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[44px]">{h}</th>
+                    <th key={h} scope="col" className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[44px]">{h}</th>
                   ))}
-                  <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">AVG</th>
-                  <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">OPS</th>
+                  <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">AVG</th>
+                  <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">OPS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-warm-50">
@@ -309,7 +359,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                         ) : 'Unknown'}
                       </td>
                       {(
-                        ['ab','r','h','doubles','triples','hr','rbi','bb','k','sb','cs','hbp','sac','sf','lob'] as (keyof BoxScoreBattingInput)[]
+                        ['ab','r','h','doubles','triples','hr','rbi','bb','k','sb','cs','hbp','sac','sf','lob'] as (keyof typeof BATTING_FIELD_LABELS)[]
                       ).map((field) => (
                         <td key={field} className="px-1 py-1.5 text-center">
                           <Input
@@ -318,14 +368,15 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             max={99}
                             value={row[field] as number}
                             onChange={(e) => updateBatting(row.player_id, field, Number(e.target.value))}
-                            className="w-10 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
+                            aria-label={`${playerFullName(player)} ${BATTING_FIELD_LABELS[field]}`}
+                            className="w-10 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 font-annual tabular-nums"
                           />
                         </td>
                       ))}
-                      <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                      <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                         {calcAvg(row.h, row.ab)}
                       </td>
-                      <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                      <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                         {calcOPS(row)}
                       </td>
                     </tr>
@@ -336,18 +387,18 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               <tfoot>
                 <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="batting-entry-totals-row">
                   <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.ab}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.r}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.h}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.doubles}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.triples}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.hr}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.rbi}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.bb}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.k}</td>
-                  <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.sb}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.ab}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.r}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.h}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.doubles}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.triples}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.hr}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.rbi}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.bb}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.k}</td>
+                  <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.sb}</td>
                   <td colSpan={5} />
-                  <td className="px-2 py-2.5 text-center text-warm-500 font-mono">
+                  <td className="px-2 py-2.5 text-center text-warm-500 font-annual tabular-nums">
                     {calcAvg(battingTotals.h, battingTotals.ab)}
                   </td>
                   <td />
@@ -355,7 +406,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               </tfoot>
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
 
       {/* Pitching table */}
@@ -367,7 +418,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               value={selectedPitcherId}
               onChange={(value) => setSelectedPitcherId(value)}
               placeholder="Select pitcher to add..."
-              className="flex-1 max-w-xs text-sm min-h-0 py-2 bg-cream-100/75"
+              className="flex-1 max-w-xs text-sm min-h-[44px] py-2 bg-cream-100/75"
               options={teamPlayers
                 .filter((p) => !pitchingRows.some((r) => r.player_id === p.id))
                 .map((p) => ({
@@ -386,24 +437,20 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
           </div>
 
           {pitchingRows.length === 0 ? (
-            <div className="glass-standard rounded-2xl p-8 text-center">
-              <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
-                Add pitchers using the selector above to record pitching lines.
-              </p>
-            </div>
+            <EditorsLetter title="Add pitchers using the selector above to record pitching lines." />
           ) : (
-            <div className="glass-standard rounded-2xl overflow-clip" data-testid="pitching-entry-table">
+            <PaperCard className="overflow-hidden" data-testid="pitching-entry-table">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-warm-100 bg-warm-50/80">
-                      <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Pitcher</th>
+                      <th scope="col" className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Pitcher</th>
                       {['IP','H','R','ER','BB','K','HR','PC','Result'].map((h) => (
-                        <th key={h} className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[52px]">{h}</th>
+                        <th key={h} scope="col" className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[52px]">{h}</th>
                       ))}
-                      <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">ERA</th>
-                      <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">WHIP</th>
-                      <th className="px-2 py-3" />
+                      <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">ERA</th>
+                      <th scope="col" className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">WHIP</th>
+                      <th scope="col" className="px-2 py-3"><span className="sr-only">Remove pitcher</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-warm-50">
@@ -415,7 +462,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             {player ? `${player.first_name?.[0]}. ${player.last_name}` : 'Unknown'}
                           </td>
                           {(
-                            ['ip','h','r','er','bb','k','hr'] as (keyof BoxScorePitchingInput)[]
+                            ['ip','h','r','er','bb','k','hr'] as (keyof typeof PITCHING_FIELD_LABELS)[]
                           ).map((field) => (
                             <td key={field} className="px-1 py-1.5 text-center">
                               <Input
@@ -427,7 +474,8 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                                 onChange={(e) =>
                                   updatePitching(row.player_id, field, Number(e.target.value))
                                 }
-                                className="w-12 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 tabular-nums"
+                                aria-label={`${playerFullName(player)} ${PITCHING_FIELD_LABELS[field]}`}
+                                className="w-12 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 hover:border-warm-200 font-annual tabular-nums"
                               />
                             </td>
                           ))}
@@ -441,7 +489,8 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               onChange={(e) =>
                                 updatePitching(row.player_id, 'pitch_count', Number(e.target.value))
                               }
-                              className="w-14 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 tabular-nums"
+                              aria-label={`${playerFullName(player)} pitch count`}
+                              className="w-14 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50 font-annual tabular-nums"
                             />
                           </td>
                           {/* Result */}
@@ -457,22 +506,25 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               }
                               placeholder="—"
                               options={PITCHING_RESULTS.map((r) => ({ value: r, label: r }))}
-                              className="w-20 min-h-0 text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50"
+                              className="w-20 min-h-[44px] text-center text-xs font-medium rounded-md p-1 border-warm-100 bg-cream-50"
                             />
                           </td>
-                          <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                          <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                             {calcERA(row.er, row.ip)}
                           </td>
-                          <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
+                          <td className="px-2 py-2 text-center text-warm-400 font-annual tabular-nums">
                             {calcWHIP(row.h, row.bb, row.ip)}
                           </td>
                           <td className="px-2 py-2 text-center">
-                            <Button variant="danger"
+                            <Button
+                              variant="danger"
+                              size="icon-sm"
                               onClick={() => removePitcher(row.player_id)}
-                              className="text-warm-300 hover:text-red-400 transition-colors text-lg leading-none"
+                              className="text-warm-300 hover:text-[color:var(--notice-error-ink)] transition-colors"
+                              aria-label={`Remove ${playerFullName(player)} from pitching lines`}
                               title="Remove"
                             >
-                              ×
+                              <IconX size={14} />
                             </Button>
                           </td>
                         </tr>
@@ -483,31 +535,41 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                     <tfoot>
                       <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="pitching-entry-totals-row">
                         <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums font-mono">
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">
                           {/* .1/.2 are outs — sum via outs, not base-10 (#434) */}
                           {sumInningsPitched(pitchingRows.map((r) => r.ip)).toFixed(1)}
                         </td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.h, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.r, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.er, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.bb, 0)}</td>
-                        <td className="px-2 py-2.5 text-center tabular-nums">{pitchingRows.reduce((s, r) => s + r.k, 0)}</td>
-                        <td colSpan={5} />
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.h, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.r, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.er, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.bb, 0)}</td>
+                        <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingRows.reduce((s, r) => s + r.k, 0)}</td>
+                        {/* Remaining header columns: HR, PC, Result, ERA, WHIP, Remove = 6
+                            (header total is 13: Pitcher + 9 stat/meta headers + ERA + WHIP +
+                            Remove; this row already renders TOTALS + IP/H/R/ER/BB/K = 7). */}
+                        <td colSpan={6} />
                       </tr>
                     </tfoot>
                   )}
                 </table>
               </div>
-            </div>
+            </PaperCard>
           )}
         </div>
       )}
 
       {/* Save button */}
       {saveError && (
-        <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600">
-          {saveError}
-        </div>
+        <EditorsLetter
+          ink="team"
+          title="Couldn't save box score"
+          body={saveError}
+          action={
+            <Button variant="outline" onClick={handleSave} disabled={saving}>
+              Try again
+            </Button>
+          }
+        />
       )}
 
       <div className="flex items-center justify-between">

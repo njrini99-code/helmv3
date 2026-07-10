@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
+import { InkNotice } from '@/components/baseball/living-annual';
 import {
   IconLink,
   IconCopy,
@@ -34,7 +35,6 @@ import {
   IconEye,
   IconExternalLink,
   IconShieldCheck,
-  IconAlertCircle,
   IconCheckCircle2,
   IconPencil,
   IconX,
@@ -241,21 +241,15 @@ export function ScoutPacketManager({
 
         {/* Guardrails */}
         {!exposed && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
-            <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-            <p className="text-sm text-amber-800">
-              This passport is internal-only. Set it to a public/scout state on the passport before
-              sharing.
-            </p>
-          </div>
+          <InkNotice ink="pursuit" role="status" className="mt-4">
+            This passport is internal-only. Set it to a public/scout state on the passport before
+            sharing.
+          </InkNotice>
         )}
         {exposed && !exportEnabled && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
-            <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-            <p className="text-sm text-amber-800">
-              Scout packet export is off for this program. Enable scout access + export in Settings.
-            </p>
-          </div>
+          <InkNotice ink="pursuit" role="status" className="mt-4">
+            Scout packet export is off for this program. Enable scout access + export in Settings.
+          </InkNotice>
         )}
 
         {/* Mint */}
@@ -392,7 +386,7 @@ export function ScoutPacketManager({
                           disabled={pending}
                           title="Revoke link"
                           haptic="none"
-                          className="min-h-0 flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 hover:bg-red-50 hover:text-red-600"
+                          className="min-h-0 flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 hover:bg-[var(--notice-error-ink)]/10 hover:text-[color:var(--notice-error-ink)]"
                         >
                           <IconTrash size={15} />
                         </Button>

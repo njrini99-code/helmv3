@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconSearch, IconChevronRight } from '@/components/icons';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   buildBaseballCommandPaletteItems,
   type BaseballCommandPaletteItem,
@@ -29,7 +30,6 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const registryCommands: CommandItem[] = useMemo(() => {
@@ -53,15 +53,20 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
     );
   });
 
+  // Shared hand-rolled-dialog primitive (already proven in ConfirmDialog /
+  // JoinRequestsModal / EventDetailModal): Tab focus trap + focus restore to
+  // whatever triggered the palette + Escape-to-close, scoped to `modalRef`
+  // below. Replaces the old window-level Escape branch (no trap/restore) —
+  // (#a11y-sweep P1).
+  const handleClose = useCallback(() => setOpen(false), []);
+  const { modalRef } = useFocusTrap(open, handleClose);
+
   // Keyboard shortcut to open
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setOpen(true);
-      }
-      if (e.key === 'Escape') {
-        setOpen(false);
       }
     };
 
@@ -78,10 +83,11 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
     return () => window.removeEventListener('helm:open-command-palette', onOpen);
   }, []);
 
-  // Focus input when opened
+  // Reset search state on open. Initial focus is handled by useFocusTrap
+  // above (it focuses the first focusable element inside modalRef, which is
+  // this search input).
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 0);
       setSearch('');
       setSelectedIndex(0);
     }
@@ -108,7 +114,7 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-warm-900/40 backdrop-blur-md animate-fade-in"
@@ -119,6 +125,10 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
       {/* Dialog */}
       <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg animate-scale-in">
         <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Command palette"
           className={cn(
             'bg-cream-100/68 backdrop-blur-[24px]',
             'rounded-2xl',
@@ -131,7 +141,6 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/20 bg-cream-50/30">
             <IconSearch size={20} className="text-warm-400" aria-hidden="true" />
             <Input
-              ref={inputRef}
               type="text"
               value={search}
               onChange={(e) => {

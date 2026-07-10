@@ -10,16 +10,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Light stand-ins for the page's UI imports ──────────────────────────────
-vi.mock('@/components/golf/layout/AnimatedPage', () => ({
-  AnimatedPage: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  AnimatedItem: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-}));
-vi.mock('@/components/golf/layout/LargeTitleHeader', () => ({
-  LargeTitleHeader: () => <header />,
-}));
-vi.mock('@/components/ui/skeleton', () => ({
-  CalendarSkeleton: () => <div />,
-}));
 vi.mock('next/dynamic', () => ({
   default: () => () => null,
 }));
@@ -41,7 +31,6 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 }));
 
 vi.mock('@/lib/redesign/flag', () => ({
-  isRedesignEnabled: () => false,
   fairwayScope: (s: string) => s,
 }));
 

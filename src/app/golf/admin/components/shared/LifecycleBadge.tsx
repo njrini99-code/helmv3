@@ -18,8 +18,9 @@ interface LifecycleBadgeProps {
   className?: string;
 }
 
-// stage → label + color-faithful Badge tone. green/emerald/blue/indigo/violet
-// are kept DISTINCT (never flattened to one "positive"/"info" tone).
+// stage → label + color-faithful Badge tone. green/emerald (→ primary-*
+// tokens under the hood, see badge.tsx)/blue/indigo/violet are kept
+// DISTINCT (never flattened to one "positive"/"info" tone).
 const stageConfig: Record<LifecycleStage, { label: string; tone: BadgeTone }> = {
   brand_new: { label: 'Brand New', tone: 'blue' },
   onboarding: { label: 'Onboarding', tone: 'indigo' },

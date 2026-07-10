@@ -1,66 +1,46 @@
-import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
+
+/**
+ * Route-level loading skeleton for a single Development Plan (Lane 3 · THE
+ * PRESSBOX, team ink). Mirrors the page's own loading branch (masthead + plan
+ * header card + goals grid).
+ */
 export default function Loading() {
   return (
-    <>
-      <Header title="Development Plan" subtitle="Detailed plan view" backHref="/baseball/dashboard/dev-plans" />
-      <div className="p-6 lg:p-8 space-y-6">
-        {/* Plan header skeleton */}
-        <Card variant="glass">
-          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton className="h-5 w-48" />
-                <Skeleton className="h-3 w-36" />
-              </div>
-            </div>
-            <Skeleton className="h-6 w-20 rounded-full" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-xl border border-warm-200 p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton className="h-3 w-8" />
-              </div>
-              <Skeleton className="h-2 w-full rounded-full" />
-              <Skeleton className="h-3 w-32" />
-            </div>
-            <div className="flex gap-4">
-              <Skeleton className="h-3 w-32" />
-              <Skeleton className="h-3 w-32" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Goals skeleton */}
-        <Card variant="glass">
-          <CardHeader>
-            <Skeleton className="h-5 w-36" />
-            <Skeleton className="h-3 w-24 mt-1" />
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="rounded-xl border border-warm-200 p-4 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Skeleton className="w-5 h-5 rounded-full flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-3 w-1/3" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-1.5 w-full rounded-full" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+    <div className={`${PAGE_SHELL} space-y-6`}>
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="text" width={230} height={11} />
+        <Skeleton variant="text" width={180} height={36} />
+        <Skeleton className="h-[3px] w-16 rounded-full" />
       </div>
-    </>
+
+      <PaperCard className="p-6">
+        <Skeleton variant="text" width="40%" height={18} className="mb-3" />
+        <Skeleton variant="text" width="100%" height={40} />
+      </PaperCard>
+
+      <PaperCard className="p-6">
+        <Skeleton variant="text" width={140} height={18} className="mb-1" />
+        <Skeleton variant="text" width={96} height={12} className="mb-4" />
+        <div className="grid gap-4 md:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="space-y-3 rounded-fw-md border border-[color:var(--hairline)] p-4">
+              <div className="flex items-start gap-2">
+                <Skeleton variant="circular" width={20} height={20} />
+                <div className="flex-1 space-y-2">
+                  <Skeleton variant="text" width="75%" height={16} />
+                  <Skeleton variant="text" width="33%" height={12} />
+                </div>
+              </div>
+              <Skeleton variant="rectangular" height={6} className="w-full rounded-full" />
+              <Skeleton variant="text" width={96} height={12} />
+            </div>
+          ))}
+        </div>
+      </PaperCard>
+    </div>
   );
 }

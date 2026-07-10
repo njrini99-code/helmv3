@@ -12,6 +12,7 @@ import {
   IconAlertCircle,
 } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 interface TrendAnalysisPanelProps {
   players: BaseballRosterPlayer[];
@@ -84,18 +85,18 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
 
   if (trendData.all.length === 0) {
     return (
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <PaperCard className="p-6">
         <h3 className="font-semibold text-warm-900 mb-2">Trend Analysis</h3>
         <p className="text-sm text-warm-500">
           Need more session data to analyze player trends. Keep tracking
           performance!
         </p>
-      </div>
+      </PaperCard>
     );
   }
 
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <PaperCard className="p-6">
       <h3 className="font-semibold text-warm-900 mb-4">Trend Analysis</h3>
 
       {/* Summary Stats */}
@@ -118,12 +119,12 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
             {summary.stableCount}
           </p>
         </div>
-        <div className="bg-red-50 rounded-xl p-3 text-center">
+        <div className="bg-pursuit/10 rounded-xl p-3 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <IconTrendingDown size={16} className="text-red-500" />
-            <span className="text-xs font-medium text-red-600">Falling</span>
+            <IconTrendingDown size={16} className="text-pursuit" />
+            <span className="text-xs font-medium text-pursuit">Falling</span>
           </div>
-          <p className="text-2xl font-bold text-red-500">
+          <p className="text-2xl font-bold text-pursuit">
             {summary.decliningCount}
           </p>
         </div>
@@ -166,13 +167,13 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
           )}
 
           {summary.coldest && (
-            <div className="flex items-center gap-3 p-3 bg-red-50 rounded-xl">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                <IconAlertCircle size={20} className="text-red-500" />
+            <div className="flex items-center gap-3 p-3 bg-pursuit/10 rounded-xl">
+              <div className="w-10 h-10 rounded-full bg-pursuit/20 flex items-center justify-center">
+                <IconAlertCircle size={20} className="text-pursuit" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-red-500 uppercase">
+                  <span className="text-xs font-semibold text-pursuit uppercase">
                     Needs Attention
                   </span>
                 </div>
@@ -181,7 +182,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
                 </p>
                 <p className="text-xs text-warm-500">
                   {formatAvg(summary.coldest.last5Avg)} last 5 games
-                  <span className="text-red-500 ml-1">
+                  <span className="text-pursuit ml-1">
                     {formatChange(
                       summary.coldest.last5Avg,
                       summary.coldest.careerAvg
@@ -191,7 +192,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
               </div>
               <Link
                 href={`/baseball/dashboard/players/${summary.coldest.id}`}
-                className="text-red-500 hover:text-red-600"
+                className="text-pursuit hover:opacity-75"
               >
                 <IconChevronRight size={20} />
               </Link>
@@ -237,7 +238,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
                     </span>
                   </div>
                 ) : player.trend === 'declining' ? (
-                  <div className="flex items-center gap-1 text-red-500">
+                  <div className="flex items-center gap-1 text-pursuit">
                     <IconTrendingDown size={14} />
                     <span className="text-xs font-medium">
                       {(player.trendMagnitude * 100).toFixed(1)}%
@@ -265,13 +266,13 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
           </p>
         )}
       </div>
-    </div>
+    </PaperCard>
   );
 }
 
 export function TrendAnalysisPanelSkeleton() {
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <PaperCard className="p-6">
       <div className="h-5 w-32 bg-warm-200 rounded animate-pulse mb-4" />
 
       {/* Summary Stats */}
@@ -311,6 +312,6 @@ export function TrendAnalysisPanelSkeleton() {
           </div>
         ))}
       </div>
-    </div>
+    </PaperCard>
   );
 }

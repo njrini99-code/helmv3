@@ -16,8 +16,10 @@ const fontSizes = { sm: 'text-eyebrow', md: 'text-sm', lg: 'text-lg' } as const;
 const labelSizes = { sm: 'text-eyebrow', md: 'text-eyebrow', lg: 'text-xs' } as const;
 
 function getScoreColor(score: number): string {
-  if (score >= 75) return '#059669'; // emerald-600
-  if (score >= 50) return 'var(--color-primary-600)'; // green-600 / primary
+  // Deeper primary tint than the 50-74 tier (not a second green hue) — keeps
+  // the top tier visually distinct while staying in the primary family.
+  if (score >= 75) return '#166534'; // primary-800
+  if (score >= 50) return 'var(--color-primary-600)'; // primary
   if (score >= 25) return '#F59E0B'; // amber-500
   return '#EF4444'; // red-500
 }

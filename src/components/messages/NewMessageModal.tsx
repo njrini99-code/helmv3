@@ -35,6 +35,7 @@ export function NewMessageModal({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   // Search for users
   const searchUsers = useCallback(async (query: string) => {
@@ -125,6 +126,7 @@ export function NewMessageModal({
       setSearchQuery('');
       setResults([]);
       setSelectedId(null);
+      setCreating(false);
     }
   }, [isOpen]);
 
@@ -132,11 +134,17 @@ export function NewMessageModal({
     setSelectedId(result.userId);
   };
 
-  const handleStartConversation = () => {
-    if (selectedId) {
-      onSelect(selectedId);
-      onClose();
+  const handleStartConversation = async () => {
+    // Guards against double-click double-submit; server dedupe is intentionally not attempted here (client-only fix).
+    if (creating || !selectedId) return;
+
+    setCreating(true);
+    try {
+      await onSelect(selectedId);
+    } finally {
+      setCreating(false);
     }
+    onClose();
   };
 
   return (
@@ -215,7 +223,8 @@ export function NewMessageModal({
         <Button
           variant="primary"
           onClick={handleStartConversation}
-          disabled={!selectedId}
+          disabled={!selectedId || creating}
+          isLoading={creating}
         >
           Start Conversation
         </Button>

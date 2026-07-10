@@ -10,6 +10,7 @@ import { IconPlus, IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface GamesListProps {
   teamId: string;
@@ -223,49 +224,53 @@ export function GamesList({
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div
+            <PaperCard
               key={i}
-              className="relative h-28 glass-standard rounded-2xl overflow-clip"
+              className="relative h-28"
+              grain={false}
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
-            </div>
+            </PaperCard>
           ))}
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center">
-          <p className="text-sm font-medium text-red-700 mb-1">Couldn&apos;t load games</p>
-          <p className="text-sm text-red-600/90 mb-4">{error}</p>
-          <Button variant="secondary" size="sm" onClick={() => fetchGames()}>
-            Try again
-          </Button>
-        </div>
+        <EditorsLetter
+          ink="pursuit"
+          title="Couldn't load games"
+          body={error}
+          action={
+            <Button variant="secondary" size="sm" onClick={() => fetchGames()}>
+              Try again
+            </Button>
+          }
+        />
       ) : games.length === 0 ? (
-        <div className="glass-standard rounded-2xl p-10 text-center animate-fade-in">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80 mx-auto mb-5">
-            <IconPlus size={28} />
-          </div>
-          <h3 className="text-body-lg font-semibold text-warm-900 tracking-tight mb-2">No games yet</h3>
-          <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto mb-6">
-            Add your first game to start tracking box scores and season stats.
-          </p>
-          {showAddButton && (
-            <Link
-              href={getBaseballStatsGameCreateHref()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
-            >
-              <IconPlus size={16} />
-              Add First Game
-            </Link>
-          )}
-        </div>
+        <EditorsLetter
+          title="No games yet"
+          body="Add your first game to start tracking box scores and season stats."
+          action={
+            showAddButton ? (
+              <Link
+                href={getBaseballStatsGameCreateHref()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                <IconPlus size={16} />
+                Add First Game
+              </Link>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="space-y-3">
           {games.map((game) => (
             <div key={game.id} className="relative group">
               <GameCard game={game} />
               {deletingId === game.id && (
-                <div className="absolute inset-0 bg-cream-100/82 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                // Solid Paper tint, no blur — this is a card-local overlay, not
+                // a full-screen scrim, so backdrop-blur doesn't qualify for the
+                // scrim exemption (Living Annual doctrine).
+                <div className="absolute inset-0 bg-cream-100/95 rounded-2xl flex items-center justify-center">
                   <span className="text-sm text-warm-500">Deleting...</span>
                 </div>
               )}
@@ -280,7 +285,7 @@ export function GamesList({
               <Button variant="danger"
                 onClick={() => handleDelete(game.id)}
                 disabled={deletingId === game.id}
-                className="absolute top-3 right-3 text-xs text-warm-300 hover:text-red-500 transition-all opacity-60 pointer-events-auto [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+                className="absolute top-3 right-3 text-xs text-warm-300 hover:text-pursuit transition-all opacity-60 pointer-events-auto [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
                 aria-label="Delete game"
               >
                 ×

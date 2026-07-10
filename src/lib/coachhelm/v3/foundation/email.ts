@@ -46,6 +46,13 @@ export interface SendEmailInput {
   from?: string;
   /** Resend tags for analytics/segmentation. */
   tags?: Array<{ name: string; value: string }>;
+  /**
+   * Sent as the Resend `Idempotency-Key` header — a retry/manual re-trigger
+   * of the same cron tick with the same key returns Resend's cached response
+   * instead of dispatching a second email. Callers should derive this from a
+   * stable per-recipient/per-period key (e.g. `job:${coachId}:${period}`).
+   */
+  idempotencyKey?: string;
 }
 
 export interface SendEmailResult {
@@ -85,7 +92,10 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 
   try {
-    const { data, error } = await client.emails.send(payload);
+    const { data, error } = await client.emails.send(
+      payload,
+      input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined,
+    );
     if (error) {
       return { delivered: false, error: error.message };
     }

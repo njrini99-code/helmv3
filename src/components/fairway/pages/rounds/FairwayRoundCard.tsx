@@ -31,7 +31,14 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Badge, Chip } from '@/components/fairway/controls/badge';
 import { Avatar } from '@/components/fairway/controls/avatar';
+import { formatToPar } from '@/lib/golf/format-to-par';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
+
+// Re-exported so FairwayRoundRow (the ledger-row alternative) and any other
+// rounds-list consumer keep importing the score-to-par formatter from here —
+// the shared implementation now lives in @/lib/golf/format-to-par so the
+// round hero, the card, and the ledger row all render the same Unicode minus.
+export { formatToPar };
 
 /** Score-to-par tone: under par = accent, level = neutral, over par = amber. */
 type ScoreTone = 'under' | 'par' | 'over';
@@ -40,12 +47,6 @@ export function scoreToParTone(stp: number): ScoreTone {
   if (stp < 0) return 'under';
   if (stp === 0) return 'par';
   return 'over';
-}
-
-/** "E" at level, signed otherwise. */
-export function formatToPar(stp: number): string {
-  if (stp === 0) return 'E';
-  return stp > 0 ? `+${stp}` : `${stp}`;
 }
 
 export function getRoundTypeLabel(type: string | null): string {

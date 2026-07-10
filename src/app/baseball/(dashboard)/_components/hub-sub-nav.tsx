@@ -15,10 +15,14 @@
 // (NOT a Radix tablist of non-tab links — invalid ARIA), longest-prefix active
 // resolution so nested leaves still light their parent tab, aria-current="page"
 // on the active tab, roving tabindex + arrow-key movement, a visible focus ring,
-// and a slow framer-motion underline that glides between tabs (reduced-motion
-// honored). Light-mode tokens (cream surface, helm-green accent) because hub
-// pages render on the cream dashboard gradient — the dark styling stays on the
-// sidebar.
+// and the underline GLIDES between tabs on the kit's cinematic settle curve
+// (`EASE_GLIDE`, not a bouncy spring — reduced-motion honored). Retokened onto
+// "The Living Annual" kit (docs/baseball/design-system-living-annual.md §4.2):
+// `--paper` surface, `--hairline` border, `--grade-plus` green ink for the
+// active tab — because hub pages render on the cream Living Annual surface,
+// not the old flat-cream Fairway gradient. The dark styling stays on the
+// sidebar. Renders at EVERY breakpoint: the `overflow-x-auto` row IS the
+// mobile treatment (a horizontal scroll strip), not a desktop-only bar.
 //
 // PURE PRESENTATION. No data, no Supabase, no server actions. Each hub's layout
 // passes its own tab list + accessible label.
@@ -29,9 +33,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { DUR, EASE_GLIDE } from '@/components/baseball/living-annual';
 import type { BaseballNavIcon } from '@/lib/baseball/nav-registry';
 import type { BaseballCapability } from '@/lib/baseball/capabilities';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
+
+/**
+ * Content column width shared with the page beneath this strip (Command
+ * Center, Roster, Pipeline, Watchlist, …) so the tab row lines up with the
+ * page content instead of stretching edge-to-edge while the page column sits
+ * centered. Kept a plain literal (not a cross-module import) to avoid a
+ * shell↔hub-sub-nav import cycle — CommandCenterFairway.tsx's own wrapper
+ * hand-rolls the identical `max-w-[1400px]`.
+ */
+const HUB_CONTENT_MAX_WIDTH = 'max-w-[1400px]';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -155,12 +170,24 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
         aria-label={ariaLabel}
         data-slot="hub-sub-nav"
         className={cn(
-          'sticky top-0 z-20 w-full',
-          'border-b border-warm-200/70 bg-cream-50/80 backdrop-blur-xl',
+          // Sticky beneath the glass top bar, which is present at EVERY
+          // breakpoint (not desktop-only) — a bare `top-0` here would collide
+          // with it on mobile. `--golf-mobile-header-offset` (set on the
+          // shared AppShell content column = topbar height + safe-area-inset)
+          // is the same var the golf FairwayHubSubNav/ViewAsBanner siblings
+          // key off of; `md:top-16` (passed by BaseballFairwayShell via
+          // `className`) overrides it for the fixed-height desktop top bar.
+          'sticky top-[var(--golf-mobile-header-offset)] z-20 w-full',
+          'border-b border-[color:var(--hairline)] bg-[color:var(--paper)]',
           className,
         )}
       >
-        <ul className="flex items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul
+          className={cn(
+            'mx-auto flex items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            HUB_CONTENT_MAX_WIDTH,
+          )}
+        >
           {tabs.map((t, i) => {
             const isActive = t.id === resolvedId;
             const Icon = t.icon;
@@ -179,10 +206,10 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
                     'group relative inline-flex select-none items-center gap-2 whitespace-nowrap',
                     'rounded-t-lg px-3.5 pb-3 pt-3 text-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-50',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[color:var(--paper)]',
                     isActive
-                      ? 'text-primary-700'
-                      : 'text-warm-500 hover:text-warm-800',
+                      ? 'text-grade-plus'
+                      : 'text-text-tertiary hover:text-text-primary',
                   )}
                 >
                   {Icon && (
@@ -192,24 +219,22 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
                       className={cn(
                         'flex-shrink-0 transition-colors duration-150',
                         isActive
-                          ? 'text-primary-600'
-                          : 'text-warm-400 group-hover:text-warm-600',
+                          ? 'text-grade-plus'
+                          : 'text-text-tertiary group-hover:text-text-secondary',
                       )}
                     />
                   )}
                   <span className="relative">{t.label}</span>
 
-                  {/* The gliding active underline (layoutId; honors reduced-motion). */}
+                  {/* The gliding active underline (layoutId; honors reduced-motion).
+                      Kit cinematic settle curve — a glide, never a bouncy spring
+                      (spec §4.4 "cinematic ease-out only"). */}
                   {isActive && (
                     <m.span
                       layoutId={reduceMotion ? undefined : underlineLayoutId}
                       aria-hidden="true"
-                      className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary-600"
-                      transition={
-                        reduceMotion
-                          ? { duration: 0 }
-                          : { type: 'spring', stiffness: 360, damping: 34, mass: 0.7 }
-                      }
+                      className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-grade-plus"
+                      transition={reduceMotion ? { duration: 0 } : { duration: DUR.rule, ease: EASE_GLIDE }}
                     />
                   )}
                 </Link>

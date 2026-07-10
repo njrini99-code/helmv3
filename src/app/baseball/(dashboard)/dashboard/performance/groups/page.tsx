@@ -35,6 +35,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
 import { StrengthGroupsClient } from '@/components/lifting/groups/StrengthGroupsClient';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 import type { HelmLiftingGroupRow } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
 
@@ -156,11 +157,12 @@ export default async function StrengthGroupsPage() {
   if (groupsResult.error || athletesResult.error) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-6">
-        <div className="glass-standard rounded-2xl border border-cream-400/40 p-8 shadow-glass">
-          <h2 className="text-h3 text-warm-900">Unable to load strength groups</h2>
-          <p className="mt-2 text-body text-warm-500">
-            Something went wrong loading your Lift Lab groups. Please refresh the page to try again.
-          </p>
+        <SectionMasthead eyebrow="PERFORMANCE · WEIGHT ROOM" title="Strength Groups" ink="team" />
+        <div className="mt-6">
+          <EditorsLetter
+            title="Unable to load strength groups"
+            body="Something went wrong loading your Lift Lab groups. Please refresh the page to try again."
+          />
         </div>
       </div>
     );
@@ -168,12 +170,15 @@ export default async function StrengthGroupsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-      <StrengthGroupsClient
-        groups={groupsResult.groups}
-        athletes={athletesResult.athletes}
-        orgId={liftCtx?.organizationId ?? ''}
-        canEdit={caps.can_manage_lifting}
-      />
+      <SectionMasthead eyebrow="PERFORMANCE · WEIGHT ROOM" title="Strength Groups" ink="team" />
+      <div className="mt-6">
+        <StrengthGroupsClient
+          groups={groupsResult.groups}
+          athletes={athletesResult.athletes}
+          orgId={liftCtx?.organizationId ?? ''}
+          canEdit={caps.can_manage_lifting}
+        />
+      </div>
     </div>
   );
 }

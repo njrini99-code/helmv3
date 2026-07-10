@@ -1,18 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { DevelopmentPlansClient } from './development-client';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { Metadata } from 'next';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
-import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
-import { runFocusAreaProgressForPlayers } from '@/app/golf/actions/v3/focus-area-progress';
+import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
+import { runGoalProgressForPlayers, runFocusAreaProgressForPlayers } from '@/lib/golf/progress-drivers';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
-import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 
 export const metadata: Metadata = {
@@ -107,86 +104,6 @@ export default async function DevelopmentPlansPage({
       ? 'We couldn’t load your development data. Please try again.'
       : null;
 
-  // Fetch round stats per player for prepopulation
-  const { data: allRounds } = playerIds.length > 0
-    ? await supabase
-        .from('golf_rounds')
-        .select('player_id, total_score, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, round_date')
-        .in('player_id', playerIds)
-        .eq('status', 'completed')
-        .not('total_score', 'is', null)
-        .order('round_date', { ascending: false })
-    : { data: [] };
-
-  // Build per-player stats summaries
-  const playerStatsMap: Record<string, {
-    rounds_played: number;
-    avg_score: number | null;
-    avg_putts: number | null;
-    fairway_pct: number | null;
-    gir_pct: number | null;
-    best_score: number | null;
-    recent_trend: 'improving' | 'declining' | 'stable' | null;
-  }> = {};
-
-  for (const pid of playerIds) {
-    const rounds = (allRounds || []).filter(r => r.player_id === pid);
-    const count = rounds.length;
-
-    if (count === 0) {
-      playerStatsMap[pid] = {
-        rounds_played: 0,
-        avg_score: null,
-        avg_putts: null,
-        fairway_pct: null,
-        gir_pct: null,
-        best_score: null,
-        recent_trend: null,
-      };
-      continue;
-    }
-
-    const scores = rounds.map(r => r.total_score!);
-    const avgScore = Math.round((scores.reduce((a, b) => a + b, 0) / count) * 10) / 10;
-    const bestScore = Math.min(...scores);
-
-    const putts = rounds.filter(r => r.total_putts != null).map(r => r.total_putts!);
-    const avgPutts = putts.length > 0
-      ? Math.round((putts.reduce((a, b) => a + b, 0) / putts.length) * 10) / 10
-      : null;
-
-    const fwRounds = rounds.filter(r => r.total_fairways_hit != null && r.total_fairways != null && r.total_fairways > 0);
-    const fairwayPct = fwRounds.length > 0
-      ? Math.round((fwRounds.reduce((s, r) => s + r.total_fairways_hit! / r.total_fairways!, 0) / fwRounds.length) * 1000) / 10
-      : null;
-
-    const girRounds = rounds.filter(r => r.total_gir != null && r.total_gir_possible != null && r.total_gir_possible > 0);
-    const girPct = girRounds.length > 0
-      ? Math.round((girRounds.reduce((s, r) => s + r.total_gir! / r.total_gir_possible!, 0) / girRounds.length) * 1000) / 10
-      : null;
-
-    // Trend: compare last 3 rounds avg to previous 3
-    let trend: 'improving' | 'declining' | 'stable' | null = null;
-    if (count >= 6) {
-      const recent3 = scores.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
-      const prev3 = scores.slice(3, 6).reduce((a, b) => a + b, 0) / 3;
-      const diff = recent3 - prev3;
-      if (diff < -1) trend = 'improving';
-      else if (diff > 1) trend = 'declining';
-      else trend = 'stable';
-    }
-
-    playerStatsMap[pid] = {
-      rounds_played: count,
-      avg_score: avgScore,
-      avg_putts: avgPutts,
-      fairway_pct: fairwayPct,
-      gir_pct: girPct,
-      best_score: bestScore,
-      recent_trend: trend,
-    };
-  }
-
   // ── Outcome-mix join (B13/F019) ─────────────────────────────────────────────
   // outcome_status is recorded on the SOURCE insight (golf_coach_insights), not on
   // golf_player_focus_areas. Pull the recorded verdict per source insight so the
@@ -264,155 +181,145 @@ export default async function DevelopmentPlansPage({
       : null,
   }));
 
-  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
-  // Flag ON → the warm "Players" grid surface (CoachHelmShell active='players').
-  // PERF FIX (redesign branch ONLY): the per-player stat snapshot is read from
-  // golf_player_stats_cache in a single query instead of re-aggregating every
-  // completed round client-side (the legacy playerStatsMap loop). The shared
-  // loader block above (org→team, members, players, focus-areas) is reused
-  // unchanged. Flag OFF (default) → DevelopmentPlansClient renders as today.
-  if (isRedesignEnabled()) {
-    const { data: statsRows } = playerIds.length > 0
-      ? await supabase
-          .from('golf_player_stats_cache')
-          .select(
-            // Core grid stats + the extended per-metric sources the create-focus-
-            // area form reads to autofill the current value for the chosen stat
-            // (driving distance, proximity, scrambling, sand saves, putt buckets,
-            // par-N averages). All nullable — honest-empty when not tracked yet.
-            'player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
-          )
-          .in('player_id', playerIds)
-      : { data: [] };
+  // The warm "Players" grid surface (CoachHelmShell active='players'). The
+  // per-player stat snapshot is read from golf_player_stats_cache in a single
+  // query rather than re-aggregating every completed round. The shared loader
+  // block above (org→team, members, players, focus-areas) is reused unchanged.
+  const { data: statsRows } = playerIds.length > 0
+    ? await supabase
+        .from('golf_player_stats_cache')
+        .select(
+          // Core grid stats + the extended per-metric sources the create-focus-
+          // area form reads to autofill the current value for the chosen stat
+          // (driving distance, proximity, scrambling, sand saves, putt buckets,
+          // par-N averages). All nullable — honest-empty when not tracked yet.
+          'player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+        )
+        .in('player_id', playerIds)
+    : { data: [] };
 
-    const trendOf = (raw: string | null | undefined): PlayersGridStats['recent_trend'] => {
-      if (raw === 'improving' || raw === 'declining' || raw === 'stable') return raw;
-      return null;
+  const trendOf = (raw: string | null | undefined): PlayersGridStats['recent_trend'] => {
+    if (raw === 'improving' || raw === 'declining' || raw === 'stable') return raw;
+    return null;
+  };
+
+  const gridStats: Record<string, PlayersGridStats> = {};
+  for (const row of statsRows || []) {
+    gridStats[row.player_id] = {
+      rounds_played: row.rounds_played ?? 0,
+      avg_score: row.scoring_average ?? null,
+      avg_putts: row.putts_per_round ?? null,
+      fairway_pct: row.driving_accuracy_percentage ?? null,
+      gir_pct: row.gir_percentage ?? null,
+      best_score: row.best_round ?? null,
+      recent_trend: trendOf(row.trend_direction),
+      // Extended autofill sources (friendly keys → getMetricCurrentValue).
+      driving_distance: row.driving_distance_average ?? null,
+      proximity_to_hole: row.approach_proximity_average ?? null,
+      scrambling_pct: row.scrambling_percentage ?? null,
+      up_and_down_pct: row.up_and_down_percentage ?? null,
+      sand_save_pct: row.sand_save_percentage ?? null,
+      one_putt_pct: row.one_putt_percentage ?? null,
+      three_putt_pct: row.three_putt_percentage ?? null,
+      par3_avg: row.par3_average ?? null,
+      par4_avg: row.par4_average ?? null,
+      par5_avg: row.par5_average ?? null,
     };
-
-    const gridStats: Record<string, PlayersGridStats> = {};
-    for (const row of statsRows || []) {
-      gridStats[row.player_id] = {
-        rounds_played: row.rounds_played ?? 0,
-        avg_score: row.scoring_average ?? null,
-        avg_putts: row.putts_per_round ?? null,
-        fairway_pct: row.driving_accuracy_percentage ?? null,
-        gir_pct: row.gir_percentage ?? null,
-        best_score: row.best_round ?? null,
-        recent_trend: trendOf(row.trend_direction),
-        // Extended autofill sources (friendly keys → getMetricCurrentValue).
-        driving_distance: row.driving_distance_average ?? null,
-        proximity_to_hole: row.approach_proximity_average ?? null,
-        scrambling_pct: row.scrambling_percentage ?? null,
-        up_and_down_pct: row.up_and_down_percentage ?? null,
-        sand_save_pct: row.sand_save_percentage ?? null,
-        one_putt_pct: row.one_putt_percentage ?? null,
-        three_putt_pct: row.three_putt_percentage ?? null,
-        par3_avg: row.par3_average ?? null,
-        par4_avg: row.par4_average ?? null,
-        par5_avg: row.par5_average ?? null,
+  }
+  // Players without a cache row still render — honest empty stats, never fake 0s.
+  for (const pid of playerIds) {
+    if (!gridStats[pid]) {
+      gridStats[pid] = {
+        rounds_played: 0,
+        avg_score: null,
+        avg_putts: null,
+        fairway_pct: null,
+        gir_pct: null,
+        best_score: null,
+        recent_trend: null,
       };
     }
-    // Players without a cache row still render — honest empty stats, never fake 0s.
-    for (const pid of playerIds) {
-      if (!gridStats[pid]) {
-        gridStats[pid] = {
-          rounds_played: 0,
-          avg_score: null,
-          avg_putts: null,
-          fairway_pct: null,
-          gir_pct: null,
-          best_score: null,
-          recent_trend: null,
-        };
-      }
-    }
-
-    // Shell Signals badge. getAlertCounts buckets BOTH 'urgent' AND 'high'
-    // priority into `counts.critical` (see alerts.ts) — so this value is the
-    // "urgent or high open signals" count the sub-nav badge's aria-label
-    // promises. The bucket is named `critical` for historic reasons; the number
-    // and its accessible description denote the same set (urgent + high).
-    const countsRes = await getAlertCounts(coach.id);
-    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
-
-    // ── Track-progress refresh (P1-07) ───────────────────────────────────────
-    // Recompute progress for the whole roster's active goals from the latest
-    // standing BEFORE loading them, so the coach sees REAL movement instead of
-    // progress frozen at whatever the player last triggered. One batched pass
-    // (single goals query + chunked standing); best-effort so a hiccup never
-    // blanks the coach page.
-    try {
-      await Promise.all([
-        runGoalProgressForPlayers(playerIds),
-        // Same idea for focus areas: window each active area against the rounds
-        // played since it started so the development-plan bar reflects reality,
-        // not the value captured when the area was created. Best-effort.
-        runFocusAreaProgressForPlayers(playerIds),
-      ]);
-    } catch {
-      /* progress refresh is best-effort; fall through to last-known goals */
-    }
-
-    // ── v3 GOALS (read-only, redesign fork ONLY) ─────────────────────────────
-    // Surface each player's assigned/shared ACTIVE goals on the coach surface:
-    // a count in the roster table + full cards in the scoped per-player view.
-    // RLS scopes coach visibility to assigned + shared goals; we just compose
-    // each goal with its live standing snapshot (null when the cron hasn't
-    // populated a row for the metric yet). Coaches do not create/accept here.
-    const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
-    await Promise.all(playerIds.map(async (pid) => {
-      const [g, sm] = await Promise.all([loadActiveGoals(pid), loadPlayerStandingMap(pid)]);
-      goalsByPlayer[pid] = g.map(goal => ({ goal, standing: sm.get(goal.metric_id) ?? null }));
-    }));
-
-    // Owning-player display names for the coach goal-card provenance labels.
-    const playerNameById: Record<string, string> = {};
-    for (const p of players || []) {
-      playerNameById[p.id] = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
-    }
-
-    // Dedupe-aware causal "why their scores move" rows, keyed by player_id.
-    const causalByPlayer = await getTeamCausalRelationships(teamId);
-
-    // F133: honor the ?player= deep-link from a player's insight/genome card —
-    // open the grid scoped to that player, but only if the id is actually on this
-    // coach's roster (never trust the raw query param).
-    const resolvedParams = (await searchParams) ?? {};
-    const requestedPlayer = Array.isArray(resolvedParams.player)
-      ? resolvedParams.player[0]
-      : resolvedParams.player;
-    const initialSelectedPlayerId =
-      requestedPlayer && playerIds.includes(requestedPlayer) ? requestedPlayer : null;
-
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-        <PlayersGridView
-          players={players || []}
-          focusAreas={focusAreasWithPlayers}
-          coachId={coach.id}
-          playerStats={gridStats}
-          signalCount={signalCount}
-          goalsByPlayer={goalsByPlayer}
-          playerNameById={playerNameById}
-          causalByPlayer={causalByPlayer}
-          initialSelectedPlayerId={initialSelectedPlayerId}
-          loadError={loadError}
-        />
-      </div>
-    );
   }
 
+  // Shell Signals badge. getAlertCounts buckets BOTH 'urgent' AND 'high'
+  // priority into `counts.critical` (see alerts.ts) — so this value is the
+  // "urgent or high open signals" count the sub-nav badge's aria-label
+  // promises. The bucket is named `critical` for historic reasons; the number
+  // and its accessible description denote the same set (urgent + high).
+  const countsRes = await getAlertCounts(coach.id);
+  const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+
+  // ── Track-progress refresh (P1-07) ───────────────────────────────────────
+  // Recompute progress for the whole roster's active goals from the latest
+  // standing BEFORE loading them, so the coach sees REAL movement instead of
+  // progress frozen at whatever the player last triggered. One batched pass
+  // (single goals query + chunked standing); best-effort so a hiccup never
+  // blanks the coach page.
+  try {
+    await Promise.all([
+      runGoalProgressForPlayers(playerIds),
+      // Same idea for focus areas: window each active area against the rounds
+      // played since it started so the development-plan bar reflects reality,
+      // not the value captured when the area was created. Best-effort.
+      runFocusAreaProgressForPlayers(playerIds),
+    ]);
+  } catch {
+    /* progress refresh is best-effort; fall through to last-known goals */
+  }
+
+  // ── v3 GOALS (read-only) ─────────────────────────────────────────────────
+  // Surface each player's assigned/shared ACTIVE goals on the coach surface:
+  // a count in the roster table + full cards in the scoped per-player view.
+  // RLS scopes coach visibility to assigned + shared goals; we just compose
+  // each goal with its live standing snapshot (null when the cron hasn't
+  // populated a row for the metric yet). Coaches do not create/accept here.
+  // Batched: one goals query (loadActiveGoalsForPlayers) + one chunked standing
+  // read (loadPlayersStandingMap) for the WHOLE roster, instead of N per-player
+  // round trips of each.
+  const [goalsByPlayerMap, standingByPlayer] = await Promise.all([
+    loadActiveGoalsForPlayers(playerIds),
+    loadPlayersStandingMap(playerIds),
+  ]);
+  const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
+  for (const pid of playerIds) {
+    const g = goalsByPlayerMap.get(pid) ?? [];
+    const sm = standingByPlayer.get(pid) ?? new Map();
+    goalsByPlayer[pid] = g.map(goal => ({ goal, standing: sm.get(goal.metric_id) ?? null }));
+  }
+
+  // Owning-player display names for the coach goal-card provenance labels.
+  const playerNameById: Record<string, string> = {};
+  for (const p of players || []) {
+    playerNameById[p.id] = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
+  }
+
+  // Dedupe-aware causal "why their scores move" rows, keyed by player_id.
+  const causalByPlayer = await getTeamCausalRelationships(teamId);
+
+  // F133: honor the ?player= deep-link from a player's insight/genome card —
+  // open the grid scoped to that player, but only if the id is actually on this
+  // coach's roster (never trust the raw query param).
+  const resolvedParams = (await searchParams) ?? {};
+  const requestedPlayer = Array.isArray(resolvedParams.player)
+    ? resolvedParams.player[0]
+    : resolvedParams.player;
+  const initialSelectedPlayerId =
+    requestedPlayer && playerIds.includes(requestedPlayer) ? requestedPlayer : null;
+
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <DevelopmentPlansClient
-          players={players || []}
-          focusAreas={focusAreasWithPlayers}
-          coachId={coach.id}
-          playerStats={playerStatsMap}
-        />
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+      <PlayersGridView
+        players={players || []}
+        focusAreas={focusAreasWithPlayers}
+        coachId={coach.id}
+        playerStats={gridStats}
+        signalCount={signalCount}
+        goalsByPlayer={goalsByPlayer}
+        playerNameById={playerNameById}
+        causalByPlayer={causalByPlayer}
+        initialSelectedPlayerId={initialSelectedPlayerId}
+        loadError={loadError}
+      />
+    </div>
   );
 }

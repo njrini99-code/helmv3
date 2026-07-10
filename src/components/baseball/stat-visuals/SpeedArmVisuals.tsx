@@ -501,7 +501,7 @@ export function SpeedDecisionBoard({
                           effTone === 'primary'
                             ? 'text-primary-600'
                             : effTone === 'amber'
-                              ? 'text-amber-600'
+                              ? 'text-pursuit'
                               : 'text-warm-400',
                         )}
                       >

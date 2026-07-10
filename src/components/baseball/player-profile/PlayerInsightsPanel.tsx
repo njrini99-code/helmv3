@@ -15,7 +15,10 @@ import {
 } from '@/components/icons';
 import type { BaseballCoachInsight } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/sonner';
 import { dismissInsight, markInsightAddressed } from '@/app/baseball/actions/insights';
+import { cn } from '@/lib/utils';
+import { InkBadge } from '@/components/baseball/living-annual';
 
 interface PlayerInsightsPanelProps {
   insights: BaseballCoachInsight[];
@@ -30,17 +33,19 @@ const insightIcons: Record<string, React.ComponentType<{ size?: number; classNam
   milestone: IconSparkles,
 };
 
-const priorityColors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-  critical: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: 'text-red-500' },
-  urgent: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: 'text-red-500' },
-  high: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: 'text-amber-500' },
-  medium: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700', icon: 'text-primary-500' },
-  low: { bg: 'bg-warm-50', border: 'border-warm-200', text: 'text-warm-700', icon: 'text-warm-500' },
-};
+/** InkBadge tone/variant for an insight's priority — never red/amber chrome
+ *  (mirrors PostgameReviewClient/PlayerTodayClient's priorityTone precedent). */
+function priorityTone(p: string): { tone: 'pursuit' | 'neutral'; variant: 'soft' | 'solid' } {
+  const lower = p.toLowerCase();
+  if (lower === 'urgent' || lower === 'critical') return { tone: 'pursuit', variant: 'solid' };
+  if (lower === 'high') return { tone: 'pursuit', variant: 'soft' };
+  return { tone: 'neutral', variant: 'soft' }; // medium / low
+}
 
 export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsightsPanelProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
+  const { addToast } = useToast();
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
   const [pendingAction, setPendingAction] = useState<{ id: string; action: 'dismiss' | 'address' } | null>(null);
   const [, startTransition] = useTransition();
@@ -49,9 +54,17 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
     if (pendingAction) return;
     setPendingAction({ id: insightId, action: 'dismiss' });
     startTransition(async () => {
-      await dismissInsight(insightId);
+      const result = await dismissInsight(insightId);
       setPendingAction(null);
-      router.refresh();
+      if (result.success) {
+        router.refresh();
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Could not dismiss insight',
+          description: result.error ?? 'Please try again in a moment.',
+        });
+      }
     });
   }
 
@@ -59,9 +72,17 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
     if (pendingAction) return;
     setPendingAction({ id: insightId, action: 'address' });
     startTransition(async () => {
-      await markInsightAddressed(insightId);
+      const result = await markInsightAddressed(insightId);
       setPendingAction(null);
-      router.refresh();
+      if (result.success) {
+        router.refresh();
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Could not mark insight addressed',
+          description: result.error ?? 'Please try again in a moment.',
+        });
+      }
     });
   }
 
@@ -94,7 +115,7 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
       <ul className="space-y-3">
         {insights.map((insight) => {
           const Icon = insightIcons[insight.insight_type] || IconSparkles;
-          const colors = priorityColors[insight.priority] || priorityColors.low;
+          const tone = priorityTone(insight.priority);
           const isExpanded = expandedInsights.has(insight.id) || expanded;
           const panelId = `insight-panel-${insight.id}`;
           // Engine rows persist detail copy in `body`; legacy/manual rows use `description`.
@@ -103,7 +124,7 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
           return (
             <li
               key={insight.id}
-              className={`rounded-xl border transition-colors ${colors?.bg ?? ''} ${colors?.border ?? ''}`}
+              className="rounded-xl border border-[color:var(--hairline)] bg-[var(--paper)] transition-colors"
             >
               <Button variant="ghost"
                 onClick={() => toggleExpand(insight.id)}
@@ -111,13 +132,16 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                 aria-controls={panelId}
                 className="w-full px-4 py-3 flex items-start gap-3 text-left hover:bg-transparent rounded-xl"
               >
-                <div className={`mt-0.5 shrink-0 ${colors?.icon ?? ''}`}>
+                <div className={cn('mt-0.5 shrink-0', tone.tone === 'pursuit' ? 'text-pursuit' : 'text-text-tertiary')}>
                   <Icon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-medium text-sm leading-snug ${colors?.text ?? ''}`}>
-                    {insight.title}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-sm leading-snug text-text-primary">
+                      {insight.title}
+                    </p>
+                    <InkBadge label={insight.priority} tone={tone.tone} variant={tone.variant} className="shrink-0" />
+                  </div>
                   {!isExpanded && detail && (
                     <p className="text-xs text-warm-500 mt-0.5 line-clamp-1">
                       {detail}

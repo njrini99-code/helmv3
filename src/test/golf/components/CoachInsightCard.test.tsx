@@ -1,21 +1,24 @@
 /**
  * CoachInsightCard (Wave 1A) — consumer-level tests.
  *
- * Covers the three coach-facing surfaces that were migrated to the unified
- * `InsightCard` primitive in Wave 1A:
+ * Covers the coach-facing surface that was migrated to the unified
+ * `InsightCard` primitive in Wave 1A and is still live post Wave-W1
+ * legacy-tree deletion:
  *
  *   1. `InsightsFeed` — renders N cards in `default` density.
- *   2. `CoachAlertCenter` — renders a hero + compact rows.
- *   3. `PlayerInsightClient` — renders a hero + default stack for one player.
+ *
+ * (`CoachAlertCenter` and `PlayerInsightClient` were deleted in Wave W1 — see
+ * the removed-test notes below.)
  *
  * The primitive itself is covered by `InsightCard.test.tsx`. These tests
  * assert the consumers call `getInsightsForCoach` correctly and wire actions
  * (acknowledge / dismiss / create_focus_area) to the right server actions.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { InsightsFeed } from '@/components/golf/coachhelm/insights/InsightsFeed';
 
 // ---------------------------------------------------------------------------
 // framer-motion stub — DOM passthroughs so click targets render synchronously.
@@ -211,7 +214,6 @@ describe('InsightsFeed (coach)', () => {
     ];
     mockGetInsightsForCoach.mockResolvedValue(rows);
 
-    const { InsightsFeed } = await import('@/components/golf/coachhelm/insights/InsightsFeed');
     render(<InsightsFeed coachId="coach-1" limit={10} showGenerateButton={false} />);
 
     await waitFor(() => {
@@ -222,7 +224,6 @@ describe('InsightsFeed (coach)', () => {
 
   it('shows the empty state when no evidence-backed insights exist', async () => {
     mockGetInsightsForCoach.mockResolvedValue([]);
-    const { InsightsFeed } = await import('@/components/golf/coachhelm/insights/InsightsFeed');
     render(<InsightsFeed coachId="coach-1" showGenerateButton={false} />);
     await waitFor(() => {
       expect(screen.getByText(/No Active Insights/i)).toBeInTheDocument();
@@ -231,136 +232,19 @@ describe('InsightsFeed (coach)', () => {
 });
 
 // ===========================================================================
-// CoachAlertCenter
+// CoachAlertCenter — DELETED in Wave W1 (golf legacy-tree deletion), along
+// with its sibling `AlertCard`. The coach alerts route (/dashboard/alerts)
+// renders `FairwayCoachHelmSignals` now, which reads evidence-backed insights
+// directly rather than mounting this legacy consumer, so this describe
+// block's scenarios no longer apply. Removed rather than left skipped since
+// the module under test no longer exists.
 // ===========================================================================
 
-// TODO(ci-flake): CoachAlertCenter renders a NumberFlow animation component
-// that throws in CI's jsdom (likely missing matchMedia/IntersectionObserver).
-// Passes locally. Skipping pending a vi.mock for @number-flow/react in
-// src/test/setup.tsx. See src/test/SKIPPED.md.
-describe.skip('CoachAlertCenter', () => {
-  it('renders a hero card for the top alert and compact rows for the rest', async () => {
-    const rows = [
-      makeInsight({ id: 'hero-1', title: 'Hero row', priority: 'urgent' }),
-      makeInsight({ id: 'r-2', title: 'Second row', priority: 'high' }),
-      makeInsight({ id: 'r-3', title: 'Third row', priority: 'high' }),
-    ];
-    mockGetInsightsForCoach.mockResolvedValue(rows);
-
-    const { CoachAlertCenter } = await import(
-      '@/components/golf/coachhelm/alerts/CoachAlertCenter'
-    );
-    render(<CoachAlertCenter coachId="coach-1" teamId="team-1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('coach-alert-stack')).toBeInTheDocument();
-    });
-    // One hero, two compact.
-    expect(screen.getAllByTestId('insight-card-hero')).toHaveLength(1);
-    expect(screen.getAllByTestId('insight-card-compact')).toHaveLength(2);
-    // Query narrows to urgent+high rows.
-    expect(mockGetInsightsForCoach).toHaveBeenCalledWith('coach-1', {
-      priorities: ['urgent', 'high'],
-      limit: 20,
-    });
-  });
-
-  it('renders the empty state when no urgent/high insights exist', async () => {
-    mockGetInsightsForCoach.mockResolvedValue([]);
-    const { CoachAlertCenter } = await import(
-      '@/components/golf/coachhelm/alerts/CoachAlertCenter'
-    );
-    render(<CoachAlertCenter coachId="coach-1" teamId="team-1" />);
-    await waitFor(() => {
-      expect(screen.getByText(/All Clear!/i)).toBeInTheDocument();
-    });
-  });
-
-  it('fires acknowledgeInsight when the hero Acknowledge action is clicked', async () => {
-    mockGetInsightsForCoach.mockResolvedValue([
-      makeInsight({ id: 'hero-1', title: 'Only row', priority: 'urgent' }),
-    ]);
-
-    const { CoachAlertCenter } = await import(
-      '@/components/golf/coachhelm/alerts/CoachAlertCenter'
-    );
-    render(<CoachAlertCenter coachId="coach-1" teamId="team-1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('insight-card-hero')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('action-acknowledged'));
-
-    await waitFor(() => {
-      expect(mockAcknowledge).toHaveBeenCalledWith('hero-1');
-    });
-  });
-});
-
 // ===========================================================================
-// PlayerInsightClient — coach-facing per-player insights section
+// PlayerInsightClient — DELETED in Wave W1 (golf legacy-tree deletion). Its
+// coach-facing per-player insights section is now FairwayPlayerInsight,
+// which receives evidence-backed insights as an SSR-computed prop rather
+// than client-fetching via getInsightsForCoach, so this describe block's
+// scenarios no longer apply. Removed rather than skipped since the module
+// under test no longer exists.
 // ===========================================================================
-
-describe('PlayerInsightClient insights section', () => {
-  const trivialProps = {
-    player: {
-      id: 'player-1',
-      first_name: 'Jake',
-      last_name: 'Doe',
-      avatar_url: null,
-      graduation_year: 2027,
-      handicap: 5.3,
-    },
-    compositeRating: 72,
-    categoryBreakdown: { teeGame: 60, approach: 55, shortGame: 50, putting: 45, scoring: 62 },
-    trendSummary: {
-      trend: 'stable' as const,
-      recentAvg: 0,
-      previousAvg: 0,
-      streakCount: 0,
-      streakType: 'neutral' as const,
-    },
-    playerStatus: 'Stable' as const,
-    rounds: [],
-    patterns: [],
-    insights: [], // legacy shape; the client now re-fetches EvidenceInsight rows
-    focusAreas: [],
-    predictions: [],
-  };
-
-  function renderClient() {
-    return import('@/app/golf/(dashboard)/dashboard/players/[playerId]/player-insight-client');
-  }
-
-  // TODO(plan-03 + user-wip): see src/test/SKIPPED.md.
-  it.skip('fetches insights for the viewed player and renders hero + secondary cards', async () => {
-    mockGetInsightsForCoach.mockResolvedValue([
-      makeInsight({ id: 'hero-1', title: 'Top insight', priority: 'urgent' }),
-      makeInsight({ id: 'r-2', title: 'Second' }),
-      makeInsight({ id: 'r-3', title: 'Third' }),
-    ]);
-
-    const { PlayerInsightClient } = await renderClient();
-    render(<PlayerInsightClient {...trivialProps} />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('insight-card-hero')).toBeInTheDocument();
-    });
-    expect(screen.getAllByTestId('insight-card-default')).toHaveLength(2);
-    expect(mockGetInsightsForCoach).toHaveBeenCalledWith('coach-1', {
-      player_id: 'player-1',
-      limit: 8,
-    });
-  });
-
-  it('shows empty-state copy when the player has no evidence-backed insights', async () => {
-    mockGetInsightsForCoach.mockResolvedValue([]);
-    const { PlayerInsightClient } = await renderClient();
-    render(<PlayerInsightClient {...trivialProps} />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/No insights generated yet/i)).toBeInTheDocument();
-    });
-  });
-});

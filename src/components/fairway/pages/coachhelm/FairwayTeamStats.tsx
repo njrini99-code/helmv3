@@ -45,6 +45,7 @@ import {
   Segmented,
   InlineNotice,
   fairwayToast,
+  RuledLeaderStat,
 } from '@/components/fairway';
 
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -420,6 +421,55 @@ export function rankPlayers(
 }
 
 // ============================================================================
+// PER-METRIC TEAM LEADERS (W6 polish) — the green-tick treatment the owner
+// asked for. For each column that has a real "best on the team" meaning
+// (lower-is-better scoring/putts/best-round, higher-is-better FW%/GIR%), find
+// the player(s) carrying the single best value. Requires >= 2 comparable
+// values — a lone carrier isn't "leading" anyone. Ties all win (a genuine tie
+// really is the best value on the team; never arbitrarily crown one).
+// Exported for unit tests.
+// ============================================================================
+
+export type TeamLeaderMetric =
+  | 'scoring_average'
+  | 'putts_per_round'
+  | 'fairway_pct'
+  | 'gir_pct'
+  | 'best_round';
+
+const LEADER_METRICS: ReadonlyArray<{
+  key: TeamLeaderMetric;
+  pick: (p: TeamPlayerStats) => number | null;
+  dir: 'asc' | 'desc';
+}> = [
+  { key: 'scoring_average', pick: (p) => p.scoring_average, dir: 'asc' },
+  { key: 'putts_per_round', pick: (p) => p.putts_per_round, dir: 'asc' },
+  { key: 'fairway_pct', pick: (p) => p.fairway_pct, dir: 'desc' },
+  { key: 'gir_pct', pick: (p) => p.gir_pct, dir: 'desc' },
+  { key: 'best_round', pick: (p) => p.best_round, dir: 'asc' },
+];
+
+export function computeMetricLeaders(
+  players: TeamPlayerStats[],
+): Record<TeamLeaderMetric, ReadonlySet<string>> {
+  const result = {} as Record<TeamLeaderMetric, Set<string>>;
+  for (const { key, pick, dir } of LEADER_METRICS) {
+    const values = players
+      .map((p) => ({ id: p.id, v: pick(p) }))
+      .filter((x): x is { id: string; v: number } => x.v !== null && !Number.isNaN(x.v));
+    const leaders = new Set<string>();
+    if (values.length >= 2) {
+      const best = dir === 'asc'
+        ? Math.min(...values.map((x) => x.v))
+        : Math.max(...values.map((x) => x.v));
+      for (const x of values) if (x.v === best) leaders.add(x.id);
+    }
+    result[key] = leaders;
+  }
+  return result;
+}
+
+// ============================================================================
 // CSV EXPORT (P141) — players × the displayed metric set + a team-average row.
 // Pure string builder so it can be unit-tested without a DOM. Values are the
 // honest formatted figures (em-dash → empty cell so the CSV never asserts 0).
@@ -527,6 +577,24 @@ export function FairwayTeamStats({
     const formatted = players.map((p) => applyFormat(p, format));
     return rankPlayers(formatted, rankKey, compositeFor);
   }, [players, format, rankKey, compositeFor]);
+
+  // ── W6 polish: per-metric team leaders (green tick) ─────────────────────────
+  // Computed off the CURRENTLY DISPLAYED (format-applied) figures so a green
+  // tick always matches the number the coach is looking at, not a stale
+  // all-format leader while a 9/18 filter is active.
+  const metricLeaders = React.useMemo(() => computeMetricLeaders(viewPlayers), [viewPlayers]);
+
+  // "Top Performer" (green leader treatment on the composite badge) — only
+  // when the composite isn't provisional (needs 3+ teammates behind the
+  // z-score, the SAME floor each tile already applies) and at least 2 players
+  // have a real composite to compare (a solo carrier isn't "leading" anyone).
+  const topComposite = React.useMemo(() => {
+    if (intelligenceSampleSize < 3) return null;
+    const composites = players
+      .map((p) => intelligenceByPlayer[p.id]?.composite ?? null)
+      .filter((v): v is number => v !== null);
+    return composites.length >= 2 ? Math.max(...composites) : null;
+  }, [players, intelligenceByPlayer, intelligenceSampleSize]);
 
   // ── CSV export (P141) — build from the current view + trigger a download. ──
   const handleExport = React.useCallback(() => {
@@ -889,6 +957,8 @@ export function FairwayTeamStats({
                   intelligence={intelligenceByPlayer[player.id] ?? null}
                   standing={standingByPlayer.get(player.id)}
                   sampleSize={intelligenceSampleSize}
+                  leaders={metricLeaders}
+                  topComposite={topComposite}
                 />
               ))}
             </div>
@@ -1000,12 +1070,18 @@ function PlayerTile({
   intelligence,
   standing,
   sampleSize,
+  leaders,
+  topComposite,
 }: {
   player: TeamPlayerStats;
   intelligence: FairwayTeamStatsPlayerIntelligence | null;
   standing: Map<MetricId, PlayerStanding> | undefined;
   /** Normalization population behind the composite; < 3 ⇒ statistically unstable. */
   sampleSize: number;
+  /** W6 polish: per-metric team-leader ids (green tick treatment). */
+  leaders: Record<TeamLeaderMetric, ReadonlySet<string>>;
+  /** W6 polish: the team's single highest composite, or null when no "Top Performer" can be crowned. */
+  topComposite: number | null;
 }) {
   const fullName = `${player.first_name} ${player.last_name}`.trim() || 'Player';
   const headlineMetric = pickHeadlineMetric(standing);
@@ -1016,6 +1092,10 @@ function PlayerTile({
   // (only when there IS a composite to qualify — a missing one is just a dash).
   const composite = intelligence?.composite ?? null;
   const compositeProvisional = composite !== null && sampleSize < 3;
+  // W6 polish: the team's single highest (non-provisional) composite gets the
+  // green "Top Performer" leader treatment instead of the plain "Composite" label.
+  const isTopPerformer =
+    !compositeProvisional && composite !== null && topComposite !== null && composite === topComposite;
 
   return (
     <InstrumentPanel depth="raised" padding="md" as="article">
@@ -1041,33 +1121,79 @@ function PlayerTile({
           title={
             compositeProvisional
               ? `Provisional — normalized over only ${sampleSize} player${sampleSize !== 1 ? 's' : ''} (needs 3+ for a stable rating).`
-              : undefined
+              : isTopPerformer
+                ? 'Highest composite on the team.'
+                : undefined
           }
         >
-          <p
-            className={`font-fw-mono text-body-lg tabular-nums ${
-              compositeProvisional ? 'text-text-tertiary' : 'text-text-primary'
-            }`}
-          >
-            {fmtComposite(composite)}
-          </p>
-          <p className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-secondary">
-            {compositeProvisional ? 'Composite · provisional' : 'Composite'}
-          </p>
+          {isTopPerformer ? (
+            // W6 polish: the team's single highest composite gets the green
+            // ruled leader treatment instead of the plain "Composite" label.
+            // `items-end` matches the outer `text-right` corner alignment —
+            // the atom's flex-column rows don't inherit text-align.
+            <RuledLeaderStat
+              label="Top Performer"
+              value={fmtComposite(composite)}
+              size="lg"
+              leader
+              className="items-end"
+            />
+          ) : (
+            <>
+              <p
+                className={`font-fw-mono text-body-lg tabular-nums ${
+                  compositeProvisional ? 'text-text-tertiary' : 'text-text-primary'
+                }`}
+              >
+                {fmtComposite(composite)}
+              </p>
+              <p className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-secondary">
+                {compositeProvisional ? 'Composite · provisional' : 'Composite'}
+              </p>
+            </>
+          )}
         </div>
       </div>
 
       {/* Per-player detail grid — the full legacy column set, honest dashes when
           a metric has no samples (never a fabricated 0 / 0%). P137: 2-up on the
-          narrowest phones, 4-up from ~380px so the 11px labels never crowd. */}
+          narrowest phones, 4-up from ~380px so the 11px labels never crowd.
+          W6 polish: the 5 competitive columns (Avg/Best/FW%/GIR%/Putts) carry
+          the green-ruled leader treatment when this player leads the team on
+          that column; Rounds/HCP/Trend are unchanged (no team "best" to lead). */}
       <div className="mb-4 grid grid-cols-2 [@media(min-width:380px)]:grid-cols-4 gap-x-3 gap-y-3 rounded-card bg-surface-sunken p-3">
         <MetricCell label="Rounds" value={`${player.rounds_played}`} />
-        <MetricCell label="Avg" value={fmtNumber(player.scoring_average, 1)} />
-        <MetricCell label="Best" value={fmtScore(player.best_round)} />
+        <RuledLeaderStat
+          label="Avg"
+          value={fmtNumber(player.scoring_average, 1)}
+          size="compact"
+          leader={leaders.scoring_average.has(player.id)}
+        />
+        <RuledLeaderStat
+          label="Best"
+          value={fmtScore(player.best_round)}
+          size="compact"
+          leader={leaders.best_round.has(player.id)}
+        />
         <MetricCell label="HCP" value={fmtHandicap(player.handicap)} />
-        <MetricCell label="FW%" value={fmtPct(player.fairway_pct)} />
-        <MetricCell label="GIR%" value={fmtPct(player.gir_pct)} />
-        <MetricCell label="Putts" value={fmtNumber(player.putts_per_round, 1)} />
+        <RuledLeaderStat
+          label="FW%"
+          value={fmtPct(player.fairway_pct)}
+          size="compact"
+          leader={leaders.fairway_pct.has(player.id)}
+        />
+        <RuledLeaderStat
+          label="GIR%"
+          value={fmtPct(player.gir_pct)}
+          size="compact"
+          leader={leaders.gir_pct.has(player.id)}
+        />
+        <RuledLeaderStat
+          label="Putts"
+          value={fmtNumber(player.putts_per_round, 1)}
+          size="compact"
+          leader={leaders.putts_per_round.has(player.id)}
+        />
         <TrendCell trend={player.scoring_trend} />
       </div>
 

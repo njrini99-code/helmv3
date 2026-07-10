@@ -1,19 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { PageHeader } from '@/components/ui/page-header';
-import { Breadcrumb } from '@/components/ui/breadcrumb';
-import { Reveal } from '@/components/ui/reveal';
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import { redirect, notFound } from 'next/navigation';
-import Link from 'next/link';
-import { IconTrophy } from '@/components/icons';
 import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
-import { QualifierLeaderboardRealtime } from '@/components/golf/qualifiers/QualifierLeaderboardRealtime';
-import { QualifierRoundBreakdown } from './QualifierRoundBreakdown';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
 import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
 
@@ -142,28 +132,6 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   // Find max round number submitted
   const maxRoundNumber = (rounds || []).reduce((max, r) => Math.max(max, r.qualifier_round_number || 1), 0);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'upcoming':
-        return { className: 'bg-warm-100 text-warm-700', label: 'Upcoming' };
-      case 'in_progress':
-        return { className: 'bg-primary-100 text-primary-700', label: 'In Progress' };
-      case 'completed':
-        return { className: 'bg-warm-100 text-warm-600', label: 'Completed' };
-      default:
-        return { className: 'bg-warm-100 text-warm-600', label: status.replace('_', ' ') };
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const statusBadge = getStatusBadge(qualifierData.status || 'upcoming');
   const totalRoundsSubmitted = (rounds || []).length;
 
   // Check if current player is entered and can play
@@ -173,203 +141,47 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   const qualifierIsActive = qualifierData.status === 'in_progress' || qualifierData.status === 'upcoming';
   const canPlayRound = !!playerEntry && qualifierIsActive;
 
-  // ── Fairway redesign fork (flag-gated; legacy branch below is unchanged) ──
-  if (isRedesignEnabled()) {
-    // Honest W29 datum the legacy hides: how many selections are actually made.
-    const { count: selectionsCount } = await supabase
-      .from('golf_qualifier_selections')
-      .select('*', { count: 'exact', head: true })
-      .eq('qualifier_id', id);
+  // Honest W29 datum the legacy hides: how many selections are actually made.
+  const { count: selectionsCount } = await supabase
+    .from('golf_qualifier_selections')
+    .select('*', { count: 'exact', head: true })
+    .eq('qualifier_id', id);
 
-    // Feature G — the course the coach assigned to each round (if any).
-    const roundCourses = await getQualifierRoundCourses(id);
-
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayQualifierDetail
-          qualifierId={id}
-          isCoach={isCoach}
-          isPlayer={isPlayer}
-          name={qualifierData.name || 'Qualifier'}
-          status={qualifierData.status || 'upcoming'}
-          startDate={qualifierData.start_date}
-          endDate={qualifierData.end_date ?? null}
-          entryDeadline={qualifierData.entry_deadline ?? null}
-          courseName={qualifierData.course_name ?? null}
-          spotsAvailable={qualifierData.spots_available ?? null}
-          rules={qualifierData.rules ?? null}
-          entrantCount={qualifierData.entries.length}
-          roundsSubmitted={totalRoundsSubmitted}
-          canPlayRound={canPlayRound}
-          breakdown={sortedBreakdown}
-          maxRoundNumber={maxRoundNumber}
-          numRounds={
-            // num_rounds is a Feature-G column not yet in the generated types
-            // (migration unapplied) — read it defensively.
-            typeof (qualifier as { num_rounds?: number }).num_rounds === 'number'
-              ? (qualifier as { num_rounds?: number }).num_rounds ?? 1
-              : 1
-          }
-          roundCourses={roundCourses}
-          selectionState={qualifierData.selection_state ?? 'open'}
-          selectionSlotsTotal={qualifierData.selection_slots_total ?? 0}
-          selectionSlotsCoachPick={qualifierData.selection_slots_coach_pick ?? 0}
-          selectionsCount={selectionsCount ?? 0}
-        />
-      </div>
-    );
-  }
+  // Feature G — the course the coach assigned to each round (if any).
+  const roundCourses = await getQualifierRoundCourses(id);
 
   return (
-    <AnimatedPage className="min-h-full bg-transparent">
-      <AnimatedItem>
-        <MobileNavHeader
-          title={qualifierData.name || 'Qualifier'}
-          backHref={isCoach ? '/golf/dashboard/qualifiers' : '/golf/dashboard/my-qualifiers'}
-          backLabel="Qualifiers"
-          breadcrumb={
-            <Breadcrumb
-              items={[
-                { label: 'Dashboard', href: '/golf/dashboard' },
-                {
-                  label: isCoach ? 'Qualifiers' : 'My Qualifiers',
-                  href: isCoach ? '/golf/dashboard/qualifiers' : '/golf/dashboard/my-qualifiers',
-                },
-                { label: qualifierData.name || 'Qualifier' },
-              ]}
-            />
-          }
-        />
-      </AnimatedItem>
-
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Qualifier Header — editorial plinth */}
-        <Reveal>
-          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
-            <PageHeader
-              eyebrow="Qualifier"
-              eyebrowAccent="primary"
-              title={qualifierData.name}
-              subtitle={
-                qualifierData.description
-                  ? qualifierData.description
-                  : `${formatDate(qualifierData.start_date)}${
-                      qualifierData.end_date && qualifierData.end_date !== qualifierData.start_date
-                        ? ` – ${formatDate(qualifierData.end_date)}`
-                        : ''
-                    } · ${qualifierData.entries.length} player${qualifierData.entries.length === 1 ? '' : 's'}`
-              }
-              actions={
-                <span
-                  className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-full ${statusBadge.className}`}
-                >
-                  {statusBadge.label}
-                </span>
-              }
-            />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-warm-200/60">
-              <div>
-                <p className="text-sm text-warm-500 mb-1">Dates</p>
-                <p className="font-medium text-warm-900">
-                  {formatDate(qualifierData.start_date)}
-                  {qualifierData.end_date && qualifierData.end_date !== qualifierData.start_date && (
-                    <> - {formatDate(qualifierData.end_date)}</>
-                  )}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-warm-500 mb-1">Players</p>
-                <AnimatedNumber
-                  value={qualifierData.entries.length}
-                  decimals={0}
-                  staggerIndex={0}
-                  className="font-medium text-warm-900 tabular-nums"
-                />
-              </div>
-
-              <div>
-                <p className="text-sm text-warm-500 mb-1">Rounds Submitted</p>
-                <AnimatedNumber
-                  value={totalRoundsSubmitted}
-                  decimals={0}
-                  staggerIndex={1}
-                  className="font-medium text-warm-900 tabular-nums"
-                />
-              </div>
-
-              {qualifierData.spots_available && (
-                <div>
-                  <p className="text-sm text-warm-500 mb-1">Spots</p>
-                  <AnimatedNumber
-                    value={qualifierData.spots_available}
-                    decimals={0}
-                    staggerIndex={2}
-                    className="font-medium text-warm-900 tabular-nums"
-                  />
-                </div>
-              )}
-            </div>
-
-            {qualifierData.course_name && (
-              <div className="mt-4 pt-4 border-t border-warm-200/60">
-                <p className="text-sm text-warm-500">Course</p>
-                <p className="font-medium text-warm-900">{qualifierData.course_name}</p>
-              </div>
-            )}
-
-            {/* Player: Play Round CTA */}
-            {canPlayRound && (
-              <div className="mt-4 pt-4 border-t border-warm-200/60">
-                <Link
-                  href={`/golf/dashboard/rounds/new?qualifier=${id}`}
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <IconTrophy size={16} />
-                  Play Qualifier Round
-                </Link>
-              </div>
-            )}
-
-            {/* Coach: Manage selections link → W29 v3 workspace */}
-            {isCoach && (
-              <div className="mt-4 pt-4 border-t border-warm-200/60">
-                <Link
-                  href={`/golf/dashboard/coachhelm/qualifying/${id}`}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 transition"
-                >
-                  Manage selections →
-                </Link>
-              </div>
-            )}
-          </div>
-        </Reveal>
-
-        {/* Real-time Leaderboard */}
-        <AnimatedItem>
-        <div className="relative surface-matte rounded-3xl overflow-clip p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <IconTrophy size={20} className="text-amber-500" />
-            <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Leaderboard</h2>
-          </div>
-          <QualifierLeaderboardRealtime
-            qualifierId={id}
-            numRounds={1}
-          />
-        </div>
-        </AnimatedItem>
-
-        {/* Per-Round Score Breakdown (Coach view) */}
-        {isCoach && sortedBreakdown.length > 0 && (
-          <AnimatedItem>
-            <QualifierRoundBreakdown
-              breakdown={sortedBreakdown}
-              maxRoundNumber={maxRoundNumber}
-            />
-          </AnimatedItem>
-        )}
-      </div>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayQualifierDetail
+        qualifierId={id}
+        isCoach={isCoach}
+        isPlayer={isPlayer}
+        name={qualifierData.name || 'Qualifier'}
+        status={qualifierData.status || 'upcoming'}
+        startDate={qualifierData.start_date}
+        endDate={qualifierData.end_date ?? null}
+        entryDeadline={qualifierData.entry_deadline ?? null}
+        courseName={qualifierData.course_name ?? null}
+        spotsAvailable={qualifierData.spots_available ?? null}
+        rules={qualifierData.rules ?? null}
+        entrantCount={qualifierData.entries.length}
+        roundsSubmitted={totalRoundsSubmitted}
+        canPlayRound={canPlayRound}
+        breakdown={sortedBreakdown}
+        maxRoundNumber={maxRoundNumber}
+        numRounds={
+          // num_rounds is a Feature-G column not yet in the generated types
+          // (migration unapplied) — read it defensively.
+          typeof (qualifier as { num_rounds?: number }).num_rounds === 'number'
+            ? (qualifier as { num_rounds?: number }).num_rounds ?? 1
+            : 1
+        }
+        roundCourses={roundCourses}
+        selectionState={qualifierData.selection_state ?? 'open'}
+        selectionSlotsTotal={qualifierData.selection_slots_total ?? 0}
+        selectionSlotsCoachPick={qualifierData.selection_slots_coach_pick ?? 0}
+        selectionsCount={selectionsCount ?? 0}
+      />
+    </div>
   );
 }

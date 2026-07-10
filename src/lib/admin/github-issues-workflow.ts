@@ -25,14 +25,21 @@ async function createLabelIfMissing(
   color: string,
   description: string,
 ): Promise<void> {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/labels`, {
-    method: 'POST',
-    headers: {
-      ...githubIssuesHeaders(token),
-      'content-type': 'application/json',
+  // owner/repo originate from githubIssuesRepo() (env-configured constants,
+  // never end-user input), but path segments are still encoded defensively
+  // so a misconfigured/odd env value can never be interpreted as extra path
+  // segments or a different host.
+  const res = await fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/labels`,
+    {
+      method: 'POST',
+      headers: {
+        ...githubIssuesHeaders(token),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ name, color, description }),
     },
-    body: JSON.stringify({ name, color, description }),
-  });
+  );
   if (res.ok || res.status === 422) return;
   const text = await res.text();
   throw new Error(`GitHub label create failed for ${name} (${res.status}): ${text.slice(0, 200)}`);
@@ -62,6 +69,17 @@ export async function setBenLeahIssueWorkflow(
   currentLabels: string[],
   selection: BenLeahWorkflowSelection,
 ): Promise<void> {
+  // SECURITY (js/request-forgery): issueNumber ultimately traces back to a
+  // caller-supplied value (updateBenLeahIssueWorkflow's argument). The caller
+  // already validates it, but this sink must not rely on that — enforce the
+  // same "positive integer" allowlist here so this function is safe to call
+  // from anywhere. Rejecting anything that isn't `^[0-9]+$`-shaped means the
+  // value can never inject extra path segments, a different host, or a query
+  // string into the request URL below.
+  if (!Number.isInteger(issueNumber) || issueNumber < 1 || !/^[0-9]+$/.test(String(issueNumber))) {
+    throw new Error('Invalid GitHub issue number.');
+  }
+
   const token = githubIssuesToken();
   if (!token) {
     throw new Error('GitHub issue token is not configured. Set GITHUB_ISSUES_TOKEN or GITHUB_TOKEN.');
@@ -69,17 +87,22 @@ export async function setBenLeahIssueWorkflow(
 
   await ensureBenLeahGitHubLabels();
 
+  // owner/repo are env-configured constants (githubIssuesRepo()), never
+  // end-user input; still encoded defensively (see createLabelIfMissing).
   const { owner, repo } = githubIssuesRepo();
   const labels = applyWorkflowSelection(currentLabels, selection);
 
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`, {
-    method: 'PATCH',
-    headers: {
-      ...githubIssuesHeaders(token),
-      'content-type': 'application/json',
+  const res = await fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${issueNumber}`,
+    {
+      method: 'PATCH',
+      headers: {
+        ...githubIssuesHeaders(token),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ labels }),
     },
-    body: JSON.stringify({ labels }),
-  });
+  );
 
   if (!res.ok) {
     const text = await res.text();

@@ -13,6 +13,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { ComposeTask } from './types';
+import { logServerError } from '@/lib/server-error-logger';
 
 type Sb = SupabaseClient<Database>;
 
@@ -104,7 +105,7 @@ export async function recordSpend(
   const usage = (cur?.task_class_usage as Record<string, number> | null) ?? {};
   usage[args.task] = (Number(usage[args.task] ?? 0)) + args.cost_usd;
 
-  await supabase.from('golf_coachhelm_llm_budget').upsert(
+  const { error } = await supabase.from('golf_coachhelm_llm_budget').upsert(
     {
       coach_id: args.coach_id,
       date,
@@ -121,6 +122,18 @@ export async function recordSpend(
     },
     { onConflict: 'coach_id,date' },
   );
+  if (error) {
+    // Intentionally fail-open: a failed spend-record silently disables
+    // *this* coach's daily cost cap (checkBudget will under-count spend
+    // until the next successful write), but blocking chat on a telemetry
+    // write would be a worse failure than an uncapped day of usage. Log
+    // loudly instead so the miss shows up in the admin dashboard/Sentry.
+    await logServerError(`recordSpend upsert failed: ${error.message}`, {
+      action: 'v3.llm.recordSpend',
+      errorCode: error.code,
+      extra: { coach_id: args.coach_id, date, cost_usd: args.cost_usd },
+    });
+  }
 }
 
 /**

@@ -1,14 +1,25 @@
 'use client';
 
+// =============================================================================
+// CollegeCard — the player-facing "college search result" card, migrated onto
+// "The Living Annual" kit (Lane 3 · THE PASSPORT, green ink; used only by
+// CollegesClient). PRESENTATION ONLY: `addToInterests`/`removeFromInterests`,
+// the optimistic-update/revert flow, and the loading guard are unchanged.
+//
+// The legacy "heart" toggle rendered red (an off-palette color for what is
+// really just this player's own interest marker, not an error/warning) — it
+// now reads in lane ink: green when interested, quiet graphite otherwise.
+// =============================================================================
+
 import { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { IconButton } from '@/components/ui/button';
 import { IconMapPin, IconHeart, IconHeartFilled } from '@/components/icons';
 import { addToInterests, removeFromInterests } from '@/app/baseball/actions/interests';
+import { PaperCard, PositionChip, Eyebrow } from '@/components/baseball/living-annual';
+import { cn } from '@/lib/utils';
 import type { College } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 
 interface CollegeCardProps {
   college: College;
@@ -62,41 +73,42 @@ export function CollegeCard({
   };
 
   return (
-    <Link href={`/baseball/program/${college.id}`}>
-      <Card variant="interactive" className="overflow-hidden h-full">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <Avatar name={college.name} size="lg" src={college.logo_url} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-warm-900 truncate">{college.name}</h3>
-                {showInterestButton && (
-                  <Button variant="danger"
-                    onClick={handleInterestClick}
-                    disabled={loading}
-                    className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${
-                      interested
-                        ? 'text-red-500 hover:bg-red-50 active:bg-red-100'
-                        : 'text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100'
-                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    aria-label={interested ? 'Remove from interests' : 'Add to interests'}
-                  >
-                    {interested ? <IconHeartFilled size={18} /> : <IconHeart size={18} />}
-                  </Button>
-                )}
-              </div>
-              <div className="flex items-center gap-1 text-sm text-warm-500 mt-1">
-                <IconMapPin size={14} />
-                <span className="truncate">{college.location_city}, {college.location_state}</span>
-              </div>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                {college.division && <Badge variant="success">{college.division}</Badge>}
-                {college.conference && <Badge className="truncate max-w-[120px]">{college.conference}</Badge>}
-              </div>
+    <Link href={`/baseball/program/${college.id}`} className="block h-full">
+      <PaperCard className="h-full p-5 transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_10px_rgba(0,0,0,0.04)]">
+        <div className="flex items-start gap-4">
+          <Avatar name={college.name} size="lg" src={college.logo_url} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="truncate font-annual text-body-lg font-semibold text-text-primary">{college.name}</h3>
+              {showInterestButton && (
+                <IconButton
+                  variant="ghost"
+                  onClick={handleInterestClick}
+                  disabled={loading}
+                  className={cn(
+                    'flex-shrink-0 p-1.5',
+                    interested ? 'text-grade-plus' : 'text-text-tertiary hover:text-grade-plus',
+                    loading && 'cursor-not-allowed opacity-50',
+                  )}
+                  aria-label={interested ? 'Remove from interests' : 'Add to interests'}
+                >
+                  {interested ? <IconHeartFilled size={18} /> : <IconHeart size={18} />}
+                </IconButton>
+              )}
+            </div>
+            <Eyebrow ink="muted" className="mt-1 inline-flex items-center gap-1">
+              <IconMapPin size={13} />
+              {college.location_city}, {college.location_state}
+            </Eyebrow>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {college.division && <PositionChip label={college.division} ink="team" size="sm" />}
+              {college.conference && (
+                <PositionChip label={college.conference} ink="neutral" size="sm" className="max-w-[120px] truncate" />
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </PaperCard>
     </Link>
   );
 }

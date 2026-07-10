@@ -16,6 +16,20 @@ import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { requireBaseballCapability } from '@/lib/baseball/capabilities';
 import type { Database } from '@/lib/types/database';
 
+/**
+ * Extracts a human-readable message from an unknown thrown/returned error.
+ * `err instanceof Error ? err.message : String(err)` mishandles Supabase's
+ * `PostgrestError` — a plain object, never an `Error` instance — which falls
+ * through to `String(err)` and logs the useless `[object Object]`. Checking
+ * for a `message` property directly (regardless of prototype) covers both
+ * real `Error`s and PostgrestError-shaped plain objects.
+ */
+function errorMessage(err: unknown): string {
+  return err && typeof err === 'object' && 'message' in err
+    ? String((err as { message: unknown }).message)
+    : String(err);
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -386,21 +400,93 @@ async function joinTeamImpl(playerId: string, teamId: string) {
     const shouldAutoEnable = !settings || settings.profile_visibility !== 'private';
 
     if (shouldAutoEnable) {
-      await supabase
-        .from('baseball_players')
-        .update({
-          recruiting_activated: true,
-          recruiting_activated_at: new Date().toISOString(),
-        })
-        .eq('id', playerId);
+      // Trigger 20260709010200 blocks authenticated-role writes to
+      // recruiting_activated (BEFORE UPDATE OF recruiting_activated,
+      // player_type on public.baseball_players), so this write must go
+      // through the service-role client, matching activateRecruitingExposure
+      // / deactivateRecruitingExposure in player-access.ts. Eligibility
+      // (JUCO team type, non-'private' profile_visibility) is already
+      // verified above via the regular RLS-scoped client.
+      const admin = createAdminClient();
 
-      // Also ensure player_settings has profile_visibility = 'public'
-      await supabase
-        .from('baseball_player_settings')
-        .upsert({
-          player_id: playerId,
-          profile_visibility: 'public',
-        }, { onConflict: 'player_id' });
+      // Multi-team JUCO / prior self-activation guard: a player can already
+      // be recruiting_activated=true before THIS join (a second JUCO team,
+      // or a prior manual self-activation). Read current state first so the
+      // revert-on-upsert-failure logic below only ever undoes a flip THIS
+      // call performed — reverting a pre-existing activation would
+      // incorrectly deactivate a player this call never touched.
+      const { data: currentPlayer } = await admin
+        .from('baseball_players')
+        .select('recruiting_activated')
+        .eq('id', playerId)
+        .maybeSingle();
+      const wasAlreadyActivated = currentPlayer?.recruiting_activated === true;
+
+      let activateFailed = false;
+      if (!wasAlreadyActivated) {
+        const { error: activateError } = await admin
+          .from('baseball_players')
+          .update({
+            recruiting_activated: true,
+            recruiting_activated_at: new Date().toISOString(),
+          })
+          .eq('id', playerId);
+
+        if (activateError) {
+          activateFailed = true;
+          await logServerError(
+            `Error auto-enabling recruiting for JUCO join: ${errorMessage(activateError)}`,
+            { action: 'teams.joinTeam' },
+          );
+          // Do NOT proceed to the profile_visibility upsert below — leaving it
+          // unset keeps state consistent (no public visibility promised while
+          // recruiting_activated failed to flip).
+        }
+      }
+
+      if (!activateFailed) {
+        // Also ensure player_settings has profile_visibility = 'public'.
+        // Runs regardless of whether THIS call flipped recruiting_activated
+        // (an already-activated player joining another JUCO team still gets
+        // visibility synced), best-effort.
+        const { error: settingsError } = await supabase
+          .from('baseball_player_settings')
+          .upsert({
+            player_id: playerId,
+            profile_visibility: 'public',
+          }, { onConflict: 'player_id' });
+
+        if (settingsError) {
+          await logServerError(
+            `Error upserting profile_visibility for JUCO join: ${errorMessage(settingsError)}`,
+            { action: 'teams.joinTeam' },
+          );
+
+          // Torn state guard: only revert if THIS call performed the
+          // false->true flip above. Reverting an activation that was already
+          // true before this join (multi-team JUCO or prior self-activation)
+          // would deactivate a player this call never touched. The join
+          // itself already committed, so this failure does not affect the
+          // success response below — activation is a best-effort side-effect
+          // of joining.
+          if (!wasAlreadyActivated) {
+            const { error: revertError } = await admin
+              .from('baseball_players')
+              .update({
+                recruiting_activated: false,
+                recruiting_activated_at: null,
+              })
+              .eq('id', playerId);
+
+            if (revertError) {
+              await logServerError(
+                `Error reverting recruiting_activated after failed profile_visibility upsert: ${errorMessage(revertError)}`,
+                { action: 'teams.joinTeam' },
+              );
+            }
+          }
+        }
+      }
     }
   }
 

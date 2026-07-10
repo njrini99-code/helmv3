@@ -3,6 +3,46 @@
 **Source:** 5-reader parallel audit, 109 raw items → 71 deduped gaps  
 **Method:** Deduplicated near-duplicates, re-prioritized (P0=blocking/security/data-loss, P1=core unbuilt feature, P2=polish), grouped into 9 parallel build waves.
 
+> **⚠️ Historical snapshot (2026-06-25) — superseded.** This gap map predates
+> ~40 commits of remediation, including the Lift Lab unification train
+> (completed 2026-07-08) and the W0–W9 production-readiness mission
+> (2026-07-09). Most items below have shipped; the raw list is kept as-is
+> for historical record rather than rewritten in place. See
+> `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` for the
+> current, row-by-row readiness state (re-graded 2026-07-09).
+>
+> **Current state (2026-07-09):**
+> - **W1 (DB foundation) — done.** All `helm_lifting_*` migrations
+>   (`20260625000000`–`20260625000030` and later hardening/drift-closure
+>   migrations) are confirmed applied to prod via `list_migrations`; types
+>   have been regenerated and the `as any`/`fromUntyped` casts flagged in W1
+>   are gone from the baseball performance page's core reads.
+> - **W2 (DB security) — done.** The anon-EXECUTE SECDEF RPCs, the
+>   `baseball_notifications` `WITH CHECK (true)` policy, and the anon
+>   GRANT-ALL findings from this pass were all closed in later hardening
+>   migrations (`baseball_anon_revoke_wave1/2`, `baseball_notifications_revoke_anon`,
+>   `revoke_anon_secdef_rpc_drift_full`, and the 2026-07-08/09 gate-and-revoke
+>   passes) — verified via the live migration list, not just the repo.
+> - **W7 (Lift Lab core) — built.** Exercise CRUD, program editor add/edit
+>   flows, player session execution (`/lifting/dashboard/lift` +
+>   `[sessionId]`), and a Today Board now exist; the baseball performance
+>   dashboard was rewired off legacy `baseball_lift_*` tables onto unified
+>   `helm_lifting_*` reads (the "W2-G REWIRE" banner in
+>   `src/app/baseball/(dashboard)/dashboard/performance/page.tsx`).
+> - **Design system — applied.** The Living Annual (LA) chrome (W5 in the
+>   production-readiness mission) has been applied across baseball surfaces
+>   including Lift Lab-adjacent screens.
+> - **Legacy tables — graveyarded**, not left dangling: three graveyard
+>   migrations (`graveyard_dead_tables_phase1`, `graveyard_dead_liftlab_tables_phase2`,
+>   `graveyard_legacy_liftlab_tables_phase3`) retired the superseded
+>   `baseball_lift_*`/legacy Lift Lab tables once the unified model took over.
+> - **What's still open:** treat the readiness matrix (not this document) as
+>   the source of truth for exactly which BaseballHelm/Lift Lab surfaces
+>   still have a real, currently-tracked gap — several of the W9 UI-polish
+>   items (skeletons, off-brand colors) and some W6/W8 feature items below
+>   may still be outstanding and were not re-verified item-by-item as part
+>   of this pass.
+
 ---
 
 ## Summary Table

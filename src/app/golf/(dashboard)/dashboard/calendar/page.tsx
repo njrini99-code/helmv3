@@ -3,31 +3,20 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { CalendarSkeleton } from '@/components/ui/skeleton';
 import { FairwayCalendarSkeleton } from '@/components/fairway/pages/calendar/FairwayCalendarSkeleton';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import type { Metadata } from 'next';
 
-// Code-split the two calendar surfaces: the route serves EXACTLY ONE of them
-// per request (redesign flag), so static imports made every visitor download
-// both implementations (~97KB gzip marginal, audit finding #26). next/dynamic
-// gives each its own chunk, loaded only when actually rendered.
-const EditorialCalendarSurface = dynamic(
-  () =>
-    import('@/components/golf/calendar/editorial/EditorialCalendarSurface').then(
-      (m) => m.EditorialCalendarSurface,
-    ),
-  { loading: () => <CalendarSkeleton /> },
-);
+// Code-split the Fairway calendar surface — it's the ONLY tree the route
+// renders, so this next/dynamic keeps its chunk loaded only when actually
+// rendered rather than bundled into the route's initial JS.
 const FairwayCalendar = dynamic(
   () =>
     import('@/components/fairway/pages/calendar/FairwayCalendar').then((m) => m.FairwayCalendar),
   // P235: the Fairway chunk's own loading fallback must mirror the agenda-default
-  // Fairway first paint (token-true), not the legacy week-grid CalendarSkeleton.
+  // Fairway first paint (token-true).
   { loading: () => <FairwayCalendarSkeleton /> },
 );
 
@@ -213,55 +202,22 @@ export default async function GolfCalendarPage() {
     e => (e.start_time || e.start_date) >= serverNow && e.status !== 'cancelled'
   ).length;
 
-  // ── Fairway redesign fork (ADDITIVE + GATED) ─────────────────────────────
-  // When NEXT_PUBLIC_REDESIGN is on, render the re-skinned Calendar shell. It
-  // reuses the SAME events/teamMembers/timezone payload and the SAME legacy
-  // engine (PremiumCalendarClient grid + DnD + realtime + EventDetailModal)
-  // UNCHANGED behind the fork. Flag OFF → the legacy branch below runs
-  // byte-for-byte unchanged.
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayCalendar
-          events={events}
-          teamMembers={teamMembers}
-          isCoach={isCoach}
-          teamTimezone={teamTimezone}
-          upcomingCount={upcomingCount}
-          serverNow={serverNow}
-          currentUserId={coach?.id ?? playerId ?? undefined}
-          teamId={teamId}
-          loadedRangeStart={threeMonthsAgo.toISOString()}
-          loadedRangeEnd={threeMonthsAhead.toISOString()}
-        />
-      </div>
-    );
-  }
-
+  // Fairway is the only tree (Wave W1) — it reuses the SAME events/
+  // teamMembers/timezone payload computed above.
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <div className="min-h-full flex flex-col">
-          <LargeTitleHeader title="Calendar" />
-
-          {/* Editorial calendar surface — hero plinth + day strip + view
-              toggle + agenda/grid body + detail drawer.
-              We pass `serverNow` so the surface seeds its initial focus date
-              from a server-stable timestamp. Without this, both server and
-              client invoke `new Date()` independently and produce divergent
-              "today" markup → React hydration error #418. */}
-          <div className="flex-1 px-4 md:px-6 pt-2 pb-6 min-h-0">
-            <EditorialCalendarSurface
-              events={events}
-              teamMembers={teamMembers}
-              isCoach={isCoach}
-              teamTimezone={teamTimezone}
-              upcomingCount={upcomingCount}
-              serverNow={serverNow}
-            />
-          </div>
-        </div>
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayCalendar
+        events={events}
+        teamMembers={teamMembers}
+        isCoach={isCoach}
+        teamTimezone={teamTimezone}
+        upcomingCount={upcomingCount}
+        serverNow={serverNow}
+        currentUserId={coach?.id ?? playerId ?? undefined}
+        teamId={teamId}
+        loadedRangeStart={threeMonthsAgo.toISOString()}
+        loadedRangeEnd={threeMonthsAhead.toISOString()}
+      />
+    </div>
   );
 }

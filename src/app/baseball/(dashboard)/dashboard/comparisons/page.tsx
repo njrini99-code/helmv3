@@ -1,37 +1,46 @@
+// =============================================================================
+// SavedComparisonsPage — the coach's saved-comparisons list, migrated onto
+// "The Living Annual" kit (Lane 2 · THE WAR ROOM, clay ink — a sibling of
+// /compare, spec §6 P3 #10). PRESENTATION ONLY: `requireRecruitingCoachRoute`
+// (W0 server guard) and `getSavedComparisons` are unchanged; only the page
+// chrome (masthead, error state, skeleton) moved to the kit — matching
+// /compare's sibling behavior instead of a raw red error string.
+// =============================================================================
 import { Suspense } from 'react';
+import { requireRecruitingCoachRoute } from '@/lib/baseball/server-route-guards';
 import { getSavedComparisons } from '../compare/actions';
 import { SavedComparisonsList } from '@/components/features/saved-comparisons-list';
-import { IconBookmark } from '@/components/icons';
+import { SectionMasthead, PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 
 export default async function SavedComparisonsPage() {
+  // SECURITY: previously relied on getSavedComparisons()'s internal
+  // { error: 'Unauthorized' } string, which just rendered as an inline error
+  // banner (no redirect) — the page shell still rendered for an unauthorized
+  // caller. Match the sibling /compare route's guard instead.
+  await requireRecruitingCoachRoute();
+
   const { comparisons, error } = await getSavedComparisons();
 
   return (
-    <div className="min-h-dvh bg-cream">
-      <div className="max-w-[1536px] mx-auto px-6 py-8">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary-50">
-                <IconBookmark size={24} className="text-primary-600" />
-              </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Saved Comparisons</h1>
-            </div>
-            <p className="text-warm-500">
-              View and manage your saved player comparisons
-            </p>
-          </div>
+    <div className={PAGE_SHELL}>
+      <SectionMasthead eyebrow="THE WAR ROOM · DECISION ROOM" title="Saved Comparisons" ink="pursuit">
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          View and manage your saved player comparisons.
+        </p>
+      </SectionMasthead>
+
+      {/* Error State */}
+      {error && (
+        <div className="mt-6">
+          <EditorsLetter ink="pursuit" title="Couldn't load your comparisons" body={error} />
         </div>
+      )}
 
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <p className="text-sm leading-relaxed text-red-800">{error}</p>
-          </div>
-        )}
-
-        {/* Comparisons List */}
+      {/* Comparisons List */}
+      <div className="mt-6">
         <Suspense fallback={<ComparisonsLoadingSkeleton />}>
           <SavedComparisonsList comparisons={comparisons} />
         </Suspense>
@@ -42,19 +51,16 @@ export default async function SavedComparisonsPage() {
 
 function ComparisonsLoadingSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          className="bg-cream-50 rounded-xl border border-warm-200 p-6 animate-pulse"
-        >
-          <div className="h-4 bg-warm-200 rounded w-3/4 mb-3" />
-          <div className="h-3 bg-warm-200 rounded w-1/2 mb-4" />
+        <PaperCard key={i} className="p-6">
+          <Skeleton variant="text" width="75%" height={16} className="mb-3" />
+          <Skeleton variant="text" width="50%" height={12} className="mb-4" />
           <div className="space-y-2">
-            <div className="h-3 bg-warm-200 rounded w-full" />
-            <div className="h-3 bg-warm-200 rounded w-5/6" />
+            <Skeleton variant="text" width="100%" height={12} />
+            <Skeleton variant="text" width="85%" height={12} />
           </div>
-        </div>
+        </PaperCard>
       ))}
     </div>
   );

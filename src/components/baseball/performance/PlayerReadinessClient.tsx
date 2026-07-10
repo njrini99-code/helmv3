@@ -87,6 +87,9 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
   const [bodyweight, setBodyweight] = useState('');
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Non-blocking notice for the done screen when a secondary write (bodyweight
+  // / soreness map) fails after the primary check-in already succeeded.
+  const [secondaryNotice, setSecondaryNotice] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -132,6 +135,7 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
 
   function handleSubmit() {
     setError(null);
+    setSecondaryNotice(null);
     startTransition(async () => {
       const r = await submitReadinessCheckin({
         checkDate,
@@ -145,17 +149,35 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
         notes: notes || null,
       });
       if (!r.success) { setError(r.error ?? 'Could not submit check-in.'); return; }
+
+      // Secondary writes are best-effort: the primary check-in above already
+      // succeeded, so a throw here (no lifting org, unresolved player, DB
+      // error) must never skip setDone(true) — that would leave the player
+      // resubmitting a duplicate check-in. Each gets its own try/catch and
+      // failures surface as a non-blocking notice on the done screen instead.
+      const failedParts: string[] = [];
       if (bodyweight) {
-        await logBodyweight({ entryDate: checkDate, weightLbs: Number(bodyweight) });
+        try {
+          await logBodyweight({ entryDate: checkDate, weightLbs: Number(bodyweight) });
+        } catch {
+          failedParts.push('bodyweight');
+        }
       }
       if (soreness && soreness >= 3 && r.id) {
         // Record a coarse soreness map entry so the staff queue has region context.
-        await saveSorenessMap({
-          checkinId: r.id,
-          regions: lowerBody && lowerBody >= 3
-            ? [{ bodyRegion: 'lower_body', severity: Math.min(10, soreness * 2) }]
-            : [{ bodyRegion: 'general', severity: Math.min(10, soreness * 2) }],
-        });
+        try {
+          await saveSorenessMap({
+            checkinId: r.id,
+            regions: lowerBody && lowerBody >= 3
+              ? [{ bodyRegion: 'lower_body', severity: Math.min(10, soreness * 2) }]
+              : [{ bodyRegion: 'general', severity: Math.min(10, soreness * 2) }],
+          });
+        } catch {
+          failedParts.push('soreness map');
+        }
+      }
+      if (failedParts.length) {
+        setSecondaryNotice(`Check-in saved, but your ${failedParts.join(' and ')} didn't — let the staff know.`);
       }
       setDone(true);
     });
@@ -181,6 +203,12 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
             </motion.div>
             <p className="mt-4 text-2xl font-semibold tracking-tight text-warm-900">Check-in saved</p>
             <p className="mt-1 text-sm text-warm-500">Thanks — the staff has what they need before training.</p>
+            {secondaryNotice && (
+              <div role="status" aria-live="polite" className="mx-auto mt-3 flex max-w-sm items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-800">
+                <IconAlertCircle size={15} className="shrink-0" />
+                <span>{secondaryNotice}</span>
+              </div>
+            )}
             <Link
               href="/baseball/dashboard/lift"
               className="mt-5 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"

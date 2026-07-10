@@ -87,13 +87,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
+import type { JoinRequestData } from '@/app/golf/actions/teams';
 import type {
   CoachDashboardPayload,
   DashboardDateRange,
   TodayEvent,
   ActionItem,
 } from '@/app/golf/actions/dashboard-data';
-import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/CoachDashboard';
+import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { deriveCoachSignal } from './coach-signal';
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -104,6 +105,15 @@ export interface FairwayCoachDashboardProps {
   data: CoachDashboardData;
   enhancedData?: CoachDashboardPayload | null;
   dateRange?: DashboardDateRange;
+  /**
+   * Pending team join requests, fetched server-side by the RSC page (same
+   * `getTeamJoinRequests()` call the banner used to make itself on mount) and
+   * passed down as a prop. Rendering from a prop the banner already has at
+   * first paint means it never has to flip in after a client fetch — no
+   * reflow of the content below it once the page hydrates. Omit to fall back
+   * to FairwayJoinRequestAlert's own self-fetch (kept for any other caller).
+   */
+  joinRequests?: JoinRequestData[];
 }
 
 const RANGE_OPTIONS: { value: DashboardDateRange; label: string }[] = [
@@ -175,6 +185,7 @@ export function FairwayCoachDashboard({
   data,
   enhancedData,
   dateRange: initialRange = 'all',
+  joinRequests,
 }: FairwayCoachDashboardProps) {
   const { coach, team, stats, recentRounds, topPlayers, teamScoringTrend } = data;
   const router = useRouter();
@@ -420,6 +431,10 @@ export function FairwayCoachDashboard({
         }
       />
 
+      {/* Masthead hairline — the owner's "more green" ruling: the loud graphite
+          masthead sits on a real green rule, not a neutral divider. */}
+      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
+
       {/* ── 2 · Quiet toolbar band: date-range scope (calm, not glass) ─────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
@@ -435,8 +450,13 @@ export function FairwayCoachDashboard({
 
       {/* Roster join-request approvals — preserved logic (getTeamJoinRequests / roster.ts),
           rendered through the Fairway warning InlineNotice so the dashboard stays one
-          calm matte surface (P003). Self-fetches on mount; parent owns the gap-8 rhythm. */}
-      <FairwayJoinRequestAlert />
+          calm matte surface (P003). `joinRequests` is fetched server-side by the RSC
+          page and passed down (see FairwayCoachDashboardProps) so this renders from
+          data already present at first paint instead of self-fetching on mount —
+          the banner no longer flips in after hydration and reflows everything below
+          the fold. Falls back to the component's own self-fetch when the prop is
+          omitted (e.g. any other caller that hasn't wired it). */}
+      <FairwayJoinRequestAlert requests={joinRequests} />
 
       {/* ── 3 · THE ONE GLASS HERO — CoachHelm signal strip ────────────────── */}
       <InsightCard
@@ -449,7 +469,10 @@ export function FairwayCoachDashboard({
         emptyMessage={signal.body}
         actions={
           <>
-            <Button variant="primary" size="sm" asChild>
+            {/* One filled-green primary per view (masthead's "Add Player" owns
+                it) — this hero card's own CTA is demoted to secondary so it
+                doesn't compete with the page-level primary action. */}
+            <Button variant="secondary" size="sm" asChild>
               <Link href="/golf/dashboard/intelligence">
                 <span>Open CoachHelm</span>
                 <IconArrowRight size={16} />
@@ -617,6 +640,8 @@ export function FairwayCoachDashboard({
             <IconArrowRight size={14} />
           </Link>
         </div>
+        {/* Section hairline — more-green ruling. */}
+        <div aria-hidden="true" className="h-px w-full bg-accent-300" />
         {recentRounds.length === 0 ? (
           <Surface elevation="border" padding="md">
             <EmptyState
@@ -899,6 +924,9 @@ function TodayPanel({
           <IconArrowRight size={14} />
         </Link>
       </div>
+      {/* Section hairline — more-green ruling: a green rule under the section
+          title, not a plain gray one. */}
+      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
 
       {scheduleError ? (
         // Degraded state — the schedule RPC failed. Surface a distinct, quiet
@@ -1036,6 +1064,8 @@ function ActionItemsPanel({ items }: { items: ActionItem[] }) {
           <IconArrowRight size={14} />
         </Link>
       </div>
+      {/* Section hairline — more-green ruling. */}
+      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
 
       {items.length === 0 ? (
         <Surface elevation="border" padding="md">

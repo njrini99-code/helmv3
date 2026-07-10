@@ -30,6 +30,8 @@ import { useShotStateMachine, type EditFormData } from '@/hooks/golf/use-shot-st
 import { usePenaltyHandler } from '@/hooks/golf/use-penalty-handler';
 import { useUndoManager } from '@/hooks/golf/use-undo-manager';
 import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
 
 import { FairwayScorecardHeader, FairwayDesktopExitHeader } from './FairwayScorecardHeader';
 import { FairwayShotPills } from './FairwayShotPills';
@@ -70,6 +72,46 @@ function scrollElementIntoView(element: Element | null) {
   });
 }
 
+/**
+ * Pure conversion-boundary helper for the "distance after this shot" write
+ * path — exported for unit testing. Resolves the player-typed display value
+ * (in their ACTIVE distance-unit preference) to the canonical yards/feet
+ * value the DB stores, deriving the locked canonical unit from shot context
+ * alone (never trusted from a free-form unit toggle — see the write-time
+ * unit guard comment in handleNextShot below).
+ *
+ * Meters-mode conversion boundary: before this fix, a meters-preference
+ * player's raw typed value (e.g. "9" meaning 9 meters) was written straight
+ * into distanceToHoleAfter as if it were already the canonical unit (9 feet
+ * instead of the correct ~30 feet) — silently corrupting shot distance,
+ * approach proximity and GIR-adjacent stats. `isReadyForNextShot`'s a
+ * pared-down validation copy of the same unit resolution lives inline below.
+ */
+export function resolveDistanceAfterShot(params: {
+  rawInput: string;
+  isMeters: boolean;
+  isPutting: boolean;
+  resultOfShot: string;
+}): { distanceAfter: number; unitAfter: 'yards' | 'feet' } {
+  const { rawInput, isMeters, isPutting, resultOfShot } = params;
+  const unitAfter: 'yards' | 'feet' = isPutting || resultOfShot === 'green' ? 'feet' : 'yards';
+  const parsedDistance = parseFloat(rawInput.trim());
+  const validParsed = Number.isFinite(parsedDistance) && parsedDistance >= 0;
+
+  let distanceAfter: number;
+  if (!validParsed) {
+    distanceAfter = 0;
+  } else if (isMeters) {
+    distanceAfter = unitAfter === 'feet'
+      ? displayToFeet(parsedDistance, 'meters')
+      : displayToYards(parsedDistance, 'meters');
+  } else {
+    distanceAfter = Math.round(parsedDistance);
+  }
+
+  return { distanceAfter, unitAfter };
+}
+
 export default function FairwayShotTracking({
   holes,
   currentHoleIndex,
@@ -108,6 +150,15 @@ export default function FairwayShotTracking({
     autoSaveInterval,
     autoSaveDisabled,
   });
+
+  // Distance-unit preference: 'yards' (default) | 'meters'
+  // This is a DISPLAY/INPUT-ONLY layer — all canonical state (distanceUnit,
+  // distanceAfterUnit) remains 'yards' or 'feet' and is stored to DB unchanged.
+  // Legacy parity fix: the Fairway path previously never read this preference,
+  // so a meters-preference player's typed input was written to the DB as if it
+  // were already yards/feet — corrupting distance/proximity/GIR stats.
+  const { distancePref } = useDistanceUnits();
+  const isMeters = distancePref === 'meters';
 
   // Destructure state for convenience
   const {
@@ -199,9 +250,11 @@ export default function FairwayShotTracking({
       const parsed = parseFloat(trimmed);
       if (!Number.isFinite(parsed) || parsed < 0) return false;
 
-      // Validate reasonable distance for green shots (proximity should be < 150 feet)
+      // Validate reasonable distance for green shots (proximity should be < 150 feet / ~46 m)
       if (resultOfShot === 'green') {
-        const afterInFeet = distanceAfterUnit === 'feet' ? parsed : parsed * 3;
+        const afterInFeet = isMeters
+          ? displayToFeet(parsed, 'meters')
+          : (distanceAfterUnit === 'feet' ? parsed : parsed * 3);
         if (afterInFeet > 150) return false; // Can't be 150+ feet from hole and "on the green"
       }
     }
@@ -252,15 +305,19 @@ export default function FairwayShotTracking({
       distanceAfter = 0;
       unitAfter = 'feet';
     } else {
-      // Parse the distance, handling potential whitespace and ensuring valid number
-      const parsedDistance = parseFloat(distanceAfterShot.trim());
-      distanceAfter = Number.isFinite(parsedDistance) && parsedDistance >= 0 ? Math.round(parsedDistance) : 0;
-      // Write-time unit guard: the stored unit is DERIVED from context, never trusted from
-      // the input state. On the green (a putt) or a shot that finished on the green is
-      // proximity in FEET; everything else is distance-remaining in YARDS. This makes it
-      // structurally impossible to persist the putt-in-yards / on-green-in-yards blend that
-      // inflated approach-proximity stats — matching the (now non-interactive) entry label.
-      unitAfter = isPutting || resultOfShot === 'green' ? 'feet' : 'yards';
+      // Write-time unit guard + meters-mode conversion boundary: the stored
+      // unit is DERIVED from context, never trusted from the input state, and
+      // the player-typed value is converted from their active preference to
+      // the canonical yards/feet unit before it's ever stored. See
+      // resolveDistanceAfterShot's doc comment for the corruption this fixes.
+      const resolved = resolveDistanceAfterShot({
+        rawInput: distanceAfterShot,
+        isMeters,
+        isPutting,
+        resultOfShot,
+      });
+      distanceAfter = resolved.distanceAfter;
+      unitAfter = resolved.unitAfter;
 
       if (distanceAfter === 0) {
         isProcessingShotRef.current = false;

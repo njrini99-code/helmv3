@@ -545,15 +545,23 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
     const section = selectedDay?.sections.find((s) => s.id === pickerSectionId);
     const nextOrder = section?.prescriptions.length ?? 0;
     startTransition(async () => {
-      await addLiftPrescription({
-        sectionId: pickerSectionId,
-        exerciseId,
-        orderIndex: nextOrder,
-        sets: 3,
-        reps: 8,
-      });
-      setPickerSectionId(null);
-      refresh();
+      try {
+        const result = await addLiftPrescription({
+          sectionId: pickerSectionId,
+          exerciseId,
+          orderIndex: nextOrder,
+          sets: 3,
+          reps: 8,
+        });
+        if (result.success) {
+          setPickerSectionId(null);
+          refresh();
+        } else {
+          setActionError(result.error ?? 'Failed to add exercise.');
+        }
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'Failed to add exercise.');
+      }
     });
   }
 
@@ -702,7 +710,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 <div className="px-3 py-2 flex items-center justify-between gap-1 group">
                   <span className="text-xs font-semibold text-warm-500 truncate">
                     Week {week.week_number}{week.name ? ` — ${week.name}` : ''}
-                    {week.deload ? <span className="ml-1 text-amber-500">(Deload)</span> : null}
+                    {week.deload ? <span className="ml-1 text-warning">(Deload)</span> : null}
                   </span>
                   {canEdit && (
                     <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -721,7 +729,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                         variant="ghost"
                         title="Delete week"
                         onClick={() => setDeletingWeekId(week.id)}
-                        className="p-1 rounded text-warm-400 hover:text-red-500 transition-colors"
+                        className="p-1 rounded text-warm-400 hover:text-destructive transition-colors"
                       >
                         <IconTrash size={11} />
                       </Button>
@@ -767,7 +775,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                             variant="ghost"
                             title="Delete day"
                             onClick={() => setDeletingDayId(day.id)}
-                            className="p-0.5 rounded text-warm-300 hover:text-red-500 transition-colors"
+                            className="p-0.5 rounded text-warm-300 hover:text-destructive transition-colors"
                           >
                             <IconTrash size={10} />
                           </Button>
@@ -824,7 +832,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
 
         {/* Action error */}
         {actionError && (
-          <p className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>
+          <p className="mt-2 text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{actionError}</p>
         )}
       </aside>
 
@@ -960,7 +968,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                               variant="ghost"
                               title="Delete section"
                               onClick={() => setDeletingSectionId(section.id)}
-                              className="p-1 rounded text-warm-400 hover:text-red-500 transition-colors"
+                              className="p-1 rounded text-warm-400 hover:text-destructive transition-colors"
                             >
                               <IconTrash size={14} />
                             </Button>
@@ -1040,7 +1048,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                                         title="Remove"
                                         onClick={() => handleDeletePresc(presc.id)}
                                         disabled={isPending}
-                                        className="p-0.5 rounded text-warm-300 hover:text-red-500 transition-colors"
+                                        className="p-0.5 rounded text-warm-300 hover:text-destructive transition-colors"
                                       >
                                         <IconX size={12} />
                                       </Button>
@@ -1115,10 +1123,10 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 </NativeSelect>
               </div>
             </div>
-            {metaError && <p className="text-sm text-red-600">{metaError}</p>}
+            {metaError && <p className="text-sm text-destructive">{metaError}</p>}
             <div className="flex items-center justify-between pt-2">
               {program.status === 'draft' && (
-                <Button variant="ghost" className="text-red-600 hover:text-red-700" onClick={handleDelete} disabled={isPending}>
+                <Button variant="ghost" className="text-destructive hover:text-destructive/90" onClick={handleDelete} disabled={isPending}>
                   Delete program
                 </Button>
               )}
@@ -1151,7 +1159,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
               />
               <span className="text-sm text-warm-700">Deload week</span>
             </label>
-            {addWeekError && <p className="text-sm text-red-600">{addWeekError}</p>}
+            {addWeekError && <p className="text-sm text-destructive">{addWeekError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setShowAddWeek(false)}>Cancel</Button>
               <Button onClick={handleAddWeek} disabled={isPending}>{isPending ? 'Adding…' : 'Add week'}</Button>
@@ -1185,7 +1193,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 />
               </div>
             </div>
-            {addDayError && <p className="text-sm text-red-600">{addDayError}</p>}
+            {addDayError && <p className="text-sm text-destructive">{addDayError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setAddDayWeekId(null)}>Cancel</Button>
               <Button onClick={handleAddDay} disabled={isPending}>{isPending ? 'Adding…' : 'Add day'}</Button>
@@ -1219,7 +1227,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 />
               </div>
             </div>
-            {editDayError && <p className="text-sm text-red-600">{editDayError}</p>}
+            {editDayError && <p className="text-sm text-destructive">{editDayError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setEditingDay(null)}>Cancel</Button>
               <Button onClick={handleEditDay} disabled={isPending}>{isPending ? 'Saving…' : 'Save'}</Button>
@@ -1240,7 +1248,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
             <div>
               <Input label="Name (optional override)" value={sectionName} onChange={(e) => setSectionName(e.target.value)} placeholder="Leave blank to use type label" />
             </div>
-            {addSectionError && <p className="text-sm text-red-600">{addSectionError}</p>}
+            {addSectionError && <p className="text-sm text-destructive">{addSectionError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setAddSectionDayId(null)}>Cancel</Button>
               <Button onClick={handleAddSection} disabled={isPending}>{isPending ? 'Adding…' : 'Add section'}</Button>
@@ -1261,7 +1269,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 {SECTION_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </NativeSelect>
             </div>
-            {editSectionError && <p className="text-sm text-red-600">{editSectionError}</p>}
+            {editSectionError && <p className="text-sm text-destructive">{editSectionError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setEditingSection(null)}>Cancel</Button>
               <Button onClick={handleEditSection} disabled={isPending}>{isPending ? 'Saving…' : 'Save'}</Button>
@@ -1296,7 +1304,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
             <div>
               <Input label="Coaching note" value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder="e.g. Control the eccentric" />
             </div>
-            {editPrescError && <p className="text-sm text-red-600">{editPrescError}</p>}
+            {editPrescError && <p className="text-sm text-destructive">{editPrescError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setEditingPresc(null)}>Cancel</Button>
               <Button onClick={handleSavePresc} disabled={isPending}>{isPending ? 'Saving…' : 'Save'}</Button>
@@ -1314,7 +1322,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
               <Button variant="ghost" onClick={() => setDeletingWeekId(null)}>Cancel</Button>
               <Button
                 variant="ghost"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                 onClick={() => deletingWeekId && handleDeleteWeek(deletingWeekId)}
                 disabled={isPending}
               >
@@ -1334,7 +1342,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
               <Button variant="ghost" onClick={() => setDeletingDayId(null)}>Cancel</Button>
               <Button
                 variant="ghost"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                 onClick={() => deletingDayId && handleDeleteDay(deletingDayId)}
                 disabled={isPending}
               >
@@ -1354,7 +1362,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
               <Button variant="ghost" onClick={() => setDeletingSectionId(null)}>Cancel</Button>
               <Button
                 variant="ghost"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                 onClick={() => deletingSectionId && handleDeleteSection(deletingSectionId)}
                 disabled={isPending}
               >
@@ -1406,7 +1414,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                     </NativeSelect>
                   </div>
                 )}
-                {publishError && <p className="text-sm text-red-600">{publishError}</p>}
+                {publishError && <p className="text-sm text-destructive">{publishError}</p>}
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="ghost" onClick={() => setShowPublish(false)}>Cancel</Button>
                   <Button onClick={handlePublish} disabled={isPending}>

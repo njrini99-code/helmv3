@@ -47,6 +47,7 @@ import {
   IconCalendar,
 } from '@/components/icons';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
+import { InkNotice } from '@/components/baseball/living-annual';
 import type {
   PassportReadModel,
   PassportMeasurable,
@@ -436,7 +437,7 @@ function CompletenessSignalRow({ signal }: { signal: PassportCompletenessSignal 
     <li className="flex items-start gap-2.5 px-1 py-2">
       <span
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-          signal.complete ? 'bg-primary-100 text-primary-600' : 'bg-amber-50 text-amber-500'
+          signal.complete ? 'bg-primary-100 text-primary-600' : 'bg-pursuit/10 text-pursuit'
         }`}
       >
         {signal.complete ? <IconCheckCircle2 size={13} /> : <IconAlertCircle size={13} />}
@@ -527,10 +528,9 @@ export function PlayerPassportCard({
 
           {/* Non-fatal error */}
           {model.error && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
-              <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-              <p className="text-sm text-amber-800">{model.error}</p>
-            </div>
+            <InkNotice ink="pursuit" className="mt-4">
+              {model.error}
+            </InkNotice>
           )}
 
           {/* Identity grid */}

@@ -12,9 +12,13 @@
  *
  * ── PRESERVE LOGIC (copied VERBATIM from GolfNewMessageModal) ────────────────
  *   The recipient search (coach → players on their team; player → coaches +
- *   teammates), the `teamId`-required guard, the SQL-wildcard escaping, and the
- *   onSelect(userId) → onClose() contract are byte-for-byte the same. Only the
- *   presentation moves onto Fairway primitives:
+ *   teammates), the `teamId`-required guard, and the SQL-wildcard escaping are
+ *   byte-for-byte the same. The onSelect → onClose contract is NOT identical:
+ *   GolfNewMessageModal fires `onSelect(selectedId); onClose();` synchronously
+ *   with no guard. Here, `handleStartConversation` AWAITS `onSelect(selectedId)`
+ *   behind a `creating` pending guard (blocking double-click double-submit)
+ *   and only calls `onClose()` once it resolves. Only the presentation moves
+ *   onto Fairway primitives:
  *     Sheet (overlays) · Input (forms) · Button/Avatar/Chip (controls) ·
  *     EmptyState/Skeleton/InlineNotice (feedback) · fw tokens + Fraunces.
  * ========================================================================== */
@@ -62,6 +66,7 @@ export function FairwayNewMessageSheet({
   const [loading, setLoading] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [noTeamError, setNoTeamError] = React.useState(false);
+  const [creating, setCreating] = React.useState(false);
 
   // ── recipient search — VERBATIM logic from GolfNewMessageModal ──────────────
   const searchUsers = React.useCallback(
@@ -226,14 +231,21 @@ export function FairwayNewMessageSheet({
       setResults([]);
       setSelectedId(null);
       setNoTeamError(false);
+      setCreating(false);
     }
   }, [isOpen]);
 
-  const handleStartConversation = () => {
-    if (selectedId) {
-      onSelect(selectedId);
-      onClose();
+  const handleStartConversation = async () => {
+    // Guards against double-click double-submit; server dedupe is intentionally not attempted here (client-only fix).
+    if (creating || !selectedId) return;
+
+    setCreating(true);
+    try {
+      await onSelect(selectedId);
+    } finally {
+      setCreating(false);
     }
+    onClose();
   };
 
   const noun = currentUserRole === 'coach' ? 'player' : 'team member';
@@ -354,7 +366,8 @@ export function FairwayNewMessageSheet({
         <Button
           variant="primary"
           onClick={handleStartConversation}
-          disabled={!selectedId || noTeamError}
+          disabled={!selectedId || noTeamError || creating}
+          busy={creating}
         >
           Start conversation
         </Button>

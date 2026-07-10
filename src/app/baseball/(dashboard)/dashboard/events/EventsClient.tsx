@@ -6,18 +6,21 @@ import { createClient } from '@/lib/supabase/client';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeams } from '@/hooks/use-teams';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   IconPlus,
   IconMapPin,
   IconClock,
   IconTrash,
 } from '@/components/icons';
-import { SectionMasthead, EditorsLetter, EmptyIssue } from '@/components/baseball/living-annual';
+import { SectionMasthead, EditorsLetter, EmptyIssue, PaperCard, InkBadge, Eyebrow } from '@/components/baseball/living-annual';
+import type { InkBadgeProps } from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
 import { createBaseballEvent, deleteBaseballEvent } from '@/app/baseball/actions/calendar';
+import { eventInk } from './event-ink';
 
 interface Event {
   id: string;
@@ -42,14 +45,15 @@ interface Event {
   };
 }
 
-const eventTypeColors: Record<string, string> = {
-  game: 'bg-blue-50 text-blue-700',
-  practice: 'bg-primary-50 text-primary-700',
-  showcase: 'bg-purple-50 text-purple-700',
-  tryout: 'bg-amber-50 text-amber-700',
-  tournament: 'bg-red-50 text-red-700',
-  meeting: 'bg-warm-100 text-warm-700',
-  other: 'bg-warm-100 text-warm-600',
+// Ink monogram tile (row avatar) — a lane-ink-tinted tile bearing the team's
+// initial, replacing the old arbitrary `team.primary_color` background
+// swatch. `neutral` event types keep a bare hairline tile so graphite still
+// carries the contrast (design-system-living-annual.md §4.2 contrast law).
+const MONOGRAM_TONE: Record<NonNullable<InkBadgeProps['tone']>, string> = {
+  team: 'border-grade-plus/25 bg-grade-plus/10 text-grade-plus',
+  pursuit: 'border-pursuit/25 bg-pursuit/10 text-pursuit',
+  neutral: 'border-[color:var(--hairline)] text-text-primary',
+  sodium: 'border-sodium/25 bg-sodium/10 text-sodium',
 };
 
 const eventTypeOptions = [
@@ -74,9 +78,9 @@ function EventsSkeleton() {
           <div className="h-4 w-40 bg-warm-200 rounded mb-3" />
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-cream-50 rounded-xl border border-warm-200 p-4">
+              <PaperCard key={i} className="p-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-warm-200 flex-shrink-0" />
+                  <div className="w-11 h-11 rounded-fw-md bg-warm-200 flex-shrink-0" />
                   <div className="flex-1 space-y-2">
                     <div className="h-4 w-48 bg-warm-200 rounded" />
                     <div className="h-3 w-32 bg-warm-100 rounded" />
@@ -86,7 +90,7 @@ function EventsSkeleton() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </PaperCard>
             ))}
           </div>
         </div>
@@ -125,6 +129,15 @@ export default function EventsPage() {
 
   // Per-event delete error (keyed by event id)
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+  // Event pending the in-kit confirm dialog (replaces native `confirm()`).
+  const [confirmDeleteEventId, setConfirmDeleteEventId] = useState<string | null>(null);
+
+  // Focus-trapped, Esc-to-close, focus-restoring dialogs (spec §7.1 doesn't
+  // cover modals directly, but the same `useFocusTrap` hook backing
+  // `ConfirmDialog` elsewhere in the app gives every dialog here the same
+  // role="dialog"/aria-modal contract).
+  const { modalRef: createModalRef } = useFocusTrap(showCreateModal, () => setShowCreateModal(false));
+  const { modalRef: deleteDialogRef } = useFocusTrap(confirmDeleteEventId !== null, () => setConfirmDeleteEventId(null));
 
   // ---------------------------------------------------------------------------
   // Fetch events (read-path — client SELECT is fine, RLS governs it)
@@ -264,9 +277,21 @@ export default function EventsPage() {
   // Delete event — server action
   // ---------------------------------------------------------------------------
 
-  const handleDeleteEvent = (eventId: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
+  // Opens the in-kit PaperCard confirm dialog (replaces native `confirm()`)
+  // instead of deleting immediately.
+  const requestDeleteEvent = (eventId: string) => {
+    setConfirmDeleteEventId(eventId);
+  };
 
+  const cancelDeleteEvent = () => {
+    setConfirmDeleteEventId(null);
+  };
+
+  const confirmDeleteEvent = () => {
+    const eventId = confirmDeleteEventId;
+    if (!eventId) return;
+
+    setConfirmDeleteEventId(null);
     setDeleteErrors((prev) => ({ ...prev, [eventId]: '' }));
     startTransition(async () => {
       const result = await deleteBaseballEvent(eventId);
@@ -301,6 +326,13 @@ export default function EventsPage() {
     groups[date].push(event);
     return groups;
   }, {} as Record<string, Event[]>);
+
+  // Filters narrowed a non-empty list down to zero vs. day-one/no-events-yet —
+  // two different empty states (see the render branch below).
+  const hasAnyEvents = events.length > 0;
+  const eventPendingDelete = confirmDeleteEventId
+    ? events.find((ev) => ev.id === confirmDeleteEventId)
+    : undefined;
 
   // ---------------------------------------------------------------------------
   // Auth/route guards
@@ -401,7 +433,9 @@ export default function EventsPage() {
         {/* Skeleton while loading */}
         {loading ? (
           <EventsSkeleton />
-        ) : fetchError ? null : filteredEvents.length === 0 ? (
+        ) : fetchError ? null : !hasAnyEvents ? (
+          // Day-one: no events exist yet for any team — the composed
+          // first-use empty issue with the "Create Your First Event" CTA.
           <EmptyIssue
             variant="calendar"
             ink="team"
@@ -412,31 +446,55 @@ export default function EventsPage() {
               </Button>
             }
           />
+        ) : filteredEvents.length === 0 ? (
+          // Events exist, but the current team/type filters narrowed the list
+          // to zero — a distinct, bespoke EditorsLetter (not the `calendar`
+          // EmptyIssue preset, which reads as "no events at all") with a
+          // "Clear filters" recovery action instead of the create CTA.
+          <EditorsLetter
+            ink="team"
+            title="Nothing matches these filters"
+            body="Try a different team or event type — or clear your filters to see everything on the schedule."
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setFilterTeam('all');
+                  setFilterType('all');
+                }}
+              >
+                Clear filters
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-6">
             {Object.entries(groupedEvents).map(([date, dateEvents]) => (
               <div key={date}>
-                <h3 className="text-sm font-medium text-warm-500 mb-3">
+                {/* Date group header — a graphite (max-contrast), tabular
+                    Eyebrow dateline instead of a plain gray h3. */}
+                <Eyebrow as="h3" ink="muted" className="mb-3 text-text-primary tabular-nums">
                   {format(new Date(date), 'EEEE, MMMM d, yyyy')}
-                </h3>
+                </Eyebrow>
                 <div className="space-y-3">
                   {dateEvents.map((event) => (
                     <div key={event.id}>
-                      <div className="bg-cream-50 rounded-xl border border-warm-200 p-4 hover:border-warm-300 hover:shadow-sm transition-all">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <div
-                              className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-medium flex-shrink-0"
-                              style={{
-                                backgroundColor:
-                                  event.team?.primary_color || 'var(--color-primary-600)',
-                              }}
+                      <PaperCard className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex min-w-0 items-start gap-4">
+                            {/* Ink monogram — replaces the arbitrary
+                                `team.primary_color` avatar tile. */}
+                            <span
+                              aria-hidden
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-fw-md border font-annual text-h3 font-semibold uppercase ${MONOGRAM_TONE[eventInk(event.event_type).tone]}`}
                             >
-                              {event.team?.name?.charAt(0) || 'E'}
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-warm-900">{event.title}</h4>
-                              <div className="flex items-center gap-3 mt-1 text-sm text-warm-500">
+                              {(event.team?.name?.charAt(0) || 'E').toUpperCase()}
+                            </span>
+                            <div className="min-w-0">
+                              <h4 className="min-w-0 truncate font-annual text-body-lg font-semibold text-text-primary">
+                                {event.title}
+                              </h4>
+                              <div className="mt-1 flex flex-wrap items-center gap-3 font-annual text-body-sm text-text-tertiary">
                                 <span className="flex items-center gap-1">
                                   <IconClock size={14} />
                                   {format(new Date(event.start_time), 'h:mm a')}
@@ -450,24 +508,26 @@ export default function EventsPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge
-                                  className={
-                                    eventTypeColors[event.event_type] || eventTypeColors.other
+                              <div className="flex flex-wrap items-center gap-2 mt-2">
+                                <InkBadge
+                                  tone={eventInk(event.event_type).tone}
+                                  variant={eventInk(event.event_type).variant}
+                                  label={
+                                    event.event_type.charAt(0).toUpperCase() +
+                                    event.event_type.slice(1)
                                   }
-                                >
-                                  {event.event_type.charAt(0).toUpperCase() +
-                                    event.event_type.slice(1)}
-                                </Badge>
-                                <Badge variant="secondary">{event.team?.name}</Badge>
+                                />
+                                {event.team?.name && (
+                                  <InkBadge tone="neutral" variant="soft" label={event.team.name} />
+                                )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex shrink-0 items-center gap-1">
                             <IconButton
                               variant="default"
-                              onClick={() => handleDeleteEvent(event.id)}
-                              className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
+                              onClick={() => requestDeleteEvent(event.id)}
+                              className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-pursuit hover:bg-pursuit/10 active:bg-pursuit/20 transition-colors flex items-center justify-center"
                               aria-label="Delete event"
                               disabled={isPending}
                             >
@@ -475,12 +535,12 @@ export default function EventsPage() {
                             </IconButton>
                           </div>
                         </div>
-                      </div>
+                      </PaperCard>
                       {/* Inline delete error for this event */}
                       {deleteErrors[event.id] && (
                         <p
                           role="alert"
-                          className="mt-1 px-2 text-xs text-red-600"
+                          className="mt-1 px-2 text-xs text-destructive"
                         >
                           {deleteErrors[event.id]}
                         </p>
@@ -494,124 +554,176 @@ export default function EventsPage() {
         )}
       </div>
 
-      {/* Create Event Modal */}
+      {/* Create Event Modal — a real dialog: role="dialog"/aria-modal, Esc to
+          close, a focus trap while open, and focus restored to the trigger on
+          close (all via the shared `useFocusTrap` hook — the same contract
+          `ConfirmDialog` uses elsewhere in the app). */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <Button
-            type="button"
-            variant="ghost"
-            aria-label="Close modal"
-            haptic="none"
-            className="min-h-0 absolute inset-0 block w-full h-full rounded-none bg-warm-900/50 backdrop-blur-sm cursor-default hover:bg-warm-900/50"
-            onClick={() => setShowCreateModal(false)}
+        <div
+          role="presentation"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/50 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            // Close only on a true backdrop click — clicks inside the dialog
+            // bubble here with a different target, so no stopPropagation is
+            // needed on the content (which would also swallow the keydown
+            // path useFocusTrap's document listener relies on).
+            if (e.target === e.currentTarget) setShowCreateModal(false);
+          }}
+        >
+          <div
+            ref={createModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-event-heading"
+            className="w-full max-w-lg"
           >
-            {''}
-          </Button>
-          <div className="relative glass-prominent rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-cream-50">
-              <h2 className="text-lg font-semibold tracking-tight text-warm-900">
-                Create New Event
-              </h2>
-            </div>
-            <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
-              {/* Inline create error */}
-              {createError && (
-                <div
-                  role="alert"
-                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                >
-                  {createError}
-                </div>
-              )}
-              <Select
-                label="Team"
-                placeholder="Select team"
-                value={newEvent.team_id}
-                onChange={(value) => setNewEvent({ ...newEvent, team_id: value })}
-                options={teams.map((t) => ({ value: t.id, label: t.name }))}
-              />
-              <Input
-                label="Event Name"
-                placeholder="e.g., Game vs. Texas Elite"
-                value={newEvent.title}
-                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                required
-              />
-              <Select
-                label="Event Type"
-                value={newEvent.event_type}
-                onChange={(value) => setNewEvent({ ...newEvent, event_type: value })}
-                options={eventTypeOptions}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="event-start-time"
-                    className="block text-sm font-medium text-warm-700 mb-1.5"
-                  >
-                    Start Time
-                  </label>
-                  <Input
-                    id="event-start-time"
-                    type="datetime-local"
-                    value={newEvent.start_time}
-                    onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
-                    className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="event-end-time"
-                    className="block text-sm font-medium text-warm-700 mb-1.5"
-                  >
-                    End Time
-                  </label>
-                  <Input
-                    id="event-end-time"
-                    type="datetime-local"
-                    value={newEvent.end_time}
-                    onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
-                    className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                  />
-                </div>
+            <PaperCard className="shadow-xl max-h-[90vh] overflow-y-auto" grain={false}>
+              <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-cream-50">
+                <h2 id="create-event-heading" className="text-lg font-semibold tracking-tight text-warm-900">
+                  Create New Event
+                </h2>
               </div>
-              <Input
-                label="Location"
-                placeholder="e.g., Main Field, Houston, TX"
-                value={newEvent.location}
-                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-              />
-              <div>
-                <label
-                  htmlFor="event-description"
-                  className="block text-sm font-medium text-warm-700 mb-1.5"
-                >
-                  Description (Optional)
-                </label>
-                <Textarea
-                  id="event-description"
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  placeholder="Add notes or details about this event..."
-                  rows={3}
-                  className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+              <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
+                {/* Inline create error — the shared InlineNotice component (danger
+                    tone), not an ad-hoc red box; matches the fetchError treatment
+                    above via EditorsLetter for the composed page-level case. */}
+                {createError && <InlineNotice tone="danger">{createError}</InlineNotice>}
+                <Select
+                  label="Team"
+                  placeholder="Select team"
+                  value={newEvent.team_id}
+                  onChange={(value) => setNewEvent({ ...newEvent, team_id: value })}
+                  options={teams.map((t) => ({ value: t.id, label: t.name }))}
                 />
-              </div>
-              <div className="flex items-center gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => setShowCreateModal(false)}
-                >
+                <Input
+                  label="Event Name"
+                  placeholder="e.g., Game vs. Texas Elite"
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                  required
+                />
+                <Select
+                  label="Event Type"
+                  value={newEvent.event_type}
+                  onChange={(value) => setNewEvent({ ...newEvent, event_type: value })}
+                  options={eventTypeOptions}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="event-start-time"
+                      className="block text-sm font-medium text-warm-700 mb-1.5"
+                    >
+                      Start Time
+                    </label>
+                    <Input
+                      id="event-start-time"
+                      type="datetime-local"
+                      value={newEvent.start_time}
+                      onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
+                      className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="event-end-time"
+                      className="block text-sm font-medium text-warm-700 mb-1.5"
+                    >
+                      End Time
+                    </label>
+                    <Input
+                      id="event-end-time"
+                      type="datetime-local"
+                      value={newEvent.end_time}
+                      onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
+                      className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                    />
+                  </div>
+                </div>
+                <Input
+                  label="Location"
+                  placeholder="e.g., Main Field, Houston, TX"
+                  value={newEvent.location}
+                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                />
+                <div>
+                  <label
+                    htmlFor="event-description"
+                    className="block text-sm font-medium text-warm-700 mb-1.5"
+                  >
+                    Description (Optional)
+                  </label>
+                  <Textarea
+                    id="event-description"
+                    value={newEvent.description}
+                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                    placeholder="Add notes or details about this event..."
+                    rows={3}
+                    className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={() => setShowCreateModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1" isLoading={isPending}>
+                    Create Event
+                  </Button>
+                </div>
+              </form>
+            </PaperCard>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm — an in-kit PaperCard dialog (replaces native
+          `confirm()`), wired through the same accessible-dialog contract as
+          the create-event modal above. */}
+      {confirmDeleteEventId && (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/50 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            // Backdrop-only close — same pattern as the create-event modal.
+            if (e.target === e.currentTarget) cancelDeleteEvent();
+          }}
+        >
+          <div
+            ref={deleteDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-event-heading"
+            className="w-full max-w-sm"
+          >
+            <PaperCard className="p-6 shadow-xl" grain={false}>
+              <h2 id="delete-event-heading" className="font-annual text-h3 font-semibold text-text-primary">
+                Delete this event?
+              </h2>
+              <p className="mt-2 font-annual text-body-sm text-text-secondary">
+                {eventPendingDelete
+                  ? `“${eventPendingDelete.title}” will be removed from the schedule. This can’t be undone.`
+                  : 'This event will be removed from the schedule. This can’t be undone.'}
+              </p>
+              <div className="mt-6 flex items-center gap-3">
+                <Button type="button" variant="secondary" className="flex-1" onClick={cancelDeleteEvent}>
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" isLoading={isPending}>
-                  Create Event
+                <Button
+                  type="button"
+                  className="flex-1 border-transparent bg-pursuit text-white hover:border-transparent hover:bg-pursuit/90 hover:-translate-y-0 hover:shadow-none"
+                  onClick={confirmDeleteEvent}
+                  isLoading={isPending}
+                >
+                  Delete
                 </Button>
               </div>
-            </form>
+            </PaperCard>
           </div>
         </div>
       )}

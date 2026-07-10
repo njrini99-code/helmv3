@@ -15,9 +15,10 @@
  * concurrent requests for the same insight. The card keeps its self-fetch
  * contract (no parent/route refactor) while the wire cost collapses to one call.
  *
- * LOADING STATE: while unresolved the card now renders a small token Skeleton
- * placeholder (not `null`), so a development page no longer pops drills in with
- * no intervening loading affordance.
+ * LOADING STATE: renders `null` while unresolved. This block resolves empty
+ * far more often than not (see HONEST-EMPTY below), so reserving skeleton
+ * height for it just flashes a token box that usually collapses to nothing a
+ * beat later — a false loading promise. Render null until resolved instead.
  *
  * HONEST-EMPTY: once loaded, an empty drill array renders nothing (PracticeRxPanel
  * collapses to null on `[]`), and a falsy `insightId` renders nothing. On the
@@ -35,7 +36,6 @@ import {
   recordDrillView as defaultRecordDrillView,
   type InsightDrill,
 } from '@/app/golf/actions/drills';
-import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { PracticeRxPanel, type PracticeRxPanelProps } from './PracticeRxPanel';
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -177,14 +177,10 @@ export function PracticeRxForInsight({
   // No insight → render nothing.
   if (!insightId) return null;
 
-  // Loading → a small token placeholder (replaces the prior silent `null`).
-  if (drills === null) {
-    return (
-      <div className={className} aria-hidden="true">
-        <Skeleton className="h-16 w-full rounded-fw-md" />
-      </div>
-    );
-  }
+  // Unresolved → render nothing. This block usually resolves empty, so a
+  // reserved skeleton height would flash a token box for a beat before
+  // collapsing anyway — null is the honest state here, not a broken loader.
+  if (drills === null) return null;
 
   // Loaded-but-empty collapses to null inside PracticeRxPanel.
   return (

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { StatsUploadClient, UploadHistory } from '@/components/baseball/stats';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 
 export default async function StatsUploadPage() {
   const supabase = await createClient();
@@ -42,25 +43,23 @@ export default async function StatsUploadPage() {
     .single() as { data: TeamInfo | null; error: unknown };
 
   if (teamError || !team) {
+    // LA ghost/EditorsLetter state (spec doctrine: no amber warning boxes
+    // anywhere) — this replaces the bespoke glass + amber-icon empty tile.
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
-        <div className="glass-standard rounded-2xl p-10 shadow-sm">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-5">
-            <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
-          <p className="text-warm-500 mb-8 max-w-sm mx-auto">
-            You need to set up your team before you can upload stats. Create your team first, then come back here.
-          </p>
-          <a
-            href="/baseball/dashboard/command-center"
-            className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-colors"
-          >
-            Go to Command Center
-          </a>
-        </div>
+      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+        <EditorsLetter
+          ink="team"
+          title="No team found."
+          body="You need to set up your team before you can upload stats. Create your team first, then come back here."
+          action={
+            <a
+              href="/baseball/dashboard/command-center"
+              className="inline-flex items-center rounded-fw-md bg-grade-plus px-6 py-3 font-annual text-sm font-medium text-white hover:opacity-90"
+            >
+              Go to Command Center
+            </a>
+          }
+        />
       </div>
     );
   }

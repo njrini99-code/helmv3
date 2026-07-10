@@ -3,9 +3,9 @@
  *
  * Multiple insight-sourced cards that mount together must coalesce their drill
  * fetches into ONE batched `getDrillsForInsights` round-trip (the microtask
- * batcher), instead of one `getDrillsForInsight` call per card. Cards must also
- * show a loading placeholder before drills resolve, then render the resolved
- * drills for their own insight.
+ * batcher), instead of one `getDrillsForInsight` call per card. Cards render
+ * nothing until drills resolve (no reserved skeleton — this block usually
+ * resolves empty), then render the resolved drills for their own insight.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -23,11 +23,6 @@ vi.mock('@/components/fairway/pages/coachhelm/PracticeRxPanel', () => ({
   PracticeRxPanel: ({ drills }: { drills: InsightDrill[] }) => (
     <div data-testid="rx-panel">{drills.map((d) => d.title).join(',')}</div>
   ),
-}));
-
-// Stub the Skeleton so the loading state is queryable.
-vi.mock('@/components/fairway/feedback/Skeleton', () => ({
-  Skeleton: () => <div data-testid="rx-skeleton" />,
 }));
 
 import {
@@ -69,8 +64,8 @@ describe('PracticeRxForInsight — batched drill loading (P176)', () => {
       </>,
     );
 
-    // Before resolution every card shows a loading placeholder (not null).
-    expect(screen.getAllByTestId('rx-skeleton')).toHaveLength(3);
+    // Before resolution, nothing renders — no reserved skeleton height.
+    expect(screen.queryAllByTestId('rx-panel')).toHaveLength(0);
 
     await waitFor(() => {
       expect(screen.getAllByTestId('rx-panel')).toHaveLength(3);

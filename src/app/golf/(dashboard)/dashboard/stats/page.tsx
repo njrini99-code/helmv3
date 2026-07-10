@@ -1,7 +1,4 @@
 import { redirect } from 'next/navigation';
-import StatsClient from './stats-client';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { isRedesignEnabled } from '@/lib/redesign/flag';
 import { FairwayPlayerStats } from '@/components/fairway/pages/coachhelm/FairwayPlayerStats';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { Metadata } from 'next';
@@ -34,36 +31,26 @@ export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps
   const params = await searchParams;
   const playerId = params.player ?? null;
 
-  // Flag-on: the data-rich Fairway player stats surface (single-player view).
-  // It resolves the same player id the route resolves — `?player=` for a coach
+  // The data-rich Fairway player stats surface (single-player view). It
+  // resolves the same player id the route resolves — `?player=` for a coach
   // viewing a teammate, else the logged-in player via useGolfUser() — and
-  // renders in its own `.fairway-ds` scope on bg-canvas. Flag-off is unchanged.
-  if (isRedesignEnabled()) {
-    // A coach has no personal player stats. Hitting /stats with no `?player=`
-    // would dead-end on the "no player selected" empty state, so send coaches
-    // to the team-stats roster (their natural landing). A coach viewing a
-    // specific teammate (`?player=`) still falls through to the single-player
-    // surface. Gated INSIDE the flag fork so the legacy (flag-off) path keeps
-    // its original behavior byte-for-byte.
-    if (!playerId) {
-      const session = await getGolfSessionProfile();
-      if (session?.coach && !session.player) {
-        redirect('/golf/dashboard/stats/team');
-      }
-    }
+  // renders in its own `.fairway-ds` scope on bg-canvas.
 
-    return (
-      <div className="min-h-full bg-canvas">
-        <FairwayPlayerStats initialPlayerId={playerId} />
-      </div>
-    );
+  // A coach has no personal player stats. Hitting /stats with no `?player=`
+  // would dead-end on the "no player selected" empty state, so send coaches
+  // to the team-stats roster (their natural landing). A coach viewing a
+  // specific teammate (`?player=`) still falls through to the single-player
+  // surface.
+  if (!playerId) {
+    const session = await getGolfSessionProfile();
+    if (session?.coach && !session.player) {
+      redirect('/golf/dashboard/stats/team');
+    }
   }
 
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <StatsClient initialPlayerId={playerId} />
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className="min-h-full bg-canvas">
+      <FairwayPlayerStats initialPlayerId={playerId} />
+    </div>
   );
 }

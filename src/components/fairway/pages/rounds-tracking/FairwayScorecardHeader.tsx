@@ -27,6 +27,8 @@
 import { memo, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { yardsToDisplay } from '@/lib/golf/distance-units';
 import type { RoundHole } from '@/lib/types/golf';
 
 type Hole = RoundHole;
@@ -171,6 +173,12 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   onNavigateToHole,
 }: FairwayScorecardHeaderProps) {
   const headerRef = useRef<HTMLDivElement>(null);
+  // Distance-unit preference — the legacy ScorecardHeader reads this
+  // independently too, so the scorecard's yardage column honors the
+  // player's meters preference even though the tracking parent never
+  // prop-drills it here.
+  const { distancePref } = useDistanceUnits();
+  const isMeters = distancePref === 'meters';
 
   // VERBATIM logic — publish the --scorecard-height CSS var so sticky offsets work.
   const updateCSSProperty = useCallback(() => {
@@ -216,7 +224,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         type="button"
         key={hole.number}
         id={`fw-hole-${hole.number}`}
-        aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
+        aria-label={`Hole ${hole.number}, Par ${hole.par}, ${isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} ${isMeters ? 'meters' : 'yards'}${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
         onClick={() => canNavigate && onNavigateToHole?.(holeIndex)}
         disabled={!canNavigate}
         className={cn(
@@ -239,7 +247,9 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           {hole.number}
         </div>
         <div className="truncate font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
-        <div className="truncate font-fw-sans text-microbadge text-text-tertiary/80">{hole.yardage} yds</div>
+        <div className="truncate font-fw-sans text-microbadge text-text-tertiary/80">
+          {isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} {isMeters ? 'm' : 'yds'}
+        </div>
         <div className={cn('mt-1 font-fw-display text-body-lg font-semibold tabular-nums', scoreColor)}>
           {hasScore ? hole.score : '–'}
         </div>
@@ -274,7 +284,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     >
       <div className="truncate font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
       <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {par}</div>
-      <div className="font-fw-sans text-microbadge text-text-tertiary/80">{yards}</div>
+      <div className="font-fw-sans text-microbadge text-text-tertiary/80">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
       <div className="mt-1 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary">{hasScores ? score : '–'}</div>
     </div>
   );

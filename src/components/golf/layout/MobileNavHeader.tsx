@@ -1,38 +1,23 @@
 'use client';
 
 /**
- * MobileNavHeader — thin shim over the canonical `<PageHeader>` primitive.
- *
- * Wave W2E consolidated six hand-rolled sibling headers into PageHeader. The
- * sticky hamburger/back top-bar implementation now lives in
- * `src/components/ui/page-header.tsx` as `variant="mobile-nav"`; this module
- * re-exports a wrapper so every existing `<MobileNavHeader …>` call site keeps
- * working byte-for-byte (same props, same behaviour, same look).
+ * MobileNavHeader — the page-owned title block WITHOUT a sticky
+ * `.golf-mobile-page-header` wrapper and WITHOUT a hamburger (the Fairway
+ * shell owns that chrome via the sticky glass FairwayTopBar and the mobile
+ * hamburger + slide-in drawer). Keeps the semantic <h1>, subtitle, action
+ * buttons, optional inline (non-sticky) back link, breadcrumb, and the
+ * belowContent slot. Uses the legacy warm-token utilities (NOT --fw-*
+ * tokens) because non-migrated pages render this outside the `.fairway-ds`
+ * scope.
  *
  * Audit reference: ultra-audit master synthesis A4 (header sprawl) + A7
  * (single semantic <h1> per page).
- *
- * ── Fairway redesign fork (ADDITIVE, flag-gated) ───────────────────────────
- * Under the Fairway shell (rendered only when the redesign flag is ON) the
- * AppShell OWNS the top chrome: the sticky glass FairwayTopBar and the mobile
- * hamburger + slide-in drawer. The legacy mobile-nav header is itself a sticky
- * top bar (`.golf-mobile-page-header`) whose default left affordance is a
- * `MobileMenuButton` hamburger — which, inside the shell, stacks a SECOND
- * sticky bar + hamburger over the glass top bar.
- *
- * So when `useRedesign()` is true we SUPPRESS the sticky top-bar wrapper and
- * the hamburger while KEEPING the page-owned content (title <h1>, subtitle,
- * action buttons, optional inline back link, breadcrumb, belowContent). The
- * page keeps its gutters + title exactly as the contract requires; the shell
- * owns the chrome. With the flag OFF this returns the original PageHeader
- * delegation BYTE-FOR-BYTE unchanged.
  */
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { PageHeader, type MobileNavHeaderProps as VariantProps } from '@/components/ui/page-header';
-import { useRedesign } from '@/lib/redesign/flag';
+import type { MobileNavHeaderProps as VariantProps } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { IconChevronLeft } from '@/components/icons';
@@ -40,15 +25,7 @@ import { Button } from '@/components/ui/button';
 
 export type MobileNavHeaderProps = Omit<VariantProps, 'variant'>;
 
-/**
- * Flag-ON layout: the page-owned title block WITHOUT the sticky
- * `.golf-mobile-page-header` wrapper and WITHOUT the hamburger (the Fairway
- * shell owns that chrome). Keeps the semantic <h1>, subtitle, action buttons,
- * optional inline (non-sticky) back link, breadcrumb, and the belowContent
- * slot. Uses the legacy warm-token utilities (NOT --fw-* tokens) because
- * non-migrated pages render this outside the `.fairway-ds` scope.
- */
-function RedesignMobileNavHeader({
+export function MobileNavHeader({
   title,
   subtitle,
   children,
@@ -128,12 +105,4 @@ function RedesignMobileNavHeader({
       {belowContent && <div className="mt-3">{belowContent}</div>}
     </div>
   );
-}
-
-export function MobileNavHeader(props: MobileNavHeaderProps) {
-  const redesign = useRedesign();
-  if (redesign) {
-    return <RedesignMobileNavHeader {...props} />;
-  }
-  return <PageHeader variant="mobile-nav" {...props} />;
 }

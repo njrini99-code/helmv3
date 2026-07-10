@@ -190,7 +190,7 @@
 }
 
 .status-confirmed {
-  @apply ring-1 ring-emerald-500/20;
+  @apply ring-1 ring-primary-500/20;
 }
 
 /* Time gradient background for day/week views */

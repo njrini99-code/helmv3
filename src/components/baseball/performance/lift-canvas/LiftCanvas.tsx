@@ -55,6 +55,7 @@ import {
   IconWarning,
 } from '@/components/icons';
 import { ExerciseBin } from './ExerciseBin';
+import { PaperCard } from '@/components/baseball/living-annual';
 import { SessionBlock } from './SessionBlock';
 import type {
   BuilderExercise,
@@ -745,9 +746,10 @@ export function LiftCanvas({
         onDragEnd={handleDragEnd}
       >
         {/* ── LEFT PANE: body-region filter + exercise bin ──────────────── */}
-        <aside
+        <PaperCard
+          as="aside"
           className={[
-            'flex-col rounded-2xl border border-warm-100 glass-standard p-3',
+            'flex-col p-3',
             'lg:w-64 lg:flex-shrink-0',
             activeTab === 'library' ? 'flex' : 'hidden lg:flex',
           ].join(' ')}
@@ -769,7 +771,7 @@ export function LiftCanvas({
             onSearchChange={setBinSearch}
             onAddExercise={handleQuickAdd}
           />
-        </aside>
+        </PaperCard>
 
         {/* ── CENTER PANE: session canvas ───────────────────────────────── */}
         <main

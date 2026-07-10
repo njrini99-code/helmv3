@@ -5,6 +5,7 @@ import { IconX, IconFolder } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { InkNotice } from '@/components/baseball/living-annual';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
 
 const NO_FOLDER_VALUE = '';
@@ -106,11 +107,7 @@ export function MoveToFolderModal({ open, document, folders, onClose, onMove }: 
         <div className="p-6 space-y-4">
           <p className="text-sm text-warm-500 truncate">{document.title}</p>
 
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          {error && <InkNotice>{error}</InkNotice>}
 
           <div>
             <span className="block text-sm font-medium text-warm-700 mb-1.5">Folder</span>

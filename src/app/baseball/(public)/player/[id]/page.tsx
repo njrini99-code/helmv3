@@ -196,7 +196,6 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
     team_members: player.baseball_team_members ?? [],
     player_settings: playerSettings,
     recruiting_interests: recruitingInterests || [],
-    player_stats: [], // No baseball stats table exists
   } as unknown as Parameters<typeof PlayerProfileClient>[0]['player'];
 
   return (

@@ -34,8 +34,10 @@
  * leaf depth (Players > {playerName}, Players > Compare). Signals stays at tab
  * level (filtered presets, not leaves).
  *
- * ADDITIVE ONLY — imported by nothing in the live app. Renders correctly inside
- * a `.fairway-ds` scope on a `bg-canvas` page.
+ * LIVE — mounted unconditionally by ~15 CoachHelm route surfaces (coach Brief/
+ * Signals/Players/Effectiveness/Ask + player Overview/Development/Game Profile/
+ * Standing and their leaf views such as GenomeDetailView/GenomeCompareView/
+ * PlayersGridView). Renders inside a `.fairway-ds` scope on a `bg-canvas` page.
  * ========================================================================== */
 
 import * as React from 'react';

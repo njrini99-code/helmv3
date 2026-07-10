@@ -41,12 +41,12 @@ import {
   EmptyState,
   InlineNotice,
   ViewHeader,
-  type FwStatusTone,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { QualifierRoundCourse } from '@/app/golf/actions/golf';
 
 import { FairwayQualifierLeaderboard } from './FairwayQualifierLeaderboard';
+import { qualifierStatusMeta } from './qualifier-status';
 
 /** One round's score within a player's breakdown (shape from the route page). */
 interface RoundScore {
@@ -122,26 +122,21 @@ function dateRange(start: string, end: string | null): string {
   return startLabel;
 }
 
-const STATUS_META: Record<string, { tone: FwStatusTone; label: string }> = {
-  upcoming: { tone: 'warning', label: 'Upcoming' },
-  in_progress: { tone: 'accent', label: 'In progress' },
-  completed: { tone: 'neutral', label: 'Completed' },
-};
-
-function statusMeta(status: string): { tone: FwStatusTone; label: string } {
-  return STATUS_META[status] ?? { tone: 'neutral', label: status.replace(/_/g, ' ') };
-}
-
+/** Over/under par, rendered with the Unicode minus (U+2212) — a plain ASCII
+ *  hyphen sits too high and reads inconsistently next to the `+` glyph. */
 function formatToPar(toPar: number | null): string {
   if (toPar === null) return '—';
   if (toPar === 0) return 'E';
-  return toPar > 0 ? `+${toPar}` : `${toPar}`;
+  if (toPar > 0) return `+${toPar}`;
+  return `−${Math.abs(toPar)}`;
 }
 
+/** Under par = green (accent). Over par = amber warning, never the SF-red
+ *  danger token — a bad hole isn't an error state. */
 function toParToneClass(toPar: number | null): string {
   if (toPar === null) return 'text-text-tertiary';
   if (toPar < 0) return 'text-accent-700';
-  if (toPar > 0) return 'text-danger';
+  if (toPar > 0) return 'text-fw-warning';
   return 'text-text-secondary';
 }
 
@@ -183,7 +178,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
   );
   const showRoundCourses = isMultiRound && hasRoundCourses;
 
-  const sm = statusMeta(status);
+  const sm = qualifierStatusMeta(status);
   const backHref = isCoach
     ? '/golf/dashboard/qualifiers'
     : '/golf/dashboard/my-qualifiers';
@@ -263,7 +258,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         primaryAction={primaryAction}
         meta={
           <>
-            <StatusPill tone={sm.tone} pulse={sm.tone === 'accent'}>
+            <StatusPill tone={sm.tone} pulse={sm.pulse}>
               {sm.label}
             </StatusPill>
             <span className="tabular-nums">{dateRange(startDate, endDate)}</span>

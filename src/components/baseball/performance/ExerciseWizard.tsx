@@ -329,7 +329,7 @@ export function ExerciseWizard({ initial, onSubmit, onClose }: ExerciseWizardPro
       </div>
 
       {/* Sticky footer */}
-      <div className="sticky bottom-0 -mx-6 -mb-6 border-t border-warm-100 bg-cream-50/95 backdrop-blur-sm px-6 py-4">
+      <div className="sticky bottom-0 -mx-6 -mb-6 border-t border-warm-100 bg-cream-50/95 px-6 py-4">
         {(stepError ?? submitError) && (
           <p
             role="alert"

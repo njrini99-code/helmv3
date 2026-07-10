@@ -47,7 +47,6 @@ permissions:
 env:
   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
-  NEXT_PUBLIC_REDESIGN: "true"
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

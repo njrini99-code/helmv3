@@ -103,7 +103,7 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
                     <IconButton variant="default" aria-label="Edit note" className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-cream-50 active:bg-cream-100/75 transition-colors">
                       <IconEdit size={14} />
                     </IconButton>
-                    <IconButton variant="default" aria-label="Delete note" className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-cream-50 active:bg-cream-100/75 transition-colors">
+                    <IconButton variant="default" aria-label="Delete note" className="p-1.5 rounded-lg text-warm-400 hover:text-[color:var(--notice-error-ink)] hover:bg-[var(--notice-error-ink)]/10 active:bg-[var(--notice-error-ink)]/20 transition-colors">
                       <IconTrash size={14} />
                     </IconButton>
                   </div>

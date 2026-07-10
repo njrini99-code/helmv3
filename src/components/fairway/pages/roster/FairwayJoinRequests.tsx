@@ -51,6 +51,7 @@ import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
+import { formatShortDate } from '@/lib/golf/format-date';
 import {
   IconUsers,
   IconCheck,
@@ -111,7 +112,9 @@ function formatDate(dateStr: string): string {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  // Beyond a week, drop the relative form for the product's editorial short
+  // date ("Jan 5") instead of a bare toLocaleDateString() locale default.
+  return formatShortDate(date);
 }
 
 function initialsFromName(name: string): string {

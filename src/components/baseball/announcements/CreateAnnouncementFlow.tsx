@@ -170,7 +170,10 @@ export function CreateAnnouncementFlow({ players, teamId, onCreated }: CreateAnn
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-4 mt-5 border-t border-warm-200 sticky bottom-0 bg-cream-50/95 backdrop-blur-sm -mx-6 px-6 pb-1 -mb-6">
+          {/* Sticky footer bar — solid Paper, no glass: this is an in-modal bar,
+              not a full-screen scrim, so backdrop-blur doesn't qualify for the
+              scrim exemption. */}
+          <div className="flex items-center justify-between pt-4 mt-5 border-t border-warm-200 sticky bottom-0 bg-cream-50 -mx-6 px-6 pb-1 -mb-6">
             <div className="flex items-center gap-2 text-xs text-warm-400">
               {recipientPlayerIds === null ? (
                 <span>Sending to all {players.length} players</span>

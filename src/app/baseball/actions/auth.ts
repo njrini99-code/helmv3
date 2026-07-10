@@ -19,6 +19,7 @@ import {
 import { validatePassword } from '@/lib/auth/password-validation';
 import { sanitizeAuthError } from '@/lib/db-error';
 import { logServerError } from '@/lib/server-error-logger';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 
 export type LoginResult = {
   success: boolean;
@@ -426,7 +427,7 @@ async function requestPasswordResetActionImpl(
   const supabase = await createClient();
 
   const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/baseball/reset-password`,
+    redirectTo: `${getAppBaseUrl()}/baseball/reset-password`,
   });
 
   if (error) {

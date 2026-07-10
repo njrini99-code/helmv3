@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { IconX, IconUpload, IconFile } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 interface UploadNewVersionModalProps {
   open: boolean;
@@ -123,11 +124,7 @@ export function UploadNewVersionModal({
         {/* Content */}
         <div className="p-6 space-y-4">
           {/* Error */}
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          {error && <InkNotice>{error}</InkNotice>}
 
           {/* File type hint */}
           {currentFileType && (

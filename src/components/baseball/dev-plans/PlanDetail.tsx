@@ -1,12 +1,20 @@
 'use client';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+// =============================================================================
+// PlanDetail — the coach's single development-plan detail card, migrated onto
+// "The Living Annual" kit (Lane 1 · THE PRESSBOX, green ink; rendered by
+// dev-plans/[id]/page.tsx, which already carries the page's single <h1>). All
+// data props (`plan`, `onComplete`/`onUncomplete`/`pendingGoalId`) are
+// unchanged — only the render moved to the kit: `<PaperCard>` instead of the
+// glass `<Card>`, `<InkBadge>` instead of the status `<Badge>` map.
+// =============================================================================
+
 import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProgressTracker } from '@/components/baseball/dev-plans/ProgressTracker';
 import { IconCalendar, IconCheck, IconClock, IconNote, IconRotateCcw } from '@/components/icons';
 import { getFullName } from '@/lib/utils';
+import { PaperCard, Eyebrow, InkBadge } from '@/components/baseball/living-annual';
 import type { DevPlanGoal, DevPlanWithPlayer, GoalStatus } from '@/lib/baseball/dev-plan-types';
 
 interface PlanDetailProps {
@@ -19,16 +27,12 @@ interface PlanDetailProps {
   pendingGoalId?: string | null;
 }
 
-const getStatusVariant = (status: string | null): 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' => {
-  if (!status) return 'secondary';
-  const variants: Record<string, 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'> = {
-    draft: 'secondary',
-    sent: 'default',
-    in_progress: 'primary',
-    completed: 'success',
-    archived: 'secondary',
-  };
-  return variants[status] || 'secondary';
+const PLAN_STATUS_BADGE: Record<string, { tone: 'team' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  draft: { tone: 'neutral', variant: 'soft' },
+  sent: { tone: 'team', variant: 'soft' },
+  in_progress: { tone: 'team', variant: 'soft' },
+  completed: { tone: 'team', variant: 'solid' },
+  archived: { tone: 'neutral', variant: 'soft' },
 };
 
 const GOAL_STATUS_LABEL: Record<GoalStatus, string> = {
@@ -37,10 +41,10 @@ const GOAL_STATUS_LABEL: Record<GoalStatus, string> = {
   completed: 'Completed',
 };
 
-const GOAL_STATUS_VARIANT: Record<GoalStatus, 'secondary' | 'primary' | 'success'> = {
-  not_started: 'secondary',
-  in_progress: 'primary',
-  completed: 'success',
+const GOAL_STATUS_BADGE: Record<GoalStatus, { tone: 'team' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  not_started: { tone: 'neutral', variant: 'soft' },
+  in_progress: { tone: 'team', variant: 'soft' },
+  completed: { tone: 'team', variant: 'solid' },
 };
 
 export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: PlanDetailProps) {
@@ -48,95 +52,98 @@ export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: Pl
   const completedGoals = goals.filter((goal) => goal.status === 'completed').length;
   const playerName = getFullName(plan.player?.first_name, plan.player?.last_name);
   const canManage = Boolean(onComplete && onUncomplete);
+  const planBadge = PLAN_STATUS_BADGE[plan.status ?? 'draft'] ?? { tone: 'neutral' as const, variant: 'soft' as const };
 
   return (
     <div className="space-y-6">
-      <Card variant="glass">
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <PaperCard className="p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <Avatar name={playerName} src={plan.player?.avatar_url || undefined} size="md" />
             <div>
-              <p className="text-sm text-warm-500">Development Plan</p>
-              <h1 className="text-xl font-semibold text-warm-900">{plan.title}</h1>
-              <p className="text-sm text-warm-500 mt-1">
+              <Eyebrow ink="team">Development Plan</Eyebrow>
+              <h2 className="font-annual text-h2 font-semibold text-text-primary">{plan.title}</h2>
+              <p className="mt-1 font-annual text-body-sm text-text-secondary">
                 {playerName} • {plan.player?.primary_position || 'Position N/A'} • Class of {plan.player?.grad_year || '—'}
               </p>
             </div>
           </div>
-          <Badge variant={getStatusVariant(plan.status)}>{plan.status || 'Draft'}</Badge>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          <InkBadge label={(plan.status || 'Draft').toUpperCase()} tone={planBadge.tone} variant={planBadge.variant} />
+        </div>
+
+        <div className="mt-4 space-y-4">
           <ProgressTracker completed={completedGoals} total={goals.length} />
 
           {plan.description && (
-            <div className="rounded-xl border border-warm-200 bg-cream-100/75 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-warm-700">
+            <div className="rounded-fw-md border border-[color:var(--hairline)] bg-[color:var(--paper-canvas)] p-4">
+              <div className="flex items-center gap-2 font-annual text-body-sm font-medium text-text-secondary">
                 <IconNote size={16} />
                 <span>Plan Overview</span>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-warm-600">{plan.description}</p>
+              <p className="mt-2 font-annual text-body-sm text-text-secondary">{plan.description}</p>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 text-xs text-warm-500">
+          <div className="flex flex-wrap gap-3 font-annual text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
             {plan.start_date && (
               <span className="flex items-center gap-1">
-                <IconCalendar size={14} />
+                <IconCalendar size={12} />
                 Starts {new Date(plan.start_date).toLocaleDateString()}
               </span>
             )}
             {plan.end_date && (
               <span className="flex items-center gap-1">
-                <IconClock size={14} />
+                <IconClock size={12} />
                 Ends {new Date(plan.end_date).toLocaleDateString()}
               </span>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </PaperCard>
 
-      <Card variant="glass">
-        <CardHeader>
-          <h2 className="font-semibold text-warm-900">Goals & Milestones</h2>
-        </CardHeader>
-        <CardContent>
+      <PaperCard className="p-5">
+        <Eyebrow as="h2" ink="team">Goals &amp; Milestones</Eyebrow>
+        <div className="mt-4">
           {goals.length === 0 ? (
-            <p className="text-sm text-warm-500">No goals have been added to this plan yet.</p>
+            <p className="font-annual text-body-sm text-text-tertiary">No goals have been added to this plan yet.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {goals.map((goal) => {
                 const isPending = pendingGoalId === goal.id;
                 const isCompleted = goal.status === 'completed';
+                const goalBadge = GOAL_STATUS_BADGE[goal.status];
                 return (
-                  <div key={goal.id} className="rounded-xl border border-warm-200 p-4">
+                  <div key={goal.id} className="rounded-fw-md border border-[color:var(--hairline)] p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-warm-900">{goal.title}</h3>
+                        <h3 className="font-annual text-body-sm font-semibold text-text-primary">{goal.title}</h3>
                         {goal.description && (
-                          <p className="mt-1 text-sm leading-relaxed text-warm-600">{goal.description}</p>
+                          <p className="mt-1 font-annual text-body-sm text-text-secondary">{goal.description}</p>
                         )}
                       </div>
-                      <Badge variant={GOAL_STATUS_VARIANT[goal.status]} className="flex shrink-0 items-center gap-1">
-                        {isCompleted && <IconCheck size={12} />}
-                        {GOAL_STATUS_LABEL[goal.status]}
-                      </Badge>
+                      <InkBadge
+                        label={GOAL_STATUS_LABEL[goal.status].toUpperCase()}
+                        tone={goalBadge.tone}
+                        variant={goalBadge.variant}
+                        className="shrink-0"
+                      />
                     </div>
 
                     {!isCompleted && goal.progress > 0 && (
                       <div className="mt-3">
-                        <div className="flex items-center justify-between text-xs text-warm-500 mb-1">
+                        <div className="mb-1 flex items-center justify-between font-annual text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
                           <span>Progress</span>
-                          <span className="font-medium">{goal.progress}%</span>
+                          <span className="font-medium text-text-secondary">{goal.progress}%</span>
                         </div>
-                        <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-primary-500" style={{ width: `${goal.progress}%` }} />
+                        <div className="h-1.5 overflow-hidden rounded-full bg-[color:var(--hairline)]">
+                          <div className="h-full rounded-full bg-grade-plus" style={{ width: `${goal.progress}%` }} />
                         </div>
                       </div>
                     )}
 
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                       {goal.target_date ? (
-                        <p className="text-xs text-warm-500">
+                        <p className="font-annual text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
                           Target: {new Date(goal.target_date).toLocaleDateString()}
                         </p>
                       ) : (
@@ -173,8 +180,8 @@ export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: Pl
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </PaperCard>
     </div>
   );
 }

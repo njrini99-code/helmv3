@@ -1,6 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { bridgeGetTracerData } from '@/app/admin/actions/golf-tracer';
-import { Surface, StatusPill, type FwStatusTone } from '@/components/fairway';
+import { Surface, StatusPill, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
@@ -133,6 +133,18 @@ export default async function TracerPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
+      <InlineNotice tone="info" title="Partial port — read-only summary">
+        This is a minimum-viable read-only port. The per-round diagnostic
+        drill-down and data-quality &quot;fix&quot; actions from the legacy
+        console are not wired here yet (the gated delegations already exist
+        in <code className="font-fw-mono">golf-tracer.ts</code> — only the UI
+        is missing). Need to inspect or fix a specific round right now? Use
+        the legacy tracer tab at{' '}
+        <a href="/golf/admin?tab=tracer" className="underline">
+          /golf/admin?tab=tracer
+        </a>{' '}
+        in the meantime.
+      </InlineNotice>
       <PanelBoundary title="Tracer">
         <TracerBody />
       </PanelBoundary>

@@ -59,7 +59,7 @@ export function EngagementSparkline({
         rx="1"
         className="fill-blue-400"
       />
-      {/* Clicks — emerald */}
+      {/* Clicks — primary */}
       <rect
         x="0"
         y={Math.floor(height / 2) + 1}

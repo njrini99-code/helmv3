@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { POSITIONS } from '@/lib/types';
 import { GripVertical, X, Plus } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/button';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 interface PositionPriorityRankerProps {
   priorities: string[];
@@ -183,7 +184,7 @@ export function PositionPriorityRanker({
                 {/* Remove button */}
                 <IconButton variant="default" aria-label="Close"
                   onClick={() => handleRemove(index)}
-                  className="p-1 text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 rounded transition-colors flex-shrink-0"
+                  className="p-1 text-warm-400 hover:text-pursuit hover:bg-pursuit/10 active:bg-pursuit/15 rounded transition-colors flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </IconButton>
@@ -211,7 +212,7 @@ export function PositionPriorityRanker({
 
           {/* Dropdown menu */}
           {showAddMenu && (
-            <div className="absolute top-full left-0 right-0 mt-2 glass-prominent rounded-xl shadow-lg z-10 overflow-hidden">
+            <PaperCard className="absolute top-full left-0 right-0 mt-2 shadow-lg z-10" grain={false}>
               <div className="max-h-64 overflow-y-auto">
                 {availablePositions.map((position) => {
                   const info = POSITION_INFO[position];
@@ -227,7 +228,7 @@ export function PositionPriorityRanker({
                   );
                 })}
               </div>
-            </div>
+            </PaperCard>
           )}
         </div>
       )}

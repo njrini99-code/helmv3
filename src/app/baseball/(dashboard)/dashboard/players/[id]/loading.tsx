@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 /**
  * Player profile loading skeleton — mirrors PlayerProfileClient's layout:
@@ -12,7 +13,7 @@ export default function PlayerProfileLoading() {
         <Skeleton className="mb-6 h-4 w-24" />
 
         {/* Player header card */}
-        <div className="glass-standard rounded-2xl p-6 mb-6">
+        <PaperCard className="p-6 mb-6" grain={false}>
           <div className="flex flex-col sm:flex-row sm:items-end gap-5">
             <Skeleton className="h-24 w-24 rounded-full shrink-0" />
             <div className="flex-1 space-y-2">
@@ -25,7 +26,7 @@ export default function PlayerProfileLoading() {
               </div>
             </div>
           </div>
-        </div>
+        </PaperCard>
 
         {/* Tab bar */}
         <div className="flex gap-1.5 mb-6">

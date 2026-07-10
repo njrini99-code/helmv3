@@ -119,7 +119,7 @@ export function FairwayRoundSummarySheet({
                   transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.35 }}
                   className={cn(
                     'font-fw-sans text-body-lg font-medium',
-                    toPar === 0 ? 'text-text-on-accent/70' : toPar < 0 ? 'text-accent-100' : 'text-red-200',
+                    toPar === 0 ? 'text-text-on-accent/70' : toPar < 0 ? 'text-accent-100' : 'text-fw-warning',
                   )}
                 >
                   ({toParLabel})

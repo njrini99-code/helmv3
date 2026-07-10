@@ -1,0 +1,460 @@
+// =============================================================================
+// src/lib/golf/nav-registry.ts
+//
+// WAVE W2 (2026-07-09) — SINGLE SOURCE OF TRUTH for GolfHelm's 8-tab coach and
+// 8-tab player navigation IA (docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md
+// § Target IA). Mirrors the SHAPE of BaseballHelm's proven hub pattern
+// (src/lib/baseball/nav-registry.ts + the baseball dashboard's
+// hub-definitions.ts / resolve-active-hub.ts), simplified: golf has no
+// capability gating and no program-type variants, so hub/tab membership is a
+// flat, always-visible declaration instead of a filtered registry.
+//
+// A rail item's `activeMatch` predicate (built by buildCoach/PlayerRailItems)
+// is DERIVED from its hub's tab list (own href ∪ every tab's href ∪ every
+// tab's matchPrefixes) — exactly baseball's `playerHubToNavItem` mechanism —
+// so the rail stays lit across the WHOLE cluster, including deep routes
+// (rounds/[id], qualifiers/[id], roster/[id], players/[playerId], …),
+// automatically, from ONE declaration per route.
+//
+// The CoachHelm AI cluster is the one exception: its OWN 5-tab (coach) /
+// 4-tab (player) sub-nav strip already exists and is rendered per-page by
+// <CoachHelmShell> (src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx)
+// — this module does not re-model those tabs (that would be two competing
+// sources of truth for the same strip). It only carries the CLUSTER PREFIXES
+// so the RAIL item's activeMatch + the shell's breadcrumb logic agree with
+// what CoachHelmSubNav already renders.
+//
+// PURE + ISOMORPHIC: no 'use client' / 'use server', no Supabase, no React
+// runtime — only data + pure functions (icon fields are typed, never
+// instantiated), safe to import from server or client code alike.
+// =============================================================================
+
+import type { ComponentType, SVGProps } from 'react';
+import type { NavItem, NavSection } from '@/components/fairway/app-shell/types';
+import {
+  IconHome,
+  IconSparkles,
+  IconUsers,
+  IconGolf,
+  IconCalendar,
+  IconChartBar,
+  IconMessage,
+  IconBell,
+  IconAirplane,
+  IconFileText,
+  IconClipboardList,
+  IconUserPlus,
+  IconFlag,
+  IconTrophy,
+  IconLayoutGrid,
+  IconMapPin,
+} from '@/components/icons';
+
+// -----------------------------------------------------------------------------
+// Types
+// -----------------------------------------------------------------------------
+
+export type GolfNavRole = 'coach' | 'player';
+
+/** Icon contract shared by the rail (AppShell NavItem) and the sub-nav strip. */
+export type GolfNavIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
+
+/** A single sub-tab inside a multi-tab hub's strip. */
+export interface GolfSubTab {
+  /** Stable id (React key, test anchor). */
+  id: string;
+  label: string;
+  /** Canonical destination route (absolute, starts with /golf/dashboard). */
+  href: string;
+  icon?: GolfNavIcon;
+  /**
+   * Extra route prefixes (besides `href`) that should light THIS tab AND keep
+   * the owning rail item lit. Used when a tab owns a nested/sibling detail
+   * route that isn't a path-child of its own href (e.g. Roster's
+   * /golf/dashboard/players/* history — see ROSTER_TAB below).
+   */
+  matchPrefixes?: readonly string[];
+}
+
+/** A multi-tab hub's metadata — id, accessible label, and its ordered tabs. */
+export interface GolfHubDef {
+  /** Stable id (telemetry / test anchor / aria-label seed). */
+  id: string;
+  ariaLabel: string;
+  tabs: readonly GolfSubTab[];
+}
+
+/** The already-polled notification counts the rail/bottom-nav can surface. A
+ *  badge only renders when its count is > 0 — never a fake "0". */
+export interface GolfNavBadgeCounts {
+  messages: number;
+  coachhelm: number;
+  calendarNotifications: number;
+  announcements: number;
+  travel: number;
+  tasks: number;
+}
+
+/** Render a numeric badge only when the count is meaningful (> 0). */
+function navBadge(count: number): number | undefined {
+  return count > 0 ? count : undefined;
+}
+
+/** Segment-boundary route match (exact or `${prefix}/…`) — never a bare substring. */
+function matchesRoutePrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+// -----------------------------------------------------------------------------
+// CoachHelm AI cluster — the ONE hub whose sub-nav strip is a pre-existing,
+// separately-rendered component (CoachHelmSubNav via CoachHelmShell), not
+// derived from this registry. Kept here as the single source of truth for the
+// CLUSTER PREFIXES so the rail's activeMatch and the shell's breadcrumb logic
+// can never drift from what CoachHelmSubNav actually renders as tabs.
+//
+// P410 fix (2026-07-09): `/golf/dashboard/players` (the coach player-detail
+// AI-insight surface, FairwayPlayerInsight) is CoachHelmSubNav's own "Players"
+// tab matchPrefix (not a Roster/Team-hub route — verified by reading the
+// route: it renders FairwayPlayerInsight, getThemesForCoach, getAlertCounts —
+// all CoachHelm reads). The RAIL's activeMatch previously omitted it, so the
+// rail lost its highlight on that one deep route even though the in-page
+// CoachHelmSubNav correctly lit "Players" — this list now agrees with
+// CoachHelmSubNav's TABS matchPrefixes exactly.
+// -----------------------------------------------------------------------------
+
+export const COACHHELM_COACH_CLUSTER_PREFIXES = [
+  '/golf/dashboard/intelligence',
+  '/golf/dashboard/alerts',
+  '/golf/dashboard/insights',
+  '/golf/dashboard/patterns',
+  '/golf/dashboard/development',
+  '/golf/dashboard/analytics/coachhelm',
+  '/golf/dashboard/players',
+  // NOTE: only the COACH CoachHelm sub-routes (`/coachhelm/chat`, `/coachhelm/genome`)
+  // belong to this cluster. Bare `/golf/dashboard/coachhelm` is the PLAYER CoachHelm
+  // home (no masthead sub-nav) and must NOT be treated as the coach cluster.
+  '/golf/dashboard/coachhelm/',
+] as const;
+
+export function isCoachHelmCoachCluster(pathname: string): boolean {
+  return COACHHELM_COACH_CLUSTER_PREFIXES.some((p) =>
+    p.endsWith('/') ? pathname.startsWith(p) : matchesRoutePrefix(pathname, p),
+  );
+}
+
+export const COACHHELM_PLAYER_CLUSTER_PREFIXES = [
+  '/golf/dashboard/coachhelm',
+  '/golf/dashboard/my-development',
+  '/golf/dashboard/my-game-profile',
+  '/golf/dashboard/my-standing',
+] as const;
+
+export function isCoachHelmPlayerCluster(pathname: string): boolean {
+  return COACHHELM_PLAYER_CLUSTER_PREFIXES.some((p) => matchesRoutePrefix(pathname, p));
+}
+
+// -----------------------------------------------------------------------------
+// COACH — multi-tab hub sub-nav strips (Team · Calendar · Rounds & Stats ·
+// Messages · Operations). Dashboard, CoachHelm AI (see above) and Courses are
+// single-destination rail items with no strip.
+// -----------------------------------------------------------------------------
+
+const COACH_TEAM_TABS: readonly GolfSubTab[] = [
+  {
+    id: 'roster',
+    label: 'Roster',
+    href: '/golf/dashboard/roster',
+    icon: IconUsers,
+  },
+  {
+    id: 'recruiting',
+    label: 'Recruiting HQ',
+    href: '/golf/dashboard/recruiting',
+    icon: IconUserPlus,
+  },
+];
+
+const COACH_CALENDAR_TABS: readonly GolfSubTab[] = [
+  { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
+  { id: 'travel', label: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
+];
+
+const COACH_ROUNDS_STATS_TABS: readonly GolfSubTab[] = [
+  { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
+  { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
+  { id: 'team-stats', label: 'Team Stats', href: '/golf/dashboard/stats/team', icon: IconChartBar },
+  { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
+];
+
+const COACH_MESSAGES_TABS: readonly GolfSubTab[] = [
+  { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },
+  { id: 'announcements', label: 'Announcements', href: '/golf/dashboard/announcements', icon: IconBell },
+];
+
+const COACH_OPERATIONS_TABS: readonly GolfSubTab[] = [
+  { id: 'tasks', label: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
+  { id: 'documents', label: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
+];
+
+/** Ordered list of the coach's multi-tab hubs (Dashboard/CoachHelm/Courses are
+ *  single-tab rail items and intentionally excluded — see module header). */
+export const GOLF_COACH_HUBS: readonly GolfHubDef[] = [
+  { id: 'team', ariaLabel: 'Team sections', tabs: COACH_TEAM_TABS },
+  { id: 'calendar', ariaLabel: 'Calendar sections', tabs: COACH_CALENDAR_TABS },
+  { id: 'rounds-stats', ariaLabel: 'Rounds & Stats sections', tabs: COACH_ROUNDS_STATS_TABS },
+  { id: 'messages', ariaLabel: 'Messages sections', tabs: COACH_MESSAGES_TABS },
+  { id: 'operations', ariaLabel: 'Operations sections', tabs: COACH_OPERATIONS_TABS },
+];
+
+// -----------------------------------------------------------------------------
+// PLAYER — the one multi-tab hub sub-nav strip (Team). Dashboard, CoachHelm AI
+// (own strip), My Rounds, My Stats, Calendar, Messages and Courses are
+// single-destination rail items with no strip.
+// -----------------------------------------------------------------------------
+
+const PLAYER_TEAM_TABS: readonly GolfSubTab[] = [
+  {
+    id: 'roster',
+    label: 'Roster',
+    href: '/golf/dashboard/roster',
+    icon: IconUsers,
+    // The coach player-detail (AI insight) surface lives at /players/[id] and
+    // belongs to the CoachHelm cluster (see above) — the PLAYER roster detail
+    // surface is /roster/[id] (FairwayPlayerProfile), a path-child of this
+    // tab's own href, so no extra matchPrefixes are needed for it.
+  },
+  { id: 'team-info', label: 'Team Info', href: '/golf/dashboard/team', icon: IconUsers },
+  { id: 'team-hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
+  { id: 'my-qualifiers', label: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
+];
+
+export const GOLF_PLAYER_HUBS: readonly GolfHubDef[] = [
+  { id: 'team', ariaLabel: 'Team sections', tabs: PLAYER_TEAM_TABS },
+];
+
+// -----------------------------------------------------------------------------
+// resolveActiveGolfHub — longest-prefix match across the role's hub list.
+// Returns null when the current route is NOT inside a multi-tab hub (single-
+// destination rail items, and the CoachHelm cluster, which renders its own
+// strip independently) — the shell renders no generic sub-nav strip then.
+// -----------------------------------------------------------------------------
+
+export function resolveActiveGolfHub(pathname: string | null, role: GolfNavRole): GolfHubDef | null {
+  if (!pathname) return null;
+  const hubs = role === 'coach' ? GOLF_COACH_HUBS : GOLF_PLAYER_HUBS;
+
+  let best: { hub: GolfHubDef; len: number } | null = null;
+  for (const hub of hubs) {
+    for (const tab of hub.tabs) {
+      const prefixes = [tab.href, ...(tab.matchPrefixes ?? [])];
+      for (const p of prefixes) {
+        if (matchesRoutePrefix(pathname, p) && (!best || p.length > best.len)) {
+          best = { hub, len: p.length };
+        }
+      }
+    }
+  }
+  return best?.hub ?? null;
+}
+
+// -----------------------------------------------------------------------------
+// Rail item construction — activeMatch DERIVED from a hub's tab list (own
+// href ∪ every tab's href/matchPrefixes), so the rail stays lit across the
+// whole cluster including deep routes, from ONE declaration per route.
+// -----------------------------------------------------------------------------
+
+function hubToNavItem(opts: {
+  label: string;
+  href: string;
+  icon: GolfNavIcon;
+  tabs?: readonly GolfSubTab[];
+  badge?: number;
+  /** Explicit override — used only for the CoachHelm AI item, whose cluster
+   *  membership is the pre-existing isCoachHelm*Cluster predicate rather than
+   *  a GolfSubTab[] (see module header). */
+  activeMatch?: (pathname: string) => boolean;
+}): NavItem {
+  const { label, href, icon, tabs, badge, activeMatch } = opts;
+  return {
+    label,
+    href,
+    icon: icon as unknown as NavItem['icon'],
+    badge,
+    activeMatch:
+      activeMatch ??
+      ((pathname: string) =>
+        matchesRoutePrefix(pathname, href) ||
+        Boolean(
+          tabs?.some(
+            (tab) =>
+              matchesRoutePrefix(pathname, tab.href) ||
+              tab.matchPrefixes?.some((prefix) => matchesRoutePrefix(pathname, prefix)),
+          ),
+        )),
+  };
+}
+
+/**
+ * The 8 coach rail items (Target IA §Golf coach):
+ *   Dashboard · CoachHelm AI · Team · Calendar · Rounds & Stats · Messages ·
+ *   Operations · Courses.
+ * Settings + Sign out are the shell's pinned footer (unchanged, not part of
+ * this array).
+ */
+export function buildCoachRailSections(badges: GolfNavBadgeCounts): NavSection[] {
+  const team = GOLF_COACH_HUBS.find((h) => h.id === 'team')!;
+  const calendar = GOLF_COACH_HUBS.find((h) => h.id === 'calendar')!;
+  const roundsStats = GOLF_COACH_HUBS.find((h) => h.id === 'rounds-stats')!;
+  const messages = GOLF_COACH_HUBS.find((h) => h.id === 'messages')!;
+  const operations = GOLF_COACH_HUBS.find((h) => h.id === 'operations')!;
+
+  const items: NavItem[] = [
+    hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({
+      label: 'CoachHelm AI',
+      href: '/golf/dashboard/intelligence',
+      icon: IconSparkles,
+      badge: navBadge(badges.coachhelm),
+      activeMatch: isCoachHelmCoachCluster,
+    }),
+    hubToNavItem({
+      label: 'Team',
+      href: team.tabs[0]!.href,
+      icon: IconUsers,
+      tabs: team.tabs,
+    }),
+    hubToNavItem({
+      label: 'Calendar',
+      href: calendar.tabs[0]!.href,
+      icon: IconCalendar,
+      tabs: calendar.tabs,
+      badge: navBadge(badges.calendarNotifications),
+    }),
+    hubToNavItem({
+      label: 'Rounds & Stats',
+      href: roundsStats.tabs[0]!.href,
+      icon: IconChartBar,
+      tabs: roundsStats.tabs,
+    }),
+    hubToNavItem({
+      label: 'Messages',
+      href: messages.tabs[0]!.href,
+      icon: IconMessage,
+      tabs: messages.tabs,
+      badge: navBadge(badges.messages),
+    }),
+    hubToNavItem({
+      label: 'Operations',
+      href: operations.tabs[0]!.href,
+      icon: IconClipboardList,
+      tabs: operations.tabs,
+      // Operations = Tasks · Documents; Documents carries no count today.
+      badge: navBadge(badges.tasks),
+    }),
+    hubToNavItem({ label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin }),
+  ];
+
+  return [{ heading: 'GolfHelm', items }];
+}
+
+/**
+ * The 8 player rail items (Target IA §Golf player):
+ *   Dashboard · CoachHelm AI · My Rounds · My Stats · Calendar · Team ·
+ *   Messages · Courses.
+ * Settings + Sign out are the shell's pinned footer (unchanged, not part of
+ * this array). The former standalone "Hub" rail entry is GONE — its content
+ * merged into Dashboard (see PlayerActionCenter); /dashboard/hub redirects.
+ */
+export function buildPlayerRailSections(badges: GolfNavBadgeCounts): NavSection[] {
+  const team = GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!;
+
+  const items: NavItem[] = [
+    hubToNavItem({ label: 'Dashboard', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({
+      label: 'CoachHelm AI',
+      href: '/golf/dashboard/coachhelm',
+      icon: IconSparkles,
+      activeMatch: isCoachHelmPlayerCluster,
+    }),
+    hubToNavItem({ label: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf }),
+    hubToNavItem({ label: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar }),
+    hubToNavItem({
+      label: 'Calendar',
+      href: '/golf/dashboard/calendar',
+      icon: IconCalendar,
+      badge: navBadge(badges.calendarNotifications),
+    }),
+    hubToNavItem({
+      label: 'Team',
+      href: team.tabs[0]!.href,
+      icon: IconUsers,
+      tabs: team.tabs,
+    }),
+    hubToNavItem({
+      label: 'Messages',
+      href: '/golf/dashboard/messages',
+      icon: IconMessage,
+      badge: navBadge(badges.messages),
+    }),
+    hubToNavItem({ label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin }),
+  ];
+
+  return [{ heading: 'My Golf', items }];
+}
+
+// -----------------------------------------------------------------------------
+// Mobile bottom-tab bar — 5 highest-frequency destinations per role (the
+// drawer keeps the long tail). Hrefs/labels updated to the new IA; a hub's
+// bottom-tab href is always its FIRST sub-tab (same "first tab = landing"
+// convention the rail + hub-definitions.ts use), so the bottom bar can never
+// disagree with the rail about where "Team"/"Calendar" lands.
+// -----------------------------------------------------------------------------
+
+export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] {
+  const team = GOLF_COACH_HUBS.find((h) => h.id === 'team')!;
+  const calendar = GOLF_COACH_HUBS.find((h) => h.id === 'calendar')!;
+  const messages = GOLF_COACH_HUBS.find((h) => h.id === 'messages')!;
+
+  return [
+    hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({
+      label: 'CoachHelm',
+      href: '/golf/dashboard/intelligence',
+      icon: IconSparkles,
+      badge: navBadge(badges.coachhelm),
+      activeMatch: isCoachHelmCoachCluster,
+    }),
+    hubToNavItem({ label: 'Team', href: team.tabs[0]!.href, icon: IconUsers, tabs: team.tabs }),
+    hubToNavItem({
+      label: 'Calendar',
+      href: calendar.tabs[0]!.href,
+      icon: IconCalendar,
+      tabs: calendar.tabs,
+      badge: navBadge(badges.calendarNotifications),
+    }),
+    hubToNavItem({
+      label: 'Messages',
+      href: messages.tabs[0]!.href,
+      icon: IconMessage,
+      tabs: messages.tabs,
+      badge: navBadge(badges.messages),
+    }),
+  ];
+}
+
+export function buildPlayerBottomNavItems(): NavItem[] {
+  const team = GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!;
+
+  return [
+    hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
+    hubToNavItem({
+      label: 'CoachHelm',
+      href: '/golf/dashboard/coachhelm',
+      icon: IconSparkles,
+      activeMatch: isCoachHelmPlayerCluster,
+    }),
+    hubToNavItem({ label: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf }),
+    hubToNavItem({ label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar }),
+    hubToNavItem({ label: 'Team', href: team.tabs[0]!.href, icon: IconUsers, tabs: team.tabs }),
+  ];
+}

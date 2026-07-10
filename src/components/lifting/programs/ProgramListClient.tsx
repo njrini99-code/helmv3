@@ -359,7 +359,7 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false, b
               </div>
             </div>
             {createError && (
-              <p className="text-sm text-red-600">{createError}</p>
+              <p className="text-sm text-destructive">{createError}</p>
             )}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>

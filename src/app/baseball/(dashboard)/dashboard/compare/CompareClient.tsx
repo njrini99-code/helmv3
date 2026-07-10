@@ -1,18 +1,48 @@
 'use client';
 
+// =============================================================================
+// CompareClient — the coach's recruit side-by-side comparison surface,
+// migrated onto "The Living Annual" kit (Lane 2 · THE WAR ROOM, clay ink —
+// spec §6 P3 #10 "Decision Room / Compare Overlay"). PRESENTATION ONLY: the
+// URL-driven player-id state, the player fetch/search effects, and add/remove
+// handlers are unchanged — only the page chrome (masthead, skeleton, empty
+// state) moved to the kit. `PlayerComparison` renders the actual comparison
+// table and is out of scope for this pass.
+// =============================================================================
+
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { PlayerComparison } from '@/components/features/player-comparison';
-import { IconSearch, IconPlus, IconX, IconTarget, IconUsers } from '@/components/icons';
+import { IconSearch, IconPlus, IconX, IconUsers } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
-import { getFullName } from '@/lib/utils';
+import { cn, getFullName } from '@/lib/utils';
+import { SectionMasthead, PaperCard, InkBadge, EditorsLetter, Eyebrow } from '@/components/baseball/living-annual';
 import type { Player } from '@/lib/types';
+
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
+
+// Debounce hook for search (mirrors the local useDebounce in DiscoverClient)
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 function CompareContent() {
   const router = useRouter();
@@ -25,6 +55,11 @@ function CompareContent() {
   const [searching, setSearching] = useState(false);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  // Debounce the search box so every keystroke doesn't fire a query; the input
+  // itself stays fully responsive since `searchQuery` updates immediately.
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // Stale-response guard: only the most recently issued search may paint results.
+  const searchRequestRef = useRef(0);
 
   // Get player IDs from URL, deduped but preserving first-occurrence order
   const playerIds = Array.from(
@@ -72,44 +107,65 @@ function CompareContent() {
   const MAX_PLAYERS = 4;
   const canAddMore = playerIds.length < MAX_PLAYERS;
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
+  };
+
+  // Fires only after the debounced value settles (300ms after the last
+  // keystroke). Guarded by `searchRequestRef` so an older, slower search that
+  // resolves after a newer one can't overwrite it with stale results.
+  useEffect(() => {
+    const query = debouncedSearchQuery;
 
     if (!query || query.length < 2) {
+      // Bump the ref even though nothing async is in flight here -- a slower
+      // in-flight request from a PRIOR keystroke could otherwise resolve
+      // after this clear and overwrite it with stale results.
+      ++searchRequestRef.current;
       setSearchResults([]);
       return;
     }
 
     if (!canAddMore) {
+      ++searchRequestRef.current;
       setSearchResults([]);
       return;
     }
 
+    const requestId = ++searchRequestRef.current;
     setSearching(true);
-    try {
-      let queryBuilder = supabase
-        .from('baseball_players')
-        .select('*')
-        .eq('recruiting_activated', true)
-        .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
-        .limit(10);
 
-      // Only add NOT IN filter if there are playerIds
-      if (playerIds.length > 0) {
-        queryBuilder = queryBuilder.not('id', 'in', `(${playerIds.join(',')})`);
+    (async () => {
+      try {
+        let queryBuilder = supabase
+          .from('baseball_players')
+          .select('*')
+          .eq('recruiting_activated', true)
+          .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
+          .limit(10);
+
+        // Only add NOT IN filter if there are playerIds
+        if (playerIds.length > 0) {
+          queryBuilder = queryBuilder.not('id', 'in', `(${playerIds.join(',')})`);
+        }
+
+        const { data, error } = await queryBuilder;
+
+        if (error) throw error;
+        if (searchRequestRef.current !== requestId) return; // stale — a newer search is in flight
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error('Error searching players:', error);
+        if (searchRequestRef.current !== requestId) return;
+        setSearchResults([]);
+      } finally {
+        if (searchRequestRef.current === requestId) {
+          setSearching(false);
+        }
       }
-
-      const { data, error } = await queryBuilder;
-
-      if (error) throw error;
-      setSearchResults(data || []);
-    } catch (error) {
-      console.error('Error searching players:', error);
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
-  };
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable (module-scope); `playerIds` is recomputed fresh from `searchParams` every render (see the fetchPlayers effect above), so listing it here would re-run this on every render. Adding a player already clears `searchQuery`/`searchResults` directly via `addPlayer`, so re-running on `playerIds` alone isn't needed.
+  }, [debouncedSearchQuery, canAddMore]);
 
   const addPlayer = (player: Player) => {
     const newIds = [...playerIds, player.id];
@@ -129,220 +185,180 @@ function CompareContent() {
 
   if (loading && playerIds.length > 0) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Side-by-side player comparison</p>
-          </div>
-        </div>
-        <div className="p-8 space-y-6">
-          {/* Skeleton for search area */}
-          <Card variant="glass">
-            <CardContent className="p-5">
-              <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-warm-200 rounded w-40" />
-                <div className="h-10 bg-warm-200 rounded w-full" />
+      <div className={cn(PAGE_SHELL, 'space-y-6')}>
+        <SectionMasthead eyebrow="THE WAR ROOM · DECISION ROOM" title="Compare Players" ink="pursuit" />
+        {/* Skeleton for search area */}
+        <PaperCard className="p-5">
+          <Skeleton variant="text" width={160} height={16} className="mb-3" />
+          <Skeleton variant="text" width="100%" height={40} />
+        </PaperCard>
+        {/* Skeleton for comparison */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {playerIds.map((id) => (
+            <PaperCard key={id} className="p-6">
+              <Skeleton variant="circular" width={64} height={64} className="mx-auto mb-3" />
+              <Skeleton variant="text" width="75%" className="mx-auto mb-2" />
+              <Skeleton variant="text" width="50%" className="mx-auto mb-4" />
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} variant="text" width="100%" height={12} />
+                ))}
               </div>
-            </CardContent>
-          </Card>
-          {/* Skeleton for comparison */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {playerIds.map((id) => (
-              <div key={id} className="glass-standard rounded-2xl p-6 animate-pulse">
-                <div className="w-16 h-16 rounded-full bg-warm-200 mx-auto mb-3" />
-                <div className="h-4 bg-warm-200 rounded w-3/4 mx-auto mb-2" />
-                <div className="h-3 bg-warm-200 rounded w-1/2 mx-auto mb-4" />
-                <div className="space-y-2">
-                  {[1,2,3,4].map(i => (
-                    <div key={i} className="h-3 bg-warm-100 rounded" />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+            </PaperCard>
+          ))}
         </div>
-      </>
+      </div>
     );
   }
 
   if (loadError && playerIds.length > 0) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Side-by-side player comparison</p>
-          </div>
-        </div>
-        <div className="p-8">
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE WAR ROOM · DECISION ROOM" title="Compare Players" ink="pursuit" />
+        <div className="mt-6">
           <ReadModelStateNotice
             state="error"
             title="Comparison unavailable"
             onRetry={() => router.refresh()}
           />
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
-          <p className="mt-1 text-body-sm text-warm-500">
-            {players.length > 0 ? `Comparing ${players.length} players` : 'Select players to compare'}
-          </p>
-        </div>
-      </div>
-      <div className="p-8 space-y-6">
-        {/* Add Players Section */}
-        <Card variant="glass">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-warm-700">Add Players to Compare</h3>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                    playerIds.length >= MAX_PLAYERS
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-warm-100 text-warm-600'
-                  }`}>
-                    {playerIds.length} / {MAX_PLAYERS} players
-                  </span>
-                </div>
-                <div className="relative">
-                  <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    placeholder={canAddMore ? "Search players by name or school..." : "Maximum 4 players reached"}
-                    className="pl-9"
-                    disabled={!canAddMore}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                  />
-                </div>
-                {!canAddMore && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    Remove a player to add another. Maximum of 4 players can be compared at once.
-                  </p>
-                )}
+    <div className={cn(PAGE_SHELL, 'space-y-6')}>
+      <SectionMasthead eyebrow="THE WAR ROOM · DECISION ROOM" title="Compare Players" ink="pursuit">
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          {players.length > 0 ? `Comparing ${players.length} players` : 'Select players to compare'}
+        </p>
+      </SectionMasthead>
 
-                {/* Search Results */}
-                {searchResults.length > 0 && (
-                  <div className="mt-2 border border-warm-200 rounded-lg divide-y divide-warm-100 max-h-64 overflow-y-auto">
-                    {searchResults.map((player) => {
-                      const name = getFullName(player.first_name, player.last_name);
-                      return (
-                        <Button variant="ghost"
-                          key={player.id}
-                          onClick={() => addPlayer(player)}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-warm-50 active:bg-warm-100 transition-colors text-left"
-                        >
-                          <Avatar name={name} src={player.avatar_url} size="sm" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-warm-900 truncate">{name}</p>
-                            <p className="text-xs text-warm-500 truncate">
-                              {player.primary_position} • {player.grad_year} • {player.high_school_name}
-                            </p>
-                          </div>
-                          <IconPlus size={16} className="text-primary-600" />
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
+      {/* Add Players Section */}
+      <PaperCard className="p-5">
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <div className="mb-2 flex items-center justify-between">
+              <Eyebrow ink="pursuit">Add Players to Compare</Eyebrow>
+              <InkBadge
+                label={`${playerIds.length} / ${MAX_PLAYERS} PLAYERS`}
+                tone={playerIds.length >= MAX_PLAYERS ? 'pursuit' : 'neutral'}
+                variant={playerIds.length >= MAX_PLAYERS ? 'solid' : 'soft'}
+              />
+            </div>
+            <div className="relative">
+              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder={canAddMore ? "Search players by name or school..." : "Maximum 4 players reached"}
+                className="pl-9"
+                disabled={!canAddMore}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+            </div>
+            {!canAddMore && (
+              <p className="mt-2 font-annual text-body-sm text-text-tertiary">
+                Remove a player to add another. Maximum of 4 players can be compared at once.
+              </p>
+            )}
 
-                {searching && (
-                  <p className="text-sm leading-relaxed text-warm-500 mt-2">Searching...</p>
-                )}
-              </div>
-
-              {/* Selected Players */}
-              <div className="flex gap-2 flex-wrap">
-                {players.map((player) => {
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="mt-2 max-h-64 divide-y divide-[color:var(--hairline)] overflow-y-auto rounded-fw-md border border-[color:var(--hairline)]">
+                {searchResults.map((player) => {
                   const name = getFullName(player.first_name, player.last_name);
                   return (
-                    <div
+                    <Button variant="ghost"
                       key={player.id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-full hover:bg-primary-100 active:bg-primary-200 transition-colors"
+                      onClick={() => addPlayer(player)}
+                      className="flex w-full items-center gap-3 rounded-none p-3 text-left hover:bg-[color:var(--paper-canvas)]"
                     >
-                      <Avatar name={name} src={player.avatar_url} size="xs" />
-                      <span className="text-sm font-medium text-primary-800">{name}</span>
-                      <IconButton variant="primary"
-                        onClick={() => removePlayer(player.id)}
-                        className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-full hover:bg-primary-200 transition-colors"
-                        aria-label={`Remove ${name} from comparison`}
-                      >
-                        <IconX size={14} className="text-primary-600" />
-                      </IconButton>
-                    </div>
+                      <Avatar name={name} src={player.avatar_url} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-annual text-sm font-medium text-text-primary">{name}</p>
+                        <p className="truncate font-annual text-body-sm text-text-tertiary">
+                          {player.primary_position} • {player.grad_year} • {player.high_school_name}
+                        </p>
+                      </div>
+                      <IconPlus size={16} className="text-pursuit" />
+                    </Button>
                   );
                 })}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            )}
 
-        {/* Comparison Table */}
-        {players.length < 2 ? (
-          <Card variant="glass">
-            <CardContent className="p-8 text-center">
-              <div className="max-w-lg mx-auto">
-                <IconTarget size={40} className="mx-auto mb-4 text-warm-400" />
-                <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">
-                  {players.length === 0 ? 'No players selected' : 'Add one more player'}
-                </h3>
-                <p className="text-sm leading-relaxed text-warm-600 mb-6">
-                  {players.length === 0
-                    ? 'Search and add at least 2 players above to start comparing them side by side.'
-                    : 'Add at least one more player to start comparing.'}
-                </p>
-                {players.length === 0 && (
-                  <Button onClick={() => router.push('/baseball/dashboard/discover')}>
-                    <IconUsers size={18} className="mr-2" />
-                    Browse Players
-                  </Button>
-                )}
+            {searching && (
+              <p className="mt-2 font-annual text-body-sm text-text-tertiary">Searching...</p>
+            )}
+          </div>
 
-                {/* Visual Preview - Empty Comparison Slots */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 opacity-40">
-                  {[1, 2, 3, 4].map((slot) => (
-                    <div key={slot} className="border-2 border-dashed border-warm-300 rounded-xl p-6">
-                      <div className="w-16 h-16 rounded-full bg-warm-200 mx-auto mb-3" />
-                      <div className="h-3 bg-warm-200 rounded mb-2" />
-                      <div className="h-2 bg-warm-200 rounded w-2/3 mx-auto" />
-                    </div>
-                  ))}
+          {/* Selected Players */}
+          <div className="flex flex-wrap gap-2">
+            {players.map((player) => {
+              const name = getFullName(player.first_name, player.last_name);
+              return (
+                <div
+                  key={player.id}
+                  className="flex items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-1.5"
+                >
+                  <Avatar name={name} src={player.avatar_url} size="xs" />
+                  <span className="font-annual text-sm font-medium text-text-primary">{name}</span>
+                  <IconButton variant="ghost"
+                    onClick={() => removePlayer(player.id)}
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full hover:bg-[color:var(--paper-canvas)]"
+                    aria-label={`Remove ${name} from comparison`}
+                  >
+                    <IconX size={14} className="text-text-tertiary" />
+                  </IconButton>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <PlayerComparison
-            players={players}
-            onRemovePlayer={removePlayer}
-          />
-        )}
-      </div>
-    </>
+              );
+            })}
+          </div>
+        </div>
+      </PaperCard>
+
+      {/* Comparison Table */}
+      {players.length < 2 ? (
+        <EditorsLetter
+          ink="pursuit"
+          title={players.length === 0 ? 'No players selected' : 'Add one more player'}
+          body={
+            players.length === 0
+              ? 'Search and add at least 2 players above to start comparing them side by side.'
+              : 'Add at least one more player to start comparing.'
+          }
+          action={
+            players.length === 0 ? (
+              <Button onClick={() => router.push('/baseball/dashboard/discover')}>
+                <IconUsers size={18} className="mr-2" />
+                Browse Players
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <PlayerComparison
+          players={players}
+          onRemovePlayer={removePlayer}
+        />
+      )}
+    </div>
   );
 }
 
 export default function ComparePage() {
   return (
-    <Suspense fallback={<>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Compare Players</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Side-by-side player comparison</p>
+    <Suspense fallback={
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE WAR ROOM · DECISION ROOM" title="Compare Players" ink="pursuit" />
+        <div className="mt-6">
+          <PageLoading />
         </div>
       </div>
-      <PageLoading />
-    </>}>
+    }>
       <CompareContent />
     </Suspense>
   );

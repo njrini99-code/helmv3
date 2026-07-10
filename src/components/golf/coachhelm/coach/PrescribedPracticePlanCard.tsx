@@ -11,7 +11,7 @@ import {
 } from '@/components/icons';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { Button } from '@/components/ui/button';
+import { Surface, Inset, Button, StatusPill, type FwStatusTone } from '@/components/fairway';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -111,6 +111,15 @@ function humanizeAreaType(area: string | null | undefined): string {
     general: 'General',
   };
   return map[area] ?? area.split('_').map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : w)).join(' ');
+}
+
+/** Priority → StatusPill tone. Replaces the old hand-rolled raw red/amber/warm
+ *  chip classes with the token-backed legend (danger/warning/neutral) shared
+ *  by every other Fairway status chip. */
+function priorityTone(priority: PrescribedDrill['priority']): FwStatusTone {
+  if (priority === 'high') return 'danger';
+  if (priority === 'medium') return 'warning';
+  return 'neutral';
 }
 
 function pickTopPatternRecommendation(p: PatternLike): string | null {
@@ -254,28 +263,16 @@ function DrillRow({
     }
   }, [drill, onSave]);
 
-  const priorityStyles =
-    drill.priority === 'high'
-      ? 'bg-red-50 text-red-700 border-red-200'
-      : drill.priority === 'medium'
-        ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : 'bg-warm-50 text-warm-600 border-warm-200';
-
   return (
-    <div className="rounded-xl border border-warm-200/70 bg-cream-100/68 p-4 space-y-3">
-      {/* Row 1: area badge + priority + title */}
+    <Inset padding="md" className="space-y-3">
+      {/* Row 1: area chip (tone = priority, via the shared StatusPill legend) + impact */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-wrap">
-          <span
-            className={cn(
-              'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border',
-              priorityStyles,
-            )}
-          >
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <StatusPill tone={priorityTone(drill.priority)} size="sm">
             {humanizeAreaType(drill.areaType)}
-          </span>
+          </StatusPill>
           {drill.impactLabel && (
-            <span className="inline-flex items-center text-eyebrow font-medium text-warm-500 tabular-nums">
+            <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary tabular-nums">
               {drill.impactLabel}
             </span>
           )}
@@ -283,24 +280,24 @@ function DrillRow({
       </div>
 
       <div>
-        <p className="text-sm font-medium text-warm-900 leading-snug">
+        <p className="font-fw-sans text-body-sm font-medium leading-snug text-text-primary">
           {drill.title}
         </p>
-        <p className="text-xs text-warm-500 mt-1 leading-relaxed">
+        <p className="mt-1 font-fw-sans text-caption leading-relaxed text-text-tertiary">
           {drill.reason}
         </p>
       </div>
 
       {drill.drillText && (
-        <div className="rounded-lg bg-primary-50/70 border border-primary-100 px-3 py-2">
-          <p className="text-eyebrow font-medium uppercase tracking-wider text-primary-700 mb-1">
+        <div className="rounded-fw-md border border-accent-200 bg-accent-50 px-3 py-2">
+          <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-accent-700">
             Drill
           </p>
-          <p className="text-xs text-primary-900 leading-relaxed">
+          <p className="mt-1 font-fw-sans text-caption leading-relaxed text-accent-900">
             {drill.drillText}
           </p>
           {drill.timeMin && (
-            <p className="mt-1.5 inline-flex items-center gap-1 text-eyebrow font-medium text-primary-600">
+            <p className="mt-1.5 inline-flex items-center gap-1 font-fw-sans text-eyebrow font-medium text-accent-700">
               <IconClock size={12} /> {drill.timeMin} min
             </p>
           )}
@@ -309,31 +306,26 @@ function DrillRow({
 
       <div className="flex items-center justify-end">
         {state.kind === 'saved' ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600">
+          <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption font-medium text-accent-700">
             <IconCheck size={14} /> Added to Focus Areas
           </span>
         ) : (
-          <Button variant="primary"
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleClick}
-            disabled={state.kind === 'saving'}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
-              'border border-primary-200 bg-primary-50 text-primary-700',
-              'hover:bg-primary-100 hover:border-primary-300 transition-colors',
-              'disabled:opacity-60 disabled:cursor-not-allowed',
-            )}
+            busy={state.kind === 'saving'}
+            leftIcon={<IconPlus size={14} />}
           >
-            <IconPlus size={14} />
             {state.kind === 'saving' ? 'Saving…' : 'Add to Focus Areas'}
           </Button>
         )}
       </div>
 
       {state.kind === 'error' && (
-        <p className="text-eyebrow text-red-600">{state.message}</p>
+        <p className="font-fw-sans text-eyebrow text-fw-danger">{state.message}</p>
       )}
-    </div>
+    </Inset>
   );
 }
 
@@ -384,42 +376,42 @@ export function PrescribedPracticePlanCard({
   );
 
   return (
-    <div className="surface-matte rounded-3xl p-6" data-testid="prescribed-practice-plan">
-      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-            <IconSparkles size={18} className="text-primary-600" />
+    <Surface data-testid="prescribed-practice-plan">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-md bg-accent-50">
+            <IconSparkles size={18} className="text-accent-700" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-body font-medium text-warm-900 tracking-[-0.005em] leading-tight">
+            <h3 className="font-fw-sans text-body font-medium leading-tight tracking-[-0.005em] text-text-primary">
               Prescribed Practice Plan
             </h3>
-            <p className="text-xs text-warm-500 mt-0.5">
+            <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
               Generated from this player's most recent analysis
             </p>
           </div>
         </div>
         {drills.length > 0 && (
-          <span className="text-xs font-medium text-warm-400 shrink-0">
+          <span className="shrink-0 font-fw-sans text-caption font-medium text-text-tertiary">
             {drills.length} drill{drills.length === 1 ? '' : 's'}
           </span>
         )}
       </div>
 
       {drills.length === 0 ? (
-        <div className="rounded-xl bg-warm-50/80 border border-warm-100 px-4 py-5 text-center">
-          <div className="w-10 h-10 rounded-lg bg-cream-50 flex items-center justify-center mx-auto mb-3">
-            <IconActivity size={20} className={cn('text-warm-400', isRefreshing && 'animate-pulse')} />
+        <Inset padding="lg" className="text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-fw-md bg-surface">
+            <IconActivity size={20} className={cn('text-text-tertiary', isRefreshing && 'animate-pulse')} />
           </div>
-          <p className="text-sm font-medium text-warm-700">
+          <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
             {isRefreshing ? 'Analyzing this player…' : 'No drills to prescribe yet'}
           </p>
-          <p className="text-xs text-warm-500 mt-1 max-w-sm mx-auto">
+          <p className="mx-auto mt-1 max-w-sm font-fw-sans text-caption text-text-tertiary">
             {isRefreshing
               ? 'Hold tight — CoachHelm is reviewing the latest rounds to surface specific weaknesses.'
               : 'Click Refresh Analysis above to run the engine for this player, or wait for the nightly sweep to populate insights.'}
           </p>
-        </div>
+        </Inset>
       ) : (
         <div className="space-y-3">
           {drills.map((drill) => (
@@ -427,6 +419,6 @@ export function PrescribedPracticePlanCard({
           ))}
         </div>
       )}
-    </div>
+    </Surface>
   );
 }

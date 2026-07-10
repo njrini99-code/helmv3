@@ -9,9 +9,19 @@
 kit so the product reads as a single publication. No surface keeps a bespoke card, header,
 empty state, or stat display once the kit covers it. Consistency is the deliverable.
 
-Delivery mechanism = the existing **Fairway redesign layer** (`NEXT_PUBLIC_REDESIGN`,
-`.fairway-ds` scope, `--fw-*` tokens). The Living-Annual kit is the **baseball-native
-vocabulary layered on top of the Fairway tokens** — not a second design system.
+Delivery mechanism = the existing **Fairway redesign layer** (`.fairway-ds` scope,
+`--fw-*` tokens — unconditional, no flag). The Living-Annual kit is the
+**baseball-native vocabulary layered on top of the Fairway tokens** — not a second
+design system.
+
+> **Update (2026-07-09, golf Wave W1):** `NEXT_PUBLIC_REDESIGN` no longer gates
+> anything — `isRedesignEnabled()`/`useRedesign()` in `src/lib/redesign/flag.ts`
+> are hardcoded `true` (the legacy `GolfDashboardShell`/`GolfSidebar` fork they
+> used to gate was deleted). Setting the env var has zero effect. Baseball's
+> `BaseballFairwayShell` renders unconditionally and was never flag-gated the
+> way golf's dual tree was; `src/components/layout/header.tsx` still calls
+> `isRedesignEnabled()` (always `true`) to suppress its own legacy chrome, but
+> that is a hardcoded return, not env-driven behavior.
 
 ---
 

@@ -15,16 +15,9 @@
 
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { BarChart3 } from 'lucide-react';
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { PageHeader } from '@/components/ui/page-header';
-import { Reveal } from '@/components/ui/reveal';
 
-import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
-import { CounterfactualLine } from '@/components/golf/coachhelm/v3/CounterfactualLine';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import {
   METRIC_RENDER_CONFIG,
@@ -40,7 +33,7 @@ import {
   computeCounterfactual,
   formatCounterfactualLine,
 } from '@/lib/coachhelm/v3/counterfactual/compute';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { StandingStrip, Surface, EmptyState as FairwayEmptyState } from '@/components/fairway';
 import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
 
@@ -108,144 +101,60 @@ export default async function MyStandingPage() {
   const totalRows = Array.from(byCategory.values()).reduce((a, b) => a + b.length, 0);
   const isEmpty = totalRows === 0;
 
-  // ── Fairway (warm-premium) fork — flag-gated re-skin. Same loaded standing
-  // map + the SAME StandingStrip vocabulary the stats cockpit uses, grouped by
-  // category, in a calm single column. Legacy below stays byte-for-byte off-flag.
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <div className="mx-auto w-full max-w-[860px] px-4 py-2 md:px-6">
-          <CoachHelmShell
-            active="standing"
-            {...{ role: 'player' as const }}
-            eyebrow="My Standing"
-            title="Where you stack up"
-            description={
-              `${isEmpty ? 'No standing data yet' : `${totalRows} metric${totalRows === 1 ? '' : 's'} tracked`} · you vs your team and PGA Tour, refreshed nightly.`
-            }
-          >
-            {isEmpty ? (
-              <Surface elevation="border" padding="lg">
-                <FairwayEmptyState
-                  title="More rounds needed"
-                  description="Log 5+ rounds and you’ll see where you stack up vs PGA Tour and your team. Standing refreshes nightly."
-                />
-              </Surface>
-            ) : (
-              <div className="flex flex-col gap-10">
-                {CATEGORY_ORDER.filter((g) => (byCategory.get(g.category) ?? []).length > 0).map((group) => {
-                  const rows = byCategory.get(group.category) ?? [];
-                  return (
-                    <section key={group.category} className="flex flex-col gap-3">
-                      <div className="px-1">
-                        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-tertiary">
-                          {group.label}
-                        </p>
-                        <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{group.description}</p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                        {rows.map(({ id, standing, cfg }) => {
-                          // F028: the "strokes you'd save vs Tour" projection the
-                          // legacy fork showed under each bar. Computed server-side
-                          // (compute + format are pure). Suppressed when omitted
-                          // (no credible anchor), below the 0.3-strokes floor, or
-                          // when the player has no 30-day baseline. We mirror the
-                          // legacy fork's input (player_30d_scoring_avg only).
-                          const counterfactualText = standing.pga_omitted
-                            ? ''
-                            : formatCounterfactualLine(
-                                computeCounterfactual({
-                                  metric_id: id,
-                                  direction: cfg.direction,
-                                  player_value: standing.player_value,
-                                  pga_value: standing.pga_value,
-                                  player_30d_scoring_avg: playerBaseline,
-                                }),
-                              );
-                          return (
-                            <div key={id} className="flex flex-col">
-                              <StandingStrip
-                                metric_id={id}
-                                metric_label={cfg.display_label}
-                                player_value={standing.player_value}
-                                team_avg={standing.team_avg}
-                                team_n={standing.team_n}
-                                team_pct={standing.team_pct}
-                                pga_value={standing.pga_value}
-                                pga_omitted={standing.pga_omitted}
-                                is_womens={standing.is_womens}
-                                direction={cfg.direction}
-                                unit={cfg.unit}
-                                scale={cfg.default_scale}
-                                size="card"
-                              />
-                              {counterfactualText ? (
-                                <p className="mt-1.5 px-1 font-fw-sans text-caption italic text-text-tertiary">
-                                  {counterfactualText}
-                                </p>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            )}
-          </CoachHelmShell>
-        </div>
-      </div>
-    );
-  }
-
+  // Same loaded standing map + the SAME StandingStrip vocabulary the stats
+  // cockpit uses, grouped by category, in a calm single column.
   return (
-    <AnimatedPage className="min-h-full">
-      <AnimatedItem>
-        <LargeTitleHeader
-          title="My Standing"
-          subtitle={
-            isEmpty
-              ? 'No standing data yet'
-              : `${totalRows} metric${totalRows === 1 ? '' : 's'} tracked`
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <div className="mx-auto w-full max-w-[860px] px-4 py-2 md:px-6">
+        <CoachHelmShell
+          active="standing"
+          {...{ role: 'player' as const }}
+          eyebrow="My Standing"
+          title="Where you stack up"
+          description={
+            `${isEmpty ? 'No standing data yet' : `${totalRows} metric${totalRows === 1 ? '' : 's'} tracked`} · you vs your team and PGA Tour, refreshed nightly.`
           }
-        />
-      </AnimatedItem>
-
-      <AnimatedItem>
-        <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8">
-          <Reveal>
-            <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
-              <PageHeader
-                eyebrow="Standing"
-                eyebrowAccent="primary"
-                title="Where you stack up."
-                subtitle="Every tracked metric, with PGA Tour reference and your team average. Refreshed nightly."
-              />
-            </div>
-          </Reveal>
-
+        >
           {isEmpty ? (
-            <EmptyState />
+            <Surface elevation="border" padding="lg">
+              <FairwayEmptyState
+                title="More rounds needed"
+                description="Log 5+ rounds and you’ll see where you stack up vs PGA Tour and your team. Standing refreshes nightly."
+              />
+            </Surface>
           ) : (
-            // Stagger the category sections — filter to non-empty groups
-            // FIRST so the Reveal stagger indices stay contiguous (no gap
-            // for skipped categories like "pressure" when empty).
-            CATEGORY_ORDER
-              .filter((g) => (byCategory.get(g.category) ?? []).length > 0)
-              .map((group, idx) => {
+            <div className="flex flex-col gap-10">
+              {CATEGORY_ORDER.filter((g) => (byCategory.get(g.category) ?? []).length > 0).map((group) => {
                 const rows = byCategory.get(group.category) ?? [];
                 return (
-                  <Reveal key={group.category} staggerIndex={idx}>
-                    <section className="mb-8">
-                      <h2 className="text-base font-medium text-warm-900 tracking-[-0.012em] mb-1">
+                  <section key={group.category} className="flex flex-col gap-3">
+                    <div className="px-1">
+                      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-tertiary">
                         {group.label}
-                      </h2>
-                      <p className="text-xs text-warm-500 mb-3">{group.description}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {rows.map(({ id, standing, cfg }) => (
-                          <div key={id}>
-                            <StandingBar
+                      </p>
+                      <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{group.description}</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {rows.map(({ id, standing, cfg }) => {
+                        // F028: the "strokes you'd save vs Tour" projection.
+                        // Computed server-side (compute + format are pure).
+                        // Suppressed when omitted (no credible anchor), below
+                        // the 0.3-strokes floor, or when the player has no
+                        // 30-day baseline.
+                        const counterfactualText = standing.pga_omitted
+                          ? ''
+                          : formatCounterfactualLine(
+                              computeCounterfactual({
+                                metric_id: id,
+                                direction: cfg.direction,
+                                player_value: standing.player_value,
+                                pga_value: standing.pga_value,
+                                player_30d_scoring_avg: playerBaseline,
+                              }),
+                            );
+                        return (
+                          <div key={id} className="flex flex-col">
+                            <StandingStrip
                               metric_id={id}
                               metric_label={cfg.display_label}
                               player_value={standing.player_value}
@@ -260,47 +169,22 @@ export default async function MyStandingPage() {
                               scale={cfg.default_scale}
                               size="card"
                             />
-                            <CounterfactualLine
-                              metric_id={id}
-                              direction={cfg.direction}
-                              player_value={standing.player_value}
-                              pga_value={standing.pga_value}
-                              player_30d_scoring_avg={playerBaseline}
-                              size="card"
-                              className="px-4"
-                            />
+                            {counterfactualText ? (
+                              <p className="mt-1.5 px-1 font-fw-sans text-caption italic text-text-tertiary">
+                                {counterfactualText}
+                              </p>
+                            ) : null}
                           </div>
-                        ))}
-                      </div>
-                    </section>
-                  </Reveal>
+                        );
+                      })}
+                    </div>
+                  </section>
                 );
-              })
+              })}
+            </div>
           )}
-        </div>
-      </AnimatedItem>
-    </AnimatedPage>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
-      <div
-        aria-hidden="true"
-        className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl glass-standard shadow-glass"
-      >
-        <BarChart3 className="h-6 w-6 text-warm-400" strokeWidth={1.5} />
+        </CoachHelmShell>
       </div>
-      <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
-        More rounds needed
-      </h3>
-      <p className="text-warm-500 mb-2 max-w-sm mx-auto">
-        Log 5+ rounds and you’ll see where you stack up vs PGA Tour and your team.
-      </p>
-      <p className="text-xs text-warm-400 max-w-sm mx-auto">
-        Standing refreshes every night at 04:00 UTC.
-      </p>
     </div>
   );
 }

@@ -28,6 +28,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { InkNotice } from '@/components/baseball/living-annual';
 import {
   IconTarget,
   IconCheck,
@@ -71,14 +72,14 @@ function SummaryStat({
 }: {
   label: string;
   value: number;
-  /** 'warning' tints a non-zero count amber (e.g. missed days draw the eye). */
+  /** 'warning' tints a non-zero count pursuit clay (e.g. missed days draw the eye). */
   tone?: 'default' | 'warning';
 }) {
   return (
     <div className="flex flex-col">
       <span
         className={`text-xl font-bold tabular-nums leading-none ${
-          tone === 'warning' ? 'text-amber-700' : 'text-warm-900'
+          tone === 'warning' ? 'text-pursuit' : 'text-warm-900'
         }`}
       >
         {value}
@@ -135,7 +136,7 @@ function RosterRow({
               {playerName(item)}
             </p>
             {item.sharedStreak > 0 && (
-              <span className="flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-eyebrow font-semibold text-amber-700">
+              <span className="flex items-center gap-0.5 rounded-full bg-primary-50 px-1.5 py-0.5 text-eyebrow font-semibold text-primary-700">
                 <IconFlame size={10} />
                 {item.sharedStreak}
               </span>
@@ -158,13 +159,13 @@ function RosterRow({
           {day ? (
             <p
               className={`mt-0.5 flex items-center gap-1.5 text-eyebrow ${
-                missed ? 'text-amber-700' : 'text-warm-500'
+                missed ? 'text-pursuit' : 'text-warm-500'
               }`}
             >
               {completed ? (
                 <IconCheckCircle2 size={12} className="text-primary-600" />
               ) : missed ? (
-                <IconAlertCircle size={12} className="text-amber-600" />
+                <IconAlertCircle size={12} className="text-pursuit" />
               ) : (
                 <IconClock size={12} className="text-warm-400" />
               )}
@@ -408,12 +409,7 @@ export function CoachDailyContracts({ model, onOpenPlayer }: CoachDailyContracts
           <SummaryStat label="Roster" value={model.summary.rosterSize} />
         </div>
 
-        {error && (
-          <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
-            <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-            <p className="text-sm text-amber-800">{error}</p>
-          </div>
-        )}
+        {error && <InkNotice className="mb-3">{error}</InkNotice>}
 
         {sharedItems.length === 0 ? (
           <EmptyState

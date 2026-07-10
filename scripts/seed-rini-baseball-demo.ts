@@ -748,9 +748,9 @@ async function main() {
     console.log('\nSkipped (schema mismatch):');
     for (const s of skipped) console.log(`  ⚠ ${s}`);
   }
-  console.log(`\nDemo logins:`);
-  console.log(`  COACH : ${COACH_EMAIL} / ${COACH_PASSWORD}   (head coach + lifting coach)`);
-  console.log(`  PLAYER: ${PLAYER_EMAIL} / ${PLAYER_PASSWORD}  (Marcus Rodriguez, SS #7)`);
+  console.log(`\nDemo logins (passwords masked — set via RINI_DEMO_COACH_PASSWORD/RINI_DEMO_PLAYER_PASSWORD env vars):`);
+  console.log(`  COACH : ${COACH_EMAIL} / ***   (head coach + lifting coach)`);
+  console.log(`  PLAYER: ${PLAYER_EMAIL} / ***  (Marcus Rodriguez, SS #7)`);
   console.log(`  Team  : Rini University Baseball (${TEAM_ID})`);
 }
 

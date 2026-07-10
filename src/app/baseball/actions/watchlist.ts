@@ -137,14 +137,19 @@ const addToWatchlistAction = withBaseballAction(
       throw new BaseballActionError();
     }
 
-    await fromUntyped(supabase, 'baseball_player_engagement_events')
+    const { error: engagementError } = await fromUntyped(supabase, 'baseball_player_engagement_events')
       .insert({
         player_id: playerId,
         coach_id: activeCoachId,
         engagement_type: 'watchlist_add',
-        is_anonymous: false,
         metadata: { source: 'discover' },
       });
+    if (engagementError) {
+      await logServerError(
+        `Failed to record watchlist_add engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+        { action: 'watchlist.addToWatchlist.engagementEvent', featureArea: 'baseball-watchlist' },
+      );
+    }
 
     revalidateWatchlistPaths();
 
@@ -482,14 +487,19 @@ const toggleWatchlistPlayerAction = withBaseballAction(
         return { success: false, error: 'Failed to remove from watchlist' };
       }
 
-      await fromUntyped(supabase, 'baseball_player_engagement_events')
+      const { error: engagementError } = await fromUntyped(supabase, 'baseball_player_engagement_events')
         .insert({
           player_id: playerId,
           coach_id: coachId,
           engagement_type: 'watchlist_remove',
-          is_anonymous: false,
           metadata: { source: 'toggle_action' },
         });
+      if (engagementError) {
+        await logServerError(
+          `Failed to record watchlist_remove engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+          { action: 'watchlist.toggleWatchlistPlayer.engagementEvent', featureArea: 'baseball-watchlist' },
+        );
+      }
 
       revalidateWatchlistPaths();
       return { success: true, action: 'removed' };
@@ -523,14 +533,19 @@ const toggleWatchlistPlayerAction = withBaseballAction(
       return { success: false, error: 'Failed to add to watchlist' };
     }
 
-    await fromUntyped(supabase, 'baseball_player_engagement_events')
+    const { error: engagementError } = await fromUntyped(supabase, 'baseball_player_engagement_events')
       .insert({
         player_id: playerId,
         coach_id: coachId,
         engagement_type: 'watchlist_add',
-        is_anonymous: false,
         metadata: { source: 'player_profile' },
       });
+    if (engagementError) {
+      await logServerError(
+        `Failed to record watchlist_add engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+        { action: 'watchlist.toggleWatchlistPlayer.engagementEvent', featureArea: 'baseball-watchlist' },
+      );
+    }
 
     revalidateWatchlistPaths();
     return { success: true, action: 'added' };

@@ -6,21 +6,21 @@
 import type { EventType, EventTypeConfig } from '@/lib/types/calendar';
 
 const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
-  // Game/Tournament - Premium emerald (brand)
+  // Game/Tournament - Premium primary green (brand)
   game: {
     label: 'Game',
-    color: 'emerald',
-    bgColor: 'bg-emerald-50/60',
-    borderColor: 'border-l-emerald-500',
-    textColor: 'text-emerald-800',
+    color: 'primary',
+    bgColor: 'bg-primary-50/60',
+    borderColor: 'border-l-primary-500',
+    textColor: 'text-primary-800',
     showText: true,
   },
   tournament: {
     label: 'Tournament',
-    color: 'emerald',
-    bgColor: 'bg-emerald-50/60',
-    borderColor: 'border-l-emerald-600',
-    textColor: 'text-emerald-800',
+    color: 'primary',
+    bgColor: 'bg-primary-50/60',
+    borderColor: 'border-l-primary-600',
+    textColor: 'text-primary-800',
     showText: true,
   },
   // Qualifier - Premium amber/gold

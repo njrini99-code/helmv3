@@ -6,6 +6,8 @@ import type { BaseballBoxScoreBatting, BaseballBoxScorePitching, BaseballGame } 
 import { IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
+import { formatDate } from '@/lib/baseball/format-date';
+import { PaperCard, EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
 
 type BattingWithGame = BaseballBoxScoreBatting & { game: Partial<BaseballGame> };
 type PitchingWithGame = BaseballBoxScorePitching & { game: Partial<BaseballGame> };
@@ -18,11 +20,29 @@ interface PlayerGameLogProps {
 type LogTab = 'batting' | 'pitching';
 type GameTypeFilter = 'all' | 'game' | 'scrimmage';
 
+/** Game-type tag tone — the scrimmage exception reads neutral graphite (same
+ *  ink BoxScoreView's `<InkBadge label="Scrimmage" tone="neutral" />` stamp
+ *  uses); an official game is the normal case and reads team-green. */
+function gameTypeTone(gameType: string | undefined): 'team' | 'neutral' {
+  return gameType === 'scrimmage' ? 'neutral' : 'team';
+}
+
+/** Mirrors BoxScoreView's `decisionTone`: a team achievement (win / save /
+ *  hold) reads team-green, everything else (loss / blown save / no-decision)
+ *  stays quiet neutral graphite — never the old red/blue rainbow. Duplicated
+ *  locally (not imported) since BoxScoreView doesn't export it; keep this in
+ *  sync with BoxScoreView.tsx's mapping if it ever changes. */
+function decisionTone(result: BaseballBoxScorePitching['result']): 'team' | 'neutral' {
+  return result === 'W' || result === 'S' || result === 'H' ? 'team' : 'neutral';
+}
+
 function fmtDate(dateStr: string | undefined) {
   if (!dateStr) return '—';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric',
-  });
+  // formatDate() anchors bare YYYY-MM-DD strings at local midnight
+  // internally, so no hand-anchoring needed here. Disable the relative
+  // "Today"/"Yesterday" label — every row in this calendar table must read
+  // as a real date, not a relative one.
+  return formatDate(dateStr, { relative: false });
 }
 
 function fmtAvg(h: number, ab: number) {
@@ -76,9 +96,10 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
   if (!hasBatting && !hasPitching) {
     return (
-      <div className="glass-standard rounded-2xl p-8 text-center">
-        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">No game log yet. Stats will appear here after box scores are entered.</p>
-      </div>
+      <EditorsLetter
+        title="No game log yet"
+        body="Stats will appear here after box scores are entered."
+      />
     );
   }
 
@@ -126,7 +147,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Batting log */}
       {activeTab === 'batting' && (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <PaperCard className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -158,7 +179,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                       <td className="px-4 py-2 sticky left-0 bg-cream-50/92">
                         <div className="flex items-center gap-1.5">
                           <IconCalendar size={11} className="text-warm-300 shrink-0" />
-                          <span className="text-warm-600">{fmtDate(row.game?.game_date)}</span>
+                          <span className="font-annual tabular-nums text-warm-900">{fmtDate(row.game?.game_date)}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2 text-warm-600 truncate max-w-[100px]">
@@ -169,29 +190,28 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                         ) : (row.game?.opponent_name ?? 'Unknown')}
                       </td>
                       <td className="px-2 py-2 text-center">
-                        <span className={`text-eyebrow font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                          row.game?.game_type === 'scrimmage' ? 'text-purple-600 bg-purple-50' : 'text-primary-600 bg-primary-50'
-                        }`}>
-                          {row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
-                        </span>
+                        <InkBadge
+                          label={row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
+                          tone={gameTypeTone(row.game?.game_type)}
+                        />
                       </td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.ab}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.r}</td>
-                      <td className="px-2 py-2 text-center tabular-nums font-semibold">{row.h}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.doubles}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.triples}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.hr}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.rbi}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.bb}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.k}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.sb}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.hbp}</td>
-                      <td className="px-3 py-2 text-center font-mono">
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.ab}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.r}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums font-semibold">{row.h}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.doubles}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.triples}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.hr}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.rbi}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.bb}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.k}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.sb}</td>
+                      <td className="px-2 py-2 text-center font-annual tabular-nums">{row.hbp}</td>
+                      <td className="px-3 py-2 text-center font-annual tabular-nums">
                         <span className={row.h >= 2 ? 'text-primary-700 font-semibold' : 'text-warm-600'}>
                           {fmtAvg(row.h, row.ab)}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-center font-mono text-warm-500">{ops}</td>
+                      <td className="px-3 py-2 text-center font-annual tabular-nums text-warm-500">{ops}</td>
                     </tr>
                   );
                 })}
@@ -200,17 +220,17 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                 <tfoot>
                   <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
                     <td colSpan={3} className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.ab}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.r}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums font-bold">{battingTotals.h}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.doubles}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.triples}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.hr}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.rbi}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.bb}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.k}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.ab}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.r}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums font-bold">{battingTotals.h}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.doubles}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.triples}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.hr}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.rbi}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.bb}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{battingTotals.k}</td>
                     <td colSpan={3} />
-                    <td className="px-3 py-2.5 text-center font-mono font-bold">
+                    <td className="px-3 py-2.5 text-center font-annual tabular-nums font-bold">
                       {fmtAvg(battingTotals.h, battingTotals.ab)}
                     </td>
                     <td />
@@ -219,12 +239,12 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               )}
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
 
       {/* Pitching log */}
       {activeTab === 'pitching' && (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <PaperCard className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -250,7 +270,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     <td className="px-4 py-2 sticky left-0 bg-cream-50/92">
                       <div className="flex items-center gap-1.5">
                         <IconCalendar size={11} className="text-warm-300 shrink-0" />
-                        <span className="text-warm-600">{fmtDate(row.game?.game_date)}</span>
+                        <span className="font-annual tabular-nums text-warm-900">{fmtDate(row.game?.game_date)}</span>
                       </div>
                     </td>
                     <td className="px-3 py-2 text-warm-600 truncate max-w-[100px]">
@@ -261,34 +281,26 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                       ) : (row.game?.opponent_name ?? 'Unknown')}
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <span className={`text-eyebrow font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                        row.game?.game_type === 'scrimmage' ? 'text-purple-600 bg-purple-50' : 'text-primary-600 bg-primary-50'
-                      }`}>
-                        {row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
-                      </span>
+                      <InkBadge
+                        label={row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
+                        tone={gameTypeTone(row.game?.game_type)}
+                      />
                     </td>
-                    <td className="px-2 py-2 text-center font-mono tabular-nums">{fmtIP(row.ip)}</td>
-                    <td className="px-2 py-2 text-center tabular-nums">{row.h}</td>
-                    <td className="px-2 py-2 text-center tabular-nums">{row.r}</td>
-                    <td className="px-2 py-2 text-center tabular-nums">{row.er}</td>
-                    <td className="px-2 py-2 text-center tabular-nums">{row.bb}</td>
-                    <td className="px-2 py-2 text-center tabular-nums font-semibold">{row.k}</td>
-                    <td className="px-2 py-2 text-center tabular-nums">{row.hr}</td>
-                    <td className="px-2 py-2 text-center tabular-nums text-warm-400">{row.pitch_count ?? '—'}</td>
-                    <td className="px-3 py-2 text-center font-mono text-warm-700">{fmtERA(row.er, ipToInnings(row.ip))}</td>
-                    <td className="px-3 py-2 text-center font-mono text-warm-500">
+                    <td className="px-2 py-2 text-center font-annual tabular-nums">{fmtIP(row.ip)}</td>
+                    <td className="px-2 py-2 text-center font-annual tabular-nums">{row.h}</td>
+                    <td className="px-2 py-2 text-center font-annual tabular-nums">{row.r}</td>
+                    <td className="px-2 py-2 text-center font-annual tabular-nums">{row.er}</td>
+                    <td className="px-2 py-2 text-center font-annual tabular-nums">{row.bb}</td>
+                    <td className="px-2 py-2 text-center font-annual tabular-nums font-semibold">{row.k}</td>
+                    <td className="px-2 py-2 text-center font-annual tabular-nums">{row.hr}</td>
+                    <td className="px-2 py-2 text-center font-annual tabular-nums text-warm-400">{row.pitch_count ?? '—'}</td>
+                    <td className="px-3 py-2 text-center font-annual tabular-nums text-warm-700">{fmtERA(row.er, ipToInnings(row.ip))}</td>
+                    <td className="px-3 py-2 text-center font-annual tabular-nums text-warm-500">
                       {ipToInnings(row.ip) > 0 ? ((row.h + row.bb) / ipToInnings(row.ip)).toFixed(3) : '—'}
                     </td>
                     <td className="px-2 py-2 text-center">
                       {row.result && (
-                        <span className={`px-1.5 py-0.5 rounded text-eyebrow font-bold ${
-                          row.result === 'W' ? 'bg-primary-100 text-primary-700' :
-                          row.result === 'L' ? 'bg-red-100 text-red-700' :
-                          row.result === 'S' ? 'bg-blue-100 text-blue-700' :
-                          'bg-warm-100 text-warm-500'
-                        }`}>
-                          {row.result}
-                        </span>
+                        <InkBadge label={row.result} tone={decisionTone(row.result)} />
                       )}
                     </td>
                   </tr>
@@ -298,17 +310,17 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                 <tfoot>
                   <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
                     <td colSpan={3} className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
-                    <td className="px-2 py-2.5 text-center font-mono tabular-nums">{fmtIP(pitchingTotals.ip)}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchingTotals.h}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchingTotals.r}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchingTotals.er}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums">{pitchingTotals.bb}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums font-bold">{pitchingTotals.k}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{fmtIP(pitchingTotals.ip)}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingTotals.h}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingTotals.r}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingTotals.er}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums">{pitchingTotals.bb}</td>
+                    <td className="px-2 py-2.5 text-center font-annual tabular-nums font-bold">{pitchingTotals.k}</td>
                     <td colSpan={2} />
-                    <td className="px-3 py-2.5 text-center font-mono font-bold">
+                    <td className="px-3 py-2.5 text-center font-annual tabular-nums font-bold">
                       {fmtERA(pitchingTotals.er, pitchingInnings)}
                     </td>
-                    <td className="px-3 py-2.5 text-center font-mono">
+                    <td className="px-3 py-2.5 text-center font-annual tabular-nums">
                       {pitchingInnings > 0 ? ((pitchingTotals.h + pitchingTotals.bb) / pitchingInnings).toFixed(3) : '—'}
                     </td>
                     <td />
@@ -317,7 +329,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               )}
             </table>
           </div>
-        </div>
+        </PaperCard>
       )}
     </div>
   );

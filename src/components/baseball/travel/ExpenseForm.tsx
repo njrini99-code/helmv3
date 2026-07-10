@@ -1,5 +1,20 @@
 'use client';
 
+// =============================================================================
+// ExpenseForm — reskinned onto "The Living Annual" kit (Lane 3 · THE
+// PRESSBOX, team ink — sibling of TravelClient which already migrated; this
+// nested component was missed in that pass). PRESENTATION ONLY: form state,
+// validation, and the `addExpense` server action are unchanged.
+//
+// Off-palette chrome removed: the category/paid-by chip pickers carried a
+// `shadow-sm` drop shadow (spec §4.3: letterpress only, never elevation
+// outside an actively-dragged object) plus primary-50/warm-200 chrome — both
+// now use the lane-ink (team green) border + tint. The inline validation
+// banner moves off bg-red-50/border-red-200 onto the app's one sanctioned
+// destructive token (`--color-destructive`, already used elsewhere in this
+// migrated surface family, e.g. CampsClient's delete icon).
+// =============================================================================
+
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -11,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   addExpense,
   type ExpenseCategory,
@@ -128,7 +144,7 @@ export function ExpenseForm({
           <motion.div
             initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
-            className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
+            className="rounded-fw-md border border-destructive/30 bg-destructive/10 p-3 font-annual text-body-sm text-destructive"
           >
             {error}
           </motion.div>
@@ -136,7 +152,7 @@ export function ExpenseForm({
 
         {/* Category Selection */}
         <div>
-          <p className="text-sm font-medium text-warm-700 block mb-2">Category</p>
+          <p className="mb-2 block font-annual text-body-sm font-medium text-text-secondary">Category</p>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {CATEGORIES.map((cat) => (
               <motion.button
@@ -145,14 +161,15 @@ export function ExpenseForm({
                 onClick={() => setCategory(cat.value)}
                 whileHover={prefersReducedMotion ? undefined : ({ scale: 1.02 })}
                 whileTap={prefersReducedMotion ? undefined : ({ scale: 0.98 })}
-                className={`p-3 rounded-xl border-2 text-center transition-all ${
+                className={cn(
+                  'rounded-fw-md border p-3 text-center transition-colors',
                   category === cat.value
-                    ? 'border-primary-600 bg-primary-50 shadow-sm'
-                    : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
-                }`}
+                    ? 'border-grade-plus bg-grade-plus/[0.08]'
+                    : 'border-[color:var(--hairline)] hover:border-grade-plus/40',
+                )}
               >
                 <span className="text-xl block mb-1">{cat.icon}</span>
-                <span className="text-xs font-medium text-warm-900">{cat.label}</span>
+                <span className="font-annual text-xs font-medium text-text-primary">{cat.label}</span>
               </motion.button>
             ))}
           </div>
@@ -196,7 +213,7 @@ export function ExpenseForm({
 
         {/* Paid By */}
         <div>
-          <p className="text-sm font-medium text-warm-700 block mb-2">Paid By</p>
+          <p className="mb-2 block font-annual text-body-sm font-medium text-text-secondary">Paid By</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PAID_BY_OPTIONS.map((option) => (
               <motion.button
@@ -205,11 +222,12 @@ export function ExpenseForm({
                 onClick={() => setPaidBy(option.value)}
                 whileHover={prefersReducedMotion ? undefined : ({ scale: 1.02 })}
                 whileTap={prefersReducedMotion ? undefined : ({ scale: 0.98 })}
-                className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                className={cn(
+                  'rounded-fw-md border px-3 py-2 text-center font-annual text-sm font-medium transition-colors',
                   paidBy === option.value
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-warm-200 text-warm-600 hover:border-warm-300'
-                }`}
+                    ? 'border-grade-plus bg-grade-plus/[0.08] text-grade-plus'
+                    : 'border-[color:var(--hairline)] text-text-secondary hover:border-grade-plus/40',
+                )}
               >
                 {option.label}
               </motion.button>
@@ -226,14 +244,11 @@ export function ExpenseForm({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional details..."
             rows={2}
-            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                     text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
           />
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-warm-200">
+        <div className="flex justify-end gap-3 border-t border-[color:var(--hairline)] pt-4">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>

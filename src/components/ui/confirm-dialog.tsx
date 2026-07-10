@@ -77,18 +77,21 @@ export function ConfirmDialog({
       <div
         role="presentation"
         className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
-        onClick={onCancel}
+        onClick={(e) => {
+          // Close only on a true backdrop click — clicks inside the sheet
+          // bubble here with a different target, so no stopPropagation is
+          // needed on the content (which would also swallow the keydown
+          // path useFocusTrap's document listener relies on).
+          if (e.target === e.currentTarget) onCancel();
+        }}
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
       >
-        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
         <div
           ref={modalRef}
           role="dialog"
           aria-modal="true"
           aria-label={title}
           className="w-full max-w-md px-3 pb-[max(12px,env(safe-area-inset-bottom))] space-y-2 animate-slide-up"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
         >
           {/* Sheet body: title + message + destructive action */}
           <div className="overflow-hidden rounded-2xl bg-surface/95 backdrop-blur-xl shadow-fw-modal">
@@ -123,18 +126,18 @@ export function ConfirmDialog({
     <div
       role="presentation"
       className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onCancel}
+      onClick={(e) => {
+        // Backdrop-only close — same pattern as the native action sheet above.
+        if (e.target === e.currentTarget) onCancel();
+      }}
       onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         className="w-full max-w-md overflow-hidden rounded-fw-lg bg-surface shadow-fw-modal animate-fade-in"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-subtle px-6 py-4">

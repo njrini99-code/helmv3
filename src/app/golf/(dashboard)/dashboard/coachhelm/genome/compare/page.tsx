@@ -13,15 +13,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadGenomes } from '@/lib/coachhelm/v3/genome/loader';
-import { GenomeRadar, type RadarSeries } from '@/components/golf/coachhelm/v3/Genome/GenomeRadar';
-import { GenomeComparePicker } from '@/components/golf/coachhelm/v3/Genome/GenomeComparePicker';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { Reveal } from '@/components/ui/reveal';
 import type { Metadata } from 'next';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { GenomeCompareView, type CompareSeries } from '@/components/fairway';
 
 interface PageProps {
@@ -31,9 +26,6 @@ interface PageProps {
 export const metadata: Metadata = {
   title: 'Compare players · Genome · CoachHelm',
 };
-
-const PLAYER_A_HEX = 'var(--color-primary-600)'; // helm green
-const PLAYER_B_HEX = '#F59E0B'; // amber 500
 
 export default async function GenomeComparePage({ searchParams }: PageProps) {
   const { p1, p2 } = await searchParams;
@@ -73,127 +65,32 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
   const a = playerA && genomeById.get(playerA.id);
   const b = playerB && genomeById.get(playerB.id);
 
-  const series: RadarSeries[] = [];
-  if (a && playerA) {
-    series.push({ label: playerA.name, colorClass: 'primary-600', hex: PLAYER_A_HEX, vector: a.vector });
-  }
-  if (b && playerB) {
-    series.push({ label: playerB.name, colorClass: 'amber-500', hex: PLAYER_B_HEX, vector: b.vector });
-  }
+  // The warm "Players → compare" surface (CoachHelmShell active='players'). It
+  // renders GenomeFingerprint DIVERGING BARS (not two overlaid radars) + a
+  // numeric dimension table + an honest "N of M live" caption + a "no genome
+  // computed" legend chip. loadGenomes + roster + ?p1=&p2= resolution + coach
+  // gate all ran above; vectors carried in as serializable CompareSeries.
+  const seriesA: CompareSeries | null = playerA
+    ? { playerId: playerA.id, name: playerA.name, vector: a ? a.vector : null }
+    : null;
+  const seriesB: CompareSeries | null = playerB
+    ? { playerId: playerB.id, name: playerB.name, vector: b ? b.vector : null }
+    : null;
 
-  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
-  // Flag ON → the warm "Players → compare" surface (CoachHelmShell
-  // active='players'). It renders GenomeFingerprint DIVERGING BARS (not two
-  // overlaid radars) + a numeric dimension table + an honest "N of M live"
-  // caption + a "no genome computed" legend chip. loadGenomes + roster + ?p1=&p2=
-  // resolution + coach gate all ran above; vectors carried in as serializable
-  // CompareSeries. Flag OFF (default) → the legacy two-series radar overlay page.
-  if (isRedesignEnabled()) {
-    const seriesA: CompareSeries | null = playerA
-      ? { playerId: playerA.id, name: playerA.name, vector: a ? a.vector : null }
-      : null;
-    const seriesB: CompareSeries | null = playerB
-      ? { playerId: playerB.id, name: playerB.name, vector: b ? b.vector : null }
-      : null;
-
-    const countsRes = await getAlertCounts(session.coach.id);
-    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
-
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-        <GenomeCompareView
-          roster={roster}
-          p1={p1 ?? null}
-          p2={p2 ?? null}
-          seriesA={seriesA}
-          seriesB={seriesB}
-          signalCount={signalCount}
-        />
-      </div>
-    );
-  }
+  const countsRes = await getAlertCounts(session.coach.id);
+  const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
 
   return (
-    <AnimatedPage className="min-h-full bg-transparent">
-      <AnimatedItem>
-        <MobileNavHeader title="Compare" backHref="/golf/dashboard/coachhelm" backLabel="CoachHelm" />
-      </AnimatedItem>
-
-      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-10">
-        <Reveal>
-          <header className="surface-stone rounded-3xl p-6 md:p-8 mb-6 md:mb-8">
-            <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-1.5">
-              Compare
-            </p>
-            {/* a11y W3D: page h1 is supplied by the consolidated PageHeader
-                (MobileNavHeader) above; demote this in-content title to <h2>
-                so the page exposes exactly one semantic <h1>. The className
-                drives the look, so the visual treatment is unchanged. */}
-            <h2 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">
-              {playerA && playerB
-                ? `${playerA.name} vs ${playerB.name}`
-                : playerA
-                  ? `Add a second player to compare ${playerA.name}`
-                  : 'Pick two players to compare'}
-            </h2>
-          </header>
-        </Reveal>
-
-        <Reveal staggerIndex={1}>
-          <section className="surface-matte rounded-3xl p-6 md:p-8 mb-6 md:mb-8">
-            {series.length === 0 ? (
-              <p className="text-sm text-warm-500 text-center py-8">
-                Pick a player from the list below to start.
-              </p>
-            ) : (
-              <div className="flex items-center justify-center">
-                <GenomeRadar series={series} />
-              </div>
-            )}
-            {series.length > 0 && (
-              <div className="mt-6 flex items-center justify-center gap-6 text-sm">
-                {series.map((s) => (
-                  <span key={s.label} className="flex items-center gap-2 text-warm-700">
-                    <span
-                      aria-hidden
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: s.hex }}
-                    />
-                    {s.label}
-                  </span>
-                ))}
-              </div>
-            )}
-          </section>
-        </Reveal>
-
-        <Reveal staggerIndex={2}>
-          <section>
-            <h2 className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-3">
-              Pick players
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <GenomeComparePicker
-                heading="Player 1"
-                selectedId={playerA?.id ?? null}
-                otherId={playerB?.id ?? null}
-                roster={roster}
-                paramName="p1"
-                otherSlot={p2}
-              />
-              <GenomeComparePicker
-                heading="Player 2"
-                selectedId={playerB?.id ?? null}
-                otherId={playerA?.id ?? null}
-                roster={roster}
-                paramName="p2"
-                otherSlot={p1}
-              />
-            </div>
-          </section>
-        </Reveal>
-      </div>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+      <GenomeCompareView
+        roster={roster}
+        p1={p1 ?? null}
+        p2={p2 ?? null}
+        seriesA={seriesA}
+        seriesB={seriesB}
+        signalCount={signalCount}
+      />
+    </div>
   );
 }
 

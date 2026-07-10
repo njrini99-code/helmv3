@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 export default function PlayersLoading() {
   return (
@@ -6,7 +7,7 @@ export default function PlayersLoading() {
       <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8">
         <Skeleton className="h-8 w-40 mb-2" />
         <Skeleton className="h-4 w-48 mb-8" />
-        <div className="glass-standard rounded-xl p-6">
+        <PaperCard className="p-6" grain={false}>
           <div className="flex items-center gap-4 mb-6">
             <Skeleton className="h-20 w-20 rounded-full" />
             <div>
@@ -23,7 +24,7 @@ export default function PlayersLoading() {
               </div>
             ))}
           </div>
-        </div>
+        </PaperCard>
       </div>
     </div>
   );

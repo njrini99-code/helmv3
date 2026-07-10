@@ -20,6 +20,7 @@ import {
 } from '@/components/icons';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
 import { Button, IconButton } from '@/components/ui/button';
+import { PaperCard, InkBadge } from '@/components/baseball/living-annual';
 
 // Document categories for display
 const DOCUMENT_CATEGORIES: Record<string, string> = {
@@ -49,7 +50,7 @@ function getFileTypeLabel(mimeType: string | null): string {
 // Get file icon based on MIME type
 function getFileIcon(fileType: string | null, size = 20) {
   if (!fileType) return <IconFile size={size} className="text-warm-400" />;
-  if (fileType === 'application/pdf') return <IconFileText size={size} className="text-red-500" />;
+  if (fileType === 'application/pdf') return <IconFileText size={size} className="text-pursuit" />;
   if (fileType.startsWith('image/')) return <IconImage size={size} className="text-warm-500" />;
   if (fileType.includes('word') || fileType.includes('document')) return <IconFileText size={size} className="text-warm-700" />;
   if (fileType.includes('sheet') || fileType.includes('excel') || fileType === 'text/csv') return <IconFileSpreadsheet size={size} className="text-primary-500" />;
@@ -60,7 +61,7 @@ function getFileIcon(fileType: string | null, size = 20) {
 
 function getFileTypeColor(fileType: string | null): string {
   if (!fileType) return 'bg-warm-100 text-warm-500';
-  if (fileType === 'application/pdf') return 'bg-red-50 text-red-600';
+  if (fileType === 'application/pdf') return 'bg-pursuit/10 text-pursuit';
   if (fileType.startsWith('image/')) return 'bg-warm-100 text-warm-600';
   if (fileType.includes('word') || fileType.includes('document')) return 'bg-warm-100 text-warm-700';
   if (fileType.includes('sheet') || fileType.includes('excel')) return 'bg-primary-50 text-primary-600';
@@ -124,10 +125,10 @@ export function DocumentCard({
   }, [document, onPreview]);
 
   return (
-    <div
+    <PaperCard
       role="button"
       tabIndex={0}
-      className="group relative glass-standard rounded-2xl overflow-clip hover:shadow-md hover:bg-cream-100/82 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+      className="group hover:shadow-md hover:bg-cream-100/82 transition-shadow duration-200 cursor-pointer active:scale-[0.98]"
       onClick={handlePreview}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePreview(); } }}
     >
@@ -136,7 +137,7 @@ export function DocumentCard({
         className={cn(
           'h-1 w-full',
           document.file_type === 'application/pdf'
-            ? 'bg-red-400'
+            ? 'bg-pursuit'
             : document.file_type?.startsWith('image/')
             ? 'bg-warm-400'
             : document.file_type?.includes('word')
@@ -197,7 +198,7 @@ export function DocumentCard({
                     >
                       {null}
                     </Button>
-                    <div role="menu" className="absolute right-0 top-8 z-40 w-48 glass-prominent rounded-xl shadow-xl py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <PaperCard role="menu" className="absolute right-0 top-8 z-40 w-48 shadow-xl py-1.5 animate-in fade-in slide-in-from-top-1 duration-150" grain={false}>
                       <Button
                         variant="ghost"
                         role="menuitem"
@@ -273,13 +274,13 @@ export function DocumentCard({
                               onDelete(document);
                               setActiveDropdown(null);
                             }}
-                            className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-red-600 hover:bg-red-50 active:bg-red-100"
+                            className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-[color:var(--notice-error-ink)] hover:bg-[var(--notice-error-ink)]/10 active:bg-[var(--notice-error-ink)]/20"
                           >
                             <IconTrash size={14} /> Delete
                           </Button>
                         </>
                       )}
-                    </div>
+                    </PaperCard>
                   </>
                 )}
               </div>
@@ -320,9 +321,7 @@ export function DocumentCard({
             </span>
           )}
           {isCoach && !document.is_player_visible && (
-            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-amber-50 text-amber-700">
-              Coach only
-            </span>
+            <InkBadge label="Coach only" tone="pursuit" variant="soft" />
           )}
         </div>
 
@@ -357,7 +356,7 @@ export function DocumentCard({
           </div>
         </div>
       </div>
-    </div>
+    </PaperCard>
   );
 }
 

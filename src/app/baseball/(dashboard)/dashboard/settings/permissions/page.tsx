@@ -9,6 +9,13 @@
 // server-enforced capability keys, with sensitive groups flagged. Capability
 // ASSIGNMENT happens on the staff surface (linked). Auth + active-team + viewer
 // caps resolve inside getPermissionMatrix (withBaseballAction). COACH route.
+//
+// Reskinned onto "The Living Annual" kit (Lane 3 · THE PRESSBOX, team ink) —
+// the sibling Roles page (settings/roles) already migrated the same header;
+// this page had been missed. Same migration depth as Roles: `SectionMasthead`
+// replaces the bespoke border-b header, and the off-palette amber "Sensitive"
+// chip becomes an `<InkBadge>` stamp; the Card-based body stays as-is to match
+// Roles/Program Settings' current level of migration.
 // =============================================================================
 
 import Link from 'next/link';
@@ -18,6 +25,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getPermissionMatrix } from '@/app/baseball/actions/roles-permissions';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { IconShield, IconLock, IconChevronRight, IconUsers } from '@/components/icons';
+import { SectionMasthead, InkBadge } from '@/components/baseball/living-annual';
 
 export const metadata = {
   title: 'Permissions | Helm Baseball',
@@ -44,15 +52,17 @@ export default async function PermissionsPage() {
   const data = await getPermissionMatrix();
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Permissions</h1>
-          <p className="mt-1 text-body-sm text-warm-500">What each capability group controls</p>
-        </div>
-      </div>
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-        <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600">
+    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Shared LA masthead — same component + eyebrow grammar as Settings,
+          Roles, and Program Settings (ui-migration-map settings row). */}
+      <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Permissions" ink="team">
+        <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+          What each capability group controls
+        </p>
+      </SectionMasthead>
+
+      <div className="space-y-6">
+        <div className="rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-3 font-annual text-body-sm text-text-secondary">
           Capabilities are enforced on the server, not by hiding tabs. A capability
           a coach does not hold is blocked at the API even if a link is visible.
         </div>
@@ -67,11 +77,7 @@ export default async function PermissionsPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-warm-900">{group.label}</h2>
-                    {group.sensitive && (
-                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                        Sensitive
-                      </span>
-                    )}
+                    {group.sensitive && <InkBadge label="Sensitive" tone="pursuit" variant="solid" />}
                   </div>
                   <p className="text-sm leading-relaxed text-warm-500">
                     {group.description}
@@ -84,7 +90,7 @@ export default async function PermissionsPage() {
                 {group.capabilities.map((cap) => (
                   <span
                     key={cap}
-                    className="rounded-lg border border-warm-200 bg-cream-50 px-3 py-1.5 text-sm font-mono text-warm-700 capitalize"
+                    className="rounded-lg border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-3 py-1.5 font-mono text-sm capitalize text-text-secondary"
                   >
                     {capLabel(cap)}
                   </span>
@@ -117,6 +123,6 @@ export default async function PermissionsPage() {
           </Link>
         )}
       </div>
-    </>
+    </div>
   );
 }

@@ -40,6 +40,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { __registerGetDetailedStatsAsAdmin } from '@/lib/golf/detailed-stats-admin-bridge';
 
 
 // ============================================================================
@@ -1187,6 +1188,10 @@ export async function getDetailedStats(
   return observedGetDetailedStats(playerId, roundId, filter);
 }
 
+// SECURITY: intentionally NOT exported. Every exported async function in a
+// 'use server' file (this file) is a public, directly-POSTable action
+// regardless of client references — and this variant skips the user
+// auth/access gate entirely (admin client, caller-supplied playerId).
 /**
  * Trusted-server variant of `getDetailedStats` for callers that don't have a
  * user session on the request — specifically the CoachHelm engine's
@@ -1195,8 +1200,9 @@ export async function getDetailedStats(
  * admin client and skips the auth/access check (both are enforced by the
  * trusted caller that dispatched the engine run).
  *
- * DO NOT call this from client-reachable code — always prefer
- * `getDetailedStats` when a user session exists.
+ * Reached by trusted server-only callers via
+ * `@/lib/golf/detailed-stats-admin-bridge`'s `getDetailedStatsAsAdmin`
+ * (registered below), never by exporting this from a 'use server' file.
  */
 async function getDetailedStatsAsAdminImpl(
   playerId: string,
@@ -1226,13 +1232,10 @@ const observedGetDetailedStatsAsAdmin = withAdminObserved(
   getDetailedStatsAsAdminImpl,
 );
 
-export async function getDetailedStatsAsAdmin(
-  playerId: string,
-  roundId?: string | 'overall',
-  filter?: StatsFilter,
-): Promise<GolfStats> {
-  return observedGetDetailedStatsAsAdmin(playerId, roundId, filter);
-}
+// Hands the observed impl above to the server-only bridge so trusted,
+// non-'use server' callers (CoachHelm v2 orchestrator) can reach it without
+// this file ever exporting it — see @/lib/golf/detailed-stats-admin-bridge.
+__registerGetDetailedStatsAsAdmin(observedGetDetailedStatsAsAdmin);
 
 async function getSprayChartDataImpl(
   playerId: string,

@@ -130,14 +130,14 @@ export function SourceTrustBadge({
             // must clear WCAG AA. warm-400 (#a8a29e, ~2.3:1 on cream) fails;
             // warm-500 (#78716c, ~4.6:1) is the readable de-emphasized floor.
             conf.missing && 'text-warm-500',
-            // Low-confidence caution figure is small tabular text — amber-700
-            // (#b45309, ~4.9:1 on cream) clears AA where amber-600 (~3.4:1) is
-            // only borderline for normal text. Keeps the amber caution language.
+            // Low-confidence caution figure is small tabular text — --pursuit-ink
+            // clears AA and keeps the caution reading as a soft warning, not
+            // an error (never red/amber Tailwind literals on this surface).
             // WCAG 1.4.1 (use of color): this is the single most decision-
             // critical number on the chip, so it must NOT rely on hue alone —
             // it is also weighted (font-medium vs the normal-confidence
             // font-normal) and carries a warning glyph cue below.
-            conf.low && 'inline-flex items-center gap-0.5 text-amber-700 font-medium',
+            conf.low && 'inline-flex items-center gap-0.5 text-pursuit font-medium',
           )}
         >
           {conf.low && (

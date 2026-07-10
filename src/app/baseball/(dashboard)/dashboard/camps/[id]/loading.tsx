@@ -1,55 +1,53 @@
-import { Header } from '@/components/layout/header';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
+const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
+
+/**
+ * Route-level loading skeleton for Camp Details (Lane 4 · THE WAR ROOM, clay
+ * ink — coaches manage the camp roster from here). Mirrors CampDetailClient's
+ * own `CampDetailSkeleton` (masthead + info card + stat tiles + roster list).
+ */
 export default function CampDetailLoading() {
   return (
-    <>
-      <Header title="Camp Details" />
-      <div className="p-6 lg:p-8 space-y-6">
-        {/* Camp Info Skeleton */}
-        <div className="glass-standard rounded-2xl p-6 animate-pulse">
-          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-warm-200" />
-                <div>
-                  <div className="h-3 w-12 bg-warm-200 rounded mb-1" />
-                  <div className="h-4 w-24 bg-warm-200 rounded" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className={`${PAGE_SHELL} space-y-6`}>
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="text" width={200} height={11} />
+        <Skeleton variant="text" width={160} height={36} />
+        <Skeleton className="h-[3px] w-16 rounded-full" />
+      </div>
 
-        {/* Stats Skeleton */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="glass-standard rounded-xl p-4 animate-pulse">
-              <div className="h-3 w-12 bg-warm-200 rounded mb-2" />
-              <div className="h-7 w-8 bg-warm-200 rounded" />
+      <PaperCard className="p-6">
+        <Skeleton variant="text" width="40%" height={18} />
+      </PaperCard>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <PaperCard key={i} className="p-4">
+            <Skeleton variant="text" width="60%" height={11} className="mb-2" />
+            <Skeleton variant="text" width="30%" height={22} />
+          </PaperCard>
+        ))}
+      </div>
+
+      <PaperCard className="overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b border-[color:var(--hairline)] px-6 py-4">
+          <Skeleton variant="text" width={96} height={18} />
+          <Skeleton variant="rectangular" width={180} height={32} className="rounded-lg" />
+        </div>
+        <div className="divide-y divide-[color:var(--hairline)]">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center gap-4 px-6 py-4">
+              <Skeleton variant="circular" width={40} height={40} />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton variant="text" width="30%" height={16} />
+                <Skeleton variant="text" width="50%" height={12} />
+              </div>
+              <Skeleton variant="rectangular" width={80} height={24} className="rounded-full" />
             </div>
           ))}
         </div>
-
-        {/* Roster Skeleton */}
-        <div className="glass-standard rounded-2xl overflow-clip animate-pulse">
-          <div className="px-6 py-4 border-b border-warm-100/50 flex items-center justify-between">
-            <div className="h-5 w-24 bg-warm-200 rounded" />
-            <div className="h-8 w-48 bg-warm-200 rounded" />
-          </div>
-          <div className="divide-y divide-warm-100/50">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="px-6 py-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-warm-200" />
-                <div className="flex-1">
-                  <div className="h-4 w-32 bg-warm-200 rounded mb-1" />
-                  <div className="h-3 w-48 bg-warm-100 rounded" />
-                </div>
-                <div className="h-6 w-20 bg-warm-200 rounded" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
+      </PaperCard>
+    </div>
   );
 }

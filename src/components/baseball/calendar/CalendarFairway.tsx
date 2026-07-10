@@ -25,19 +25,26 @@ import Link from 'next/link';
 import { Button } from '@/components/fairway';
 import { SectionMasthead, EditorsLetter, InkBadge, LiveDot } from '@/components/baseball/living-annual';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { eventInk } from '@/app/baseball/(dashboard)/dashboard/events/event-ink';
 import { BaseballCalendarWrapper } from './BaseballCalendarWrapper';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 type WrapperProps = ComponentProps<typeof BaseballCalendarWrapper>;
 
-/** Event-type → singular label for the ruled summary strip. */
+/**
+ * Event-type → singular label for the ruled summary strip. Kept in sync with
+ * the `event_type` values `createBaseballEvent`/`EventsClient` actually write
+ * (game/practice/showcase/tryout/tournament/meeting/other) — the badge's
+ * *ink* for each of these comes from `eventInk()` in event-ink.ts so this
+ * strip never drifts from the Events list's tone/variant mapping.
+ */
 const EVENT_TYPE_LABEL: Record<string, string> = {
   game: 'game',
   practice: 'practice',
-  camp: 'camp',
+  showcase: 'showcase',
   tryout: 'tryout',
+  tournament: 'tournament',
   meeting: 'meeting',
-  travel: 'travel event',
   other: 'other',
 };
 
@@ -143,8 +150,14 @@ export function CalendarFairway({
             <LiveDot ink="team" label={`${upcomingEvents} upcoming ${pluralizeEventLabel('event', upcomingEvents)}`} />
             {Object.entries(eventTypeCounts).map(([type, count]) => {
               const label = EVENT_TYPE_LABEL[type] ?? type;
+              const ink = eventInk(type);
               return (
-                <InkBadge key={type} tone="team" label={`${count} ${pluralizeEventLabel(label, count)}`} />
+                <InkBadge
+                  key={type}
+                  tone={ink.tone}
+                  variant={ink.variant}
+                  label={`${count} ${pluralizeEventLabel(label, count)}`}
+                />
               );
             })}
           </div>

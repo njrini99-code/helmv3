@@ -125,11 +125,13 @@ const COLUMNS: ColumnSpec[] = [
     status: 'nurture',
     label: 'Nurture',
     description: 'Long-term touchpoints',
-    headerBg: 'bg-emerald-50/80',
-    headerText: 'text-emerald-700',
-    countBg: 'bg-emerald-100',
-    countText: 'text-emerald-700',
-    dotColor: 'bg-emerald-500',
+    // Deeper primary tint than `won` (not a second green hue) — keeps the
+    // two "closed" columns visually distinct while staying in one family.
+    headerBg: 'bg-primary-100/80',
+    headerText: 'text-primary-800',
+    countBg: 'bg-primary-200',
+    countText: 'text-primary-800',
+    dotColor: 'bg-primary-700',
     promptsReason: true,
   },
 ];

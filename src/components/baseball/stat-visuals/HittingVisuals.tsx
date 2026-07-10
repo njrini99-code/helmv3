@@ -781,7 +781,7 @@ export function GameVsPracticeGap({
                 className={cn(
                   'text-right text-xs font-semibold tabular-nums',
                   d.tone === 'up' && 'text-primary-600',
-                  d.tone === 'down' && 'text-amber-600',
+                  d.tone === 'down' && 'text-pursuit',
                   (d.tone === 'flat' || d.tone === 'none') && 'text-warm-400',
                 )}
               >

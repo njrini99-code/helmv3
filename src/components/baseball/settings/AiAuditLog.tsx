@@ -55,7 +55,9 @@ const DISPOSITION_STYLE: Record<
   { label: string; cls: string }
 > = {
   approved: { label: 'Approved', cls: 'bg-primary-50 text-primary-700 border-primary-200' },
-  pending: { label: 'Pending', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  // Ink system, not raw amber — "pending" is a warning/caution status
+  // (doctrine: warning -> pursuit soft), needs-approval, not an error.
+  pending: { label: 'Pending', cls: 'bg-pursuit/10 text-pursuit border-pursuit/30' },
   withheld: { label: 'Withheld', cls: 'bg-warm-100 text-warm-600 border-warm-200' },
 };
 
@@ -283,7 +285,7 @@ export function AiAuditLog({ teamId, canManage }: { teamId: string; canManage: b
       {/* Pending-approval queue (the primary action of this surface) */}
       {rows !== null && !error && pending.length > 0 && (
         <div className="mb-3">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-pursuit">
             Awaiting your approval ({pending.length})
           </p>
           <AnimatePresence initial={false}>

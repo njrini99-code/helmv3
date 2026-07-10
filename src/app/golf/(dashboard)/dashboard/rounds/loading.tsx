@@ -1,17 +1,13 @@
-import { RoundsListSkeleton } from '@/components/ui/skeleton';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
 /**
- * P206 — the Suspense fallback for the Rounds library must match the LIVE
+ * P206 — the Suspense fallback for the Rounds library matches the LIVE
  * Fairway layout: a max-w-[1200px] shell with a 5-tile KPI hero (grid-cols-2 →
- * md:grid-cols-5) on bg-surface, then month-ledger Surfaces. The legacy
- * RoundsListSkeleton (max-w-5xl, no KPI strip) only matches the flag-off page,
- * so it stays behind the flag. isRedesignEnabled() is build-time-inlined and is
- * safe to read in a loading boundary.
+ * md:grid-cols-5) on bg-surface, then month-ledger Surfaces.
  */
-function FairwayRoundsLibraryLoading() {
+export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -65,9 +61,4 @@ function FairwayRoundsLibraryLoading() {
       </div>
     </div>
   );
-}
-
-export default function Loading() {
-  if (isRedesignEnabled()) return <FairwayRoundsLibraryLoading />;
-  return <RoundsListSkeleton />;
 }

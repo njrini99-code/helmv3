@@ -57,7 +57,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: string }) {
-  if (mimeType === 'application/pdf') return <IconFileText className={cn('text-red-500', className)} />;
+  if (mimeType === 'application/pdf') return <IconFileText className={cn('text-pursuit', className)} />;
   if (mimeType.startsWith('image/')) return <IconImage className={cn('text-warm-500', className)} />;
   if (mimeType.startsWith('video/')) return <IconVideo className={cn('text-primary-600', className)} />;
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') return <IconFileSpreadsheet className={cn('text-primary-500', className)} />;
@@ -172,10 +172,10 @@ export function DocumentPreview({
       return (
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center max-w-md">
-            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-              <IconFile size={24} className="text-red-500" />
+            <div className="w-12 h-12 rounded-full bg-[var(--notice-error-ink)]/10 flex items-center justify-center mx-auto mb-4">
+              <IconFile size={24} className="text-[color:var(--notice-error-ink)]" />
             </div>
-            <p className="text-red-600 font-medium mb-2">Preview unavailable</p>
+            <p className="text-[color:var(--notice-error-ink)] font-medium mb-2">Preview unavailable</p>
             <p className="text-warm-500 text-sm mb-4">{error}</p>
             <div className="flex gap-2 justify-center">
               <Button variant="secondary" onClick={handleDownload}>

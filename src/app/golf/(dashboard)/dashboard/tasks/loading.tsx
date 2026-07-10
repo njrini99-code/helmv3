@@ -1,18 +1,14 @@
-import { GenericPageSkeleton } from '@/components/ui/skeleton';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
 /**
- * P433 — purpose-built loading state for the Tasks board (redesign path). The
- * generic 4-card list skeleton did not match FairwayTasks (max-w-[1280px]
- * ViewHeader masthead → filter pills → search → a `grid lg:grid-cols-3` task
- * list + Templates rail), causing a layout swap / CLS on hydrate. This reserves
- * the real slots with Fairway tokens so the board paints in place. The legacy
- * GenericPageSkeleton stays behind the flag-off fork. isRedesignEnabled() is
- * build-time-inlined and safe to read in a loading boundary.
+ * P433 — purpose-built loading state for the Tasks board. Shape-matches
+ * FairwayTasks (max-w-[1280px] ViewHeader masthead → filter pills → search →
+ * a `grid lg:grid-cols-3` task list + Templates rail), so the board paints in
+ * place with no layout swap / CLS on hydrate.
  */
-function FairwayTasksLoading() {
+export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -82,9 +78,4 @@ function FairwayTasksLoading() {
       </div>
     </div>
   );
-}
-
-export default function Loading() {
-  if (isRedesignEnabled()) return <FairwayTasksLoading />;
-  return <GenericPageSkeleton />;
 }

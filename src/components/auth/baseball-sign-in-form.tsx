@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { loginAction } from '@/app/baseball/actions/auth';
 import { invalidateAuthCache } from '@/hooks/use-baseball-auth';
 import { Input } from '@/components/ui/input';
-import { AlertCircle } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 import { humanizeAuthError } from '@/components/auth/baseball-auth-shell';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 function getErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -99,15 +99,7 @@ export function BaseballSignInForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       {/* Error message */}
-      {error && (
-        <div
-          className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
-          role="alert"
-        >
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <InkNotice>{error}</InkNotice>}
 
       {/* Email — explicit "Email" label + honest autocomplete so password
           managers and keyboards offer the right affordance every time. */}

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { JoinTeamClient } from './join-team-client';
 import Link from 'next/link';
 import { IconX, IconWarning, IconArrowRight } from '@/components/icons';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 export const metadata = {
   title: 'Join Team | Helm Baseball',
@@ -135,7 +136,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
     if (existingMembership) {
       return (
         <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
-          <div className="max-w-md w-full glass-standard rounded-2xl p-6 sm:p-8 text-center">
+          <PaperCard className="max-w-md w-full rounded-2xl p-6 sm:p-8 text-center">
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -152,7 +153,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
               Go to Player Today
               <IconArrowRight size={18} />
             </Link>
-          </div>
+          </PaperCard>
         </div>
       );
     }
@@ -162,9 +163,15 @@ export default async function JoinTeamPage({ params }: PageProps) {
   if (!team) {
     return (
       <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
-        <div className="max-w-md w-full glass-standard rounded-2xl p-6 sm:p-8 text-center">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconX size={32} className="text-red-600" />
+        <PaperCard className="max-w-md w-full rounded-2xl p-6 sm:p-8 text-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border"
+            style={{
+              backgroundColor: 'color-mix(in oklch, var(--notice-error-ink) 16%, transparent)',
+              borderColor: 'color-mix(in oklch, var(--notice-error-ink) 32%, transparent)',
+            }}
+          >
+            <IconX size={32} className="text-[color:var(--notice-error-ink)]" />
           </div>
           <h1 className="text-xl font-semibold text-warm-900 mb-2">Invalid Invite Code</h1>
           <p className="text-warm-600 mb-6">
@@ -177,7 +184,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
             Go to Dashboard
             <IconArrowRight size={18} />
           </Link>
-        </div>
+        </PaperCard>
       </div>
     );
   }
@@ -186,9 +193,12 @@ export default async function JoinTeamPage({ params }: PageProps) {
   if (isInvitationBased && (isInactive || isExpired)) {
     return (
       <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
-        <div className="max-w-md w-full glass-standard rounded-2xl p-6 sm:p-8 text-center">
-          <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconWarning size={32} className="text-amber-600" />
+        <PaperCard className="max-w-md w-full rounded-2xl p-6 sm:p-8 text-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 8%, transparent)' }}
+          >
+            <IconWarning size={32} className="text-pursuit" />
           </div>
           <h1 className="text-xl font-semibold text-warm-900 mb-2">
             Invitation {isExpired ? 'Expired' : 'Inactive'}
@@ -203,7 +213,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
             Go to Dashboard
             <IconArrowRight size={18} />
           </Link>
-        </div>
+        </PaperCard>
       </div>
     );
   }

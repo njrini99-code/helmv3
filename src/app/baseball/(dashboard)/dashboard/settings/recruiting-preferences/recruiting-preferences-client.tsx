@@ -13,6 +13,7 @@ import {
 import { saveRecruitingPhilosophy } from '@/app/baseball/actions/recruiting-philosophy';
 import { IconCheck, IconSave, IconMapPin, IconGraduationCap } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 interface RecruitingPreferencesClientProps {
   coachId: string;
@@ -121,39 +122,39 @@ export function RecruitingPreferencesClient({
       </div>
 
       {/* Metric Weights */}
-      <div
+      <PaperCard
         className={cn(
-          'glass-standard rounded-2xl p-6',
+          'p-6',
           activeSection !== 'weights' && 'hidden lg:block'
         )}
       >
         <RecruitingWeightDistributor values={weights} onChange={setWeights} />
-      </div>
+      </PaperCard>
 
       {/* Position Priorities */}
-      <div
+      <PaperCard
         className={cn(
-          'glass-standard rounded-2xl p-6',
+          'p-6',
           activeSection !== 'positions' && 'hidden lg:block'
         )}
       >
         <PositionPriorityRanker priorities={positions} onChange={setPositions} />
-      </div>
+      </PaperCard>
 
       {/* Minimum Standards */}
-      <div
+      <PaperCard
         className={cn(
-          'glass-standard rounded-2xl p-6',
+          'p-6',
           activeSection !== 'standards' && 'hidden lg:block'
         )}
       >
         <MinimumStandards values={standards} onChange={setStandards} />
-      </div>
+      </PaperCard>
 
       {/* Geographic Preferences */}
-      <div
+      <PaperCard
         className={cn(
-          'glass-standard rounded-2xl p-6',
+          'p-6',
           activeSection !== 'geography' && 'hidden lg:block'
         )}
       >
@@ -201,12 +202,12 @@ export function RecruitingPreferencesClient({
             </p>
           )}
         </div>
-      </div>
+      </PaperCard>
 
       {/* Target Grad Years */}
-      <div
+      <PaperCard
         className={cn(
-          'glass-standard rounded-2xl p-6',
+          'p-6',
           activeSection !== 'gradyears' && 'hidden lg:block'
         )}
       >
@@ -254,11 +255,11 @@ export function RecruitingPreferencesClient({
             </p>
           )}
         </div>
-      </div>
+      </PaperCard>
 
       {/* Save button - sticky on mobile */}
       <div className="sticky bottom-4 z-10">
-        <div className="glass-standard rounded-2xl border-warm-200 p-4 shadow-lg">
+        <PaperCard className="border-warm-200 p-4 shadow-lg">
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm text-warm-600">
               {saved ? (
@@ -267,7 +268,7 @@ export function RecruitingPreferencesClient({
                   Preferences saved!
                 </span>
               ) : error ? (
-                <span className="text-red-600">{error}</span>
+                <span className="text-destructive">{error}</span>
               ) : (
                 'Changes will affect your Discover rankings'
               )}
@@ -287,7 +288,7 @@ export function RecruitingPreferencesClient({
               {isPending ? 'Saving...' : 'Save Preferences'}
             </Button>
           </div>
-        </div>
+        </PaperCard>
       </div>
     </div>
   );

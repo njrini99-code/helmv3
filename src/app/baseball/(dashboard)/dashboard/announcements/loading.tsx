@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 export default function AnnouncementsLoading() {
   return (
@@ -13,11 +14,11 @@ export default function AnnouncementsLoading() {
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-standard rounded-xl p-6">
+            <PaperCard key={i} className="p-6" grain={false}>
               <Skeleton className="h-6 w-48 mb-3" />
               <Skeleton className="h-4 w-full mb-2" />
               <Skeleton className="h-4 w-3/4" />
-            </div>
+            </PaperCard>
           ))}
         </div>
       </div>

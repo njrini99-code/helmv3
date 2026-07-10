@@ -3,18 +3,18 @@
 // =============================================================================
 // src/components/baseball/practice-player/PlayerPracticeClient.tsx
 //
-// Player-facing practice plan view — mobile-first, glanceable, premium.
+// Player-facing practice plan view, migrated onto "The Living Annual" kit
+// (docs/baseball/design-system-living-annual.md; map: docs/baseball/
+// ui-migration-map.md Lane 3 "today"-adjacent Passport row — same premium bar
+// as Player Today, since this is the player's practice execution surface).
 //
-// DESIGN BAR (California-modern × neo-futurism):
-//   - Cream bg (#FFFEFA), Helm green primary, warm-gray text.
-//   - Glass cards: bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl
-//   - Editorial type hierarchy, generous spacing, thumb-friendly tap targets (≥44px).
-//   - Skeleton loaders (not raw spinners), honest empty states.
-//   - Subtle framer-motion (cinematic, respects prefers-reduced-motion).
-//   - Class-conflict flag: amber, never neon; honest only when data exists.
-//   - Accessible: role/aria on interactive elements, focus-visible rings, Escape.
+// PRESENTATION ONLY. Every prop (practices / teamless / fetchError) and the
+// expand/collapse interaction state are unchanged — only the render moved to
+// the kit: SectionMasthead, PaperCard record-book cards, InkBadge status
+// stamps, EditorsLetter empty/error states (no yellow/amber warning boxes),
+// and Reveal entrance in place of hand-rolled fade-ins.
 //
-// HONESTY RULES:
+// HONESTY RULES (carried over):
 //   - Never shows staff_only blocks (filtered by server action).
 //   - Class-conflict flags only appear when class schedule data was available
 //     AND a wall-clock start time was present on the practice. No fake flags.
@@ -23,27 +23,22 @@
 
 import { useState } from 'react';
 import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
-import {
-  ClipboardList,
-  Clock,
-  MapPin,
-  UserCircle2,
-  AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-  Package,
-  BarChart2,
-} from 'lucide-react';
+import { AlertTriangle, Package, UserCircle2, BarChart2 } from 'lucide-react';
 
-import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { IconClock, IconMapPin, IconChevronDown, IconChevronUp } from '@/components/icons';
 import type { PlayerPracticeView } from '@/app/baseball/actions/practice';
+import { cn } from '@/lib/utils';
+import { fairwayScope } from '@/lib/redesign/flag';
+import { SectionMasthead, EditorsLetter, PaperCard, InkBadge, Reveal } from '@/components/baseball/living-annual';
 
 interface Props {
   practices: PlayerPracticeView[];
   teamless?: boolean;
   fetchError?: string;
 }
+
+const PAGE_SHELL = 'mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:py-10';
 
 /** Format a minute offset as a relative offset label: "+0m … +2h 15m". */
 function fmtOffsetMin(offset: number, duration: number): string {
@@ -76,7 +71,6 @@ function wallClockLabel(startTime: string | null, offsetMin: number, durationMin
 }
 
 export function PlayerPracticeClient({ practices, teamless, fetchError }: Props) {
-  const prefersReduced = useReducedMotion();
   const [expandedId, setExpandedId] = useState<string | null>(
     // Auto-expand the most recent practice on first load.
     practices.length > 0 ? (practices[0]?.id ?? null) : null,
@@ -84,78 +78,70 @@ export function PlayerPracticeClient({ practices, teamless, fetchError }: Props)
 
   if (teamless) {
     return (
-      <div className="min-h-dvh bg-[#FFFEFA] px-4 py-8">
-        <EmptyState
-          icon={<ClipboardList className="h-8 w-8" />}
-          title="No team yet"
-          description="Join a team to see your published practice plans."
-        />
+      <div className={fairwayScope('min-h-dvh')}>
+        <div className={PAGE_SHELL}>
+          <EditorsLetter
+            ink="team"
+            title="No team yet"
+            body="Join a team to see your published practice plans."
+          />
+        </div>
       </div>
     );
   }
 
   if (fetchError) {
     return (
-      <div className="min-h-dvh bg-[#FFFEFA] px-4 py-8">
-        <div className="mx-auto max-w-2xl">
-          <div className="rounded-2xl border border-red-100 bg-red-50/60 p-5 text-sm text-red-700">
-            Could not load practice plans. Please try refreshing.
-          </div>
+      <div className={fairwayScope('min-h-dvh')}>
+        <div className={PAGE_SHELL}>
+          <EditorsLetter
+            ink="team"
+            title="Could not load practice plans"
+            body="Please try refreshing."
+          />
         </div>
       </div>
     );
   }
 
-  if (practices.length === 0) {
-    return (
-      <div className="min-h-dvh bg-[#FFFEFA] px-4 py-8">
-        <EmptyState
-          icon={<ClipboardList className="h-8 w-8" />}
-          title="No practice plans yet"
-          description="When your coaches publish a practice plan, it will appear here."
-        />
-      </div>
-    );
-  }
-
+  // ONE shared masthead for every non-terminal state (matches every other LA
+  // surface's SectionMasthead usage) — the empty-vs-populated body is the only
+  // thing that varies below it.
   return (
-    <LazyMotion features={domAnimation}>
-      <div className="min-h-dvh bg-[#FFFEFA]">
-        <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
-          {/* Page header */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-warm-400">Schedule</p>
-            <h1 className="mt-1 text-2xl font-bold text-warm-900">Practice Plans</h1>
-            <p className="mt-1 text-sm text-warm-500">
-              Your published schedule, blocks, and what to bring.
-            </p>
-          </div>
+    <div className={fairwayScope('min-h-dvh')}>
+      <div className={PAGE_SHELL}>
+        <SectionMasthead eyebrow="THE PASSPORT · SCHEDULE" title="Practice Plans" ink="team">
+          <p className="max-w-prose font-annual text-body-sm text-text-secondary">
+            Your published schedule, blocks, and what to bring.
+          </p>
+        </SectionMasthead>
 
-          {/* Practice cards */}
-          <div className="space-y-4">
-            {practices.map((practice, idx) => (
-              <m.div
-                key={practice.id}
-                initial={prefersReduced ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={
-                  prefersReduced ? undefined : { duration: 0.28, delay: Math.min(idx * 0.05, 0.2) }
-                }
-              >
-                <PracticeCard
-                  practice={practice}
-                  expanded={expandedId === practice.id}
-                  onToggle={() =>
-                    setExpandedId((cur) => (cur === practice.id ? null : practice.id))
-                  }
-                  prefersReduced={!!prefersReduced}
-                />
-              </m.div>
-            ))}
-          </div>
+        <div className="mt-8">
+          {practices.length === 0 ? (
+            <EditorsLetter
+              ink="team"
+              live
+              title="No practice plans yet"
+              body="When your coaches publish a practice plan, it will appear here."
+            />
+          ) : (
+            <div className="space-y-4">
+              {practices.map((practice, idx) => (
+                <Reveal key={practice.id} staggerIndex={Math.min(idx, 6)}>
+                  <PracticeCard
+                    practice={practice}
+                    expanded={expandedId === practice.id}
+                    onToggle={() =>
+                      setExpandedId((cur) => (cur === practice.id ? null : practice.id))
+                    }
+                  />
+                </Reveal>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-    </LazyMotion>
+    </div>
   );
 }
 
@@ -163,26 +149,36 @@ export function PlayerPracticeClient({ practices, teamless, fetchError }: Props)
 // PracticeCard — single glanceable practice card with expand / collapse.
 // =============================================================================
 
+/** InkBadge tone/variant for the player's own attendance — never red/amber. */
+const ATTENDANCE_TONE: Record<string, { label: string; tone: 'team' | 'sodium' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  present: { label: 'Present', tone: 'team', variant: 'solid' },
+  limited: { label: 'Limited', tone: 'sodium', variant: 'soft' },
+  absent: { label: 'Absent', tone: 'sodium', variant: 'solid' },
+  excused: { label: 'Excused', tone: 'neutral', variant: 'soft' },
+};
+
 function PracticeCard({
   practice,
   expanded,
   onToggle,
-  prefersReduced,
 }: {
   practice: PlayerPracticeView;
   expanded: boolean;
   onToggle: () => void;
-  prefersReduced: boolean;
 }) {
+  const prefersReduced = useReducedMotion();
   const conflictCount = practice.blocks.filter((b) => b.hasClassConflict).length;
+  const attendance = practice.myAttendanceStatus
+    ? (ATTENDANCE_TONE[practice.myAttendanceStatus] ?? { label: practice.myAttendanceStatus, tone: 'neutral' as const, variant: 'soft' as const })
+    : null;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-white/20 glass-standard shadow-glass backdrop-blur-xl">
+    <PaperCard className="overflow-hidden p-0">
       {/* Card header — always visible, tap to expand */}
       <Button
         type="button"
         variant="ghost"
-        className="flex w-full items-start justify-between gap-3 px-5 py-4 text-left transition-colors hover:glass-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        className="flex w-full items-start justify-between gap-3 rounded-none px-5 py-4 text-left"
         aria-expanded={expanded}
         aria-controls={`practice-body-${practice.id}`}
         onClick={onToggle}
@@ -190,98 +186,94 @@ function PracticeCard({
         <div className="min-w-0 flex-1">
           {/* Title + date */}
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-warm-900 truncate">{practice.title}</h2>
+            <h2 className="truncate font-annual text-body-md font-semibold text-text-primary">{practice.title}</h2>
             {practice.calendarDate && (
-              <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
-                {new Date(practice.calendarDate + 'T12:00:00').toLocaleDateString(undefined, {
+              <InkBadge
+                label={new Date(practice.calendarDate + 'T12:00:00').toLocaleDateString(undefined, {
                   weekday: 'short',
                   month: 'short',
                   day: 'numeric',
                 })}
-              </span>
+                tone="team"
+              />
             )}
           </div>
 
           {/* Focus + meta row */}
           {practice.focus && (
-            <p className="mt-0.5 text-xs text-warm-500 truncate">{practice.focus}</p>
+            <p className="mt-0.5 truncate font-annual text-body-sm text-text-secondary">{practice.focus}</p>
           )}
 
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-warm-400">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow text-text-tertiary">
             {practice.calendarStartTime && (
               <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3" />
+                <IconClock size={11} aria-hidden />
                 {practice.calendarStartTime}
                 {practice.calendarEndTime && ` – ${practice.calendarEndTime}`}
               </span>
             )}
             {practice.location && (
               <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
+                <IconMapPin size={11} aria-hidden />
                 {practice.location}
               </span>
             )}
             <span>{practice.blocks.length} block{practice.blocks.length !== 1 ? 's' : ''}</span>
-            {practice.totalMinutes > 0 && (
-              <span>{practice.totalMinutes} min</span>
-            )}
+            {practice.totalMinutes > 0 && <span>{practice.totalMinutes} min</span>}
           </div>
         </div>
 
         {/* Right: conflict badge + attendance + chevron */}
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           {conflictCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-              <AlertTriangle className="h-3 w-3" />
-              {conflictCount} conflict{conflictCount !== 1 ? 's' : ''}
-            </span>
+            <InkBadge
+              label={`${conflictCount} conflict${conflictCount !== 1 ? 's' : ''}`}
+              tone="sodium"
+              variant="solid"
+            />
           )}
-          {practice.myAttendanceStatus && (
-            <AttendancePill status={practice.myAttendanceStatus} />
-          )}
-          <span className="text-warm-400" aria-hidden>
-            {expanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+          {attendance && <InkBadge label={attendance.label} tone={attendance.tone} variant={attendance.variant} />}
+          <span className="text-text-tertiary" aria-hidden>
+            {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
           </span>
         </div>
       </Button>
 
       {/* Expanded body */}
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <m.div
-            id={`practice-body-${practice.id}`}
-            role="region"
-            aria-label={`${practice.title} blocks`}
-            initial={prefersReduced ? false : { height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={prefersReduced ? undefined : { height: 0, opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            className="overflow-hidden"
-          >
-            <div className="border-t border-warm-100 px-5 pb-5 pt-4">
-              {practice.blocks.length === 0 ? (
-                <p className="text-sm text-warm-500">No blocks in this practice.</p>
-              ) : (
-                <ol className="space-y-3" aria-label="Practice blocks">
-                  {practice.blocks.map((block, i) => (
-                    <PracticeBlockRow
-                      key={block.id}
-                      block={block}
-                      index={i + 1}
-                      practiceStartTime={practice.calendarStartTime}
-                    />
-                  ))}
-                </ol>
-              )}
-            </div>
-          </m.div>
-        )}
-      </AnimatePresence>
-    </article>
+      <LazyMotion features={domAnimation}>
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <m.div
+              id={`practice-body-${practice.id}`}
+              role="region"
+              aria-label={`${practice.title} blocks`}
+              initial={prefersReduced ? false : { height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={prefersReduced ? undefined : { height: 0, opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-[color:var(--hairline)] px-5 pb-5 pt-4">
+                {practice.blocks.length === 0 ? (
+                  <p className="font-annual text-body-sm text-text-secondary">No blocks in this practice.</p>
+                ) : (
+                  <ol className="space-y-3" aria-label="Practice blocks">
+                    {practice.blocks.map((block, i) => (
+                      <PracticeBlockRow
+                        key={block.id}
+                        block={block}
+                        index={i + 1}
+                        practiceStartTime={practice.calendarStartTime}
+                      />
+                    ))}
+                  </ol>
+                )}
+              </div>
+            </m.div>
+          )}
+        </AnimatePresence>
+      </LazyMotion>
+    </PaperCard>
   );
 }
 
@@ -308,136 +300,103 @@ function PracticeBlockRow({
 
   return (
     <li
-      className={`rounded-xl border transition-colors ${
+      className={cn(
+        'rounded-fw-sm border px-3 py-2.5',
         block.hasClassConflict
-          ? 'border-amber-200 bg-amber-50/50'
-          : 'border-warm-100 bg-cream-50/60 hover:border-warm-200 hover:bg-cream-50'
-      }`}
+          ? 'border-[color:var(--hairline)] bg-sodium/5'
+          : 'border-[color:var(--hairline)] bg-[var(--paper-canvas)]',
+      )}
     >
-      {/* Primary row — always visible */}
-      <div className="px-3 py-2.5">
-        <div className="flex items-start gap-3">
-          {/* Block number */}
-          <span
-            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-micro font-bold text-primary-700"
-            aria-hidden
-          >
-            {index}
-          </span>
+      <div className="flex items-start gap-3">
+        {/* Block number */}
+        <span
+          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-microbadge font-bold text-grade-plus"
+          aria-hidden
+        >
+          {index}
+        </span>
 
-          <div className="min-w-0 flex-1">
-            {/* Activity headline */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-warm-900">{block.activity}</span>
-              {block.stationType && (
-                <span className="rounded bg-warm-100 px-1.5 py-0.5 text-micro font-medium uppercase tracking-wide text-warm-600">
-                  {block.stationType}
-                </span>
-              )}
-              {block.isMeasured && (
-                <span className="inline-flex items-center gap-0.5 rounded bg-primary-50 px-1.5 py-0.5 text-micro font-medium text-primary-600">
-                  <BarChart2 className="h-2.5 w-2.5" />
-                  Measured
-                </span>
-              )}
-            </div>
-
-            {/* Time + location */}
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-warm-500">
-              <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3 text-primary-500" />
-                {timeLabel}
+        <div className="min-w-0 flex-1">
+          {/* Activity headline */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-annual text-body-sm font-semibold text-text-primary">{block.activity}</span>
+            {block.stationType && <InkBadge label={block.stationType} tone="neutral" />}
+            {block.isMeasured && (
+              <span className="inline-flex items-center gap-1 text-microbadge font-medium uppercase tracking-[0.1em] text-grade-plus">
+                <BarChart2 className="h-2.5 w-2.5" aria-hidden />
+                Measured
               </span>
-              {block.location && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {block.location}
-                </span>
-              )}
-              {block.coachOwnerName && (
-                <span className="inline-flex items-center gap-1">
-                  <UserCircle2 className="h-3 w-3" />
-                  {block.coachOwnerName}
-                </span>
-              )}
-            </div>
-
-            {/* Class conflict warning */}
-            {block.hasClassConflict && (
-              <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-amber-100/70 px-2.5 py-1.5">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                <p className="text-xs text-amber-700">
-                  <span className="font-medium">Class conflict:</span>{' '}
-                  {block.conflictingClasses.join(', ')} overlaps this block.
-                  <span className="ml-1 text-amber-500">See your coach.</span>
-                </p>
-              </div>
             )}
           </div>
 
-          {/* Detail toggle (if there's extra info) */}
-          {hasDetail && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="ml-auto shrink-0 rounded-lg p-1 text-warm-400 hover:bg-warm-100 hover:text-warm-600"
-              aria-expanded={detailOpen}
-              aria-label={`${detailOpen ? 'Hide' : 'Show'} details for ${block.activity}`}
-              onClick={() => setDetailOpen((v) => !v)}
-            >
-              {detailOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
+          {/* Time + location */}
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-eyebrow text-text-tertiary">
+            <span className="inline-flex items-center gap-1">
+              <IconClock size={11} className="text-grade-plus" aria-hidden />
+              {timeLabel}
+            </span>
+            {block.location && (
+              <span className="inline-flex items-center gap-1">
+                <IconMapPin size={11} aria-hidden />
+                {block.location}
+              </span>
+            )}
+            {block.coachOwnerName && (
+              <span className="inline-flex items-center gap-1">
+                <UserCircle2 className="h-3 w-3" aria-hidden />
+                {block.coachOwnerName}
+              </span>
+            )}
+          </div>
+
+          {/* Class conflict — a quiet ink line, never a colored warning box. */}
+          {block.hasClassConflict && (
+            <p className="mt-1.5 flex items-start gap-1.5 font-annual text-body-sm text-sodium">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span>
+                <span className="font-medium">Class conflict:</span>{' '}
+                {block.conflictingClasses.join(', ')} overlaps this block. See your coach.
+              </span>
+            </p>
           )}
         </div>
 
-        {/* Expandable detail: description + equipment + group */}
-        {detailOpen && hasDetail && (
-          <div className="ml-8 mt-2 space-y-1.5 text-xs text-warm-600">
-            {block.description && (
-              <p className="leading-relaxed">{block.description}</p>
-            )}
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {block.groupLabel && (
-                <span className="inline-flex items-center gap-1">
-                  <span className="font-medium text-warm-500">Group:</span>
-                  {block.groupLabel}
-                </span>
-              )}
-              {block.equipment && (
-                <span className="inline-flex items-center gap-1">
-                  <Package className="h-3 w-3 text-warm-400" />
-                  {block.equipment}
-                </span>
-              )}
-            </div>
-          </div>
+        {/* Detail toggle (if there's extra info) */}
+        {hasDetail && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="ml-auto shrink-0 text-text-tertiary"
+            aria-expanded={detailOpen}
+            aria-label={`${detailOpen ? 'Hide' : 'Show'} details for ${block.activity}`}
+            onClick={() => setDetailOpen((v) => !v)}
+          >
+            {detailOpen ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+          </Button>
         )}
       </div>
+
+      {/* Expandable detail: description + equipment + group */}
+      {detailOpen && hasDetail && (
+        <div className="ml-8 mt-2 space-y-1.5 font-annual text-body-sm text-text-secondary">
+          {block.description && <p className="leading-relaxed">{block.description}</p>}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-eyebrow text-text-tertiary">
+            {block.groupLabel && (
+              <span className="inline-flex items-center gap-1">
+                <span className="font-medium text-text-secondary">Group:</span>
+                {block.groupLabel}
+              </span>
+            )}
+            {block.equipment && (
+              <span className="inline-flex items-center gap-1">
+                <Package className="h-3 w-3" aria-hidden />
+                {block.equipment}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </li>
-  );
-}
-
-// =============================================================================
-// AttendancePill — compact status pill for player's own attendance on a card.
-// =============================================================================
-
-const ATTENDANCE_DISPLAY: Record<string, { label: string; className: string }> = {
-  present: { label: 'Present', className: 'bg-primary-100 text-primary-700' },
-  limited: { label: 'Limited', className: 'bg-amber-100 text-amber-700' },
-  absent: { label: 'Absent', className: 'bg-red-100 text-red-700' },
-  excused: { label: 'Excused', className: 'bg-warm-100 text-warm-600' },
-};
-
-function AttendancePill({ status }: { status: string }) {
-  const display = ATTENDANCE_DISPLAY[status] ?? { label: status, className: 'bg-warm-100 text-warm-500' };
-  return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${display.className}`}>
-      {display.label}
-    </span>
   );
 }

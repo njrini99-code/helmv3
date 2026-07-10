@@ -4,8 +4,7 @@
  * Usage: node scripts/build-baseball-qa-pack.mjs
  */
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } from 'fs';
-import { join, basename } from 'path';
-import { globSync } from 'glob';
+import { join } from 'path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const SRC = process.env.QA_SRC || '/tmp/baseball-qa-full';
@@ -102,8 +101,10 @@ const COACH_REDIRECT_NOTES = {
   '/baseball/dashboard/dev-plan': 'Player-only → coach-onboarding if no player record.',
   '/baseball/dashboard/settings/privacy': 'Player-only privacy form.',
   '/baseball/dashboard/settings/notifications': 'Alias → settings/program#notifications.',
-  '/baseball/dashboard/settings/ai': 'Alias → settings/program#ai.',
-  '/baseball/dashboard/settings/appearance': 'Alias → settings/program#appearance.',
+  // '/baseball/dashboard/settings/ai' and '/baseball/dashboard/settings/appearance'
+  // were removed in Wave W5 (Lift Lab / Performance reskin cleanup) — they are not
+  // live redirect aliases, the routes no longer exist. settings/program still
+  // covers AI + appearance preferences as sections on one page.
   '/baseball/dashboard/page.tsx': 'INVALID AUDIT PATH — use /baseball/dashboard (redirects to command-center).',
 };
 
@@ -145,7 +146,7 @@ function inferActions(route) {
 function parseNavRegistry() {
   const text = readFileSync(join(ROOT, 'src/lib/baseball/nav-registry.ts'), 'utf8');
   const entries = [];
-  const blocks = text.split(/\n  \{/).slice(1);
+  const blocks = text.split(/\n {2}\{/).slice(1);
   for (const block of blocks) {
     const id = block.match(/id: '([^']+)'/)?.[1];
     const href = block.match(/href: '([^']+)'/)?.[1];

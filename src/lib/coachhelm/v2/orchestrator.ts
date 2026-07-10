@@ -1844,8 +1844,11 @@ class CoachHelmIntelligence {
       return this._statsCache.get(playerId);
     }
     try {
-      // Dynamic import to avoid client/server import issues.
-      const { getDetailedStatsAsAdmin } = await import('@/app/golf/actions/stats-data');
+      // Dynamic import to avoid client/server import issues. Goes through the
+      // server-only bridge (never the 'use server' actions file) — see
+      // src/lib/golf/detailed-stats-admin-bridge.ts for why this admin-scoped
+      // variant must never be exported from a 'use server' module.
+      const { getDetailedStatsAsAdmin } = await import('@/lib/golf/detailed-stats-admin-bridge');
       const stats = await getDetailedStatsAsAdmin(playerId, 'overall');
       this._statsCache.set(playerId, stats);
       return stats;

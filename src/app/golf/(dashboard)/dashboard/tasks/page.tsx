@@ -1,27 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
-import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { PageHeader } from '@/components/ui/page-header';
-import { Reveal } from '@/components/ui/reveal';
-import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
-import { TasksList } from '@/components/golf/tasks/TasksList';
-import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
-import { CreateFromTemplateModal } from '@/components/golf/tasks/CreateFromTemplateModal';
-import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
-import type { TaskTemplate } from '@/app/golf/actions/tasks';
 import { completeTask } from '@/app/golf/actions/tasks';
-import { PullToRefresh } from '@/components/golf/PullToRefresh';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTasks } from '@/components/fairway/pages/tasks';
-
-type FilterType = 'all' | 'active' | 'completed';
 
 interface Task {
   id: string;
@@ -50,17 +35,12 @@ interface Player {
 }
 
 export default function GolfTasksPage() {
-  const prefersReducedMotion = useReducedMotion();
   const golfUser = useGolfUser();
   const [initialLoading, setInitialLoading] = useState(true);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('all');
   const [players, setPlayers] = useState<Player[]>([]);
   // P292 — distinguish "roster fetch failed" from a genuinely empty roster, so
   // the create modal doesn't show "No players on the roster yet" on an outage.
   const [playersError, setPlayersError] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
 
   // Use IDs from context — no auth/role queries needed
   const teamId = golfUser.teamId || null;
@@ -72,10 +52,6 @@ export default function GolfTasksPage() {
     playerId: userRole === 'player' ? playerId : undefined,
     assignedToPlayerOnly: userRole === 'player',
   });
-
-  const handleRefresh = async () => {
-    await refetch();
-  };
 
   // Transform real-time tasks to expected format. `assignments` comes straight
   // from the hook's golf_task_assignments rows (the M:N join create/complete
@@ -147,25 +123,15 @@ export default function GolfTasksPage() {
     setPlayersError(false);
   }
 
-  const activeCount = tasks.filter(t => t.status === 'active').length;
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const dueTodayCount = tasks.filter(t => {
-    if (t.status !== 'active' || !t.due_date) return false;
-    const due = new Date(t.due_date);
-    const now = new Date();
-    return due.toDateString() === now.toDateString();
-  }).length;
   const loading = initialLoading || tasksLoading;
 
-  // Player complete handler — shared by the legacy + Fairway paths. Completes
-  // via golf_task_assignments (the completeTask action), then refetches so the
-  // live list + stats reflect the change.
+  // Player complete handler. Completes via golf_task_assignments (the
+  // completeTask action), then refetches so the live list + stats reflect the
+  // change.
   //
   // P284 — completeTask returns an ActionResult { success, error } and does NOT
   // throw on a soft failure (RLS denial, "not assigned", etc). We RETURN that
-  // result so the caller can surface honest success/failure feedback. The legacy
-  // TaskCard types onComplete as `Promise<void> | void` and simply ignores the
-  // returned value, so this is backward-compatible with the flag-off fork.
+  // result so the caller can surface honest success/failure feedback.
   const handleCompleteTask = async (taskId: string): Promise<{ success: boolean; error?: string }> => {
     const result = await completeTask(taskId);
     await refetch();
@@ -199,278 +165,21 @@ export default function GolfTasksPage() {
     );
   }
 
-  // ── Fairway redesign fork (flag-gated, additive) ─────────────────────────
-  // Presentation-only re-skin. Reuses the SAME live tasks/stats/players + the
-  // SAME refetch, and the unchanged completeTask action for the player path.
-  // Legacy return below stays byte-identical when the flag is off.
-  if (isRedesignEnabled()) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayTasks
-          role={userRole === 'coach' ? 'coach' : 'player'}
-          teamId={teamId}
-          tasks={tasks}
-          stats={stats}
-          players={players}
-          playersError={playersError}
-          error={tasksError}
-          onRefetch={refetch}
-          onCompleteTask={userRole === 'player' ? handleCompleteTask : undefined}
-        />
-      </div>
-    );
-  }
-
+  // Presentation surface. Reuses the SAME live tasks/stats/players + the SAME
+  // refetch, and the unchanged completeTask action for the player path.
   return (
-    <div className="min-h-full bg-transparent">
-      {/* Header */}
-      <LargeTitleHeader
-        title="Tasks"
-        subtitle={userRole === 'coach' ? 'Assign and track player tasks' : 'View and complete your assigned tasks'}
-      >
-        <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary-500" />
-          </span>
-          Live
-        </span>
-        {userRole === 'coach' && (
-          <Button onClick={() => setCreateModalOpen(true)} size="sm">
-            <IconPlus size={16} />
-            <span className="hidden sm:inline">Create Task</span>
-            <span className="sm:hidden">New</span>
-          </Button>
-        )}
-      </LargeTitleHeader>
-
-      <PullToRefresh onRefresh={handleRefresh}>
-      <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8">
-
-        {/* Editorial hero band — frames the task list beneath the sticky
-            LargeTitleHeader so the surface reads with magazine rhythm. */}
-        <Reveal>
-          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
-            <PageHeader
-              eyebrow="Tasks"
-              eyebrowAccent="primary"
-              title={userRole === 'coach' ? "Team to-dos." : "Your to-dos."}
-              subtitle={
-                tasks.length === 0
-                  ? userRole === 'coach'
-                    ? 'Assign and track player tasks.'
-                    : 'View and complete your assigned tasks.'
-                  : `${dueTodayCount} due today · ${activeCount} open.`
-              }
-            />
-          </div>
-        </Reveal>
-
-        {/* Due Date Alert Banner */}
-        {stats.overdue_tasks > 0 && (
-          <m.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-100"
-          >
-            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-              <IconClipboardList size={16} className="text-red-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-red-800">
-                {stats.overdue_tasks} overdue task{stats.overdue_tasks !== 1 ? 's' : ''} need{stats.overdue_tasks === 1 ? 's' : ''} attention
-              </p>
-              <p className="text-xs text-red-600 mt-0.5">
-                Review and update tasks that are past their due date
-              </p>
-            </div>
-            <Button variant="danger"
-              onClick={() => setFilter('active')}
-              className="text-xs font-medium text-red-700 hover:text-red-800 px-2 py-1 rounded-md hover:bg-red-100 transition-colors flex-shrink-0"
-            >
-              View
-            </Button>
-          </m.div>
-        )}
-
-        {/* Filters */}
-        <m.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}
-          className="pills-scroll mb-6"
-        >
-          <m.button
-            onClick={() => setFilter('all')}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
-              filter === 'all'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-cream-50 text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
-            )}
-          >
-            All ({tasks.length})
-          </m.button>
-          <m.button
-            onClick={() => setFilter('active')}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap relative',
-              filter === 'active'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-cream-50 text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
-            )}
-          >
-            Active ({activeCount})
-            {stats.overdue_tasks > 0 && filter !== 'active' && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-eyebrow font-medium rounded-full flex items-center justify-center">
-                {stats.overdue_tasks}
-              </span>
-            )}
-          </m.button>
-          <m.button
-            onClick={() => setFilter('completed')}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
-              filter === 'completed'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-cream-50 text-warm-600 hover:bg-warm-50 active:bg-warm-100 shadow-sm'
-            )}
-          >
-            Completed ({completedCount})
-          </m.button>
-        </m.div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Tasks List - Main Column */}
-          <div className="lg:col-span-2">
-            <TasksList
-              tasks={tasks}
-              filter={filter}
-              role={userRole === 'player' ? 'player' : 'coach'}
-              // Legacy fork — the legacy TaskCard consumes a void-returning
-              // onComplete and ignores any result, so adapt the richer wrapper.
-              onComplete={
-                userRole === 'player'
-                  ? async (taskId: string) => {
-                      await handleCompleteTask(taskId);
-                    }
-                  : undefined
-              }
-            />
-          </div>
-
-          {/* Templates Sidebar - Coach Only */}
-          {userRole === 'coach' && teamId && (
-            <div className="lg:col-span-1">
-              <m.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
-                className="sticky top-6"
-              >
-                {/* Templates Section */}
-                <div className="surface-matte rounded-3xl overflow-clip">
-                  <Button variant="ghost"
-                    onClick={() => setShowTemplates(!showTemplates)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-warm-50/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <IconClipboardList size={18} className="text-warm-600" />
-                      <span className="font-medium text-warm-900">Templates</span>
-                    </div>
-                    {showTemplates ? (
-                      <IconChevronDown size={18} className="text-warm-400" />
-                    ) : (
-                      <IconChevronRight size={18} className="text-warm-400" />
-                    )}
-                  </Button>
-
-                  <AnimatePresence>
-                    {showTemplates && (
-                      <m.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
-                        className="border-t border-warm-200"
-                      >
-                        <div className="p-4">
-                          <TaskTemplateList
-                            teamId={teamId}
-                            onSelectTemplate={(template) => setSelectedTemplate(template)}
-                          />
-                        </div>
-                      </m.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Quick Stats */}
-                <m.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
-                  className="mt-4 surface-matte rounded-3xl p-4"
-                >
-                  <h3 className="text-sm font-medium text-warm-400 uppercase tracking-wider mb-3">
-                    Quick Stats
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center p-3 bg-warm-50 rounded-lg">
-                      <p className="text-2xl font-medium text-warm-900">{activeCount}</p>
-                      <p className="text-xs text-warm-500">Active</p>
-                    </div>
-                    <div className="text-center p-3 bg-primary-50 rounded-lg">
-                      <p className="text-2xl font-medium text-primary-600">{completedCount}</p>
-                      <p className="text-xs text-warm-500">Completed</p>
-                    </div>
-                  </div>
-                  {stats.overdue_tasks > 0 && (
-                    <div className="mt-3 p-3 bg-red-50 rounded-lg text-center">
-                      <p className="text-lg font-medium text-red-600">{stats.overdue_tasks}</p>
-                      <p className="text-xs text-red-500">Overdue</p>
-                    </div>
-                  )}
-                </m.div>
-              </m.div>
-            </div>
-          )}
-        </div>
-      </div>
-      </PullToRefresh>
-
-      {/* Create Task Modal */}
-      {userRole === 'coach' && teamId && (
-        <CreateTaskModal
-          isOpen={createModalOpen}
-          onClose={() => setCreateModalOpen(false)}
-          onTaskCreated={refetch}
-          teamId={teamId}
-          players={players}
-        />
-      )}
-
-      {/* Create From Template Modal */}
-      {userRole === 'coach' && teamId && selectedTemplate && (
-        <CreateFromTemplateModal
-          isOpen={!!selectedTemplate}
-          onClose={() => setSelectedTemplate(null)}
-          onTaskCreated={() => {
-            refetch();
-            setSelectedTemplate(null);
-          }}
-          template={selectedTemplate}
-          teamId={teamId}
-          players={players}
-        />
-      )}
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <FairwayTasks
+        role={userRole === 'coach' ? 'coach' : 'player'}
+        teamId={teamId}
+        tasks={tasks}
+        stats={stats}
+        players={players}
+        playersError={playersError}
+        error={tasksError}
+        onRefetch={refetch}
+        onCompleteTask={userRole === 'player' ? handleCompleteTask : undefined}
+      />
     </div>
   );
 }

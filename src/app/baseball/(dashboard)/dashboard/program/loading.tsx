@@ -1,31 +1,38 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
+/**
+ * Route-level loading skeleton for Program Profile (Lane 3 · THE PRESSBOX,
+ * team ink). Mirrors ProgramClient's masthead + logo/form card so there is no
+ * legacy chrome flash on navigation.
+ */
 export default function ProgramLoading() {
   return (
-    <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8">
-        <Skeleton className="h-8 w-48 mb-2" />
-        <Skeleton className="h-4 w-64 mb-8" />
-        <div className="glass-standard rounded-xl p-6 space-y-6">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-20 w-20 rounded-lg" />
-            <div>
-              <Skeleton className="h-6 w-48 mb-2" />
-              <Skeleton className="h-4 w-32" />
+    <div className="mx-auto w-full max-w-[720px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-3">
+        <Skeleton variant="text" width={170} height={11} />
+        <Skeleton variant="text" width={200} height={36} />
+        <Skeleton className="h-[3px] w-16 rounded-full" />
+      </div>
+
+      <div className="rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] p-6 space-y-6">
+        <div className="flex items-center gap-6">
+          <Skeleton variant="rectangular" width={96} height={96} className="rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton variant="text" width={180} height={20} />
+            <Skeleton variant="text" width={120} height={14} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton variant="text" width={96} height={14} />
+              <Skeleton variant="rectangular" height={40} className="rounded-lg" />
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i}>
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-10 w-full rounded-lg" />
-              </div>
-            ))}
-          </div>
-          <div>
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-24 w-full rounded-lg" />
-          </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <Skeleton variant="text" width={96} height={14} />
+          <Skeleton variant="rectangular" height={96} className="rounded-lg" />
         </div>
       </div>
     </div>

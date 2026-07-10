@@ -23,7 +23,6 @@ import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
 import { DiagnosisPanel } from './DiagnosisPanel';
-import { isRedesignEnabled } from '@/lib/redesign/flag';
 
 /**
  * W15: When v2 generators have injected `evidence.standing` (W14), render
@@ -444,10 +443,10 @@ export function EvidencePanel({
       )}
     >
       {/* Root-cause reasoning spine (P0-05) — the machine-readable diagnosis the
-          engine writes on every v3 row but no surface rendered. Flag-gated +
-          self-scoped so it only lights up in the Fairway redesign; the legacy
-          numeric grid below stays as the supporting evidence. */}
-      {isRedesignEnabled() && evidence.diagnosis ? (
+          engine writes on every v3 row but no surface rendered. Self-scoped
+          (.fairway-ds) so it lights up in Fairway tokens; the legacy numeric
+          grid below stays as the supporting evidence. */}
+      {evidence.diagnosis ? (
         <div className="fairway-ds mb-4 border-b border-border-subtle pb-4">
           <DiagnosisPanel
             diagnosis={evidence.diagnosis}

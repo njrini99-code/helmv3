@@ -54,7 +54,9 @@ const LEVELS: { value: 1 | 2 | 3 | 4; label: string; hint: string }[] = [
 const STATUS_TONE: Record<BaseballIntegrationStatus, string> = {
   available: 'bg-warm-100 text-warm-600 border-warm-300',
   configured: 'bg-primary-50 text-primary-700 border-primary-200',
-  pending_pilot: 'bg-amber-50 text-amber-700 border-amber-200',
+  // Ink system, not raw amber — "pending pilot" is a warning/caution status
+  // (doctrine: warning -> pursuit soft), inert until pilot evidence lands.
+  pending_pilot: 'bg-pursuit/10 text-pursuit border-pursuit/30',
   disabled: 'bg-warm-100 text-warm-500 border-warm-300',
 };
 
@@ -167,7 +169,7 @@ function IntegrationFormBody({
           <p className="text-xs leading-relaxed text-warm-500 mt-2">{levelHint}</p>
         )}
         {draft.integration_level === 4 && (
-          <p className="text-xs leading-relaxed text-amber-700 mt-1">
+          <p className="text-xs leading-relaxed text-pursuit mt-1">
             Level 4 is saved as pending-pilot and stays inert until pilot
             evidence and explicit vendor permission are in place.
           </p>

@@ -4,17 +4,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { IconGraduationCap, IconUsers, IconEdit, IconCheck } from '@/components/icons';
+import { IconEdit } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { getFullName } from '@/lib/utils';
 import { getTeamAcademics, upsertPlayerAcademics } from '@/app/baseball/actions/academics';
+import {
+  SectionMasthead,
+  EditorsLetter,
+  RuledStatLine,
+  InkBadge,
+  PositionChip,
+  PaperCard,
+} from '@/components/baseball/living-annual';
+import { InlineNotice } from '@/components/fairway';
 
 // ============================================================================
 // TYPES
@@ -49,10 +56,14 @@ interface EditValues {
 // STYLE MAPS
 // ============================================================================
 
-const academicStandingColors: Record<'good' | 'warning' | 'probation', string> = {
-  good: 'bg-primary-100 text-primary-700',
-  warning: 'bg-amber-100 text-amber-700',
-  probation: 'bg-red-100 text-red-700',
+// Ink tone map for academic standing — team green marks "good", everything else
+// (warning/probation) stays neutral graphite. Per the Living Annual empty-state
+// doctrine, urgency is never a red/amber chrome badge; the label text itself
+// ("Warning" / "Probation") carries the meaning.
+const academicStandingTone: Record<'good' | 'warning' | 'probation', 'team' | 'neutral'> = {
+  good: 'team',
+  warning: 'neutral',
+  probation: 'neutral',
 };
 
 // ============================================================================
@@ -230,31 +241,31 @@ export default function AcademicsPage() {
   // ── No team selected ──────────────────────────────────────────────────────
   if (!selectedTeamId) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
-        </div>
-        <div className="p-8">
-          <EmptyState
-            icon={<IconGraduationCap size={24} />}
-            title="No team selected"
-            description="Select a team from the navigation to view academic records."
-          />
-        </div>
-      </>
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE PRESSBOX · ACADEMICS" title="Academics" ink="team">
+          <p className="font-annual text-body-sm text-text-secondary">
+            Track student-athlete academic progress and eligibility
+          </p>
+        </SectionMasthead>
+        <EditorsLetter
+          ink="team"
+          title="No team selected."
+          body="Select a team from the navigation to view academic records."
+        />
+      </div>
     );
   }
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
-        </div>
-        <div className="p-4 lg:p-8 space-y-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE PRESSBOX · ACADEMICS" title="Academics" ink="team">
+          <p className="font-annual text-body-sm text-text-secondary">
+            Track student-athlete academic progress and eligibility
+          </p>
+        </SectionMasthead>
+        <div className="space-y-6">
           {/* Summary skeleton */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
             {[1, 2, 3, 4].map((i) => (
@@ -299,31 +310,30 @@ export default function AcademicsPage() {
             </CardContent>
           </Card>
         </div>
-      </>
+      </div>
     );
   }
 
   // ── Empty roster ──────────────────────────────────────────────────────────
   if (students.length === 0) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-          <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
-          <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
-        </div>
-        <div className="p-8">
-          <EmptyState
-            icon={<IconGraduationCap size={24} />}
-            title="No student-athletes"
-            description="Add players to your roster to track their academic progress."
-            action={
-              <Button onClick={() => { window.location.href = '/baseball/dashboard/roster'; }}>
-                Manage Roster
-              </Button>
-            }
-          />
-        </div>
-      </>
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE PRESSBOX · ACADEMICS" title="Academics" ink="team">
+          <p className="font-annual text-body-sm text-text-secondary">
+            Track student-athlete academic progress and eligibility
+          </p>
+        </SectionMasthead>
+        <EditorsLetter
+          ink="team"
+          title="No student-athletes."
+          body="Add players to your roster to track their academic progress."
+          action={
+            <Button onClick={() => { window.location.href = '/baseball/dashboard/roster'; }}>
+              Manage Roster
+            </Button>
+          }
+        />
+      </div>
     );
   }
 
@@ -358,100 +368,57 @@ export default function AcademicsPage() {
     return isEligible ? 'Eligible' : 'Ineligible';
   };
 
-  const eligibilityBadgeClass = (isEligible: boolean | null) => {
-    if (isEligible === null) return 'bg-warm-100 text-warm-500';
-    return isEligible ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700';
-  };
+  // Tri-state, never coerced to a red "Ineligible" chrome badge — the label
+  // text carries the meaning; only a real, recorded `true` gets green ink.
+  const eligibilityTone = (isEligible: boolean | null): 'team' | 'neutral' =>
+    isEligible ? 'team' : 'neutral';
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8">
-        <h1 className="text-h2 font-semibold text-warm-900">Academics</h1>
-        <p className="mt-1 text-body-sm text-warm-500">Track student-athlete academic progress and eligibility</p>
-      </div>
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <SectionMasthead eyebrow="THE PRESSBOX · ACADEMICS" title="Academics" ink="team">
+        <p className="font-annual text-body-sm text-text-secondary">
+          Track student-athlete academic progress and eligibility
+        </p>
+      </SectionMasthead>
 
-      <div className="p-4 lg:p-8 space-y-6">
-        {/* Error alert */}
+      <div className="space-y-6">
+        {/* Error alert — the shared InlineNotice component, not an ad-hoc red box. */}
         <AnimatePresence>
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between"
             >
-              <span>{error}</span>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setError(null)}
-                className="ml-4"
+              <InlineNotice
+                tone="danger"
+                dismissible
+                onDismiss={() => setError(null)}
               >
-                Dismiss
-              </Button>
+                {error}
+              </InlineNotice>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-          <Card variant="glass">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center">
-                  <IconUsers size={20} className="text-warm-600" />
-                </div>
-                <div>
-                  <p className="text-sm leading-relaxed text-warm-500">Total Athletes</p>
-                  <p className="text-2xl font-semibold tracking-tight text-warm-900">{students.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
-                  <IconGraduationCap size={20} className="text-primary-600" />
-                </div>
-                <div>
-                  <p className="text-sm leading-relaxed text-warm-500">Team GPA</p>
-                  <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">
-                    {avgGpa !== null ? avgGpa.toFixed(2) : '—'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
-                  <IconCheck size={20} className="text-primary-600" />
-                </div>
-                <div>
-                  <p className="text-sm leading-relaxed text-warm-500">Eligible</p>
-                  <p className="text-2xl font-semibold tracking-tight text-warm-900">{eligibleCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <IconGraduationCap size={20} className="text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-sm leading-relaxed text-warm-500">At Risk</p>
-                  <p className="text-2xl font-semibold tracking-tight text-warm-900">{atRiskCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Summary — RuledStatLine, not gray icon-tile cards: the number carries
+            the contrast, not chrome-colored circles (spec §4.2 founder addendum). */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-7 lg:grid-cols-4 lg:gap-x-8">
+          <RuledStatLine label="Total Athletes" value={students.length} ink="team" size="row" />
+          <RuledStatLine
+            label="Team GPA"
+            value={avgGpa !== null ? avgGpa.toFixed(2) : '—'}
+            ink="team"
+            size="row"
+          />
+          <RuledStatLine
+            label="Eligible"
+            value={eligibleCount}
+            ink="team"
+            size="row"
+            emphasis={students.length > 0 && eligibleCount === students.length}
+          />
+          <RuledStatLine label="At Risk" value={atRiskCount} ink="team" size="row" />
         </div>
 
         {/* Student table */}
@@ -466,8 +433,8 @@ export default function AcademicsPage() {
                 <motion.div
                   key={student.id}
                   layout
-                  className="glass-standard rounded-xl p-4 shadow-sm"
                 >
+                <PaperCard className="p-4 shadow-sm">
                   <div className="flex items-start gap-3 mb-3">
                     <Avatar
                       name={getFullName(student.first_name, student.last_name)}
@@ -551,18 +518,14 @@ export default function AcademicsPage() {
                       </>
                     ) : (
                       <>
-                        <Badge
-                          className={
-                            student.academic_standing
-                              ? academicStandingColors[student.academic_standing]
-                              : 'bg-warm-100 text-warm-500'
-                          }
-                        >
-                          {standingLabel(student.academic_standing)}
-                        </Badge>
-                        <Badge className={eligibilityBadgeClass(student.is_eligible)}>
-                          {eligibilityLabel(student.is_eligible)}
-                        </Badge>
+                        <InkBadge
+                          tone={student.academic_standing ? academicStandingTone[student.academic_standing] : 'neutral'}
+                          label={standingLabel(student.academic_standing)}
+                        />
+                        <InkBadge
+                          tone={eligibilityTone(student.is_eligible)}
+                          label={eligibilityLabel(student.is_eligible)}
+                        />
                       </>
                     )}
                   </div>
@@ -586,6 +549,7 @@ export default function AcademicsPage() {
                       <IconEdit size={14} className="mr-1" /> Edit
                     </Button>
                   )}
+                </PaperCard>
                 </motion.div>
               ))}
             </div>
@@ -630,7 +594,7 @@ export default function AcademicsPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <Badge>{student.primary_position || 'N/A'}</Badge>
+                        <PositionChip label={student.primary_position || 'N/A'} />
                       </td>
 
                       <td className="px-6 py-4">
@@ -685,15 +649,10 @@ export default function AcademicsPage() {
                             ]}
                           />
                         ) : (
-                          <Badge
-                            className={
-                              student.academic_standing
-                                ? academicStandingColors[student.academic_standing]
-                                : 'bg-warm-100 text-warm-500'
-                            }
-                          >
-                            {standingLabel(student.academic_standing)}
-                          </Badge>
+                          <InkBadge
+                            tone={student.academic_standing ? academicStandingTone[student.academic_standing] : 'neutral'}
+                            label={standingLabel(student.academic_standing)}
+                          />
                         )}
                       </td>
 
@@ -708,9 +667,10 @@ export default function AcademicsPage() {
                             ]}
                           />
                         ) : (
-                          <Badge className={eligibilityBadgeClass(student.is_eligible)}>
-                            {eligibilityLabel(student.is_eligible)}
-                          </Badge>
+                          <InkBadge
+                            tone={eligibilityTone(student.is_eligible)}
+                            label={eligibilityLabel(student.is_eligible)}
+                          />
                         )}
                       </td>
 
@@ -738,6 +698,6 @@ export default function AcademicsPage() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }

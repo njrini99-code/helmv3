@@ -11,7 +11,10 @@
 //   - season_totals  → baseball_player_season_stats  (dedup: player_id + season_year)
 //   - game_box_score → baseball_box_score_batting/pitching + baseball_games
 //                      (dedup: player_id + game_id)
-//   - event_log      → baseball_stat_facts            (dedup: source_external_id [+ game_id])
+//   - event_log      → routes to EventImportWizard, which writes to the
+//                      per-grain event tables (baseball_pitch_events /
+//                      baseball_batted_ball_events / baseball_swing_events
+//                      via GRAIN_TO_TABLE) (dedup: source_external_id [+ game_id])
 //
 // The "event_log" shape has a dedicated advanced wizard (EventImportWizard via
 // the "Event level" tab in ImportCenterShell). Selecting it here routes the
@@ -97,12 +100,14 @@ import { xlsxToCsv } from '@/lib/baseball/adapters/xlsx-reader';
  *                    Dedup key: player_id + game_id
  *
  * `event_log`      — pitch / batted-ball / swing events (sensor/video granularity).
- *                    Target: baseball_stat_facts (generic) or the elite event tables.
+ *                    Target: the elite event tables (baseball_pitch_events /
+ *                    baseball_batted_ball_events / baseball_swing_events).
  *                    Dedup key: source_external_id [+ game_id]
  *                    NOTE: the dedicated EventImportWizard (Event-level tab in
- *                    ImportCenterShell) is the correct entry point for this shape.
- *                    Selecting it here shows a redirect card instead of duplicating
- *                    the event-import pipeline.
+ *                    ImportCenterShell) is the correct entry point for this shape —
+ *                    it owns the actual write to those tables. Selecting it here
+ *                    shows a redirect card instead of duplicating the
+ *                    event-import pipeline.
  */
 export type ImportDataShape = 'season_totals' | 'game_box_score' | 'event_log';
 
@@ -147,7 +152,9 @@ export const DATA_SHAPE_META: Record<ImportDataShape, DataShapeMeta> = {
     shape: 'event_log',
     label: 'Event log',
     subtitle: 'Pitch-by-pitch or swing events from a sensor or tracking platform.',
-    targetTable: 'baseball_stat_facts',
+    // NOTE: no '/' in this string — the tile render below treats a '/' as the
+    // two-table (batting/pitching) case and appends a hardcoded second box.
+    targetTable: 'baseball_pitch_events (+ event tables)',
     dedupKey: 'source_external_id + game_id',
     columnTemplate: [
       'player', 'stat_key', 'stat_value', 'game_id', 'period_type', 'period_start', 'period_end',

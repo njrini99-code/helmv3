@@ -51,8 +51,23 @@ vi.mock('next/link', () => ({
 // only care that the DOM contents render, not that the animation runs.
 vi.mock('framer-motion', async () => {
   const React = await import('react');
+  const motionProxy = new Proxy(
+    {},
+    {
+      get: (_target, prop) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        React.forwardRef<HTMLElement, any>((props, ref) => {
+          const { children, initial: _i, animate: _a, exit: _e, transition: _t, variants: _v, whileHover: _wh, whileTap: _wt, ...rest } = props;
+          void _i; void _a; void _e; void _t; void _v; void _wh; void _wt;
+          return React.createElement(prop as string, { ...rest, ref }, children);
+        }),
+    },
+  );
   return {
     useReducedMotion: () => false,
+    // Fairway ViewHeader (unconditional after the W1 legacy-tree deletion)
+    // imports `motion` directly; LazyMotion surfaces use `m`. Same stub.
+    motion: motionProxy,
     m: new Proxy(
       {},
       {
@@ -181,8 +196,6 @@ vi.mock('@/lib/coachhelm/v3/standing/metric-config', () => ({
 }));
 
 vi.mock('@/lib/redesign/flag', () => ({
-  isRedesignEnabled: () => false,
-  useRedesign: () => false,
   fairwayScope: (className: string) => className,
 }));
 

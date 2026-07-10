@@ -12,6 +12,7 @@ import {
   IconUpload,
   IconAlertCircle,
 } from '@/components/icons';
+import { PaperCard, InkBadge } from '@/components/baseball/living-annual';
 
 // ============================================================================
 // TYPES
@@ -114,20 +115,20 @@ export function UploadHistory({
   // Loading state with skeleton
   if (loading) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
+      <PaperCard className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
           <IconRefresh size={16} className="text-warm-400 animate-spin" aria-hidden />
         </div>
         <UploadSkeleton />
-      </div>
+      </PaperCard>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
+      <PaperCard className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
           <IconButton variant="default" aria-label="Refresh"
@@ -139,8 +140,17 @@ export function UploadHistory({
           </IconButton>
         </div>
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
-            <IconAlertCircle size={24} className="text-red-600" />
+          {/* Real fetch failure — reads --notice-error-ink (not --pursuit-ink)
+              so this stays clay/oxide, never sage, on any scope (see
+              InkNotice.tsx header for why the two vars stay independent). */}
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center mb-3 border"
+            style={{
+              backgroundColor: 'color-mix(in oklch, var(--notice-error-ink) 16%, transparent)',
+              borderColor: 'color-mix(in oklch, var(--notice-error-ink) 32%, transparent)',
+            }}
+          >
+            <IconAlertCircle size={24} className="text-[color:var(--notice-error-ink)]" />
           </div>
           <p className="text-warm-700 font-medium mb-1">
             Unable to load history
@@ -153,14 +163,14 @@ export function UploadHistory({
             Try again
           </Button>
         </div>
-      </div>
+      </PaperCard>
     );
   }
 
   // Empty state
   if (uploads.length === 0) {
     return (
-      <div className="glass-standard rounded-2xl p-6">
+      <PaperCard className="p-6">
         <h3 className="font-semibold text-warm-900 mb-4">Recent Uploads</h3>
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
@@ -171,13 +181,13 @@ export function UploadHistory({
             Upload a CSV file to start tracking stats
           </p>
         </div>
-      </div>
+      </PaperCard>
     );
   }
 
   // Normal state with data
   return (
-    <div className="glass-standard rounded-2xl p-6">
+    <PaperCard className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
         <IconButton variant="default" aria-label="Refresh"
@@ -207,19 +217,13 @@ export function UploadHistory({
                   {upload.filename}
                 </p>
                 <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-warm-500">
-                  <span
-                    className={`px-1.5 py-0.5 rounded font-medium ${
-                      isComplete
-                        ? 'bg-primary-100 text-primary-700'
-                        : isProcessing
-                          ? 'bg-amber-100 text-amber-700'
-                          : hasFailed
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-warm-100 text-warm-600'
-                    }`}
-                  >
-                    {upload.status || 'pending'}
-                  </span>
+                  {/* success→team, in-progress→pursuit soft (warning),
+                      failed→pursuit solid (error), else→neutral (info). */}
+                  <InkBadge
+                    label={upload.status || 'pending'}
+                    tone={isComplete ? 'team' : isProcessing || hasFailed ? 'pursuit' : 'neutral'}
+                    variant={hasFailed ? 'solid' : 'soft'}
+                  />
                   {upload.created_at && (
                     <>
                       <span>•</span>
@@ -240,7 +244,7 @@ export function UploadHistory({
                   </div>
                 )}
                 {upload.row_count != null && upload.row_count > 0 && upload.processed_count != null && upload.row_count > upload.processed_count && (
-                  <div className="flex items-center gap-1 text-amber-600" title="Unprocessed rows">
+                  <div className="flex items-center gap-1 text-pursuit" title="Unprocessed rows">
                     <IconX size={14} />
                     <span className="font-medium">{upload.row_count - upload.processed_count}</span>
                   </div>
@@ -259,6 +263,6 @@ export function UploadHistory({
           View all uploads
         </Button>
       )}
-    </div>
+    </PaperCard>
   );
 }

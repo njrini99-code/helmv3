@@ -10,6 +10,7 @@ import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
+import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { isNativeApp } from '@/lib/utils/capacitor';
@@ -59,7 +60,7 @@ function LoginContent() {
         const admin = (data?.role as string) === 'admin';
         setIsAdmin(admin);
         setIsLoggedIn(true);
-        const dest = isSafeInternalPath(returnTo) ? returnTo : admin ? '/golf/admin' : '/golf/dashboard';
+        const dest = isSafeInternalPath(returnTo) ? returnTo : resolveAdminPostLoginPath(admin);
         router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
         return;
       }
@@ -211,7 +212,7 @@ function LoginContent() {
                     You&apos;re already signed in
                   </div>
                   <Button variant="primary"
-                    onClick={() => router.push(isSafeInternalPath(returnTo) ? returnTo : (isAdmin ? '/golf/admin' : '/golf/dashboard'))}
+                    onClick={() => router.push(isSafeInternalPath(returnTo) ? returnTo : resolveAdminPostLoginPath(isAdmin))}
                     className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
                     aria-label="Continue to dashboard"
                   >

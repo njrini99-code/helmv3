@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
+import { PaperCard } from '@/components/baseball/living-annual';
 import type {
   PracticeSignal,
   SuggestedPracticeBlock,
@@ -123,11 +124,12 @@ export function PracticeIntelligenceBoard({
           const staffOnly = signal.visibility === 'staff_only';
           const isConverting = convertingId === signal.insightId;
           return (
-            <li
+            <PaperCard
+              as="li"
               key={signal.insightId}
               className={cn(
-                'rounded-xl border glass-standard p-3',
-                converted ? 'border-primary-200 bg-primary-50/50' : 'border-warm-200',
+                'p-3',
+                converted ? 'border-primary-200 bg-primary-50/50' : undefined,
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -204,7 +206,7 @@ export function PracticeIntelligenceBoard({
                   {suggestion.measurementTarget ? ` · measures: ${suggestion.measurementTarget}` : ''}
                 </div>
               )}
-            </li>
+            </PaperCard>
           );
         })}
       </ul>

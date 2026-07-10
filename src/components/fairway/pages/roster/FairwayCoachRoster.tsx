@@ -11,6 +11,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { Chip } from '@/components/fairway/controls/badge';
 import { SearchField } from '@/components/fairway/command/search-field';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
+import { ViewHeader } from '@/components/fairway/view-header/view-header';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import { exportRosterCSV } from '@/components/golf/roster/RosterToolbar';
@@ -71,19 +72,19 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent-700">Roster</p>
-          <h1 className="mt-1 font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">Your players.</h1>
-          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-            {empty
-              ? `Build your roster on ${teamName} by inviting players to join.`
-              : `${players.length} ${players.length === 1 ? 'player' : 'players'}${activeCount !== players.length ? ` · ${activeCount} active` : ''} on ${teamName}.`}
-          </p>
-        </div>
-        <FairwayInvitePlayerButton teamName={teamName} joinCode={inviteCode} />
-      </div>
+      {/* Masthead — the one canonical ViewHeader primitive (eyebrow + title +
+          description + primary CTA), pixel-identical to every other feature page. */}
+      <ViewHeader
+        className="mb-6"
+        eyebrow="Roster"
+        title="Your players."
+        description={
+          empty
+            ? `Build your roster on ${teamName} by inviting players to join.`
+            : `${players.length} ${players.length === 1 ? 'player' : 'players'}${activeCount !== players.length ? ` · ${activeCount} active` : ''} on ${teamName}.`
+        }
+        primaryAction={<FairwayInvitePlayerButton teamName={teamName} joinCode={inviteCode} />}
+      />
 
       {/* Join requests */}
       <FairwayJoinRequests requests={joinRequests} />
@@ -95,7 +96,11 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
             Invite players to join {teamName}. Share the code below or send a join link.
           </p>
           <div className="mt-5 flex flex-col items-center gap-3">
-            <FairwayInvitePlayerButton teamName={teamName} joinCode={inviteCode} />
+            {/* The header above already carries the primary "Invite player" CTA —
+                this card repeats the affordance for a reader who lands mid-page,
+                so it renders ghost to avoid two competing primary buttons on one
+                empty state. */}
+            <FairwayInvitePlayerButton teamName={teamName} joinCode={inviteCode} variant="ghost" />
             {inviteCode ? <Chip tone="neutral">Join code · {inviteCode}</Chip> : null}
           </div>
         </Surface>

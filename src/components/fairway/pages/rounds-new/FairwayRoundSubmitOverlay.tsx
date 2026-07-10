@@ -23,6 +23,11 @@ import { TriangleAlert, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
 
+// Elements a keyboard user can land on inside the dialog panel, for the Tab
+// trap and for picking an initial-focus target.
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 interface FairwayRoundSubmitOverlayProps {
   isVisible: boolean;
   totalScore: number;
@@ -57,6 +62,13 @@ export function FairwayRoundSubmitOverlay({
   const successEscapeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasNavigatedRef = useRef(false);
+
+  // Focus management: this is a blocking full-screen overlay with zero prior
+  // a11y wiring. `dialogRef` is shared across all three visual states — only
+  // one is ever mounted at a time (AnimatePresence `mode="wait"`) — so one
+  // ref/effect pair covers submitting → success/error transitions too.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const isSuccess = !!completedRoundId && !error;
   const isError = !!error;
@@ -121,6 +133,78 @@ export function FairwayRoundSubmitOverlay({
     if (!isVisible) hasNavigatedRef.current = false;
   }, [isVisible]);
 
+  // Capture whatever had focus before the overlay interrupted the flow, and
+  // hand it back once the overlay closes (this component unmounts, or the
+  // parent flips `isVisible` false) — same contract as a native <dialog>.
+  useEffect(() => {
+    if (!isVisible) return undefined;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    return () => {
+      previouslyFocusedRef.current?.focus?.();
+      previouslyFocusedRef.current = null;
+    };
+  }, [isVisible]);
+
+  // Seed initial focus on the primary action for whichever state is showing.
+  const seedInitialFocus = useCallback(() => {
+    const panel = dialogRef.current;
+    if (!panel) return;
+    const primary = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    (primary ?? panel).focus();
+  }, []);
+
+  // Fires when the ENTERING panel actually mounts, not on a timer keyed off
+  // `dialogStateKey`. `<AnimatePresence mode="wait">` doesn't mount the
+  // entering panel until the exiting one's ~0.3s exit animation finishes, so
+  // a rAF/timeout scheduled off the state-change render (the previous
+  // approach) fired while the EXITING panel was still the only thing
+  // mounted -- seeding focus into a node that was about to be torn down. A
+  // callback ref instead runs exactly when React attaches the entering
+  // panel's DOM node, so it's correct whether that transition takes ~0.3s or
+  // is instant (`prefersReducedMotion` collapses AnimatePresence's exit to a
+  // swap, and this still fires right when the new node lands either way).
+  const registerDialogNode = useCallback((node: HTMLDivElement | null) => {
+    dialogRef.current = node;
+    if (!node) return;
+    const raf = requestAnimationFrame(() => seedInitialFocus());
+    return () => cancelAnimationFrame(raf);
+  }, [seedInitialFocus]);
+
+  // Tab trap: keep focus cycling inside the dialog panel while it's open.
+  useEffect(() => {
+    if (!isVisible) return undefined;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Tab') return;
+      const panel = dialogRef.current;
+      if (!panel) return;
+
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const active = document.activeElement;
+
+      if (event.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !panel.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isVisible]);
+
   if (!isVisible) return null;
 
   const scrim = <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" />;
@@ -144,7 +228,14 @@ export function FairwayRoundSubmitOverlay({
               transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="relative w-full max-w-sm"
             >
-              <div className="overflow-hidden rounded-card bg-surface shadow-fw-modal">
+              <div
+                ref={registerDialogNode}
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="fw-round-submit-success-title"
+                tabIndex={-1}
+                className="overflow-hidden rounded-card bg-surface shadow-fw-modal outline-none"
+              >
                 {/* Green celebration header */}
                 <div className="relative overflow-hidden bg-accent-600 px-6 pb-6 pt-8 text-center">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_60%)]" />
@@ -164,6 +255,7 @@ export function FairwayRoundSubmitOverlay({
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3 }}
+                    id="fw-round-submit-success-title"
                     className="mb-1 font-fw-sans text-body-lg font-medium text-white/90"
                   >
                     Round submitted
@@ -180,7 +272,7 @@ export function FairwayRoundSubmitOverlay({
                     <span
                       className={cn(
                         'font-fw-sans text-body-lg font-medium',
-                        toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-accent-100' : 'text-red-200',
+                        toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-accent-100' : 'text-fw-warning',
                       )}
                     >
                       ({toParLabel})
@@ -247,12 +339,17 @@ export function FairwayRoundSubmitOverlay({
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="relative w-full max-w-sm rounded-card bg-surface p-6 text-center shadow-fw-modal"
+              ref={registerDialogNode}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="fw-round-submit-error-title"
+              tabIndex={-1}
+              className="relative w-full max-w-sm rounded-card bg-surface p-6 text-center shadow-fw-modal outline-none"
             >
               <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-fw-danger/20 bg-fw-danger-bg text-fw-danger">
                 <TriangleAlert className="h-7 w-7" aria-hidden />
               </div>
-              <h3 className="mb-2 font-fw-display text-h3 font-semibold text-text-primary">Submission failed</h3>
+              <h3 id="fw-round-submit-error-title" className="mb-2 font-fw-display text-h3 font-semibold text-text-primary">Submission failed</h3>
               <p className="mb-1 font-fw-sans text-body-sm text-text-secondary">{error}</p>
               <p className="mb-6 font-fw-sans text-caption text-text-tertiary">
                 Your round data is saved and won&apos;t be lost.
@@ -296,7 +393,12 @@ export function FairwayRoundSubmitOverlay({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.3 }}
-              className="relative w-full max-w-sm rounded-card bg-surface p-8 text-center shadow-fw-modal"
+              ref={registerDialogNode}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="fw-round-submit-loading-title"
+              tabIndex={-1}
+              className="relative w-full max-w-sm rounded-card bg-surface p-8 text-center shadow-fw-modal outline-none"
             >
               <div className="relative mx-auto mb-5 h-20 w-20">
                 <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
@@ -321,7 +423,7 @@ export function FairwayRoundSubmitOverlay({
                 </div>
               </div>
 
-              <h2 className="mb-1 font-fw-display text-h3 font-semibold text-text-primary">Submitting round</h2>
+              <h2 id="fw-round-submit-loading-title" className="mb-1 font-fw-display text-h3 font-semibold text-text-primary">Submitting round</h2>
               <p className="mb-1 font-fw-sans text-body-sm text-text-tertiary">{courseName}</p>
               <p className="font-fw-sans text-caption text-text-secondary">Calculating your statistics…</p>
 

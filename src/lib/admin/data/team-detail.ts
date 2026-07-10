@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { classifyTeamHealth, type TeamHealth } from '@/lib/admin/data/golf';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { resolveTeamUserIds } from '@/lib/admin/data/team-scope';
@@ -429,22 +430,37 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
   let coachhelm: TeamDetailCoachHelmUsage | null = null;
   if (coachIds.length > 0) {
     try {
-      const [callsRes, budgetRes] = await Promise.all([
+      const [callsCountRes, costRes, budgetRes] = await Promise.all([
+        // Pure count — head:true never triggers the PostgREST 1000-row cap,
+        // unlike deriving calls30d from calls.length on a capped fetch.
         admin
           .from('golf_coachhelm_llm_calls')
-          .select('cost_usd')
+          .select('id', { count: 'exact', head: true })
           .in('coach_id', coachIds)
-          .gte('created_at', ago30d)
-          .limit(2000),
+          .gte('created_at', ago30d),
+        // Cost needs every row's cost_usd to sum — paginate past the cap
+        // instead of the prior .limit(2000), which silently under-summed
+        // cost30d for any coach staff whose combined 30d call volume passed
+        // 2000 rows.
+        fetchAllRowsResult((from, to) =>
+          admin
+            .from('golf_coachhelm_llm_calls')
+            .select('cost_usd')
+            .in('coach_id', coachIds)
+            .gte('created_at', ago30d)
+            .order('id', { ascending: true })
+            .range(from, to),
+        ),
         admin
           .from('golf_coachhelm_llm_budget')
           .select('budget_usd, spent_usd')
           .in('coach_id', coachIds)
           .eq('date', todayDate),
       ]);
-      if (callsRes.error) throw new Error(callsRes.error.message);
+      if (callsCountRes.error) throw new Error(callsCountRes.error.message);
+      if (costRes.error) throw new Error(costRes.error.message);
       if (budgetRes.error) throw new Error(budgetRes.error.message);
-      const calls = (callsRes.data ?? []) as Array<{ cost_usd: number | null }>;
+      const calls = (costRes.data ?? []) as Array<{ cost_usd: number | null }>;
       const budgetRows = (budgetRes.data ?? []) as Array<{ budget_usd: number; spent_usd: number }>;
       const budgetToday = budgetRows.length > 0
         ? {
@@ -453,7 +469,7 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
           }
         : null;
       coachhelm = {
-        calls30d: calls.length,
+        calls30d: callsCountRes.count ?? 0,
         cost30d: calls.reduce((sum, c) => sum + (c.cost_usd ?? 0), 0),
         budgetToday,
       };

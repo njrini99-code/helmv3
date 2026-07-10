@@ -5,11 +5,11 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { SportTabBar } from '@/components/lifting/shell/SportTabBar';
 import { Card } from '@/components/ui/card';
+import { SectionMasthead, RuledStatLine } from '@/components/baseball/living-annual';
 import {
   Activity,
   ClipboardList,
   Dumbbell,
-  TrendingUp,
   Users,
 } from 'lucide-react';
 import type { HelmLiftingCoachRow, HelmLiftingCoachAssignmentRow, HelmLiftingSport } from '@/lib/types/helm-lifting';
@@ -90,47 +90,6 @@ async function fetchOrgStats(
 }
 
 // ---------------------------------------------------------------------------
-// Quick-stat card
-// ---------------------------------------------------------------------------
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  href,
-  colorClass = 'bg-primary-50 text-primary-600',
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | number;
-  sub?: string;
-  href?: string;
-  colorClass?: string;
-}) {
-  const inner = (
-    <Card variant="raised" noPadding className="p-5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-200 group">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-      <p className="text-2xl font-bold text-warm-900 leading-none mb-1">{value}</p>
-      <p className="text-sm font-medium text-warm-700">{label}</p>
-      {sub && <p className="text-xs text-warm-400 mt-0.5">{sub}</p>}
-    </Card>
-  );
-
-  return href ? (
-    <Link href={href} className="block">
-      {inner}
-    </Link>
-  ) : (
-    inner
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Assignment card
 // ---------------------------------------------------------------------------
 
@@ -205,22 +164,17 @@ export default async function LiftingDashboardPage({ searchParams }: PageProps) 
   const displayName = coachRow?.full_name ?? 'Coach';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const dateline = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 tracking-tight">
-            {greeting}, {displayName.split(' ')[0]}
-          </h1>
-          <p className="text-warm-500 text-sm mt-1">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-
-        {access.isCoach && (
-          <div className="flex items-center gap-2">
+      {/* Masthead — eyebrow dateline + green accent rule, not a SaaS greeting */}
+      <SectionMasthead
+        eyebrow={`${greeting}, ${displayName.split(' ')[0]} · ${dateline}`}
+        title="Lift Lab"
+        ink="team"
+        actions={
+          access.isCoach ? (
             <Link
               href="/lifting/dashboard/sessions"
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-all shadow-sm shadow-primary-600/20"
@@ -228,52 +182,52 @@ export default async function LiftingDashboardPage({ searchParams }: PageProps) 
               <Dumbbell className="w-4 h-4" />
               Start session
             </Link>
-          </div>
-        )}
-      </div>
+          ) : null
+        }
+      />
 
       {/* Sport filter tabs */}
       <SportTabBar activeSport={sportFilter} baseHref="/lifting/dashboard" />
 
-      {/* Quick-stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={Users}
-          label="Athletes"
-          value={stats.totalAthletes}
-          sub={sportFilter ? `${sportFilter} only` : 'across all sports'}
-          href="/lifting/dashboard/athletes"
-          colorClass="bg-blue-50 text-blue-600"
-        />
-        <StatCard
-          icon={Dumbbell}
-          label="Sessions today"
-          value={stats.todaySessions}
-          href="/lifting/dashboard/sessions"
-          colorClass="bg-primary-50 text-primary-600"
-        />
-        <StatCard
-          icon={Activity}
-          label="Avg readiness"
-          value={stats.avgReadiness !== null ? `${stats.avgReadiness}/10` : '—'}
-          sub="last 24 hours"
-          href="/lifting/dashboard/readiness"
-          colorClass="bg-amber-50 text-amber-600"
-        />
-        <StatCard
-          icon={TrendingUp}
-          label="Active programs"
-          value={stats.activePrograms > 0 ? stats.activePrograms : '—'}
-          href="/lifting/dashboard/programs"
-          colorClass="bg-purple-50 text-purple-600"
-        />
-      </div>
+      {/* KPI strip — graphite numerals on a green rule, flat hairline card (no rainbow icon chips) */}
+      <Card variant="flat" noPadding className="p-5 sm:p-6">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+          <Link href="/lifting/dashboard/athletes" className="block">
+            <RuledStatLine label="Athletes" value={stats.totalAthletes} ink="team" />
+            <p className="mt-1.5 text-xs text-text-tertiary">
+              {sportFilter ? `${sportFilter} only` : 'across all sports'}
+            </p>
+          </Link>
+          <Link href="/lifting/dashboard/sessions" className="block">
+            <RuledStatLine label="Sessions today" value={stats.todaySessions} ink="team" />
+          </Link>
+          <Link href="/lifting/dashboard/readiness" className="block">
+            <RuledStatLine
+              label="Avg readiness"
+              value={stats.avgReadiness ?? 0}
+              unit={stats.avgReadiness !== null ? '/10' : undefined}
+              ghost={stats.avgReadiness === null}
+              decimals={1}
+              ink="team"
+            />
+            <p className="mt-1.5 text-xs text-text-tertiary">last 24 hours</p>
+          </Link>
+          <Link href="/lifting/dashboard/programs" className="block">
+            <RuledStatLine
+              label="Active programs"
+              value={stats.activePrograms}
+              ghost={stats.activePrograms === 0}
+              ink="team"
+            />
+          </Link>
+        </div>
+      </Card>
 
       {/* Two-column body */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Team assignments (coach) or access info (viewer) */}
         <div className="lg:col-span-1 space-y-4">
-          <Card variant="raised" noPadding className="p-5">
+          <Card variant="flat" noPadding className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-warm-900 uppercase tracking-wide">
                 {access.isCoach ? 'Covered teams' : 'Your access'}
@@ -318,7 +272,7 @@ export default async function LiftingDashboardPage({ searchParams }: PageProps) 
 
         {/* Quick links / actions */}
         <div className="lg:col-span-2">
-          <Card variant="raised" noPadding className="p-5">
+          <Card variant="flat" noPadding className="p-5">
             <h2 className="text-sm font-bold text-warm-900 uppercase tracking-wide mb-4">Quick actions</h2>
 
             <div className="grid sm:grid-cols-2 gap-3">

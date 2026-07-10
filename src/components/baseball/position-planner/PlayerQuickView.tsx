@@ -22,9 +22,12 @@ const STAGE_CONFIG: Record<PipelineStage, {
   glow: string;
 }> = {
   watchlist: { label: 'Watching', variant: 'default', color: 'bg-warm-500', glow: 'shadow-warm-500/20' },
-  high_priority: { label: 'High Priority', variant: 'warning', color: 'bg-amber-500', glow: 'shadow-amber-500/30' },
+  // Clay/pursuit ink (not amber) — the ink-system's sanctioned "urgency"
+  // tone; keeps High Priority visually distinct from the team-green
+  // offer/committed dots without a raw Tailwind amber.
+  high_priority: { label: 'High Priority', variant: 'warning', color: 'bg-pursuit', glow: 'shadow-pursuit/30' },
   offer_extended: { label: 'Offer Extended', variant: 'primary', color: 'bg-primary-500', glow: 'shadow-primary-500/30' },
-  committed: { label: 'Committed', variant: 'success', color: 'bg-emerald-500', glow: 'shadow-emerald-500/40' },
+  committed: { label: 'Committed', variant: 'success', color: 'bg-primary-700', glow: 'shadow-primary-700/40' },
   uninterested: { label: 'Not Interested', variant: 'secondary', color: 'bg-warm-400', glow: '' },
 };
 
@@ -43,7 +46,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
         exit={{ opacity: 0 }}
         transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.25 })}
         onClick={onClose}
-        className="fixed inset-0 bg-warm-900/30 backdrop-blur-md z-40"
+        className="fixed inset-0 bg-warm-900/30 z-40"
       />
 
       {/* Premium Slideout Panel */}
@@ -55,7 +58,6 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
         className={cn(
           'fixed right-0 top-0 bottom-0 w-full max-w-md z-50',
           'bg-gradient-to-b from-white via-white to-warm-50/50',
-          'backdrop-blur-2xl',
           'border-l border-warm-200/50',
           'shadow-2xl shadow-warm-900/10',
           'flex flex-col',
@@ -77,7 +79,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             className={cn(
               'absolute top-4 right-4 z-10',
               'p-2.5 rounded-xl',
-              'bg-cream-100/82 backdrop-blur-sm',
+              'bg-cream-100/82',
               'border border-warm-200/50',
               'text-warm-400 hover:text-warm-600',
               'hover:bg-cream-100 active:bg-cream-100/75 hover:shadow-md',
@@ -347,8 +349,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
           className={cn(
             'p-4 border-t border-warm-100',
-            'bg-gradient-to-t from-warm-50/80 to-white/50',
-            'backdrop-blur-sm'
+            'bg-gradient-to-t from-warm-50/80 to-white/50'
           )}
         >
           <Link href={`/baseball/player/${player.id}`} className="block">
@@ -417,8 +418,13 @@ function MetricCard({
 }) {
   const colorClasses = {
     primary: 'from-primary-50/80 to-primary-100/50 border-primary-200/50 text-primary-700',
-    amber: 'from-amber-50/80 to-amber-100/50 border-amber-200/50 text-amber-700',
-    emerald: 'from-emerald-50/80 to-emerald-100/50 border-emerald-200/50 text-emerald-700',
+    // Pursuit/clay ink, not a raw Tailwind amber — flat (no gradient stops)
+    // so it doesn't ride the `bg-gradient-to-br` base class; stays visually
+    // distinct from the green `primary`/`emerald` cards via hue, not amber.
+    amber: 'bg-pursuit/10 border-pursuit/20 text-pursuit',
+    // Deeper primary tint (not a second green hue) — stays distinct from the
+    // `primary` card above while remaining palette-compliant.
+    emerald: 'from-primary-100/80 to-primary-200/50 border-primary-300/50 text-primary-800',
   };
 
   return (

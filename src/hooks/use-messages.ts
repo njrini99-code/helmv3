@@ -12,6 +12,12 @@ export function useMessages(conversationId: string) {
   const [loading, setLoading] = useState(true);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  // Always holds the conversationId the hook should currently be displaying.
+  // Updated synchronously on every render (not in an effect) so an in-flight
+  // fetchMessages() request can tell -- after its own `await` -- whether the
+  // user has since switched threads, without waiting for an effect to run.
+  const conversationIdRef = useRef(conversationId);
+  conversationIdRef.current = conversationId;
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
@@ -19,19 +25,32 @@ export function useMessages(conversationId: string) {
       return;
     }
 
+    // Captured once per call so a stale closure (from the previous
+    // conversationId) can be told apart from the latest one below.
+    const requestConversationId = conversationId;
+
     setLoading(true);
-    // Use explicit columns instead of SELECT * for better performance
+    // Fetch most recent 200 messages (descending for limit), then reverse for
+    // display order. The prior unbounded ascending fetch silently dropped the
+    // newest messages once a thread passed 1000 rows (PostgREST's row cap) --
+    // mirrors src/hooks/golf/use-golf-messages.ts.
     const { data } = await supabase
       .from('baseball_messages')
       .select('id, conversation_id, sender_id, content, read, created_at')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+      .eq('conversation_id', requestConversationId)
+      .order('created_at', { ascending: false })
+      .limit(200);
 
-    setMessages((data || []) as Message[]);
+    // Stale-response guard: if the user switched to a different conversation
+    // while this request was in flight, discard it -- otherwise the previous
+    // thread's messages could paint over the one the user is now viewing.
+    if (conversationIdRef.current !== requestConversationId) return;
+
+    setMessages(((data || []) as Message[]).reverse());
     setLoading(false);
 
     // Mark messages as read
-    markMessagesAsRead(conversationId);
+    markMessagesAsRead(requestConversationId);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 13). Adding it would noise the dep array without changing behavior.
   }, [conversationId]);
 

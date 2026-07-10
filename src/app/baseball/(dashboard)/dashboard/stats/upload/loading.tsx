@@ -1,3 +1,5 @@
+import { PaperCard } from '@/components/baseball/living-annual';
+
 export default function StatsUploadLoading() {
   return (
     <div className="min-h-dvh bg-cream-100">
@@ -22,17 +24,17 @@ export default function StatsUploadLoading() {
         </div>
 
         {/* Upload area skeleton */}
-        <div className="glass-standard border-2 border-dashed border-warm-200 rounded-2xl p-12">
+        <PaperCard className="border-2 border-dashed border-warm-200 p-12" grain={false}>
           <div className="flex flex-col items-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-200 animate-pulse mb-4" />
             <div className="h-6 w-48 bg-warm-200 rounded animate-pulse mb-2" />
             <div className="h-4 w-64 bg-warm-100 rounded animate-pulse mb-6" />
             <div className="h-10 w-28 bg-warm-200 rounded-lg animate-pulse" />
           </div>
-        </div>
+        </PaperCard>
 
         {/* History skeleton */}
-        <div className="mt-8 glass-standard rounded-2xl p-6">
+        <PaperCard className="mt-8 p-6" grain={false}>
           <div className="h-5 w-32 bg-warm-200 rounded animate-pulse mb-4" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -45,7 +47,7 @@ export default function StatsUploadLoading() {
               </div>
             ))}
           </div>
-        </div>
+        </PaperCard>
       </div>
     </div>
   );

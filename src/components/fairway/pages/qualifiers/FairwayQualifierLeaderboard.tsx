@@ -39,6 +39,7 @@ import { Flag } from 'lucide-react';
 import { useQualifierRealtime } from '@/hooks/golf/use-qualifier-realtime';
 import { Surface, EmptyState, InlineNotice, StatusPill, Skeleton } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway/controls';
+import { formatToPar } from '@/lib/golf/format-to-par';
 import { cn } from '@/lib/utils';
 
 interface FairwayQualifierLeaderboardProps {
@@ -76,13 +77,6 @@ interface StandingRow {
   /** Display position (1-based among scored players); null until a score posts. */
   position: number | null;
   isTied: boolean;
-}
-
-/** Format a to-par value honestly: only scored players get '+N' / 'E' / '-N'. */
-function formatToPar(toPar: number | null, hasScore: boolean): string {
-  if (!hasScore || toPar === null) return '—';
-  if (toPar === 0) return 'E';
-  return toPar > 0 ? `+${toPar}` : `${toPar}`;
 }
 
 export function FairwayQualifierLeaderboard({
@@ -306,7 +300,11 @@ function StandingsTable({
                         : 'text-text-secondary',
                     )}
                   >
-                    {formatToPar(row.totalToPar, row.hasScore)}
+                    {/* `row.totalToPar` is already null for unscored players
+                        (see the `rows` derivation above), so the shared
+                        formatter's null → '—' path covers the honest-empty
+                        case without a separate `hasScore` param. */}
+                    {formatToPar(row.totalToPar)}
                   </td>
                 </tr>
 

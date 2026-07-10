@@ -39,6 +39,44 @@ export async function loadActiveGoals(playerId: string): Promise<Goal[]> {
 }
 
 /**
+ * Batched variant of {@link loadActiveGoals} for multi-player surfaces (e.g.
+ * the coach development page) — resolves EVERY given player's active goals in
+ * a single `.in('player_id', ...)` query instead of N per-player round trips,
+ * then groups in memory. Filters to `state = 'active'` server-side (so the
+ * per-player ordering below is equivalent to loadPlayerGoals' state-then-
+ * ends_at order, since every row here already has state='active').
+ *
+ * Returns a Map keyed by player_id; players with no active goals get an empty
+ * array, so callers can rely on `.get(id)` returning an array for every
+ * requested id.
+ */
+export async function loadActiveGoalsForPlayers(
+  playerIds: string[],
+): Promise<Map<string, Goal[]>> {
+  const result = new Map<string, Goal[]>();
+  const ids = [...new Set(playerIds.filter(Boolean))];
+  for (const id of ids) result.set(id, []);
+  if (ids.length === 0) return result;
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('golf_goals')
+    .select('*')
+    .in('player_id', ids)
+    .eq('state', 'active')
+    .order('ends_at', { ascending: true });
+  if (error) {
+    throw new Error(`loadActiveGoalsForPlayers: ${error.message}`);
+  }
+  for (const row of (data ?? []) as unknown as Goal[]) {
+    const list = result.get(row.player_id);
+    if (list) list.push(row);
+    else result.set(row.player_id, [row]);
+  }
+  return result;
+}
+
+/**
  * Recently ACHIEVED goals — the validated-win surface. Goals whose terminal
  * outcome resolved to 'achieved' within the last `withinDays`, newest win
  * first. `loadActiveGoals` (active-only) drops these, so without this loader a

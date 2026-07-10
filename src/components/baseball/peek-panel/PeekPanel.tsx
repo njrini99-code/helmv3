@@ -114,6 +114,8 @@ const PeekPanelComponent = function PeekPanel({ className }: PeekPanelProps) {
             animate="visible"
             exit="exit"
             className={cn(
+              // Full-screen scrim backdrop — the one Living Annual backdrop-blur
+              // exemption (a true scrim, not a panel/inner surface). Keep as-is.
               'fixed inset-0 z-40',
               'bg-black/20 backdrop-blur-[2px]',
               'cursor-pointer'
@@ -135,7 +137,9 @@ const PeekPanelComponent = function PeekPanel({ className }: PeekPanelProps) {
             className={cn(
               'fixed top-0 right-0 z-50',
               'h-full w-full max-w-[400px]',
-              'bg-cream-50/95 backdrop-blur-xl',
+              // Solid Paper, no glass — this is the panel surface itself, not a
+              // scrim, so backdrop-blur doesn't qualify for the scrim exemption.
+              'bg-cream-50',
               'shadow-2xl shadow-black/10',
               'border-l border-warm-200/50',
               'flex flex-col',
@@ -149,7 +153,8 @@ const PeekPanelComponent = function PeekPanel({ className }: PeekPanelProps) {
               className={cn(
                 'absolute top-4 right-4 z-10',
                 'w-9 h-9 flex items-center justify-center',
-                'rounded-xl bg-warm-100/80 backdrop-blur-sm',
+                // Solid surface, no glass — an inner control on the panel, not a scrim.
+                'rounded-xl bg-warm-100',
                 'text-warm-500 hover:text-warm-700 hover:bg-warm-200/80',
                 'transition-colors duration-200',
                 'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'

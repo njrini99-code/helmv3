@@ -33,11 +33,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import {
-  IconDatabase,
   IconPlus,
   IconTrash,
   IconLock,
@@ -46,6 +44,7 @@ import {
   IconX,
   IconSearch,
 } from '@/components/icons';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 import {
   upsertImportSource,
   deleteImportSource,
@@ -97,7 +96,9 @@ const TRUST_TONE: Record<BaseballSourceTrustLevel, string> = {
   staff_entered: 'bg-warm-100 text-warm-700 border-warm-300',
   player_entered: 'bg-warm-100 text-warm-700 border-warm-300',
   ai_derived: 'bg-warm-100 text-warm-600 border-warm-300',
-  unreviewed: 'bg-amber-50 text-amber-700 border-amber-200',
+  // Ink system, not raw amber — "unreviewed" is a caution/warning status
+  // (doctrine: warning -> pursuit soft), same pill shape as its siblings above.
+  unreviewed: 'bg-pursuit/10 text-pursuit border-pursuit/30',
 };
 
 interface DraftSource {
@@ -379,21 +380,24 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
   };
 
   return (
-    <>
-      <header className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Import Sources</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{teamName} • source registry</p>
-        </div>
-        {canManage && !showForm && (
-          <Button onClick={() => setShowForm(true)} disabled={isPending}>
-            <IconPlus size={16} className="mr-1.5" />
-            Add source
-          </Button>
-        )}
-      </header>
+    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <SectionMasthead
+        eyebrow="THE PRESSBOX · SETTINGS"
+        title="Import Sources"
+        ink="team"
+        actions={
+          canManage && !showForm ? (
+            <Button onClick={() => setShowForm(true)} disabled={isPending}>
+              <IconPlus size={16} className="mr-1.5" />
+              Add source
+            </Button>
+          ) : undefined
+        }
+      >
+        <p className="font-annual text-body-sm text-text-secondary">{teamName} • source registry</p>
+      </SectionMasthead>
 
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="space-y-6">
         {!canManage && (
           <div className="rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600 flex items-center gap-2">
             <IconLock size={16} className="text-warm-400 shrink-0" />
@@ -464,12 +468,10 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
         )}
 
         {filteredSources.length === 0 && !showForm ? (
-          <EmptyState
-            variant="card"
-            glass
-            icon={<IconDatabase size={40} />}
-            title={filter ? 'No sources match' : 'No import sources yet'}
-            description={
+          <EditorsLetter
+            ink="team"
+            title={filter ? 'No sources match.' : 'No import sources yet.'}
+            body={
               filter
                 ? `No sources match "${filter}". Clear the filter or add a new source.`
                 : canManage
@@ -477,11 +479,15 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
                   : 'No import sources have been registered for this program yet.'
             }
             action={
-              filter
-                ? { label: 'Clear filter', onClick: () => setFilter('') }
-                : canManage
-                  ? { label: 'Add source', onClick: () => setShowForm(true) }
-                  : undefined
+              filter ? (
+                <Button variant="secondary" size="sm" onClick={() => setFilter('')}>
+                  Clear filter
+                </Button>
+              ) : canManage ? (
+                <Button size="sm" onClick={() => setShowForm(true)}>
+                  Add source
+                </Button>
+              ) : undefined
             }
           />
         ) : (
@@ -624,7 +630,7 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
                                 aria-label={`Remove ${s.source_name}`}
                                 className={cn(
                                   'shrink-0 rounded-lg p-2 text-warm-400 transition-colors',
-                                  'hover:bg-red-50 hover:text-red-600',
+                                  'hover:bg-[var(--notice-error-ink)]/10 hover:text-[color:var(--notice-error-ink)]',
                                   isPending && 'cursor-not-allowed opacity-50',
                                 )}
                               >
@@ -642,6 +648,6 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
           </motion.div>
         )}
       </div>
-    </>
+    </div>
   );
 }

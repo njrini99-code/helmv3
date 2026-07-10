@@ -2,9 +2,13 @@
  * v3 weekly coach email cron — GET/POST /api/cron/v3/weekly-coach-email
  *
  * Designed to fire Sundays. Picks every active team's primary coach,
- * builds a WeeklyRecap for the past 7 days, and sends via Resend. The
- * route is idempotent within the same week — we tag each send so a
- * future "sent already" lookup table can dedupe (deferred).
+ * builds a WeeklyRecap for the past 7 days, and sends via Resend.
+ *
+ * Idempotency: a retry/manual re-trigger within the same ISO week must not
+ * re-email every coach. Each send carries an
+ * `idempotencyKey: weekly-coach-email:${coach_id}:${isoWeekStart}` (Resend's
+ * `Idempotency-Key` header) so a duplicate tick for the same coach/week
+ * returns Resend's cached response instead of dispatching a second email.
  *
  * Auth: Vercel Cron sends Authorization: Bearer ${CRON_SECRET}.
  *
@@ -21,6 +25,19 @@ import { buildWeeklyRecap } from '@/lib/coachhelm/v3/recap/builder';
 import { buildWeeklyRecapHtml } from '@/lib/coachhelm/v3/recap/template';
 import { sendEmail } from '@/lib/coachhelm/v3/foundation/email';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+
+/**
+ * ISO week start (Monday), UTC, as `YYYY-MM-DD` — the dedupe period key.
+ * Mirrors the sibling helper in src/app/lifting/actions/performance-profile.ts.
+ */
+function isoWeekStartKey(d: Date): string {
+  const dayOfWeek = d.getUTCDay(); // 0=Sun..6=Sat
+  const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(d);
+  monday.setUTCDate(monday.getUTCDate() - offset);
+  return monday.toISOString().slice(0, 10);
+}
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -31,6 +48,8 @@ interface SendSummary {
   sent: number;
   skipped_no_email: number;
   skipped_provider_unset: number;
+  /** Coach has explicitly opted out of the CoachHelm email digest. */
+  skipped_opted_out: number;
   errors: number;
   duration_ms: number;
 }
@@ -54,13 +73,22 @@ async function handle(): Promise<NextResponse> {
     sent: 0,
     skipped_no_email: 0,
     skipped_provider_unset: 0,
+    skipped_opted_out: 0,
     errors: 0,
     duration_ms: 0,
   };
-  const weekEndIso = new Date().toISOString();
+  const now = new Date();
+  const weekEndIso = now.toISOString();
+  const weekKey = isoWeekStartKey(now);
 
-  // All teams that have at least one active member.
-  const { data: teams } = await sb.from('golf_teams').select('id');
+  // All teams that have at least one active member. Paginated — platform-wide
+  // fetch with no filter can exceed the PostgREST 1000-row cap once the team
+  // count grows (mirrors event-reminders' use of fetchAllRowsResult).
+  const { data: teams } = await fetchAllRowsResult<{ id: string }>(
+    (from, to) => sb.from('golf_teams').select('id').order('id', { ascending: true }).range(from, to),
+    undefined,
+    { table: 'golf_teams', action: 'cron.v3.weekly-coach-email', sport: 'golf' },
+  );
   const teamIds = (teams ?? []).map((t) => t.id);
   summary.teams_considered = teamIds.length;
 
@@ -74,6 +102,23 @@ async function handle(): Promise<NextResponse> {
         .limit(1)
         .maybeSingle();
       if (!staff?.coach_id) continue;
+
+      // Opt-out gate: there is no dedicated `email_weekly_recap` preference
+      // column, so this recap (a CoachHelm digest email, same as the daily
+      // coach-morning-digest cron) is gated on the CLOSEST existing coach
+      // preference — `golf_coach_philosophy.email_digest_enabled` — the same
+      // column /api/cron/coach-morning-digest already honors. Missing row →
+      // opted-in by default (mirrors that cron's convention: the flag only
+      // records explicit opt-outs).
+      const { data: philosophyRow } = await sb
+        .from('golf_coach_philosophy')
+        .select('email_digest_enabled')
+        .eq('coach_id', staff.coach_id)
+        .maybeSingle();
+      if (philosophyRow && philosophyRow.email_digest_enabled === false) {
+        summary.skipped_opted_out += 1;
+        continue;
+      }
 
       const recap = await buildWeeklyRecap(sb, {
         coach_id: staff.coach_id,
@@ -112,6 +157,7 @@ async function handle(): Promise<NextResponse> {
           { name: 'task', value: 'weekly_coach_recap' },
           { name: 'team_id', value: team_id },
         ],
+        idempotencyKey: `weekly-coach-email:${staff.coach_id}:${weekKey}`,
       });
       if (!result.delivered) {
         // The wrapper returns a friendly error string when the API key

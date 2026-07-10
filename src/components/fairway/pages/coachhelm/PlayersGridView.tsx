@@ -268,6 +268,10 @@ export function PlayersGridView({
   // feeds the per-area Sparkline (updateFocusAreaProgress only appends with a note).
   const [logNote, setLogNote] = React.useState('');
   const [logSaving, setLogSaving] = React.useState(false);
+  // Inline range-guard error — ported from the player-side LogProgressDrawer
+  // (FairwayMyDevelopment) for parity: a fat-fingered negative or absurd
+  // magnitude should surface here, not land in current_value silently.
+  const [logValueError, setLogValueError] = React.useState<string | null>(null);
 
   // Delete-focus-area dialog — a forced-choice destructive confirm (the action
   // layer + legacy UI both have delete; the redesign restores the affordance).
@@ -434,7 +438,13 @@ export function PlayersGridView({
     setLogTarget(fa);
     setLogValue(fa.current_value ?? null);
     setLogNote('');
+    setLogValueError(null);
   }
+
+  // Largest plausible measurement for any tracked golf metric (scores, yards,
+  // putts, percentages). Anything beyond this is a fat-finger, not a real value.
+  // Ported verbatim from the player-side LogProgressDrawer for parity.
+  const LOG_VALUE_MAX = 100_000;
 
   // PRESERVED: identical updateFocusAreaProgress(id, value) call the native
   // prompt fired — now with the value from the dialog's NumberField PLUS an
@@ -444,9 +454,20 @@ export function PlayersGridView({
   async function submitLogProgress() {
     if (!logTarget || logSaving) return;
     if (logValue == null || !Number.isFinite(logValue)) {
-      fairwayToast.error('Enter a number to log progress');
+      setLogValueError('Enter a number to log progress.');
       return;
     }
+    // Range guard — ported from the player-side dialog: reject negatives and
+    // absurd magnitudes before the round-trip rather than after.
+    if (logValue < 0) {
+      setLogValueError('Value can’t be negative — enter 0 or higher.');
+      return;
+    }
+    if (logValue > LOG_VALUE_MAX) {
+      setLogValueError(`That looks too large — enter a value up to ${LOG_VALUE_MAX.toLocaleString()}.`);
+      return;
+    }
+    setLogValueError(null);
     setLogSaving(true);
     try {
       const trimmedNote = logNote.trim();
@@ -864,13 +885,17 @@ export function PlayersGridView({
         onSubmit={handleSubmitFocusArea}
       />
 
-      {/* ---- LOG-PROGRESS DIALOG (replaces native window.prompt) ---- */}
+      {/* ---- LOG-PROGRESS DIALOG (replaces native window.prompt) ----
+          Layout ported from the player-side LogProgressDrawer
+          (FairwayMyDevelopment) for parity: current/target readout first,
+          then the value field wired to the same range-guard validation. */}
       <ModalShell
         open={logTarget != null}
         onOpenChange={(o) => {
           if (!o && !logSaving) {
             setLogTarget(null);
             setLogNote('');
+            setLogValueError(null);
           }
         }}
         size="sm"
@@ -879,28 +904,40 @@ export function PlayersGridView({
       >
         <ModalShell.Body>
           <div className="space-y-4">
+            {logTarget?.current_value != null ? (
+              <div>
+                <p className="mb-1.5 block font-fw-sans text-body-sm font-medium text-text-secondary">
+                  Current value
+                </p>
+                <div className="rounded-fw-sm border border-border-subtle bg-surface-sunken px-3 py-2.5 font-fw-sans text-text-primary">
+                  <span className="font-fw-mono tabular-nums">{logTarget.current_value}</span>
+                  {logTarget.target_value != null ? (
+                    <span className="font-normal text-text-tertiary">
+                      {' '}
+                      / <span className="font-fw-mono tabular-nums">{logTarget.target_value}</span>
+                    </span>
+                  ) : null}
+                  {logTarget.target_metric && (
+                    <span className="ml-2 font-fw-sans text-eyebrow text-text-tertiary">
+                      {logTarget.target_metric}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : null}
             <FormField
               label={logTarget?.target_metric ? `New value (${logTarget.target_metric})` : 'New value'}
               required
+              error={logValueError ?? undefined}
             >
-              <NumberField value={logValue} onValueChange={(v) => setLogValue(v)} />
+              <NumberField
+                value={logValue}
+                onValueChange={(v) => {
+                  setLogValue(v);
+                  if (logValueError) setLogValueError(null);
+                }}
+              />
             </FormField>
-            {logTarget?.current_value != null ? (
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                Current{' '}
-                <span className="font-fw-mono tabular-nums text-text-secondary">
-                  {logTarget.current_value}
-                </span>
-                {logTarget.target_value != null ? (
-                  <>
-                    {' · target '}
-                    <span className="font-fw-mono tabular-nums text-text-secondary">
-                      {logTarget.target_value}
-                    </span>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
             {/* Optional note — a note is what makes the write append a
                 progress_notes entry, which is the per-area Sparkline's source.
                 The helper text makes that cause-and-effect honest. */}
@@ -924,6 +961,7 @@ export function PlayersGridView({
             onClick={() => {
               setLogTarget(null);
               setLogNote('');
+              setLogValueError(null);
             }}
             disabled={logSaving}
           >

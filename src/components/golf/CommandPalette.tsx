@@ -18,11 +18,12 @@
  * same cubic-bezier(0.16, 1, 0.3, 1) easing as DropdownMenu/Tooltip.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@/components/ui/button';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
@@ -34,7 +35,6 @@ import {
   getCommandPaletteData,
   type CommandPaletteData,
 } from '@/app/golf/actions/command-palette';
-import { useRedesign } from '@/lib/redesign/flag';
 
 interface CommandItemSpec {
   id: string;
@@ -111,36 +111,42 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
-  // Fairway redesign: the player's Tasks / Announcements / Travel / Classes are
-  // consolidated into the Team Hub, so the palette deep-links into the matching
-  // sub-tab (and gains a top-level "Team Hub" command) instead of the old
-  // scattered routes. Flag OFF → the original entries, unchanged.
-  const redesign = useRedesign();
-  const playerActions: CommandItemSpec[] = redesign
-    ? (() => {
-        const TAB_FOR_ID: Record<string, 'tasks' | 'announcements' | 'travel' | 'classes'> = {
-          tasks: 'tasks',
-          announcements: 'announcements',
-          travel: 'travel',
-          classes: 'classes',
-        };
-        const remapped = playerQuickActions.map((a) => {
-          const tab = TAB_FOR_ID[a.id];
-          return tab ? { ...a, href: `/golf/dashboard/team-hub?tab=${tab}` } : a;
-        });
-        const teamHubEntry: CommandItemSpec = {
-          id: 'team-hub',
-          label: 'Team Hub',
-          description: 'Tasks, announcements, travel & your classes',
-          icon: <IconLayoutGrid size={18} />,
-          href: '/golf/dashboard/team-hub',
-          keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
-        };
-        return [teamHubEntry, ...remapped];
-      })()
-    : playerQuickActions;
+  // The player's Tasks / Announcements / Travel / Classes are consolidated
+  // into the Team Hub, so the palette deep-links into the matching sub-tab
+  // (and gains a top-level "Team Hub" command) instead of the old scattered
+  // routes.
+  const playerActions: CommandItemSpec[] = (() => {
+    const TAB_FOR_ID: Record<string, 'tasks' | 'announcements' | 'travel' | 'classes'> = {
+      tasks: 'tasks',
+      announcements: 'announcements',
+      travel: 'travel',
+      classes: 'classes',
+    };
+    const remapped = playerQuickActions.map((a) => {
+      const tab = TAB_FOR_ID[a.id];
+      return tab ? { ...a, href: `/golf/dashboard/team-hub?tab=${tab}` } : a;
+    });
+    const teamHubEntry: CommandItemSpec = {
+      id: 'team-hub',
+      label: 'Team Hub',
+      description: 'Tasks, announcements, travel & your classes',
+      icon: <IconLayoutGrid size={18} />,
+      href: '/golf/dashboard/team-hub',
+      keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
+    };
+    return [teamHubEntry, ...remapped];
+  })();
 
   const quickActions = isCoach ? coachQuickActions : playerActions;
+
+  // Shared hand-rolled-dialog primitive (already proven in ConfirmDialog /
+  // JoinRequestsModal / EventDetailModal): Tab focus trap + focus restore to
+  // whatever triggered the palette + Escape-to-close, scoped to `modalRef`
+  // below. cmdk itself owns only the fuzzy matcher/keyboard nav, not modal
+  // semantics, so without this Tab could escape to background controls and
+  // focus was never returned to the ⌘K trigger on close (#a11y-sweep P1).
+  const handleClose = useCallback(() => setOpen(false), []);
+  const { modalRef } = useFocusTrap(open, handleClose);
 
   // ⌘K / Ctrl+K toggles the palette globally
   useEffect(() => {
@@ -192,7 +198,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 animate-in fade-in-0 duration-200" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div className="fixed inset-0 z-50 animate-in fade-in-0 duration-200">
       {/* Backdrop */}
       <IconButton variant="default"
         type="button"
@@ -202,7 +208,13 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       ><span className="sr-only">Close command palette</span></IconButton>
 
       {/* Palette frame */}
-      <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
+      >
         <Command
           label="Command palette"
           loop
@@ -215,13 +227,8 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
           <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/40">
             <IconSearch size={18} className="text-warm-400" aria-hidden />
             <Command.Input
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
               placeholder="Search commands…"
               className="flex-1 bg-transparent outline-none text-body text-warm-900 placeholder:text-warm-500 tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') setOpen(false);
-              }}
             />
             <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
               ESC

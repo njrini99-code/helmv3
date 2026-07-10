@@ -80,11 +80,11 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
 
       {/* Readiness prompt (if not checked in) */}
       {!readinessSubmittedToday && (
-        <Card className="border-amber-200 bg-amber-50/60">
+        <Card className="border-warning/30 bg-warning/10">
           <CardContent className="flex items-center justify-between gap-3 py-4">
             <div className="flex items-center gap-3">
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning"
                 aria-hidden
               >
                 <IconHeart size={18} />
@@ -125,8 +125,8 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
                     : ''}
                 </p>
                 {todaysSession.status === 'modified' && todaysSession.coach_note && (
-                  <p className="mt-1 rounded-lg border-l-2 border-amber-300 bg-amber-50/70 px-2.5 py-1.5 text-xs text-warm-600">
-                    <span className="font-medium text-amber-700">Coach note:</span>{' '}
+                  <p className="mt-1 rounded-lg border-l-2 border-warning/40 bg-warning/10 px-2.5 py-1.5 text-xs text-warm-600">
+                    <span className="font-medium text-warning">Coach note:</span>{' '}
                     {todaysSession.coach_note}
                   </p>
                 )}

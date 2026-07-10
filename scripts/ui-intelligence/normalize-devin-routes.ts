@@ -215,7 +215,14 @@ const TABLE: TableRow[] = [
   },
 
   // --- PLAYER-ONLY (role player, auth true, enabled true) ---
-  { route: '/golf/dashboard/hub', role: 'player', category: 'player-hub', criticality: 'high' },
+  {
+    route: '/golf/dashboard/hub',
+    role: 'player',
+    category: 'core',
+    criticality: 'low',
+    needs_confirmation: true,
+    notes: 'redirects to /golf/dashboard (Hub merged into Dashboard Action Center, 2026-07-09)',
+  },
   { route: '/golf/dashboard/coachhelm', role: 'player', category: 'coachhelm', criticality: 'high' },
   { route: '/golf/dashboard/coachhelm/chat', role: 'player', category: 'coachhelm', criticality: 'medium' },
   { route: '/golf/dashboard/my-development', role: 'player', category: 'development', criticality: 'high' },

@@ -15,14 +15,14 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, GraduationCap, X, RotateCw } from 'lucide-react';
+import { Plus, GraduationCap, RotateCw } from 'lucide-react';
 
-import { Button, IconButton } from '@/components/fairway/controls/button';
+import { Button } from '@/components/fairway/controls/button';
 import { FilterPill } from '@/components/fairway/controls/filter-pill';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { Input } from '@/components/fairway/forms/Input';
+import { SearchField } from '@/components/fairway/command/search-field';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
@@ -284,29 +284,14 @@ export function FairwayRecruitingPage({
               to a cramped second line and never needs horizontal scroll. */}
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
             <div className="flex-1">
-              <Input
-                type="search"
+              <SearchField
+                size="sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onClear={() => setSearch('')}
                 placeholder="Search by name, hometown, email, or notes…"
                 aria-label="Search prospects"
-                autoComplete="off"
                 enterKeyHint="search"
-                leading={<Search className="h-4 w-4" />}
-                trailing={
-                  search ? (
-                    /* P120 — trailing clear for the search well. */
-                    <IconButton
-                      aria-label="Clear search"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSearch('')}
-                      className="-mr-1 h-7 w-7"
-                    >
-                      <X className="h-4 w-4" />
-                    </IconButton>
-                  ) : undefined
-                }
               />
             </div>
             <div className="flex items-center gap-2">

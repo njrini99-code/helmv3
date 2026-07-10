@@ -18,8 +18,6 @@ import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
 import { useToast } from '@/components/ui/sonner';
 import { RoundReviewDisplay } from '@/components/golf/coachhelm/RoundReviewDisplay';
 import { RoundStatsComparison } from '@/components/golf/coachhelm/RoundStatsComparison';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { Breadcrumb } from '@/components/ui/breadcrumb';
 import {
   getRoundReview,
   generateAndStoreRoundReview,
@@ -34,18 +32,16 @@ import {
   RoundTakeaway,
   V2ReviewSummary,
 } from '@/components/golf/coachhelm/round-review';
-import { EmptyState } from '@/components/ui/empty-state';
 import {
   getRoundTakeawayInsight,
   getInsightsForPlayer,
   type EvidenceInsight,
 } from '@/app/golf/actions/insight-delivery';
-import { IconSparkles, IconRefresh, IconGolf } from '@/components/icons';
+import { IconSparkles, IconRefresh } from '@/components/icons';
 import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
 import { RoundIntelligence } from '@/components/golf/coachhelm/round-review/RoundIntelligence';
-import { Button } from '@/components/ui/button';
 import {
   ViewHeader as FwViewHeader,
   Button as FwButton,
@@ -53,11 +49,13 @@ import {
   InlineNotice as FwInlineNotice,
   EmptyState as FwEmptyState,
   Skeleton as FwSkeleton,
+  Surface as FwSurface,
+  Eyebrow as FwEyebrow,
 } from '@/components/fairway';
 import { Flag as LucideFlag } from 'lucide-react';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { useGolfUser } from '@/contexts/golf-user-context';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -184,13 +182,10 @@ export default function RoundReviewPage() {
   const { addToast } = useToast();
   const roundId = params.id as string;
 
-  // P203/P205/P216: when the Fairway redesign is ON, the whole review surface
-  // (chrome, loading, error, the round-body wrapper + bottom bar) renders in the
-  // Fairway design system inside `.fairway-ds` on bg-canvas — exactly as the
-  // sibling Detail/Library/Recover pages do — so the Detail page's "Open full
-  // review" CTA lands on a Fairway surface, not a legacy one. Flag OFF (default)
-  // → every branch returns the legacy markup byte-for-byte unchanged.
-  const redesign = isRedesignEnabled();
+  // The whole review surface (chrome, loading, error, the round-body wrapper +
+  // bottom bar) renders in the Fairway design system inside `.fairway-ds` on
+  // bg-canvas — exactly as the sibling Detail/Library/Recover pages do — so the
+  // Detail page's "Open full review" CTA lands on a Fairway surface.
 
   // Layout-resolved user context (cookie-aware active team + all staffed
   // teams) — used to authorize coach access across every team they staff.
@@ -367,13 +362,11 @@ export default function RoundReviewPage() {
           setTeamAvg(avgResult.teamAvg ?? null);
         }
 
-        // Redesign-only: fetch season standing for the PGA/team/you band.
-        // Gated so flag-off does zero extra work; failure-silent (the action
-        // returns `{}` on error/cold-start, so the band simply won't render).
-        if (isRedesignEnabled()) {
-          const standingMap = await getPlayerStandingForReview(round.player_id);
-          if (!cancelled) setStanding(standingMap);
-        }
+        // Fetch season standing for the PGA/team/you band. Failure-silent
+        // (the action returns `{}` on error/cold-start, so the band simply
+        // won't render).
+        const standingMap = await getPlayerStandingForReview(round.player_id);
+        if (!cancelled) setStanding(standingMap);
       } catch {
         // Silently ignore fetch errors
       } finally {
@@ -529,7 +522,7 @@ export default function RoundReviewPage() {
   const fairwayStatusCopy = isGenerating ? 'Analyzing your round…' : 'Loading review…';
 
   // ── Fairway loading surface (P203/P216) ──────────────────────────────────
-  if (isLoading && redesign) {
+  if (isLoading) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <div className="mx-auto w-full max-w-2xl px-5 py-8 md:px-8 md:py-10">
@@ -596,95 +589,11 @@ export default function RoundReviewPage() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <m.div
-        variants={containerVariants}
-        initial={prefersReducedMotion ? false : "hidden"}
-        animate="visible"
-        className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
-      >
-        {/* Header stays mounted during generation so the Refresh button is
-            always reachable. The icon spins while a generation is in flight. */}
-        <MobileNavHeader
-          title="Round Review"
-          subtitle={round?.course_name ?? undefined}
-          backHref="/golf/dashboard/rounds"
-          backLabel="Rounds"
-          breadcrumb={
-            <Breadcrumb
-              items={[
-                { label: 'Dashboard', href: '/golf/dashboard' },
-                { label: 'Rounds', href: '/golf/dashboard/rounds' },
-                { label: round?.course_name ?? 'Round', href: `/golf/dashboard/rounds/${roundId}` },
-                { label: 'Review' },
-              ]}
-            />
-          }
-        >
-          {isV2Enabled && (
-            <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
-              <IconSparkles size={12} />
-              CoachHelm AI
-            </span>
-          )}
-          <Button variant="ghost"
-            onClick={() => generateReview()}
-            disabled={isGenerating}
-            className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
-          >
-            <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
-            Refresh
-          </Button>
-        </MobileNavHeader>
-
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-warm-100 overflow-hidden">
-              <div className="bg-primary-50/55 px-6 pt-6 pb-5">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-warm-200/60 skeleton-shimmer" />
-                  <div className="h-5 w-32 bg-warm-200/40 rounded-lg skeleton-shimmer" />
-                  <div className="h-10 w-20 bg-warm-200/40 rounded-lg skeleton-shimmer" />
-                </div>
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                      <div className="h-6 w-10 bg-warm-200/60 rounded mx-auto mb-1 skeleton-shimmer" />
-                      <div className="h-3 w-12 bg-warm-100 rounded mx-auto skeleton-shimmer" />
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-3">
-                  <div className="h-4 w-24 bg-warm-100 rounded skeleton-shimmer" />
-                  <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
-                  <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-warm-500 font-medium text-center">
-              {isGenerating ? (
-                <span className="flex items-center justify-center gap-2">
-                  <IconSparkles size={16} className="text-purple-500" />
-                  {isV2Enabled ? 'Running CoachHelm analysis...' : 'Analyzing your round...'}
-                </span>
-              ) : (
-                'Loading review...'
-              )}
-            </p>
-          </div>
-        </div>
-      </m.div>
-    );
-  }
-
   // ── Fairway error surface (P205) ─────────────────────────────────────────
   // A designed Fairway error state: InlineNotice (danger tone, text-fw-danger
   // via the tone bar) with a clear retry Button, inside the .fairway-ds scope.
   // Raw `text-red-500` + `bg-primary-600` are gone.
-  if (error && redesign) {
+  if (error) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
@@ -705,26 +614,8 @@ export default function RoundReviewPage() {
     );
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="text-center py-20">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Button variant="primary"
-            onClick={() => generateReview()}
-            className="px-5 py-3 min-h-[48px] bg-primary-600 text-white rounded-xl hover:bg-primary-700 active:scale-95 transition-all flex items-center gap-2 mx-auto font-medium"
-          >
-            <IconRefresh size={16} />
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   // ── Fairway no-data surface (P203) ───────────────────────────────────────
-  if (!round && redesign) {
+  if (!round) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <div className="mx-auto w-full max-w-2xl px-5 py-12 md:px-8">
@@ -740,26 +631,6 @@ export default function RoundReviewPage() {
             }
           />
         </div>
-      </div>
-    );
-  }
-
-  // No data state — show the shared EmptyState primitive with a back-to-rounds
-  // recovery action instead of the bare "Round not found" paragraph (IA audit
-  // 2026-05-28 flagged this as a states-fix orphan).
-  if (!round) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <EmptyState
-          variant="compact"
-          icon={<IconGolf size={32} />}
-          title="Round not found"
-          description="This round may have been deleted, or you may not have access to it. Head back to your rounds list to try another."
-          action={{
-            label: 'Back to Rounds',
-            href: '/golf/dashboard/rounds',
-          }}
-        />
       </div>
     );
   }
@@ -794,11 +665,9 @@ export default function RoundReviewPage() {
     return round.total_score - parSum;
   })();
 
-  // Shared round-review BODY — identical content in both the legacy chrome and
-  // the Fairway chrome (P203). Only the wrapping header / bottom-bar / scope
-  // differ between forks; the content blocks (LLM card, RoundReviewDisplay,
-  // stats comparison, standing band, takeaway, shot paths, V2 summary, promote
-  // CTA) are reused verbatim so behavior and data flow are unchanged.
+  // Round-review BODY, rendered once below inside the Fairway chrome (P203):
+  // LLM card, RoundReviewDisplay, stats comparison, standing band, takeaway,
+  // shot paths, V2 summary, promote CTA.
   const reviewBody = (
     <m.div variants={itemVariants} className="space-y-6">
         {/* W30 LLM round-review prose. Renders the deterministic
@@ -844,28 +713,27 @@ export default function RoundReviewPage() {
           teamAvg={toComparisonProps(teamAvg)}
         />
 
-        {/* CoachHelm round intelligence — REDESIGN ONLY. Surfaces this round's
-            stroke-leak board (review.strokesToGain) + the per-round practice
-            priority (review.coachHelm) — both computed by the engine but, until
-            now, all but invisible on the review. Additive; the component itself
-            returns null when neither piece has content. Page is already inside
-            the `.fairway-ds` scope under the redesign, so no nested scope here. */}
-        {isRedesignEnabled() && storedReview?.review_content && (
+        {/* CoachHelm round intelligence. Surfaces this round's stroke-leak
+            board (review.strokesToGain) + the per-round practice priority
+            (review.coachHelm) — both computed by the engine but, until now,
+            all but invisible on the review. Additive; the component itself
+            returns null when neither piece has content. Page is already
+            inside the `.fairway-ds` scope, so no nested scope here. */}
+        {storedReview?.review_content && (
           <RoundIntelligence
             strokesToGain={storedReview.review_content.strokesToGain}
             coachHelm={storedReview.review_content.coachHelm}
           />
         )}
 
-        {/* Where this sits vs PGA + team — REDESIGN ONLY.
+        {/* Where this sits vs PGA + team.
             Season-level standing (NOT round values) for the metrics this round
             exercised. The standing `player_value` is the season figure the
             PGA/team markers are calibrated against; mixing a single-round value
             onto a season scale would lie. Renders only when at least one
             canonical standing row exists — otherwise the RoundStatsComparison
-            above is the honest fallback (cold-start: <5 rounds / cron unrun).
-            Flag-off: this whole block is byte-for-byte absent. */}
-        {isRedesignEnabled() && (() => {
+            above is the honest fallback (cold-start: <5 rounds / cron unrun). */}
+        {(() => {
           const bandMetrics = ['gir_pct', 'sg_ott', 'sg_approach', 'sg_putting'] as const;
           const bars = bandMetrics
             .map((mid) => {
@@ -900,10 +768,8 @@ export default function RoundReviewPage() {
           return (
             <section className="space-y-3">
               <div>
-                <h2 className="text-base font-medium text-warm-900 tracking-[-0.012em]">
-                  Where this sits
-                </h2>
-                <p className="text-xs text-warm-500">
+                <FwEyebrow as="h2">Where this sits</FwEyebrow>
+                <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
                   Your season standing vs PGA Tour and your team.
                 </p>
               </div>
@@ -958,12 +824,16 @@ export default function RoundReviewPage() {
           );
           if (!storedReview?.id || !promoteSuggestion) return null;
           return (
-            <div className="rounded-2xl border border-primary-200/60 bg-primary-50/40 backdrop-blur-xl p-4 flex items-start gap-3">
+            <FwSurface
+              elevation="border"
+              padding="sm"
+              className="flex items-start gap-3 border-accent-200 bg-accent-50/60"
+            >
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-warm-900">
+                <p className="font-fw-sans text-body-sm font-medium text-text-primary">
                   Turn this into a focus area
                 </p>
-                <p className="text-xs text-warm-600 mt-0.5">
+                <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
                   {promoteSuggestion.title}
                 </p>
               </div>
@@ -977,7 +847,7 @@ export default function RoundReviewPage() {
                 reviewContext={round.course_name ?? undefined}
                 className="flex-shrink-0"
               />
-            </div>
+            </FwSurface>
           );
         })()}
     </m.div>
@@ -989,9 +859,8 @@ export default function RoundReviewPage() {
   // the action cluster — no purple-blue gradient pill), the shared body, and a
   // calm Fairway bottom action row. The standing band's lone scoped island is
   // gone (P204) — the outer scope supplies the tokens now.
-  if (redesign) {
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
+  return (
+    <div className={fairwayScope('min-h-full bg-canvas')}>
         <m.div
           variants={containerVariants}
           initial={prefersReducedMotion ? false : 'hidden'}
@@ -1037,69 +906,4 @@ export default function RoundReviewPage() {
         </m.div>
       </div>
     );
-  }
-
-  return (
-    <m.div
-      variants={containerVariants}
-      initial={prefersReducedMotion ? false : "hidden"}
-      animate="visible"
-      className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
-    >
-      {/* Header */}
-      <MobileNavHeader
-        title="Round Review"
-        subtitle={round.course_name ?? undefined}
-        backHref="/golf/dashboard/rounds"
-        backLabel="Rounds"
-        breadcrumb={
-          <Breadcrumb
-            items={[
-              { label: 'Dashboard', href: '/golf/dashboard' },
-              { label: 'Rounds', href: '/golf/dashboard/rounds' },
-              { label: round.course_name ?? 'Round', href: `/golf/dashboard/rounds/${roundId}` },
-              { label: 'Review' },
-            ]}
-          />
-        }
-      >
-        {isV2Enabled && v2Review && (
-          <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
-            <IconSparkles size={12} />
-            CoachHelm AI
-          </span>
-        )}
-        <Button variant="ghost"
-          onClick={() => generateReview()}
-          disabled={isGenerating}
-          className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
-        >
-          <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
-          Refresh
-        </Button>
-      </MobileNavHeader>
-
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {reviewBody}
-      </div>
-
-      {/* Bottom actions */}
-      <m.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 z-30 p-4 pb-[var(--golf-mobile-bottom-nav-offset)] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:z-auto lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
-        <div className="max-w-2xl mx-auto flex gap-3">
-          <Link
-            href={`/golf/dashboard/rounds/${roundId}`}
-            className="flex-1 py-3 bg-warm-100 text-warm-700 rounded-xl text-center font-medium hover:bg-warm-200 transition-colors"
-          >
-            Round Detail
-          </Link>
-          <Link
-            href="/golf/dashboard/stats"
-            className="flex-1 py-3 bg-primary-600 text-white rounded-xl text-center font-medium hover:bg-primary-700 transition-colors"
-          >
-            All Stats
-          </Link>
-        </div>
-      </m.div>
-    </m.div>
-  );
 }

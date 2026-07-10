@@ -5,6 +5,7 @@ import { getPlayerSeasonStats } from '@/app/baseball/actions/games';
 import { SeasonStatsTable } from '@/components/baseball/season-stats/SeasonStatsTable';
 import { PlayerGameLog } from '@/components/baseball/season-stats/PlayerGameLog';
 import type { BaseballPlayerSeasonStats, BaseballBoxScoreBatting, BaseballBoxScorePitching, BaseballGame } from '@/lib/types';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -118,9 +119,10 @@ export default async function PlayerStatsPage({ params }: PageProps) {
           teamId={team.id}
         />
       ) : (
-        <div className="glass-standard rounded-2xl p-8 text-center">
-          <p className="text-sm text-warm-400">No season stats yet. Stats populate automatically from box scores.</p>
-        </div>
+        <EditorsLetter
+          title="No season stats yet"
+          body="Stats populate automatically from box scores."
+        />
       )}
 
       {/* Game log */}
@@ -137,9 +139,9 @@ export default async function PlayerStatsPage({ params }: PageProps) {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="glass-standard rounded-2xl p-4 shadow-sm text-center">
+    <PaperCard className="p-4 shadow-sm text-center">
       <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-1">{label}</p>
       <p className="text-2xl font-black text-warm-900 tabular-nums">{value}</p>
-    </div>
+    </PaperCard>
   );
 }

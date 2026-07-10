@@ -11,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { InkNotice } from '@/components/baseball/living-annual';
 import {
   createItinerary,
   updateItinerary,
@@ -141,9 +142,8 @@ export function CreateItineraryModal({
           <motion.div
             initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
-            className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
           >
-            {error}
+            <InkNotice>{error}</InkNotice>
           </motion.div>
         )}
 

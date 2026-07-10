@@ -1,24 +1,16 @@
-import { fairwayScope, isRedesignEnabled } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
-import { GenericPageSkeleton } from '@/components/ui/skeleton';
 
 /**
  * Route-level loading fallback for the player My Qualifiers view.
  *
- * P183: when the redesign is on, this must be Fairway-native (warm `--fw-*`
- * skeleton blocks, not the legacy `warm-*`/`cream-*` GenericPageSkeleton) and
- * shape-match what loads — otherwise the skeleton→page swap flashes legacy
- * chrome and shifts layout (CLS). It mirrors FairwayMyQualifiers exactly:
- * the `max-w-[1100px]` column, a ViewHeader masthead (eyebrow / title /
- * description / meta), then an Active and a Concluded section, each a
- * SectionHeading label over a `md:grid-cols-2` grid of scorecard-shaped cards.
- *
- * Flag-off, the legacy MyQualifiersClient still renders, so the legacy
- * GenericPageSkeleton remains the correct match for that fork.
+ * Fairway-native (warm `--fw-*` skeleton blocks) and shape-matched to what
+ * loads. It mirrors FairwayMyQualifiers exactly: the `max-w-[1100px]`
+ * column, a ViewHeader masthead (eyebrow / title / description / meta),
+ * then an Active and a Concluded section, each a SectionHeading label over
+ * a `md:grid-cols-2` grid of scorecard-shaped cards.
  */
 export default function Loading() {
-  if (!isRedesignEnabled()) return <GenericPageSkeleton />;
-
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div

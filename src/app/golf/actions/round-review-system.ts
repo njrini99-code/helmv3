@@ -1468,6 +1468,12 @@ async function generateAndStoreRoundReviewImpl(
   } finally {
     // Clear only if we still own the slot (a settled job must not evict a newer
     // run that a later Refresh may have started).
+    // NOTE: `run` is intentionally NOT awaited a second time here — it was
+    // already awaited above via `return await run;`. This is a Promise
+    // *reference* (identity) comparison against the map entry, used solely to
+    // detect whether a later caller has since replaced this round's in-flight
+    // slot with a newer job; awaiting would resolve to the settled value and
+    // defeat the identity check.
     if (inFlightRoundReviews.get(roundId) === run) {
       inFlightRoundReviews.delete(roundId);
     }

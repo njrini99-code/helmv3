@@ -3,44 +3,38 @@
 // =============================================================================
 // src/components/baseball/player-today/PlayerTodayClient.tsx
 //
-// Wave 4 / packet P4.2 — Player Today (daily loop), client surface.
+// Player Today (daily loop) — migrated onto "The Living Annual" kit (docs/
+// baseball/design-system-living-annual.md; map: docs/baseball/ui-migration-
+// map.md Lane 3 "today" row — the premium editorial cover-page treatment for
+// the highest-traffic player screen).
 //
-// Renders the SELF-ONLY daily view from the Wave-3 read-model
-// (PlayerTodayReadModel): today's schedule annotated with this player's
-// acknowledgement status, recent captured stats, and the deferred
-// assignments / readiness-check-in feeds.
+// PRESENTATION ONLY. Every data path below is byte-for-byte unchanged:
+// fetchCoachTeam-adjacent read-model shapes, the acknowledgement optimistic
+// flow (acknowledgeEvent / withdrawAcknowledgement), the coach-action flow
+// (acknowledgePlayerAction / completePlayerAction), and every prop/handler
+// wiring into DailyContract / PlayerLiftToday / the lifting check-in cards.
+// Only the render moved to the kit: masthead, RuledStatLine-driven contents
+// strip, PaperCard record-book rows, EditorsLetter/EmptyIssue empty states
+// (no yellow/amber warning boxes anywhere), and the compact LA
+// `PlayerPassportFairway` embed in place of the legacy `PlayerPassportCard`.
 //
-// This component is DISPLAY-FIRST and honest:
-//   - authorized:false / error  → labeled, recoverable states (no crash, no
-//     fabricated data, no black background).
-//   - deferred feeds            → "coming soon" cards driven by the read-model's
-//     available:false flag; never invent assignments or check-ins.
-//   - acknowledgement           → WIRED (P4.3 integration). Each event exposes a
-//     real Acknowledge / Withdraw control backed by acknowledgeEvent /
-//     withdrawAcknowledgement (actions/acknowledgements.ts). Optimistic local
-//     state gives instant feedback; an honest error toast + revert covers
-//     failure; router.refresh() reconciles against the server read-model. Initial
-//     state is seeded from the read-model's per-event ackStatus (getPlayerToday
-//     already self-joins baseball_event_acknowledgements server-side), so we do
-//     NOT round-trip getMyEventAcknowledgements at mount — that action exists for
-//     surfaces without a pre-joined model.
+// HONESTY (carried over verbatim):
+//   - authorized:false / error  → labeled, recoverable states (EditorsLetter),
+//     never a crash or fabricated data.
+//   - deferred feeds            → honest "coming soon" cards driven by the
+//     read-model's available:false flag; never invent assignments/check-ins.
+//   - acknowledgement           → WIRED. Each event exposes a real Acknowledge
+//     / Withdraw control; optimistic local state + honest revert-on-failure;
+//     router.refresh() reconciles against the server read-model.
 //
-// EXTENSION SLOT: <div data-slot="player-lift-today"> is a labeled placeholder
-// where the Performance vertical's PlayerLiftToday card is wired in integration.
-// We deliberately do NOT import a lifting component that doesn't exist yet.
-//
-// UI: reuses GolfHelm primitives (Card / EmptyState / Skeleton / Button) +
-// cream/green tokens + glass/matte patterns. Motion via LazyMotion/domAnimation
-// honoring prefers-reduced-motion.
+// EXTENSION SLOT: <div data-slot="player-lift-today"> is the labeled mount
+// point for the Performance vertical's PlayerLiftToday card (untouched here).
 // =============================================================================
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
-import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import {
@@ -55,9 +49,6 @@ import {
   IconAlertCircle,
   IconRotateCcw,
   IconSparkles,
-  IconGauge,
-  IconShieldCheck,
-  IconShieldAlert,
   IconChevronRight,
   IconTarget,
   IconFlag,
@@ -90,11 +81,24 @@ import PlayerLiftToday from '@/components/baseball/performance/PlayerLiftToday';
 import type { DailyContractReadModel } from '@/lib/baseball/read-models/player-daily-contract';
 import type { PassportReadModel } from '@/lib/baseball/read-models/player-passport';
 import { DailyContract } from '@/components/baseball/daily-contract/DailyContract';
-import { PlayerPassportCard } from '@/components/baseball/passport/PlayerPassportCard';
+import { PlayerPassportFairway } from '@/components/baseball/passport';
 import { SorenessCheckCard } from '@/components/lifting/soreness/SorenessCheckCard';
 import { WeightCheckInCard } from '@/components/lifting/weight/WeightCheckInCard';
 import { NutritionPlanCard } from '@/components/lifting/nutrition/NutritionPlanCard';
 import type { PerformanceCheckinSlot } from '@/app/baseball/(player-dashboard)/player/today/page';
+import { cn } from '@/lib/utils';
+import { fairwayScope } from '@/lib/redesign/flag';
+import {
+  SectionMasthead,
+  Eyebrow,
+  EditorsLetter,
+  EmptyIssue,
+  PaperCard,
+  InkBadge,
+  KPIContentsStrip,
+  Reveal,
+  pressableClass,
+} from '@/components/baseball/living-annual';
 
 // -----------------------------------------------------------------------------
 // Props
@@ -160,7 +164,10 @@ const SOURCE_LABEL: Record<string, string> = {
 };
 
 // -----------------------------------------------------------------------------
-// Section header
+// Section header — the shared subsection pairing every migrated LA surface
+// uses (Eyebrow + optional meta/action; see PlayerPassportFairway's local
+// SubSectionHeader). Kept as a single helper so every call site below stays
+// unchanged (icon/title/count/action) while the render moved to the kit.
 // -----------------------------------------------------------------------------
 
 function SectionHeader({
@@ -172,233 +179,98 @@ function SectionHeader({
   icon: React.ReactNode;
   title: string;
   count?: number;
-  /**
-   * Optional trailing action (e.g. a "View all" deep-link to the section's full
-   * depth surface). Right-aligned so the title + count stay left. Purely additive
-   * — existing call sites omit it and render unchanged.
-   */
+  /** Optional trailing action (e.g. a "View all" deep-link). */
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2.5 mb-3">
-      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-        {icon}
-      </span>
-      <h2 className="text-xl font-semibold tracking-tight text-warm-900">{title}</h2>
-      {typeof count === 'number' && count > 0 && (
-        <span className="ml-0.5 rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow font-semibold tabular-nums text-warm-600">
-          {count}
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus"
+        >
+          {icon}
         </span>
-      )}
-      {action && <div className="ml-auto">{action}</div>}
+        <Eyebrow as="h2" ink="team">
+          {title}
+        </Eyebrow>
+        {typeof count === 'number' && count > 0 && (
+          <span className="font-annual text-eyebrow tabular-nums text-text-tertiary">{count}</span>
+        )}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
 
 // -----------------------------------------------------------------------------
-// Summary strip
+// Readiness gate — the daily loop's "are you good to train" signal. No amber/
+// red tone chrome: an unfilled check-in reads as an EditorsLetter prompt; a
+// filled one reads as an honest PaperCard where the numeral/badge carries the
+// only accent (green for a good band), never a colored border/background.
 // -----------------------------------------------------------------------------
-
-function SummaryStrip({ model }: { model: PlayerTodayReadModel }) {
-  const liftsDue = model.summary.assignmentsDue;
-  const coachOpen = model.summary.coachActionsOpen;
-  const coachDue = model.summary.coachActionsDue;
-  const tiles = [
-    {
-      label: 'Events Today',
-      value: model.summary.eventsToday,
-      icon: <IconCalendar size={18} />,
-      tone: 'text-warm-600',
-      bg: 'bg-warm-100',
-    },
-    {
-      label: 'Need Acknowledgement',
-      value: model.summary.eventsPendingAck,
-      icon: <IconAlertCircle size={18} />,
-      tone: model.summary.eventsPendingAck > 0 ? 'text-amber-600' : 'text-warm-600',
-      bg: model.summary.eventsPendingAck > 0 ? 'bg-amber-50' : 'bg-warm-100',
-    },
-    {
-      // Coach assignments are the player-side of source -> signal -> action: the
-      // most action-relevant tile on the daily loop. Emphasized amber when any is
-      // due/overdue, green when there's open work, neutral when clear.
-      label: 'From Coach',
-      value: coachOpen,
-      icon: <IconClipboardList size={18} />,
-      tone:
-        coachDue > 0
-          ? 'text-amber-600'
-          : coachOpen > 0
-            ? 'text-primary-600'
-            : 'text-warm-600',
-      bg:
-        coachDue > 0 ? 'bg-amber-50' : coachOpen > 0 ? 'bg-primary-50' : 'bg-warm-100',
-    },
-    {
-      // "Lifts Due" (not "Lifts Today"): counts sessions the player still owes —
-      // today PLUS overdue-but-open — so this tile agrees with the right-rail
-      // Lift & Check-in card instead of reading 0 while the card shows overdue.
-      label: 'Lifts Due',
-      value: liftsDue,
-      icon: <IconDumbbell size={18} />,
-      tone: liftsDue > 0 ? 'text-primary-600' : 'text-warm-600',
-      bg: liftsDue > 0 ? 'bg-primary-50' : 'bg-warm-100',
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      {tiles.map((t) => (
-        <Card key={t.label} variant="raised" padding="md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-                {t.label}
-              </p>
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-warm-900">
-                {t.value}
-              </p>
-            </div>
-            <span
-              className={`flex h-10 w-10 items-center justify-center rounded-xl ${t.bg} ${t.tone}`}
-            >
-              {t.icon}
-            </span>
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Readiness gate — the daily loop's "are you good to train" signal
-// -----------------------------------------------------------------------------
-
-// Maps the read-model's cream/green tone to surface classes (no new palette).
-const READINESS_TONE_CLASSES: Record<
-  'success' | 'warning' | 'error' | 'info',
-  { border: string; chipBg: string; chipText: string; iconBg: string; iconText: string }
-> = {
-  success: {
-    border: 'border-primary-200',
-    chipBg: 'bg-primary-50',
-    chipText: 'text-primary-700',
-    iconBg: 'bg-primary-100',
-    iconText: 'text-primary-600',
-  },
-  warning: {
-    border: 'border-amber-200',
-    chipBg: 'bg-amber-50',
-    chipText: 'text-amber-700',
-    iconBg: 'bg-amber-100',
-    iconText: 'text-amber-600',
-  },
-  error: {
-    border: 'border-red-200',
-    chipBg: 'bg-red-50',
-    chipText: 'text-red-700',
-    iconBg: 'bg-red-100',
-    iconText: 'text-red-600',
-  },
-  info: {
-    border: 'border-warm-200',
-    chipBg: 'bg-warm-50',
-    chipText: 'text-warm-700',
-    iconBg: 'bg-warm-100',
-    iconText: 'text-warm-600',
-  },
-};
 
 function ReadinessGate({ readiness }: { readiness: PlayerTodayReadiness }) {
   // No check-in yet → honest prompt, never a fabricated band.
   if (!readiness.available || readiness.band == null) {
     return (
-      <Card variant="raised" padding="md" className="border-warm-200">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warm-100 text-warm-500">
-            <IconGauge size={18} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-warm-900">Readiness</h2>
-              <span className="rounded-full bg-warm-100 px-2.5 py-1 text-eyebrow font-semibold text-warm-500">
-                Not checked in
-              </span>
-            </div>
-            <p className="mt-1 text-sm text-warm-500">{readiness.note}</p>
-            <p className="mt-2 text-eyebrow text-warm-400">
-              Complete your daily check-in below to unlock today&apos;s readiness.
-            </p>
-          </div>
-        </div>
-      </Card>
+      <EditorsLetter
+        ink="team"
+        live
+        title="Readiness — not checked in"
+        body={`${readiness.note} Complete your daily check-in below to unlock today's readiness.`}
+      />
     );
   }
 
-  const tone = READINESS_TONE_CLASSES[readiness.tone ?? 'warning'];
   const isGood = readiness.tone === 'success';
 
   return (
-    <Card variant="raised" padding="md" className={tone.border}>
-      <div className="flex items-start gap-3">
-        <span
-          className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone.iconBg} ${tone.iconText}`}
-        >
-          {isGood ? <IconShieldCheck size={18} /> : <IconShieldAlert size={18} />}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-base font-semibold text-warm-900">Readiness</h2>
-            <div className="flex items-center gap-1.5">
-              {readiness.confidence && (
-                <span className="rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-wide text-warm-500">
-                  {readiness.confidence} confidence
-                </span>
-              )}
-              <span
-                className={`rounded-full px-2.5 py-1 text-eyebrow font-semibold ${tone.chipBg} ${tone.chipText}`}
-              >
-                {readiness.bandLabel}
-              </span>
-            </div>
-          </div>
-
-          {/* Why — each reason cites an input (source -> signal honesty). */}
-          {readiness.reasons.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {readiness.reasons.map((r, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-sm text-warm-600">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-warm-300" />
-                  <span className="first-letter:uppercase">{r}</span>
-                </li>
-              ))}
-            </ul>
+    <PaperCard className="p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Eyebrow ink="team">Readiness</Eyebrow>
+        <div className="flex items-center gap-2">
+          {readiness.confidence && (
+            <InkBadge label={`${readiness.confidence} confidence`} tone="neutral" />
           )}
-
-          {readiness.suggestedAction && (
-            <p className="mt-2 text-sm font-medium text-warm-700">
-              {readiness.suggestedAction}
-            </p>
-          )}
-
-          {/* Honest footers: staleness + missing inputs, never hidden. */}
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow text-warm-400">
-            {!readiness.submittedToday && (
-              <span className="flex items-center gap-1">
-                <IconAlertCircle size={12} />
-                {readiness.stale
-                  ? "Based on an older check-in — submit today's below."
-                  : "No check-in for today yet — submit one below."}
-              </span>
-            )}
-            {readiness.missingInputs.length > 0 && (
-              <span>Missing: {readiness.missingInputs.join(', ')}</span>
-            )}
-          </div>
+          <InkBadge
+            label={readiness.bandLabel ?? 'Unknown'}
+            tone={isGood ? 'team' : 'neutral'}
+            variant={isGood ? 'solid' : 'soft'}
+          />
         </div>
       </div>
-    </Card>
+
+      {/* Why — each reason cites an input (source -> signal honesty). */}
+      {readiness.reasons.length > 0 && (
+        <ul className="mt-3 space-y-1.5">
+          {readiness.reasons.map((r, i) => (
+            <li key={i} className="flex items-start gap-2 font-annual text-body-sm text-text-secondary">
+              <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[color:var(--hairline)]" />
+              <span className="first-letter:uppercase">{r}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {readiness.suggestedAction && (
+        <p className="mt-3 font-annual text-body-sm font-medium text-text-primary">
+          {readiness.suggestedAction}
+        </p>
+      )}
+
+      {/* Honest footers: staleness + missing inputs, never hidden. */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[color:var(--hairline)] pt-3 text-eyebrow text-text-tertiary">
+        {!readiness.submittedToday && (
+          <span>
+            {readiness.stale
+              ? "Based on an older check-in — submit today's below."
+              : 'No check-in for today yet — submit one below.'}
+          </span>
+        )}
+        {readiness.missingInputs.length > 0 && <span>Missing: {readiness.missingInputs.join(', ')}</span>}
+      </div>
+    </PaperCard>
   );
 }
 
@@ -408,14 +280,21 @@ function ReadinessGate({ readiness }: { readiness: PlayerTodayReadiness }) {
 // write-dead — see src/lib/baseball/read-models/player-today.ts)
 // -----------------------------------------------------------------------------
 
-const LIFT_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  assigned: { label: 'Assigned', cls: 'bg-warm-100 text-warm-700' },
-  started: { label: 'In progress', cls: 'bg-amber-100 text-amber-700' },
-  modified: { label: 'Adjusted', cls: 'bg-amber-100 text-amber-700' },
-  completed: { label: 'Completed', cls: 'bg-primary-100 text-primary-700' },
-  missed: { label: 'Missed', cls: 'bg-red-100 text-red-700' },
-  excused: { label: 'Excused', cls: 'bg-warm-100 text-warm-600' },
+const LIFT_STATUS_LABEL: Record<string, string> = {
+  assigned: 'Assigned',
+  started: 'In progress',
+  modified: 'Adjusted',
+  completed: 'Completed',
+  missed: 'Missed',
+  excused: 'Excused',
 };
+
+/** InkBadge tone/variant for a lift assignment row — never red/amber chrome. */
+function liftStatusTone(a: PlayerTodayAssignment): { tone: 'team' | 'sodium' | 'neutral'; variant: 'soft' | 'solid' } {
+  if (a.isOverdue) return { tone: 'sodium', variant: 'solid' };
+  if (a.status === 'completed') return { tone: 'team', variant: 'solid' };
+  return { tone: 'neutral', variant: 'soft' };
+}
 
 function AssignmentsSection({
   feed,
@@ -424,76 +303,48 @@ function AssignmentsSection({
 }) {
   return (
     <section>
-      <SectionHeader
-        icon={<IconDumbbell size={16} />}
-        title="Lifts Due"
-        count={feed.items.length}
-      />
+      <SectionHeader icon={<IconDumbbell size={15} />} title="Lifts Due" count={feed.items.length} />
       {feed.items.length === 0 ? (
-        <EmptyState
-          variant="card"
-          glass
-          icon={<IconDumbbell size={40} />}
-          title="No lifts scheduled"
-          description={feed.note}
-        />
+        <EditorsLetter ink="team" title="No lifts scheduled" body={feed.note} />
       ) : (
-        <Card variant="raised" noPadding>
-          <ul className="divide-y divide-warm-100">
-            {feed.items.map((a: PlayerTodayAssignment) => {
-              const badge = a.isOverdue
-                ? { label: 'Overdue', cls: 'bg-red-100 text-red-700' }
-                : (LIFT_STATUS_LABEL[a.status] ?? {
-                    label: prettyLabel(a.status),
-                    cls: 'bg-warm-100 text-warm-600',
-                  });
+        <PaperCard className="p-0">
+          <ul className="divide-y divide-[color:var(--hairline)]">
+            {feed.items.map((a: PlayerTodayAssignment, i) => {
+              const statusLabel = a.isOverdue ? 'Overdue' : (LIFT_STATUS_LABEL[a.status] ?? prettyLabel(a.status));
               const dateLabel = a.isToday
                 ? 'Today'
                 : a.isOverdue
                   ? `Overdue · ${a.scheduledDate}`
                   : a.scheduledDate;
+              const tone = liftStatusTone(a);
               return (
-                <li
-                  key={a.id}
-                  className="flex items-center gap-3 px-5 py-3.5"
-                >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                      a.isOverdue
-                        ? 'bg-red-50 text-red-600'
-                        : 'bg-primary-50 text-primary-600'
-                    }`}
-                  >
-                    <IconDumbbell size={16} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-warm-900">
-                      {a.title}
-                    </p>
-                    <p
-                      className={`text-eyebrow uppercase tracking-wide ${
-                        a.isOverdue ? 'text-red-500' : 'text-warm-400'
-                      }`}
+                <Reveal key={a.id} staggerIndex={Math.min(i, 6)}>
+                  <li className="flex items-center gap-3 px-5 py-3.5">
+                    <span
+                      aria-hidden
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus"
                     >
-                      {dateLabel}
-                      {a.estimatedMinutes ? ` · ~${a.estimatedMinutes} min` : ''}
-                      {a.baseballContext ? ` · ${prettyLabel(a.baseballContext)}` : ''}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-eyebrow font-semibold ${badge.cls}`}
-                  >
-                    {badge.label}
-                  </span>
-                  <IconChevronRight size={14} className="shrink-0 text-warm-400" />
-                </li>
+                      <IconDumbbell size={15} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-annual text-body-sm font-medium text-text-primary">{a.title}</p>
+                      <p className="text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+                        {dateLabel}
+                        {a.estimatedMinutes ? ` · ~${a.estimatedMinutes} min` : ''}
+                        {a.baseballContext ? ` · ${prettyLabel(a.baseballContext)}` : ''}
+                      </p>
+                    </div>
+                    <InkBadge label={statusLabel} tone={tone.tone} variant={tone.variant} className="shrink-0" />
+                    <IconChevronRight size={14} className="shrink-0 text-text-tertiary" aria-hidden />
+                  </li>
+                </Reveal>
               );
             })}
           </ul>
-          <p className="border-t border-warm-100 px-5 py-2.5 text-eyebrow text-warm-400">
+          <p className="border-t border-[color:var(--hairline)] px-5 py-2.5 text-eyebrow text-text-tertiary">
             Log your sets in the Lift &amp; Check-in card.
           </p>
-        </Card>
+        </PaperCard>
       )}
     </section>
   );
@@ -513,18 +364,15 @@ const PLAYER_ACTION_META: Record<
   PlayerActionType,
   { label: string; icon: React.ReactNode }
 > = {
-  player_task: { label: 'Task', icon: <IconClipboardList size={16} /> },
-  video_request: { label: 'Video', icon: <IconTarget size={16} /> },
-  message: { label: 'Message', icon: <IconFlag size={16} /> },
+  player_task: { label: 'Task', icon: <IconClipboardList size={15} /> },
+  video_request: { label: 'Video', icon: <IconTarget size={15} /> },
+  message: { label: 'Message', icon: <IconFlag size={15} /> },
 };
 
-const PLAYER_ACTION_STATUS_BADGE: Record<
-  PlayerActionItem['status'],
-  { label: string; cls: string }
-> = {
-  open: { label: 'New', cls: 'bg-amber-50 text-amber-700' },
-  in_progress: { label: 'In progress', cls: 'bg-primary-50 text-primary-700' },
-  blocked: { label: 'Blocked', cls: 'bg-red-50 text-red-700' },
+const PLAYER_ACTION_STATUS_LABEL: Record<PlayerActionItem['status'], string> = {
+  open: 'New',
+  in_progress: 'In progress',
+  blocked: 'Blocked',
 };
 
 /** Local optimistic status for a single assignment card. */
@@ -545,28 +393,16 @@ function CoachAssignmentCard({
 }) {
   const meta = PLAYER_ACTION_META[item.actionType];
   const completed = view.status === 'completed';
-  const badge = completed
-    ? { label: 'Completed', cls: 'bg-primary-100 text-primary-700' }
-    : (PLAYER_ACTION_STATUS_BADGE[view.status as PlayerActionItem['status']] ?? {
-        label: prettyLabel(view.status),
-        cls: 'bg-warm-100 text-warm-600',
-      });
+  const statusLabel = completed
+    ? 'Completed'
+    : (PLAYER_ACTION_STATUS_LABEL[view.status as PlayerActionItem['status']] ?? prettyLabel(view.status));
 
   return (
-    <Card
-      variant="raised"
-      padding="md"
-      className={`transition-all duration-200 ${
-        completed ? 'border-primary-200 bg-primary-50/30' : 'hover:border-warm-300 hover:shadow-sm'
-      }`}
-    >
+    <PaperCard className={cn('p-4 sm:p-5', completed && 'opacity-70')}>
       <div className="flex items-start gap-3">
         <span
-          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-            completed
-              ? 'bg-primary-100 text-primary-600'
-              : 'bg-primary-50 text-primary-600'
-          }`}
+          aria-hidden
+          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus"
         >
           {completed ? <IconCheckCircle2 size={16} /> : meta.icon}
         </span>
@@ -574,13 +410,14 @@ function CoachAssignmentCard({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <h3
-                className={`truncate text-base font-semibold ${
-                  completed ? 'text-warm-500 line-through' : 'text-warm-900'
-                }`}
+                className={cn(
+                  'truncate font-annual text-body-md font-semibold',
+                  completed ? 'text-text-tertiary line-through' : 'text-text-primary',
+                )}
               >
                 {item.title}
               </h3>
-              <p className="mt-0.5 text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
+              <p className="mt-0.5 text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
                 {meta.label}
                 {item.dueDate
                   ? item.isOverdue
@@ -591,32 +428,29 @@ function CoachAssignmentCard({
                   : ''}
               </p>
             </div>
-            <span
-              className={`shrink-0 rounded-full px-2.5 py-1 text-eyebrow font-semibold ${badge.cls}`}
-            >
-              {badge.label}
-            </span>
+            <InkBadge
+              label={statusLabel}
+              tone={completed ? 'team' : item.isOverdue ? 'sodium' : 'neutral'}
+              variant={completed || item.isOverdue ? 'solid' : 'soft'}
+              className="shrink-0"
+            />
           </div>
 
-          {item.detail && (
-            <p className="mt-2 text-sm text-warm-600">{item.detail}</p>
-          )}
+          {item.detail && <p className="mt-2 font-annual text-body-sm text-text-secondary">{item.detail}</p>}
 
           {/* Provenance: source -> signal -> assigned-to-you. */}
-          <p className="mt-2 flex items-center gap-1.5 text-eyebrow text-warm-400">
-            <IconSparkles size={12} className="shrink-0" />
+          <p className="mt-2 flex items-center gap-1.5 text-eyebrow text-text-tertiary">
+            <IconSparkles size={11} className="shrink-0" aria-hidden />
             {item.sourceRef.label}
             {item.confidence != null && (
-              <span className="tabular-nums">
-                · {Math.round(item.confidence * 100)}% confidence
-              </span>
+              <span className="tabular-nums">· {Math.round(item.confidence * 100)}% confidence</span>
             )}
           </p>
 
           {/* Controls — acknowledge to start, complete when done. A completed
               action is terminal from the player side (no withdraw). */}
           {!completed && (
-            <div className="mt-3.5 flex items-center justify-end gap-2 border-t border-warm-100 pt-3">
+            <div className="mt-3.5 flex items-center justify-end gap-2 border-t border-[color:var(--hairline)] pt-3">
               {view.status === 'open' || view.status === 'blocked' ? (
                 <Button
                   variant="secondary"
@@ -640,13 +474,13 @@ function CoachAssignmentCard({
             </div>
           )}
           {completed && (
-            <p className="mt-3 border-t border-warm-100 pt-3 text-eyebrow text-primary-600">
+            <p className="mt-3 border-t border-[color:var(--hairline)] pt-3 text-eyebrow text-grade-plus">
               Nice work. Your coach can see this is done.
             </p>
           )}
         </div>
       </div>
-    </Card>
+    </PaperCard>
   );
 }
 
@@ -712,38 +546,37 @@ function CoachAssignmentsSection({
   return (
     <section>
       <SectionHeader
-        icon={<IconClipboardList size={16} />}
+        icon={<IconClipboardList size={15} />}
         title="From Your Coach"
         count={feed.items.length}
       />
       {feed.items.length === 0 ? (
-        <EmptyState
-          variant="card"
-          glass
-          icon={<IconClipboardList size={40} />}
+        <EditorsLetter
+          ink="team"
           title="No assignments right now"
-          description="When your coach assigns you a task from a coaching signal, it'll show up here for you to complete."
+          body="When your coach assigns you a task from a coaching signal, it'll show up here for you to complete."
         />
       ) : (
         <div className="space-y-3">
-          {feed.items.map((item) => (
-            <CoachAssignmentCard
-              key={item.id}
-              item={item}
-              view={viewFor(item)}
-              busy={busyId === item.id}
-              onAcknowledge={() =>
-                run(
-                  item,
-                  'in_progress',
-                  acknowledgePlayerAction,
-                  'Assignment acknowledged',
-                )
-              }
-              onComplete={() =>
-                run(item, 'completed', completePlayerAction, 'Marked done')
-              }
-            />
+          {feed.items.map((item, i) => (
+            <Reveal key={item.id} staggerIndex={Math.min(i, 6)}>
+              <CoachAssignmentCard
+                item={item}
+                view={viewFor(item)}
+                busy={busyId === item.id}
+                onAcknowledge={() =>
+                  run(
+                    item,
+                    'in_progress',
+                    acknowledgePlayerAction,
+                    'Assignment acknowledged',
+                  )
+                }
+                onComplete={() =>
+                  run(item, 'completed', completePlayerAction, 'Marked done')
+                }
+              />
+            </Reveal>
           ))}
         </div>
       )}
@@ -761,19 +594,9 @@ type AckView = { status: AckStatus; acknowledgedAt: string | null };
 
 function AckBadge({ status }: { status: AckStatus }) {
   if (status === 'acknowledged') {
-    return (
-      <span className="flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-eyebrow font-semibold text-primary-700">
-        <IconCheckCircle2 size={12} />
-        Acknowledged
-      </span>
-    );
+    return <InkBadge label="Acknowledged" tone="team" variant="solid" />;
   }
-  return (
-    <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-eyebrow font-semibold text-amber-700">
-      <IconAlertCircle size={12} />
-      Needs acknowledgement
-    </span>
-  );
+  return <InkBadge label="Needs acknowledgement" tone="sodium" variant="solid" />;
 }
 
 function ScheduleCard({
@@ -792,45 +615,41 @@ function ScheduleCard({
   const acknowledged = ack.status === 'acknowledged';
 
   return (
-    <Card variant="raised" padding="md" className="transition-all duration-200 hover:border-warm-300 hover:shadow-sm">
+    <PaperCard className="p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-base font-semibold text-warm-900">{event.title}</h3>
-            {event.isMandatory && (
-              <span className="rounded-full bg-red-50 px-2 py-0.5 text-eyebrow font-semibold text-red-600">
-                Mandatory
-              </span>
-            )}
+            <h3 className="truncate font-annual text-body-md font-semibold text-text-primary">{event.title}</h3>
+            {event.isMandatory && <InkBadge label="Mandatory" tone="sodium" />}
           </div>
-          <p className="mt-0.5 text-sm text-warm-500">{prettyLabel(event.eventType)}</p>
+          <p className="mt-0.5 font-annual text-body-sm text-text-secondary">{prettyLabel(event.eventType)}</p>
         </div>
         <AckBadge status={ack.status} />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-warm-600">
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 font-annual text-body-sm text-text-secondary">
         <span className="flex items-center gap-1.5 tabular-nums">
-          <IconClock size={14} className="text-warm-400" />
+          <IconClock size={13} className="text-text-tertiary" aria-hidden />
           {formatTimeRange(event.startTime, event.endTime)}
         </span>
         {event.location && (
           <span className="flex items-center gap-1.5">
-            <IconMapPin size={14} className="text-warm-400" />
+            <IconMapPin size={13} className="text-text-tertiary" aria-hidden />
             {event.location}
           </span>
         )}
       </div>
 
       {/* Acknowledge / Withdraw control — the spec's "Acknowledge" primary CTA. */}
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-warm-100 pt-3">
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--hairline)] pt-3">
         {acknowledged ? (
-          <p className="min-w-0 text-eyebrow text-warm-400">
+          <p className="min-w-0 text-eyebrow text-text-tertiary">
             {ack.acknowledgedAt
               ? `Acknowledged ${formatTime(ack.acknowledgedAt) || 'today'}`
               : 'Acknowledged'}
           </p>
         ) : (
-          <p className="min-w-0 text-eyebrow text-warm-400">
+          <p className="min-w-0 text-eyebrow text-text-tertiary">
             Let your staff know you&apos;ve seen this.
           </p>
         )}
@@ -858,7 +677,7 @@ function ScheduleCard({
           </Button>
         )}
       </div>
-    </Card>
+    </PaperCard>
   );
 }
 
@@ -965,29 +784,24 @@ function ScheduleSection({ events }: { events: PlayerTodayEvent[] }) {
   return (
     <section>
       <SectionHeader
-        icon={<IconCalendar size={16} />}
+        icon={<IconCalendar size={15} />}
         title="Today's Schedule"
         count={events.length}
       />
       {events.length === 0 ? (
-        <EmptyState
-          variant="card"
-          glass
-          icon={<IconCalendar size={40} />}
-          title="Nothing scheduled today"
-          description="When your coach adds practices or games for today, they'll show up here."
-        />
+        <EmptyIssue variant="today" ink="team" />
       ) : (
         <div className="space-y-3">
-          {visible.map((e) => (
-            <ScheduleCard
-              key={e.id}
-              event={e}
-              ack={ackFor(e)}
-              busy={busyId === e.id}
-              onAcknowledge={() => handleAcknowledge(e)}
-              onWithdraw={() => handleWithdraw(e)}
-            />
+          {visible.map((e, i) => (
+            <Reveal key={e.id} staggerIndex={Math.min(i, 6)}>
+              <ScheduleCard
+                event={e}
+                ack={ackFor(e)}
+                busy={busyId === e.id}
+                onAcknowledge={() => handleAcknowledge(e)}
+                onWithdraw={() => handleWithdraw(e)}
+              />
+            </Reveal>
           ))}
           {events.length > 4 && (
             <Button
@@ -1017,79 +831,82 @@ function RecentStatsSection({ stats }: { stats: PlayerTodayStat[] }) {
   const myStatsLink = (
     <Link
       href="/baseball/dashboard/my-stats"
-      className="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+      className={pressableClass({
+        ink: 'team',
+        tint: false,
+        className:
+          'inline-flex items-center gap-1 rounded-fw-sm text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus',
+      })}
     >
       My Stats
-      <IconChevronRight
-        size={14}
-        className="transition-transform group-hover:translate-x-0.5"
-      />
+      <IconChevronRight size={13} aria-hidden />
     </Link>
   );
 
   return (
     <section>
       <SectionHeader
-        icon={<IconActivity size={16} />}
+        icon={<IconActivity size={15} />}
         title="Recent Sessions"
         count={stats.length}
         action={myStatsLink}
       />
       {stats.length === 0 ? (
-        <EmptyState
-          variant="card"
-          glass
-          icon={<IconActivity size={40} />}
+        <EditorsLetter
+          ink="team"
           title="No recent sessions"
-          description="Your captured game and practice stats will appear here as they're logged. Visit My Stats anytime to see your season totals and trends."
+          body="Your captured game and practice stats will appear here as they're logged. Visit My Stats anytime to see your season totals and trends."
           action={
             <Link
               href="/baseball/dashboard/my-stats"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+              className={pressableClass({
+                ink: 'team',
+                className:
+                  'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+              })}
             >
               View My Stats
-              <IconChevronRight size={16} />
+              <IconChevronRight size={16} aria-hidden />
             </Link>
           }
         />
       ) : (
-        <Card variant="raised" noPadding>
-          <ul className="divide-y divide-warm-100">
+        <PaperCard className="p-0">
+          <ul className="divide-y divide-[color:var(--hairline)]">
             {stats.map((s) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between gap-3 px-5 py-3.5"
-              >
+              <li key={s.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-warm-900">
+                  <p className="truncate font-annual text-body-sm font-medium text-text-primary">
                     {s.sessionName ?? prettyLabel(s.statType)}
                   </p>
-                  <p className="text-eyebrow uppercase tracking-wide text-warm-400">
+                  <p className="text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
                     {prettyLabel(s.statType)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-sm tabular-nums text-warm-500">
+                  <span className="font-annual text-body-sm tabular-nums text-text-secondary">
                     {s.sessionDate}
                   </span>
-                  <span className="rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow font-semibold text-warm-500">
-                    {SOURCE_LABEL[s.sourceRef.source] ?? prettyLabel(s.sourceRef.source)}
-                  </span>
+                  <InkBadge
+                    label={SOURCE_LABEL[s.sourceRef.source] ?? prettyLabel(s.sourceRef.source)}
+                    tone="neutral"
+                  />
                 </div>
               </li>
             ))}
           </ul>
           <Link
             href="/baseball/dashboard/my-stats"
-            className="group flex items-center justify-center gap-1.5 border-t border-warm-100 px-5 py-3 text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40"
+            className={pressableClass({
+              ink: 'team',
+              className:
+                'flex items-center justify-center gap-1.5 border-t border-[color:var(--hairline)] px-5 py-3 font-annual text-body-sm font-semibold text-grade-plus',
+            })}
           >
             View season totals &amp; trends
-            <IconChevronRight
-              size={16}
-              className="transition-transform group-hover:translate-x-0.5"
-            />
+            <IconChevronRight size={15} aria-hidden />
           </Link>
-        </Card>
+        </PaperCard>
       )}
     </section>
   );
@@ -1101,6 +918,8 @@ function RecentStatsSection({ stats }: { stats: PlayerTodayStat[] }) {
 // Additive surface: only renders when performanceSlot is non-null AND at least
 // one item is actionable. Never fabricates cards or shows fake "coming soon"
 // states — when there is nothing due, this section simply doesn't appear.
+// These three cards are a separate vertical (Lifting Lab) and are reused
+// verbatim — no presentation changes here beyond the section header.
 // -----------------------------------------------------------------------------
 
 function PerformanceCheckinSection({ slot }: { slot: PerformanceCheckinSlot }) {
@@ -1114,10 +933,7 @@ function PerformanceCheckinSection({ slot }: { slot: PerformanceCheckinSlot }) {
 
   return (
     <section>
-      <SectionHeader
-        icon={<IconActivity size={16} />}
-        title="Daily Check-Ins"
-      />
+      <SectionHeader icon={<IconActivity size={15} />} title="Daily Check-Ins" />
       <div className="space-y-3">
         {hasSoreness && slot.sorenessToday && (
           <SorenessCheckCard
@@ -1157,7 +973,7 @@ function PerformanceCheckinSection({ slot }: { slot: PerformanceCheckinSlot }) {
 function LiftTodaySlot() {
   return (
     <section>
-      <SectionHeader icon={<IconDumbbell size={16} />} title="Lift & Check-in" />
+      <SectionHeader icon={<IconDumbbell size={15} />} title="Lift & Check-in" />
       {/*
         EXECUTION CARD — the interactive input surface for the daily loop.
         The server read-model above (the "Lifts Due" feed + the Readiness gate)
@@ -1172,7 +988,8 @@ function LiftTodaySlot() {
         helm_lifting_* tables so this card and the feed above never diverge — if
         it still reads the legacy tables directly, that is a bug in that
         component, not evidence the legacy tables are current. Its internal
-        empty/loading/error states cover the "no lift" case.
+        empty/loading/error states cover the "no lift" case. Unrelated Lifting
+        Lab surface — presentation untouched by this pass.
       */}
       <div data-slot="player-lift-today" data-slot-status="integrated">
         <PlayerLiftToday />
@@ -1185,73 +1002,69 @@ function LiftTodaySlot() {
 // My Tasks (spec line 81) — baseball_task_assignments → baseball_tasks
 // -----------------------------------------------------------------------------
 
-const TASK_PRIORITY_BADGE: Record<string, { label: string; cls: string }> = {
-  high: { label: 'High', cls: 'bg-red-50 text-red-700' },
-  medium: { label: 'Medium', cls: 'bg-amber-50 text-amber-700' },
-  low: { label: 'Low', cls: 'bg-warm-100 text-warm-600' },
-};
+/** InkBadge tone/variant for a task priority — never red/amber chrome (mirrors
+ *  PostgameReviewClient's priorityTone precedent). */
+function taskPriorityTone(p: string): { tone: 'sodium' | 'neutral'; variant: 'soft' | 'solid' } {
+  const lower = p.toLowerCase();
+  if (lower === 'high') return { tone: 'sodium', variant: 'solid' };
+  if (lower === 'medium') return { tone: 'sodium', variant: 'soft' };
+  return { tone: 'neutral', variant: 'soft' };
+}
 
 function MyTasksSection({ feed }: { feed: PlayerTodayReadModel['tasks'] }) {
   const dueTasks = feed.items.filter((t) => t.isOverdue);
   return (
     <section>
       <SectionHeader
-        icon={<IconList size={16} />}
+        icon={<IconList size={15} />}
         title="My Tasks"
         count={feed.items.length}
         action={
           <Link
             href="/baseball/dashboard/tasks"
-            className="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+            className={pressableClass({
+              ink: 'team',
+              tint: false,
+              className:
+                'inline-flex items-center gap-1 rounded-fw-sm text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus',
+            })}
           >
             All tasks
-            <IconChevronRight
-              size={14}
-              className="transition-transform group-hover:translate-x-0.5"
-            />
+            <IconChevronRight size={13} aria-hidden />
           </Link>
         }
       />
       {dueTasks.length > 0 && (
-        <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          <IconAlertCircle size={14} className="shrink-0" />
+        <p className="mb-3 flex items-center gap-2 font-annual text-body-sm text-sodium">
+          <IconAlertCircle size={14} className="shrink-0" aria-hidden />
           <span>
             {dueTasks.length === 1
               ? '1 overdue task needs your attention.'
               : `${dueTasks.length} overdue tasks need your attention.`}
           </span>
-        </div>
+        </p>
       )}
       {feed.items.length === 0 ? (
-        <EmptyState
-          variant="card"
-          glass
-          icon={<IconList size={40} />}
-          title="No tasks right now"
-          description={feed.note}
-        />
+        <EditorsLetter ink="team" title="No tasks right now" body={feed.note} />
       ) : (
-        <Card variant="raised" noPadding>
-          <ul className="divide-y divide-warm-100">
+        <PaperCard className="p-0">
+          <ul className="divide-y divide-[color:var(--hairline)]">
             {feed.items.map((t: PlayerTodayTaskItem) => {
-              const priorityBadge = t.priority
-                ? (TASK_PRIORITY_BADGE[t.priority.toLowerCase()] ?? {
-                    label: prettyLabel(t.priority),
-                    cls: 'bg-warm-100 text-warm-600',
-                  })
-                : null;
+              const tone = t.priority ? taskPriorityTone(t.priority) : null;
               return (
                 <li key={t.id} className="flex items-start gap-3 px-5 py-3.5">
                   <span
-                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                      t.isOverdue ? 'bg-red-50 text-red-600' : 'bg-primary-50 text-primary-600'
-                    }`}
+                    aria-hidden
+                    className={cn(
+                      'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+                      t.isOverdue ? 'bg-sodium/15 text-sodium' : 'bg-grade-plus/10 text-grade-plus',
+                    )}
                   >
                     <IconList size={15} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-warm-900">{t.title}</p>
-                    <p className="text-eyebrow uppercase tracking-wide text-warm-400">
+                    <p className="truncate font-annual text-body-sm font-medium text-text-primary">{t.title}</p>
+                    <p className="text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
                       {t.dueDate
                         ? t.isOverdue
                           ? `Overdue · ${t.dueDate}`
@@ -1262,31 +1075,26 @@ function MyTasksSection({ feed }: { feed: PlayerTodayReadModel['tasks'] }) {
                       {t.category ? ` · ${prettyLabel(t.category)}` : ''}
                     </p>
                     {t.description && (
-                      <p className="mt-1 line-clamp-2 text-xs text-warm-500">{t.description}</p>
+                      <p className="mt-1 line-clamp-2 font-annual text-body-sm text-text-tertiary">{t.description}</p>
                     )}
                   </div>
-                  {priorityBadge && (
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-eyebrow font-semibold ${priorityBadge.cls}`}
-                    >
-                      {priorityBadge.label}
-                    </span>
-                  )}
+                  {tone && <InkBadge label={t.priority as string} tone={tone.tone} variant={tone.variant} className="shrink-0" />}
                 </li>
               );
             })}
           </ul>
           <Link
             href="/baseball/dashboard/tasks"
-            className="group flex items-center justify-center gap-1.5 border-t border-warm-100 px-5 py-2.5 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:bg-primary-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40"
+            className={pressableClass({
+              ink: 'team',
+              className:
+                'flex items-center justify-center gap-1.5 border-t border-[color:var(--hairline)] px-5 py-2.5 text-eyebrow font-semibold uppercase tracking-[0.1em] text-grade-plus',
+            })}
           >
             View all tasks
-            <IconChevronRight
-              size={14}
-              className="transition-transform group-hover:translate-x-0.5"
-            />
+            <IconChevronRight size={14} aria-hidden />
           </Link>
-        </Card>
+        </PaperCard>
       )}
     </section>
   );
@@ -1304,70 +1112,67 @@ function CoachNotesSection({ feed }: { feed: PlayerTodayReadModel['coachNotes'] 
   return (
     <section>
       <SectionHeader
-        icon={<IconMessage size={16} />}
+        icon={<IconMessage size={15} />}
         title="Notes from Coach"
         count={feed.items.length}
       />
       {feed.items.length === 0 ? (
-        <EmptyState
-          variant="card"
-          glass
-          icon={<IconMessage size={40} />}
+        <EditorsLetter
+          ink="team"
           title="No notes yet"
-          description="When your coach shares a note with you, it'll appear here."
+          body="When your coach shares a note with you, it'll appear here."
         />
       ) : (
         <div className="space-y-3">
-          {feed.items.map((note: PlayerTodayCoachNote) => {
+          {feed.items.map((note: PlayerTodayCoachNote, i) => {
             const isOpen = expanded[note.id] ?? false;
             const isLong = note.body.length > 200;
             return (
-              <Card
-                key={note.id}
-                variant="raised"
-                padding="md"
-                className={note.pinned ? 'border-primary-200' : ''}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
-                    <IconMessage size={15} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      {note.title && (
-                        <p className="truncate text-sm font-semibold text-warm-900">
-                          {note.title}
-                        </p>
-                      )}
-                      {note.pinned && (
-                        <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-eyebrow font-semibold text-primary-700">
-                          Pinned
-                        </span>
-                      )}
-                    </div>
-                    <p
-                      className={`mt-1 text-sm text-warm-700 ${!isOpen && isLong ? 'line-clamp-3' : ''}`}
+              <Reveal key={note.id} staggerIndex={Math.min(i, 6)}>
+                <PaperCard className={cn('p-4 sm:p-5', note.pinned && 'ring-1 ring-grade-plus/25')}>
+                  <div className="flex items-start gap-3">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus"
                     >
-                      {note.body}
-                    </p>
-                    {isLong && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => toggleNote(note.id)}
-                        className="mt-1 text-eyebrow font-semibold text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                      <IconMessage size={15} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        {note.title && (
+                          <p className="truncate font-annual text-body-sm font-semibold text-text-primary">
+                            {note.title}
+                          </p>
+                        )}
+                        {note.pinned && <InkBadge label="Pinned" tone="team" />}
+                      </div>
+                      <p
+                        className={cn(
+                          'mt-1 font-annual text-body-sm text-text-secondary',
+                          !isOpen && isLong && 'line-clamp-3',
+                        )}
                       >
-                        {isOpen ? 'Show less' : 'Read more'}
-                      </Button>
-                    )}
-                    <p className="mt-1.5 text-eyebrow text-warm-400">
-                      {new Date(note.createdAt).toLocaleDateString([], {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </p>
+                        {note.body}
+                      </p>
+                      {isLong && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => toggleNote(note.id)}
+                          className="mt-1 text-eyebrow font-semibold uppercase tracking-[0.1em] text-grade-plus"
+                        >
+                          {isOpen ? 'Show less' : 'Read more'}
+                        </Button>
+                      )}
+                      <p className="mt-1.5 text-eyebrow text-text-tertiary">
+                        {new Date(note.createdAt).toLocaleDateString([], {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </PaperCard>
+              </Reveal>
             );
           })}
         </div>
@@ -1388,51 +1193,47 @@ function PracticeGroupSection({
   return (
     <section>
       <SectionHeader
-        icon={<IconUsers size={16} />}
+        icon={<IconUsers size={15} />}
         title="Today's Practice"
         action={
           feed.practiceId ? (
             <Link
               href="/baseball/player/practice"
-              className="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+              className={pressableClass({
+                ink: 'team',
+                tint: false,
+                className:
+                  'inline-flex items-center gap-1 rounded-fw-sm text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus',
+              })}
             >
               View plan
-              <IconChevronRight
-                size={14}
-                className="transition-transform group-hover:translate-x-0.5"
-              />
+              <IconChevronRight size={13} aria-hidden />
             </Link>
           ) : undefined
         }
       />
       {!feed.available || !feed.practiceId ? (
-        <EmptyState
-          variant="card"
-          glass
-          icon={<IconUsers size={40} />}
-          title="No practice plan today"
-          description={feed.note}
-        />
+        <EditorsLetter ink="team" title="No practice plan today" body={feed.note} />
       ) : (
-        <Card variant="raised" padding="md">
+        <PaperCard className="p-5 sm:p-6">
           <div>
-            <h3 className="text-base font-semibold text-warm-900">{feed.practiceTitle}</h3>
+            <h3 className="font-annual text-body-md font-semibold text-text-primary">{feed.practiceTitle}</h3>
             {feed.practiceFocus && (
-              <p className="mt-0.5 text-sm text-warm-500">Focus: {feed.practiceFocus}</p>
+              <p className="mt-0.5 font-annual text-body-sm text-text-secondary">Focus: {feed.practiceFocus}</p>
             )}
           </div>
           {feed.blocks.length === 0 ? (
-            <p className="mt-3 text-sm text-warm-500">{feed.note}</p>
+            <p className="mt-3 font-annual text-body-sm text-text-secondary">{feed.note}</p>
           ) : (
             <ul className="mt-4 space-y-2">
               {feed.blocks.map((block) => (
                 <li key={block.id} className="flex items-start gap-3">
-                  <span className="mt-0.5 w-10 shrink-0 text-right text-eyebrow tabular-nums text-warm-400">
+                  <span className="mt-0.5 w-10 shrink-0 text-right text-eyebrow tabular-nums text-text-tertiary">
                     {block.startOffsetMin}m
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-warm-900">{block.activity}</p>
-                    <p className="text-eyebrow text-warm-400">
+                    <p className="font-annual text-body-sm font-medium text-text-primary">{block.activity}</p>
+                    <p className="text-eyebrow text-text-tertiary">
                       {block.durationMin} min
                       {block.location ? ` · ${block.location}` : ''}
                     </p>
@@ -1443,15 +1244,16 @@ function PracticeGroupSection({
           )}
           <Link
             href="/baseball/player/practice"
-            className="group mt-4 flex items-center gap-1.5 border-t border-warm-100 pt-3 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+            className={pressableClass({
+              ink: 'team',
+              className:
+                'mt-4 flex items-center gap-1.5 border-t border-[color:var(--hairline)] pt-3 text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus',
+            })}
           >
             View full practice plan
-            <IconChevronRight
-              size={14}
-              className="transition-transform group-hover:translate-x-0.5"
-            />
+            <IconChevronRight size={14} aria-hidden />
           </Link>
-        </Card>
+        </PaperCard>
       )}
     </section>
   );
@@ -1467,44 +1269,33 @@ function NextEventHero({ events }: { events: PlayerTodayEvent[] }) {
 
   const isPending = next.ackStatus === 'pending';
   return (
-    <div
-      className={`flex items-start gap-4 rounded-2xl border px-5 py-4 ${
-        isPending
-          ? 'border-amber-200 bg-amber-50'
-          : 'border-primary-200 bg-primary-50/60'
-      }`}
-    >
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          isPending ? 'bg-amber-100 text-amber-700' : 'bg-primary-100 text-primary-700'
-        }`}
-      >
-        <IconCalendar size={18} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-          {next.isMandatory ? 'Next required event' : 'Coming up'}
-        </p>
-        <h2 className="mt-0.5 truncate text-base font-semibold text-warm-900">{next.title}</h2>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-warm-600">
-          <span className="flex items-center gap-1.5 tabular-nums">
-            <IconClock size={13} className="text-warm-400" />
-            {formatTimeRange(next.startTime, next.endTime)}
-          </span>
-          {next.location && (
-            <span className="flex items-center gap-1.5">
-              <IconMapPin size={13} className="text-warm-400" />
-              {next.location}
-            </span>
-          )}
-        </div>
-      </div>
-      {isPending && (
-        <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-eyebrow font-semibold text-amber-700">
-          Needs ack
+    <PaperCard registrationTick className="p-5">
+      <div className="flex items-start gap-4">
+        <span
+          aria-hidden
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus"
+        >
+          <IconCalendar size={17} />
         </span>
-      )}
-    </div>
+        <div className="min-w-0 flex-1">
+          <Eyebrow ink="team">{next.isMandatory ? 'Next required event' : 'Coming up'}</Eyebrow>
+          <h2 className="mt-0.5 truncate font-annual text-h3 font-semibold text-text-primary">{next.title}</h2>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-annual text-body-sm text-text-secondary">
+            <span className="flex items-center gap-1.5 tabular-nums">
+              <IconClock size={13} className="text-text-tertiary" aria-hidden />
+              {formatTimeRange(next.startTime, next.endTime)}
+            </span>
+            {next.location && (
+              <span className="flex items-center gap-1.5">
+                <IconMapPin size={13} className="text-text-tertiary" aria-hidden />
+                {next.location}
+              </span>
+            )}
+          </div>
+        </div>
+        {isPending && <InkBadge label="Needs ack" tone="sodium" variant="solid" className="shrink-0" />}
+      </div>
+    </PaperCard>
   );
 }
 
@@ -1527,18 +1318,26 @@ function PrimaryCtaRow({
       {hasLiftToday && (
         <a
           href="#player-lift-today"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+          className={pressableClass({
+            ink: 'team',
+            className:
+              'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+          })}
         >
-          <IconCheck size={15} />
+          <IconCheck size={15} aria-hidden />
           Check In
         </a>
       )}
       {hasPendingAck && (
         <a
           href="#today-schedule"
-          className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40"
+          className={pressableClass({
+            ink: 'team',
+            className:
+              'inline-flex items-center gap-1.5 rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-4 py-2 font-annual text-body-sm font-semibold text-sodium',
+          })}
         >
-          <IconCheckCircle2 size={15} />
+          <IconCheckCircle2 size={15} aria-hidden />
           Acknowledge
         </a>
       )}
@@ -1548,9 +1347,13 @@ function PrimaryCtaRow({
             ? '/baseball/player/practice'
             : '/baseball/dashboard/calendar'
         }
-        className="inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-cream-50 px-4 py-2 text-sm font-semibold text-warm-700 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        className={pressableClass({
+          ink: 'team',
+          className:
+            'inline-flex items-center gap-1.5 rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-4 py-2 font-annual text-body-sm font-semibold text-text-primary',
+        })}
       >
-        <IconCalendar size={15} />
+        <IconCalendar size={15} aria-hidden />
         {practiceId ? 'View Today Plan' : 'View Schedule'}
       </Link>
     </div>
@@ -1563,14 +1366,23 @@ function PrimaryCtaRow({
 
 function UnauthorizedView() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-      <EmptyState
-        variant="card"
-        glass
-        icon={<IconClipboardList size={40} />}
+    <div className={cn(fairwayScope('mx-auto max-w-2xl px-4 py-16 sm:px-6'))}>
+      <EditorsLetter
+        ink="team"
         title="No player profile on this team"
-        description="Today's view is for players on a team roster. If you just joined, ask your coach to confirm you're on the roster."
-        action={{ label: 'Back to dashboard', href: '/baseball/player' }}
+        body="Today's view is for players on a team roster. If you just joined, ask your coach to confirm you're on the roster."
+        action={
+          <Link
+            href="/baseball/player"
+            className={pressableClass({
+              ink: 'team',
+              className:
+                'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+            })}
+          >
+            Back to dashboard
+          </Link>
+        }
       />
     </div>
   );
@@ -1589,21 +1401,12 @@ export function PlayerTodayClient({
   performanceSlot,
 }: PlayerTodayClientProps) {
   // Hooks run unconditionally before any early return (rules-of-hooks).
-  const reduceMotion = useReducedMotion();
   const longDate = useMemo(() => formatLongDate(todayIso), [todayIso]);
 
   // Honest unauthorized envelope — not a crash, not a redirect loop.
   if (!model.authorized) {
     return <UnauthorizedView />;
   }
-
-  const fade = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
-      };
 
   // Derived values for first-viewport hero + CTA row
   const hasPendingAck = model.summary.eventsPendingAck > 0;
@@ -1616,163 +1419,179 @@ export function PlayerTodayClient({
   void activeRole;
 
   return (
-    <LazyMotion features={domAnimation} strict>
-      <div className="min-h-dvh bg-cream-100">
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
-          {/* Header — includes first-viewport hero (spec lines 65-76). */}
-          <m.header {...fade} className="mb-6">
-            <p className="text-eyebrow font-semibold uppercase tracking-wide text-primary-600">
-              Today
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">
-              {longDate}
-            </h1>
-            <p className="mt-1 text-warm-500">
+    <div className={fairwayScope('min-h-dvh')}>
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
+        {/* Masthead — the editorial cover-page treatment for the daily loop. */}
+        <Reveal>
+          <SectionMasthead eyebrow="THE PASSPORT · DAILY LOOP" title={longDate} ink="team">
+            <p className="max-w-prose font-annual text-body-sm text-text-secondary">
               Your daily rundown: schedule, recent work, and what needs your attention.
             </p>
+          </SectionMasthead>
+        </Reveal>
 
-            {/* Primary CTA row (spec lines 72-76): Check In · Acknowledge · View Today Plan.
-                Rendered above the fold so the player's three core actions are
-                immediately reachable without scrolling. */}
-            <div className="mt-4">
-              <PrimaryCtaRow
-                hasPendingAck={hasPendingAck}
-                hasLiftToday={hasLiftToday}
-                practiceId={practiceId}
-              />
+        {/* Primary CTA row (spec lines 72-76): Check In · Acknowledge · View Today Plan.
+            Rendered above the fold so the player's three core actions are
+            immediately reachable without scrolling. */}
+        <div className="mt-5">
+          <PrimaryCtaRow
+            hasPendingAck={hasPendingAck}
+            hasLiftToday={hasLiftToday}
+            practiceId={practiceId}
+          />
+        </div>
+
+        {/* Non-fatal error notice (sub-read failure) — surfaced honestly, never
+            hidden and never a colored warning box. */}
+        {model.error && (
+          <EditorsLetter className="mt-6" ink="team" title="Some of today's data is catching up." body={model.error} />
+        )}
+
+        {/* Next required event hero — first-viewport spec item (lines 67-68).
+            Promoted above the summary strip so it's immediately visible. Only
+            renders when there are events; hidden when the schedule is empty. */}
+        {model.schedule.length > 0 && (
+          <div className="mt-6">
+            <NextEventHero events={model.schedule} />
+          </div>
+        )}
+
+        {/* Summary + readiness gate. The gate sits with the summary because it
+            is the daily loop's single most important "can I train as planned"
+            signal — the readiness gate now lives ON Today, not only on the
+            coach board. Computed by the server read-model (computeReadiness). */}
+        <div className="mt-9 space-y-6">
+          <KPIContentsStrip
+            columns={4}
+            items={[
+              { label: 'Events Today', value: model.summary.eventsToday },
+              {
+                label: 'Need Acknowledgement',
+                value: model.summary.eventsPendingAck,
+                emphasis: model.summary.eventsPendingAck > 0,
+              },
+              {
+                label: 'From Coach',
+                value: model.summary.coachActionsOpen,
+                emphasis: model.summary.coachActionsOpen > 0,
+              },
+              {
+                label: 'Lifts Due',
+                value: model.summary.assignmentsDue,
+                emphasis: model.summary.assignmentsDue > 0,
+              },
+            ]}
+          />
+          <ReadinessGate readiness={model.readiness} />
+        </div>
+
+        {/* Body grid */}
+        <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-3">
+          {/* Primary column */}
+          <div className="space-y-10 lg:col-span-2">
+            {/* Daily Contract — the commitment loop sits first: it's the most
+                important thing a player DOES each day, and completing it
+                compounds into the Passport development story. Separate
+                vertical — presentation untouched by this pass. */}
+            <DailyContract model={dailyContract} />
+            {/* Performance check-ins (soreness / weight / nutrition) — due items
+                from the Helm Lifting Lab. Rendered just after the Daily Contract
+                so scheduled health checks are a top daily priority. Only visible
+                when the player has an athlete row AND at least one due item. */}
+            {performanceSlot && (
+              <PerformanceCheckinSection slot={performanceSlot} />
+            )}
+            {/* From Your Coach — the player-side of source -> signal -> action.
+                A signal a coach converted into a player task lands here as a
+                real, completable obligation. Sits right under the Daily
+                Contract because acting on coach-assigned work is a top daily
+                priority, above the passive schedule. */}
+            <CoachAssignmentsSection feed={model.coachActions} />
+            {/* My Tasks (spec line 81): active task assignments for this player.
+                Reads baseball_task_assignments → baseball_tasks. */}
+            <MyTasksSection feed={model.tasks} />
+            {/* Today's Schedule (spec line 80): acknowledge section gets a scroll
+                anchor id so the "Acknowledge" CTA in the first-viewport row can
+                deep-link directly to it. */}
+            <div id="today-schedule">
+              <ScheduleSection events={model.schedule} />
             </div>
-          </m.header>
+            {/* Practice group (spec line 84): today's published practice plan.
+                Shows between schedule and lift assignments so the player can see
+                what's on for today before diving into their lifts. */}
+            <PracticeGroupSection feed={model.practiceGroup} />
+            {/* Lifts due — real feed from helm_lifting_sessions (the unified
+                Helm Lifting Lab table, via the server read-model; the legacy
+                baseball_lift_sessions table is write-dead). Source -> signal:
+                each row links to the Lift & Check-in card below where the
+                player logs sets. */}
+            <AssignmentsSection feed={model.assignments} />
+            {/* Coach notes (spec line 85): player-visible notes only (scope =
+                'player_visible'). Staff-only scopes are never shown here. */}
+            <CoachNotesSection feed={model.coachNotes} />
+            <RecentStatsSection stats={model.recentStats} />
+          </div>
 
-          {/* Non-fatal error notice (sub-read failure) — surfaced, never hidden. */}
-          {model.error && (
-            <div className="mb-6 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <IconAlertCircle size={18} className="mt-0.5 shrink-0 text-amber-600" />
-              <p className="text-sm text-amber-800">{model.error}</p>
-            </div>
-          )}
-
-          {/* Next required event hero — first-viewport spec item (lines 67-68).
-              Promoted above the summary strip so it's immediately visible. Only
-              renders when there are events; hidden when the schedule is empty. */}
-          {model.schedule.length > 0 && (
-            <m.div {...fade} className="mb-6">
-              <NextEventHero events={model.schedule} />
-            </m.div>
-          )}
-
-          {/* Summary + readiness gate. The gate sits with the summary because it
-              is the daily loop's single most important "can I train as planned"
-              signal — the readiness gate now lives ON Today, not only on the
-              coach board. Computed by the server read-model (computeReadiness). */}
-          <m.div {...fade} className="mb-8 space-y-4">
-            <SummaryStrip model={model} />
-            <ReadinessGate readiness={model.readiness} />
-          </m.div>
-
-          {/* Body grid */}
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Primary column */}
-            <div className="space-y-8 lg:col-span-2">
-              {/* Daily Contract — the commitment loop sits first: it's the most
-                  important thing a player DOES each day, and completing it
-                  compounds into the Passport development story. */}
-              <DailyContract model={dailyContract} />
-              {/* Performance check-ins (soreness / weight / nutrition) — due items
-                  from the Helm Lifting Lab. Rendered just after the Daily Contract
-                  so scheduled health checks are a top daily priority. Only visible
-                  when the player has an athlete row AND at least one due item. */}
-              {performanceSlot && (
-                <PerformanceCheckinSection slot={performanceSlot} />
-              )}
-              {/* From Your Coach — the player-side of source -> signal -> action.
-                  A signal a coach converted into a player task lands here as a
-                  real, completable obligation. Sits right under the Daily
-                  Contract because acting on coach-assigned work is a top daily
-                  priority, above the passive schedule. */}
-              <CoachAssignmentsSection feed={model.coachActions} />
-              {/* My Tasks (spec line 81): active task assignments for this player.
-                  Reads baseball_task_assignments → baseball_tasks. */}
-              <MyTasksSection feed={model.tasks} />
-              {/* Today's Schedule (spec line 80): acknowledge section gets a scroll
-                  anchor id so the "Acknowledge" CTA in the first-viewport row can
-                  deep-link directly to it. */}
-              <div id="today-schedule">
-                <ScheduleSection events={model.schedule} />
-              </div>
-              {/* Practice group (spec line 84): today's published practice plan.
-                  Shows between schedule and lift assignments so the player can see
-                  what's on for today before diving into their lifts. */}
-              <PracticeGroupSection feed={model.practiceGroup} />
-              {/* Lifts due — real feed from helm_lifting_sessions (the unified
-                  Helm Lifting Lab table, via the server read-model; the legacy
-                  baseball_lift_sessions table is write-dead). Source -> signal:
-                  each row links to the Lift & Check-in card below where the
-                  player logs sets. */}
-              <AssignmentsSection feed={model.assignments} />
-              {/* Coach notes (spec line 85): player-visible notes only (scope =
-                  'player_visible'). Staff-only scopes are never shown here. */}
-              <CoachNotesSection feed={model.coachNotes} />
-              <RecentStatsSection stats={model.recentStats} />
-            </div>
-
-            {/* Side column: passport snapshot + lift/check-in execution card. */}
-            <div className="space-y-8">
-              {/* Player Passport — source-backed identity snapshot (compact). */}
-              <section>
-                <SectionHeader
-                  icon={<IconSparkles size={16} />}
-                  title="Your Passport"
-                  action={
-                    <Link
-                      href="/baseball/player/passport"
-                      className="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-                    >
-                      Full view
-                      <IconChevronRight
-                        size={14}
-                        className="transition-transform group-hover:translate-x-0.5"
-                      />
-                    </Link>
-                  }
-                />
-                <PlayerPassportCard
-                  model={passport}
-                  compact
-                  fullHref="/baseball/player/passport"
-                />
-              </section>
-              {/* The interactive lift + readiness check-in surface. Writing here
-                  feeds the Lifts Due feed + Readiness gate above (same tables).
-                  The id anchor lets the "Check In" CTA scroll here. */}
-              <div id="player-lift-today">
-                <LiftTodaySlot />
-              </div>
-              {/* My Timeline quick-link — the player's development story (stat
-                  milestones, coach notes, import events, AI insights in order).
-                  Surfaces the route from Today so the player's primary daily view
-                  has a clear path to their full development narrative. */}
-              <section>
-                <SectionHeader icon={<IconClock size={16} />} title="My Timeline" />
-                <Card variant="raised" padding="md" className="hover:border-warm-300 hover:shadow-sm transition-all duration-200">
-                  <p className="text-sm text-warm-500">
-                    Your full development story: stats, notes, and coach insights in order.
-                  </p>
+          {/* Side column: passport snapshot + lift/check-in execution card. */}
+          <div className="space-y-10">
+            {/* Player Passport — source-backed identity snapshot (compact). */}
+            <section>
+              <SectionHeader
+                icon={<IconSparkles size={15} />}
+                title="Your Passport"
+                action={
                   <Link
-                    href="/baseball/player/timeline"
-                    className="group mt-3 flex items-center gap-1.5 text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                    href="/baseball/player/passport"
+                    className={pressableClass({
+                      ink: 'team',
+                      tint: false,
+                      className:
+                        'inline-flex items-center gap-1 rounded-fw-sm text-eyebrow font-semibold uppercase tracking-[0.14em] text-grade-plus',
+                    })}
                   >
-                    View my timeline
-                    <IconChevronRight
-                      size={14}
-                      className="transition-transform group-hover:translate-x-0.5"
-                    />
+                    Full view
+                    <IconChevronRight size={13} aria-hidden />
                   </Link>
-                </Card>
-              </section>
+                }
+              />
+              <PlayerPassportFairway
+                model={passport}
+                compact
+                fullHref="/baseball/player/passport"
+              />
+            </section>
+            {/* The interactive lift + readiness check-in surface. Writing here
+                feeds the Lifts Due feed + Readiness gate above (same tables).
+                The id anchor lets the "Check In" CTA scroll here. */}
+            <div id="player-lift-today">
+              <LiftTodaySlot />
             </div>
+            {/* My Timeline quick-link — the player's development story (stat
+                milestones, coach notes, import events, AI insights in order).
+                Surfaces the route from Today so the player's primary daily view
+                has a clear path to their full development narrative. */}
+            <section>
+              <SectionHeader icon={<IconClock size={15} />} title="My Timeline" />
+              <PaperCard className="p-5">
+                <p className="font-annual text-body-sm text-text-secondary">
+                  Your full development story: stats, notes, and coach insights in order.
+                </p>
+                <Link
+                  href="/baseball/player/timeline"
+                  className={pressableClass({
+                    ink: 'team',
+                    tint: false,
+                    className: 'mt-3 flex items-center gap-1.5 font-annual text-body-sm font-semibold text-grade-plus',
+                  })}
+                >
+                  View my timeline
+                  <IconChevronRight size={14} aria-hidden />
+                </Link>
+              </PaperCard>
+            </section>
           </div>
         </div>
       </div>
-    </LazyMotion>
+    </div>
   );
 }

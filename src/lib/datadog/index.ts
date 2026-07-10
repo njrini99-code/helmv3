@@ -24,9 +24,15 @@ export function initDatadog() {
 
   isInitialized = true;
 
-  const site = process.env.DD_SITE || 'datadoghq.com';
-  const service = process.env.DD_SERVICE || 'helm-sports-labs';
-  const env = process.env.DD_ENV || 'development';
+  // This module only ever runs in the browser (see the typeof window guard
+  // above), so these MUST be NEXT_PUBLIC_-prefixed — un-prefixed vars are
+  // stripped at build time and would always read as undefined here, silently
+  // falling back to the defaults in every deployed env. Reuse the
+  // NEXT_PUBLIC_VERCEL_ENV Next.js already inlines (see next.config.mjs)
+  // for env detection instead of requiring a separate var.
+  const site = process.env.NEXT_PUBLIC_DD_SITE || 'datadoghq.com';
+  const service = process.env.NEXT_PUBLIC_DD_SERVICE || 'helm-sports-labs';
+  const env = process.env.NEXT_PUBLIC_DD_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development';
 
   // Lazy-load SDKs after initial page render to avoid blocking
   requestIdleCallback(async () => {

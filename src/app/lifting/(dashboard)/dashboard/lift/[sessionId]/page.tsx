@@ -23,6 +23,8 @@ import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { PlayerLiftSessionClient } from '@/components/lifting/players/PlayerLiftSessionClient';
+import { resolveLiftingAthleteTimezone } from '@/lib/lifting/resolve-athlete-timezone';
+import { todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 import type {
   HelmLiftingSessionRow,
   HelmLiftingSessionExerciseRow,
@@ -154,9 +156,8 @@ async function fetchSessionWithExercises(
   };
 }
 
-async function checkReadinessToday(athleteId: string): Promise<boolean> {
+async function checkReadinessToday(athleteId: string, today: string): Promise<boolean> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
 
   const { data } = await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
     .select('id')
@@ -194,9 +195,15 @@ export default async function PlayerLiftSessionPage({ params }: PageProps) {
     redirect('/lifting/dashboard/lift');
   }
 
+  // Resolve the athlete's own team-local "today" for the checkin_date lookup
+  // — mirrors the baseball Daily Contract's resolveTeamTimezone + todayIsoInTz
+  // idiom (see PlayerLiftPage, the sibling lift-home page) so this page and
+  // the lift home agree on the same day boundary and can't drift apart.
+  const today = todayIsoInTz(await resolveLiftingAthleteTimezone(athleteId));
+
   const [session, readinessSubmittedToday] = await Promise.all([
     fetchSessionWithExercises(sessionId, athleteId),
-    checkReadinessToday(athleteId),
+    checkReadinessToday(athleteId, today),
   ]);
 
   if (!session) {

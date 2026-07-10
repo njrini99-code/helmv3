@@ -1,5 +1,4 @@
-import { DetailPageSkeleton } from '@/components/ui/skeleton';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
@@ -9,9 +8,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * The live page (GenomeDetailView) is a max-w-[1200px] CoachHelmShell (eyebrow →
  * title → breadcrumb → sub-nav) wrapping an asymmetric InstrumentCluster cockpit
  * (radar hero focal + persona rail + 3-up tertiary readout row) and a 4-up
- * Dimensions grid — NOT the generic DetailPageSkeleton (max-w-5xl, bg-white/30
- * 3-col grid). The generic skeleton only matches the flag-off page, so it stays
- * behind the flag. This reserves the cockpit's real slots with Fairway tokens to
+ * Dimensions grid. This reserves the cockpit's real slots with Fairway tokens to
  * remove the shape/token swap on hydrate (CLS / gate B3).
  */
 function FairwayGenomeLoading() {
@@ -90,6 +87,5 @@ function FairwayGenomeLoading() {
 }
 
 export default function Loading() {
-  if (isRedesignEnabled()) return <FairwayGenomeLoading />;
-  return <DetailPageSkeleton />;
+  return <FairwayGenomeLoading />;
 }

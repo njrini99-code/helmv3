@@ -7,10 +7,12 @@
  * player's availability status for that slot:
  *
  *   available   → green (primary-500)
- *   class       → amber (amber-400)
+ *   class       → pursuit clay, soft weight (bg-pursuit/70 — Living Annual ink
+ *                 system, no raw amber)
  *   practice    → clay/orange (orange-400)
  *   game        → graphite (warm-700)
- *   unavailable → red (red-500)
+ *   unavailable → pursuit clay, solid weight (bg-pursuit — no raw red; one
+ *                 notch deeper than `class` so the two stay distinguishable)
  *   unknown     → muted cream (warm-200)
  *
  * Accessibility contract:
@@ -70,12 +72,16 @@ interface StatusCfg {
   fg: string;
 }
 
+// Ink system (Living Annual doctrine — no raw amber/red): `class` reads
+// pursuit clay at a softer weight, `unavailable` the same lane at full solid
+// weight — one notch deeper so the two stay visually distinguishable.
+// `practice` stays orange — out of the red/amber ban, unchanged.
 const STATUS_CFG: Record<CellStatus, StatusCfg> = {
   available:   { label: 'Available',   bg: 'bg-primary-500',  fg: 'text-white'     },
-  class:       { label: 'Class',       bg: 'bg-amber-400',    fg: 'text-white'     },
+  class:       { label: 'Class',       bg: 'bg-pursuit/70',   fg: 'text-white'     },
   practice:    { label: 'Practice',    bg: 'bg-orange-400',   fg: 'text-white'     },
   game:        { label: 'Game',        bg: 'bg-warm-700',     fg: 'text-warm-100'  },
-  unavailable: { label: 'Unavailable', bg: 'bg-red-500',      fg: 'text-white'     },
+  unavailable: { label: 'Unavailable', bg: 'bg-pursuit',      fg: 'text-white'     },
   unknown:     { label: 'Unknown',     bg: 'bg-warm-200',     fg: 'text-warm-600'  },
 };
 

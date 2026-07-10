@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { Card } from '@/components/ui/card';
-import { IconInfo, IconSparkles } from '@/components/icons';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import {
@@ -9,11 +8,9 @@ import {
   getInsightsForPlayer,
   getThemesForPlayer,
 } from '@/app/golf/actions/insight-delivery';
-import { PlayerCoachHelmDashboard } from './components/PlayerCoachHelmDashboard';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { Metadata } from 'next';
-import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
-import { FairwayPlayerCoachHelm } from '@/components/fairway';
+import { fairwayScope } from '@/lib/redesign/flag';
+import { FairwayPlayerCoachHelm, InlineNotice, Button } from '@/components/fairway';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
@@ -27,27 +24,21 @@ export const metadata: Metadata = {
  */
 function ErrorState({ error }: { error: string }) {
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <div className="min-h-full flex items-center justify-center p-4 md:p-6 bg-gradient-to-br from-red-500/5 via-transparent to-transparent">
-          <Card variant="overlay" padding="md" className="max-w-md w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
-              <IconInfo size={32} className="text-red-500" />
-            </div>
-            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
-              Unable to Load AI Dashboard
-            </h2>
-            <p className="text-warm-600 mb-6">{error}</p>
-            <a
-              href="/golf/dashboard/coachhelm"
-              className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Try Again
-            </a>
-          </Card>
-        </div>
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('flex min-h-full items-center justify-center bg-canvas px-4 py-16 md:px-6')}>
+      <div className="w-full max-w-md">
+        <InlineNotice
+          tone="danger"
+          title="Unable to Load AI Dashboard"
+          action={
+            <Button asChild variant="primary" size="sm">
+              <Link href="/golf/dashboard/coachhelm">Try Again</Link>
+            </Button>
+          }
+        >
+          {error}
+        </InlineNotice>
+      </div>
+    </div>
   );
 }
 
@@ -56,30 +47,22 @@ function ErrorState({ error }: { error: string }) {
  */
 function NotPlayerState() {
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <div className="min-h-full flex items-center justify-center p-4 md:p-6">
-          <Card variant="overlay" padding="md" className="max-w-md w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <IconSparkles size={32} className="text-amber-500" />
-            </div>
-            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
-              Player Dashboard Only
-            </h2>
-            <p className="text-warm-600 mb-6">
-              This CoachHelm dashboard is designed for players. As a coach, you can access
-              player insights from the roster page.
-            </p>
-            <a
-              href="/golf/dashboard"
-              className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Go to Dashboard
-            </a>
-          </Card>
-        </div>
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('flex min-h-full items-center justify-center bg-canvas px-4 py-16 md:px-6')}>
+      <div className="w-full max-w-md">
+        <InlineNotice
+          tone="info"
+          title="Player Dashboard Only"
+          action={
+            <Button asChild variant="primary" size="sm">
+              <Link href="/golf/dashboard">Go to Dashboard</Link>
+            </Button>
+          }
+        >
+          This CoachHelm dashboard is designed for players. As a coach, you can access
+          player insights from the roster page.
+        </InlineNotice>
+      </div>
+    </div>
   );
 }
 
@@ -88,29 +71,21 @@ function NotPlayerState() {
  */
 function CoachHelmDisabledState({ reason }: { reason: string }) {
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <div className="min-h-full flex items-center justify-center p-4 md:p-6">
-          <Card variant="overlay" padding="md" className="max-w-md w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconSparkles size={32} className="text-warm-400" />
-            </div>
-            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
-              CoachHelm AI Not Available
-            </h2>
-            <p className="text-warm-600 mb-6">
-              {reason || 'CoachHelm is currently disabled for your team. Contact your coach for more information.'}
-            </p>
-            <a
-              href="/golf/dashboard"
-              className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Return to Dashboard
-            </a>
-          </Card>
-        </div>
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('flex min-h-full items-center justify-center bg-canvas px-4 py-16 md:px-6')}>
+      <div className="w-full max-w-md">
+        <InlineNotice
+          tone="warning"
+          title="CoachHelm AI Not Available"
+          action={
+            <Button asChild variant="primary" size="sm">
+              <Link href="/golf/dashboard">Return to Dashboard</Link>
+            </Button>
+          }
+        >
+          {reason || 'CoachHelm is currently disabled for your team. Contact your coach for more information.'}
+        </InlineNotice>
+      </div>
+    </div>
   );
 }
 
@@ -194,54 +169,32 @@ export default async function PlayerCoachHelmPage() {
     return <ErrorState error="No dashboard data available" />;
   }
 
-  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
-  // Flag ON → the warm player front door (player CoachHelmShell variant: sub-nav
-  // = Brief + My Development). It receives the SAME parallel-fetched props; null
-  // V3 panels degrade to honest InsufficientData INSIDE the surface (no shells),
-  // and the "Ask CoachHelm about this insight" entry ships RESERVED/disabled (no
-  // chat-gate lift this wave). Flag OFF (default) → PlayerCoachHelmDashboard
-  // renders EXACTLY as today. All gate states above are shared by both branches.
-  if (isRedesignEnabled()) {
-    // Standing snapshots (you vs team vs PGA) — flag-gated read, lives ONLY in
-    // this fork so the flag-OFF path is byte-identical. Convert the Map to a
-    // plain Record so it serializes across the server→client boundary.
-    const standingMap = await loadPlayerStandingMap(player.id);
-    const standingByMetric = Object.fromEntries(standingMap) as Record<string, PlayerStanding>;
-    // Hierarchical theme scaffold — degrades to `[]` on a failed/absent fetch.
-    const themes = themesRes?.data?.themes ?? [];
-    return (
-      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-        <FairwayPlayerCoachHelm
-          data={dashboardResult.data}
-          playerId={player.id}
-          initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
-          profileData={profileData}
-          trendData={trendData}
-          shotData={shotData}
-          topInsight={topInsight}
-          secondaryInsights={secondaryInsights}
-          standingByMetric={standingByMetric}
-          themes={themes}
-        />
-      </div>
-    );
-  }
-
-  // Render the dashboard
+  // The warm player front door (player CoachHelmShell variant: sub-nav = Brief +
+  // My Development). It receives the SAME parallel-fetched props; null V3 panels
+  // degrade to honest InsufficientData INSIDE the surface (no shells), and the
+  // "Ask CoachHelm about this insight" entry ships RESERVED/disabled (no
+  // chat-gate lift this wave). All gate states above are shared.
+  //
+  // Standing snapshots (you vs team vs PGA). Convert the Map to a plain Record
+  // so it serializes across the server→client boundary.
+  const standingMap = await loadPlayerStandingMap(player.id);
+  const standingByMetric = Object.fromEntries(standingMap) as Record<string, PlayerStanding>;
+  // Hierarchical theme scaffold — degrades to `[]` on a failed/absent fetch.
+  const themes = themesRes?.data?.themes ?? [];
   return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <PlayerCoachHelmDashboard
-          data={dashboardResult.data}
-          playerId={player.id}
-          initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
-          profileData={profileData}
-          trendData={trendData}
-          shotData={shotData}
-          topInsight={topInsight}
-          secondaryInsights={secondaryInsights}
-        />
-      </AnimatedItem>
-    </AnimatedPage>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+      <FairwayPlayerCoachHelm
+        data={dashboardResult.data}
+        playerId={player.id}
+        initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
+        profileData={profileData}
+        trendData={trendData}
+        shotData={shotData}
+        topInsight={topInsight}
+        secondaryInsights={secondaryInsights}
+        standingByMetric={standingByMetric}
+        themes={themes}
+      />
+    </div>
   );
 }

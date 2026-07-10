@@ -13,14 +13,49 @@
  * their existing state/handlers wired), so this component never imports or
  * touches the messaging data path — `use-messages.ts` and `NewMessageModal`'s
  * coach/org fetch stay entirely with Lane A.
+ *
+ * The loading skeleton below is shaped exactly like the populated two-pane
+ * layout (an `InstrumentPanel` rail + an `InstrumentPanel` thread well) so a
+ * `<MessagesFairway loading .../>` render can ALSO stand in as the page's
+ * outer `<Suspense>` fallback (see `MessagesClient.tsx`'s default export)
+ * with zero shape change on mount — no cream/spinner flash swapping into a
+ * differently-shaped skeleton once the client boundary hydrates.
  * ========================================================================== */
 
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { Skeleton } from '@/components/fairway';
+import { InstrumentPanel, Skeleton } from '@/components/fairway';
 
-const SHELL = 'flex h-[calc(100dvh-64px)] bg-canvas';
+// `4rem` (64px) is the AppShell top bar's fixed height on every breakpoint
+// (matches ConversationClient.tsx's sibling `100dvh-4rem` budget). The
+// safe-area-inset-top term additionally reserves the notch inset so the
+// two-pane split never renders under it.
+//
+// safe-area-inset-BOTTOM is deliberately NOT subtracted here — it's owned
+// solely by the composer's own bottom padding instead (see
+// MessagesClient.tsx's thread-pane <form>:
+// `pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4`). On-screen math
+// for why owning it twice was a bug: with this shell height, `100dvh -
+// shellHeight = 4rem + insetTop + insetBottom`, i.e. the shell's OWN
+// bottom edge already sits exactly `insetBottom` above the physical
+// screen edge before the composer does anything. If the shell also
+// subtracted insetBottom (as it used to), the composer's identical
+// `env(safe-area-inset-bottom)` padding then reserved that same strip a
+// second time — eating an extra `insetBottom` worth of height out of the
+// already-safe shell and shrinking the message-scroll area for no reason
+// on notched phones. Removing the term here so only the composer reserves
+// it means the inset is accounted for exactly once.
+const SHELL =
+  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] overflow-hidden bg-canvas';
+
+/** The rail's masthead — kept byte-identical to `MessagesClient.tsx`'s
+ *  `RAIL_TITLE` so the loading -> loaded swap never changes the title. */
+const RAIL_TITLE_SKELETON = (
+  <h2 className="font-fw-display text-h3 font-semibold leading-tight text-text-primary">
+    Messages
+  </h2>
+);
 
 export interface MessagesFairwayProps {
   loading: boolean;
@@ -45,23 +80,38 @@ export function MessagesFairway({
     return (
       <div className={fairwayScope(SHELL)}>
         <div className="w-full flex-shrink-0 border-r border-border-subtle lg:w-80 xl:w-96">
-          <div className="border-b border-border-subtle p-4">
-            <div className="h-10 animate-pulse rounded-fw-md bg-surface-sunken" />
-          </div>
-          <div className="divide-y divide-border-subtle">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex animate-pulse items-center gap-3 px-4 py-3">
-                <div className="h-10 w-10 flex-shrink-0 rounded-full bg-surface-sunken" />
-                <div className="min-w-0 flex-1">
-                  <div className="mb-2 h-4 w-2/3 rounded bg-surface-sunken" />
-                  <div className="h-3 w-4/5 rounded bg-surface-tint" />
+          <InstrumentPanel
+            as="nav"
+            depth="base"
+            padding="md"
+            header={RAIL_TITLE_SKELETON}
+            aria-label="Conversations"
+            aria-busy="true"
+            className="flex h-full min-h-0 flex-col"
+          >
+            <div className="flex flex-col gap-1">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex animate-pulse items-start gap-3 rounded-fw-md px-3 py-2.5">
+                  <div className="h-10 w-10 flex-shrink-0 rounded-full bg-surface-sunken" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="h-3.5 w-2/3 rounded bg-surface-sunken" />
+                    <div className="h-3 w-4/5 rounded bg-surface-tint" />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </InstrumentPanel>
         </div>
-        <div className="hidden flex-1 items-center justify-center lg:flex">
-          <Skeleton className="h-24 w-48" />
+        <div className="hidden flex-1 lg:block">
+          <InstrumentPanel
+            as="section"
+            depth="raised"
+            padding="none"
+            aria-label="Conversation"
+            className="flex h-full min-h-0 items-center justify-center overflow-hidden"
+          >
+            <Skeleton className="h-24 w-48" />
+          </InstrumentPanel>
         </div>
       </div>
     );

@@ -17,7 +17,7 @@
  * NOT a replacement for triggerPlayerInsightsAfterRound — wraps it.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
+import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { logServerError } from '@/lib/server-error-logger';
 
 export interface PostRoundTriggerArgs {

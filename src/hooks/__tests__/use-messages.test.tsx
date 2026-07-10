@@ -45,7 +45,7 @@ let rpcResult: { data: unknown[]; error: null | { message: string } } = { data: 
 
 function makeQueryChain() {
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'order', 'in']) {
+  for (const method of ['select', 'eq', 'order', 'in', 'limit']) {
     chain[method] = () => chain;
   }
   (chain as { then: (resolve: (v: unknown) => void) => void }).then = (resolve) => {

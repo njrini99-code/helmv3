@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signupAction } from '@/app/baseball/actions/auth';
-import { Users, GraduationCap, AlertCircle } from 'lucide-react';
+import { Users, GraduationCap } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { humanizeAuthError } from '@/components/auth/baseball-auth-shell';
 import { cn } from '@/lib/utils';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 type Role = 'player' | 'coach';
 
@@ -91,23 +92,17 @@ export function BaseballSignUpForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       {error && (
-        <div
-          className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in"
-          role="alert"
-        >
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
-          <div>
-            <span>{error}</span>
-            {error.includes('already exists') && (
-              <Link
-                href="/baseball/login"
-                className="mt-1 block rounded font-medium text-grade-plus underline underline-offset-2 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
-              >
-                Go to sign in
-              </Link>
-            )}
-          </div>
-        </div>
+        <InkNotice>
+          <span>{error}</span>
+          {error.includes('already exists') && (
+            <Link
+              href="/baseball/login"
+              className="mt-1 block rounded font-medium text-grade-plus underline underline-offset-2 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
+            >
+              Go to sign in
+            </Link>
+          )}
+        </InkNotice>
       )}
 
       {/* Role Selection */}

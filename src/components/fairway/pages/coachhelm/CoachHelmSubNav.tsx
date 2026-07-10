@@ -25,11 +25,13 @@
  *     signals) sourced ONCE by the shell (getAlertCounts → signalCount).
  *
  * PLAYER VARIANT (cohesion: PLAYER SHELL VARIANT):
- *   role='player' shows Brief + Players ONLY (Ask / Effectiveness / Signals-as-
- *   triage hidden). The player surfaces still mount the same shell + sub-nav.
+ *   role='player' shows Overview · Development · Game Profile · Standing (the
+ *   coach-only Signals/Ask tabs and the Signals badge are hidden). The player
+ *   surfaces still mount the same shell + sub-nav.
  *
- * ADDITIVE ONLY — imported by nothing in the live app. Renders correctly inside
- * a `.fairway-ds` scope on a `bg-canvas` page.
+ * LIVE — unconditional, no redesign flag. Rendered by every CoachHelmShell
+ * mount (~15 live coach + player route surfaces). Renders inside a
+ * `.fairway-ds` scope on a `bg-canvas` page.
  * ========================================================================== */
 
 import * as React from 'react';

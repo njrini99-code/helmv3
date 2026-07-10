@@ -18,6 +18,8 @@
  *   4. Today      — the schedule list region.
  *   5. KPI row    — 2/4-up MetricCard skeletons (reuses MetricCard `loading`).
  *   6. Recent     — the rounds DataTable digest.
+ *   6.5 Action Items — the unconditionally-rendered ActionItemsPanel slot
+ *                   (header + green hairline + 1-2 row Panel).
  *   7. Team       — the 5-col (3+2) trend / pulse / top-performers region.
  *
  * Tokens only (bg-canvas / bg-surface / border-border-subtle / rounded-card),
@@ -28,7 +30,7 @@
  * the legacy DashboardSkeleton stays for the flag-off path.
  * ========================================================================== */
 
-import { Skeleton, MetricCard } from '@/components/fairway';
+import { Skeleton, MetricCard, InsightCard } from '@/components/fairway';
 
 /** A matte Fairway Surface-shaped block (border elevation, rounded-card). */
 function Panel({ className, children }: { className?: string; children?: React.ReactNode }) {
@@ -70,21 +72,14 @@ export function FairwayDashboardSkeleton() {
       </div>
 
       {/* ── 3 · The ONE glass hero — CoachHelm signal strip ────────────────── */}
-      <Panel className="flex flex-col gap-4 p-6 md:p-7">
-        <div className="flex items-center gap-3">
-          <Skeleton circle className="h-10 w-10" />
-          <div className="flex flex-1 flex-col gap-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-5 w-2/3" />
-          </div>
-        </div>
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-4/5" />
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Skeleton className="h-9 w-36 rounded-full" />
-          <Skeleton className="h-9 w-28 rounded-full" />
-        </div>
-      </Panel>
+      {/* Reuses InsightCard's own `variant="hero" loading` treatment (rather
+          than the opaque `Panel` helper every other section below uses) so
+          this ONE slot carries the SAME frosted warm-glass material + accent
+          ring the live hero InsightCard renders — the material was the
+          mismatch (an opaque matte skeleton standing in for a glass card),
+          not the shape. `title` is required by the prop type but unused by
+          the loading branch. */}
+      <InsightCard variant="hero" loading title="" />
 
       {/* ── 3.5 · Today — schedule region ──────────────────────────────────── */}
       <section aria-hidden="true" className="flex flex-col gap-3">
@@ -126,6 +121,29 @@ export function FairwayDashboardSkeleton() {
               <Skeleton className="h-3.5 w-10" />
               <Skeleton className="h-3.5 w-10" />
               <Skeleton className="h-3.5 w-12" />
+            </div>
+          ))}
+        </Panel>
+      </section>
+
+      {/* ── 5.5 · Action Items — unconditionally rendered (ActionItemsPanel has
+          no flag/empty-state gate on whether it mounts), so the skeleton must
+          reserve its slot too or the live page grows a section on load. */}
+      <section aria-hidden="true" className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-14" />
+        </div>
+        {/* Green hairline — mirrors ActionItemsPanel's `bg-accent-300` ruling. */}
+        <div aria-hidden="true" className="h-px w-full bg-accent-300" />
+        <Panel className="flex flex-col gap-2 p-3">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 rounded-fw-md px-3 py-2.5">
+              <Skeleton circle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="flex flex-1 flex-col gap-1.5">
+                <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${70 - i * 15}%` }} />
+                <Skeleton className="h-3 w-16" />
+              </div>
             </div>
           ))}
         </Panel>

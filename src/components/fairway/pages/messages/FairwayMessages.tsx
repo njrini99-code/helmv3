@@ -381,7 +381,9 @@ export function FairwayMessages() {
   // ── HONEST-EMPTY (f): no-team error state, role-branched copy ────────────────
   if (!teamId) {
     return (
-      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas p-6')}>
+      // Mobile subtracts FairwayBottomNav's 56px (md:hidden) too, so this empty
+      // state never renders taller than the visible viewport above the tab bar.
+      <div className={fairwayScope('flex h-[calc(100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]')}>
         <EmptyState
           icon={Users}
           title="No team found"
@@ -407,7 +409,12 @@ export function FairwayMessages() {
     // dvh height down to the grid so the thread pane's flex-1 overflow-y-auto
     // activates. Without overflow-hidden the inner flex-1 has no bounded parent
     // and the message list grows instead of scrolling.
-    <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden bg-canvas')}>
+    // Mobile also subtracts FairwayBottomNav's fixed 56px (md:hidden, safe-area
+    // pad already inside that 56px via its own env() padding) — without this
+    // the composer at the foot of the thread pane rendered UNDER the tab bar
+    // on notched phones instead of clearing it. Reverts to the plain top-bar
+    // -only calc at md+, where the bottom nav is hidden and doesn't apply.
+    <div className={fairwayScope('flex h-[calc(100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]')}>
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-6 sm:px-6 lg:py-8">
         {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ── */}
         <ViewHeader

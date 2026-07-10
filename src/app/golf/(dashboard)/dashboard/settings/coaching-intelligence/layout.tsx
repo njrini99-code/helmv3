@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
+import { FeatureUnavailable } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'Coaching Intelligence | GolfHelm',

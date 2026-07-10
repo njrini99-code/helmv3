@@ -20,6 +20,7 @@ import {
   getGapColor,
   getGapBgColor,
 } from './PressureGapIndicator';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 // ============================================================================
 // TYPES
@@ -107,12 +108,12 @@ function StatBreakdown({ players, category }: StatBreakdownProps) {
         </div>
 
         {/* Struggling */}
-        <div className="bg-red-50 rounded-lg p-3 text-center">
-          <div className="flex items-center justify-center gap-1 text-red-600 mb-1">
+        <div className="bg-pursuit/10 rounded-lg p-3 text-center">
+          <div className="flex items-center justify-center gap-1 text-pursuit mb-1">
             <IconTrendingDown size={14} />
             <span className="text-lg font-bold">{tiers.struggling.length}</span>
           </div>
-          <span className="text-xs text-red-700">Struggling</span>
+          <span className="text-xs text-pursuit">Struggling</span>
         </div>
       </div>
 
@@ -232,8 +233,8 @@ function PlayerRow({ player, showDetails, onToggleDetails }: PlayerRowProps) {
               )}
               {player.trend === 'down' && (
                 <>
-                  <IconTrendingDown size={12} className="text-red-500" />
-                  <span className="text-red-600">Game performance trending down</span>
+                  <IconTrendingDown size={12} className="text-pursuit" />
+                  <span className="text-pursuit">Game performance trending down</span>
                 </>
               )}
               {player.trend === 'stable' && (
@@ -324,7 +325,7 @@ export function GameVsPracticePanel({
   // Empty state
   if (!pressureData || pressureData.length === 0) {
     return (
-      <div className={cn('bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6', className)}>
+      <PaperCard className={cn('p-6', className)}>
         <h3 className="font-semibold text-warm-900 mb-2">
           Practice vs Game Performance
         </h3>
@@ -340,12 +341,12 @@ export function GameVsPracticePanel({
             pressure.
           </p>
         </div>
-      </div>
+      </PaperCard>
     );
   }
 
   return (
-    <div className={cn('bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6', className)}>
+    <PaperCard className={cn('p-4 sm:p-6', className)}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
@@ -372,7 +373,7 @@ export function GameVsPracticePanel({
                 <IconTrendingUp size={12} />
                 {teamSummary.clutchPlayers} clutch
               </span>
-              <span className="flex items-center gap-1 text-red-500">
+              <span className="flex items-center gap-1 text-pursuit">
                 <IconTrendingDown size={12} />
                 {teamSummary.strugglePlayers} struggle
               </span>
@@ -418,7 +419,7 @@ export function GameVsPracticePanel({
               {teamSummary.avgGap > 0.01 ? (
                 <IconTrendingUp size={20} className="text-primary-500" />
               ) : teamSummary.avgGap < -0.01 ? (
-                <IconTrendingDown size={20} className="text-red-500" />
+                <IconTrendingDown size={20} className="text-pursuit" />
               ) : (
                 <IconMinus size={20} className="text-warm-400" />
               )}
@@ -439,7 +440,7 @@ export function GameVsPracticePanel({
               <IconTrendingUp size={12} />
               {teamSummary.clutchPlayers} clutch
             </span>
-            <span className="flex items-center gap-1 text-xs text-red-500">
+            <span className="flex items-center gap-1 text-xs text-pursuit">
               <IconTrendingDown size={12} />
               {teamSummary.strugglePlayers} struggle
             </span>
@@ -477,7 +478,7 @@ export function GameVsPracticePanel({
             : `Show all ${pressureData.length} players`}
         </Button>
       )}
-    </div>
+    </PaperCard>
   );
 }
 
@@ -487,7 +488,7 @@ export function GameVsPracticePanel({
 
 export function GameVsPracticePanelSkeleton() {
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6">
+    <PaperCard className="p-4 sm:p-6">
       {/* Header skeleton */}
       <div className="flex items-center justify-between mb-4">
         <div className="space-y-1">
@@ -554,6 +555,6 @@ export function GameVsPracticePanelSkeleton() {
           </div>
         ))}
       </div>
-    </div>
+    </PaperCard>
   );
 }

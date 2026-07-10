@@ -30,6 +30,8 @@ export { PositionChip } from './PositionChip';
 export type { PositionChipProps } from './PositionChip';
 export { InkBadge } from './InkBadge';
 export type { InkBadgeProps } from './InkBadge';
+export { InkNotice } from './InkNotice';
+export type { InkNoticeProps } from './InkNotice';
 export { AgingBar } from './AgingBar';
 export type { AgingBarProps } from './AgingBar';
 export { LiveDot } from './LiveDot';

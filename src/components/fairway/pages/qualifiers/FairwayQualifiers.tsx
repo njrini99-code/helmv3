@@ -48,10 +48,10 @@ import {
   EmptyState,
   FilterPill,
   SearchField,
-  type FwStatusTone,
 } from '@/components/fairway';
 import { IconCalendar, IconMapPin, IconGolf, IconArrowRight, IconPlus } from '@/components/icons';
 import type { GolfQualifier } from '@/lib/types/golf';
+import { qualifierStatusMeta } from './qualifier-status';
 
 const CREATE_HREF = '/golf/dashboard/qualifiers/new';
 const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;
@@ -76,24 +76,6 @@ export interface FairwayQualifiersProps {
   isCoach: boolean;
   /** The team's qualifiers (legacy query verbatim: team_id, start_date desc). */
   qualifiers: GolfQualifier[];
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * Status → Fairway StatusPill config. Token tones only (accent for live /
- * upcoming, neutral for completed). `pulse` is the calm "live" ping (it honors
- * reduced-motion inside StatusPill) — never animate-pulse glass.
- * ────────────────────────────────────────────────────────────────────────── */
-function statusConfig(status: string): { tone: FwStatusTone; label: string; pulse: boolean } {
-  switch (status) {
-    case 'in_progress':
-      return { tone: 'accent', label: 'Live', pulse: true };
-    case 'completed':
-      return { tone: 'neutral', label: 'Completed', pulse: false };
-    case 'upcoming':
-      return { tone: 'accent', label: 'Upcoming', pulse: false };
-    default:
-      return { tone: 'neutral', label: status.replace(/_/g, ' '), pulse: false };
-  }
 }
 
 function formatDate(dateStr: string): string {
@@ -441,7 +423,7 @@ function QualifierMeta({ qualifier }: { qualifier: GolfQualifier }) {
  * ────────────────────────────────────────────────────────────────────────── */
 function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
   const status = qualifier.status ?? 'upcoming';
-  const cfg = statusConfig(status);
+  const cfg = qualifierStatusMeta(status);
 
   return (
     <Surface
@@ -488,7 +470,7 @@ function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
  * ────────────────────────────────────────────────────────────────────────── */
 function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
   const status = qualifier.status ?? 'upcoming';
-  const cfg = statusConfig(status);
+  const cfg = qualifierStatusMeta(status);
 
   return (
     <Surface

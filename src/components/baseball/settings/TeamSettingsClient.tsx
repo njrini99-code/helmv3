@@ -20,10 +20,10 @@ import { useState, useTransition } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
-import { IconUsers, IconLock, IconCheck, IconLink } from '@/components/icons';
+import { IconUsers, IconCheck, IconLink } from '@/components/icons';
+import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 
 import {
   BASEBALL_INVITE_POLICIES,
@@ -126,36 +126,26 @@ export function TeamSettingsClient({ data }: Props) {
 
   if (!canEdit) {
     return (
-      <>
-        <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-h2 font-semibold text-warm-900">Team Settings</h1>
-            <p className="mt-1 text-body-sm text-warm-500">Coach access required</p>
-          </div>
-        </div>
-        <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-          <EmptyState
-            variant="card"
-            glass
-            icon={<IconLock size={40} />}
-            title="Team settings are staff-controlled"
-            description="Join policy and the team code are managed by your coaching staff."
-          />
-        </div>
-      </>
+      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Team Settings" ink="team">
+          <p className="font-annual text-body-sm text-text-secondary">Coach access required</p>
+        </SectionMasthead>
+        <EditorsLetter
+          ink="team"
+          title="Team settings are staff-controlled."
+          body="Join policy and the team code are managed by your coaching staff."
+        />
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="border-b border-warm-200/60 px-6 pb-5 pt-6 lg:px-8 lg:pt-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-semibold text-warm-900">Team Settings</h1>
-          <p className="mt-1 text-body-sm text-warm-500">{`${settings.teamName} • how members join`}</p>
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Team Settings" ink="team">
+        <p className="font-annual text-body-sm text-text-secondary">{`${settings.teamName} • how members join`}</p>
+      </SectionMasthead>
 
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="space-y-6">
         {/* Join code */}
         <Card variant="glass">
           <CardHeader>
@@ -265,6 +255,6 @@ export function TeamSettingsClient({ data }: Props) {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }
