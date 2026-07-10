@@ -4,10 +4,17 @@
 // CompareClient — the coach's recruit side-by-side comparison surface,
 // migrated onto "The Living Annual" kit (Lane 2 · THE WAR ROOM, clay ink —
 // spec §6 P3 #10 "Decision Room / Compare Overlay"). PRESENTATION ONLY: the
-// URL-driven player-id state, the player fetch/search effects, and add/remove
-// handlers are unchanged — only the page chrome (masthead, skeleton, empty
-// state) moved to the kit. `PlayerComparison` renders the actual comparison
-// table and is out of scope for this pass.
+// URL-driven player-id state and add/remove handler shapes are unchanged —
+// only the page chrome (masthead, skeleton, empty state) moved to the kit.
+// `PlayerComparison` renders the actual comparison table and is out of
+// scope for this pass.
+// EXCEPTION (P0 fix): the player fetch/search effects no longer query
+// `baseball_players` directly from the client — they call the gated
+// `getComparablePlayers`/`searchRecruitablePlayers`/`canAddPlayerToCompare`
+// server actions (./actions.ts) instead. The old direct queries had no
+// privacy/recruitability filtering at all — a private, college, or
+// off-territory player's full profile (and a bookmarkable
+// `/compare?players=<id>` URL for one) had zero eligibility check.
 // =============================================================================
 
 import { Suspense, useState, useEffect, useRef } from 'react';
@@ -20,9 +27,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { PlayerComparison } from '@/components/features/player-comparison';
 import { IconSearch, IconPlus, IconX, IconUsers } from '@/components/icons';
-import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/sonner';
 import { cn, getFullName } from '@/lib/utils';
 import { SectionMasthead, PaperCard, InkBadge, EditorsLetter, Eyebrow } from '@/components/baseball/living-annual';
+import { searchRecruitablePlayers, getComparablePlayers, canAddPlayerToCompare } from './actions';
 import type { Player } from '@/lib/types';
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
@@ -47,14 +55,14 @@ function useDebounce<T>(value: T, delay: number): T {
 function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Player[]>([]);
   const [searching, setSearching] = useState(false);
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
+  const [addingPlayerId, setAddingPlayerId] = useState<string | null>(null);
   // Debounce the search box so every keystroke doesn't fire a query; the input
   // itself stays fully responsive since `searchQuery` updates immediately.
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -77,16 +85,17 @@ function CompareContent() {
       setLoading(true);
       setLoadError(null);
       try {
-        const { data, error } = await supabase
-          .from('baseball_players')
-          .select('*')
-          .in('id', playerIds);
-
-        if (error) throw error;
+        // Server-gated (P0 fix): getComparablePlayers re-applies the same
+        // recruitability checks as the search below (private/college/
+        // off-territory/own-roster excluded) so a bookmarked
+        // `/compare?players=<id>` URL can't bypass them and pull in a
+        // player's full profile with zero eligibility check.
+        const data = await getComparablePlayers(playerIds);
 
         // Supabase/Postgres does not guarantee `.in()` results match the
         // order of the id list, so re-sort fetched players to match the
-        // URL's player order (falling back to omitting any id not found).
+        // URL's player order (falling back to omitting any id not found,
+        // including ids the recruitability gate excluded).
         const byId = new Map((data || []).map((player) => [player.id, player]));
         const ordered = playerIds
           .map((id) => byId.get(id))
@@ -101,7 +110,7 @@ function CompareContent() {
     }
 
     fetchPlayers();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable (module-scope) and `playerIds` is recomputed each render from `searchParams`; adding it would loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `playerIds` is recomputed each render from `searchParams`; adding it would loop.
   }, [searchParams]);
 
   const MAX_PLAYERS = 4;
@@ -137,21 +146,12 @@ function CompareContent() {
 
     (async () => {
       try {
-        let queryBuilder = supabase
-          .from('baseball_players')
-          .select('*')
-          .eq('recruiting_activated', true)
-          .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
-          .limit(10);
+        // Server-gated (P0 fix): searchRecruitablePlayers excludes private
+        // profiles, college players, off-territory players, and the
+        // coach's own roster — the raw client-side query here previously
+        // applied none of those checks (only `recruiting_activated`).
+        const data = await searchRecruitablePlayers(query, playerIds);
 
-        // Only add NOT IN filter if there are playerIds
-        if (playerIds.length > 0) {
-          queryBuilder = queryBuilder.not('id', 'in', `(${playerIds.join(',')})`);
-        }
-
-        const { data, error } = await queryBuilder;
-
-        if (error) throw error;
         if (searchRequestRef.current !== requestId) return; // stale — a newer search is in flight
         setSearchResults(data || []);
       } catch (error) {
@@ -164,14 +164,31 @@ function CompareContent() {
         }
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable (module-scope); `playerIds` is recomputed fresh from `searchParams` every render (see the fetchPlayers effect above), so listing it here would re-run this on every render. Adding a player already clears `searchQuery`/`searchResults` directly via `addPlayer`, so re-running on `playerIds` alone isn't needed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `playerIds` is recomputed fresh from `searchParams` every render (see the fetchPlayers effect above), so listing it here would re-run this on every render. Adding a player already clears `searchQuery`/`searchResults` directly via `addPlayer`, so re-running on `playerIds` alone isn't needed.
   }, [debouncedSearchQuery, canAddMore]);
 
-  const addPlayer = (player: Player) => {
-    const newIds = [...playerIds, player.id];
-    router.push(`/baseball/dashboard/compare?players=${newIds.join(',')}`);
-    setSearchQuery('');
-    setSearchResults([]);
+  const addPlayer = async (player: Player) => {
+    // Defense-in-depth (P0 fix): the search results above are already
+    // recruitability-filtered, but this stops an ineligible id from ever
+    // landing in the `?players=` URL — mirroring Watchlist's addToWatchlist
+    // server-side gate — instead of relying on it silently vanishing from
+    // render once getComparablePlayers re-validates on the next fetch.
+    setAddingPlayerId(player.id);
+    try {
+      const { allowed } = await canAddPlayerToCompare(player.id);
+      if (!allowed) {
+        showToast('This player is not available for recruiting', 'error');
+        return;
+      }
+      const newIds = [...playerIds, player.id];
+      router.push(`/baseball/dashboard/compare?players=${newIds.join(',')}`);
+      setSearchQuery('');
+      setSearchResults([]);
+    } catch {
+      showToast('Failed to add player', 'error');
+    } finally {
+      setAddingPlayerId(null);
+    }
   };
 
   const removePlayer = (playerId: string) => {
@@ -270,10 +287,12 @@ function CompareContent() {
               <div className="mt-2 max-h-64 divide-y divide-[color:var(--hairline)] overflow-y-auto rounded-fw-md border border-[color:var(--hairline)]">
                 {searchResults.map((player) => {
                   const name = getFullName(player.first_name, player.last_name);
+                  const isAddingThis = addingPlayerId === player.id;
                   return (
                     <Button variant="ghost"
                       key={player.id}
                       onClick={() => addPlayer(player)}
+                      disabled={addingPlayerId !== null}
                       className="flex w-full items-center gap-3 rounded-none p-3 text-left hover:bg-[color:var(--paper-canvas)]"
                     >
                       <Avatar name={name} src={player.avatar_url} size="sm" />
@@ -283,7 +302,11 @@ function CompareContent() {
                           {player.primary_position} • {player.grad_year} • {player.high_school_name}
                         </p>
                       </div>
-                      <IconPlus size={16} className="text-pursuit" />
+                      {isAddingThis ? (
+                        <span className="font-annual text-body-sm text-text-tertiary">Adding…</span>
+                      ) : (
+                        <IconPlus size={16} className="text-pursuit" />
+                      )}
                     </Button>
                   );
                 })}

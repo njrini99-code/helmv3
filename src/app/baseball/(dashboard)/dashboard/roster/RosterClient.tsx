@@ -10,13 +10,22 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
-import { saveLineup } from '@/app/baseball/actions/lineups';
+import { saveLineup, updateLineup } from '@/app/baseball/actions/lineups';
+import {
+  removePlayerFromTeam,
+  assignPlayerToTeam,
+  approvePendingMember,
+  rejectPendingMember,
+  searchAssignablePlayers,
+} from '@/app/baseball/actions/roster';
 import { useToast } from '@/components/ui/sonner';
 import type { RosterBoardMember } from '@/components/baseball/roster';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { RosterReadModel } from '@/lib/baseball/read-models/roster';
+import { mergeSeasonStatsIntoAggregates } from '@/lib/baseball/read-models/roster-aggregates-merge';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { RosterFairway } from './RosterFairway';
+import type { LineupSlot } from '@/components/coach/lineup/LineupBuilder';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
 export type RosterSurface = 'cards' | 'position' | 'status' | 'development';
@@ -134,8 +143,15 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
     initialModel?.aggregatesError ?? false,
   );
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   const [activeView, setActiveView] = useState<'roster' | 'lineup'>('roster');
   const [, setSavingLineup] = useState(false);
+  const [editingLineup, setEditingLineup] = useState<{
+    id: string;
+    name: string;
+    positions: LineupSlot[];
+  } | null>(null);
+  const [lineupsRefreshKey, setLineupsRefreshKey] = useState(0);
   const { showToast } = useToast();
 
   // Filters
@@ -236,16 +252,33 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
       .select('*')
       .eq('team_id', resolvedTeamId) as { data: BaseballPlayerAggregates[] | null; error: unknown };
 
+    let aggMap: Record<string, BaseballPlayerAggregates> = {};
     if (!aggError && aggregatesData) {
-      const aggMap: Record<string, BaseballPlayerAggregates> = {};
       aggregatesData.forEach((agg) => {
         aggMap[agg.player_id] = agg;
       });
-      setAggregates(aggMap);
     } else if (aggError) {
       setAggregatesWarning(true);
     }
 
+    // Merge box-score-canonical season stats over the legacy aggregates row —
+    // mirrors getRoster's server read model so a client-side refetch (after a
+    // roster mutation below) never regresses a player back to em-dash/0 stats
+    // that ARE available from the box-score pipeline (#roster-stat-staleness).
+    const currentSeasonYear = new Date().getFullYear();
+    const { data: seasonStatsData, error: seasonStatsError } = await supabase
+      .from('baseball_player_season_stats')
+      .select('player_id, avg, obp, slg, ops, g, last_updated')
+      .eq('team_id', resolvedTeamId)
+      .eq('season_year', currentSeasonYear);
+
+    if (!seasonStatsError && seasonStatsData) {
+      aggMap = mergeSeasonStatsIntoAggregates(aggMap, seasonStatsData, resolvedTeamId);
+    } else if (seasonStatsError) {
+      setAggregatesWarning(true);
+    }
+
+    setAggregates(aggMap);
     setLoading(false);
   }
 
@@ -405,6 +438,126 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
     exportRosterCSV(exportData);
   };
 
+  // ── Roster mutation handlers ────────────────────────────────────────────
+  // removePlayerFromTeam / assignPlayerToTeam / approvePendingMember /
+  // rejectPendingMember were all fully built, capability-gated server actions
+  // with NO reachable UI (#roster-actions-unwired, #pending-joiners-stuck).
+  // Every handler here toasts the outcome, then calls fetchRosterWithAggregates()
+  // (not router.refresh()) so the change appears immediately — router.refresh()
+  // would refetch server props but NOT re-derive the `roster`/`aggregates`
+  // state above, which is only ever seeded once from `initialModel` on mount.
+  async function handleRemoveMember(playerId: string, playerName: string) {
+    try {
+      const result = await removePlayerFromTeam({ playerId });
+      if (result.success) {
+        showToast(`${playerName} removed from team`, 'success');
+        await fetchRosterWithAggregates();
+      } else {
+        showToast(result.error || 'Failed to remove player', 'error');
+      }
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove player';
+      showToast(message, 'error');
+      return { success: false, error: message };
+    }
+  }
+
+  async function handleApproveMember(memberId: string) {
+    try {
+      const result = await approvePendingMember({ memberId });
+      if (result.success) {
+        showToast('Join request approved', 'success');
+        await fetchRosterWithAggregates();
+      } else {
+        showToast(result.error || 'Failed to approve join request', 'error');
+      }
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to approve join request';
+      showToast(message, 'error');
+      return { success: false, error: message };
+    }
+  }
+
+  async function handleRejectMember(memberId: string) {
+    try {
+      const result = await rejectPendingMember({ memberId });
+      if (result.success) {
+        showToast('Join request declined', 'success');
+        await fetchRosterWithAggregates();
+      } else {
+        showToast(result.error || 'Failed to decline join request', 'error');
+      }
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to decline join request';
+      showToast(message, 'error');
+      return { success: false, error: message };
+    }
+  }
+
+  async function handleAssignPlayer(input: {
+    playerId: string;
+    jerseyNumber: number | null;
+    position: string | null;
+  }) {
+    try {
+      const result = await assignPlayerToTeam(input);
+      if (result.success) {
+        showToast('Roster updated', 'success');
+        await fetchRosterWithAggregates();
+      } else {
+        showToast(result.error || 'Failed to update player', 'error');
+      }
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update player';
+      showToast(message, 'error');
+      return { success: false, error: message };
+    }
+  }
+
+  async function handleSearchPlayers(query: string) {
+    try {
+      return await searchAssignablePlayers({ query });
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Search failed. Please try again.',
+      };
+    }
+  }
+
+  // ── Saved-lineup edit session ────────────────────────────────────────────
+  // getTeamLineups only returns bare {order, playerId} positions; hydrate them
+  // against the roster we already have loaded so LineupBuilder can render
+  // names/positions/jerseys immediately without another round trip.
+  function handleEditLineup(lineup: { id: string; name: string; positions: Array<{ order: number; playerId: string }> }) {
+    const byPlayerId = new Map(roster.map((m) => [m.player.id, m]));
+    const positions: LineupSlot[] = lineup.positions.map((p) => {
+      const member = byPlayerId.get(p.playerId);
+      return {
+        order: p.order,
+        player: member
+          ? {
+              id: member.player.id,
+              first_name: member.player.first_name,
+              last_name: member.player.last_name,
+              primary_position: member.player.primary_position,
+              jersey_number: member.jersey_number,
+              avatar_url: member.player.avatar_url,
+            }
+          : null,
+      };
+    });
+    setEditingLineup({ id: lineup.id, name: lineup.name, positions });
+  }
+
+  function handleNewLineup() {
+    setEditingLineup(null);
+  }
+
   // Stats summary
   const rosterStats = useMemo(() => {
     const total = roster.length;
@@ -518,16 +671,25 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
           }
           setSavingLineup(true);
           try {
-            // saveLineup returns { success: false, error } for validation
-            // failures (duplicate orders, > 9 players, missing coach) without
-            // throwing, so check the result before claiming success.
-            const result = await saveLineup({
-              teamId: resolvedTeamId,
-              name: name || 'Untitled Lineup',
-              positions,
-            });
+            // saveLineup/updateLineup return { success: false, error } for
+            // validation failures (duplicate orders, > 9 players, missing
+            // coach) without throwing, so check the result before claiming
+            // success. Editing a saved lineup (editingLineup set) updates it
+            // in place instead of always inserting a new row.
+            const result = editingLineup
+              ? await updateLineup(editingLineup.id, { name: name || 'Untitled Lineup', positions })
+              : await saveLineup({
+                  teamId: resolvedTeamId,
+                  name: name || 'Untitled Lineup',
+                  positions,
+                });
             if (result.success) {
-              showToast('Lineup saved successfully', 'success');
+              showToast(
+                editingLineup ? 'Lineup updated successfully' : 'Lineup saved successfully',
+                'success',
+              );
+              setEditingLineup(null);
+              setLineupsRefreshKey((k) => k + 1);
             } else {
               showToast(result.error || 'Failed to save lineup', 'error');
             }
@@ -540,6 +702,19 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
             setSavingLineup(false);
           }
         }}
+        onRemoveMember={handleRemoveMember}
+        onApproveMember={handleApproveMember}
+        onRejectMember={handleRejectMember}
+        onAssignPlayer={handleAssignPlayer}
+        onSearchPlayers={handleSearchPlayers}
+        showAssignModal={showAssignModal}
+        onOpenAssignModal={() => setShowAssignModal(true)}
+        onCloseAssignModal={() => setShowAssignModal(false)}
+        teamId={resolvedTeamId}
+        editingLineup={editingLineup}
+        onEditLineup={handleEditLineup}
+        onNewLineup={handleNewLineup}
+        lineupsRefreshKey={lineupsRefreshKey}
         onInvite={() => setShowInviteModal(true)}
         showInviteModal={showInviteModal}
         onCloseInvite={() => setShowInviteModal(false)}

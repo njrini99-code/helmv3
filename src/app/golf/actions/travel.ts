@@ -51,6 +51,7 @@ const createTravelItinerarySchema = z.object({
 
 const updateTravelItinerarySchema = z.object({
   id: z.string().uuid(),
+  event_id: z.string().uuid().nullable().optional(),
   event_name: z.string().min(1).max(200).optional(),
   destination: z.string().min(1).max(200).optional(),
   transportation_type: transportationTypeSchema.optional(),
@@ -103,6 +104,8 @@ export interface CreateTravelItineraryInput {
 
 export interface UpdateTravelItineraryInput {
   id: string;
+  /** Undefined/null clears the calendar link — mirrors CreateTravelItineraryInput's event_id. */
+  event_id?: string | null;
   event_name?: string;
   destination?: string;
   transportation_type?: 'bus' | 'van' | 'flight' | 'carpool';
@@ -271,8 +274,14 @@ async function updateGolfTravelItineraryImpl(input: UpdateTravelItineraryInput) 
     const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...rawUpdateData } = validatedData;
 
     // Convert types to match DB schema: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
-    // Convert empty strings to null for time/date columns (Postgres rejects "" for time type)
-    const emptyToNull = (val: unknown) => (typeof val === 'string' && val.trim() === '' ? null : val);
+    // Convert empty strings to null for time/date columns (Postgres rejects "" for time type).
+    // Also normalize `undefined` to null: when a field key IS present (guarded by the
+    // `field in updateData` checks below) but its value is undefined — e.g. the "Link to
+    // event" picker's NO_EVENT sentinel maps event_id to undefined — the bare key would
+    // otherwise be dropped by JSON serialization on the way to Postgrest, silently leaving
+    // the previous value in place instead of clearing it.
+    const emptyToNull = (val: unknown) =>
+      val === undefined || (typeof val === 'string' && val.trim() === '') ? null : val;
 
     const updateData: Record<string, unknown> = { ...rawUpdateData };
 

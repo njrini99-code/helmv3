@@ -104,6 +104,12 @@ export function FairwayEventCard({
   const start = startTimeLabel(event);
   const end = endTimeLabel(event);
   const rsvp = showRsvp && rsvpStatus ? RSVP_PILL[rsvpStatus] : null;
+  // Cancelled events render DISTINCTLY at the list level too — badge + strike,
+  // mirroring FairwayEventDetailDrawer's treatment (previously this only
+  // showed up once a player tapped into the event's detail drawer; 2026-07-10
+  // calendar-travel audit). Orthogonal to `isPast` — a cancelled event can be
+  // past or upcoming, both cues apply independently.
+  const isCancelled = event.status === 'cancelled';
 
   return (
     // GOTCHA (a): a real Fairway <Button variant="ghost">, NOT `Surface as="button"`.
@@ -146,13 +152,23 @@ export function FairwayEventCard({
 
         {/* Title + location. */}
         <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-          <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+          <p
+            className={cn(
+              'truncate font-fw-sans text-body-sm font-medium text-text-primary',
+              isCancelled && 'text-text-tertiary line-through decoration-2',
+            )}
+          >
             {event.title}
           </p>
           <span className="flex min-w-0 items-center gap-2">
             <StatusPill tone={typeTone} size="sm" dot={false}>
               {typeLabel}
             </StatusPill>
+            {isCancelled ? (
+              <StatusPill tone="danger" size="sm" dot={false}>
+                Cancelled
+              </StatusPill>
+            ) : null}
             {event.location ? (
               <span className="truncate font-fw-sans text-caption text-text-tertiary">
                 {event.location}

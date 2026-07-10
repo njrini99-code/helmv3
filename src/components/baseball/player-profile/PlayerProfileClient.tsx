@@ -61,8 +61,11 @@ import { Button, IconButton } from '@/components/ui/button';
 import { VideoPlayer } from '@/components/features/video-player';
 import { Textarea } from '@/components/ui/textarea';
 import { NativeSelect } from '@/components/ui/select';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useToast } from '@/components/ui/sonner';
 import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
 import { createCoachNote } from '@/app/baseball/actions/coach-notes';
+import { removePlayerFromTeam } from '@/app/baseball/actions/roster';
 
 // =============================================================================
 // PlayerProfileClient — MIGRATED to "The Living Annual" kit
@@ -372,6 +375,7 @@ export function PlayerProfileClient({
 }: PlayerProfileClientProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   // ── Note add form state ────────────────────────────────────────────────────
   const [noteBody, setNoteBody] = useState('');
@@ -386,6 +390,12 @@ export function PlayerProfileClient({
   const [sortKey, setSortKey] = useState<StatSortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [selectedVideo, setSelectedVideo] = useState<PlayerProfileClientProps['videos'][number] | null>(null);
+  // ── Remove from team (roster.ts's removePlayerFromTeam, previously unreachable
+  // from any UI — this page is the coach-only player detail surface, gated by
+  // page.tsx redirecting non-college/JUCO coaches away, so no extra
+  // capability check is needed client-side). ─────────────────────────────────
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const fullName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Unknown Player';
   const initials = (player.first_name?.[0] ?? '') + (player.last_name?.[0] ?? '');
@@ -547,6 +557,25 @@ export function PlayerProfileClient({
     }
   };
 
+  // ── Remove from team handler ─────────────────────────────────────────────
+  async function handleRemoveFromTeam() {
+    setRemoving(true);
+    try {
+      const result = await removePlayerFromTeam({ playerId: player.id });
+      if (result.success) {
+        showToast(`${fullName} removed from team`, 'success');
+        setRemoveOpen(false);
+        router.push('/baseball/dashboard/roster');
+      } else {
+        showToast(result.error || 'Failed to remove player', 'error');
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to remove player', 'error');
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   // ── Add note handler ─────────────────────────────────────────────────────
   function handleAddNote() {
     const body = noteBody.trim();
@@ -627,19 +656,39 @@ export function PlayerProfileClient({
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
 
         {/* ── Back button ─────────────────────────────────────────────── */}
-        <div className="mb-7 flex items-center gap-3">
-          <Link
-            href="/baseball/dashboard/command-center"
-            className={cn('group flex items-center gap-2 text-text-secondary', pressableClass({ ink: 'team', className: '-m-1 rounded-fw-md p-1' }))}
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/baseball/dashboard/command-center"
+              className={cn('group flex items-center gap-2 text-text-secondary', pressableClass({ ink: 'team', className: '-m-1 rounded-fw-md p-1' }))}
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06)] transition-colors group-hover:text-grade-plus">
+                <IconArrowLeft size={16} />
+              </span>
+              <span className="hidden font-annual text-body-sm font-medium sm:inline">Back to Command Center</span>
+            </Link>
+            <span className="hidden text-text-tertiary sm:inline">/</span>
+            <span className="hidden max-w-[200px] truncate font-annual text-body-sm text-text-tertiary sm:inline">{teamName}</span>
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => setRemoveOpen(true)}
+            className="px-2.5 py-1.5 text-xs font-medium text-[color:var(--notice-error-ink)] hover:bg-[var(--notice-error-ink)]/10"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06)] transition-colors group-hover:text-grade-plus">
-              <IconArrowLeft size={16} />
-            </span>
-            <span className="hidden font-annual text-body-sm font-medium sm:inline">Back to Command Center</span>
-          </Link>
-          <span className="hidden text-text-tertiary sm:inline">/</span>
-          <span className="hidden max-w-[200px] truncate font-annual text-body-sm text-text-tertiary sm:inline">{teamName}</span>
+            Remove from team
+          </Button>
         </div>
+
+        <ConfirmDialog
+          open={removeOpen}
+          title="Remove player?"
+          message={`Remove ${fullName} from ${teamName}? Their account and stats will not be deleted — this only ends their roster membership. They can rejoin later using the team invite link.`}
+          confirmLabel="Remove player"
+          variant="danger"
+          isLoading={removing}
+          onConfirm={handleRemoveFromTeam}
+          onCancel={() => setRemoveOpen(false)}
+        />
 
         {/* ── Hero card ────────────────────────────────────────────────── */}
         <PaperCard registrationTick className="mb-6 p-6 sm:p-8">

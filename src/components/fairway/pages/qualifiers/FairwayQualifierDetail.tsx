@@ -206,11 +206,23 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     );
   }
 
+  // Coach-only "Edit qualifier" — wires the previously-dead updateGolfQualifierDetails
+  // / setQualifierRoundCourses actions to a real surface (name/dates/rules/spots/
+  // round-courses were uneditable after creation until now).
+  const secondaryActions = isCoach ? (
+    <Button asChild variant="ghost" size="md">
+      <Link href={`/golf/dashboard/qualifiers/${qualifierId}/edit`}>Edit qualifier</Link>
+    </Button>
+  ) : undefined;
+
   // P326 — no more player dead-end. A player who can't play (not entered, or the
   // qualifier is completed / entries closed) saw a masthead with NO action and NO
   // status telling them why. Give that state an explicit notice + a next step.
-  // There is no player self-entry flow (coaches add entrants on create), so the
-  // next action is always "contact your coach".
+  // There is no player self-entry flow (coaches add entrants on create) and no
+  // "add entrant to an existing qualifier" action anywhere in the app, so the
+  // copy below stops short of promising a fix a coach has no button for —
+  // it names the constraint and points to a human ("talk to your coach"),
+  // not an in-app action that doesn't exist.
   let playerNotice:
     | { tone: 'info' | 'warning'; title: string; body: string }
     | null = null;
@@ -225,13 +237,13 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
       playerNotice = {
         tone: 'warning',
         title: 'Entries are closed',
-        body: 'The entry deadline has passed. Ask your coach if you can still be added to this qualifier.',
+        body: "The entry deadline has passed, so you can't be added now. Talk to your coach if you think this is a mistake.",
       };
     } else {
       playerNotice = {
         tone: 'warning',
         title: "You're not entered in this qualifier",
-        body: "You can follow the standings below, but you can't post a round. Ask your coach to add you to enter.",
+        body: "Entries were locked in when this qualifier was created, so there's no in-app way to join now. Talk to your coach if you think this is a mistake.",
       };
     }
   }
@@ -256,6 +268,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         eyebrow="Qualifier"
         title={name}
         primaryAction={primaryAction}
+        secondaryActions={secondaryActions}
         meta={
           <>
             <StatusPill tone={sm.tone} pulse={sm.pulse}>

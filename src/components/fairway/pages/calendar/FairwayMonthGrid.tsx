@@ -207,6 +207,12 @@ export function FairwayMonthGrid({
                   }
                   const e = item.event;
                   const { tone } = typeMeta(e.event_type);
+                  // Cancelled events get the same distinct cue as the Agenda/Week
+                  // card (FairwayEventCard) — danger tint + strike-through —
+                  // instead of rendering identically to a live event (2026-07-10
+                  // calendar-travel audit). No room for a second badge in a
+                  // compact month chip, so the tint swap carries the signal.
+                  const isCancelled = e.status === 'cancelled';
                   return (
                     <Button
                       key={e.id}
@@ -214,10 +220,11 @@ export function FairwayMonthGrid({
                       variant="ghost"
                       haptic="none"
                       onClick={onEventClick ? () => onEventClick(e) : undefined}
-                      title={e.title}
+                      title={isCancelled ? `${e.title} (cancelled)` : e.title}
                       className={cn(
                         'block h-auto min-h-0 truncate rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
-                        TONE_CHIP[tone],
+                        isCancelled ? TONE_CHIP.danger : TONE_CHIP[tone],
+                        isCancelled && 'line-through decoration-2',
                       )}
                     >
                       {!e.all_day && eventStart(e) ? (

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { notifyGolfMessageRecipients } from '@/lib/notifications/golf-message-fanout';
 
 /**
  * Attachment data from upload
@@ -16,6 +17,33 @@ export interface AttachmentUploadData {
   width?: number;
   height?: number;
   durationSeconds?: number;
+}
+
+/**
+ * Attachment-aware notification preview: prefer the message text when the
+ * sender wrote one, otherwise describe the attachment(s) so the email/push/
+ * in-app notification isn't just a blank body for a photo-only send.
+ */
+function buildAttachmentPreview(content: string, attachments: AttachmentUploadData[]): string {
+  const trimmed = content?.trim();
+  if (trimmed) {
+    return trimmed.length > 80 ? trimmed.substring(0, 80) + '…' : trimmed;
+  }
+  if (attachments.length > 1) {
+    return `📎 ${attachments.length} attachments`;
+  }
+  switch (attachments[0]?.fileType) {
+    case 'image':
+      return '📷 Photo';
+    case 'video':
+      return '🎥 Video';
+    case 'audio':
+      return '🎵 Audio';
+    case 'document':
+      return '📎 Document';
+    default:
+      return 'Sent a message';
+  }
 }
 
 /**
@@ -103,6 +131,16 @@ async function sendGolfMessageWithAttachmentsImpl(
       .from('golf_conversations')
       .update({ updated_at: new Date().toISOString() }) // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI
       .eq('id', conversationId);
+
+    // Fan out email/push/in-app notifications to the other participants —
+    // mirrors sendGolfMessageImpl's text-only fan-out (P1: this attachments
+    // path previously fired none of these, so a photo/document send was
+    // invisible to the recipient until they manually opened Messages).
+    await notifyGolfMessageRecipients(
+      conversationId,
+      user.id,
+      buildAttachmentPreview(content, attachments),
+    );
 
     return { success: true, messageId: message.id };
   } catch (err) {

@@ -458,6 +458,27 @@ export async function getDecisionRoomData(): Promise<DecisionRoomData> {
 //   - run inside withBaseballAction({ requiredCapability: 'can_manage_settings' })
 //   - scope every write to ctx.targetTeamId (server-resolved, never from client)
 //   - call revalidatePath(DECISION_ROOM_PATH) after a successful write
+//
+// SCHEMA NOTE (2026-07-10 reconcile): `baseball_decision_log`'s live (prod)
+// columns are meeting_item_id/signal_id — NOT the subject_table/subject_id/
+// source_signal_id shape 20260624000310_baseball_decision_log.sql originally
+// intended (its CREATE TABLE IF NOT EXISTS no-op'd against a pre-existing,
+// differently-shaped table). All ledger inserts below target the real
+// columns. Migration 20260710031500_baseball_decision_log_kind_reconcile.sql
+// closes the gap on BOTH axes this depends on: (1) `ADD COLUMN IF NOT
+// EXISTS` for meeting_item_id/signal_id/decided_at/rationale/participants/
+// outcome_summary/tags/created_by, so a freshly-replayed migration chain
+// (CI shadow DB, a new dev's local `supabase start`) actually has these
+// columns too — not just prod's already-drifted table; and (2) widens the
+// `decision_kind` CHECK constraint, which predates this feature and only
+// allowed a legacy value set (program/player/staff/roster/travel/
+// scheduling/administrative), to also allow the values written here
+// (discussed/resolved/converted_task/converted_note/converted_practice/
+// raised/reopened/note). Until that migration is applied, every insert
+// below still fails (column-does-not-exist in a fresh environment, CHECK
+// violation in prod) and these mutations degrade to their existing
+// `{success:false, error}` envelope (the meeting_items status update
+// commits either way; see each function's early-return handling below).
 // =============================================================================
 
 /**
@@ -493,8 +514,7 @@ export const markMeetingItemDiscussed = withBaseballAction(
       team_id: ctx.targetTeamId,
       decision_kind: 'discussed',
       title: 'Item marked as discussed',
-      subject_table: 'baseball_meeting_items',
-      subject_id: itemId,
+      meeting_item_id: itemId,
       decided_by: ctx.user.id,
     });
 
@@ -542,8 +562,7 @@ export const reopenMeetingItem = withBaseballAction(
       team_id: ctx.targetTeamId,
       decision_kind: 'reopened',
       title: 'Item reopened for discussion',
-      subject_table: 'baseball_meeting_items',
-      subject_id: itemId,
+      meeting_item_id: itemId,
       decided_by: ctx.user.id,
     });
 
@@ -595,8 +614,7 @@ export const resolveMeetingItem = withBaseballAction(
       decision_kind: 'resolved',
       title: 'Item resolved',
       detail: args.resolution,
-      subject_table: 'baseball_meeting_items',
-      subject_id: args.itemId,
+      meeting_item_id: args.itemId,
       decided_by: ctx.user.id,
     });
 
@@ -665,14 +683,24 @@ export const recordDecisionNote = withBaseballAction(
   ): Promise<DecisionRoomMutationResult> => {
     const supabase = (await createClient()) as unknown as LooseClient;
 
+    // baseball_decision_log has no generic subject_table/subject_id column —
+    // it links back to a subject via the concrete meeting_item_id/signal_id
+    // FK columns instead. Derive them from the caller's subjectTable/subjectId
+    // (see StaffDecisionRoomFairway.tsx's submitNote, the only caller).
+    const meetingItemId =
+      args.subjectTable === 'baseball_meeting_items' ? args.subjectId : null;
+    const signalId =
+      args.subjectTable === 'baseball_signals'
+        ? args.subjectId
+        : (args.sourceSignalId ?? null);
+
     const { error } = await supabase.from('baseball_decision_log').insert({
       team_id: ctx.targetTeamId,
       decision_kind: 'note',
       title: args.title,
       detail: args.note,
-      subject_table: args.subjectTable,
-      subject_id: args.subjectId,
-      source_signal_id: args.sourceSignalId ?? null,
+      meeting_item_id: meetingItemId,
+      signal_id: signalId,
       player_id: args.playerId ?? null,
       decided_by: ctx.user.id,
     });
@@ -768,9 +796,7 @@ export const convertSignalToPracticeBlock = withBaseballAction(
         decision_kind: 'converted_practice',
         title: `Practice block: ${args.title}`,
         detail: args.detail ?? null,
-        subject_table: 'baseball_signals',
-        subject_id: args.signalId,
-        source_signal_id: args.signalId,
+        signal_id: args.signalId,
         action_id: actionId,
         decided_by: ctx.user.id,
       });

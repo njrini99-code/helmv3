@@ -29,7 +29,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
-import type { Json } from '@/lib/types/database';
+import type { Database, Json } from '@/lib/types/database';
 
 // ============================================================================
 // COURSE ID RESOLUTION
@@ -1268,14 +1268,13 @@ async function submitGolfRoundComprehensiveImpl(
     // Server-side qualifier validation
     if (data.qualifierId) {
       // Verify qualifier exists and is not completed
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: qualifierRaw, error: qualifierError } = await (supabase as any)
+      const { data: qualifierRaw, error: qualifierError } = await supabase
         .from('golf_qualifiers')
-        .select('id, status')
+        .select('id, status, num_rounds')
         .eq('id', data.qualifierId)
         .single();
 
-      const qualifier = qualifierRaw as { id: string; status: string } | null;
+      const qualifier = qualifierRaw as { id: string; status: string; num_rounds: number } | null;
 
       if (qualifierError || !qualifier) {
         return { success: false, error: 'Qualifier not found.' };
@@ -1297,11 +1296,17 @@ async function submitGolfRoundComprehensiveImpl(
         return { success: false, error: 'You are not entered in this qualifier.' };
       }
 
-      // NOTE: golf_qualifiers.num_rounds was removed in the 2026-05-27 schema
-      // rebuild, so there is no stored per-qualifier round cap to validate
-      // against here anymore (selecting it 400'd the whole query). The
-      // duplicate-round-number guard below still prevents re-submitting the
-      // same round; round count is inferred downstream from completed rounds.
+      // num_rounds IS a live, typed golf_qualifiers column (the "removed in the
+      // schema rebuild" note above was stale — the write path was reconciled
+      // long ago but this read/cap-check path never was, so a qualifier
+      // configured for e.g. 1 round never stopped accepting round 2, 3, 4...).
+      const numRounds = qualifier.num_rounds ?? 1;
+      if (data.qualifierRoundNumber && data.qualifierRoundNumber > numRounds) {
+        return {
+          success: false,
+          error: `This qualifier only has ${numRounds} round${numRounds === 1 ? '' : 's'}. Round ${data.qualifierRoundNumber} is beyond the configured count.`,
+        };
+      }
 
       // Prevent duplicate qualifier round numbers
       if (data.qualifierRoundNumber) {
@@ -1817,11 +1822,11 @@ async function submitGolfRoundComprehensiveImpl(
     }
 
     // If this is a qualifier round, update the qualifier entry stats and
-    // auto-advance the qualifier lifecycle (F029/F138). updateQualifierStatus
-    // had no caller, so a qualifier never left 'upcoming' on its own — the
-    // leaderboard's "Live" pill (status === 'in_progress') never lit up once
-    // play started. The first completed round transitions upcoming→in_progress.
-    // (completed is a deliberate coach action via the selections workspace.)
+    // auto-advance the qualifier lifecycle (F029/F138). The first completed
+    // round transitions upcoming→in_progress; once every entrant has posted
+    // num_rounds completed rounds (or end_date has passed) it auto-closes to
+    // completed too, so a qualifier never gets stuck 'in_progress' forever
+    // even if no coach opens the selections workspace to conclude it manually.
     if (data.qualifierId) {
       try {
         await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
@@ -2685,13 +2690,43 @@ async function deleteGolfEventImpl(
             .select('player:golf_players(user_id)')
             .eq('event_id', eventId);
 
-          const userIds = (attendances ?? [])
+          const attendanceUserIds = (attendances ?? [])
             .map((row) => {
               const playerRef = (row as { player: { user_id: string | null } | Array<{ user_id: string | null }> | null }).player;
               const playerRow = Array.isArray(playerRef) ? playerRef[0] ?? null : playerRef;
               return playerRow?.user_id ?? null;
             })
             .filter((id): id is string => Boolean(id));
+
+          // Union with the whole active team (2026-07-10 calendar-travel
+          // audit, P1): a coach's CREATE fan-out notifies every active
+          // golf_team_members row unconditionally, regardless of whether
+          // attendeeIds was populated — but this cancel fan-out previously
+          // queried golf_event_attendance ONLY, so a whole-team event
+          // cancelled before anyone RSVP'd (zero attendance rows) silently
+          // notified nobody even though the team was told it was happening.
+          // Same two-query shape as the create fan-out above (team_members →
+          // player_id → golf_players.user_id) rather than an embedded join.
+          const { data: teamMembers } = await adminClient
+            .from('golf_team_members')
+            .select('player_id')
+            .eq('team_id', teamId)
+            .eq('status', 'active');
+          const activePlayerIds = (teamMembers ?? [])
+            .map((m) => m.player_id)
+            .filter((id): id is string => Boolean(id));
+          let teamUserIds: string[] = [];
+          if (activePlayerIds.length > 0) {
+            const { data: activePlayers } = await adminClient
+              .from('golf_players')
+              .select('id, user_id')
+              .in('id', activePlayerIds);
+            teamUserIds = (activePlayers ?? [])
+              .map((p) => p.user_id)
+              .filter((id): id is string => Boolean(id));
+          }
+
+          const userIds = [...new Set([...attendanceUserIds, ...teamUserIds])];
           if (userIds.length === 0) return;
 
           const startLabel = cancelStart
@@ -3237,6 +3272,138 @@ export async function updateQualifierStatus(
   status: 'upcoming' | 'in_progress' | 'completed'
 ): Promise<ActionResult> {
   return observedUpdateQualifierStatus(qualifierId, status);
+}
+
+/** Editable scalar fields on an existing qualifier. All optional — only the
+ *  keys the caller actually sends are written. */
+export interface UpdateGolfQualifierDetailsInput {
+  name?: string;
+  description?: string | null;
+  courseName?: string | null;
+  rules?: string | null;
+  entryDeadline?: string | null;
+  startDate?: string;
+  endDate?: string | null;
+  spotsAvailable?: number | null;
+}
+
+const updateGolfQualifierDetailsSchema = z
+  .object({
+    name: z.string().min(1).max(200).optional(),
+    description: z.string().max(2000).nullable().optional(),
+    courseName: z.string().max(200).nullable().optional(),
+    rules: z.string().max(5000).nullable().optional(),
+    entryDeadline: z.string().nullable().optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().nullable().optional(),
+    spotsAvailable: z.number().int().min(1).nullable().optional(),
+  })
+  .refine((d) => !d.endDate || !d.startDate || d.endDate >= d.startDate, {
+    message: 'End date cannot be before the start date',
+    path: ['endDate'],
+  })
+  .refine((d) => !d.entryDeadline || !d.startDate || d.entryDeadline <= d.startDate, {
+    message: 'Entry deadline must be on or before the start date',
+    path: ['entryDeadline'],
+  });
+
+/**
+ * Feature — edit an existing qualifier's basic details (name, description,
+ * dates, rules, spots). Coach-only; mirrors the auth/team-ownership check
+ * every other qualifier mutation in this file uses. Round count + per-round
+ * course assignments are a separate concern, already handled by the
+ * existing setQualifierRoundCourses — this only touches golf_qualifiers'
+ * scalar columns, closing the "no edit surface after creation" gap.
+ */
+async function updateGolfQualifierDetailsImpl(
+  qualifierId: string,
+  data: UpdateGolfQualifierDetailsInput,
+): Promise<ActionResult> {
+  try {
+    const validatedData = updateGolfQualifierDetailsSchema.parse(data);
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to edit a qualifier' };
+    }
+
+    // Verify coach owns this qualifier's team (same check as updateQualifierStatusImpl).
+    const { data: qualifier } = await supabase
+      .from('golf_qualifiers')
+      .select('team_id')
+      .eq('id', qualifierId)
+      .single();
+
+    if (!qualifier) return { success: false, error: 'Qualifier not found' };
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    const { data: qualifierTeam } = await supabase
+      .from('golf_teams')
+      .select('organization_id')
+      .eq('id', qualifier.team_id)
+      .single();
+
+    if (!coach || !qualifierTeam || coach.organization_id !== qualifierTeam.organization_id) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Only write fields the caller actually sent — undefined keys stay
+    // untouched, an explicit null clears the column.
+    const updateData: Database['public']['Tables']['golf_qualifiers']['Update'] = {};
+    if (validatedData.name !== undefined) updateData.name = validatedData.name;
+    if (validatedData.description !== undefined) updateData.description = validatedData.description;
+    if (validatedData.courseName !== undefined) updateData.course_name = validatedData.courseName;
+    if (validatedData.rules !== undefined) updateData.rules = validatedData.rules;
+    if (validatedData.entryDeadline !== undefined) updateData.entry_deadline = validatedData.entryDeadline;
+    if (validatedData.startDate !== undefined) updateData.start_date = validatedData.startDate;
+    if (validatedData.endDate !== undefined) updateData.end_date = validatedData.endDate;
+    if (validatedData.spotsAvailable !== undefined) updateData.spots_available = validatedData.spotsAvailable;
+
+    if (Object.keys(updateData).length === 0) {
+      return { success: true, data: undefined };
+    }
+
+    const { error } = await supabase
+      .from('golf_qualifiers')
+      .update(updateData)
+      .eq('id', qualifierId);
+
+    if (error) {
+      return { success: false, error: 'Failed to update qualifier. Please try again.' };
+    }
+
+    revalidatePath('/golf/dashboard/qualifiers');
+    revalidatePath(`/golf/dashboard/qualifiers/${qualifierId}`);
+    revalidatePath('/golf/dashboard/my-qualifiers');
+    updateTag(CACHE_TAGS.DASHBOARD);
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: 'Invalid qualifier data. Please check your inputs.' };
+    }
+    return formatSafeErrorResponse(error);
+  }
+}
+
+const observedUpdateGolfQualifierDetails = withAdminObserved(
+  'updateGolfQualifierDetails',
+  { sport: 'golf', feature: 'qualifiers' },
+  updateGolfQualifierDetailsImpl,
+);
+
+export async function updateGolfQualifierDetails(
+  qualifierId: string,
+  data: UpdateGolfQualifierDetailsInput,
+): Promise<ActionResult> {
+  return observedUpdateGolfQualifierDetails(qualifierId, data);
 }
 
 // ============================================================================
@@ -5002,15 +5169,37 @@ async function savePartialRoundImpl(
         return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings } };
       }
     } else {
-      // Check for existing in_progress round to avoid creating duplicates
-      const { data: existingRound } = await supabase
-        .from('golf_rounds')
-        .select('id')
-        .eq('player_id', player.id)
-        .eq('status', 'in_progress')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Recover a session that lost its local roundId (e.g. a backgrounded/
+      // killed tab) by looking for an in_progress round to resume — but
+      // scope the match tightly (course + round date + qualifier context),
+      // not just "most recently updated in_progress round for this player".
+      // An unscoped recency match can collide with an unrelated unfinished
+      // round (product supports multiple simultaneous in-progress rounds),
+      // silently repurposing it and orphan-trimming its holes/shots away.
+      // If the course can't even be resolved to an id there's no safe way
+      // to disambiguate, so skip the heuristic and always insert fresh.
+      let existingRound: { id: string } | null = null;
+      if (resolvedCourseId) {
+        let existingRoundQuery = supabase
+          .from('golf_rounds')
+          .select('id')
+          .eq('player_id', player.id)
+          .eq('status', 'in_progress')
+          .eq('course_id', resolvedCourseId)
+          .eq('round_date', data.roundDate);
+        existingRoundQuery = data.qualifierId
+          ? existingRoundQuery.eq('qualifier_id', data.qualifierId)
+          : existingRoundQuery.is('qualifier_id', null);
+        existingRoundQuery = data.qualifierRoundNumber != null
+          ? existingRoundQuery.eq('qualifier_round_number', data.qualifierRoundNumber)
+          : existingRoundQuery.is('qualifier_round_number', null);
+
+        const { data: candidateRound } = await existingRoundQuery
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        existingRound = candidateRound;
+      }
 
       let round: { id: string } | null = null;
       if (existingRound) {
@@ -5444,7 +5633,8 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
           course_name,
           start_date,
           end_date,
-          status
+          status,
+          num_rounds
         )
       `)
       .eq('player_id', player.id);
@@ -5488,6 +5678,7 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
         start_date: string;
         end_date: string | null;
         status: string;
+        num_rounds: number | null;
       } | null;
     };
     const qualifiers: PlayerQualifierInfo[] = (entries as unknown as QualifierEntry[])
@@ -5501,6 +5692,7 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
           start_date: string;
           end_date: string | null;
           status: string;
+          num_rounds: number | null;
         };
 
         // Get rounds for this qualifier
@@ -5515,9 +5707,11 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
         const roundsCompleted = qualifierRounds.length > 0
           ? qualifierRounds.length
           : (entry.rounds_completed ?? 0);
-        const numRounds = (q as Record<string, unknown>).num_rounds as number | null ?? (q.status === 'completed'
-          ? Math.max(roundsCompleted, 1)
-          : Math.max(roundsCompleted + 1, 1));
+        // num_rounds is a live, typed golf_qualifiers column (NOT NULL, default
+        // 1) — read it directly instead of falling back to a computed guess
+        // that was always roundsCompleted+1 (structurally always "one more
+        // round to go", so a 1-round qualifier never left the active picker).
+        const numRounds = q.num_rounds ?? 1;
 
         return {
           id: q.id,
@@ -5598,7 +5792,7 @@ async function getNextQualifierRoundNumberImpl(
     // Verify qualifier exists
     const { data: qualifier } = await supabase
       .from('golf_qualifiers')
-      .select('id')
+      .select('id, num_rounds')
       .eq('id', qualifierId)
       .single();
 
@@ -5628,6 +5822,15 @@ async function getNextQualifierRoundNumberImpl(
     const maxCompletedRound = completedRoundNumbers.size > 0
       ? Math.max(...completedRoundNumbers)
       : 0;
+    const numRounds = qualifier.num_rounds ?? 1;
+
+    // The cap check that was missing end-to-end: without it, the "Enter Round"
+    // flow could always request maxCompletedRound+1 even past the qualifier's
+    // configured round count.
+    if (maxCompletedRound >= numRounds) {
+      return { success: false, error: 'You have already completed every round for this qualifier.' };
+    }
+
     const nextRoundNumber = maxCompletedRound + 1;
 
     // Available rounds start from the next round number
@@ -5936,8 +6139,14 @@ async function updateQualifierEntryStats(
     const totalToPar = scoredRounds.reduce((sum, r) => sum + (r.score_to_par ?? 0), 0);
     const roundsCompleted = scoredRounds.length;
 
-    // Update all aggregate columns on the qualifier entry
-    await supabase
+    // Update all aggregate columns on the qualifier entry. Uses the admin
+    // client for the write: golf_qualifier_entries_update_coach RLS only
+    // grants UPDATE to the team's coach, but this aggregate refresh is
+    // triggered by a PLAYER submitting their OWN round — a player-session
+    // client would match 0 rows here (no error, just a silent no-op), so
+    // rounds_completed/total_score/total_to_par never actually persisted.
+    const admin = createAdminClient();
+    await admin
       .from('golf_qualifier_entries')
       .update({
         score: totalScore,
@@ -5959,30 +6168,101 @@ async function updateQualifierEntryStats(
  * The first completed round flips an 'upcoming' qualifier to 'in_progress'.
  * This is the missing server-side caller that updateQualifierStatus never had:
  * without it the leaderboard's realtime "Live" pill (status === 'in_progress')
- * never illuminated once play actually started. A qualifier already
- * 'in_progress' or 'completed' is left untouched (advancing to 'completed' is a
- * deliberate coach action through the selections workspace, never automatic).
+ * never illuminated once play actually started.
+ *
+ * P0 follow-up: an 'in_progress' qualifier now ALSO auto-closes to 'completed'
+ * once every entrant has posted at least num_rounds completed rounds, or the
+ * qualifier's end_date has passed — a backstop so a qualifier isn't left
+ * stuck forever if no coach ever opens the selections workspace. A coach can
+ * still close a qualifier early/manually via updateQualifierStatus (the
+ * qualifying workspace's "Conclude qualifier" action).
+ *
+ * Uses the admin client for both status writes below: this is a system
+ * transition triggered by a PLAYER's round submission, and
+ * golf_qualifiers_update_coach RLS only grants UPDATE to the team's coach —
+ * a player-session client would silently no-op (0 rows matched, no error).
  *
  * Best-effort and non-fatal: a failure here must never block the round submit.
  */
+/**
+ * View-time lifecycle reconcile (F029/F138 follow-up). The auto-advance
+ * below only runs when a round is SUBMITTED — so an 'in_progress' qualifier
+ * whose entrants simply stopped playing was never re-checked after its
+ * end_date passed; the deadline backstop was dead in exactly the scenario
+ * it exists for. The qualifier detail page calls this before rendering:
+ * a no-op unless an objective transition (all entrants done / deadline
+ * passed) is due, and best-effort — it never blocks the page.
+ */
+async function reconcileQualifierStatusImpl(qualifierId: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await advanceQualifierOnRoundSubmit(supabase, qualifierId);
+  } catch {
+    // Best-effort — never block the page render.
+  }
+}
+
+const observedReconcileQualifierStatus = withAdminObserved(
+  'reconcileQualifierStatus',
+  { sport: 'golf', feature: 'qualifiers' },
+  reconcileQualifierStatusImpl,
+);
+
+export async function reconcileQualifierStatus(qualifierId: string): Promise<void> {
+  return observedReconcileQualifierStatus(qualifierId);
+}
+
 async function advanceQualifierOnRoundSubmit(
   supabase: Awaited<ReturnType<typeof createClient>>,
   qualifierId: string
 ): Promise<void> {
   const { data: qualifier } = await supabase
     .from('golf_qualifiers')
-    .select('status')
+    .select('status, num_rounds, end_date')
     .eq('id', qualifierId)
     .maybeSingle();
 
-  if (!qualifier || qualifier.status !== 'upcoming') return;
+  if (!qualifier) return;
 
-  await supabase
+  const admin = createAdminClient();
+
+  if (qualifier.status === 'upcoming') {
+    await admin
+      .from('golf_qualifiers')
+      .update({ status: 'in_progress' })
+      .eq('id', qualifierId)
+      // Guard against a concurrent transition (only advance from 'upcoming').
+      .eq('status', 'upcoming');
+    // NO early return: fall through to the completion check. For a
+    // single-entrant, num_rounds=1 qualifier (the DB default — both live
+    // examples in prod are this shape) the submission that starts the
+    // qualifier is also the one that finishes it; returning here would
+    // strand it at 'in_progress' forever, since num_rounds now caps further
+    // submissions and no later call would ever re-run the check.
+  } else if (qualifier.status !== 'in_progress') {
+    return; // completed / cancelled — nothing to advance
+  }
+
+  const { data: entries } = await supabase
+    .from('golf_qualifier_entries')
+    .select('rounds_completed')
+    .eq('qualifier_id', qualifierId);
+
+  const numRounds = qualifier.num_rounds ?? 1;
+  const everyEntrantDone =
+    !!entries && entries.length > 0 && entries.every((e) => (e.rounds_completed ?? 0) >= numRounds);
+  const deadlinePassed = !!qualifier.end_date && new Date(qualifier.end_date) < new Date();
+
+  if (!everyEntrantDone && !deadlinePassed) return;
+
+  await admin
     .from('golf_qualifiers')
-    .update({ status: 'in_progress' })
+    .update({ status: 'completed' })
     .eq('id', qualifierId)
-    // Guard against a concurrent transition (only advance from 'upcoming').
-    .eq('status', 'upcoming');
+    // Guard against a concurrent transition (only close from 'in_progress').
+    .eq('status', 'in_progress');
 }
 
 // ============================================================================

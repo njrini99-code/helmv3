@@ -314,7 +314,11 @@ describe('FEATURE_REGISTRY completeness', () => {
   // insights.ts's explicit array, which still lists the now-private
   // triggerPlayerInsightsAfterRound by name) are unaffected since this count
   // sums `manifest.length` for those, not a live export scan.
-  it('total manifest size is exactly 419 (excludes the CRM row)', () => {
+  // 2026-07-10 feature-flow sweep: +2 to 421. The qualifiers manifest gains
+  // `updateGolfQualifierDetails` (the previously-missing edit-qualifier flow)
+  // and `reconcileQualifierStatus` (view-time lifecycle self-heal) — both new
+  // withAdminObserved-wrapped exports in golf.ts.
+  it('total manifest size is exactly 421 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -326,7 +330,7 @@ describe('FEATURE_REGISTRY completeness', () => {
         }
       }
     }
-    expect(total).toBe(419);
+    expect(total).toBe(421);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

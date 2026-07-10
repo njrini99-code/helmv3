@@ -10,7 +10,10 @@
 // Props are server-assembled (the page server component fetches data and passes
 // it down, so the client stays interaction-only).
 //
-// Routes link to /lifting/dashboard/lift/[sessionId] for execution.
+// This component is shared by both /lifting/dashboard/lift (Lifting Lab) and
+// /baseball/dashboard/lift (BaseballHelm). Every internal Link is built off
+// the caller-supplied `basePath` prop instead of a hardcoded '/lifting/...'
+// literal, so navigation stays inside whichever app rendered it.
 // =============================================================================
 
 import Link from 'next/link';
@@ -30,6 +33,13 @@ interface Props {
   recent: HelmLiftingSessionRow[];
   /** True if the athlete has submitted a readiness check-in today. */
   readinessSubmittedToday: boolean;
+  /**
+   * Base dashboard route for this caller, e.g. '/lifting/dashboard' or
+   * '/baseball/dashboard'. Used to build the readiness and lift-session
+   * links so this shared component never leaks navigation into the
+   * sibling product's route tree.
+   */
+  basePath: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,10 +67,16 @@ function formatDate(d: string): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday }: Props) {
+export function PlayerLiftHomeClient({
+  upcoming,
+  recent,
+  readinessSubmittedToday,
+  basePath,
+}: Props) {
   const today = new Date().toISOString().slice(0, 10);
   const todaysSession = upcoming.find((s) => s.scheduled_date === today) ?? null;
   const prefersReducedMotion = useReducedMotion();
+  const base = basePath.replace(/\/$/, '');
 
   return (
     <motion.div
@@ -97,7 +113,7 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
               </div>
             </div>
             <Link
-              href="/lifting/dashboard/readiness"
+              href={`${base}/readiness`}
               className="shrink-0 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               Check in
@@ -135,7 +151,7 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
                 )}
               </div>
               <Link
-                href={`/lifting/dashboard/lift/${todaysSession.id}`}
+                href={`${base}/lift/${todaysSession.id}`}
                 className="shrink-0 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
               >
                 {todaysSession.status === 'started' ? 'Continue' : 'Start'}
@@ -164,7 +180,7 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
                 .map((s) => (
                   <li key={s.id}>
                     <Link
-                      href={`/lifting/dashboard/lift/${s.id}`}
+                      href={`${base}/lift/${s.id}`}
                       className="group flex items-center justify-between gap-3 rounded-lg border border-warm-100 px-3 py-2 transition-colors hover:border-primary-200 hover:bg-cream-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                     >
                       <div className="min-w-0">
@@ -205,7 +221,7 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
               {recent.map((s) => (
                 <li key={s.id}>
                   <Link
-                    href={`/lifting/dashboard/lift/${s.id}`}
+                    href={`${base}/lift/${s.id}`}
                     className="group flex items-center justify-between gap-3 rounded-lg border border-warm-50 px-3 py-2 transition-colors hover:border-warm-200 hover:bg-cream-100/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                   >
                     <div className="min-w-0">

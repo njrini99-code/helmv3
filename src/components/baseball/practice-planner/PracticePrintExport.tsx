@@ -56,7 +56,12 @@ export function PracticePrintExport({ practice }: Props) {
     const visibleBlocks = practice.blocks.filter((b) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const vis = (b as any).visibility ?? 'player_visible';
-      return vis !== 'staff_only';
+      // Exclude BOTH 'staff_only' and 'restricted' -- this export is handed
+      // to/shared with players via the copy-link action below, so it must
+      // match the player-facing visibility contract exactly (RLS-backed as
+      // of 20260710150000_baseball_practice_blocks_visibility_rls.sql), not
+      // just the narrower "staff_only" check this used to run.
+      return vis === 'player_visible';
     });
 
     const blocksHtml = visibleBlocks.length === 0

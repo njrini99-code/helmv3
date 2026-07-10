@@ -371,8 +371,16 @@ const addPlayerClassAction = withBaseballAction(
   },
 );
 
+// Mirrors assertPlayerClassAccess's two valid actors: the player who owns the
+// class, OR a coach with can_view_academics acting on a player who is a member
+// of the coach's active team. This action is reached from the Academics page,
+// which is coach-only (requireAcademicsCoachRoute) — a coach's resolved active
+// context always has activePlayerId: null, so gating on
+// `existing.player_id !== ctx.activePlayerId` alone unconditionally rejected
+// every coach edit/delete. The player-ownership branch is kept for any future
+// player-facing caller of update/deletePlayerClass.
 async function assertOwnPlayerClass(
-  ctx: { activePlayerId: string | null },
+  ctx: { activeTeamId: string; activePlayerId: string | null },
   classId: string,
 ): Promise<void> {
   const supabase = await createClient();
@@ -383,8 +391,23 @@ async function assertOwnPlayerClass(
     .eq('id', classId)
     .maybeSingle();
 
-  if (!existing || existing.player_id !== ctx.activePlayerId) {
+  if (!existing) {
     throw new BaseballUnauthorizedError('You can only edit your own classes.');
+  }
+
+  if (existing.player_id === ctx.activePlayerId) {
+    return;
+  }
+
+  await requireBaseballCapability(ctx.activeTeamId, 'can_view_academics');
+  const { data: membership } = await supabase
+    .from('baseball_team_members')
+    .select('id')
+    .eq('team_id', ctx.activeTeamId)
+    .eq('player_id', existing.player_id)
+    .maybeSingle();
+  if (!membership) {
+    throw new BaseballUnauthorizedError('This player is not on your active team.');
   }
 }
 

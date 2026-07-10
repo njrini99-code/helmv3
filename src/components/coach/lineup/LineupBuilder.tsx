@@ -7,9 +7,10 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { getFullName } from '@/lib/utils';
+import { useToast } from '@/components/ui/sonner';
 import { IconMoreVertical, IconX, IconCheck, IconSend } from '@/components/icons';
 
-interface Player {
+export interface Player {
   id: string;
   first_name: string | null;
   last_name: string | null;
@@ -18,7 +19,7 @@ interface Player {
   avatar_url: string | null;
 }
 
-interface LineupSlot {
+export interface LineupSlot {
   order: number;
   player: Player | null;
 }
@@ -26,18 +27,36 @@ interface LineupSlot {
 interface LineupBuilderProps {
   roster: Player[];
   onSave?: (lineup: LineupSlot[], name: string) => void;
+  /** Pre-populate the batting order (Load from Saved Lineups). Read once on mount. */
+  initialLineup?: LineupSlot[];
+  /** Pre-populate the lineup name. Read once on mount. */
+  initialName?: string;
 }
 
 const BATTING_ORDER_SIZE = 9;
 
-export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
-  const [lineup, setLineup] = useState<LineupSlot[]>(
-    Array.from({ length: BATTING_ORDER_SIZE }, (_, i) => ({
-      order: i + 1,
-      player: null,
-    }))
-  );
-  const [lineupName, setLineupName] = useState('');
+function emptyLineup(): LineupSlot[] {
+  return Array.from({ length: BATTING_ORDER_SIZE }, (_, i) => ({
+    order: i + 1,
+    player: null,
+  }));
+}
+
+export function LineupBuilder({ roster, onSave, initialLineup, initialName }: LineupBuilderProps) {
+  const { showToast } = useToast();
+  const [lineup, setLineup] = useState<LineupSlot[]>(() => {
+    if (!initialLineup || initialLineup.length === 0) return emptyLineup();
+    // Normalize onto the fixed 9-slot batting order regardless of how many
+    // positions the saved lineup had, so a partial lineup still lands in the
+    // right slots instead of shifting.
+    const base = emptyLineup();
+    for (const slot of initialLineup) {
+      const idx = base.findIndex((s) => s.order === slot.order);
+      if (idx >= 0) base[idx] = slot;
+    }
+    return base;
+  });
+  const [lineupName, setLineupName] = useState(initialName ?? '');
   const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
   const [draggedSlotIndex, setDraggedSlotIndex] = useState<number | null>(null);
 
@@ -113,6 +132,45 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
     }
   };
 
+  /**
+   * Share the batting order as plain text — the native OS share sheet when
+   * available (mobile), falling back to a clipboard copy + toast. No new
+   * route/DB write: there is no shareable public lineup page to link to, so
+   * this is the minimal complete "Share" a coach can act on today rather than
+   * a control that silently does nothing when clicked (#lineup-share-unwired).
+   */
+  const handleShareLineup = async () => {
+    const filled = lineup.filter((slot): slot is { order: number; player: Player } => slot.player !== null);
+    if (filled.length === 0) return;
+
+    const title = lineupName.trim() || 'Lineup';
+    const lines = filled.map(
+      (slot) =>
+        `${slot.order}. ${getFullName(slot.player.first_name, slot.player.last_name)}${
+          slot.player.primary_position ? ` (${slot.player.primary_position})` : ''
+        }`
+    );
+    const text = [title, ...lines].join('\n');
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title, text });
+        return;
+      } catch (err) {
+        // AbortError = the coach dismissed the native share sheet — not a failure.
+        if (err instanceof Error && err.name === 'AbortError') return;
+        // Otherwise fall through to the clipboard fallback below.
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Lineup copied to clipboard', 'success');
+    } catch {
+      showToast('Could not share the lineup. Please try again.', 'error');
+    }
+  };
+
   const filledSlots = lineup.filter((slot) => slot.player !== null).length;
 
   return (
@@ -135,6 +193,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                 variant="secondary"
                 size="sm"
                 disabled={filledSlots === 0}
+                onClick={handleShareLineup}
               >
                 <IconSend size={16} className="mr-2" />
                 Share

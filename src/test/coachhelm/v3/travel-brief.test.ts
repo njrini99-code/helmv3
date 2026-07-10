@@ -54,6 +54,7 @@ function workspace(candidates: SelectionCandidate[]): QualifyingWorkspace {
     name: 'Spring Qualifier',
     start_date: '2026-05-20',
     end_date: '2026-05-22',
+    status: 'in_progress',
     selection_state: 'selected',
     selection_slots_total: 5,
     selection_slots_coach_pick: 1,

@@ -97,6 +97,34 @@ function normalizeTimeframe(
   return { target_kind: null, target_date: null, target_rounds: null };
 }
 
+/**
+ * Lifecycle states a focus area's mutating actions (complete / log progress /
+ * record outcome) may act on. 'active' and 'in_progress' are the two the
+ * coach/player create-flow ever puts a row into for live work; 'paused' is
+ * included too since it's already treated as "still being worked" by the
+ * my-development loader's own active-bucket query (`status === 'active' ||
+ * 'in_progress' || 'paused'`) even though no control currently sets it.
+ * Excluded: 'proposed' (coach-prescribed, not yet accepted by the player —
+ * the improvement window hasn't started) and 'declined' (player explicitly
+ * rejected it). Acting on either would silently fabricate progress/outcomes
+ * on work the player never actually did.
+ */
+const ACTIONABLE_FOCUS_AREA_STATUSES = ['active', 'in_progress', 'paused'] as const;
+
+/**
+ * Returns a human error when `status` is NOT one of the actionable lifecycle
+ * states above, or null when the write may proceed.
+ */
+function focusAreaLifecycleError(status: string | null | undefined): string | null {
+  if (status && (ACTIONABLE_FOCUS_AREA_STATUSES as readonly string[]).includes(status)) {
+    return null;
+  }
+  if (status === 'proposed') return "This focus area hasn't been accepted by the player yet.";
+  if (status === 'declined') return 'This focus area was declined by the player.';
+  if (status === 'completed') return 'This focus area is already completed.';
+  return 'This focus area cannot be updated in its current state.';
+}
+
 // ============================================================================
 // FOCUS AREA OPERATIONS
 // ============================================================================
@@ -572,7 +600,7 @@ async function updateFocusAreaProgressImpl(
   // player-self or a staff coach is making the update.
   const { data: focusArea } = await supabase
     .from('golf_player_focus_areas')
-    .select('player_id, progress_notes')
+    .select('player_id, progress_notes, status')
     .eq('id', id)
     .maybeSingle();
 
@@ -583,6 +611,13 @@ async function updateFocusAreaProgressImpl(
   const access = await verifyPlayerAccess(focusArea.player_id, user.id, supabase);
   if (!access.allowed) {
     return { success: false, error: 'Forbidden' };
+  }
+
+  // Lifecycle guard: a 'proposed' (not yet accepted) or 'declined' area can't
+  // take progress — see ACTIONABLE_FOCUS_AREA_STATUSES.
+  const lifecycleError = focusAreaLifecycleError(focusArea.status);
+  if (lifecycleError) {
+    return { success: false, error: lifecycleError };
   }
 
   // Build the update payload. Always bump current_value + updated_at.
@@ -610,10 +645,12 @@ async function updateFocusAreaProgressImpl(
 
   // Select the updated row back so a scope/id mismatch (0 rows matched) surfaces
   // as a failure rather than a false {success:true} — a PostgREST UPDATE
-  // matching no rows returns error:null.
+  // matching no rows returns error:null. The status filter is a defense-in-depth
+  // mirror of the lifecycle guard above (closes a select-then-update race).
   const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .update(updatePayload)
     .eq('id', id)
+    .in('status', ACTIONABLE_FOCUS_AREA_STATUSES)
     .select('id');
 
   if (error) {
@@ -673,10 +710,18 @@ async function completeFocusAreaImpl(
     return { success: false, error: 'Forbidden' };
   }
 
+  // Lifecycle guard: a 'proposed' (not yet accepted) or 'declined' area can't
+  // be marked complete — see ACTIONABLE_FOCUS_AREA_STATUSES.
+  const lifecycleError = focusAreaLifecycleError(focusArea.status);
+  if (lifecycleError) {
+    return { success: false, error: lifecycleError };
+  }
+
   const nowIso = new Date().toISOString();
   // Select the updated row back so a 0-row update (id mismatch) surfaces as a
   // failure rather than a false {success:true} — a PostgREST UPDATE matching no
-  // rows returns error:null.
+  // rows returns error:null. The status filter is a defense-in-depth mirror of
+  // the lifecycle guard above (closes a select-then-update race).
   const { data: updated, error } = await supabase
     .from('golf_player_focus_areas')
     .update({
@@ -685,6 +730,7 @@ async function completeFocusAreaImpl(
       updated_at: nowIso,
     })
     .eq('id', focusAreaId)
+    .in('status', ACTIONABLE_FOCUS_AREA_STATUSES)
     .select('id');
 
   if (error) {
@@ -829,7 +875,11 @@ interface CreateFocusAreaFromReviewArgs {
 
 /**
  * Insert a new focus area whose source is a round review.
- * Sets `from_review_id`, `status='active'`, `started_at=now()`.
+ * Sets `from_review_id`. `status`/`started_at` follow the same consent model
+ * as `createFocusAreaImpl`: a COACH promoting a review into a focus area is
+ * PRESCRIBING it (status='proposed', started_at=null — the player must accept
+ * before the improvement window starts); a PLAYER promoting their own review
+ * needs no consent step (status='active', started_at=now()).
  * Resolves `team_id` and `coach_id` from the player's current active team.
  *
  * NOTE: This is the new (camelCase-args) variant added per the My Development
@@ -855,6 +905,9 @@ async function createFocusAreaFromReviewImpl(
 
   const { teamId, coachId } = await resolvePlayerTeamAndCoach(supabase, args.playerId);
 
+  // A coach promoting is a PRESCRIPTION (proposed, pending accept); a player
+  // promoting their own review needs no consent step (active immediately).
+  const isCoachPromoting = access.reason === 'coach';
   const nowIso = new Date().toISOString();
   const { data: row, error } = await supabase
     .from('golf_player_focus_areas')
@@ -865,12 +918,12 @@ async function createFocusAreaFromReviewImpl(
       area_type: args.areaType,
       title: args.title,
       description: args.description,
-      status: 'active',
+      status: isCoachPromoting ? 'proposed' : 'active',
       target_metric: args.targetMetric ?? null,
       target_value: args.targetValue ?? null,
       from_review_id: args.reviewId,
       review_context: args.reviewContext ?? null,
-      started_at: nowIso,
+      started_at: isCoachPromoting ? null : nowIso,
     })
     .select('id')
     .single();
@@ -911,7 +964,12 @@ interface CreateFocusAreaFromInsightArgsV2 {
 
 /**
  * Insert a new focus area whose source is a CoachHelm insight.
- * Sets `from_insight_id`, `status='active'`, `started_at=now()`.
+ * Sets `from_insight_id`. `status`/`started_at` follow the same consent model
+ * as `createFocusAreaImpl`: a COACH promoting an insight into a focus area
+ * (e.g. via `PromoteToFocusAreaButton` on the Players tab) is PRESCRIBING it
+ * (status='proposed', started_at=null — the player must accept before the
+ * improvement window starts); a PLAYER promoting their own insight needs no
+ * consent step (status='active', started_at=now()).
  * Resolves `team_id` and `coach_id` from the player's current active team.
  *
  * NOTE: This is the new (camelCase-args) variant added per the My Development
@@ -935,6 +993,9 @@ async function createFocusAreaFromInsightV2Impl(
 
   const { teamId, coachId } = await resolvePlayerTeamAndCoach(supabase, args.playerId);
 
+  // A coach promoting is a PRESCRIPTION (proposed, pending accept); a player
+  // promoting their own insight needs no consent step (active immediately).
+  const isCoachPromoting = access.reason === 'coach';
   const nowIso = new Date().toISOString();
   const { data: row, error } = await supabase
     .from('golf_player_focus_areas')
@@ -945,11 +1006,11 @@ async function createFocusAreaFromInsightV2Impl(
       area_type: args.areaType,
       title: args.title,
       description: args.description,
-      status: 'active',
+      status: isCoachPromoting ? 'proposed' : 'active',
       target_metric: args.targetMetric ?? null,
       target_value: args.targetValue ?? null,
       from_insight_id: args.insightId,
-      started_at: nowIso,
+      started_at: isCoachPromoting ? null : nowIso,
     })
     .select('id')
     .single();
@@ -1247,11 +1308,12 @@ async function recordFocusAreaOutcomeImpl(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Look up the focus area: we need its player (for the ownership guard) and
-  // its originating insight (the row whose outcome we credit).
+  // Look up the focus area: we need its player (for the ownership guard), its
+  // status (for the lifecycle guard), and its originating insight (the row
+  // whose outcome we credit).
   const { data: focusArea } = await supabase
     .from('golf_player_focus_areas')
-    .select('player_id, from_insight_id')
+    .select('player_id, from_insight_id, status')
     .eq('id', focusAreaId)
     .maybeSingle();
 
@@ -1264,21 +1326,37 @@ async function recordFocusAreaOutcomeImpl(
     return { success: false, error: 'Forbidden' };
   }
 
+  // Lifecycle guard: a 'proposed' (not yet accepted) or 'declined' area has no
+  // real outcome to record — see ACTIONABLE_FOCUS_AREA_STATUSES.
+  const lifecycleError = focusAreaLifecycleError(focusArea.status);
+  if (lifecycleError) {
+    return { success: false, error: lifecycleError };
+  }
+
   const nowIso = new Date().toISOString();
 
   // Always mark the focus area completed (the outcome resolves the work).
-  const { error: faError } = await supabase
+  // Select the updated row back so a 0-row update (status changed out from
+  // under us since the select above) surfaces as a failure rather than a false
+  // {success:true} — a PostgREST UPDATE matching no rows returns error:null.
+  const { data: faUpdated, error: faError } = await supabase
     .from('golf_player_focus_areas')
     .update({
       status: 'completed',
       completed_at: nowIso,
       updated_at: nowIso,
     })
-    .eq('id', focusAreaId);
+    .eq('id', focusAreaId)
+    .in('status', ACTIONABLE_FOCUS_AREA_STATUSES)
+    .select('id');
 
   if (faError) {
     await logServerError(`Failed to complete focus area on outcome: ${faError instanceof Error ? faError.message : String(faError)}`, { action: 'development.recordFocusAreaOutcome' });
     return { success: false, error: 'Failed to record outcome. Please try again.' };
+  }
+
+  if (!faUpdated || faUpdated.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
   }
 
   // No source insight → nothing to credit. Soft-notice, still a success.

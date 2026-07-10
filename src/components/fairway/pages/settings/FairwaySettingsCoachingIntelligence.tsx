@@ -321,6 +321,17 @@ function CoachingIntelligenceBody({
       meta={
         saving ? (
           <span className="text-text-tertiary">Saving…</span>
+        ) : error ? (
+          // A save failed AFTER the initial load succeeded (the full-page error
+          // branch above only covers the initial fetch — this is the ONLY place
+          // a later save failure was ever surfaced before, which was nowhere:
+          // the control just silently snapped back to the last-good value with
+          // no explanation (P421-style honesty gap). Mirrors the "Saved" chip's
+          // placement so it's visible right where the coach is already looking.
+          <span className="inline-flex items-center gap-1.5 text-fw-danger">
+            <IconWarning size={13} aria-hidden />
+            Couldn’t save
+          </span>
         ) : hasEverSaved ? (
           <span className="inline-flex items-center gap-1.5 text-fw-success">
             <IconCheck size={13} aria-hidden />
@@ -330,6 +341,18 @@ function CoachingIntelligenceBody({
       }
     >
       <div className="mt-8 space-y-6">
+        {/* A save failed — the field it belonged to has already reverted to the
+            last-good server value (it's a controlled input bound to `philosophy`,
+            which the hook only ever updates on success). Same InlineNotice
+            treatment as `teamSettingsError` below, for the same reason: a failed
+            write must never be silent. */}
+        {error ? (
+          <InlineNotice tone="danger">
+            Your last change didn’t save — {error}. The control below has reverted;
+            try adjusting it again.
+          </InlineNotice>
+        ) : null}
+
         {/* Metric Priorities */}
         <Surface elevation="border" padding="lg">
           <div className="mb-5 flex flex-col gap-1">

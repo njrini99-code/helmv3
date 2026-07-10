@@ -3,32 +3,57 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
+import { gatedDelivery, type DeliveryNotificationKey } from '@/lib/coachhelm/v3/notifications/types';
 
 /**
- * Check if user wants push notifications for a specific type
+ * Maps a notification type to the `push_*` preference key that gates it.
+ * `null` means there's no dedicated push preference for this type — it
+ * always sends (matches the pre-existing default fall-through below).
+ */
+function pushDeliveryKeyFor(type: NotificationType): DeliveryNotificationKey | null {
+  switch (type) {
+    case 'new_message':
+      return 'push_messages';
+    case 'team_announcement':
+    case 'qualifier_created':
+    case 'qualifier_updated':
+    case 'event_rsvp_reminder':
+    case 'round_submitted':
+      return 'push_events';
+    // Was grouped under 'push_events' — copy/paste drift from before
+    // CoachHelm push had its own settings toggle. A user who left
+    // "CoachHelm AI" push ON but "Events & reminders" push OFF never
+    // received insight pushes even though the switch they saved has
+    // nothing to do with push_events.
+    case 'coachhelm_insight':
+      return 'push_coachhelm';
+    case 'task_reminder':
+    case 'task_assigned':
+    case 'task_completed':
+    case 'dev_plan_assigned':
+      return 'push_task_reminders';
+    default:
+      return null;
+  }
+}
+
+/**
+ * Check if user wants push notifications for a specific type.
+ *
+ * Routed through `gatedDelivery` — the same single source of truth the
+ * settings UI (FairwaySettingsGeneral) and `DELIVERY_NOTIFICATION_GROUPS`
+ * are built around — so this can't drift from the toggle the user actually
+ * sees again, and so `quiet_mode` (persisted on the same
+ * users.notification_preferences row `prefs` is read from, even though it
+ * isn't part of the `NotificationPreferences` shape) is honoured for push.
  */
 function shouldSendPush(
   type: NotificationType,
   prefs: NotificationPreferences
 ): boolean {
-  switch (type) {
-    case 'new_message':
-      return prefs.push_messages;
-    case 'team_announcement':
-    case 'qualifier_created':
-    case 'qualifier_updated':
-    case 'event_rsvp_reminder':
-    case 'coachhelm_insight':
-    case 'round_submitted':
-      return prefs.push_events;
-    case 'task_reminder':
-    case 'task_assigned':
-    case 'task_completed':
-    case 'dev_plan_assigned':
-      return prefs.push_task_reminders;
-    default:
-      return true;
-  }
+  const key = pushDeliveryKeyFor(type);
+  if (!key) return true;
+  return gatedDelivery(prefs, key);
 }
 
 /**

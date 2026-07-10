@@ -40,6 +40,7 @@ const MOCK_WORKSPACE: QualifyingWorkspace = {
   name: 'Spring Qualifier',
   start_date: '2026-05-20',
   end_date: '2026-05-22',
+  status: 'in_progress',
   selection_state: 'closed',
   selection_slots_total: 3,
   selection_slots_coach_pick: 1,

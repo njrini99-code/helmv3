@@ -29,6 +29,7 @@ import {
   type RoundReviewWithRound,
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
+import { CoachNotesSection } from './CoachNotesSection';
 import {
   RoundTakeaway,
   V2ReviewSummary,
@@ -297,6 +298,11 @@ export default function RoundReviewPage() {
   // round stats. Empty `{}` until the season standing cron has populated rows
   // for this player — the band renders nothing in that cold-start case.
   const [standing, setStanding] = useState<Record<string, PlayerStanding>>({});
+  // True only when the viewer is a coach on the round's player's team (not
+  // the player themselves, even a dual-role coach viewing their OWN round —
+  // matches the server-side `callerRole === 'coach'` gate in
+  // `annotateReviewImpl`). Drives the Coach Notes edit affordance below.
+  const [isCoachViewer, setIsCoachViewer] = useState(false);
   const [loadingRound, setLoadingRound] = useState(true);
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
@@ -311,7 +317,9 @@ export default function RoundReviewPage() {
   // Use existing CoachHelm hook for V2 features. V1 review object is no
   // longer rendered on this page (IA audit 2026-05-28 trimmed the dual V1/V2
   // surface down to V2 only — the W30 LLM round-review card lives in V2);
-  // the hook still returns it for back-compat with `RoundReviewViewer.tsx`.
+  // the hook still returns it, but this page's own `coach_notes` reads/writes
+  // go through `storedReview` (round-review-system.ts) + `CoachNotesSection`
+  // instead, not through this hook's `review.coachNotes`.
   // NOTE: the hook call is retained (it drives V2 hydration side effects), but
   // its `loading` return is intentionally NOT destructured — the page-level
   // `isLoading` gate no longer consults it (see the umbrella below). We still
@@ -338,6 +346,7 @@ export default function RoundReviewPage() {
     const coachTeamIds = coachTeamIdsKey ? coachTeamIdsKey.split(',') : [];
     async function fetchRound() {
       setLoadingRound(true);
+      setIsCoachViewer(false);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -408,6 +417,8 @@ export default function RoundReviewPage() {
           setError('Round not found');
           return;
         }
+
+        setIsCoachViewer(isCoachOnTeam);
 
         if (roundData.holes) {
           roundData.holes = roundData.holes.sort((a, b) => a.hole_number - b.hole_number);
@@ -791,6 +802,17 @@ export default function RoundReviewPage() {
           />
         )}
 
+        {/* Coach notes — read-only for the player, editable only for a
+            coach on this player's team. Renders nothing for a player when
+            no note has been left yet (honest-empty). */}
+        {storedReview?.id && (
+          <CoachNotesSection
+            reviewId={storedReview.id}
+            initialNotes={storedReview.coach_notes ?? null}
+            canEdit={isCoachViewer}
+          />
+        )}
+
         {/* Stats Comparison */}
         <RoundStatsComparison
           roundStats={{
@@ -991,7 +1013,7 @@ export default function RoundReviewPage() {
               <Link href={`/golf/dashboard/rounds/${roundId}`}>Round Detail</Link>
             </FwButton>
             <FwButton variant="primary" className="flex-1" asChild>
-              <Link href="/golf/dashboard/stats">All Stats</Link>
+              <Link href={`/golf/dashboard/stats?player=${round.player_id}`}>All Stats</Link>
             </FwButton>
           </m.div>
         </m.div>

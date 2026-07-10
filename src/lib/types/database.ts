@@ -6660,33 +6660,65 @@ export type Database = {
       }
       baseball_settings_audit_log: {
         Row: {
+          actor_coach_id: string | null
+          actor_user_id: string | null
+          after_value: Json | null
+          before_value: Json | null
           changed_by: string | null
           created_at: string
+          event_type: string | null
           id: string
           new_value: Json | null
           old_value: Json | null
-          setting_key: string
+          setting_key: string | null
+          summary: string | null
           team_id: string
         }
         Insert: {
+          actor_coach_id?: string | null
+          actor_user_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
           changed_by?: string | null
           created_at?: string
+          event_type?: string | null
           id?: string
           new_value?: Json | null
           old_value?: Json | null
-          setting_key: string
+          setting_key?: string | null
+          summary?: string | null
           team_id: string
         }
         Update: {
+          actor_coach_id?: string | null
+          actor_user_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
           changed_by?: string | null
           created_at?: string
+          event_type?: string | null
           id?: string
           new_value?: Json | null
           old_value?: Json | null
-          setting_key?: string
+          setting_key?: string | null
+          summary?: string | null
           team_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "baseball_settings_audit_log_actor_coach_id_fkey"
+            columns: ["actor_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_settings_audit_log_actor_coach_id_fkey"
+            columns: ["actor_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "baseball_settings_audit_log_team_id_fkey"
             columns: ["team_id"]
@@ -19883,6 +19915,10 @@ export type Database = {
       is_user_on_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: boolean
+      }
+      mark_golf_messages_read: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
       }
       mark_player_stats_stale: {
         Args: { p_player_id: string }

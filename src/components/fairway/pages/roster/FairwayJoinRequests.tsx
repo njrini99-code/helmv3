@@ -32,7 +32,17 @@
  * Both are optimistic (local remove on success) + router.refresh().
  *
  * PRESENTATION-ONLY. Renders inside a `.fairway-ds` scope on a bg-canvas page.
- * ADDITIVE — imported by nothing live until the roster route fork.
+ * Live in prod via FairwayCoachRoster → /dashboard/roster (Fairway has been the
+ * only dashboard tree for 5+ weeks as of W1, 2026-07-09).
+ *
+ * SURFACE EXCLUSIVITY: the inline accordion and the auto-popup modal must never
+ * both show the EXPANDED request list at once — the sole call site
+ * (FairwayCoachRoster) passes no overrides, so the component's own defaults
+ * decide this. `defaultExpanded` therefore defaults to the OPPOSITE of
+ * `enableModal`: when the modal is the first-touch surface, the inline
+ * accordion starts collapsed (just the amber banner); when there's no modal,
+ * the accordion alone is the first-touch surface and starts expanded. Pass
+ * `defaultExpanded` explicitly to override either way.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -78,7 +88,12 @@ export interface FairwayJoinRequestsProps {
    */
   enableModal?: boolean;
   /**
-   * Start the inline accordion expanded. Defaults to `true` (legacy behavior).
+   * Start the inline accordion expanded. Defaults to `!enableModal` — i.e.
+   * collapsed when the auto-popup modal is the first-touch surface (so the
+   * page never shows the same pending-request list expanded AND in a modal
+   * simultaneously), or expanded when there's no modal (the accordion alone
+   * is then the first-touch surface, matching legacy behavior). Pass an
+   * explicit value to override.
    */
   defaultExpanded?: boolean;
   /**
@@ -567,10 +582,14 @@ function RequestsModal({
 export function FairwayJoinRequests({
   requests,
   enableModal = true,
-  defaultExpanded = true,
+  defaultExpanded,
   sessionKey = 'roster_modal_shown',
   className,
 }: FairwayJoinRequestsProps) {
+  // See SURFACE EXCLUSIVITY note above: an explicit `defaultExpanded` always
+  // wins; otherwise collapse the accordion when the modal owns first-touch.
+  const effectiveDefaultExpanded = defaultExpanded ?? !enableModal;
+
   // Local mirror of the prop so accept/reject can optimistically remove rows.
   // Re-sync when the caller refetches and passes a new array.
   const [local, setLocal] = React.useState<JoinRequestData[]>(requests);
@@ -621,7 +640,7 @@ export function FairwayJoinRequests({
         error={error}
         onAccept={handleAccept}
         onReject={handleReject}
-        defaultExpanded={defaultExpanded}
+        defaultExpanded={effectiveDefaultExpanded}
         className={className}
       />
 

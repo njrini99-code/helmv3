@@ -8,11 +8,14 @@ import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { IconEdit } from '@/components/icons';
+import { IconEdit, IconBook, IconShieldAlert } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { getFullName } from '@/lib/utils';
+import { useToast } from '@/components/ui/sonner';
 import { getTeamAcademics, upsertPlayerAcademics } from '@/app/baseball/actions/academics';
+import { runClassConflictDetection } from '@/app/baseball/actions/video-classes';
+import { ClassScheduleModal } from './ClassScheduleModal';
 import {
   SectionMasthead,
   EditorsLetter,
@@ -42,6 +45,7 @@ interface StudentAthlete {
   is_eligible: boolean | null;
   academic_standing: 'good' | 'warning' | 'probation' | null;
   eligibility_id: string | null;
+  class_count: number;
 }
 
 interface EditValues {
@@ -112,6 +116,7 @@ function SkeletonCard() {
 export default function AcademicsPage() {
   const { loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
+  const { showToast } = useToast();
 
   const [students, setStudents] = useState<StudentAthlete[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +130,8 @@ export default function AcademicsPage() {
     academic_standing: null,
   });
   const [saving, setSaving] = useState(false);
+  const [classesStudent, setClassesStudent] = useState<StudentAthlete | null>(null);
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
 
   const fetchStudentAthletes = useCallback(async () => {
     if (!selectedTeamId) return;
@@ -155,6 +162,7 @@ export default function AcademicsPage() {
       is_eligible: row.is_eligible,
       academic_standing: row.academic_standing,
       eligibility_id: row.eligibility_id,
+      class_count: row.class_count,
     }));
 
     setStudents(transformed);
@@ -232,6 +240,35 @@ export default function AcademicsPage() {
   const cancelEditing = () => {
     setEditingId(null);
     setEditValues({ gpa: null, credits_completed: null, credits_required: null, is_eligible: true, academic_standing: null });
+  };
+
+  // Re-derives class-vs-obligation conflicts for the whole team from whatever
+  // class schedules are currently on file (via the Classes editor below) and
+  // surfaces them into the Signal Inbox — see runClassConflictDetection
+  // (video-classes.ts). Without this trigger the engine never runs, so
+  // baseball_class_conflicts stays empty even after classes are entered.
+  const handleCheckConflicts = async () => {
+    setCheckingConflicts(true);
+    try {
+      const result = await runClassConflictDetection();
+      if (!result.success) {
+        showToast(result.error ?? 'Could not check class conflicts.', 'error');
+        return;
+      }
+      const { detected = 0, hard = 0 } = result.stats ?? {};
+      if (detected === 0) {
+        showToast('No class conflicts found.', 'success');
+      } else {
+        showToast(
+          `Found ${detected} class conflict${detected === 1 ? '' : 's'} (${hard} hard) — sent to the Signal Inbox.`,
+          'success',
+        );
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not check class conflicts.', 'error');
+    } finally {
+      setCheckingConflicts(false);
+    }
   };
 
   if (authLoading) {
@@ -375,7 +412,22 @@ export default function AcademicsPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <SectionMasthead eyebrow="THE PRESSBOX · ACADEMICS" title="Academics" ink="team">
+      <SectionMasthead
+        eyebrow="THE PRESSBOX · ACADEMICS"
+        title="Academics"
+        ink="team"
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleCheckConflicts}
+            disabled={checkingConflicts}
+          >
+            <IconShieldAlert size={14} className="mr-1.5" />
+            {checkingConflicts ? 'Checking…' : 'Check Class Conflicts'}
+          </Button>
+        }
+      >
         <p className="font-annual text-body-sm text-text-secondary">
           Track student-athlete academic progress and eligibility
         </p>
@@ -540,14 +592,25 @@ export default function AcademicsPage() {
                       </Button>
                     </div>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => startEditing(student)}
-                      className="w-full min-h-[44px]"
-                    >
-                      <IconEdit size={14} className="mr-1" /> Edit
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => startEditing(student)}
+                        className="flex-1 min-h-[44px]"
+                      >
+                        <IconEdit size={14} className="mr-1" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setClassesStudent(student)}
+                        className="flex-1 min-h-[44px]"
+                      >
+                        <IconBook size={14} className="mr-1" />
+                        Classes{student.class_count > 0 ? ` (${student.class_count})` : ''}
+                      </Button>
+                    </div>
                   )}
                 </PaperCard>
                 </motion.div>
@@ -685,9 +748,15 @@ export default function AcademicsPage() {
                             </Button>
                           </div>
                         ) : (
-                          <Button size="sm" variant="secondary" onClick={() => startEditing(student)}>
-                            <IconEdit size={14} className="mr-1" /> Edit
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => startEditing(student)}>
+                              <IconEdit size={14} className="mr-1" /> Edit
+                            </Button>
+                            <Button size="sm" variant="secondary" onClick={() => setClassesStudent(student)}>
+                              <IconBook size={14} className="mr-1" />
+                              Classes{student.class_count > 0 ? ` (${student.class_count})` : ''}
+                            </Button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -698,6 +767,17 @@ export default function AcademicsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {classesStudent && (
+        <ClassScheduleModal
+          open
+          onClose={() => setClassesStudent(null)}
+          playerId={classesStudent.player_id}
+          teamId={selectedTeamId ?? ''}
+          playerName={getFullName(classesStudent.first_name, classesStudent.last_name)}
+          onChanged={() => void fetchStudentAthletes()}
+        />
+      )}
     </div>
   );
 }

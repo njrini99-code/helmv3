@@ -1522,26 +1522,42 @@ async function annotateReviewImpl(
   const supabase = await createClient();
 
   try {
+    const trimmed = annotation.trim();
+    if (!trimmed) {
+      return { success: false, error: 'Note cannot be empty' };
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
+    const { data: review, error: reviewError } = await supabase
+      .from('golf_round_reviews')
+      .select('id, player_id')
+      .eq('id', reviewId)
       .single();
 
-    if (!coach) {
+    if (reviewError || !review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    // Coach notes are a coach's annotation ABOUT a player's round — only a
+    // coach on the player's team may write one (mirrors verifyReviewAccess's
+    // role split used everywhere else in this file). `player_or_coach`
+    // resolves whether the caller reached the row via self-access or
+    // coach-of-team access; requiring `callerRole === 'coach'` here rejects a
+    // player (including a dual-role coach viewing their OWN round as
+    // themselves) from writing to this field.
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized || access.callerRole !== 'coach') {
       return { success: false, error: 'Not authorized - coach access required' };
     }
 
     const { error } = await supabase
       .from('golf_round_reviews')
       .update({
-        coach_notes: annotation,
+        coach_notes: trimmed,
         updated_at: new Date().toISOString(),
       })
       .eq('id', reviewId);
@@ -1554,6 +1570,12 @@ async function annotateReviewImpl(
       });
       return { success: false, error: 'Failed to save annotation' };
     }
+
+    // Revalidate the dynamic review segment (same pattern as
+    // saveCoachFeedback above) so a server-rendered consumer picks up the
+    // note on next nav; the client page updates its own state optimistically.
+    revalidatePath('/golf/dashboard/rounds/[id]/review', 'page');
+    revalidatePath('/golf/dashboard/rounds');
 
     return { success: true };
   } catch (error) {

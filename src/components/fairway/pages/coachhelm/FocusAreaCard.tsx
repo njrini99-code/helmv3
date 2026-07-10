@@ -257,10 +257,27 @@ const STATUS_TONE: Record<string, { tone: FwStatusTone; label: string }> = {
   // Coach-prescribed, awaiting the player's acceptance (the coach sees this on
   // their board so a prescribed area reads as pending, not already Active).
   proposed: { tone: 'warning', label: 'Proposed' },
+  // Player explicitly rejected a coach-prescribed area. Distinct danger tone so
+  // it never reads as "Active" (the old fallback rendered this identically to
+  // real, ongoing work — see the STATUS_TONE fallback below).
+  declined: { tone: 'danger', label: 'Declined' },
 };
 
 function statusMeta(status: string | null | undefined): { tone: FwStatusTone; label: string } {
   return STATUS_TONE[status ?? 'active'] ?? STATUS_TONE.active!;
+}
+
+/**
+ * Lifecycle states the mutating actions (Mark complete / Log progress / Record
+ * outcome) are meaningful on. Mirrors the server-side allowlist
+ * (development.ts's ACTIONABLE_FOCUS_AREA_STATUSES) so a 'proposed' (not yet
+ * accepted) or 'declined' (rejected) area never shows live action buttons that
+ * would just be rejected by the server anyway.
+ */
+const ACTIONABLE_STATUSES = new Set(['active', 'in_progress', 'paused']);
+
+function isActionableStatus(status: string | null | undefined): boolean {
+  return ACTIONABLE_STATUSES.has(status ?? 'active');
 }
 
 /* ---------------------------------------------------------------------------
@@ -639,15 +656,20 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     }
 
     /* ---- ACTIVE / IN-PROGRESS: the full card ---- */
+    // A 'proposed' (not yet accepted) or 'declined' area isn't being worked —
+    // Log progress / Mark complete / Record outcome are hidden for it (they'd
+    // just be rejected server-side anyway). Edit + Delete stay independent of
+    // lifecycle so a coach can still fix or retract a pending/declined area.
+    const actionable = isActionableStatus(focusArea.status);
     const showEdit = role === 'coach' && typeof onEdit === 'function';
-    const showLogProgress = typeof onLogProgress === 'function';
-    const showComplete = typeof onComplete === 'function';
+    const showLogProgress = actionable && typeof onLogProgress === 'function';
+    const showComplete = actionable && typeof onComplete === 'function';
     // Delete is a coach-only destructive capability (mirrors the legacy fork).
     // The card requests it; the consumer owns the forced-choice confirm + write.
     const showDelete = role === 'coach' && typeof onDelete === 'function';
     // Outcome capture is an ADDITIONAL coach capability — it never replaces the
     // complete/progress actions. Shown when a handler is wired for a coach.
-    const showOutcome = role === 'coach' && typeof onRecordOutcome === 'function';
+    const showOutcome = role === 'coach' && actionable && typeof onRecordOutcome === 'function';
 
     return (
       <motion.div

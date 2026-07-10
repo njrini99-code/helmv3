@@ -550,6 +550,10 @@ export function ImportWizardClient({
         mapping: preview.mapping,
         rows: preview.rows,
         matches,
+        // ISSUE #379 — tells the server which canonical table (box-score RPC vs
+        // baseball_player_season_stats) this commit ALSO writes to, so Stats
+        // Center reflects the import instead of only the legacy stat row.
+        dataShape,
         // GAP 1 + GAP 2 — hand the server the ORIGINAL file body so it preserves
         // the source-of-truth file + fingerprints it for the duplicate guard.
         rawFileBody: csvContent || undefined,
@@ -597,6 +601,7 @@ export function ImportWizardClient({
     sessionDate,
     sessionName,
     matches,
+    dataShape,
     addToast,
     validation,
     hasCreateConflicts,

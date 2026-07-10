@@ -21,7 +21,9 @@
  * heuristic for backward compatibility.
  */
 
+import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
@@ -99,6 +101,9 @@ interface CreateRecurringEventInput {
   maxAttendees?: number;
   teamId?: string;
   timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
+  // golf_player ids invited onto every occurrence's attendance (roll-call).
+  // Mirrors GolfEventInput.attendeeIds on the one-off create path.
+  attendeeIds?: string[];
 }
 
 interface EditRecurringEventInput {
@@ -173,6 +178,167 @@ async function fetchSeriesRows(
     if (opts.fromStart) query = query.gte('start_time', opts.fromStart);
     return query.order('id', { ascending: true }).range(from, to);
   }, undefined, { table: 'golf_events', action: 'recurringEventsSeriesLookup', feature: 'calendar_events', sport: 'golf' });
+}
+
+/** Lightweight attendance row used only to resolve attendee user_ids. */
+interface AttendanceRowLite {
+  id: string;
+  player: { user_id: string | null } | Array<{ user_id: string | null }> | null;
+}
+
+/**
+ * Attendee user_ids for a set of event ids, chunked to keep `.in()` URLs
+ * short. MUST be called BEFORE any delete of those event ids: golf_events →
+ * golf_event_attendance cascades on delete, so reading attendance after the
+ * rows are gone always returns empty (2026-07-10 calendar-travel audit).
+ *
+ * Paginated past the PostgREST 1000-row cap (mirrors fetchSeriesRows above):
+ * a season-length series ('all'/'thisAndFuture' scope) times a full roster
+ * can produce well over 1000 attendance rows per 200-event id chunk, and an
+ * unpaginated `.select().in()` silently truncates there with no error,
+ * dropping attendees from the cancellation notify list (2026-07-10
+ * calendar-travel REPAIR audit, P1).
+ */
+async function fetchSeriesAttendeeUserIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventIds: string[],
+): Promise<string[]> {
+  const userIds = new Set<string>();
+  for (const ids of chunkArray(eventIds, ID_CHUNK_SIZE)) {
+    if (ids.length === 0) continue;
+    const { data: attendances, error } = await fetchAllRowsResult<AttendanceRowLite>(
+      (from, to) =>
+        supabase
+          .from('golf_event_attendance')
+          .select('id, player:golf_players(user_id)')
+          .in('event_id', ids)
+          .order('id', { ascending: true })
+          .range(from, to),
+      undefined,
+      {
+        table: 'golf_event_attendance',
+        action: 'recurringEventsAttendeeLookup',
+        feature: 'calendar_events',
+        sport: 'golf',
+      },
+    );
+    if (error) {
+      await logServerError(`fetchSeriesAttendeeUserIds: ${error.message}`, {
+        action: 'recurring_events.fetchSeriesAttendeeUserIds',
+        extra: { chunkSize: ids.length },
+      });
+      continue;
+    }
+    for (const row of (attendances ?? []) as unknown as AttendanceRowLite[]) {
+      const playerRef = row.player;
+      const playerRow = Array.isArray(playerRef) ? playerRef[0] ?? null : playerRef;
+      if (playerRow?.user_id) userIds.add(playerRow.user_id);
+    }
+  }
+  return [...userIds];
+}
+
+/**
+ * Cancellation notification fan-out for a recurring-series delete
+ * (2026-07-10 calendar-travel audit, P1). Mirrors deleteGolfEventImpl's
+ * soft-cancel fan-out in golf.ts (in-app 'event_cancelled' rows + email) but
+ * keyed on a SET of event ids, since a series delete can span up to
+ * MAX_SERIES_OCCURRENCES rows. `userIds`/`eventIds` must be resolved BEFORE
+ * the delete (see fetchSeriesAttendeeUserIds) — this only performs the
+ * deferred WRITE side, via after(), fire-and-forget: a notify failure never
+ * blocks or fails a delete that already committed.
+ */
+function deferRecurringDeleteNotify(opts: {
+  userIds: string[];
+  eventIds: string[];
+  title: string;
+  startTime: string | null;
+  location: string | null;
+  scope: RecurringEditScope;
+}): void {
+  const { userIds, eventIds, title, startTime, location, scope } = opts;
+  if (userIds.length === 0 || eventIds.length === 0) return;
+
+  after(async () => {
+    try {
+      const adminClient = createAdminClient();
+      const startLabel = startTime
+        ? new Date(startTime).toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+        : 'TBD';
+      const scopeLabel = scope === 'all' ? 'The whole series' : 'This and future occurrences';
+      const detail = `${scopeLabel} cancelled — ${startLabel}${location ? ` at ${location}` : ''}`;
+
+      const inAppPromise = (async () => {
+        const notifications = eventIds.flatMap((eventId) =>
+          userIds.map((uid) => ({
+            user_id: uid,
+            event_id: eventId,
+            notification_type: 'event_cancelled',
+            title: `Cancelled: ${title}`,
+            message: detail,
+            action_url: `/golf/dashboard/calendar`,
+          })),
+        );
+        for (const chunk of chunkArray(notifications, ID_CHUNK_SIZE)) {
+          const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
+            .upsert(chunk, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: false });
+          if (notifError) {
+            await logServerError(`deleteRecurringEvent notification insert failed: ${notifError.message}`, {
+              action: 'recurring_events.deleteRecurringEvent.notify',
+              extra: { scope },
+            });
+          }
+        }
+      })();
+
+      const emailPromise = (async () => {
+        const { sendEmailNotification } = await import('@/lib/notifications/email');
+        const { data: userRows } = await adminClient.from('users').select('id, email').in('id', userIds);
+        const recipients = (userRows ?? [])
+          .filter((u) => Boolean(u.email))
+          .map((u) => ({ id: u.id, email: u.email as string }));
+        if (recipients.length === 0) return;
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+        const results = await Promise.allSettled(
+          recipients.map((u) =>
+            sendEmailNotification('team_announcement', u.id, u.email, {
+              title: `Event cancelled: ${title}`,
+              content: `This recurring event has been cancelled. ${detail}`,
+              announcementUrl: `${baseUrl}/golf/dashboard/calendar`,
+            }),
+          ),
+        );
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        if (failed > 0) {
+          await logServerError(
+            `deleteRecurringEvent cancellation email failed for ${failed}/${recipients.length} recipients`,
+            { action: 'recurring_events.deleteRecurringEvent.notify', extra: { scope } },
+          );
+        }
+      })();
+
+      const channelResults = await Promise.allSettled([inAppPromise, emailPromise]);
+      for (const result of channelResults) {
+        if (result.status === 'rejected') {
+          await logServerError(
+            `deleteRecurringEvent cancellation fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+            { action: 'recurring_events.deleteRecurringEvent.notify', extra: { scope } },
+          );
+        }
+      }
+    } catch (notifyErr) {
+      await logServerError(
+        `deleteRecurringEvent notify threw: ${notifyErr instanceof Error ? notifyErr.message : String(notifyErr)}`,
+        { action: 'recurring_events.deleteRecurringEvent.notify', extra: { scope } },
+      );
+    }
+  });
 }
 
 /**
@@ -459,6 +625,9 @@ async function createRecurringEventImpl(
     // queryable series identity (`WHERE parent_event_id = root.id OR id =
     // root.id`) that the edit + delete scope dialogs lean on.
     const teamId = input.teamId || coachTeamId;
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
+    }
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
 
     const rootDate = occurrenceDates[0]!;
@@ -492,6 +661,7 @@ async function createRecurringEventImpl(
     }
 
     const rootId = rootInsert.id as string;
+    const childIds: string[] = [];
 
     if (occurrenceDates.length > 1) {
       const childRows = occurrenceDates.slice(1).map((date) => ({
@@ -512,9 +682,10 @@ async function createRecurringEventImpl(
       }));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: childError } = await (supabase as any)
+      const { data: childInsert, error: childError } = await (supabase as any)
         .from('golf_events')
-        .insert(childRows);
+        .insert(childRows)
+        .select('id');
 
       if (childError) {
         // Roll back the root so we don't leave a half-built series. Log
@@ -537,7 +708,149 @@ async function createRecurringEventImpl(
         await logServerError(`[createRecurringEvent child Error]: ${childError instanceof Error ? childError.message : String(childError)}`, { action: 'recurring_events.createRecurringEvent' });
         return { success: false, error: 'Failed to create recurring event. Please try again.' };
       }
+
+      childIds.push(...(childInsert ?? []).map((row: { id: string }) => row.id));
     }
+
+    const seriesEventIds = [rootId, ...childIds];
+
+    // Invite selected attendees onto EVERY occurrence's roll-call/attendance
+    // panel (2026-07-10 calendar-travel audit, P0). Mirrors the one-off
+    // create path's sendEventInvitations, but as one batched upsert instead
+    // of a per-occurrence loop — a series can carry up to
+    // MAX_SERIES_OCCURRENCES rows.
+    if (input.attendeeIds && input.attendeeIds.length > 0) {
+      const invitedPlayerIds = input.attendeeIds;
+      const attendanceRows = seriesEventIds.flatMap((eventId) =>
+        invitedPlayerIds.map((playerId) => ({
+          event_id: eventId,
+          player_id: playerId,
+          status: 'pending' as const,
+          notified_at: new Date().toISOString(),
+        })),
+      );
+      for (const chunk of chunkArray(attendanceRows, ID_CHUNK_SIZE)) {
+        const { error: attendanceError } = await supabase
+          .from('golf_event_attendance')
+          .upsert(chunk, { onConflict: 'event_id,player_id' });
+        if (attendanceError) {
+          // Don't fail the whole create — the series exists; a coach can
+          // still invite players via the per-occurrence edit flow.
+          await logServerError(`[createRecurringEvent attendance Error]: ${attendanceError.message}`, {
+            action: 'recurring_events.createRecurringEvent.attendance',
+            extra: { rootId },
+          });
+          break;
+        }
+      }
+    }
+
+    // Notify every active team member that the series was created — same
+    // unconditional team-wide fan-out (in-app + email + push) that
+    // createGolfEventImpl runs for one-off events (2026-07-10 calendar-travel
+    // audit, P0: previously nobody was ever told a recurring series existed).
+    // Deferred via after() and fired ONCE for the whole series, not once per
+    // occurrence.
+    const fanOutTeamId = teamId;
+    const fanOutTitle = input.title;
+    const fanOutStartDate = input.startDate;
+    const fanOutLocation = input.location || '';
+    after(async () => {
+      try {
+        const adminClient = createAdminClient();
+        const { data: teamMembers } = await adminClient
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', fanOutTeamId)
+          .eq('status', 'active');
+
+        const playerIds = (teamMembers ?? [])
+          .map((m) => m.player_id)
+          .filter((id): id is string => Boolean(id));
+        if (playerIds.length === 0) return;
+
+        const { data: players } = await adminClient
+          .from('golf_players')
+          .select('id, user_id')
+          .in('id', playerIds);
+
+        const userIds = (players ?? [])
+          .map((p) => p.user_id)
+          .filter((id): id is string => Boolean(id));
+        if (userIds.length === 0) return;
+
+        const inAppPromise = (async () => {
+          const notifications = userIds.map((uid) => ({
+            user_id: uid,
+            event_id: rootId,
+            notification_type: 'event_invitation',
+            title: `New event: ${fanOutTitle}`,
+            message: `${fanOutStartDate}${fanOutLocation ? ` at ${fanOutLocation}` : ''}`,
+            action_url: `/golf/dashboard/calendar`,
+          }));
+          const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
+            .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
+          if (notifError) {
+            await logServerError(`createRecurringEvent notification insert failed: ${notifError.message}`, {
+              action: 'recurring_events.createRecurringEvent.notifications',
+              extra: { errorCode: notifError.code },
+            });
+          }
+        })();
+
+        const emailPromise = (async () => {
+          const { sendEmailNotification } = await import('@/lib/notifications/email');
+          const { data: userRows } = await adminClient
+            .from('users')
+            .select('id, email')
+            .in('id', userIds);
+          const recipients = (userRows ?? [])
+            .filter((u) => Boolean(u.email))
+            .map((u) => ({ id: u.id, email: u.email as string }));
+          if (recipients.length === 0) return;
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+          const results = await Promise.allSettled(
+            recipients.map((u) =>
+              sendEmailNotification('event_rsvp_reminder', u.id, u.email, {
+                eventName: fanOutTitle,
+                eventDate: fanOutStartDate,
+                location: fanOutLocation,
+                eventUrl: `${baseUrl}/golf/dashboard/calendar`,
+              })
+            )
+          );
+          const failed = results.filter((r) => r.status === 'rejected').length;
+          if (failed > 0) {
+            await logServerError(`createRecurringEvent email notification failed for ${failed}/${recipients.length} recipients`, {
+              action: 'recurring_events.createRecurringEvent.notifications',
+            });
+          }
+        })();
+
+        const pushPromise = (async () => {
+          const { sendBulkPushNotification } = await import('@/lib/notifications/push');
+          await sendBulkPushNotification('event_rsvp_reminder', userIds, {
+            eventName: fanOutTitle,
+          });
+        })();
+
+        const channelResults = await Promise.allSettled([inAppPromise, emailPromise, pushPromise]);
+        const channelNames = ['inApp', 'email', 'push'] as const;
+        for (let i = 0; i < channelResults.length; i++) {
+          const result = channelResults[i];
+          if (result?.status === 'rejected') {
+            await logServerError(`createRecurringEvent ${channelNames[i]} fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`, {
+              action: 'recurring_events.createRecurringEvent.notifications',
+              extra: { channel: channelNames[i], rootId },
+            });
+          }
+        }
+      } catch (notifErr) {
+        await logServerError(`createRecurringEvent notification creation failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+          action: 'recurring_events.createRecurringEvent.notifications',
+        });
+      }
+    });
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: rootId } };
@@ -658,6 +971,14 @@ async function editRecurringEventImpl(
     const startDeltaMs =
       startChanged && newStartMs !== null && Number.isFinite(oldStartMs) ? newStartMs - oldStartMs : 0;
 
+    // Ids of rows actually touched by a MEANINGFUL change for 'thisAndFuture'/
+    // 'all' (2026-07-10 calendar-travel audit, P1). Populated only inside
+    // those two scope branches below — stays empty for 'this' (that single-
+    // occurrence path is reached via golf.ts's updateGolfEvent, which already
+    // notifies) and for no-op edits, so the post-switch fan-out below is a
+    // no-op unless there's something worth telling an attendee about.
+    let notifiedIds: string[] = [];
+
     switch (input.scope) {
       case 'this': {
         // Edit just this single event — literal semantics are correct here,
@@ -734,6 +1055,7 @@ async function editRecurringEventImpl(
             });
             return { success: false, error: zeroMessage };
           }
+          notifiedIds = affected.map((row: { id: string }) => row.id);
           break;
         }
 
@@ -804,8 +1126,42 @@ async function editRecurringEventImpl(
             return { success: false, error: failMessage };
           }
         }
+        notifiedIds = matchedRows.map((row) => row.id);
         break;
       }
+    }
+
+    // Series-wide notify (2026-07-10 calendar-travel audit, P1):
+    // 'thisAndFuture'/'all' edits previously never told attendees a
+    // reschedule/edit happened at all. Deferred via after() — a series can
+    // carry up to MAX_SERIES_OCCURRENCES rows — same fire-and-forget contract
+    // as golf.ts's fan-outs: a notify failure never fails the save that
+    // already committed above.
+    if (notifiedIds.length > 0) {
+      const idsToNotify = notifiedIds;
+      const notifyScope = input.scope;
+      const notifyEventId = input.eventId;
+      after(async () => {
+        try {
+          const { notifyEventUpdate } = await import('@/lib/calendar/rsvp');
+          const adminClient = createAdminClient();
+          const results = await Promise.allSettled(
+            idsToNotify.map((id) => notifyEventUpdate(id, adminClient)),
+          );
+          const failed = results.filter((r) => r.status === 'rejected').length;
+          if (failed > 0) {
+            await logServerError(`editRecurringEvent notify failed for ${failed}/${idsToNotify.length} occurrences`, {
+              action: 'recurring_events.editRecurringEvent.notify',
+              extra: { eventId: notifyEventId, scope: notifyScope },
+            });
+          }
+        } catch (notifyErr) {
+          await logServerError(`editRecurringEvent notify threw: ${notifyErr instanceof Error ? notifyErr.message : String(notifyErr)}`, {
+            action: 'recurring_events.editRecurringEvent.notify',
+            extra: { eventId: notifyEventId, scope: notifyScope },
+          });
+        }
+      });
     }
 
     // Rule change / series extension — scope 'all' only (a recurrence rule
@@ -987,6 +1343,11 @@ async function deleteRecurringEventImpl(
 
           const deleteIds = new Set(matchedRows.map((row) => row.id));
 
+          // MUST run before any DELETE below: golf_event_attendance cascades
+          // off golf_events, so attendee ids are unreadable once the rows are
+          // gone (2026-07-10 calendar-travel audit, P1).
+          const attendeeUserIds = await fetchSeriesAttendeeUserIds(supabase, [...deleteIds]);
+
           if (deleteIds.has(rootId)) {
             // Need the root's rule to transfer onto the promoted child.
             let rootRecurrenceRule: string | null = targetEvent.recurrence_rule;
@@ -1034,6 +1395,14 @@ async function deleteRecurringEventImpl(
                 });
                 return { success: false, error: 'No matching future events were found to delete.' };
               }
+              deferRecurringDeleteNotify({
+                userIds: attendeeUserIds,
+                eventIds: [...deleteIds],
+                title: targetEvent.title,
+                startTime: targetEvent.start_time,
+                location: targetEvent.location,
+                scope: 'thisAndFuture',
+              });
               break;
             }
             // promoted === false → no child survives the cutoff: the whole
@@ -1060,10 +1429,32 @@ async function deleteRecurringEventImpl(
             });
             return { success: false, error: 'No matching future events were found to delete.' };
           }
+          deferRecurringDeleteNotify({
+            userIds: attendeeUserIds,
+            eventIds: [...deleteIds],
+            title: targetEvent.title,
+            startTime: targetEvent.start_time,
+            location: targetEvent.location,
+            scope: 'thisAndFuture',
+          });
           break;
         }
 
-        // Legacy series (pre parent_event_id): heuristic filter, no cascade risk.
+        // Legacy series (pre parent_event_id): heuristic filter, no cascade
+        // risk — but attendee ids still need resolving BEFORE the delete
+        // (same cascade concern as above).
+        const { data: legacyMatchedRows, error: legacyMatchError } = await fetchSeriesRows(supabase, {
+          teamId: targetEvent.team_id,
+          legacy: { title: targetEvent.title, eventType: targetEvent.event_type },
+          fromStart,
+        });
+        if (legacyMatchError) {
+          await logServerError(`[deleteRecurringEvent fetch Error]: ${legacyMatchError.message}`, { action: 'recurring_events.deleteRecurringEvent' });
+          return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
+        }
+        const legacyIds = (legacyMatchedRows ?? []).map((row) => row.id);
+        const legacyAttendeeUserIds = await fetchSeriesAttendeeUserIds(supabase, legacyIds);
+
         const { data: affected, error: deleteError } = await supabase
           .from('golf_events')
           .delete()
@@ -1084,10 +1475,34 @@ async function deleteRecurringEventImpl(
           });
           return { success: false, error: 'No matching future events were found to delete.' };
         }
+        deferRecurringDeleteNotify({
+          userIds: legacyAttendeeUserIds,
+          eventIds: affected.map((row) => row.id),
+          title: targetEvent.title,
+          startTime: targetEvent.start_time,
+          location: targetEvent.location,
+          scope: 'thisAndFuture',
+        });
         break;
       }
 
       case 'all': {
+        // Resolve the delete set + its attendees BEFORE deleting: the FK
+        // cascade from golf_events → golf_event_attendance makes attendee
+        // ids unreadable once the rows are gone (2026-07-10 calendar-travel
+        // audit, P1 — this scope previously never notified anyone).
+        const { data: allMatchedRows, error: allMatchError } = await fetchSeriesRows(supabase, {
+          teamId: targetEvent.team_id,
+          rootId,
+          legacy: rootId ? undefined : { title: targetEvent.title, eventType: targetEvent.event_type },
+        });
+        if (allMatchError) {
+          await logServerError(`[deleteRecurringEvent fetch Error]: ${allMatchError.message}`, { action: 'recurring_events.deleteRecurringEvent' });
+          return { success: false, error: 'Failed to delete event series. Please try again.' };
+        }
+        const allIds = (allMatchedRows ?? []).map((row) => row.id);
+        const allAttendeeUserIds = await fetchSeriesAttendeeUserIds(supabase, allIds);
+
         let query = supabase.from('golf_events').delete();
         if (rootId) {
           query = query
@@ -1113,6 +1528,14 @@ async function deleteRecurringEventImpl(
           });
           return { success: false, error: 'No matching events were found to delete.' };
         }
+        deferRecurringDeleteNotify({
+          userIds: allAttendeeUserIds,
+          eventIds: affected.map((row) => row.id),
+          title: targetEvent.title,
+          startTime: targetEvent.start_time,
+          location: targetEvent.location,
+          scope: 'all',
+        });
         break;
       }
     }

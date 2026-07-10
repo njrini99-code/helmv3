@@ -40,6 +40,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+import { logServerError } from '@/lib/server-error-logger';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import {
@@ -131,6 +132,13 @@ function serializeVariant(v: BaseballProgramVariant): SerializableVariant {
 // -----------------------------------------------------------------------------
 // Audit helper — write a sensitive-change row (best-effort; never blocks the
 // primary mutation, but is gated by RLS so only authorized staff can insert).
+//
+// The insert failing used to be silent (no {error} check), which is exactly
+// how the #bb-settings schema-drift bug went unnoticed: every audit write
+// 400'd against a live table that was missing these columns. Fixed by
+// supabase/migrations/20260710020000_baseball_settings_audit_log_column_
+// reconcile.sql; the {error} check below stays so any future drift fails
+// loudly (Sentry/admin feed) instead of quietly leaving the log empty again.
 // -----------------------------------------------------------------------------
 
 async function writeAudit(
@@ -143,7 +151,7 @@ async function writeAudit(
   after: Record<string, unknown> | null,
 ): Promise<void> {
   const supabase = await createClient();
-  await fromUntyped(supabase, 'baseball_settings_audit_log').insert({
+  const { error } = await fromUntyped(supabase, 'baseball_settings_audit_log').insert({
     team_id: teamId,
     actor_user_id: actorUserId,
     actor_coach_id: actorCoachId,
@@ -152,6 +160,17 @@ async function writeAudit(
     before_value: before,
     after_value: after,
   });
+  if (error) {
+    await logServerError(
+      `writeAudit insert failed (event_type=${eventType}): ${error.message}`,
+      {
+        action: 'program-settings.writeAudit',
+        featureArea: 'baseball-settings',
+        handled: true,
+      },
+      'warning',
+    );
+  }
 }
 
 // -----------------------------------------------------------------------------

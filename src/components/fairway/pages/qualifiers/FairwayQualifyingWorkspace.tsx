@@ -27,6 +27,7 @@
  * ========================================================================== */
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Flag } from 'lucide-react';
 
@@ -47,6 +48,11 @@ import {
   setQualifierCoachPick,
   removeQualifierCoachPick,
 } from '@/app/golf/actions/v3/qualifying';
+// updateQualifierStatus is fully built (auth+coach-of-team check, DB write,
+// revalidate) but had ZERO callers anywhere in the app — a qualifier could
+// never reach status='completed' through any reachable flow. This is the
+// first real caller.
+import { updateQualifierStatus } from '@/app/golf/actions/golf';
 import { nextState } from '@/lib/coachhelm/v3/qualifying/state-machine';
 import type {
   QualifierSelectionState,
@@ -75,6 +81,7 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
   const {
     qualifier_id,
     name,
+    status,
     selection_state,
     selection_slots_total,
     selection_slots_coach_pick,
@@ -129,8 +136,80 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
             state={selection_state}
           />
         ) : null}
+
+        {/* Roster committed — the qualifier's play lifecycle (status) is a
+            SEPARATE state machine from selection_state above, and nothing
+            anywhere ever advanced it to 'completed'. Give the coach a real
+            control for it right where the roster decision just got made. */}
+        {selection_state === 'selected' ? (
+          <ConcludeQualifier qualifierId={qualifier_id} status={status} />
+        ) : null}
       </div>
     </div>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 4 · Conclude qualifier — the missing caller for updateQualifierStatus.
+ * Only reachable once the roster is committed (selection_state === 'selected').
+ * A best-effort auto-transition also runs from the round-submit path once
+ * every entrant has posted every round (see advanceQualifierOnRoundSubmit in
+ * golf.ts) — this button is the manual override for a coach who doesn't want
+ * to wait for stragglers, or who never lets that auto-transition fire.
+ * ────────────────────────────────────────────────────────────────────────── */
+function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; status: string }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  if (status === 'completed') {
+    return (
+      <Surface elevation="border" padding="md">
+        <div className="flex items-center gap-3">
+          <StatusPill tone="neutral" size="md">
+            Completed
+          </StatusPill>
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            This qualifier is closed out — it now shows under Concluded on the qualifiers list.
+          </p>
+        </div>
+      </Surface>
+    );
+  }
+
+  const handleConclude = () => {
+    startTransition(async () => {
+      const r = await updateQualifierStatus(qualifierId, 'completed');
+      if (!r.success) {
+        fairwayToast.danger("Couldn't conclude the qualifier", { description: r.error });
+      } else {
+        fairwayToast.success('Qualifier concluded');
+        router.refresh();
+      }
+    });
+  };
+
+  return (
+    <Surface elevation="border" padding="md">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <p className="font-fw-sans text-body font-medium text-text-primary">
+            Roster committed — ready to close this out?
+          </p>
+          <p className="font-fw-sans text-caption text-text-tertiary">
+            Marks the qualifier Completed so it moves to Concluded for the whole team.
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleConclude}
+          busy={pending}
+          className="shrink-0"
+        >
+          Conclude qualifier
+        </Button>
+      </div>
+    </Surface>
   );
 }
 

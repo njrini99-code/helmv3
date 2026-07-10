@@ -22,7 +22,7 @@
  * `<EmptyIssue>` — never a yellow/amber box, never a fabricated zero.
  * ========================================================================== */
 
-import { useMemo, type ComponentProps } from 'react';
+import { useMemo, type ComponentProps, type ReactNode } from 'react';
 import { ArrowDown, ArrowUp, Download, UserPlus } from 'lucide-react';
 import { Button as PlainButton } from '@/components/ui/button';
 import { Segmented, Select, SearchField, Button, SkeletonCard } from '@/components/fairway';
@@ -46,6 +46,14 @@ import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { InviteModal } from '@/components/coach/InviteModal';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { RosterBoardMember } from '@/components/baseball/roster';
+import type { AssignablePlayerResult } from '@/app/baseball/actions/roster';
+import {
+  RosterRowMenu,
+  PendingMemberActions,
+  AssignPlayerModal,
+  type RosterActionOutcome,
+} from './RosterMemberActions';
+import { SavedLineupsPanel, type SavedLineupSlot } from './SavedLineupsPanel';
 import type { TeamMember, RosterSurface, SortField, SortDirection } from './RosterClient';
 
 // LineupBuilder / InviteModal own their prop types; borrow them so we never
@@ -54,7 +62,7 @@ type LineupProps = ComponentProps<typeof LineupBuilder>;
 
 const EM_DASH = '—';
 
-const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'OF', 'LHP', 'RHP', 'UTL'];
+export const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'OF', 'LHP', 'RHP', 'UTL'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 
 const STATUS_OPTIONS = [
@@ -119,10 +127,18 @@ function RosterWall({
   members,
   aggregates,
   onSelect,
+  onAssignPlayer,
+  onRemoveMember,
 }: {
   members: TeamMember[];
   aggregates: Record<string, BaseballPlayerAggregates>;
   onSelect: (playerId: string) => void;
+  onAssignPlayer: (input: {
+    playerId: string;
+    jerseyNumber: number | null;
+    position: string | null;
+  }) => Promise<RosterActionOutcome>;
+  onRemoveMember: (playerId: string, playerName: string) => Promise<RosterActionOutcome>;
 }) {
   // The team's OPS leader (min two qualifiers so a lone data point is never
   // crowned) — renders in lane green, the same "leads the column" treatment
@@ -140,18 +156,33 @@ function RosterWall({
       <div className="min-w-[680px]">
         <PlayerRowPlateHeader columns={WALL_COLUMNS} />
         <div className="flex flex-col">
-          {members.map((member, i) => (
-            <Reveal key={member.id} staggerIndex={Math.min(i, 10)}>
-              <PlayerRowPlate
-                firstName={member.player.first_name ?? ''}
-                lastName={member.player.last_name ?? ''}
-                jerseyNumber={member.jersey_number ?? undefined}
-                position={member.player.primary_position ?? undefined}
-                stats={buildWallStats(aggregates[member.player.id], member.player.id === opsLeaderId)}
-                onClick={() => onSelect(member.player.id)}
-              />
-            </Reveal>
-          ))}
+          {members.map((member, i) => {
+            const playerName = `${member.player.first_name ?? ''} ${member.player.last_name ?? ''}`.trim() || 'this player';
+            return (
+              <Reveal key={member.id} staggerIndex={Math.min(i, 10)}>
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <PlayerRowPlate
+                      firstName={member.player.first_name ?? ''}
+                      lastName={member.player.last_name ?? ''}
+                      jerseyNumber={member.jersey_number ?? undefined}
+                      position={member.player.primary_position ?? undefined}
+                      stats={buildWallStats(aggregates[member.player.id], member.player.id === opsLeaderId)}
+                      onClick={() => onSelect(member.player.id)}
+                    />
+                  </div>
+                  <RosterRowMenu
+                    playerId={member.player.id}
+                    playerName={playerName}
+                    jerseyNumber={member.jersey_number}
+                    position={member.player.primary_position}
+                    onAssign={onAssignPlayer}
+                    onRemove={onRemoveMember}
+                  />
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -209,8 +240,18 @@ function groupByDevelopment(members: RosterBoardMember[]): Record<string, Roster
   for (const c of DEV_BOARD_COLUMNS) groups[c.key] = [];
   for (const m of members) {
     const hasData = (m.aggregates?.total_sessions ?? 0) > 0;
+    // A player with no captured sessions genuinely has "Needs Data" — but a
+    // player WITH real (box-score-canonical) sessions and no computed trend
+    // signal is not "needs data", they're just untrended. Bucketing them into
+    // "no-data" was dumping every box-score-tracked player there regardless
+    // of how much real performance data existed (#roster-stat-staleness).
+    // "Holding Steady" is the honest default absent a trend signal.
+    if (!hasData) {
+      groups['no-data']!.push(m);
+      continue;
+    }
     const trend = m.aggregates?.recent_trend ?? null;
-    const key = !hasData || trend == null ? 'no-data' : (groups[trend] ? trend : 'no-data');
+    const key = trend && groups[trend] ? trend : 'stable';
     groups[key]!.push(m);
   }
   return groups;
@@ -230,10 +271,13 @@ function TriageColumn({
   label,
   members,
   onSelect,
+  renderTrailing,
 }: {
   label: string;
   members: RosterBoardMember[];
   onSelect: (playerId: string) => void;
+  /** Optional per-row trailing content (e.g. the pending column's Approve/Decline). */
+  renderTrailing?: (member: RosterBoardMember) => ReactNode;
 }) {
   return (
     <PaperCard className="flex flex-col p-4">
@@ -248,14 +292,19 @@ function TriageColumn({
         <div className="flex flex-col">
           {members.map((m, i) => (
             <Reveal key={m.memberId} staggerIndex={Math.min(i, 10)}>
-              <PlayerRowPlate
-                firstName={m.firstName ?? ''}
-                lastName={m.lastName ?? ''}
-                jerseyNumber={m.jerseyNumber ?? undefined}
-                position={m.primaryPosition ?? undefined}
-                stats={boardRowStats(m)}
-                onClick={() => onSelect(m.playerId)}
-              />
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <PlayerRowPlate
+                    firstName={m.firstName ?? ''}
+                    lastName={m.lastName ?? ''}
+                    jerseyNumber={m.jerseyNumber ?? undefined}
+                    position={m.primaryPosition ?? undefined}
+                    stats={boardRowStats(m)}
+                    onClick={() => onSelect(m.playerId)}
+                  />
+                </div>
+                {renderTrailing ? renderTrailing(m) : null}
+              </div>
             </Reveal>
           ))}
         </div>
@@ -268,15 +317,23 @@ function TriageBoard({
   columns,
   groups,
   onSelect,
+  renderTrailing,
 }: {
   columns: { key: string; label: string }[];
   groups: Record<string, RosterBoardMember[]>;
   onSelect: (playerId: string) => void;
+  renderTrailing?: (columnKey: string, member: RosterBoardMember) => ReactNode;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {columns.map((c) => (
-        <TriageColumn key={c.key} label={c.label} members={groups[c.key] ?? []} onSelect={onSelect} />
+        <TriageColumn
+          key={c.key}
+          label={c.label}
+          members={groups[c.key] ?? []}
+          onSelect={onSelect}
+          renderTrailing={renderTrailing ? (m) => renderTrailing(c.key, m) : undefined}
+        />
       ))}
     </div>
   );
@@ -316,9 +373,30 @@ export interface RosterFairwayProps {
   // handlers
   onSelectPlayer: (playerId: string) => void;
   onExport: () => void;
+  // roster mutations (removePlayerFromTeam / assignPlayerToTeam / pending approve-reject)
+  onRemoveMember: (playerId: string, playerName: string) => Promise<RosterActionOutcome>;
+  onApproveMember: (memberId: string) => Promise<RosterActionOutcome>;
+  onRejectMember: (memberId: string) => Promise<RosterActionOutcome>;
+  onAssignPlayer: (input: {
+    playerId: string;
+    jerseyNumber: number | null;
+    position: string | null;
+  }) => Promise<RosterActionOutcome>;
+  onSearchPlayers: (query: string) => Promise<{ success: boolean; data?: AssignablePlayerResult[]; error?: string }>;
+  showAssignModal: boolean;
+  onOpenAssignModal: () => void;
+  onCloseAssignModal: () => void;
   // lineup (types borrowed from LineupBuilder)
+  teamId: string | null;
   lineupRoster: LineupProps['roster'];
   onSaveLineup: LineupProps['onSave'];
+  editingLineup: { id: string; name: string; positions: LineupProps['initialLineup'] } | null;
+  // Matches SavedLineupsPanel's onEdit — bare {order, playerId} rows (what
+  // getTeamLineups returns); RosterClient hydrates these into full LineupSlot
+  // objects (with player details) before storing them as `editingLineup`.
+  onEditLineup: (lineup: { id: string; name: string; positions: SavedLineupSlot[] }) => void;
+  onNewLineup: () => void;
+  lineupsRefreshKey: number;
   // invite modal
   onInvite: () => void;
   showInviteModal: boolean;
@@ -362,8 +440,21 @@ export function RosterFairway(props: RosterFairwayProps) {
     aggregatesWarning,
     onSelectPlayer,
     onExport,
+    onRemoveMember,
+    onApproveMember,
+    onRejectMember,
+    onAssignPlayer,
+    onSearchPlayers,
+    showAssignModal,
+    onOpenAssignModal,
+    onCloseAssignModal,
+    teamId,
     lineupRoster,
     onSaveLineup,
+    editingLineup,
+    onEditLineup,
+    onNewLineup,
+    lineupsRefreshKey,
     onInvite,
     showInviteModal,
     onCloseInvite,
@@ -387,9 +478,14 @@ export function RosterFairway(props: RosterFairwayProps) {
         title="Roster"
         ink="team"
         actions={
-          <Button variant="primary" size="sm" leftIcon={<UserPlus className="h-4 w-4" />} onClick={onInvite}>
-            Invite players
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={onOpenAssignModal}>
+              Add existing player
+            </Button>
+            <Button variant="primary" size="sm" leftIcon={<UserPlus className="h-4 w-4" />} onClick={onInvite}>
+              Invite players
+            </Button>
+          </div>
         }
       >
         <div className="mt-1">
@@ -413,8 +509,30 @@ export function RosterFairway(props: RosterFairwayProps) {
       )}
 
       {activeView === 'lineup' ? (
-        <div className="mt-6">
-          <LineupBuilder roster={lineupRoster} onSave={onSaveLineup} />
+        <div className="mt-6 space-y-6">
+          <SavedLineupsPanel
+            teamId={teamId}
+            refreshKey={lineupsRefreshKey}
+            editingLineupId={editingLineup?.id ?? null}
+            onEdit={onEditLineup}
+          />
+          {editingLineup && (
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary-200 bg-primary-50/60 px-4 py-3">
+              <p className="text-sm text-warm-700">
+                Editing <span className="font-medium text-warm-900">{editingLineup.name}</span>
+              </p>
+              <PlainButton variant="ghost" size="sm" onClick={onNewLineup}>
+                Start a new lineup
+              </PlainButton>
+            </div>
+          )}
+          <LineupBuilder
+            key={editingLineup?.id ?? 'new'}
+            roster={lineupRoster}
+            onSave={onSaveLineup}
+            initialLineup={editingLineup?.positions ?? undefined}
+            initialName={editingLineup?.name}
+          />
         </div>
       ) : (
         <>
@@ -570,11 +688,44 @@ export function RosterFairway(props: RosterFairwayProps) {
                 />
               )
             ) : rosterSurface === 'cards' ? (
-              <RosterWall members={members} aggregates={aggregates} onSelect={onSelectPlayer} />
+              <RosterWall
+                members={members}
+                aggregates={aggregates}
+                onSelect={onSelectPlayer}
+                onAssignPlayer={onAssignPlayer}
+                onRemoveMember={onRemoveMember}
+              />
             ) : rosterSurface === 'position' ? (
               <TriageBoard columns={POSITION_BOARD_COLUMNS} groups={positionGroups} onSelect={onSelectPlayer} />
             ) : rosterSurface === 'status' ? (
-              <TriageBoard columns={STATUS_BOARD_COLUMNS} groups={statusGroups} onSelect={onSelectPlayer} />
+              <TriageBoard
+                columns={STATUS_BOARD_COLUMNS}
+                groups={statusGroups}
+                onSelect={onSelectPlayer}
+                renderTrailing={(columnKey, member) => {
+                  const playerName = `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim() || 'this player';
+                  if (columnKey === 'pending') {
+                    return (
+                      <PendingMemberActions
+                        memberId={member.memberId}
+                        playerName={playerName}
+                        onApprove={onApproveMember}
+                        onReject={onRejectMember}
+                      />
+                    );
+                  }
+                  return (
+                    <RosterRowMenu
+                      playerId={member.playerId}
+                      playerName={playerName}
+                      jerseyNumber={member.jerseyNumber}
+                      position={member.primaryPosition}
+                      onAssign={onAssignPlayer}
+                      onRemove={onRemoveMember}
+                    />
+                  );
+                }}
+              />
             ) : (
               <TriageBoard columns={DEV_BOARD_COLUMNS} groups={developmentGroups} onSelect={onSelectPlayer} />
             )}
@@ -588,6 +739,15 @@ export function RosterFairway(props: RosterFairwayProps) {
           teamName={inviteTeamName}
           coachId={inviteCoachId}
           onClose={onCloseInvite}
+        />
+      )}
+
+      {showAssignModal && (
+        <AssignPlayerModal
+          open={showAssignModal}
+          onClose={onCloseAssignModal}
+          onSearch={onSearchPlayers}
+          onAssign={onAssignPlayer}
         />
       )}
     </div>
