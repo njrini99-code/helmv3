@@ -735,6 +735,7 @@ export function PlayerProfileClient({
                 aria-selected={isActive}
                 aria-controls={`pp-panel-${tab.id}`}
                 id={`pp-tab-${tab.id}`}
+                aria-label={tab.count != null && tab.count > 0 ? `${tab.label} (${tab.count})` : tab.label}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn('flex items-center gap-1.5 whitespace-nowrap rounded-fw-lg px-3 py-2', pressableClass({ ink: 'team' }))}
               >
@@ -1181,6 +1182,7 @@ export function PlayerProfileClient({
                         type="button"
                         onClick={() => setVideoFilter(key)}
                         aria-pressed={active}
+                        aria-label={count > 0 ? `${label} (${count})` : label}
                         className={cn('flex items-center gap-1.5 whitespace-nowrap rounded-fw-md px-3 py-1.5', pressableClass({ ink: 'team' }))}
                       >
                         <InkBadge label={label} tone={active ? 'team' : 'neutral'} variant={active ? 'solid' : 'soft'} />
@@ -1534,10 +1536,13 @@ export function PlayerProfileClient({
                               <InkBadge label={task.priority} tone="neutral" variant={task.priority === 'high' ? 'solid' : 'soft'} />
                             )}
                             <InkBadge
-                              label={isOverdue ? 'Overdue' : task.assignment_status}
+                              label={task.assignment_status}
                               tone={task.assignment_status === 'completed' ? 'team' : 'neutral'}
-                              variant={isOverdue ? 'solid' : 'soft'}
+                              variant="soft"
                             />
+                            {isOverdue && (
+                              <InkBadge label="Overdue" tone="neutral" variant="solid" />
+                            )}
                           </div>
                         </div>
                       </li>

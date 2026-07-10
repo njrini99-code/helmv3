@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { IconUpload, IconCheck, IconRefresh } from '@/components/icons';
+import { IconUpload, IconCheck, IconRefresh, IconWarning } from '@/components/icons';
 import { BoxScoreEntry } from './BoxScoreEntry';
-import { PaperCard } from '@/components/baseball/living-annual';
+import { PaperCard, InkBadge, InkNotice } from '@/components/baseball/living-annual';
 
 interface PlayerRow {
   id: string;
@@ -263,11 +263,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
               className="w-full text-xs font-mono border border-warm-200 rounded-xl p-3 bg-cream-100/82 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y placeholder:text-warm-300"
             />
 
-            {uploadError && (
-              <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-xs text-red-600">
-                {uploadError}
-              </div>
-            )}
+            {uploadError && <InkNotice className="text-xs">{uploadError}</InkNotice>}
 
             <Button
               onClick={handleCSVUpload}
@@ -294,7 +290,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-warm-800">Player Matching Results</h3>
                 {allMatched && (
-                  <span className="flex items-center gap-1.5 text-xs text-primary-600 font-medium">
+                  <span className="flex items-center gap-1.5 text-xs text-grade-plus font-medium">
                     <IconCheck size={14} />
                     All matched — stats saved!
                   </span>
@@ -304,18 +300,20 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
               {/* Matched players */}
               {matched.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-warm-500 mb-2">
-                    ✅ Matched ({matched.length})
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-warm-500 mb-2">
+                    <IconCheck size={13} className="text-grade-plus" aria-hidden />
+                    Matched ({matched.length})
                   </p>
                   <div className="space-y-1.5">
                     {matched.map((m) => (
-                      <div key={m.csvName} className="flex items-center justify-between bg-primary-50 rounded-lg px-3 py-2">
+                      <div
+                        key={m.csvName}
+                        className="flex items-center justify-between rounded-lg border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-2"
+                      >
                         <span className="text-xs text-warm-700 font-mono">{m.csvName}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-primary-700 font-medium">{m.playerName}</span>
-                          <span className="text-eyebrow text-primary-500 bg-primary-100 px-1.5 py-0.5 rounded-full font-annual tabular-nums">
-                            {Math.round(m.confidence * 100)}%
-                          </span>
+                          <span className="text-xs text-warm-700 font-medium">{m.playerName}</span>
+                          <InkBadge label={`${Math.round(m.confidence * 100)}%`} tone="team" />
                         </div>
                       </div>
                     ))}
@@ -326,12 +324,16 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
               {/* Unmatched players — manual resolution */}
               {unmatched.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-warm-500 mb-2">
-                    ⚠️ Unmatched — please resolve ({unmatched.length})
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-warm-500 mb-2">
+                    <IconWarning size={13} className="text-pursuit" aria-hidden />
+                    Unmatched — please resolve ({unmatched.length})
                   </p>
                   <div className="space-y-2">
                     {unmatched.map((u) => (
-                      <div key={u.csvName} className="flex items-center gap-3 bg-amber-50 rounded-lg px-3 py-2">
+                      <div
+                        key={u.csvName}
+                        className="flex items-center gap-3 rounded-lg border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-2"
+                      >
                         <span className="text-xs text-warm-700 font-mono flex-1 truncate">{u.csvName}</span>
                         <span className="text-warm-400 text-xs">→</span>
                         <Select

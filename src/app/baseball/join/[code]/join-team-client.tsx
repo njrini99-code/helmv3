@@ -6,10 +6,9 @@ import { processTeamInvitation, joinTeamByCode } from '@/app/baseball/actions/te
 import Image from 'next/image';
 import { m, useReducedMotion } from 'framer-motion';
 import { IconCheck, IconUsers, IconUser, IconArrowLeft } from '@/components/icons';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { InlineNotice } from '@/components/fairway';
-import { PaperCard, HairlineRule, stampPress, inkBleed } from '@/components/baseball/living-annual';
+import { PaperCard, HairlineRule, InkBadge, stampPress, inkBleed } from '@/components/baseball/living-annual';
 
 // ============================================================================
 // JOIN SEAL — the ceremony object (island-join-ceremony packet).
@@ -176,17 +175,21 @@ export function JoinTeamClient({
           {team.season && (
             <p className="text-sm text-warm-500 mt-1">{team.season}</p>
           )}
-          {/* Team type badge */}
+          {/* Team type badge — ink tone, not a raw rainbow color map: green
+              for the player's own team, clay for the recruiting-destination
+              levels (college/JUCO), graphite for everything else. */}
           <div className="mt-3">
-            <span className={cn(
-              "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium",
-              team.teamType === 'college' && "bg-blue-100 text-blue-700",
-              team.teamType === 'juco' && "bg-purple-100 text-purple-700",
-              team.teamType === 'high_school' && "bg-amber-100 text-amber-700",
-              team.teamType === 'showcase' && "bg-primary-100 text-primary-700"
-            )}>
-              {team.teamType.replace('_', ' ').toUpperCase()} TEAM
-            </span>
+            <InkBadge
+              label={`${team.teamType.replace('_', ' ').toUpperCase()} TEAM`}
+              tone={
+                team.teamType === 'high_school'
+                  ? 'team'
+                  : team.teamType === 'college' || team.teamType === 'juco'
+                    ? 'pursuit'
+                    : 'neutral'
+              }
+              variant="solid"
+            />
           </div>
         </div>
 

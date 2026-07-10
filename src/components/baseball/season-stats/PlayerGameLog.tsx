@@ -7,7 +7,7 @@ import { IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 import { formatDate } from '@/lib/baseball/format-date';
-import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
+import { PaperCard, EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
 
 type BattingWithGame = BaseballBoxScoreBatting & { game: Partial<BaseballGame> };
 type PitchingWithGame = BaseballBoxScorePitching & { game: Partial<BaseballGame> };
@@ -20,10 +20,29 @@ interface PlayerGameLogProps {
 type LogTab = 'batting' | 'pitching';
 type GameTypeFilter = 'all' | 'game' | 'scrimmage';
 
+/** Game-type tag tone — the scrimmage exception reads neutral graphite (same
+ *  ink BoxScoreView's `<InkBadge label="Scrimmage" tone="neutral" />` stamp
+ *  uses); an official game is the normal case and reads team-green. */
+function gameTypeTone(gameType: string | undefined): 'team' | 'neutral' {
+  return gameType === 'scrimmage' ? 'neutral' : 'team';
+}
+
+/** Mirrors BoxScoreView's `decisionTone`: a team achievement (win / save /
+ *  hold) reads team-green, everything else (loss / blown save / no-decision)
+ *  stays quiet neutral graphite — never the old red/blue rainbow. Duplicated
+ *  locally (not imported) since BoxScoreView doesn't export it; keep this in
+ *  sync with BoxScoreView.tsx's mapping if it ever changes. */
+function decisionTone(result: BaseballBoxScorePitching['result']): 'team' | 'neutral' {
+  return result === 'W' || result === 'S' || result === 'H' ? 'team' : 'neutral';
+}
+
 function fmtDate(dateStr: string | undefined) {
   if (!dateStr) return '—';
-  // Anchor at local midnight so date-only strings don't shift a day west of UTC.
-  return formatDate(dateStr + 'T00:00:00');
+  // formatDate() anchors bare YYYY-MM-DD strings at local midnight
+  // internally, so no hand-anchoring needed here. Disable the relative
+  // "Today"/"Yesterday" label — every row in this calendar table must read
+  // as a real date, not a relative one.
+  return formatDate(dateStr, { relative: false });
 }
 
 function fmtAvg(h: number, ab: number) {
@@ -171,11 +190,10 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                         ) : (row.game?.opponent_name ?? 'Unknown')}
                       </td>
                       <td className="px-2 py-2 text-center">
-                        <span className={`text-eyebrow font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                          row.game?.game_type === 'scrimmage' ? 'text-purple-600 bg-purple-50' : 'text-primary-600 bg-primary-50'
-                        }`}>
-                          {row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
-                        </span>
+                        <InkBadge
+                          label={row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
+                          tone={gameTypeTone(row.game?.game_type)}
+                        />
                       </td>
                       <td className="px-2 py-2 text-center font-annual tabular-nums">{row.ab}</td>
                       <td className="px-2 py-2 text-center font-annual tabular-nums">{row.r}</td>
@@ -263,11 +281,10 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                       ) : (row.game?.opponent_name ?? 'Unknown')}
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <span className={`text-eyebrow font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                        row.game?.game_type === 'scrimmage' ? 'text-purple-600 bg-purple-50' : 'text-primary-600 bg-primary-50'
-                      }`}>
-                        {row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
-                      </span>
+                      <InkBadge
+                        label={row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
+                        tone={gameTypeTone(row.game?.game_type)}
+                      />
                     </td>
                     <td className="px-2 py-2 text-center font-annual tabular-nums">{fmtIP(row.ip)}</td>
                     <td className="px-2 py-2 text-center font-annual tabular-nums">{row.h}</td>
@@ -283,14 +300,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     </td>
                     <td className="px-2 py-2 text-center">
                       {row.result && (
-                        <span className={`px-1.5 py-0.5 rounded text-eyebrow font-bold ${
-                          row.result === 'W' ? 'bg-primary-100 text-primary-700' :
-                          row.result === 'L' ? 'bg-red-100 text-red-700' :
-                          row.result === 'S' ? 'bg-blue-100 text-blue-700' :
-                          'bg-warm-100 text-warm-500'
-                        }`}>
-                          {row.result}
-                        </span>
+                        <InkBadge label={row.result} tone={decisionTone(row.result)} />
                       )}
                     </td>
                   </tr>

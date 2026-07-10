@@ -23,7 +23,19 @@ export interface FormatDateOptions {
 
 export function formatDate(date: string | number | Date, opts: FormatDateOptions = {}): string {
   const { relative = true } = opts;
-  const d = date instanceof Date ? date : new Date(date);
+  // A bare `YYYY-MM-DD` string — the exact shape every date-only DB column
+  // (game_date, session_date, expense_date, ...) hands back — has no
+  // timezone offset, so the native `Date` parser treats it as UTC midnight.
+  // West of UTC that reads as the PREVIOUS calendar day. Anchor it at local
+  // midnight here, once, so every caller gets the correct day without having
+  // to remember to hand-append 'T00:00:00' themselves (a callsite that
+  // forgets to is exactly how this bug keeps recurring). A string that
+  // already carries a time/offset (e.g. a caller's own `+ 'T00:00:00'`, or a
+  // full ISO timestamp) doesn't match the bare-date shape below and passes
+  // through unchanged.
+  const anchored =
+    typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
+  const d = anchored instanceof Date ? anchored : new Date(anchored);
   if (Number.isNaN(d.getTime())) return '—';
 
   if (relative) {

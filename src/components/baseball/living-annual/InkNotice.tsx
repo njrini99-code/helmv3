@@ -20,6 +20,21 @@
  * submit button. Defaults to the `pursuit` (clay) lane since every current
  * use is a form/account error; pass `ink="team"` for a green-lane notice.
  * No hooks — safe in a server component.
+ *
+ * The `pursuit` (error) lane reads `--notice-error-ink`, NOT `--pursuit-ink`
+ * directly (src/styles/baseball-living-annual.css) — three "SAGE & CREAM"
+ * entry scopes this component mounts inside (src/styles/baseball-auth.css's
+ * `.baseball-auth-panel`, and the onboarding-entry.css files under both
+ * baseball/(onboarding)/coach-onboarding and .../player, each scoping
+ * `.entry-onboarding-scope`) redefine --pursuit-ink AND --grade-plus
+ * to the identical `--fl-sage-deep`, so an error reading --pursuit-ink would
+ * render in the same sage as any success indicator on those same surfaces
+ * (e.g. forgot-password's `text-grade-plus` CheckCircle2) — indistinguishable.
+ * --notice-error-ink is deliberately independent of --pursuit-ink so none of
+ * those three scopes' overrides touch it; the error strip stays clay/oxide
+ * (never sage, never raw red) everywhere. The `team` lane is unaffected by
+ * this and still reads `--grade-plus` directly — success IS meant to sage-ify
+ * under those scopes, only the error/success collision is the bug.
  */
 import type { ReactNode } from 'react';
 import { AlertCircle, type LucideIcon } from 'lucide-react';
@@ -38,7 +53,12 @@ export interface InkNoticeProps {
 }
 
 const INK: Record<NonNullable<InkNoticeProps['ink']>, { text: string; bar: string }> = {
-  pursuit: { text: 'text-pursuit', bar: 'bg-pursuit' },
+  // Reads the dedicated --notice-error-ink var (see file header) instead of
+  // the shared `text-pursuit`/`bg-pursuit` utilities — those resolve to
+  // --pursuit-ink, which the SAGE & CREAM entry scopes collapse onto the
+  // same value as --grade-plus. Arbitrary-value classes, not a new Tailwind
+  // color, matching this file's existing `bg-[var(--paper)]` pattern below.
+  pursuit: { text: 'text-[color:var(--notice-error-ink)]', bar: 'bg-[var(--notice-error-ink)]' },
   team: { text: 'text-grade-plus', bar: 'bg-grade-plus' },
 };
 

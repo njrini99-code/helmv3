@@ -379,13 +379,13 @@ function PositionEmptyMarker({
         'pointer-events-auto',
         isActive
           ? [
-              'bg-warm-100/90 backdrop-blur-sm',
+              'bg-[var(--paper)]',
               'text-warm-700',
               'border-warm-400',
               'shadow-md'
             ]
           : [
-              'bg-[color:var(--paper)]/70 backdrop-blur-sm',
+              'bg-[var(--paper-canvas)]',
               'text-warm-400',
               'border-warm-200/60',
               'hover:bg-cream-100/68',

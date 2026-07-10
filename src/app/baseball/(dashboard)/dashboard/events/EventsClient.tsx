@@ -562,17 +562,20 @@ export default function EventsPage() {
         <div
           role="presentation"
           className="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/50 backdrop-blur-sm p-4"
-          onClick={() => setShowCreateModal(false)}
+          onClick={(e) => {
+            // Close only on a true backdrop click — clicks inside the dialog
+            // bubble here with a different target, so no stopPropagation is
+            // needed on the content (which would also swallow the keydown
+            // path useFocusTrap's document listener relies on).
+            if (e.target === e.currentTarget) setShowCreateModal(false);
+          }}
         >
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing the dialog */}
           <div
             ref={createModalRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-event-heading"
             className="w-full max-w-lg"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           >
             <PaperCard className="shadow-xl max-h-[90vh] overflow-y-auto" grain={false}>
               <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-cream-50">
@@ -686,17 +689,17 @@ export default function EventsPage() {
         <div
           role="presentation"
           className="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/50 backdrop-blur-sm p-4"
-          onClick={cancelDeleteEvent}
+          onClick={(e) => {
+            // Backdrop-only close — same pattern as the create-event modal.
+            if (e.target === e.currentTarget) cancelDeleteEvent();
+          }}
         >
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing the dialog */}
           <div
             ref={deleteDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-event-heading"
             className="w-full max-w-sm"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           >
             <PaperCard className="p-6 shadow-xl" grain={false}>
               <h2 id="delete-event-heading" className="font-annual text-h3 font-semibold text-text-primary">

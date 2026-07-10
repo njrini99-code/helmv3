@@ -529,14 +529,15 @@ function OverviewTab({
   // The passport measurable stack — every field always renders; a missing
   // measurable ghosts at 40% instead of vanishing, so the profile literally
   // "fills in" as the player records more of themselves (spec north-star #1).
-  // Pitch/exit velo + 60 time are the recruiting-grade measurables and wear
-  // the `verified` ON THE RECORD check when present.
+  // These are all self-reported by the player, so none of them wear the
+  // `verified` ON THE RECORD check — presence isn't verification. That check
+  // is reserved for a real verification signal (e.g. combine/coach-attested
+  // data) once one exists.
   const measurables: Array<{
     label: string;
     value: string;
     unit?: string;
     ghost: boolean;
-    verified?: boolean;
   }> = [
     {
       label: 'Height',
@@ -551,21 +552,18 @@ function OverviewTab({
       value: player.pitch_velo != null ? String(player.pitch_velo) : '',
       unit: player.pitch_velo != null ? 'MPH' : undefined,
       ghost: player.pitch_velo == null,
-      verified: player.pitch_velo != null,
     },
     {
       label: 'Exit Velo',
       value: player.exit_velo != null ? String(player.exit_velo) : '',
       unit: player.exit_velo != null ? 'MPH' : undefined,
       ghost: player.exit_velo == null,
-      verified: player.exit_velo != null,
     },
     {
       label: '60 Time',
       value: player.sixty_time != null ? String(player.sixty_time) : '',
       unit: player.sixty_time != null ? 'SEC' : undefined,
       ghost: player.sixty_time == null,
-      verified: player.sixty_time != null,
     },
     { label: 'GPA', value: player.gpa != null ? player.gpa.toFixed(2) : '', ghost: player.gpa == null },
     { label: 'SAT', value: player.sat_score != null ? player.sat_score.toString() : '', ghost: player.sat_score == null },
@@ -600,7 +598,6 @@ function OverviewTab({
                   value={m.ghost ? '' : m.value}
                   unit={m.unit}
                   ghost={m.ghost}
-                  verified={m.verified}
                   ink="pursuit"
                   size="row"
                 />
@@ -833,7 +830,6 @@ function StatsTab({ player }: { player: PlayerData }) {
             value={player.pitch_velo != null ? String(player.pitch_velo) : ''}
             unit={player.pitch_velo != null ? 'MPH' : undefined}
             ghost={player.pitch_velo == null}
-            verified={player.pitch_velo != null}
             ink="pursuit"
             size="row"
           />
@@ -842,7 +838,6 @@ function StatsTab({ player }: { player: PlayerData }) {
             value={player.exit_velo != null ? String(player.exit_velo) : ''}
             unit={player.exit_velo != null ? 'MPH' : undefined}
             ghost={player.exit_velo == null}
-            verified={player.exit_velo != null}
             ink="pursuit"
             size="row"
           />
@@ -851,7 +846,6 @@ function StatsTab({ player }: { player: PlayerData }) {
             value={player.sixty_time != null ? String(player.sixty_time) : ''}
             unit={player.sixty_time != null ? 'SEC' : undefined}
             ghost={player.sixty_time == null}
-            verified={player.sixty_time != null}
             ink="pursuit"
             size="row"
           />

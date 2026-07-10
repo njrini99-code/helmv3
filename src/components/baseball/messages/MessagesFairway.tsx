@@ -29,10 +29,25 @@ import { InstrumentPanel, Skeleton } from '@/components/fairway';
 
 // `4rem` (64px) is the AppShell top bar's fixed height on every breakpoint
 // (matches ConversationClient.tsx's sibling `100dvh-4rem` budget). The
-// safe-area terms additionally reserve the notch/home-indicator insets on
-// iOS so the two-pane split never renders under them.
+// safe-area-inset-top term additionally reserves the notch inset so the
+// two-pane split never renders under it.
+//
+// safe-area-inset-BOTTOM is deliberately NOT subtracted here — it's owned
+// solely by the composer's own bottom padding instead (see
+// MessagesClient.tsx's thread-pane <form>:
+// `pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4`). On-screen math
+// for why owning it twice was a bug: with this shell height, `100dvh -
+// shellHeight = 4rem + insetTop + insetBottom`, i.e. the shell's OWN
+// bottom edge already sits exactly `insetBottom` above the physical
+// screen edge before the composer does anything. If the shell also
+// subtracted insetBottom (as it used to), the composer's identical
+// `env(safe-area-inset-bottom)` padding then reserved that same strip a
+// second time — eating an extra `insetBottom` worth of height out of the
+// already-safe shell and shrinking the message-scroll area for no reason
+// on notched phones. Removing the term here so only the composer reserves
+// it means the inset is accounted for exactly once.
 const SHELL =
-  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] overflow-hidden bg-canvas';
+  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] overflow-hidden bg-canvas';
 
 /** The rail's masthead — kept byte-identical to `MessagesClient.tsx`'s
  *  `RAIL_TITLE` so the loading -> loaded swap never changes the title. */

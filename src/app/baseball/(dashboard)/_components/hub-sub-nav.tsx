@@ -170,7 +170,14 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
         aria-label={ariaLabel}
         data-slot="hub-sub-nav"
         className={cn(
-          'sticky top-0 z-20 w-full',
+          // Sticky beneath the glass top bar, which is present at EVERY
+          // breakpoint (not desktop-only) — a bare `top-0` here would collide
+          // with it on mobile. `--golf-mobile-header-offset` (set on the
+          // shared AppShell content column = topbar height + safe-area-inset)
+          // is the same var the golf FairwayHubSubNav/ViewAsBanner siblings
+          // key off of; `md:top-16` (passed by BaseballFairwayShell via
+          // `className`) overrides it for the fixed-height desktop top bar.
+          'sticky top-[var(--golf-mobile-header-offset)] z-20 w-full',
           'border-b border-[color:var(--hairline)] bg-[color:var(--paper)]/85 backdrop-blur-xl',
           className,
         )}

@@ -71,6 +71,10 @@ function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
     );
   }
 
+  // stat.session_date is a bare `YYYY-MM-DD` DB date, not a timestamp;
+  // formatDate() anchors bare-date strings at local midnight internally
+  // (src/lib/baseball/format-date.ts), so this can't shift a day west of
+  // UTC — no hand-anchoring needed at either call site below.
   return (
     <div className="border-b border-[color:var(--hairline)] last:border-b-0">
       <Button

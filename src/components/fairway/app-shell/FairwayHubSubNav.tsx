@@ -107,14 +107,21 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
     <nav
       aria-label={ariaLabel}
       data-slot="fairway-hub-subnav"
-      // Sticky beneath the glass top bar (top-16 = the top bar's 4rem) so the
-      // strip stays reachable while a long leaf page scrolls. An opaque
-      // `bg-canvas` fill (not the previous `/80 backdrop-blur-xl`, which was a
-      // no-op — this element never had scrolled content behind it while
-      // static) — now that it sticks, the fill needs to be solid so it fully
-      // occludes content scrolling underneath rather than reading as a glass
-      // surface floating over it.
-      className={cn('sticky top-16 z-raised w-full border-b border-border-subtle bg-canvas', className)}
+      // Sticky beneath the glass top bar so the strip stays reachable while a
+      // long leaf page scrolls. `--golf-mobile-header-offset` is set on the
+      // shared AppShell content column (topbar height + safe-area-inset) —
+      // the same var its sibling sticky headers (ViewAsBanner, the
+      // new-round/continue-round in-progress bars) key off of, so this strip
+      // never collides with the top bar under a notch/safe-area on mobile.
+      // An opaque `bg-canvas` fill (not the previous `/80 backdrop-blur-xl`,
+      // which was a no-op — this element never had scrolled content behind it
+      // while static) — now that it sticks, the fill needs to be solid so it
+      // fully occludes content scrolling underneath rather than reading as a
+      // glass surface floating over it.
+      className={cn(
+        'sticky top-[var(--golf-mobile-header-offset)] z-raised w-full border-b border-border-subtle bg-canvas',
+        className,
+      )}
     >
       {/* A real navigation list of route links — NOT a tablist (WCAG 2.2 4.1.2). */}
       <ul className="flex items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

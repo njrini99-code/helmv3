@@ -29,6 +29,7 @@
 
 import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import {
@@ -276,10 +277,27 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion() ?? false;
 
+  // Auto-scroll to bottom on new messages — ONLY when near the bottom, so a
+  // reply from the other side doesn't yank someone away from scrollback
+  // they're reading. Honors prefers-reduced-motion (instant jump instead of
+  // an animated scroll). Ported from the (now-removed, orphaned-by-this-
+  // rebuild) legacy ChatWindow's near-bottom check
+  // (scrollTop + clientHeight >= scrollHeight - 100).
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
+    const container = messagesContainerRef.current;
+    if (!container) {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+      return;
+    }
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }
+  }, [messages, reduceMotion]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -321,7 +339,10 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-surface px-4 py-5 sm:px-5">
+      <div
+        ref={messagesContainerRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-surface px-4 py-5 sm:px-5"
+      >
         {loading ? (
           <div className="space-y-3 py-8">
             <div className="h-4 w-3/4 animate-pulse rounded bg-surface-sunken" />

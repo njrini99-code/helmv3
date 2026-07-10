@@ -38,6 +38,22 @@
   --pursuit-ink:  #C2703D;   /* infield-clay terracotta — recruiting & urgency */
   --pursuit-deep: #7A2E22;   /* oxblood — seals & stamps only */
 
+  /* ---- Dedicated error ink (NOT an alias of --pursuit-ink) ----
+     The "SAGE & CREAM" entry scopes (src/styles/baseball-auth.css's
+     `.baseball-auth-panel`, plus the onboarding-entry.css files under
+     baseball/(onboarding)/coach-onboarding and .../player, each scoping
+     `.entry-onboarding-scope`) redefine --grade-plus AND --pursuit-ink to the
+     SAME `--fl-sage-deep`, so anything reading --pursuit-ink for an error on
+     those surfaces renders identically to a --grade-plus success indicator —
+     error and success become indistinguishable. `<InkNotice>`'s error/`pursuit`
+     variant reads THIS var instead of --pursuit-ink specifically so it keeps
+     reading as clay/oxide (never sage, never raw red) under every scope —
+     none of the three recolor files list --notice-error-ink among the vars
+     they override, and it must stay that way. Same literal as --pursuit-ink
+     by design (byte-identical outside the recolor scopes); only the name is
+     independent so it survives scoping. */
+  --notice-error-ink: #C2703D;
+
   /* ---- Grade ramp (20–80 scouting scale) ---- */
   --grade-low:    #B4573F;   /* 20–40 muted clay-red */
   --grade-avg:    #6B655B;   /* 45–55 ink-neutral */

@@ -122,7 +122,7 @@ export function PositionPlayerPill({
       className={cn(
         // Base styles
         'relative flex items-center gap-2 px-2.5 py-1.5 rounded-full',
-        'border backdrop-blur-md',
+        'border',
         'transition-all duration-300 cursor-pointer',
         'pointer-events-auto',
 
@@ -131,9 +131,6 @@ export function PositionPlayerPill({
         colors.gradient,
         colors.bg,
         colors.border,
-
-        // Shadow and glow
-        'shadow-glass-sm',
 
         // Hover glow effect
         'hover:shadow-lg',
@@ -253,14 +250,10 @@ export function PositionPlayerStack({
         'pointer-events-auto',
         expanded && [
           'gap-2 p-3',
-          'bg-cream-50/95 backdrop-blur-xl',
+          'bg-[var(--paper)]',
           'rounded-2xl',
-          'shadow-glass-lg',
-          'border border-warm-200/55',
-          // Ambient glow when expanded
-          'before:absolute before:inset-0 before:-z-10',
-          'before:rounded-2xl before:blur-xl',
-          'before:bg-primary-500/5'
+          'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06)]',
+          'border border-[color:var(--hairline)]',
         ],
         !expanded && 'gap-1'
       )}
@@ -314,7 +307,6 @@ export function PositionPlayerStack({
             'w-7 h-7 rounded-full',
             'bg-gradient-to-br from-warm-100/90 to-warm-50/70',
             'border border-warm-200/60',
-            'backdrop-blur-sm',
             'text-micro font-bold text-warm-600',
             'transition-all duration-200',
             'hover:bg-warm-100 active:bg-warm-200 hover:border-warm-300/80',
