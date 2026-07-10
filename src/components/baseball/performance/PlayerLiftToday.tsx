@@ -351,12 +351,15 @@ export default function PlayerLiftToday({
                         {s.estimated_minutes ? ` · ~${s.estimated_minutes} min` : ''}
                       </p>
                       {coachNote && (
-                        <p className="mt-1.5 rounded-lg border-l-2 border-amber-300 bg-amber-50/70 px-2.5 py-1.5 text-sm text-warm-700">
-                          <span className="font-medium text-amber-700">
-                            Coach adjusted this:
-                          </span>{' '}
-                          {coachNote}
-                        </p>
+                        <div className="mt-1.5 rounded-lg bg-amber-50/70 px-2.5 py-1.5">
+                          <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-amber-300" />
+                          <p className="text-sm text-warm-700">
+                            <span className="font-medium text-amber-700">
+                              Coach adjusted this:
+                            </span>{' '}
+                            {coachNote}
+                          </p>
+                        </div>
                       )}
                     </div>
                     <IconChevronRight

@@ -2,6 +2,7 @@
 
 import { startTransition, useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/golf';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
@@ -20,9 +21,6 @@ import {
   DrawerContent,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { FairwaySaveRoundModal } from '@/components/fairway/pages/rounds-new/FairwaySaveRoundModal';
-import { FairwayRoundSubmitOverlay } from '@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay';
-import { FairwayRoundSummarySheet } from '@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
@@ -30,6 +28,20 @@ import { useToast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+
+// Round-completion-only overlays — never rendered until the round is
+// finished, so keep them out of the initial hole-entry bundle (perf audit
+// 2026-07-09, bundle finding 4). Same no-ssr-flag, .then((m) => m.X) pattern
+// as FairwayCalendar.tsx's CalendarFeedManager.
+const FairwaySaveRoundModal = dynamic(
+  () => import('@/components/fairway/pages/rounds-new/FairwaySaveRoundModal').then((m) => m.FairwaySaveRoundModal),
+);
+const FairwayRoundSubmitOverlay = dynamic(
+  () => import('@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay').then((m) => m.FairwayRoundSubmitOverlay),
+);
+const FairwayRoundSummarySheet = dynamic(
+  () => import('@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet').then((m) => m.FairwayRoundSummarySheet),
+);
 
 type Hole = RoundHole;
 

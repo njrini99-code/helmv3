@@ -245,7 +245,7 @@ export function AthleteRosterClient({ athletes, assignments, orgId, canEdit, loa
                 key={athlete.id}
                 initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: prefersReducedMotion ? 0 : i * 0.04, ease: [0.25, 0.46, 0.45, 0.94] }}
+                transition={{ duration: 0.2, delay: prefersReducedMotion ? 0 : Math.min(i, 5) * 0.04, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
                 <AthleteProfileCard athlete={athlete} latestCheckin={null} />
               </motion.div>

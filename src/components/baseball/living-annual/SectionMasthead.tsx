@@ -36,9 +36,13 @@ export function SectionMasthead({ eyebrow, title, ink = 'team', actions, childre
     <header className={cn('flex flex-col gap-3', className)}>
       {eyebrow ? <Eyebrow ink={ink}>{eyebrow}</Eyebrow> : null}
 
-      <div className="flex items-start justify-between gap-4">
-        <h1 className="font-annual text-h1 font-semibold leading-tight text-text-primary md:text-display">{title}</h1>
-        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <h1 className="min-w-0 flex-1 font-annual text-h1 font-semibold leading-tight text-text-primary md:text-display">
+          {title}
+        </h1>
+        {actions ? (
+          <div className="flex basis-full flex-wrap items-center gap-2 sm:basis-auto sm:shrink-0">{actions}</div>
+        ) : null}
       </div>
 
       {/* The green (team) / clay (pursuit) accent rule — the per-page green. */}

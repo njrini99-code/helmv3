@@ -20,7 +20,7 @@
 // Integration: mounted in BaseballFairwayShell's top bar actions slot.
 // =============================================================================
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useState, useEffect, useTransition, useCallback, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
 import { IconBell } from '@/components/icons';
@@ -135,12 +135,17 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<BaseballNotification[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // Gates the poll while the tab/app is backgrounded — ported from golf's
+  // notification-badge-context.tsx (isVisibleRef + visibilitychange), which
+  // already skips fetches while hidden instead of polling every 60s regardless.
+  const isVisibleRef = useRef(true);
 
   // -------------------------------------------------------------------------
-  // Poll unread count every 60 s
+  // Poll unread count every 60 s (skipped while the tab is hidden)
   // -------------------------------------------------------------------------
 
   const refreshCount = useCallback(async () => {
+    if (!isVisibleRef.current) return;
     try {
       const result = await getUnreadNotificationCount();
       if (result.success && result.count !== undefined) {
@@ -152,9 +157,19 @@ export function NotificationBell({ className }: NotificationBellProps) {
   }, []);
 
   useEffect(() => {
+    function handleVisibilityChange() {
+      isVisibleRef.current = !document.hidden;
+      if (!document.hidden) void refreshCount(); // Refetch when tab becomes visible
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     void refreshCount();
     const interval = setInterval(() => void refreshCount(), POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, [refreshCount]);
 
   // -------------------------------------------------------------------------

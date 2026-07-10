@@ -33,7 +33,8 @@
 // =============================================================================
 
 import * as React from 'react';
-import { type HTMLMotionProps, LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { type HTMLMotionProps, LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -244,7 +245,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
       .join('. ');
 
     return (
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={loadFeatures}>
         <m.div
           ref={ref}
           data-slot="stat-visual-frame"

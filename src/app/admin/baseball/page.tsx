@@ -20,6 +20,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Dateline rule — replaces the retired border-l-2 "key panel" left-edge
+// stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
+// rule above the card title.
+function KeyPanelRule() {
+  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
+}
+
 function lastSeenLabel(value: string | null) {
   if (!value) return 'never';
   return new Date(value).toLocaleDateString();
@@ -37,9 +44,10 @@ function TeamCommandCard({ team }: { team: TeamRosterInsight }) {
   const topPlayers = team.players.slice(0, 5);
 
   return (
-    <Surface padding="sm" className="h-full border-l-2 border-l-accent-500">
+    <Surface padding="sm" className="h-full">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
+          <KeyPanelRule />
           <Link
             href={`/admin/users?team=${team.teamId}`}
             className="block truncate text-base font-semibold text-warm-900 underline-offset-2 hover:underline"
@@ -162,9 +170,10 @@ async function BaseballBody() {
   return (
     <div className="space-y-6">
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
-        <Surface padding="sm" className="border-l-2 border-l-accent-500">
+        <Surface padding="sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
+              <KeyPanelRule />
               <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Baseball command center</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-normal text-warm-900">
                 Team-by-team, player-by-player visibility

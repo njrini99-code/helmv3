@@ -67,11 +67,14 @@ function GraphiteStat({
   );
 }
 
-// "Key panel" chrome: a 2px helm-green left edge on the structural cards of
-// this page (header, activity, coachhelm) — a chrome constant, not a status
-// signal, so it applies regardless of whether the panel's content is good or
-// bad news.
-const KEY_PANEL = 'border-l-2 border-l-accent-500';
+// "Key panel" chrome: a dateline rule (h-[2px] w-7 rounded-full, helm-green)
+// above the title of the structural cards of this page (header, activity,
+// coachhelm) — a chrome constant, not a status signal, so it applies
+// regardless of whether the panel's content is good or bad news. Replaces
+// the retired border-l-2 left-edge stripe.
+function KeyPanelRule() {
+  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
+}
 
 async function TeamDetailBody({ teamId }: { teamId: string }) {
   const detail = await fetchTeamDetail(teamId);
@@ -115,9 +118,10 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
 
   return (
     <div className="space-y-6">
-      <Surface padding="sm" className={KEY_PANEL}>
+      <Surface padding="sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
+            <KeyPanelRule />
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold text-warm-900">{team.name}</h1>
               <StatusPill tone={HEALTH_TONE[health]} dot size="sm">
@@ -224,7 +228,8 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
         </div>
       </Surface>
 
-      <Surface padding="sm" className={KEY_PANEL}>
+      <Surface padding="sm">
+        <KeyPanelRule />
         <SectionLabel>CoachHelm</SectionLabel>
         <div className="mt-3">
           {coaches.length === 0 || extras.coachhelmInsights === null ? (

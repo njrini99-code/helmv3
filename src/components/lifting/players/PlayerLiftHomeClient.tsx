@@ -125,10 +125,13 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
                     : ''}
                 </p>
                 {todaysSession.status === 'modified' && todaysSession.coach_note && (
-                  <p className="mt-1 rounded-lg border-l-2 border-warning/40 bg-warning/10 px-2.5 py-1.5 text-xs text-warm-600">
-                    <span className="font-medium text-warning">Coach note:</span>{' '}
-                    {todaysSession.coach_note}
-                  </p>
+                  <div className="mt-1 rounded-lg bg-warning/10 px-2.5 py-1.5">
+                    <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-warning/40" />
+                    <p className="text-xs text-warm-600">
+                      <span className="font-medium text-warning">Coach note:</span>{' '}
+                      {todaysSession.coach_note}
+                    </p>
+                  </div>
                 )}
               </div>
               <Link

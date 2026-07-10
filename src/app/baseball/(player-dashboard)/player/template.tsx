@@ -31,7 +31,8 @@
  * preference, and useReducedMotion() collapses this reveal to a faster linear fade.
  */
 
-import { LazyMotion, domAnimation, MotionConfig, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, MotionConfig, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { usePathname } from 'next/navigation';
 
 // --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1); --fw-dur-base = 280ms.
@@ -47,7 +48,7 @@ export default function BaseballPlayerDashboardTemplate({
   // component, which LazyMotion-strict forbids. Non-strict lets them load their own
   // features while this template stays on the tree-shaken `m`.
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <MotionConfig reducedMotion="user">
         <RouteReveal>{children}</RouteReveal>
       </MotionConfig>

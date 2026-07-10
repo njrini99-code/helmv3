@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { isNativeApp } from '@/lib/utils/capacitor';
@@ -43,7 +44,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
     <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

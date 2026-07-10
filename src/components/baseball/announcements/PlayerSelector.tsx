@@ -147,7 +147,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
                       onClick={() => togglePlayer(player.id)}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.02 })}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: Math.min(index, 10) * 0.02 })}
                       whileHover={{ scale: 1.01, x: 2 }}
                       whileTap={{ scale: 0.98 }}
                       className={cn(

@@ -8,6 +8,7 @@
  */
 
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
@@ -39,9 +40,6 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
-import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
-import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
-import { RoundIntelligence } from '@/components/golf/coachhelm/round-review/RoundIntelligence';
 import {
   ViewHeader as FwViewHeader,
   Button as FwButton,
@@ -59,6 +57,46 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+
+// ============================================================================
+// CODE-SPLIT BELOW-THE-FOLD PANELS
+// ============================================================================
+// This route is the heaviest First Load JS in the app (bundle scout finding
+// #3). None of these three render during the initial client render anyway —
+// every render path above `reviewBody` returns early while `isLoading`/`error`/
+// `!round` is true, and `round` only resolves after this page's own fetch
+// effects complete — so splitting them into separate chunks trims the route's
+// initial JS without changing when, whether, or in what order they render.
+// RoundReviewDisplay/RoundStatsComparison/RoundTakeaway/V2ReviewSummary are
+// deliberately left as static imports (out of scope — see task notes).
+const RoundReviewLlmCard = dynamic(
+  () =>
+    import('@/components/golf/coachhelm/v3/RoundReviewLlmCard').then(
+      (mod) => mod.RoundReviewLlmCard,
+    ),
+  {
+    loading: () => (
+      <div className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6">
+        <FwSkeleton className="h-3 w-24 mb-3" />
+        <FwSkeleton className="h-6 w-full" />
+      </div>
+    ),
+  },
+);
+const HoleByHoleShotPaths = dynamic(
+  () =>
+    import('@/components/golf/coachhelm/round-review/HoleByHoleShotPaths').then(
+      (mod) => mod.HoleByHoleShotPaths,
+    ),
+  { loading: () => <FwSkeleton className="h-40 w-full rounded-fw-md" /> },
+);
+const RoundIntelligence = dynamic(
+  () =>
+    import('@/components/golf/coachhelm/round-review/RoundIntelligence').then(
+      (mod) => mod.RoundIntelligence,
+    ),
+  { loading: () => null },
+);
 
 // ============================================================================
 // TYPES

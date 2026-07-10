@@ -176,15 +176,19 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
     );
   }
 
-  // Stat (legacy helper variant): 2px green left border.
+  // Stat (legacy helper variant): retired the baked 2px green left-border
+  // stripe (ACCENT-CARD anti-pattern) — now a flat matte panel, same as the
+  // canonical `flat` variant. Callers that need a tone signal render their
+  // own dateline rule (h-[2px] w-7 rounded-full, tone via ink tokens) above
+  // the card title instead — see `StatCard` below for the composed example.
   if (resolved === 'stat') {
     return (
       <div
         ref={ref}
         className={cn(
-          'bg-white border border-warm-200 border-l-2 border-l-primary-600 rounded-2xl',
+          'bg-white border border-warm-200 rounded-2xl',
           'transition-[box-shadow,border-color] duration-200 ease-out',
-          'hover:shadow-sm hover:border-l-primary-500',
+          'hover:shadow-sm',
           padding === 'lg' ? 'p-6' : paddingClasses[padding],
           className
         )}
@@ -256,6 +260,16 @@ export function StatCard({ className, label, value, trend, icon, suffix, ...prop
     <Card variant="stat" padding="md" className={className} {...props}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
+          {/* Dateline rule — replaces the retired border-l-2 stripe. Tone
+              follows the trend (green up / red down) when one is present,
+              otherwise the neutral brand rule. */}
+          <span
+            aria-hidden
+            className={cn(
+              'mb-1.5 block h-[2px] w-7 rounded-full',
+              resolvedTrend ? (resolvedTrend.positive ? 'bg-primary-600' : 'bg-red-600') : 'bg-primary-600'
+            )}
+          />
           <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
             {label}
           </p>

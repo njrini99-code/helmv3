@@ -23,6 +23,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Dateline rule — replaces the retired border-l-2 "key panel" left-edge
+// stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
+// rule above the card title.
+function KeyPanelRule() {
+  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
+}
+
 async function GolfBody() {
   const tab = await fetchGolfTab();
   const r = tab.rollup.rounds;
@@ -91,7 +98,8 @@ async function GolfBody() {
       {/* CoachHelm engine health — key panel: the AI engine that makes
           CoachHelm worth paying for, so it earns the same 2px green left
           edge as the overview's Feature health rollup. */}
-      <Surface padding="sm" className="border-l-2 border-l-accent-500">
+      <Surface padding="sm">
+        <KeyPanelRule />
         <SectionLabel>CoachHelm engine health</SectionLabel>
         <p className="mt-2 text-sm text-warm-700">
           Last insight generated:{' '}

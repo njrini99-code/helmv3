@@ -64,7 +64,6 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
   dotColor: string;
   bgColor: string;
   textColor: string;
-  borderColor: string;
   softBg: string;
   pillBg: string;
   pillText: string;
@@ -74,7 +73,6 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
     dotColor: 'bg-primary-500',
     bgColor: 'bg-primary-500',
     textColor: 'text-white',
-    borderColor: 'border-l-primary-500',
     softBg: 'bg-primary-50',
     pillBg: 'bg-primary-50 border border-primary-200/60',
     pillText: 'text-primary-700',
@@ -84,7 +82,6 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
     dotColor: 'bg-amber-500',
     bgColor: 'bg-amber-500',
     textColor: 'text-white',
-    borderColor: 'border-l-amber-500',
     softBg: 'bg-amber-50',
     pillBg: 'bg-amber-50 border border-amber-200/60',
     pillText: 'text-amber-700',
@@ -94,7 +91,6 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
     dotColor: 'bg-blue-500',
     bgColor: 'bg-blue-500',
     textColor: 'text-white',
-    borderColor: 'border-l-blue-500',
     softBg: 'bg-blue-50',
     pillBg: 'bg-blue-50 border border-blue-200/60',
     pillText: 'text-blue-700',
@@ -104,7 +100,6 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
     dotColor: 'bg-violet-500',
     bgColor: 'bg-violet-500',
     textColor: 'text-white',
-    borderColor: 'border-l-violet-500',
     softBg: 'bg-violet-50',
     pillBg: 'bg-violet-50 border border-violet-200/60',
     pillText: 'text-violet-700',
@@ -114,7 +109,6 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
     dotColor: 'bg-warm-400',
     bgColor: 'bg-warm-500',
     textColor: 'text-white',
-    borderColor: 'border-l-warm-500',
     softBg: 'bg-warm-50',
     pillBg: 'bg-warm-50 border border-warm-200/60',
     pillText: 'text-warm-700',
@@ -124,7 +118,6 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
     dotColor: 'bg-warm-400',
     bgColor: 'bg-warm-500',
     textColor: 'text-white',
-    borderColor: 'border-l-warm-500',
     softBg: 'bg-warm-50',
     pillBg: 'bg-warm-50 border border-warm-200/60',
     pillText: 'text-warm-700',
@@ -408,9 +401,7 @@ export function CalendarView({
                         onMouseLeave={() => setHoveredEvent(null)}
                         className={cn(
                           'block h-auto min-h-0 absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden text-left',
-                          'border-l-[3px]',
                           config.softBg,
-                          config.borderColor,
                           hoveredEvent === event.id && 'ring-1 ring-warm-300 shadow-md z-10'
                         )}
                         style={{ top: `${top}px`, height: `${height}px`, minHeight: '24px' }}
@@ -512,9 +503,7 @@ export function CalendarView({
                     onMouseLeave={() => setHoveredEvent(null)}
                     className={cn(
                       'block h-auto min-h-0 absolute left-2 right-4 rounded-xl px-4 py-2.5 cursor-pointer transition-all text-left',
-                      'border-l-[3px]',
                       config.softBg,
-                      config.borderColor,
                       'shadow-sm',
                       hoveredEvent === event.id && 'ring-1 ring-warm-300 shadow-lg z-10'
                     )}

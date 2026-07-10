@@ -55,7 +55,9 @@ export async function EngagementPanel({ userId }: { userId: string }) {
   const engagement = await fetchUserEngagement(userId);
 
   return (
-    <Surface padding="sm" className="border-l-2 border-l-accent-500">
+    <Surface padding="sm">
+      {/* Dateline rule — replaces the retired border-l-2 "key panel" stripe. */}
+      <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />
       <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Engagement</h2>
       <div className="mt-3">
         {engagement === null ? (

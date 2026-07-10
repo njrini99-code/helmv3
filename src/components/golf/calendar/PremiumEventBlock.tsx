@@ -4,7 +4,7 @@
  * Premium Event Block Component
  *
  * Glass-treatment event cards with:
- * - Type-based left border (category ribbon)
+ * - Type-based category dot (leading, next to the title)
  * - Frosted glass background
  * - Status overlays (draft, cancelled, confirmed)
  * - Hover micro-interactions
@@ -14,7 +14,7 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { getEventClasses, formatTime } from '@/lib/calendar/premium-utils';
+import { getEventClasses, getEventDotColorVar, formatTime } from '@/lib/calendar/premium-utils';
 import {
   Calendar,
   Clock,
@@ -63,7 +63,7 @@ export function PremiumEventBlock({
       className={cn(
         // Base glass styles
         'relative pl-2.5 pr-2 cursor-pointer text-left w-full h-auto min-h-0 justify-start',
-        'border-l-[3px] rounded-lg',
+        'rounded-lg',
         // Glass treatment
         'backdrop-blur-sm',
         // Hover micro-interaction
@@ -86,7 +86,12 @@ export function PremiumEventBlock({
       <div className="flex items-center justify-between gap-2 w-full">
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ backgroundColor: getEventDotColorVar(event.event_type) }}
+              aria-hidden="true"
+            />
             <span
               className={cn(
                 'font-medium truncate leading-tight',

@@ -15,13 +15,16 @@
  *   • `before:` pseudo carries the cheap universal top sheen (Safari/FF too).
  *   • reduced-transparency / forced-colors → collapses to opaque `bg-surface`
  *     + `shadow-soft` (Apple's own a11y lesson; spec §4.3).
- *   • mobile (<=768px) downshifts blur via --fw-blur-mobile.
+ *   • mobile (<md) gets an opaque `bg-surface` unconditionally (no blur) —
+ *     a `sticky` header over constantly-scrolling content is the worst
+ *     compositing case on phone-class GPUs. The inset specular lines stay
+ *     at every breakpoint. md+ keeps the full blur/saturate glass.
  *
  * Holds: breadcrumb trail, a persistent search / ⌘K command entry, and a
  * right-aligned action cluster. Content scrolls UNDER it (sticky, z-sticky).
  * ========================================================================== */
 
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { IconMenu, IconSearch } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -40,9 +43,14 @@ const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
  */
 const glassSurface = cn(
   'relative isolate [contain:layout_paint_style]',
-  'bg-[var(--fw-glass-bg)]',
-  'supports-[backdrop-filter]:backdrop-blur-[var(--fw-blur-mobile)] md:supports-[backdrop-filter]:backdrop-blur-[var(--fw-blur-glass)]',
-  'supports-[backdrop-filter]:backdrop-saturate-[var(--fw-glass-saturate)]',
+  // Mobile (<md): opaque matte, no blur — a `sticky` header over
+  // constantly-scrolling content is the worst compositing case on
+  // phone-class GPUs, so it gets the opaque surface unconditionally here.
+  // md+: full warm glass (blur/saturate) as before. No shadow utilities:
+  // the unconditional inset [box-shadow:...] below must survive at md+.
+  'bg-surface md:bg-[var(--fw-glass-bg)]',
+  'md:supports-[backdrop-filter]:backdrop-blur-[var(--fw-blur-glass)]',
+  'md:supports-[backdrop-filter]:backdrop-saturate-[var(--fw-glass-saturate)]',
   'border-b border-[var(--fw-glass-border)]',
   '[box-shadow:inset_0_1px_0_0_var(--fw-glass-highlight),inset_0_-1px_0_0_var(--fw-glass-border-bot)]',
   // Cheap universal top sheen (works without backdrop-filter support).
@@ -129,7 +137,9 @@ function BreadcrumbTrail({
   );
 }
 
-export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(function FairwayTopBar(
+// React.memo (perf packet [shell-render-hygiene]): AppShell re-renders this on
+// every pathname change; memo skips re-render when its props are unchanged.
+export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(function FairwayTopBar(
   { breadcrumbs, onSearchOpen, searchPlaceholder = 'Search or jump to…', searchSlot, actions, accentColor, onMenuOpen, linkComponent, className },
   ref,
 ) {
@@ -233,4 +243,4 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
       )}
     </header>
   );
-});
+}));

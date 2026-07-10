@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
@@ -93,7 +94,7 @@ export default function SignupPage() {
 
   if (!accessGranted) {
     return (
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={loadFeatures}>
         <div className="min-h-dvh flex items-center justify-center relative overflow-hidden p-4 sm:p-6">
           {/*
            * Reuse the login page's painterly scene as the gate backdrop instead
@@ -198,7 +199,7 @@ export default function SignupPage() {
     );
   }
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
     <div className="min-h-dvh flex items-center justify-center relative overflow-hidden p-4 sm:p-6">
       {/* Skip to main content link for keyboard navigation */}
       <a

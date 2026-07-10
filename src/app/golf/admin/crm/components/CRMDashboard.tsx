@@ -191,7 +191,6 @@ export function CRMDashboard({
           label="Won"
           value={stats.byStatus.won || 0}
           detail="Closed customers"
-          accent
         />
         <KPICard
           icon={<IconTarget size={20} />}
@@ -579,7 +578,7 @@ export function CRMDashboard({
 // ============================================================================
 
 function KPICard({
-  icon, iconBg, iconColor, label, value, detail, accent, className,
+  icon, iconBg, iconColor, label, value, detail, className,
 }: {
   icon: React.ReactNode;
   iconBg: string;
@@ -587,7 +586,6 @@ function KPICard({
   label: string;
   value: number;
   detail: string;
-  accent?: boolean;
   className?: string;
 }) {
   return (
@@ -598,7 +596,6 @@ function KPICard({
       'p-5',
       'transition-[transform,box-shadow] duration-200 group',
       'hover:-translate-y-0.5 hover:shadow-lg',
-      accent && 'border-l-[3px] border-l-primary-500',
       className
     )}>
       <div className="flex items-start justify-between gap-3">

@@ -45,7 +45,6 @@ function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: 
 
 const severityConfig = {
   success: {
-    border: 'border-l-primary-500',
     sparkline: '#10B981',
     pulse: 'bg-primary-500',
     trend: {
@@ -54,7 +53,6 @@ const severityConfig = {
     },
   },
   warning: {
-    border: 'border-l-amber-500',
     sparkline: '#F59E0B',
     pulse: 'bg-amber-500',
     trend: {
@@ -63,7 +61,6 @@ const severityConfig = {
     },
   },
   error: {
-    border: 'border-l-red-500',
     sparkline: '#EF4444',
     pulse: 'bg-red-500',
     trend: {
@@ -72,7 +69,6 @@ const severityConfig = {
     },
   },
   neutral: {
-    border: 'border-l-warm-400',
     sparkline: '#78716c',
     pulse: 'bg-warm-500',
     trend: {
@@ -108,8 +104,6 @@ export function StatCardV2({
       whileTap={prefersReducedMotion ? undefined : (onClick ? { scale: 0.99 } : undefined)}
       className={cn(
         'relative glass-standard rounded-2xl p-8',
-        'border-l-[4px]',
-        config.border,
         'transition-all duration-300',
         'hover:bg-cream-100 active:bg-cream-100 hover:shadow-card-hover',
         onClick && 'cursor-pointer'

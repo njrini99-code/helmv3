@@ -57,6 +57,20 @@ export function getEventClasses(event: {
   ].filter(Boolean).join(' ');
 }
 
+/**
+ * CSS custom property for the event type's accent hue (see
+ * src/styles/calendar-tokens.css `--event-*`). Used for the small category
+ * dot next to the title — replaces the former left-border stripe.
+ */
+export function getEventDotColorVar(eventType: string): string {
+  const known = new Set([
+    'practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other',
+    'game', 'scrimmage', 'camp', 'tryout',
+  ]);
+  const key = known.has(eventType) ? eventType : 'other';
+  return `var(--event-${key})`;
+}
+
 // ============================================================================
 // TIME UTILITIES
 // ============================================================================

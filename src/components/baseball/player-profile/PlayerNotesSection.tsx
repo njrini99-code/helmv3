@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { IconNote, IconEdit, IconTrash, IconClock } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
 
@@ -40,7 +41,7 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
   const displayNotes = compact ? notes.slice(0, 3) : notes;
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <ul className="space-y-3">
         {displayNotes.map((note, idx) => {
           const isExpanded = expandedNote === note.id;

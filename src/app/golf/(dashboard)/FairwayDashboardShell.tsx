@@ -20,7 +20,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
+import { LazyMotion, MotionConfig } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { AppShell } from '@/components/fairway/app-shell/AppShell';
@@ -308,14 +309,21 @@ function FairwayDashboardContent({
   }, [serverGender]);
   const accentColor = showSwitcher ? teamAccentVar(optimisticGender ?? serverGender) : undefined;
 
-  const teamSwitcher = showSwitcher ? (
-    <TeamSwitcher
-      teams={coachTeams}
-      activeTeamId={userData.teamId!}
-      canSwitch
-      onOptimisticSwitch={setOptimisticGender}
-    />
-  ) : null;
+  // Stable element identity (perf packet [shell-render-hygiene]): a fresh JSX
+  // literal every render would defeat the React.memo on FairwayTopBar, which
+  // receives this verbatim as `actions`.
+  const teamSwitcher = useMemo(
+    () =>
+      showSwitcher ? (
+        <TeamSwitcher
+          teams={coachTeams}
+          activeTeamId={userData.teamId!}
+          canSwitch
+          onOptimisticSwitch={setOptimisticGender}
+        />
+      ) : null,
+    [showSwitcher, coachTeams, userData.teamId],
+  );
 
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
@@ -360,6 +368,21 @@ function FairwayDashboardContent({
   }, []);
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
+
+  // Stable identity across pathname-only re-renders (perf packet
+  // [shell-render-hygiene]) — was a fresh object literal every render,
+  // defeating FairwaySidebar's React.memo (it reads `user` from AppShell).
+  const shellUser = useMemo(
+    () => ({ name: userData.name, teamName: userData.teamName, avatarUrl: userData.avatarUrl }),
+    [userData.name, userData.teamName, userData.avatarUrl],
+  );
+
+  // Same packet, element props: inline JSX literals are fresh objects every
+  // render, so passing them straight into AppShell defeats the React.memo on
+  // FairwaySidebar (which receives them verbatim) — and AppShell's own
+  // sidebarProps useMemo, which lists `brand` as a dependency.
+  const brand = useMemo(() => <Brand />, []);
+  const sidebarFooter = useMemo(() => <ShellFooter />, []);
 
   // Live shot-entry flows own their full screen (their own sticky control header
   // + immersive scoring UI), so render them WITHOUT the shell chrome — the glass
@@ -413,9 +436,9 @@ function FairwayDashboardContent({
 
       <AppShell
         sections={sections}
-        user={{ name: userData.name, teamName: userData.teamName, avatarUrl: userData.avatarUrl }}
-        brand={<Brand />}
-        sidebarFooter={<ShellFooter />}
+        user={shellUser}
+        brand={brand}
+        sidebarFooter={sidebarFooter}
         topBarActions={teamSwitcher}
         accentColor={accentColor}
         pathname={pathname}
@@ -483,7 +506,7 @@ export function FairwayDashboardShell({
         <SessionActivityProvider>
           <GolfUserProvider userData={userData}>
             <NotificationBadgeProvider>
-              <LazyMotion features={domAnimation}>
+              <LazyMotion features={loadFeatures}>
                 <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                   <LastSeenUpdater />
                   {/* B36/F012: the demo_coach_entered PostHog event must fire in the

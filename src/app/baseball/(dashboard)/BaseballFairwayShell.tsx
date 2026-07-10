@@ -572,6 +572,21 @@ function BaseballFairwayContent({
   const name = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
   const avatarUrl = coach?.avatar_url || player?.avatar_url || undefined;
   const teamName = selectedTeam?.name || coach?.organization?.name;
+  // Stable identity across pathname-only re-renders (perf packet
+  // [shell-render-hygiene]) — was a fresh object literal every render,
+  // defeating FairwaySidebar's React.memo (it reads `user` from AppShell).
+  const shellUser = useMemo(
+    () => ({ name, teamName: teamName ?? undefined, avatarUrl: avatarUrl ?? undefined }),
+    [name, teamName, avatarUrl],
+  );
+
+  // Same packet, element props: inline JSX literals are fresh objects every
+  // render, so passing them straight into AppShell defeats the React.memo on
+  // FairwaySidebar/FairwayTopBar (which receive them verbatim) — and AppShell's
+  // own sidebarProps useMemo, which lists `brand` as a dependency.
+  const brand = useMemo(() => <Brand homeHref={homeHref} />, [homeHref]);
+  const sidebarFooter = useMemo(() => <ShellFooter />, []);
+  const topBarActions = useMemo(() => <NotificationBell />, []);
 
   // Imperative open (mirrors GolfHelm's FairwayDashboardShell): the shell's
   // own ⌘K entry point dispatches the same global event CommandPalette listens
@@ -631,14 +646,21 @@ function BaseballFairwayContent({
 
       <AppShell
         sections={sections}
-        user={{ name, teamName: teamName ?? undefined, avatarUrl: avatarUrl ?? undefined }}
-        brand={<Brand homeHref={homeHref} />}
-        sidebarFooter={<ShellFooter />}
-        topBarActions={<NotificationBell />}
+        user={shellUser}
+        brand={brand}
+        sidebarFooter={sidebarFooter}
+        topBarActions={topBarActions}
         pathname={pathname}
         linkComponent={shellLink}
         breadcrumbs={breadcrumbs}
         collapsible
+        // The dashboard route `template.tsx` already owns the route-reveal
+        // fade (one keyed motion div). Disabling the shell's own
+        // RouteTransition here prevents BOTH from fading on navigation —
+        // that compounded the opacity and read as a heavy, laggy
+        // double-fade. One fade, one source of truth (mirrors golf's
+        // FairwayDashboardShell.tsx).
+        disableRouteTransition
         mobileOpen={mobileOpen}
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}

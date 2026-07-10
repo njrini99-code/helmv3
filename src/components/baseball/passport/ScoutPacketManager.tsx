@@ -20,7 +20,8 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -225,7 +226,7 @@ export function ScoutPacketManager({
   };
 
   return (
-    <LazyMotion features={domAnimation} strict>
+    <LazyMotion features={loadFeatures} strict>
       <div className="rounded-2xl border border-warm-200 bg-cream-50 p-5 shadow-card sm:p-6">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-50 text-primary-600">

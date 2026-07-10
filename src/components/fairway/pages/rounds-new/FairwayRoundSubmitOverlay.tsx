@@ -17,7 +17,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { TriangleAlert, Check } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -210,7 +211,7 @@ export function FairwayRoundSubmitOverlay({
   const scrim = <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" />;
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <AnimatePresence mode="wait">
         {/* ── SUCCESS ── */}
         {isSuccess && (

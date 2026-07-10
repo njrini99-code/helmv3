@@ -21,6 +21,7 @@
  * focus ring (WCAG 2.2 AA) and an honest numeric badge (rendered only when > 0).
  * ========================================================================== */
 
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import type { NavItem, ShellLinkComponent } from './types';
 
@@ -48,7 +49,10 @@ const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
   </a>
 );
 
-export function FairwayBottomNav({
+// React.memo (perf packet [shell-render-hygiene]): mounted permanently on
+// every mobile route; AppShell re-renders on every pathname change, so memo
+// skips re-rendering the whole tab list when `items`/`pathname` are unchanged.
+export const FairwayBottomNav = memo(function FairwayBottomNav({
   items,
   pathname,
   linkComponent,
@@ -62,9 +66,11 @@ export function FairwayBottomNav({
       className={cn(
         // Mobile-only; the desktop rail owns navigation on >=md.
         'fixed inset-x-0 bottom-0 z-[var(--fw-z-nav)] md:hidden',
-        // Glass-ish matte chrome on the canvas; a hairline top border separates
-        // it from the scrolling content. No backdrop-blur (cheap chrome).
-        'border-t border-border-subtle bg-surface/95 supports-[backdrop-filter]:bg-surface/80 supports-[backdrop-filter]:backdrop-blur-md',
+        // Near-opaque matte chrome on the canvas; a hairline top border
+        // separates it from the scrolling content. No backdrop-blur (cheap
+        // chrome) — a `fixed` bar this size sits over moving content on
+        // every scroll frame, so it stays a flat, cheap-to-composite matte.
+        'border-t border-border-subtle bg-surface/95',
         // Clear the iOS home indicator.
         'pb-[env(safe-area-inset-bottom,0px)]',
         className,
@@ -125,4 +131,4 @@ export function FairwayBottomNav({
       </ul>
     </nav>
   );
-}
+});

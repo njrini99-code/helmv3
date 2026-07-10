@@ -73,14 +73,18 @@ async function TracerBody() {
                 className={
                   i === 0
                     // Leader row — the single most-active player by rounds
-                    // logged, sorted just above: soft green wash + 2px green
-                    // left bar, the same "leader" treatment used everywhere
-                    // else in the console a list is genuinely rank-ordered.
-                    ? 'flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 border-l-accent-500 bg-accent-50/60 py-2 pl-2 text-sm'
+                    // logged, sorted just above: soft green wash + a dateline
+                    // rule above the name, the same "leader" treatment used
+                    // everywhere else in the console a list is genuinely
+                    // rank-ordered. Replaces the retired border-l-2 left bar.
+                    ? 'flex flex-wrap items-center gap-x-3 gap-y-1 bg-accent-50/60 py-2 pl-2 text-sm'
                     : 'flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm'
                 }
               >
-                <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{playerName(p)}</span>
+                <span className="min-w-0 flex-1 basis-full sm:basis-auto">
+                  {i === 0 && <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-accent-500" />}
+                  <span className="block truncate text-warm-900">{playerName(p)}</span>
+                </span>
                 <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                   {p.completed_rounds}/{p.total_rounds} completed
                 </span>

@@ -91,13 +91,12 @@ function SortableRow({
     transition,
   };
 
-  // Conflict level → left-border accent
-  const conflictBorder =
-    conflict?.level === 'high'
-      ? 'border-l-2 border-l-red-400'
-      : conflict?.level === 'caution'
-      ? 'border-l-2 border-l-amber-400'
-      : '';
+  // Conflict level → dateline-rule tone (replaces the retired border-l-2
+  // stripe). This row has no other in-row conflict signal — the detail pane
+  // handles the full warning card — so the rule is rendered inline next to
+  // the exercise name below, not just dropped.
+  const conflictRule =
+    conflict?.level === 'high' ? 'bg-red-400' : conflict?.level === 'caution' ? 'bg-amber-400' : '';
 
   return (
     <m.div
@@ -110,7 +109,6 @@ function SortableRow({
         isSelected
           ? 'border-primary-300 bg-primary-50/60'
           : 'border-warm-100 hover:border-warm-200',
-        conflictBorder,
       ].join(' ')}
     >
       {/* ── Drag handle ────────────────────────────────────────────── */}
@@ -133,6 +131,7 @@ function SortableRow({
         aria-pressed={isSelected}
         aria-label={`Select ${exercise?.name ?? 'exercise'} to view details`}
       >
+        {conflictRule && <span aria-hidden className={`mb-0.5 block h-[2px] w-7 rounded-full ${conflictRule}`} />}
         <p className="truncate text-sm font-medium text-warm-900">
           {exercise?.name ?? <span className="text-warm-400 italic">Unknown exercise</span>}
         </p>

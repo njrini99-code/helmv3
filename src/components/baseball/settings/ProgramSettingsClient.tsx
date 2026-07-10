@@ -29,7 +29,8 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -320,7 +321,7 @@ export function ProgramSettingsClient({ data }: Props) {
 
   if (!canEdit && !settings.id) {
     return (
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={loadFeatures}>
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
           <SectionMasthead eyebrow="THE PRESSBOX · SETTINGS" title="Program Settings" ink="team" />
           <div className="mt-8">
@@ -336,7 +337,7 @@ export function ProgramSettingsClient({ data }: Props) {
   }
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <SectionMasthead
           eyebrow="THE PRESSBOX · SETTINGS"

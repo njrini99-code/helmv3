@@ -18,14 +18,6 @@ interface AdminStatCardProps {
   sparklineColor?: string;
 }
 
-const accentBorders: Record<string, string> = {
-  green: 'border-l-primary-600',
-  red: 'border-l-red-500',
-  amber: 'border-l-amber-500',
-  blue: 'border-l-blue-500',
-  violet: 'border-l-violet-500',
-};
-
 const iconBgColors: Record<string, string> = {
   green: 'bg-primary-50',
   red: 'bg-red-50',
@@ -80,9 +72,8 @@ export const AdminStatCard = memo(function AdminStatCard({
         'transition-shadow duration-200',
         // Bigger padding
         'p-4 sm:p-5 md:p-6',
-        // Accent border
-        'border-l-[3px] border-t-white/30 border-r-white/30 border-b-white/30',
-        accentBorders[accentColor]
+        // Glass edge
+        'border-white/30'
       )}
       whileHover={{ y: -3 }}
       transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 25 })}

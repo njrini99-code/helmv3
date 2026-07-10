@@ -70,11 +70,15 @@ function maxStressLevel(ex: BuilderExercise): StressLevel {
   return (['none', 'low', 'medium', 'high'] as const)[w as 0 | 1 | 2 | 3];
 }
 
+// Dateline-rule tone (replaces the retired border-l-2 stress stripe) — a
+// short h-[2px] w-7 rounded-full rule above the card title, same color per
+// stress level. The existing stress pill (below) still carries the label;
+// the rule is the quieter graphic echo of it, not a replacement for it.
 const STRESS_CLS: Record<StressLevel, string> = {
   none: '',
-  low: 'border-l-amber-300',
-  medium: 'border-l-orange-400',
-  high: 'border-l-red-500',
+  low: 'bg-amber-300',
+  medium: 'bg-orange-400',
+  high: 'bg-red-500',
 };
 
 // ─── Draggable exercise card ──────────────────────────────────────────────────
@@ -103,11 +107,7 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
   );
 
   const stress = maxStressLevel(exercise);
-  const borderAccent = hasSorenessOverlap
-    ? 'border-l-2 border-l-amber-400'
-    : stress !== 'none'
-    ? `border-l-2 ${STRESS_CLS[stress]}`
-    : '';
+  const ruleAccent = hasSorenessOverlap ? 'bg-amber-400' : stress !== 'none' ? STRESS_CLS[stress] : '';
 
   return (
     <div
@@ -116,7 +116,6 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
       className={[
         'group relative rounded-xl border bg-cream-50 px-3 py-2.5 transition-shadow',
         isDragging ? 'opacity-40 shadow-xl' : 'border-warm-100 hover:border-warm-200 hover:shadow-sm',
-        borderAccent,
       ].join(' ')}
     >
       {/* Drag handle area covering most of the card */}
@@ -128,6 +127,7 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
+            {ruleAccent && <span aria-hidden className={`mb-1 block h-[2px] w-7 rounded-full ${ruleAccent}`} />}
             <p className="truncate text-sm font-medium text-warm-900">{exercise.name}</p>
             <p className="text-eyebrow text-warm-400">{exercise.category}</p>
           </div>

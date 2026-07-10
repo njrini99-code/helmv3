@@ -4,7 +4,8 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { m, LazyMotion, domAnimation, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { m, LazyMotion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { loadFeatures } from '@/lib/motion/load-features'
 import Link from 'next/link'
 import Image from 'next/image'
 import { submitDemoRequest } from '@/app/actions/demo-request'
@@ -91,7 +92,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
   }
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       {/* Hamburger */}
       <IconButton variant="default"
         onClick={() => setIsOpen(!isOpen)}

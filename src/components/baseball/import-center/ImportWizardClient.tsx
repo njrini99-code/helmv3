@@ -1116,9 +1116,13 @@ export function ImportWizardClient({
                         <td
                           className={cn(
                             'sticky left-0 z-10 min-w-[120px] bg-[var(--paper)] px-3 py-2 text-text-primary',
-                            blocking && 'border-l-2 border-sodium',
                           )}
                         >
+                          {/* Dateline rule — replaces the retired border-l-2
+                              stripe for blocking rows. */}
+                          {blocking && (
+                            <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-sodium" />
+                          )}
                           {m.sourceName || '—'}
                         </td>
                         <td className="px-3 py-2">

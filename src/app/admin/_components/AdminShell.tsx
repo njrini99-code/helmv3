@@ -205,43 +205,56 @@ export function AdminShell({
     [],
   );
 
+  // Stable element/object identities (perf packet [shell-render-hygiene]):
+  // inline literals here are fresh objects every render (e.g. each ⌘K
+  // open/close), defeating the React.memo on FairwaySidebar/FairwayTopBar.
+  const brand = useMemo(
+    () => (
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.08] bg-nav-surface font-fw-mono text-caption text-accent-400">
+          HB
+        </span>
+        <span className="min-w-0 text-sm font-semibold tracking-wide text-white">
+          Helm <span className="text-accent-400">Bridge</span>
+        </span>
+      </span>
+    ),
+    [],
+  );
+  const shellUser = useMemo(() => ({ name: 'Super admin', teamName: email }), [email]);
+  const topBarActions = useMemo(
+    () => (
+      <div className="hidden items-center gap-2 lg:flex">
+        <span className="rounded-full border border-warm-200 bg-surface px-2.5 py-1 font-fw-mono text-caption uppercase text-warm-600">
+          prod
+        </span>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => router.refresh()}
+          className="min-h-0 rounded-full px-2.5 py-1 text-caption"
+        >
+          Refresh
+        </Button>
+      </div>
+    ),
+    [router],
+  );
+
   return (
     <SessionActivityProvider>
     <div className="fairway-ds min-h-screen bg-canvas-gradient">
       <AppShell
         sections={sections}
-        brand={
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.08] bg-nav-surface font-fw-mono text-caption text-accent-400">
-              HB
-            </span>
-            <span className="min-w-0 text-sm font-semibold tracking-wide text-white">
-              Helm <span className="text-accent-400">Bridge</span>
-            </span>
-          </span>
-        }
-        user={{ name: 'Super admin', teamName: email }}
+        brand={brand}
+        user={shellUser}
         pathname={pathname}
         linkComponent={Link}
         breadcrumbs={breadcrumbs}
         onSearchOpen={() => setCommandOpen(true)}
         searchPlaceholder="Jump to command, incident, user…"
-        topBarActions={
-          <div className="hidden items-center gap-2 lg:flex">
-            <span className="rounded-full border border-warm-200 bg-surface px-2.5 py-1 font-fw-mono text-caption uppercase text-warm-600">
-              prod
-            </span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => router.refresh()}
-              className="min-h-0 rounded-full px-2.5 py-1 text-caption"
-            >
-              Refresh
-            </Button>
-          </div>
-        }
+        topBarActions={topBarActions}
       >
         {children}
       </AppShell>

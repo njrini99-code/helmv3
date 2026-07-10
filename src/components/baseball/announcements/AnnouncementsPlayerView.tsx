@@ -21,14 +21,22 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: 'spring' as const, stiffness: 300, damping: 30 } },
 };
 
-const urgencyBorderColors: Record<string, string> = {
-  low: 'border-l-warm-300',
-  normal: 'border-l-primary-400',
-  // 'high' (warning) reads the shared pursuit ink; 'urgent' (error) reads the
-  // dedicated --notice-error-ink so it stays clay/oxide even inside the
-  // SAGE-recolored entry scopes (see InkNotice.tsx header) — never raw amber/red.
-  high: 'border-l-pursuit',
-  urgent: 'border-l-[color:var(--notice-error-ink)]',
+// Dateline-rule tone (replaces the retired border-l-[3px] stripe): a short
+// h-[2px] w-7 rounded-full rule above the card title, same ink per urgency.
+// 'high' (warning) reads the shared pursuit ink; 'urgent' (error) reads the
+// dedicated --notice-error-ink so it stays clay/oxide even inside the
+// SAGE-recolored entry scopes (see InkNotice.tsx header) — never raw amber/red.
+const urgencyRuleTone: Record<string, string> = {
+  low: 'bg-warm-300',
+  normal: 'bg-primary-400',
+  high: 'bg-pursuit',
+  urgent: 'bg-[color:var(--notice-error-ink)]',
+};
+
+// High-urgency-only whisper background tint (tone/4) — the one tier that
+// earns a touch of ground beyond the rule + badge.
+const urgencyCardTint: Partial<Record<string, string>> = {
+  urgent: 'bg-[color:var(--notice-error-ink)]/[0.04]',
 };
 
 // Ink tone/variant for the urgency <InkBadge>: 'normal' reads team (green —
@@ -50,9 +58,10 @@ interface AnnouncementsPlayerViewProps {
 
 function AnnouncementSkeleton() {
   return (
-    <PaperCard className="border-l-[3px] border-l-warm-200 animate-pulse" grain={false}>
+    <PaperCard className="animate-pulse" grain={false}>
       <div className="px-5 py-4 flex items-start gap-4">
         <div className="flex-1 min-w-0 space-y-2">
+          <div aria-hidden className="h-[2px] w-7 rounded-full bg-warm-200" />
           <div className="h-4 bg-warm-100 rounded w-3/5" />
           <div className="h-3 bg-warm-100 rounded w-4/5" />
           <div className="h-3 bg-warm-100 rounded w-2/5" />
@@ -101,7 +110,8 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
   const [hasAcknowledged, setHasAcknowledged] = useState(!!ann.has_player_acknowledged);
   const [acknowledging, setAcknowledging] = useState(false);
 
-  const urgencyBorder = urgencyBorderColors[ann.urgency || 'normal'];
+  const urgencyRule = urgencyRuleTone[ann.urgency || 'normal'] ?? 'bg-primary-400';
+  const urgencyTint = urgencyCardTint[ann.urgency || 'normal'];
   // Typed fallback constant (not an indexed access) so noUncheckedIndexedAccess
   // fully strips `undefined` from the union — matches the map's 'normal' entry.
   const urgencyBadge = urgencyBadgeTone[ann.urgency || 'normal'] ?? ({ tone: 'team', variant: 'soft' } as const);
@@ -131,8 +141,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
   return (
     <PaperCard
       className={cn(
-        'border-l-[3px]',
-        urgencyBorder,
+        urgencyTint,
         needsAck && 'ring-1 ring-pursuit/25',
         'transition-shadow hover:shadow-md'
       )}
@@ -146,6 +155,9 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
         className="w-full justify-start text-left px-5 py-4 flex items-start gap-4 min-h-0 rounded-none hover:bg-warm-50/50 focus-visible:ring-inset"
       >
         <div className="flex-1 min-w-0">
+          {/* Dateline rule — replaces the retired border-l-[3px] stripe;
+              urgency stays distinguishable via rule tone + the InkBadge below. */}
+          <span aria-hidden className={cn('mb-1.5 block h-[2px] w-7 rounded-full', urgencyRule)} />
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
             {ann.is_pinned && (

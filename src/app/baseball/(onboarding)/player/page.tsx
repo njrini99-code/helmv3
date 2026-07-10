@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
+import { HelmMark } from '@/components/brand/HelmMark';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -308,23 +309,20 @@ export default function BaseballPlayerOnboarding() {
           transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.1 })}
           className="mb-6 sm:mb-8"
         >
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full blur-xl scale-150" style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.2)' }} />
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
-              <Image
-                src="/helm-baseball-logo.png"
-                alt="BaseballHelm Logo"
-                width={48}
-                height={48}
-                className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
-                priority
-                unoptimized
-              />
-            </div>
-          </div>
+          <HelmMark
+            sport="baseball"
+            size={48}
+            className="h-10 w-10 sm:h-12 sm:w-12"
+            glow
+            glowClassName="blur-xl scale-150"
+            glowOpacity={0.2}
+            alt="BaseballHelm Logo"
+            priority
+            unoptimized
+          />
         </m.div>
 
-        <LazyMotion features={domAnimation}>
+        <LazyMotion features={loadFeatures}>
           {/* Step Indicator - only after type selection */}
           {step !== 'type' && (
             <m.div

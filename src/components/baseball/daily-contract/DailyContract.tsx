@@ -24,7 +24,8 @@
 // =============================================================================
 
 import { useState, useTransition, useCallback } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -748,7 +749,7 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
   }
 
   return (
-    <LazyMotion features={domAnimation} strict>
+    <LazyMotion features={loadFeatures} strict>
       <section>
         <StreakHeader streak={model.streak} />
 

@@ -26,6 +26,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Dateline rule — replaces the retired border-l-2 "key panel" left-edge
+// stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
+// rule above the card title.
+function KeyPanelRule() {
+  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
+}
+
 function formatDuration(ms: number | null): string {
   if (ms == null) return '—';
   if (ms < 1000) return `${ms}ms`;
@@ -130,7 +137,8 @@ async function JobsBody() {
       {/* Key panel: the board that answers "is anything actually running on
           schedule" — a 2px green left edge, same signal as the overview's
           Feature health rollup. */}
-      <Surface padding="sm" className="border-l-2 border-l-accent-500">
+      <Surface padding="sm">
+        <KeyPanelRule />
         <SectionLabel>Cron board — expected vs actual</SectionLabel>
         <p className="mt-1 text-xs text-warm-500">
           A job with no row yet reads &ldquo;awaiting first run&rdquo; (neutral) — never a red alarm until it has

@@ -91,7 +91,8 @@ export interface EventTypeConfig {
   label: string;
   color: string; // Tailwind color class
   bgColor: string;
-  borderColor: string;
+  /** Small leading category dot (replaces the former left-border stripe). */
+  dotColor: string;
   textColor: string;
   showText: boolean; // false for classes/blocked time
 }

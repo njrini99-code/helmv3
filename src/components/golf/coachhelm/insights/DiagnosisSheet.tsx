@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import type { Diagnosis } from '@/lib/coachhelm/v2/insights/types';
 import { formatValue } from './EvidencePanel';
 import { metricLabel } from './DiagnosisPanel';
+import { InsightCallout } from './InsightCallout';
 import {
   StrokesGainedTornado,
   type SGCategory,
@@ -51,21 +52,17 @@ function ChainRow({
   value: string;
   tone?: 'neutral' | 'emphasis' | 'accent';
 }) {
+  if (tone === 'accent') {
+    return (
+      <InsightCallout label={label}>
+        <p className="text-body-sm text-text-primary">{value}</p>
+      </InsightCallout>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        'rounded-fw-md px-3 py-2.5',
-        tone === 'accent' ? 'border-l-2 border-accent-500 bg-accent-50' : 'bg-surface',
-      )}
-    >
-      <p
-        className={cn(
-          'text-caption uppercase tracking-wide',
-          tone === 'accent' ? 'text-accent-700' : 'text-text-tertiary',
-        )}
-      >
-        {label}
-      </p>
+    <div className="rounded-fw-md bg-surface px-3 py-2.5">
+      <p className="text-caption uppercase tracking-wide text-text-tertiary">{label}</p>
       <p
         className={cn(
           'text-body-sm text-text-primary',

@@ -508,9 +508,6 @@ export function WeekView({
                       : isClass
                         ? 'repeating-linear-gradient(45deg, rgba(244, 63, 94, 0.08), rgba(244, 63, 94, 0.08) 8px, rgba(244, 63, 94, 0.04) 8px, rgba(244, 63, 94, 0.04) 16px)'
                         : 'rgba(251, 146, 60, 0.12)';
-                    const borderColor = hasColor
-                      ? period.color!.bg
-                      : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
                     const textColor = hasColor
                       ? period.color!.bg
                       : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
@@ -518,12 +515,11 @@ export function WeekView({
                     return (
                       <div
                         key={periodIndex}
-                        className="absolute left-0.5 right-0.5 rounded-lg border-l-2 overflow-hidden"
+                        className="absolute left-0.5 right-0.5 rounded-lg overflow-hidden"
                         style={{
                           top: `${top}px`,
                           height: `${Math.max(height, 24)}px`,
                           background: bgColor,
-                          borderColor: borderColor,
                         }}
                       >
                         <div className="px-2 py-1 h-full">
@@ -758,17 +754,14 @@ export function WeekView({
                         : isClass
                           ? 'rgba(244, 63, 94, 0.08)'
                           : 'rgba(251, 146, 60, 0.12)';
-                      const borderColor = hasColor
-                        ? period.color!.bg
-                        : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
                       const textColor = hasColor
                         ? period.color!.bg
                         : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
                       return (
                         <div
                           key={`busy-${periodIndex}`}
-                          className="rounded-lg border-l-2 px-2.5 py-1.5"
-                          style={{ background: bgColor, borderColor }}
+                          className="rounded-lg px-2.5 py-1.5"
+                          style={{ background: bgColor }}
                         >
                           <p className="text-xs font-medium truncate" style={{ color: textColor }}>
                             {period.title || (isClass ? 'Class' : 'Busy')}

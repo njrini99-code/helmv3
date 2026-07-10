@@ -4,7 +4,8 @@ import { Suspense, useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { AlertCircle, Loader2, ArrowRight, BarChart2, Users, Brain } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -135,7 +136,7 @@ function DemoGateContent() {
       : { duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] };
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div
         className="relative overflow-hidden"
         style={{ minHeight: '100dvh' }}

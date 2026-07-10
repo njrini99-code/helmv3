@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import {
   IconSparkles,
   IconTrendingUp,
@@ -111,7 +112,7 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
   };
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <ul className="space-y-3">
         {insights.map((insight) => {
           const Icon = insightIcons[insight.insight_type] || IconSparkles;

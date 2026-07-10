@@ -23,10 +23,11 @@
  * presentation-only and owns no data.
  * ========================================================================== */
 
-import { forwardRef, useState, useCallback, useEffect, useRef } from 'react';
+import { forwardRef, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { IconX } from '@/components/icons';
 import { IconButton } from '@/components/fairway/controls/button';
 import { FairwaySidebar, type FairwaySidebarProps } from './FairwaySidebar';
@@ -245,15 +246,36 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     };
   }, [mobileOpen]);
 
-  const sidebarProps: Omit<FairwaySidebarProps, 'isMobile' | 'onNavigate' | 'collapsed' | 'onToggleCollapsed'> = {
-    sections,
-    user,
-    brand,
-    footer: sidebarFooter,
-    identityExtra: sidebarIdentityExtra,
-    pathname,
-    linkComponent,
-  };
+  // Stable identity across pathname-only re-renders (perf packet
+  // [shell-render-hygiene]) — paired with FairwaySidebar's React.memo below,
+  // this keeps the desktop rail + mobile drawer from re-rendering when a
+  // parent re-render didn't actually change any of these inputs.
+  const sidebarProps: Omit<FairwaySidebarProps, 'isMobile' | 'onNavigate' | 'collapsed' | 'onToggleCollapsed'> =
+    useMemo(
+      () => ({
+        sections,
+        user,
+        brand,
+        footer: sidebarFooter,
+        identityExtra: sidebarIdentityExtra,
+        pathname,
+        linkComponent,
+      }),
+      [sections, user, brand, sidebarFooter, sidebarIdentityExtra, pathname, linkComponent],
+    );
+
+  // Gate the desktop rail's MOUNT (not just its CSS visibility) behind an
+  // actual matchMedia check — perf packet [shell-render-hygiene] / scout
+  // render-paint finding 2. Previously `<div className="hidden md:block">`
+  // kept a second full FairwaySidebar tree alive at all times, CSS-hidden on
+  // mobile; every nav-affecting re-render (badge ticks, route changes)
+  // reconciled BOTH the desktop rail and the mobile drawer's copy even though
+  // a phone can only ever show one. `useMediaQuery` is SSR-safe (server
+  // snapshot = false, mobile-first) so the very first client render matches
+  // the SSR markup exactly (neither renders the rail) — no hydration
+  // mismatch — then corrects synchronously before paint on an actual desktop
+  // viewport via useSyncExternalStore's snapshot check.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const topBarProps: FairwayTopBarProps = {
     breadcrumbs,
@@ -278,14 +300,21 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         className,
       )}
     >
-      {/* ── Desktop rail (fixed) ── */}
-      <div className="hidden md:block">
-        <FairwaySidebar
-          {...sidebarProps}
-          collapsed={collapsed}
-          onToggleCollapsed={collapsible ? toggleCollapsed : undefined}
-        />
-      </div>
+      {/* ── Desktop rail (fixed) ──
+          Mount gated on `isDesktop` (matchMedia) — see the doc comment above.
+          The `hidden md:block` wrapper is kept as defense-in-depth (harmless
+          if isDesktop and the CSS breakpoint ever briefly disagree) but the
+          real cost-avoidance is not mounting the FairwaySidebar tree at all
+          on phone-width viewports. */}
+      {isDesktop && (
+        <div className="hidden md:block">
+          <FairwaySidebar
+            {...sidebarProps}
+            collapsed={collapsed}
+            onToggleCollapsed={collapsible ? toggleCollapsed : undefined}
+          />
+        </div>
+      )}
 
       {/* ── Mobile drawer ── */}
       <AnimatePresence>
@@ -307,7 +336,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
               initial={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
               animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
-              transition={{ duration: reduceMotion ? 0.18 : 0.52, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: reduceMotion ? 0.18 : 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="absolute left-0 top-0 h-full w-[280px] max-w-[85vw] overflow-hidden rounded-r-[22px] shadow-fw-modal"
             >
               <FairwaySidebar {...sidebarProps} isMobile onNavigate={closeMobile} />
