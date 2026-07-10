@@ -49,3 +49,30 @@ export const ADMIN_COMMAND_SHORTCUTS = [
 export function hrefForShortcut(key: string): string | null {
   return ADMIN_NAV.find((e) => e.key === key)?.href ?? null;
 }
+
+/**
+ * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 10): Bridge's mobile
+ * bottom-tab daily loop — Overview / Errors / Health / Users (Synthesis
+ * Decision 6). A stable module-level array (never a fresh literal at the
+ * call site) so it can be passed straight through as `AppShell`'s
+ * `bottomNavHrefs` and `selectOverflow`'s `excludeHrefs` without defeating
+ * any memoization downstream.
+ */
+export const BRIDGE_BOTTOM_NAV_HREFS = [
+  '/admin',
+  '/admin/errors',
+  '/admin/health',
+  '/admin/users',
+] as const satisfies readonly AdminHref[];
+
+/**
+ * Short bottom-tab labels — deliberately distinct from `ADMIN_NAV`'s longer
+ * rail labels (e.g. "Users & Teams" would truncate awkwardly in a ~64px-wide
+ * tab column; the rail keeps the fuller label).
+ */
+export const BRIDGE_BOTTOM_NAV_LABELS: Record<(typeof BRIDGE_BOTTOM_NAV_HREFS)[number], string> = {
+  '/admin': 'Overview',
+  '/admin/errors': 'Errors',
+  '/admin/health': 'Health',
+  '/admin/users': 'Users',
+};

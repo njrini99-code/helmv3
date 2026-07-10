@@ -41,6 +41,16 @@ export interface NavItem {
    * so the global rail keeps a current-location indicator across the cluster.
    */
   readonly activeMatch?: (pathname: string) => boolean;
+  /**
+   * Optional stable join key back to the source nav registry/hub id that
+   * built this item (e.g. a BaseballNavHub id, a PLAYER_HUB_ROW_IDS value, or
+   * a registry entry's `id`). Plain data — never a fresh element, so it can't
+   * defeat `React.memo` on shell chrome. Used by BaseballFairwayShell.tsx to
+   * resolve the 4 daily-loop bottom-nav keys (src/lib/baseball/bottom-nav.ts)
+   * back to their built NavItem without re-deriving hrefs/labels/icons.
+   * Ignored by GolfHelm (registry-built bottom nav) and Bridge.
+   */
+  readonly navKey?: string;
 }
 
 /** A labelled group of nav items (e.g. "Team Management", "More"). */

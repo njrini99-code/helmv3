@@ -570,6 +570,7 @@ export default async function CoachPlayerPassportPage({ params }: PageProps) {
         <div className="mt-8">
           <PassportVisibilityControls
             playerId={id}
+            publicProfilePlayerId={id}
             initialState={settings.visibilityState}
             initialHeadline={settings.headline}
             initialFieldVisibility={settings.fieldVisibility}

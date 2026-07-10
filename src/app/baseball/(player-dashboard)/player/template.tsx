@@ -4,23 +4,26 @@
  * Player dashboard route template — fires on every route segment change under
  * /baseball/player/*.
  *
- * Provides the ONE cinematic transition when a player navigates between their
- * dashboard tabs. Previously these transitions were an abrupt content snap. This
- * mirrors the coach-side template and satisfies the V10 spec's shell requirement
- * "Route transitions with reduced-motion respect."
- * (docs/.../25_premium_ui_coachhelm_v10/v10_premium_ui_system_by_tab.md line 33).
+ * Doctrine Rule 9 (docs/MOBILE_DOCTRINE.md): "Tab switches are instant — no
+ * cross-fade between bottom-tab roots; motion is reserved for forward/detail
+ * pushes." Until this wave every navigation ran the SAME 280ms opacity
+ * cross-fade, so a lateral tab swap (Today → Schedule) dissolved the whole
+ * viewport exactly like a forward push into a detail leaf. The classification
+ * + timing now live in the shared `useRouteRevealMotion` hook
+ * (src/lib/motion/route-motion.ts — see that file for the full decision table
+ * and why it depends only on the CURRENT pathname); `isBaseballLateralDestination`
+ * (src/lib/baseball/nav-registry.ts) is the baseball-specific classifier:
+ * every BASEBALL_NAV_REGISTRY href/playerHref + Messages is lateral (instant);
+ * a dynamic detail leaf (lift/[sessionId], messages/[id]) is absent from that
+ * registry and reveals.
  *
  * Ported VERBATIM in spirit from the GolfHelm route-reveal
  * (src/app/golf/(dashboard)/dashboard/template.tsx) to keep the two products
- * consistent — same curve, same duration, same opacity-only recipe.
+ * consistent — same shared hook, same classifier shape, same recipe.
  *
  * Self-contained motion provider: the BaseballDashboardShell does not mount a motion
  * provider, so this template wraps its own LazyMotion (tree-shaken `domAnimation`) +
  * MotionConfig. No shell edit required.
- *
- * Recipe — matches the canonical Fairway RouteTransition primitive EXACTLY:
- *   - Opacity-ONLY crossfade 0 → 1 over --fw-dur-base (280ms)
- *   - --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1) (the iOS out-quint)
  *
  * Why opacity-only (no slide / no `will-change: transform`): a transform value
  * establishes a CSS containing block that would re-anchor `position: fixed`
@@ -28,16 +31,14 @@
  * wrapper instead of the viewport. A pure crossfade sidesteps that hazard.
  *
  * Reduced-motion: honored TWO ways — MotionConfig reducedMotion="user" reads the OS
- * preference, and useReducedMotion() collapses this reveal to a faster linear fade.
+ * preference, and useRouteRevealMotion's own useReducedMotion() check collapses
+ * EVERY navigation (lateral and push alike) to zero motion.
  */
 
-import { LazyMotion, MotionConfig, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, MotionConfig, m } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
-import { usePathname } from 'next/navigation';
-
-// --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1); --fw-dur-base = 280ms.
-const GLIDE = [0.16, 1, 0.3, 1] as const;
-const DURATION = 0.28;
+import { useRouteRevealMotion } from '@/lib/motion/route-motion';
+import { isBaseballLateralDestination } from '@/lib/baseball/nav-registry';
 
 export default function BaseballPlayerDashboardTemplate({
   children,
@@ -57,18 +58,13 @@ export default function BaseballPlayerDashboardTemplate({
 }
 
 function RouteReveal({ children }: { children: React.ReactNode }) {
-  const prefersReducedMotion = useReducedMotion();
-  const pathname = usePathname();
+  const reveal = useRouteRevealMotion(isBaseballLateralDestination);
   return (
     <m.div
-      key={pathname}
-      initial={prefersReducedMotion ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={
-        prefersReducedMotion
-          ? { duration: 0.18, ease: 'linear' }
-          : { duration: DURATION, ease: GLIDE }
-      }
+      key={reveal.routeKey}
+      initial={reveal.initial}
+      animate={reveal.animate}
+      transition={reveal.transition}
       className="min-h-full"
       // No `will-change: transform` — opacity-only never needs it, and asserting it
       // would create the containing block this recipe exists to avoid.

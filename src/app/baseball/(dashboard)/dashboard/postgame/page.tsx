@@ -25,6 +25,7 @@ import { getSessionProfile } from '@/lib/auth/session';
 import { getPostgameReview } from '@/lib/baseball/read-models/postgame';
 import { PostgameReviewClient } from '@/components/baseball/postgame/PostgameReviewClient';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 interface PostgamePageProps {
   searchParams: Promise<{ game?: string }>;
@@ -46,11 +47,15 @@ export default async function PostgameReviewPage({ searchParams }: PostgamePageP
     redirect('/baseball/dashboard/program');
   }
 
-  const { data: team } = (await supabase
-    .from('baseball_teams')
-    .select('id, name')
-    .eq('organization_id', coach.organization_id)
-    .single()) as { data: { id: string; name: string } | null };
+  // Cookie-aware, multi-row-safe team resolution (matches Command Center).
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  const { data: team } = teamId
+    ? ((await supabase
+        .from('baseball_teams')
+        .select('id, name')
+        .eq('id', teamId)
+        .maybeSingle()) as { data: { id: string; name: string } | null })
+    : { data: null };
 
   if (!team) {
     return (

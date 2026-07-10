@@ -4,26 +4,38 @@
  * ============================================================================
  * Fairway · AppShell · FairwayBottomNav (ADDITIVE)  — P413
  * ----------------------------------------------------------------------------
- * A persistent mobile bottom-tab bar for the 4–5 highest-frequency destinations.
- * On mobile (the primary surface for a player logging rounds in the field) the
- * ONLY navigation used to be the hamburger → slide-in drawer → tap round-trip;
- * this gives one-tap access to the core destinations (Nielsen #7: flexibility &
- * efficiency), keeping the drawer for the long tail.
+ * A persistent mobile bottom-tab bar for the role's 4 daily-loop destinations
+ * (docs/MOBILE_DOCTRINE.md Rule 10). On mobile (the primary surface for a
+ * player logging rounds in the field) the ONLY navigation used to be the
+ * hamburger → slide-in drawer → tap round-trip; this gives one-tap access to
+ * the core destinations (Nielsen #7: flexibility & efficiency), keeping the
+ * More sheet (`MoreNavSheet`) for the long tail.
  *
  * Mobile-only (`md:hidden`) — desktop keeps the recessive rail. Fixed to the
  * bottom of the viewport with a `safe-area-inset-bottom` pad so it clears the
- * iOS home indicator. Sits at `--fw-z-nav` (below the drawer/modal/toast so the
- * drawer scrim and any overlay always cover it).
+ * iOS home indicator. Sits at `--fw-z-nav` (below the sheet/modal/toast so the
+ * More sheet's scrim and any overlay always cover it).
  *
  * Active-state mirrors FairwaySidebar's `matchActive` (segment-boundary) and
  * honors a per-item `activeMatch` predicate for cluster rows (e.g. CoachHelm).
  * Each tab is a >=44px touch target (full-height column) with a visible 2px
  * focus ring (WCAG 2.2 AA) and an honest numeric badge (rendered only when > 0).
+ *
+ * M1 (2026-07-10, docs/MOBILE_DOCTRINE.md Rule 6/10): a 5th column — a
+ * `<Button>`, never a `<Link>` — renders when `onMoreOpen` is passed. It
+ * opens `MoreNavSheet`, the ONE overflow surface (the retired hamburger →
+ * left-drawer round-trip). `moreActive` lights it exactly like a destination
+ * tab when the CURRENT ROUTE is one of the sheet's overflow items;
+ * `moreBadge` is the aggregate of every hidden destination's unread count
+ * (`more-nav.ts`'s `summarizeMoreTab`) so a badge is never silently lost by
+ * being off the bar.
  * ========================================================================== */
 
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
-import type { NavItem, ShellLinkComponent } from './types';
+import { IconLayoutGrid } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import type { FairwayIcon, NavItem, ShellLinkComponent } from './types';
 
 /** Segment-boundary active match (mirrors FairwaySidebar's `matchActive`). */
 function matchActive(href: string, pathname?: string): boolean {
@@ -34,13 +46,31 @@ function matchActive(href: string, pathname?: string): boolean {
 }
 
 export interface FairwayBottomNavProps {
-  /** The 4–5 highest-frequency destinations for the current role. */
+  /** The role's 4 daily-loop destinations (docs/MOBILE_DOCTRINE.md Rule 10). */
   items: readonly NavItem[];
   /** Current pathname — drives active-state. */
   pathname?: string;
   /** Link element (Next's `<Link>` in the app; `<a>` in isolation/tests). */
   linkComponent?: ShellLinkComponent;
   className?: string;
+  /** Opens the More sheet. Presence renders the 5th column as a `<button>`
+   *  (never a `<Link>` — it isn't a destination, it's an affordance). */
+  onMoreOpen?: () => void;
+  /** Lights the More column when the current route is an overflow
+   *  destination (`more-nav.ts`'s `summarizeMoreTab`). */
+  moreActive?: boolean;
+  /** Aggregate badge across every hidden overflow destination. */
+  moreBadge?: number;
+  /** More column label. Default "More". */
+  moreLabel?: string;
+  /** More column icon. Default `IconLayoutGrid`. */
+  moreIcon?: FairwayIcon;
+  /** Whether the More sheet is CURRENTLY open — drives `aria-expanded` on the
+   *  button. Distinct from `moreActive` (which reflects the current ROUTE,
+   *  independent of whether the sheet happens to be open). Optional; the
+   *  caller already holds this as the same bridged `mobileOpen` state it
+   *  passes to `AppShell`. */
+  moreOpen?: boolean;
 }
 
 const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
@@ -57,8 +87,15 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
   pathname,
   linkComponent,
   className,
+  onMoreOpen,
+  moreActive,
+  moreBadge,
+  moreLabel = 'More',
+  moreIcon,
+  moreOpen,
 }: FairwayBottomNavProps) {
   const Link = linkComponent ?? DefaultLink;
+  const MoreIcon = moreIcon ?? IconLayoutGrid;
 
   return (
     <nav
@@ -128,6 +165,60 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
             </li>
           );
         })}
+        {onMoreOpen && (
+          <li className="flex-1">
+            <Button
+              type="button"
+              variant="ghost"
+              haptic="light"
+              aria-haspopup="dialog"
+              aria-expanded={moreOpen ?? false}
+              aria-label={moreLabel}
+              onClick={onMoreOpen}
+              className={cn(
+                // Full-height column ≥44px tall touch target — identical
+                // rhythm to a tab column above (it isn't a destination, but
+                // it must feel like one). `rounded-none` + zeroed padding
+                // cancel <Button>'s own defaults so the column stays flush
+                // with its 4 <Link> siblings (no corner radius, no min-height
+                // floor fighting the shared 56px column height).
+                'group relative flex min-h-[56px] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-none px-1 py-1.5',
+                'outline-none transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
+                'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+                'active:translate-y-[0.5px]',
+                'bg-transparent hover:bg-transparent',
+                moreActive ? 'text-accent-700' : 'text-text-tertiary hover:text-text-secondary',
+              )}
+            >
+              <span className="relative inline-flex">
+                <MoreIcon
+                  size={22}
+                  aria-hidden
+                  className={cn('flex-shrink-0', moreActive ? 'text-accent-700' : 'text-text-tertiary')}
+                />
+                {/* Aggregate overflow badge — only when the sum > 0. */}
+                {moreBadge && moreBadge > 0 ? (
+                  <span
+                    className={cn(
+                      'absolute -right-2 -top-1.5 min-w-[16px] rounded-full px-1 text-center',
+                      'bg-accent-600 font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent',
+                    )}
+                  >
+                    {moreBadge > 9 ? '9+' : moreBadge}
+                  </span>
+                ) : null}
+              </span>
+              <span
+                className={cn(
+                  'max-w-full truncate font-fw-sans text-eyebrow normal-case tracking-normal',
+                  moreActive ? 'font-semibold' : 'font-normal',
+                )}
+              >
+                {moreLabel}
+              </span>
+            </Button>
+          </li>
+        )}
       </ul>
     </nav>
   );

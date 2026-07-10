@@ -278,13 +278,14 @@ export function FairwayEventDetailDrawer({
           ) : null}
 
           {/* Linked travel itinerary (P440) — only when this event has a trip in
-              golf_travel_itineraries pointing back at it. Deep-links to Travel HQ
-              so the coach/player can jump straight to the itinerary, mirroring the
-              reverse "View on calendar" affordance on FairwayTripDetail. Honest:
-              hidden when the event has no linked trip. */}
+              golf_travel_itineraries pointing back at it. Deep-links to the
+              SPECIFIC trip (?trip=<id>) so Travel HQ auto-selects it, mirroring
+              the reverse "View on calendar" affordance on FairwayTripDetail
+              (which deep-links with ?event=<id>). Honest: hidden when the event
+              has no linked trip. */}
           {linkedTrip ? (
             <Link
-              href="/golf/dashboard/travel"
+              href={`/golf/dashboard/travel?trip=${linkedTrip.id}`}
               className={cn(
                 'group flex items-center gap-2.5 rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5',
                 'font-fw-sans text-body-sm text-text-secondary transition-colors hover:border-accent-500 hover:bg-surface',

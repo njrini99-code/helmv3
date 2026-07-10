@@ -26,7 +26,11 @@
  *
  * REAL SOURCE CHIPS (no teases):
  *   - from_review_id  → /golf/dashboard/rounds/<id>/review
- *   - from_insight_id → /golf/dashboard/coachhelm#insight-<id> (player anchor)
+ *   - from_insight_id → role-aware: player → /golf/dashboard/coachhelm#insight-<id>
+ *     (player anchor); coach → /golf/dashboard/insights?id=<id> (coaches have no
+ *     player profile, so the player front door always 404s them into
+ *     NotPlayerState — the Insights workspace's `?id=` deep-link is the coach-
+ *     facing equivalent).
  *   Both are real Next <Link>s (Button asChild) — not decorative spans.
  *
  * VARIANTS:
@@ -268,22 +272,30 @@ function SourceChip({
   reviewRoundId,
   insightId,
   context,
+  role,
 }: {
   reviewId?: string | null;
   /** Resolved round id behind the review (route is keyed by round, not review). */
   reviewRoundId?: string | null;
   insightId?: string | null;
   context?: string | null;
+  /** Viewer role — selects the insight destination (coach vs player front door). */
+  role: FocusAreaRole;
 }): ReactNode {
   if (!reviewId && !insightId) return null;
 
   // from_review_id → the round review (route /rounds/[id]/review is keyed by the
   // ROUND id, so prefer the resolved reviewRoundId; fall back to reviewId only
-  // when unresolved). from_insight_id → the player CoachHelm front door anchored
-  // to the insight (player insights live inline there).
+  // when unresolved). from_insight_id → role-aware: a COACH has no player
+  // profile, so `/golf/dashboard/coachhelm` (the player-only front door) always
+  // renders NotPlayerState for them — send coaches to the Insights workspace's
+  // `?id=` deep-link instead (the same insight, in the coach-facing surface).
+  // A player keeps the original in-page anchor.
   const href = reviewId
     ? `/golf/dashboard/rounds/${reviewRoundId ?? reviewId}/review`
-    : `/golf/dashboard/coachhelm#insight-${insightId}`;
+    : role === 'coach'
+      ? `/golf/dashboard/insights?id=${insightId}`
+      : `/golf/dashboard/coachhelm#insight-${insightId}`;
   const label = reviewId ? 'From a round review' : 'From a CoachHelm insight';
   const Icon = reviewId ? IconFileText : IconSparkles;
 
@@ -687,6 +699,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             reviewRoundId={focusArea.from_review_round_id}
             insightId={focusArea.from_insight_id}
             context={focusArea.review_context}
+            role={role}
           />
 
           {/* Practice Rx — drills prescribed for the originating insight. Self-

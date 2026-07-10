@@ -139,10 +139,10 @@ function UnfinishedRow({
             className="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center gap-0.5"
           >
             {isSetup ? (
-              <span className="font-fw-sans text-caption font-medium text-warm-800">Setup</span>
+              <span className="font-fw-sans text-caption font-medium text-fw-warning-ink">Setup</span>
             ) : (
               <>
-                <span className="font-fw-mono text-h3 font-medium leading-none tabular-nums text-warm-800">
+                <span className="font-fw-mono text-h3 font-medium leading-none tabular-nums text-fw-warning-ink">
                   {currentHole}
                 </span>
                 <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">

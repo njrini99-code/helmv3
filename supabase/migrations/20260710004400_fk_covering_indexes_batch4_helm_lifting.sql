@@ -1,0 +1,36 @@
+-- Advisor cleanup (unindexed_foreign_keys, batch 4/4).
+-- Applied to prod 2026-07-10 via MCP.
+create index if not exists helm_lifting_availability_statuses_created_by_coach_id_idx on helm_lifting_availability_statuses (created_by_coach_id);
+create index if not exists helm_lifting_bodyweight_entries_organization_id_idx on helm_lifting_bodyweight_entries (organization_id);
+create index if not exists helm_lifting_coach_assignments_assigned_by_user_id_idx on helm_lifting_coach_assignments (assigned_by_user_id);
+create index if not exists helm_lifting_coach_invites_invited_by_user_id_idx on helm_lifting_coach_invites (invited_by_user_id);
+create index if not exists helm_lifting_exercise_substitutions_substitute_exercise_id_idx on helm_lifting_exercise_substitutions (substitute_exercise_id);
+create index if not exists helm_lifting_exercise_substitutions_organization_id_idx on helm_lifting_exercise_substitutions (organization_id);
+create index if not exists helm_lifting_exercise_substitutions_created_by_coach_id_idx on helm_lifting_exercise_substitutions (created_by_coach_id);
+create index if not exists helm_lifting_exercises_created_by_coach_id_idx on helm_lifting_exercises (created_by_coach_id);
+create index if not exists helm_lifting_group_audit_target_athlete_id_idx on helm_lifting_group_audit (target_athlete_id);
+create index if not exists helm_lifting_group_members_added_by_coach_id_idx on helm_lifting_group_members (added_by_coach_id);
+create index if not exists helm_lifting_groups_created_by_coach_id_idx on helm_lifting_groups (created_by_coach_id);
+create index if not exists helm_lifting_import_rows_organization_id_idx on helm_lifting_import_rows (organization_id);
+create index if not exists helm_lifting_import_rows_matched_athlete_id_idx on helm_lifting_import_rows (matched_athlete_id);
+create index if not exists helm_lifting_import_runs_created_by_coach_id_idx on helm_lifting_import_runs (created_by_coach_id);
+create index if not exists helm_lifting_maxes_exercise_id_idx on helm_lifting_maxes (exercise_id);
+create index if not exists helm_lifting_maxes_organization_id_idx on helm_lifting_maxes (organization_id);
+create index if not exists helm_lifting_nutrition_plan_assignmen_assigned_by_coach_id_idx on helm_lifting_nutrition_plan_assignments (assigned_by_coach_id);
+create index if not exists helm_lifting_prescriptions_substitution_group_id_idx on helm_lifting_prescriptions (substitution_group_id);
+create index if not exists helm_lifting_prescriptions_exercise_id_idx on helm_lifting_prescriptions (exercise_id);
+create index if not exists helm_lifting_program_assignments_athlete_id_idx on helm_lifting_program_assignments (athlete_id);
+create index if not exists helm_lifting_program_assignments_group_id_idx on helm_lifting_program_assignments (group_id);
+create index if not exists helm_lifting_program_assignments_lift_day_id_idx on helm_lifting_program_assignments (lift_day_id);
+create index if not exists helm_lifting_program_assignments_assigned_by_coach_id_idx on helm_lifting_program_assignments (assigned_by_coach_id);
+create index if not exists helm_lifting_programs_created_by_coach_id_idx on helm_lifting_programs (created_by_coach_id);
+create index if not exists helm_lifting_prs_organization_id_idx on helm_lifting_prs (organization_id);
+create index if not exists helm_lifting_prs_lift_session_id_idx on helm_lifting_prs (lift_session_id);
+create index if not exists helm_lifting_prs_exercise_id_idx on helm_lifting_prs (exercise_id);
+create index if not exists helm_lifting_prs_verified_by_coach_id_idx on helm_lifting_prs (verified_by_coach_id);
+create index if not exists helm_lifting_session_exercises_prescription_id_idx on helm_lifting_session_exercises (prescription_id);
+create index if not exists helm_lifting_session_exercises_modified_by_coach_id_idx on helm_lifting_session_exercises (modified_by_coach_id);
+create index if not exists helm_lifting_set_results_organization_id_idx on helm_lifting_set_results (organization_id);
+create index if not exists helm_lifting_soreness_check_schedules_created_by_coach_id_idx on helm_lifting_soreness_check_schedules (created_by_coach_id);
+create index if not exists helm_lifting_soreness_maps_organization_id_idx on helm_lifting_soreness_maps (organization_id);
+create index if not exists helm_lifting_weight_checkin_schedules_created_by_coach_id_idx on helm_lifting_weight_checkin_schedules (created_by_coach_id);

@@ -8,22 +8,22 @@
  * the eye lands on it; a settled figure flashes its rule green when a background
  * sync lands a value (owned by the atom).
  *
- * Column counts resolve through a static class map (no arbitrary grid classes,
- * Tailwind-JIT safe). No hooks / handlers — safe in a server component.
+ * Phone shape resolves through `StatStrip` (Mobile Doctrine's ONE shape rule,
+ * shared with the Fairway/Bridge `StatTile` grids): phone → 2-col index (≤4
+ * KPIs) or snap-rail (≥5 KPIs); desktop grid preserved byte-for-byte above
+ * `sm`. No hooks / handlers — safe in a server component.
  */
-import { cn } from '@/lib/utils';
+import { StatStrip, STAT_STRIP_RAIL_THRESHOLD } from '@/components/fairway';
 import { RuledStatLine } from '..';
 
-// Static, JIT-safe column templates. Base is a single column; larger counts
-// step up at sm/lg so the strip never crams on mobile.
-const COLS: Record<number, string> = {
-  1: '',
-  2: 'sm:grid-cols-2',
-  3: 'sm:grid-cols-2 lg:grid-cols-3',
-  4: 'sm:grid-cols-2 lg:grid-cols-4',
-  5: 'sm:grid-cols-2 lg:grid-cols-5',
-  6: 'sm:grid-cols-2 lg:grid-cols-6',
-};
+// Below StatStrip's default rail threshold, a `leader`/`emphasis` figure
+// stays wherever the caller placed it — the pin-first partition below only
+// matters once the strip becomes a snap-rail, so a swipe isn't required to
+// see the one figure that carries hierarchy. Imports StatStrip's own
+// threshold constant rather than re-declaring the literal, so this
+// partition can never drift out of sync with StatStrip's actual rail/grid
+// decision.
+const RAIL_THRESHOLD = STAT_STRIP_RAIL_THRESHOLD;
 
 export interface KPIContentsItem {
   /** Small-caps KPI label, e.g. `ROSTER`, `ON THE RECORD`, `OPEN RISKS`. */
@@ -55,9 +55,27 @@ export interface KPIContentsStripProps {
 }
 
 export function KPIContentsStrip({ items, columns = 3, className }: KPIContentsStripProps) {
+  // Pin-first: once the strip becomes a snap-rail, a leader/emphasis figure
+  // is moved to index 0 so it's visible in the initial peek without a swipe.
+  // A stable partition — NOT a re-sort of the whole list — peer order is
+  // preserved within each half.
+  const ordered =
+    items.length >= RAIL_THRESHOLD
+      ? [
+          ...items.filter((it) => it.leader || it.emphasis),
+          ...items.filter((it) => !it.leader && !it.emphasis),
+        ]
+      : items;
+
+  // StatStrip's `columns` prop covers 2–6 (a lone column is expressed by
+  // omitting it and letting StatStrip default from `count` instead — its
+  // public contract has no "always 1 column" literal).
+  const clampedColumns = Math.min(Math.max(columns, 1), 6);
+  const statStripColumns = clampedColumns === 1 ? undefined : (clampedColumns as 2 | 3 | 4 | 5 | 6);
+
   return (
-    <div className={cn('grid grid-cols-1 gap-x-8 gap-y-7', COLS[columns] ?? COLS[3], className)}>
-      {items.map((it, i) => (
+    <StatStrip count={items.length} columns={statStripColumns} ariaLabel="Key figures" className={className}>
+      {ordered.map((it, i) => (
         <RuledStatLine
           key={`${it.label}-${i}`}
           label={it.label}
@@ -71,6 +89,6 @@ export function KPIContentsStrip({ items, columns = 3, className }: KPIContentsS
           ghost={it.ghost}
         />
       ))}
-    </div>
+    </StatStrip>
   );
 }

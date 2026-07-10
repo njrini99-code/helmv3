@@ -48,6 +48,8 @@ import {
   IconShieldCheck,
   IconCheckCircle2,
   IconAlertCircle,
+  IconCopy,
+  IconExternalLink,
 } from '@/components/icons';
 import {
   updatePassportVisibility,
@@ -76,6 +78,13 @@ interface Props {
    * this is undefined.
    */
   playerId?: string;
+  /**
+   * The RESOLVED subject player id — always present (self or staff-target),
+   * unlike `playerId` above. Display-only: builds the public-profile link
+   * (conn-baseball-player Finding 3) so a player can share the exact URL that
+   * `/baseball/player/[id]` (public-profile-access.ts) actually gates.
+   */
+  publicProfilePlayerId: string;
   initialState: PassportVisibilityState;
   initialHeadline: string | null;
   initialFieldVisibility: PassportFieldVisibilityMap;
@@ -224,6 +233,7 @@ function FieldRow({
 
 export function PassportVisibilityControls({
   playerId,
+  publicProfilePlayerId,
   initialState,
   initialHeadline,
   initialFieldVisibility,
@@ -303,6 +313,20 @@ export function PassportVisibilityControls({
   const onReset = () => {
     setState(initialState);
     setHeadline(initialHeadline ?? '');
+  };
+
+  // ---- Public link (Finding 3: give players a copy-my-link affordance once
+  // exposure is actually on, instead of leaving "Exposure is ON" as a claim
+  // with nothing to act on). Points at the real gated public route. ----
+  const publicProfilePath = `/baseball/player/${publicProfilePlayerId}`;
+  const onCopyPublicLink = async () => {
+    try {
+      const url = `${window.location.origin}${publicProfilePath}`;
+      await navigator.clipboard.writeText(url);
+      showToast('Public link copied', 'success');
+    } catch {
+      showToast('Could not copy the link', 'error');
+    }
   };
 
   // Group field defs for a scannable, hand-composed layout.
@@ -385,6 +409,36 @@ export function PassportVisibilityControls({
             );
           })}
         </div>
+
+        {exposureEnabled && (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-warm-200 bg-cream-50 px-3.5 py-2.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <IconEye size={14} className="shrink-0 text-warm-400" />
+              <p className="truncate text-sm text-warm-600">{publicProfilePath}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onCopyPublicLink}
+                title="Copy public link"
+                leftIcon={<IconCopy size={14} />}
+              >
+                Copy link
+              </Button>
+              <a
+                href={publicProfilePath}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open your public profile"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700"
+              >
+                <IconExternalLink size={15} />
+              </a>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 2. HEADLINE */}

@@ -3,12 +3,15 @@ import { AlertTriangle, Activity, SearchCheck, Users, ShieldCheck, RadioTower } 
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { fetchUsersTab, type RosterPlayerInsight, type TeamRosterInsight } from '@/lib/admin/data/users';
-import { Surface, StatTile, StatusPill } from '@/components/fairway';
+import { fetchBaseballTab } from '@/lib/admin/data/baseball';
+import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
+import { Surface, StatStrip, StatTile, StatusPill, TrendChart } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { TeamHealthTable } from '../_components/TeamHealthTable';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,10 +141,22 @@ function PlayerWatchlist({ players }: { players: RosterPlayerInsight[] }) {
 }
 
 async function BaseballBody() {
-  const [usersTab, errorsTab] = await Promise.all([
+  const [usersTab, errorsTab, baseballTab, featureHealth] = await Promise.all([
     fetchUsersTab({}),
     fetchErrorsTab({ sport: 'baseball', windowHours: 168 }),
+    fetchBaseballTab(),
+    fetchFeatureHealth(),
   ]);
+
+  const baseballFeatureHealth = summarizeFeatureHealth(
+    {
+      features: featureHealth.features.filter((f) => f.app === 'baseballhelm'),
+      generatedAt: featureHealth.generatedAt,
+      degraded: featureHealth.degraded,
+    },
+    new Date(),
+  );
+  const gamesTrend = baseballTab.games.gamesByWeek.map((w) => ({ x: w.week, y: w.count }));
 
   const teams = usersTab.teams.filter((team) => team.sport === 'baseball');
   const players = teams.flatMap((team) => team.players);
@@ -228,6 +243,63 @@ async function BaseballBody() {
           </div>
         </Surface>
       </section>
+
+      {/* Activity pulse — baseball engine rollup (fetchBaseballTab), the
+          BaseballHelm parity counterpart to golf's rounds/CoachHelm trend
+          section. Games trend replaces the prior "no sport-specific engine
+          rollup" gap; roster/team health stays sourced from fetchUsersTab
+          above (Team command map below) rather than duplicated here. */}
+      <section className="space-y-4">
+        <SectionLabel>Activity pulse</SectionLabel>
+        <StatStrip count={3} columns={3} mdColumns={3} ariaLabel="Baseball activity pulse KPIs">
+          <KpiTile
+            label="Games this week"
+            value={baseballTab.games.gamesThisWeek}
+            delta={baseballTab.games.gamesThisWeek - baseballTab.games.gamesLastWeek}
+            href="/admin/baseball"
+            trendData={baseballTab.games.gamesByWeek.slice(-8).map((w) => w.count)}
+          />
+          <KpiTile label="Games today" value={baseballTab.games.gamesToday} href="/admin/baseball" />
+          <KpiTile label="Completed 30d" value={baseballTab.games.completedGames30d} href="/admin/baseball" />
+        </StatStrip>
+        {/* No valueFormatter on TrendChart: functions can't cross the RSC
+            boundary from this server component, and the data is already
+            integer counts (mirrors golf/page.tsx's identical rounds chart). */}
+        {gamesTrend.length > 0 ? (
+          <TrendChart title="Games per week (12w)" data={gamesTrend} height={180} />
+        ) : (
+          <PanelNoData
+            label="No game history yet"
+            description="The 12-week games trend appears once teams start logging games."
+          />
+        )}
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Lift Lab — cross-sport strength program, baseball half. */}
+        <Surface padding="sm">
+          <SectionLabel>Lift Lab</SectionLabel>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <StatTile label="Sessions 30d" value={baseballTab.liftLab.sessions30d} tone="neutral" mono />
+            <StatTile label="Active athletes 30d" value={baseballTab.liftLab.activeAthletes30d} tone="neutral" mono />
+          </div>
+        </Surface>
+
+        {/* Feature health cross-link — BaseballHelm slice of the platform-wide
+            board, filtered by app='baseballhelm' (feature-registry.ts). */}
+        <Surface padding="sm">
+          <SectionLabel>Feature health</SectionLabel>
+          <div className="mt-3">
+            <FeatureHealthRollup summary={baseballFeatureHealth} />
+          </div>
+          <p className="mt-3 text-xs text-warm-500">
+            BaseballHelm features only — full cross-sport board lives at{' '}
+            <Link href="/admin/health" className="text-accent-700 underline">
+              /admin/health →
+            </Link>
+          </p>
+        </Surface>
+      </div>
 
       <Surface padding="sm">
         <SectionLabel>Team command map</SectionLabel>

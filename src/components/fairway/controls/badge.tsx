@@ -25,7 +25,7 @@ const toneSoft: Record<FwStatusTone, string> = {
   neutral: 'bg-surface-sunken text-text-secondary',
   accent: 'bg-accent-50 text-accent-700',
   success: 'bg-fw-success-bg text-accent-700',
-  warning: 'bg-fw-warning-bg text-warm-800',
+  warning: 'bg-fw-warning-bg text-fw-warning-ink',
   danger: 'bg-fw-danger-bg text-fw-danger',
   info: 'bg-surface-sunken text-text-secondary',
 };
@@ -34,7 +34,7 @@ const toneOutline: Record<FwStatusTone, string> = {
   neutral: 'border-border-subtle text-text-secondary',
   accent: 'border-accent-200 text-accent-700',
   success: 'border-accent-200 text-accent-700',
-  warning: 'border-warm-300 text-warm-800',
+  warning: 'border-fw-warning-ring text-fw-warning-ink',
   danger: 'border-fw-danger/30 text-fw-danger',
   info: 'border-border-subtle text-text-secondary',
 };

@@ -9,11 +9,14 @@
  *   • Details  — schedule (depart/return), lodging, flight info, room
  *                assignments, uniform, gear, notes. Honest emptiness: only
  *                fields that exist render; nothing is fabricated.
- *   • Expenses — REUSES the legacy ExpenseSummary / ExpenseList / (the form is
- *                mounted by the parent) VERBATIM. The expense sub-feature has
- *                its own self-contained write surface; we do not re-implement
- *                it. The parent owns the load/export/CRUD wiring and passes it
- *                down (no writes happen in this presentational component).
+ *   • Expenses — FairwayExpenseSummary / FairwayExpenseList, the Fairway
+ *                re-skins of the legacy ExpenseSummary / ExpenseList (this
+ *                file used to reuse those VERBATIM; that was a deliberate
+ *                scope cut, now closed — see FairwayExpenseList.tsx /
+ *                FairwayExpenseSummary.tsx for what changed). The form is
+ *                mounted by the parent. The parent owns the load/export/CRUD
+ *                wiring and passes it down (no writes happen in this
+ *                presentational component).
  *
  * Coach actions (edit / delete) sit in the panel header. Delete opens a
  * ModalShell confirm that names the destructive cascade explicitly ("Deletes
@@ -21,8 +24,9 @@
  * that removes the whole itinerary AND every expense. Confirm calls the parent
  * handler, which uses the unchanged deleteGolfTravelItinerary action.
  *
- * Presentation only. Tokens ONLY (legacy expense components keep their own
- * styling — they are reused, not re-skinned, per the file-ownership rule).
+ * Presentation only. Fairway tokens end to end — the expense sub-feature now
+ * shares this file's overlay paradigm (ModalShell) and toast system
+ * (fairwayToast) instead of running its own.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -42,7 +46,8 @@ import {
   ModalShell,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import { ExpenseList, ExpenseSummary } from '@/components/golf/travel';
+import { FairwayExpenseList } from './FairwayExpenseList';
+import { FairwayExpenseSummary } from './FairwayExpenseSummary';
 import type {
   TravelExpense,
   ExpenseSummary as ExpenseSummaryType,
@@ -235,11 +240,12 @@ export function FairwayTripDetail({
             </div>
 
             {/* Linked calendar event — only when this trip is linked to a
-                golf_events row. Deep-links to the calendar so the coach/player
-                can jump straight to the event. Honest: hidden when unlinked. */}
+                golf_events row. Deep-links to the SPECIFIC event (?event=<id>)
+                so the calendar auto-opens its detail drawer, rather than just
+                landing on the general hub. Honest: hidden when unlinked. */}
             {itinerary.event_id ? (
               <Link
-                href="/golf/dashboard/calendar"
+                href={`/golf/dashboard/calendar?event=${itinerary.event_id}`}
                 className="group flex items-center gap-2.5 rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5 font-fw-sans text-body-sm text-text-secondary transition-colors hover:border-accent-500 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
               >
                 <CalendarDays className="h-4 w-4 shrink-0 text-accent-700" aria-hidden />
@@ -387,9 +393,8 @@ export function FairwayTripDetail({
             </Surface>
           ) : (
             <div className="flex flex-col gap-6">
-              {/* Legacy expense components reused VERBATIM (own styling). */}
               {expenseSummary && expenseSummary.count > 0 ? (
-                <ExpenseSummary
+                <FairwayExpenseSummary
                   summary={expenseSummary}
                   budgets={budgets}
                   itineraryId={itinerary.id}
@@ -401,7 +406,7 @@ export function FairwayTripDetail({
                 <h4 className={cn('mb-3 font-fw-sans text-body-sm font-semibold text-text-secondary')}>
                   All expenses
                 </h4>
-                <ExpenseList
+                <FairwayExpenseList
                   expenses={expenses}
                   onEdit={onEditExpense}
                   onRefresh={onRefreshExpenses}

@@ -26,10 +26,14 @@ export async function revokeSessionsForUser(
   if (error) throw new Error(`revoke_user_sessions failed: ${error.message}`);
 
   // Audit into the event feed too (the RPC already wrote audit_log).
-  logSecurityEvent(`Admin revoked all sessions for user ${userId}`, 'warning', {
-    targetUserId: userId,
-    revokedBy: admin.userId,
-  }).catch(() => {});
+  // Pass userId so this shows up on the TARGET user's own event timeline
+  // (`/admin/users/[id]`) — not just buried in metadata.
+  logSecurityEvent(
+    `Admin revoked all sessions for user ${userId}`,
+    'warning',
+    { targetUserId: userId, revokedBy: admin.userId },
+    userId,
+  ).catch(() => {});
 
   revalidatePath('/admin/auth');
   return { revokedCount: data ?? 0 };

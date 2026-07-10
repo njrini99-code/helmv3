@@ -7,11 +7,11 @@ import { PageLoading } from '@/components/ui/loading';
 import { ProfileEditor } from '@/components/features/profile-editor';
 import { CollegeProfileEditor } from '@/components/baseball/profile';
 import { useAuth } from '@/hooks/use-auth';
-import { IconGlobe } from '@/components/icons';
+import { IconGlobe, IconChevronRight } from '@/components/icons';
 import { Player } from '@/lib/types';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Button } from '@/components/fairway';
-import { SectionMasthead, EditorsLetter, Reveal } from '@/components/baseball/living-annual';
+import { SectionMasthead, EditorsLetter, Reveal, pressableClass } from '@/components/baseball/living-annual';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -82,6 +82,34 @@ export default function ProfilePage() {
             </p>
           </SectionMasthead>
         </Reveal>
+
+        {/* Activate Recruiting nudge (conn-baseball-player Finding 2) — the
+            nav entry (player-activate) has no persistent rail slot by design
+            (command palette / direct URL only, see hub-definitions.ts), so
+            Today/Passport/Profile — the surfaces every eligible player
+            actually visits — carry the one-time nudge instead. */}
+        {!isCollegePlayer && player.recruiting_activated !== true && (
+          <EditorsLetter
+            ink="team"
+            live
+            liveLabel="One-time"
+            title="Activate recruiting to be seen by college coaches"
+            body="Right now your profile is invisible to recruiters. Turn on recruiting exposure once to let college coaches discover it."
+            action={
+              <Link
+                href="/baseball/dashboard/activate"
+                className={pressableClass({
+                  ink: 'team',
+                  className:
+                    'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+                })}
+              >
+                Activate Recruiting
+                <IconChevronRight size={16} aria-hidden />
+              </Link>
+            }
+          />
+        )}
 
         {isCollegePlayer ? (
           <CollegeProfileEditor player={player} onUpdate={handleUpdate} />

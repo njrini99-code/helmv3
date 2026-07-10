@@ -1,43 +1,38 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { bridgeGetTracerData } from '@/app/admin/actions/golf-tracer';
-import { Surface, StatusPill, InlineNotice, type FwStatusTone } from '@/components/fairway';
+import { bridgeGetTracerData, bridgeGetTracerEnrichedData } from '@/app/admin/actions/golf-tracer';
+import { Surface, InlineNotice, Sparkline } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
-import { PanelAllClear, PanelNoData } from '../../_components/PanelStates';
+import { PanelAllClear } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
 import { AutoRefresh } from '../../_components/AutoRefresh';
+import { StuckRoundsPanel } from './StuckRoundsPanel';
+import { TracerPlayerList } from './TracerPlayerList';
+import { TracerIncidentRow } from './TracerIncidentRow';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Port strategy: minimum-viable read-only port for W8 (per the wave doc's
- * fallback clause). This page calls bridgeGetTracerData() only — the
- * per-round diagnostic drill-down (getTracerRoundDiagnostic) and the
- * fixRoundData "fix" buttons are NOT wired here; they're deferred to the
- * first W14 retirement prerequisite, where the legacy TracerRoundInspector /
- * RoundDiagnosticModal client components get ported as interactive pieces.
- * Both delegations already exist and are gated in
- * src/app/admin/actions/golf-tracer.ts.
+ * Port strategy: W8 shipped a minimum-viable read-only port. This wave
+ * closes the gap the page's own banner used to admit — the daily trend +
+ * stuck-round detector (`getTracerEnrichedDataImpl`) is now bridged in
+ * (`bridgeGetTracerEnrichedData`), the player list opens a real drill-down
+ * (`TracerPlayerList` → `TracerRoundDiagnostic`, wired to
+ * `bridgeGetTracerRoundDiagnostic`/`bridgeFixRoundData`), and every tracer
+ * incident (here and inside the drill-down) exposes its dropped remediation
+ * fields via expand-on-click. Marking an incident "resolved" and the full
+ * hole-by-hole shot browser still live on the legacy tracer tab only.
  */
 
-const SEVERITY_TONE: Record<'critical' | 'error' | 'warning' | 'info', FwStatusTone> = {
-  critical: 'danger',
-  error: 'danger',
-  warning: 'warning',
-  info: 'neutral',
-};
-
-function playerName(p: { first_name: string | null; last_name: string | null }): string {
-  return `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Unknown player';
-}
-
 async function TracerBody() {
-  const data = await bridgeGetTracerData();
+  const [data, enriched] = await Promise.all([bridgeGetTracerData(), bridgeGetTracerEnrichedData()]);
 
   const sortedPlayers = [...data.playerSummaries].sort((a, b) => b.total_rounds - a.total_rounds);
+  const dailyRounds = enriched.dailyRoundCounts.map((d) => d.count);
+  const dailyErrors = enriched.dailyErrorCounts.map((d) => d.count);
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <KpiTile label="Players tracked" value={data.playerSummaries.length} href="/admin/golf/tracer" />
         <KpiTile
           label="Errors 7d"
@@ -59,48 +54,51 @@ async function TracerBody() {
           href="/admin/errors?sport=golf&severity=warning"
           goodDirection="down"
         />
+        <KpiTile
+          label="Stuck rounds"
+          value={enriched.stuckRounds.length}
+          href="/admin/golf/tracer#stuck-rounds"
+          tone={enriched.stuckRounds.length > 0 ? 'danger' : 'neutral'}
+          goodDirection="down"
+        />
       </section>
 
       <Surface padding="sm">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Daily activity (30d)</h2>
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium text-warm-600">Rounds started / day</p>
+              <p className="font-fw-mono text-lg font-semibold tabular-nums text-warm-900">
+                {dailyRounds.at(-1) ?? 0}
+              </p>
+            </div>
+            <Sparkline data={dailyRounds} goodDirection="up" label="Rounds started per day" width={100} height={28} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium text-warm-600">Tracer errors / day</p>
+              <p className="font-fw-mono text-lg font-semibold tabular-nums text-warm-900">
+                {dailyErrors.at(-1) ?? 0}
+              </p>
+            </div>
+            <Sparkline data={dailyErrors} goodDirection="down" label="Tracer errors per day" width={100} height={28} />
+          </div>
+        </div>
+      </Surface>
+
+      <Surface padding="sm" id="stuck-rounds">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+          Stuck rounds — in-progress, no activity in 1h+
+        </h2>
+        <div className="mt-2">
+          <StuckRoundsPanel rounds={enriched.stuckRounds} />
+        </div>
+      </Surface>
+
+      <Surface padding="sm">
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Player data quality</h2>
-        {sortedPlayers.length === 0 ? (
-          <PanelNoData label="No player round activity yet" description="Player rows appear once a round is logged." />
-        ) : (
-          <ul className="mt-2 divide-y divide-warm-200/60">
-            {sortedPlayers.slice(0, 100).map((p, i) => (
-              <li
-                key={p.player_id}
-                className={
-                  i === 0
-                    // Leader row — the single most-active player by rounds
-                    // logged, sorted just above: soft green wash + a dateline
-                    // rule above the name, the same "leader" treatment used
-                    // everywhere else in the console a list is genuinely
-                    // rank-ordered. Replaces the retired border-l-2 left bar.
-                    ? 'flex flex-wrap items-center gap-x-3 gap-y-1 bg-accent-50/60 py-2 pl-2 text-sm'
-                    : 'flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm'
-                }
-              >
-                <span className="min-w-0 flex-1 basis-full sm:basis-auto">
-                  {i === 0 && <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-accent-500" />}
-                  <span className="block truncate text-warm-900">{playerName(p)}</span>
-                </span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-600">
-                  {p.completed_rounds}/{p.total_rounds} completed
-                </span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-600">
-                  {p.in_progress_rounds} in-progress · {p.draft_rounds} draft
-                </span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-500">
-                  {p.last_activity ? new Date(p.last_activity).toLocaleDateString() : 'never'}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {data.truncated ? (
-          <p className="mt-2 text-xs text-warm-500">Showing latest data — the bounded query hit its row cap.</p>
-        ) : null}
+        <TracerPlayerList players={sortedPlayers} roundDetails={data.roundDetails} truncated={data.truncated} />
       </Surface>
 
       <Surface padding="sm">
@@ -112,18 +110,7 @@ async function TracerBody() {
         ) : (
           <ul className="mt-2 divide-y divide-warm-200/60">
             {data.recentErrors.slice(0, 50).map((incident) => (
-              <li key={incident.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
-                <StatusPill tone={SEVERITY_TONE[incident.severity]} dot size="sm">
-                  {incident.severity}
-                </StatusPill>
-                <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">{incident.title}</span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-600">
-                  {incident.occurrences} occurrence{incident.occurrences === 1 ? '' : 's'}
-                </span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-500">
-                  {new Date(incident.lastSeen).toLocaleDateString()}
-                </span>
-              </li>
+              <TracerIncidentRow key={incident.id} incident={incident} />
             ))}
           </ul>
         )}
@@ -137,17 +124,16 @@ export default async function TracerPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <InlineNotice tone="info" title="Partial port — read-only summary">
-        This is a minimum-viable read-only port. The per-round diagnostic
-        drill-down and data-quality &quot;fix&quot; actions from the legacy
-        console are not wired here yet (the gated delegations already exist
-        in <code className="font-fw-mono">golf-tracer.ts</code> — only the UI
-        is missing). Need to inspect or fix a specific round right now? Use
-        the legacy tracer tab at{' '}
+      <InlineNotice tone="info" title="Round diagnostics and fixes now live here">
+        Click any player below to see their rounds; expand a round to inspect
+        its data-quality checks and run a fix (recalculate totals, GIR,
+        strokes gained, refresh the stats cache, or remove a stuck round).
+        Marking a tracer incident resolved and the full hole-by-hole shot
+        browser still live on the legacy tracer tab at{' '}
         <a href="/golf/admin?tab=tracer" className="underline">
           /golf/admin?tab=tracer
         </a>{' '}
-        in the meantime.
+        for now.
       </InlineNotice>
       <PanelBoundary title="Tracer">
         <TracerBody />

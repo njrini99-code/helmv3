@@ -17,6 +17,7 @@ import { getSessionProfile } from '@/lib/auth/session';
 import { getSignalInbox } from '@/lib/baseball/read-models/signal-inbox';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import { SignalInboxClient } from '@/components/baseball/signals';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 export default async function SignalsPage() {
   const supabase = await createClient();
@@ -28,12 +29,16 @@ export default async function SignalsPage() {
   if (!coach) redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
-  // Resolve the team for this program.
-  const { data: team } = (await supabase
-    .from('baseball_teams')
-    .select('id, name')
-    .eq('organization_id', coach.organization_id)
-    .single()) as { data: { id: string; name: string } | null };
+  // Resolve the team for this program (cookie-aware, multi-row-safe —
+  // matches Command Center).
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  const { data: team } = teamId
+    ? ((await supabase
+        .from('baseball_teams')
+        .select('id, name')
+        .eq('id', teamId)
+        .maybeSingle()) as { data: { id: string; name: string } | null })
+    : { data: null };
 
   if (!team) {
     // No team yet — render the inbox empty/unauthorized envelope honestly.

@@ -28,7 +28,17 @@ export const metadata: Metadata = {
 // 30s cache: balances freshness vs cold-fetch timeouts (was 0 → 100% P75 30s)
 export const revalidate = 30;
 
-export default async function GolfCalendarPage() {
+interface GolfCalendarPageProps {
+  /**
+   * `?event=<id>` — the Travel→Calendar cross-link (FairwayTripDetail's "Linked
+   * calendar event" chip) deep-links here so the specific event's detail
+   * drawer auto-opens instead of landing on the general calendar hub.
+   */
+  searchParams: Promise<{ event?: string }>;
+}
+
+export default async function GolfCalendarPage({ searchParams }: GolfCalendarPageProps) {
+  const { event: initialEventId } = await searchParams;
   // React.cache() dedupes getUser() + profile queries — free after layout runs them
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
@@ -217,6 +227,7 @@ export default async function GolfCalendarPage() {
         teamId={teamId}
         loadedRangeStart={threeMonthsAgo.toISOString()}
         loadedRangeEnd={threeMonthsAhead.toISOString()}
+        initialEventId={initialEventId}
       />
     </div>
   );

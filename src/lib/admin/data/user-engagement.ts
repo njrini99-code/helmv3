@@ -51,7 +51,6 @@ export interface UserEngagementActivityItem {
   kind: 'round' | 'insight' | 'review';
   at: string;
   label: string;
-  href: string | null;
 }
 
 export interface UserEngagementDetail {
@@ -79,21 +78,18 @@ function mergeRecent(
       kind: 'round' as const,
       at: r.created_at ?? '',
       label: r.course_name ? `Round at ${r.course_name}` : 'Round logged',
-      href: null,
     })),
     ...insights.map((i) => ({
       id: i.id,
       kind: 'insight' as const,
       at: i.created_at ?? '',
       label: i.title,
-      href: null,
     })),
     ...reviews.map((r) => ({
       id: r.id,
       kind: 'review' as const,
       at: r.created_at ?? '',
       label: r.primary_takeaway ?? 'Round review',
-      href: null,
     })),
   ];
   return items.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);

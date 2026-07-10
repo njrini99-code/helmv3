@@ -20,9 +20,9 @@ import {
   IconLock,
   IconMail,
   IconPalette,
-  IconSchool,
   IconSettings,
   IconShield,
+  IconShieldCheck,
   IconTarget,
   IconUpload,
   IconUsers,
@@ -100,10 +100,20 @@ const PLAYER_SETTINGS_LINKS = [
     icon: IconShield,
   },
   {
-    href: '/baseball/dashboard/settings/recruiting-preferences',
-    label: 'Recruiting Preferences',
-    description: 'Manage exposure preferences and college fit signals',
-    icon: IconSchool,
+    // P0 fix: this card used to point at
+    // /baseball/dashboard/settings/recruiting-preferences, a COACH-only
+    // recruiting-philosophy page (`if (!coach) redirect('/baseball/login')`).
+    // A player session always has session.coach === null, so every player who
+    // clicked this card was bounced straight to the login screen. The real
+    // player-facing exposure controls already live on the Passport page
+    // (Visibility Controls: staff-only / player-visible / public / scout
+    // packet). Repoint here now; a dedicated player-facing recruiting/college-
+    // fit preferences page is a deferred, real feature-design task (new UI,
+    // new fields), tracked separately — not a same-day redirect fix.
+    href: '/baseball/player/passport',
+    label: 'Passport & Visibility',
+    description: 'Control what recruiters and scouts can see',
+    icon: IconShieldCheck,
   },
 ] as const;
 

@@ -3,6 +3,7 @@
 import { useState, useMemo, ReactNode, Component, ErrorInfo } from 'react';
 import type { AdminDashboardData, BIFunnelStep } from '@/app/golf/actions/admin-data';
 import { AdminStatCard } from './AdminStatCard';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -390,15 +391,21 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <GlassCard className="text-center">
             <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Visitors 24h</p>
-            <p className="text-2xl font-bold text-warm-900 tabular-nums">{bi.vercel.visitors24h.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-warm-900 tabular-nums">
+              <AnimatedNumber value={bi.vercel.visitors24h} />
+            </p>
           </GlassCard>
           <GlassCard className="text-center">
             <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Visitors 7d</p>
-            <p className="text-2xl font-bold text-warm-900 tabular-nums">{bi.vercel.visitors7d.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-warm-900 tabular-nums">
+              <AnimatedNumber value={bi.vercel.visitors7d} />
+            </p>
           </GlassCard>
           <GlassCard className="text-center">
             <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Visitors 30d</p>
-            <p className="text-2xl font-bold text-warm-900 tabular-nums">{bi.vercel.visitors30d.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-warm-900 tabular-nums">
+              <AnimatedNumber value={bi.vercel.visitors30d} />
+            </p>
           </GlassCard>
         </div>
       )}

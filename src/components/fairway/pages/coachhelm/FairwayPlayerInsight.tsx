@@ -599,6 +599,24 @@ export function FairwayPlayerInsight({
   const heroInsight = displayInsights[0];
   const secondInsight = displayInsights[1];
 
+  // Deep-link scroll: insights are fetched client-side (loadInsights above),
+  // so a `#insight-<id>` hash from the coach morning-digest email
+  // (coach-morning-digest/route.ts's deepLinkFor) has nothing to find at
+  // initial paint — the browser's native hash-scroll runs once, too early,
+  // and gives up. Once loading settles, retry it manually against whichever
+  // card actually mounted (matches the id={} wrappers around heroInsight/
+  // secondInsight below). No-ops harmlessly if the linked insight didn't
+  // make the top-2 display cut.
+  useEffect(() => {
+    if (insightsLoading) return;
+    const hash = window.location.hash;
+    if (!hash.startsWith('#insight-')) return;
+    const el = document.getElementById(hash.slice(1));
+    if (!el) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+  }, [insightsLoading, displayInsights]);
+
   // ── Zero-data honesty guard (P104) ───────────────────────────────────────
   // The route's computeCompositeRating / computeCategoryBreakdown default to a
   // synthetic "50" (and Stable) when a player has NEVER recorded a round. Never
@@ -825,10 +843,20 @@ export function FairwayPlayerInsight({
               ) : (
                 <div className="flex flex-col gap-4">
                   {heroInsight ? (
-                    <InsightCard insight={heroInsight} density="hero" audience="coach" showActions onAction={handleAction} />
+                    // id target for the coach morning-digest email's deep link
+                    // (#insight-<id> — see coach-morning-digest/route.ts
+                    // deepLinkFor). InsightCard itself has no `id` prop (its
+                    // props are a closed set, not spread HTML attrs) — a
+                    // wrapper div is the anchor instead of touching the
+                    // verbatim-reused primitive.
+                    <div id={`insight-${heroInsight.id}`}>
+                      <InsightCard insight={heroInsight} density="hero" audience="coach" showActions onAction={handleAction} />
+                    </div>
                   ) : null}
                   {secondInsight ? (
-                    <InsightCard insight={secondInsight} density="default" audience="coach" showActions onAction={handleAction} />
+                    <div id={`insight-${secondInsight.id}`}>
+                      <InsightCard insight={secondInsight} density="default" audience="coach" showActions onAction={handleAction} />
+                    </div>
                   ) : null}
                 </div>
               )}

@@ -5,7 +5,7 @@ import {
   fetchOverviewSnapshot,
   classifyKpiTone,
   ERRORS_24H_RED_AT,
-  AUTH_FAILURES_24H_RED_AT,
+  SECURITY_EVENTS_24H_RED_AT,
   type OverviewKpis,
   type WatcherSignal,
 } from '@/lib/admin/data/overview';
@@ -20,7 +20,7 @@ import { AutoRefresh } from './_components/AutoRefresh';
 import { PanelBoundary } from './_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from './_components/PanelStates';
 import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
-import { SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill } from '@/components/fairway';
+import { SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill, StatStrip } from '@/components/fairway';
 import { ADMIN_COMMAND_SHORTCUTS } from './_components/admin-nav';
 
 export const dynamic = 'force-dynamic';
@@ -96,7 +96,15 @@ async function BannerAndKpis() {
           <BriefingStrip />
         </PanelBoundary>
       </div>
-      <div className="mt-4 grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <StatStrip
+        count={6}
+        columns={6}
+        mdColumns={3}
+        xlColumns={6}
+        edgeBleedClassName="-mx-4 px-4"
+        ariaLabel="Platform KPIs"
+        className="mt-4"
+      >
         <KpiTile label="Sentry unresolved" value={kpis.sentryUnresolved} href="/admin/errors" tone={kpis.sentryUnresolved ? 'danger' : 'neutral'} goodDirection="down" />
         <KpiTile
           label="Incident groups 24h"
@@ -106,11 +114,11 @@ async function BannerAndKpis() {
           tone={classifyKpiTone(kpis.incidentGroups24h, ERRORS_24H_RED_AT)}
         />
         <KpiTile
-          label="Auth failures 24h"
-          value={kpis.authFailures24h}
+          label="Security events 24h"
+          value={kpis.securityEvents24h}
           href="/admin/auth"
           goodDirection="down"
-          tone={classifyKpiTone(kpis.authFailures24h, AUTH_FAILURES_24H_RED_AT)}
+          tone={classifyKpiTone(kpis.securityEvents24h, SECURITY_EVENTS_24H_RED_AT)}
         />
         <KpiTile label="Active users today" value={kpis.activeUsersToday} href="/admin/users" />
         <KpiTile
@@ -125,7 +133,7 @@ async function BannerAndKpis() {
           tone={kpis.lastDeploy?.state === 'ERROR' ? 'danger' : 'neutral'}
           goodDirection="down"
         />
-      </div>
+      </StatStrip>
       <SignalBoard kpis={kpis} watcher={watcher} />
       <MetricTruthPanel kpis={kpis} watcher={watcher} />
       <SavedCommandViews kpis={kpis} />
@@ -343,9 +351,9 @@ async function TriagePanel() {
   const { items, sentry, counts } = await fetchTriageQueue();
   const regressed = items.filter((i) => i.substatus === 'regressed');
   const sportCounts = [
-    ['Golf', items.filter((i) => i.sport === 'golf').length],
-    ['Baseball', items.filter((i) => i.sport === 'baseball').length],
-    ['Shared', items.filter((i) => i.sport === 'shared' || i.sport === null).length],
+    ['Golf', items.filter((i) => i.sport === 'golf').length, 'golf'],
+    ['Baseball', items.filter((i) => i.sport === 'baseball').length, 'baseball'],
+    ['Shared', items.filter((i) => i.sport === 'shared' || i.sport === null).length, 'shared'],
   ] as const;
   const topSources = Array.from(
     items.reduce((map, item) => {
@@ -379,15 +387,23 @@ async function TriagePanel() {
           ))}
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {sportCounts.map(([label, count]) => (
-            <span key={label} className="inline-flex items-center gap-2 rounded-full border border-warm-200 px-2.5 py-1 text-caption text-warm-600">
+          {sportCounts.map(([label, count, sport]) => (
+            <Link
+              key={label}
+              href={`/admin/errors?sport=${sport}`}
+              className="inline-flex items-center gap-2 rounded-full border border-warm-200 px-2.5 py-1 text-caption text-warm-600 transition-colors hover:bg-warm-100"
+            >
               {label}<span className="font-fw-mono tabular-nums text-warm-900">{count}</span>
-            </span>
+            </Link>
           ))}
           {topSources.map(([source, count]) => (
-            <span key={source} className="inline-flex items-center gap-2 rounded-full bg-warm-100 px-2.5 py-1 font-fw-mono text-caption text-warm-600">
+            <Link
+              key={source}
+              href={`/admin/errors?source=${encodeURIComponent(source)}`}
+              className="inline-flex items-center gap-2 rounded-full bg-warm-100 px-2.5 py-1 font-fw-mono text-caption text-warm-600 transition-colors hover:bg-warm-200"
+            >
               {source}<span className="tabular-nums text-warm-900">{count}</span>
-            </span>
+            </Link>
           ))}
         </div>
       </Surface>
@@ -457,6 +473,16 @@ async function DeployRail() {
   );
 }
 
+/**
+ * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 2/7): on phone this used to
+ * be the FIRST thing rendered — an eyebrow + big title + paragraph + four
+ * shortcut pills spending the entire first viewport on decoration before the
+ * posture banner (the actual answer to "is anything on fire") ever appears.
+ * Below `md` it condenses to one title line: the paragraph and the shortcut
+ * pills are desktop-only chrome (rule 7), and `AdminOverviewPage` now renders
+ * the "Live posture" section BEFORE this masthead so the banner is always
+ * the first thing above the fold, on every breakpoint.
+ */
 function CommandHeader() {
   const iconByHref = {
     '/admin/errors': Activity,
@@ -470,14 +496,14 @@ function CommandHeader() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-widest text-white/55">Helm Bridge</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-normal text-white sm:text-3xl">
+          <h1 className="mt-1 text-h3 font-semibold tracking-normal text-white md:text-2xl lg:text-3xl">
             Command Center
           </h1>
-          <p className="mt-1 max-w-3xl text-sm text-white/65">
+          <p className="mt-1 hidden max-w-3xl text-sm text-white/65 md:block">
             Production posture across GolfHelm, CoachHelm, BaseballHelm, Sentry, and Vercel.
           </p>
         </div>
-        <nav aria-label="Command center shortcuts" className="flex flex-wrap gap-2">
+        <nav aria-label="Command center shortcuts" className="hidden flex-wrap gap-2 md:flex">
           {ADMIN_COMMAND_SHORTCUTS.map((item) => {
             const Icon = iconByHref[item.href];
             return (
@@ -503,8 +529,10 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-5">
       <AutoRefresh />
-      <CommandHeader />
 
+      {/* M1 (bridge-chrome): posture BEFORE the masthead on every breakpoint
+          — the operator's headline question ("is anything on fire") answers
+          above the fold instead of sitting under a decorative hero. */}
       <section aria-label="Live posture" className="space-y-4">
         <div>
           <Eyebrow as="h2" tone="secondary">Live posture</Eyebrow>
@@ -514,6 +542,8 @@ export default async function AdminOverviewPage() {
           <BannerAndKpis />
         </PanelBoundary>
       </section>
+
+      <CommandHeader />
 
       <section aria-label="Incident operations" className="space-y-4">
         <div>

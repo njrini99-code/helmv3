@@ -16,8 +16,10 @@
  *                   getBudgetsForItinerary / exportExpensesToCSV (unchanged).
  *                   The add/edit EDITOR is the Fairway-native FairwayExpenseForm
  *                   (P317: same ModalShell paradigm as the itinerary editor;
- *                   write logic preserved verbatim). The legacy ExpenseList /
- *                   ExpenseSummary display components are reused as-is.
+ *                   write logic preserved verbatim). The list/summary DISPLAY
+ *                   components are now also Fairway-native — FairwayExpenseList /
+ *                   FairwayExpenseSummary (mounted by FairwayTripDetail), not
+ *                   the legacy golf/travel ExpenseList/ExpenseSummary.
  *
  * ── ROLE FORK (the ONLY thing role changes) ────────────────────────────────
  *   Coaches and players see the SAME trip list + detail. Role ONLY toggles the
@@ -79,6 +81,14 @@ export interface FairwayTravelProps {
    * agree on the calendar date; the effect then upgrades to precise client time).
    */
   nowISO?: string;
+  /**
+   * `?trip=<id>` from the route's searchParams — the Calendar→Travel
+   * cross-link (FairwayEventDetailDrawer's "Linked travel itinerary" chip).
+   * When the id matches a loaded itinerary, it auto-selects on mount instead
+   * of landing on the general trips list. Silently ignored if the trip isn't
+   * found (deleted, wrong team) — honest, no error for a stale link.
+   */
+  initialTripId?: string;
 }
 
 /**
@@ -99,12 +109,14 @@ export function FairwayTravel({
   teamId,
   isCoach,
   nowISO,
+  initialTripId,
 }: FairwayTravelProps) {
   const router = useRouter();
   const badges = useNotificationBadges();
 
   const [itineraries, setItineraries] = React.useState(initialItineraries);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const detailPanelRef = React.useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = React.useState<'details' | 'expenses'>('details');
 
   // Itinerary create/edit modal.
@@ -139,6 +151,28 @@ export function FairwayTravel({
     () => itineraries.find((i) => i.id === selectedId) ?? null,
     [itineraries, selectedId],
   );
+
+  // ── Deep-link auto-select (Calendar→Travel cross-link, P440 symmetric fix)
+  // FairwayEventDetailDrawer's "Linked travel itinerary" chip deep-links here
+  // with `?trip=<id>` instead of just landing on the general hub. Selects the
+  // matching trip ONCE the id is found in the loaded list, then scrolls the
+  // detail panel into view (it renders below the list on mobile, off-screen
+  // otherwise). A ref guards against re-selecting after the coach/player picks
+  // a different trip. Silently no-ops if the trip never shows up — honest,
+  // never an error for a stale link.
+  const autoSelectedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!initialTripId || autoSelectedRef.current) return;
+    const match = itineraries.find((i) => i.id === initialTripId);
+    if (!match) return;
+    autoSelectedRef.current = true;
+    setSelectedId(match.id);
+    setActiveTab('details');
+    // Defer to the next paint so the detail panel exists before scrolling.
+    requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [initialTripId, itineraries]);
 
   /* ── expense state (parent-owned, verbatim) ─────────────────────────────── */
   const [expenses, setExpenses] = React.useState<TravelExpense[]>([]);
@@ -358,7 +392,7 @@ export function FairwayTravel({
           </div>
 
           {/* ── Detail panel ───────────────────────────────────────────── */}
-          <div className="lg:col-span-2">
+          <div ref={detailPanelRef} className="lg:col-span-2">
             {selected ? (
               <FairwayTripDetail
                 itinerary={selected}

@@ -31,9 +31,11 @@ export function FeatureHealthRollup({ summary }: { summary: FeatureHealthSummary
         Features: {summary.green} green · {summary.amber} amber · {summary.red} red · {summary.neutral} neutral
       </Link>
       {chips.map((c) => (
-        <StatusPill key={c.key} tone={c.tone} dot size="sm">
-          {c.label}
-        </StatusPill>
+        <Link key={c.key} href={`/admin/errors?feature=${c.key}`} className="rounded-full transition-opacity hover:opacity-80">
+          <StatusPill tone={c.tone} dot size="sm">
+            {c.label}
+          </StatusPill>
+        </Link>
       ))}
       {overflow > 0 ? (
         <Link href="/admin/health" className="text-xs font-medium text-accent-700 underline underline-offset-2">

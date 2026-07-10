@@ -10,6 +10,7 @@ import { getPlayerTasks } from '@/app/baseball/actions/tasks';
 import { getPlayerSeasonStats } from '@/app/baseball/actions/games';
 import { resolveBaseballLiftingOrg, resolveBaseballAthleteIds } from '@/lib/lifting/resolve-baseball-context';
 import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -45,13 +46,22 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     redirect('/baseball/dashboard/program');
   }
 
-  // Get team for this organization
+  // Cookie-aware, multi-row-safe team resolution (matches Command Center).
+  // The prior `.eq('organization_id', ...).single()` would throw for any
+  // org with 2+ team rows — unreachable today since this route is locked to
+  // college/JUCO coach types above, but this closes the gap ahead of any
+  // future multi-team college/JUCO feature.
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!teamId) {
+    redirect('/baseball/dashboard/program');
+  }
+
   type TeamInfo = { id: string; name: string };
   const { data: team } = await supabase
     .from('baseball_teams')
     .select('id, name')
-    .eq('organization_id', coach.organization_id)
-    .single() as { data: TeamInfo | null };
+    .eq('id', teamId)
+    .maybeSingle() as { data: TeamInfo | null };
 
   if (!team) {
     redirect('/baseball/dashboard/program');

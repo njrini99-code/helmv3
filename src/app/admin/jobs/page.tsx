@@ -69,6 +69,14 @@ function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
                 <StatusPill tone={CRON_STATUS_TONE[row.status]} dot size="sm">
                   {row.status}
                 </StatusPill>
+                {row.status === 'failed' && row.lastError ? (
+                  <p
+                    title={row.lastError}
+                    className="mt-1 max-w-[260px] truncate text-xs text-fw-danger"
+                  >
+                    {row.lastError}
+                  </p>
+                ) : null}
               </td>
               <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
                 {row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : 'awaiting first run'}
@@ -117,7 +125,20 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
                   {c.status}
                 </StatusPill>
               </td>
-              <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">{c.count}</td>
+              <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
+                {c.status === 'fail' && c.sample.length > 0 ? (
+                  <details>
+                    <summary className="cursor-pointer text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+                      {c.count} — view rows
+                    </summary>
+                    <pre className="mt-2 max-w-[420px] whitespace-pre-wrap break-all rounded-lg bg-surface-sunken p-2 text-xs text-warm-700">
+                      {JSON.stringify(c.sample, null, 2)}
+                    </pre>
+                  </details>
+                ) : (
+                  c.count
+                )}
+              </td>
               <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
                 {new Date(c.lastRunAt).toLocaleString()}
               </td>

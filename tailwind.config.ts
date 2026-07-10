@@ -67,6 +67,10 @@ const config: Config = {
         'fw-success-bg':  'var(--fw-color-success-bg)',
         'fw-warning':     'var(--fw-color-warning)',
         'fw-warning-bg':  'var(--fw-color-warning-bg)',
+        // Additive — names the on-warning-bg ink/ring 7+ files already used
+        // ad hoc via warm-800/warm-300. Same values, a real semantic token.
+        'fw-warning-ink':  'var(--fw-color-warning-ink)',
+        'fw-warning-ring': 'var(--fw-color-warning-ring)',
         'fw-danger':      'var(--fw-color-danger)',
         'fw-danger-bg':   'var(--fw-color-danger-bg)',
         // Helm Bridge sport inks (W4) — baseball clay, beside the fw-* trio.

@@ -42,13 +42,21 @@ function ActivityBar({ value, max }: { value: number; max: number }) {
   );
 }
 
-function TeamRosterPanel({ team }: { team: TeamRosterInsight }) {
+function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; activeTeamId?: string }) {
   const maxActivity = team.players.reduce((max, player) => Math.max(max, player.activity30d), 0);
-  const topPlayers = team.players.slice(0, 8);
+  // The "?team=<id>" filter is the promised escape hatch for teams with more
+  // than 8 players (see the hint text below) — honor that promise by
+  // lifting the slice for the team the URL is actually scoped to, instead of
+  // capping every team's roster unconditionally regardless of the filter.
+  const isFocused = Boolean(activeTeamId) && activeTeamId === team.teamId;
+  const topPlayers = isFocused ? team.players : team.players.slice(0, 8);
   const teamHref = team.sport === 'golf' ? `/admin/teams/${team.teamId}` : `/admin/users?team=${team.teamId}`;
 
   return (
-    <details className="group border-b border-warm-200/70 py-4" open={team.attentionPlayers > 0 || team.health !== 'active'}>
+    <details
+      className="group border-b border-warm-200/70 py-4"
+      open={isFocused || team.attentionPlayers > 0 || team.health !== 'active'}
+    >
       <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-2">
         <div className="min-w-0 flex-1 basis-full md:basis-auto">
           <div className="flex flex-wrap items-center gap-2">
@@ -140,9 +148,12 @@ function TeamRosterPanel({ team }: { team: TeamRosterInsight }) {
             </tbody>
           </table>
         )}
-        {team.players.length > topPlayers.length ? (
+        {!isFocused && team.players.length > topPlayers.length ? (
           <p className="mt-2 text-xs text-warm-500">
-            Showing the first {topPlayers.length} players by errors, activity, then name. Use the team filter for the full roster.
+            Showing the first {topPlayers.length} players by errors, activity, then name.{' '}
+            <Link href={`/admin/users?team=${team.teamId}`} className="underline hover:text-warm-700">
+              Use the team filter for the full roster.
+            </Link>
           </p>
         ) : null}
       </div>
@@ -154,10 +165,12 @@ function RosterIntelligence({
   teams,
   sport,
   attention,
+  activeTeamId,
 }: {
   teams: TeamRosterInsight[];
   sport?: 'golf' | 'baseball';
   attention?: 'watch' | 'profile' | 'quiet' | 'demo';
+  activeTeamId?: string;
 }) {
   const filteredTeams = teams
     .filter((team) => !sport || team.sport === sport)
@@ -230,7 +243,9 @@ function RosterIntelligence({
                     if (a.errors7d !== b.errors7d) return b.errors7d - a.errors7d;
                     return a.name.localeCompare(b.name);
                   })
-                  .map((team) => <TeamRosterPanel key={`${team.sport}:${team.teamId}`} team={team} />)
+                  .map((team) => (
+                    <TeamRosterPanel key={`${team.sport}:${team.teamId}`} team={team} activeTeamId={activeTeamId} />
+                  ))
               )}
             </div>
           </div>
@@ -337,13 +352,19 @@ export default async function UsersPage({
         </form>
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatTile label="Total users" value={tab.users.length} tone="neutral" mono />
+          <StatTile label="Total users" value={tab.totalUsersCount} tone="neutral" mono />
           <StatTile label="Golf" value={golfCount} tone="neutral" mono />
           <StatTile label="Baseball" value={baseballCount} tone="neutral" mono />
           <StatTile label="At-risk" value={tab.atRisk.length} tone="neutral" mono goodDirection="down" />
         </section>
+        {tab.totalUsersCount > tab.users.length ? (
+          <p className="text-xs text-warm-500">
+            Showing the {tab.users.length} most recently seen users (capped view — {tab.totalUsersCount} total match
+            this filter). Golf/Baseball/At-risk counts reflect only this capped set.
+          </p>
+        ) : null}
 
-        <RosterIntelligence teams={tab.teams} sport={sport} attention={attention} />
+        <RosterIntelligence teams={tab.teams} sport={sport} attention={attention} activeTeamId={team} />
 
         <Surface padding="sm">
           <SectionLabel>Users ({tab.users.length})</SectionLabel>

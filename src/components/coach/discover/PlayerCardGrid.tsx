@@ -1,9 +1,11 @@
 'use client';
 
 import { useRef, useCallback, memo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PlayerCard, PlayerCardData } from './PlayerCard';
 import { IconUsers } from '@/components/icons';
+import { staggerContainer, fadeUp } from '@/lib/coachhelm/v3/motion';
 
 interface PlayerCardGridProps {
   players: PlayerCardData[];
@@ -105,6 +107,7 @@ function PlayerCardGridComponent({
   onCardLeave,
 }: PlayerCardGridProps) {
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reduceMotion = useReducedMotion();
 
   const gridCols = {
     2: 'grid-cols-1 md:grid-cols-2',
@@ -167,12 +170,47 @@ function PlayerCardGridComponent({
   // Compact variant uses list layout
   if (variant === 'compact') {
     return (
-      <div className={cn('space-y-2', className)}>
+      <motion.div
+        className={cn('space-y-2', className)}
+        variants={staggerContainer}
+        initial={reduceMotion ? false : 'hidden'}
+        animate="visible"
+      >
         {players.map((player) => (
+          <motion.div key={player.id} variants={fadeUp} initial="hidden" animate="visible">
+            <MemoizedCardItem
+              player={player}
+              variant="compact"
+              onWatchlist={onWatchlist}
+              onMessage={onMessage}
+              onPlayerClick={onPlayerClick}
+              isOnWatchlist={watchlistIds.includes(player.id)}
+              showCheckbox={showCheckbox}
+              isSelected={selectedIds.includes(player.id)}
+              onSelect={onSelect}
+              isFeatured={featuredIds.includes(player.id)}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            />
+          </motion.div>
+        ))}
+      </motion.div>
+    );
+  }
+
+  // Grid layout for default and featured variants
+  return (
+    <motion.div
+      className={cn('grid gap-6', gridCols[columns], className)}
+      variants={staggerContainer}
+      initial={reduceMotion ? false : 'hidden'}
+      animate="visible"
+    >
+      {players.map((player) => (
+        <motion.div key={player.id} variants={fadeUp} initial="hidden" animate="visible">
           <MemoizedCardItem
-            key={player.id}
             player={player}
-            variant="compact"
+            variant={variant}
             onWatchlist={onWatchlist}
             onMessage={onMessage}
             onPlayerClick={onPlayerClick}
@@ -184,32 +222,9 @@ function PlayerCardGridComponent({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           />
-        ))}
-      </div>
-    );
-  }
-
-  // Grid layout for default and featured variants
-  return (
-    <div className={cn('grid gap-6', gridCols[columns], className)}>
-      {players.map((player) => (
-        <MemoizedCardItem
-          key={player.id}
-          player={player}
-          variant={variant}
-          onWatchlist={onWatchlist}
-          onMessage={onMessage}
-          onPlayerClick={onPlayerClick}
-          isOnWatchlist={watchlistIds.includes(player.id)}
-          showCheckbox={showCheckbox}
-          isSelected={selectedIds.includes(player.id)}
-          onSelect={onSelect}
-          isFeatured={featuredIds.includes(player.id)}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 

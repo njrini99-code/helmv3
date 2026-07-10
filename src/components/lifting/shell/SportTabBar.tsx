@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Circle, Flag, LayoutGrid, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { HelmLiftingSport } from '@/lib/types/helm-lifting';
@@ -30,6 +30,7 @@ interface SportTabBarProps {
  * Icons + small-caps labels — no decorative emoji glyphs.
  */
 export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
+  const reduceMotion = useReducedMotion();
   const tabs: Array<{ sport: HelmLiftingSport | null; label: string; icon: LucideIcon }> = [
     { sport: null, label: 'All sports', icon: LayoutGrid },
     ...SPORT_TABS,
@@ -62,9 +63,9 @@ export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
           >
             {isActive && (
               <motion.div
-                layoutId="sport-tab-indicator"
+                layoutId={reduceMotion ? undefined : 'sport-tab-indicator'}
                 className="absolute inset-0 bg-cream-50 rounded-xl shadow-sm border border-white/60"
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
               />
             )}
             <Icon className="relative z-10 h-3.5 w-3.5" aria-hidden="true" />

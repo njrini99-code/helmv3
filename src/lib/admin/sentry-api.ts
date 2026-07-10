@@ -20,7 +20,12 @@ import {
 
 const API = 'https://sentry.io/api/0';
 const REVALIDATE_SECONDS = 60;
-const MAX_PAGES = 3;
+// Bounded ceiling, not unbounded — org-wide "unresolved" was silently capped
+// at 3 pages (150 issues at the default limit=50) with no signal that more
+// existed. Raised 3 → 20 (up to 1,000 issues at limit=50) and now tracked:
+// if the loop exhausts the ceiling while a next-page cursor still exists,
+// the result comes back `truncated: true` instead of quietly looking complete.
+const MAX_PAGES = 20;
 
 function isPlaceholderSecret(value: string): boolean {
   return /^(your-|replace-|changeme|todo|example)/i.test(value.trim());
@@ -142,7 +147,11 @@ export async function fetchSentryIssues(opts?: {
       cursor = nextCursor(res.headers.get('link'));
       if (!cursor) break;
     }
-    return ok(issues);
+    // If the loop ran out of ceiling (never hit the `if (!cursor) break`)
+    // while Sentry's Link header still advertised a next page, `data` is a
+    // real but partial slice — flag it so callers can say so honestly
+    // instead of presenting it as the complete unresolved list.
+    return { ...ok(issues), truncated: cursor !== null };
   } catch (err) {
     return failed(`Sentry issues fetch threw: ${err instanceof Error ? err.message : String(err)}`);
   }

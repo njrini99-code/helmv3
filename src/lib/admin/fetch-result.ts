@@ -10,6 +10,10 @@ export interface AdminFetchResult<T> {
   data: T | null;
   fetchedAt: string | null; // ISO — feeds the freshness chips / watch-the-watcher
   error?: string;
+  /** Optional: set true when `data` stopped short of the true total because
+   *  a bounded page ceiling was hit (not because the source ran dry). Callers
+   *  that never set this can ignore it — always undefined, never a false claim. */
+  truncated?: boolean;
 }
 
 export function unconfigured<T>(what: string): AdminFetchResult<T> {

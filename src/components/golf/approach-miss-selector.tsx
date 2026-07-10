@@ -26,8 +26,8 @@ export function ApproachMissSelector({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-warm-600 font-medium">Where did it miss?</p>
-      
+      <p className="font-fw-sans text-caption font-medium text-text-tertiary">Where did it miss?</p>
+
       <div className="relative max-w-[280px] mx-auto">
         {/* Grid container */}
         <div className="grid grid-cols-3 gap-2">
@@ -37,11 +37,11 @@ export function ApproachMissSelector({
               return (
                 <div
                   key={index}
-                  className="flex items-center justify-center rounded-xl bg-primary-500/20 border-2 border-primary-500/40 aspect-square"
+                  className="flex items-center justify-center rounded-fw-md bg-accent-50 border-2 border-accent-200 aspect-square"
                 >
                   <div className="text-center">
-                    <div className="w-4 h-4 mx-auto rounded-full bg-primary-500/60 mb-1" />
-                    <span className="text-xs text-primary-600 font-medium">GREEN</span>
+                    <div className="w-4 h-4 mx-auto rounded-full bg-accent-500/60 mb-1" />
+                    <span className="font-fw-sans text-eyebrow font-semibold text-accent-700">GREEN</span>
                   </div>
                 </div>
               );
@@ -62,23 +62,24 @@ export function ApproachMissSelector({
                 disabled={disabled}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
-                  'relative flex flex-col items-center justify-center rounded-xl border transition-all duration-200 aspect-square',
-                  'font-medium',
+                  'relative flex flex-col items-center justify-center rounded-fw-md border transition-all duration-200 aspect-square',
+                  'font-fw-sans font-medium',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   isSelected
-                    ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-950/10'
-                    : 'bg-cream-100/75 backdrop-blur-sm border-warm-200 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100',
+                    ? 'bg-accent-500 border-accent-500 text-text-on-accent shadow-flat'
+                    : 'bg-surface-sunken border-border-subtle hover:border-accent-300 hover:bg-surface-tint active:bg-surface-tint',
                   disabled && 'opacity-50 cursor-not-allowed'
                 )}
               >
                 <span className={cn(
                   'text-lg leading-none',
-                  isSelected ? 'text-white' : 'text-warm-600'
+                  isSelected ? 'text-text-on-accent' : 'text-text-secondary'
                 )}>
                   {config.icon}
                 </span>
                 <span className={cn(
                   'text-micro font-medium leading-none mt-1.5',
-                  isSelected ? 'text-white' : config.color
+                  isSelected ? 'text-text-on-accent' : config.color
                 )}>
                   {config.shortLabel}
                 </span>
@@ -87,7 +88,7 @@ export function ApproachMissSelector({
                 {isSelected && (
                   <motion.div
                     layoutId="miss-selection"
-                    className="absolute inset-0 rounded-xl border-2 border-white/20"
+                    className="absolute inset-0 rounded-fw-md border-2 border-text-on-accent/20"
                     initial={false}
                     transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
                   />
@@ -103,14 +104,14 @@ export function ApproachMissSelector({
             <motion.p
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-sm text-warm-700 font-medium"
+              className="font-fw-sans text-caption font-medium text-text-secondary"
             >
               Missed <span className={APPROACH_MISS_CONFIG[selectedDirection].color}>
                 {APPROACH_MISS_CONFIG[selectedDirection].label}
               </span>
             </motion.p>
           ) : (
-            <div className="flex items-center justify-center gap-1 text-warm-400">
+            <div className="flex items-center justify-center gap-1 text-text-tertiary">
               <span className="text-xs">You</span>
               <span className="text-sm">⛳</span>
             </div>

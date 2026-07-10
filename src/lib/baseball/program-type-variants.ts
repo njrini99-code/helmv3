@@ -31,6 +31,11 @@ import type {
   BaseballPerformanceDepth,
   BaseballDefaultVisibility,
 } from '@/lib/types/baseball-settings';
+// Type-only import (erased at compile time — no runtime cycle): nav-registry.ts
+// has a VALUE import from this module (getProgramVariant/orderCoachNav/
+// orderPlayerNav); this module only needs nav-registry's `BaseballNavHub`
+// TYPE for the bottom-nav differentiator field below.
+import type { BaseballNavHub } from './nav-registry';
 
 // -----------------------------------------------------------------------------
 // Terminology pack — mode-aware labels (v4 §differences: terminology)
@@ -78,6 +83,22 @@ export interface BaseballProgramVariant {
 
   /** Mode-aware terminology. */
   terminology: BaseballTerminologyPack;
+
+  /**
+   * M1 (baseball-nav-4) — the bottom-nav slot-3 DIFFERENTIATOR hub for this
+   * mode's COACH bar (src/lib/baseball/bottom-nav.ts). A single-entry array:
+   * universal slots 1/2/4 (Dashboard/Team/Messages) are added by that module,
+   * never forked here, so the per-mode diff stays a single token. Read as
+   * `coachBottomNavHubs[0]`.
+   */
+  coachBottomNavHubs: readonly BaseballNavHub[];
+  /**
+   * The bottom-nav slot-3 DIFFERENTIATOR row id for this mode's PLAYER bar. A
+   * single-entry array of a PLAYER_HUB_ROW_IDS value or registry id (never a
+   * BaseballNavHub — players are never grouped into a coach hub). Universal
+   * slots 1/2/4 (Today/Schedule/Messages) are added by bottom-nav.ts.
+   */
+  playerBottomNavRows: readonly string[];
 
   /**
    * The DISTINCT default program settings for this mode. Applied once, at first
@@ -147,6 +168,11 @@ const COLLEGE: BaseballProgramVariant = {
     exposureNoun: 'Recruiting',
     programNoun: 'Program',
   },
+  // M1 bottom-nav differentiator: College is team-ops-forward (analytics-
+  // heavy day-to-day; postgame review is college/JUCO-only) — Stats & Perf
+  // takes slot 3, Recruiting stays one tap away in More.
+  coachBottomNavHubs: ['stats-performance'],
+  playerBottomNavRows: ['player-stats-hub'],
   defaultSettings: {
     // Strict staff-controlled profile; player Today + lift/check-in enabled.
     players_require_invite: true,
@@ -217,6 +243,11 @@ const HIGH_SCHOOL: BaseballProgramVariant = {
     exposureNoun: 'College Interest',
     programNoun: 'Team',
   },
+  // M1 bottom-nav differentiator: HS has no recruiting hub at all (gated out
+  // of RECRUITING_PROGRAM_TYPES for coaches) — Development is the mission.
+  coachBottomNavHubs: ['development'],
+  // Player: exposure IS the defining reason an HS recruit opens the app.
+  playerBottomNavRows: ['player-recruiting-hub'],
   defaultSettings: {
     // Player profile editing more likely; guardian policies available; exposure on.
     players_require_invite: true,
@@ -285,6 +316,15 @@ const SHOWCASE: BaseballProgramVariant = {
     exposureNoun: 'Exposure',
     programNoun: 'Organization',
   },
+  // M1 bottom-nav differentiator: showcase COACH bar is generic-college-shaped
+  // in the fallback path (measurables are a stats-forward surface); the real
+  // per-scope bar (org vs team) is derived independently via `showcaseScope`
+  // in bottom-nav.ts, not this field — kept here for type completeness /
+  // consistency with the generic (non-showcase-scoped) resolution path.
+  coachBottomNavHubs: ['stats-performance'],
+  // Player: the day is building the measurables/video packet, not team stats
+  // (players_can_view_team_stats: false makes a Stats tab moot).
+  playerBottomNavRows: ['player-profile'],
   defaultSettings: {
     // Profile completion + video/measurable upload; public visibility prominent.
     players_require_invite: false, // event registration flows
@@ -357,6 +397,10 @@ const JUCO: BaseballProgramVariant = {
     exposureNoun: 'Transfer Exposure',
     programNoun: 'Program',
   },
+  // M1 bottom-nav differentiator: transfer exposure IS why JUCO mode exists —
+  // Recruiting takes slot 3 for both coach and player.
+  coachBottomNavHubs: ['recruiting'],
+  playerBottomNavRows: ['player-recruiting-hub'],
   defaultSettings: {
     // College operations + stronger exposure/recruiting capability (v4).
     players_require_invite: true,
@@ -427,6 +471,10 @@ const ACADEMY: BaseballProgramVariant = {
     exposureNoun: 'Exposure',
     programNoun: 'Academy',
   },
+  // M1 bottom-nav differentiator: development-first training mission —
+  // Development takes slot 3, same reasoning as HS.
+  coachBottomNavHubs: ['development'],
+  playerBottomNavRows: ['player-stats-hub'],
   defaultSettings: {
     players_require_invite: true,
     players_can_self_join: false,
@@ -474,6 +522,10 @@ const CLUB: BaseballProgramVariant = {
     exposureNoun: 'Exposure',
     programNoun: 'Club',
   },
+  // M1 bottom-nav differentiator: travel-ball team ops mirrors College's
+  // analytics-forward shape — Stats & Perf takes slot 3.
+  coachBottomNavHubs: ['stats-performance'],
+  playerBottomNavRows: ['player-stats-hub'],
   defaultSettings: {
     players_require_invite: true,
     players_can_self_join: false,

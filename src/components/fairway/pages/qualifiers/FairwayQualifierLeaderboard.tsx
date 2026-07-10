@@ -34,6 +34,7 @@
  * ========================================================================== */
 
 import { Fragment, useMemo } from 'react';
+import Link from 'next/link';
 import { Flag } from 'lucide-react';
 
 import { useQualifierRealtime } from '@/hooks/golf/use-qualifier-realtime';
@@ -273,9 +274,15 @@ function StandingsTable({
                   </td>
                   <td className="py-2.5 pr-3 font-medium text-text-primary">
                     <span className="inline-flex items-center gap-2">
-                      <span className={cn(tier === 'out' && 'text-text-secondary')}>
+                      <Link
+                        href={`/golf/dashboard/stats?player=${row.playerId}`}
+                        className={cn(
+                          'rounded-fw-sm underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                          tier === 'out' && 'text-text-secondary',
+                        )}
+                      >
                         {row.playerName}
-                      </span>
+                      </Link>
                       {badge ? (
                         <StatusPill tone={badge.tone} size="sm" className="flex-shrink-0">
                           {badge.label}

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   parseErrorsFilters,
@@ -59,6 +60,19 @@ function chipHref(current: URLSearchParams, param: string, value: string): strin
 function clearParamHref(current: URLSearchParams, param: string): string {
   const next = new URLSearchParams(current);
   next.delete(param);
+  const qs = next.toString();
+  return qs ? `/admin/errors?${qs}` : '/admin/errors';
+}
+
+/** Build a href off the CURRENT filter set with the given params overridden
+ *  (string → set, null → delete) — every other filter (sport/severity/source/
+ *  feature) survives the navigation instead of being silently dropped. */
+function hrefWithOverrides(current: URLSearchParams, overrides: Record<string, string | null>): string {
+  const next = new URLSearchParams(current);
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === null) next.delete(key);
+    else next.set(key, value);
+  }
   const qs = next.toString();
   return qs ? `/admin/errors?${qs}` : '/admin/errors';
 }
@@ -164,7 +178,7 @@ export default async function ErrorsPage({
               ) : null}
               .{' '}
               <Link
-                href={filters.sport ? '/admin/errors?window=168' : '/admin/errors?window=168'}
+                href={hrefWithOverrides(current, { window: '168' })}
                 className="text-accent-700 underline"
               >
                 Open 7-day view
@@ -173,10 +187,13 @@ export default async function ErrorsPage({
                 <>
                   {' '}
                   or{' '}
-                  <Link href="/admin/errors?window=168" className="text-accent-700 underline">
+                  <Link
+                    href={hrefWithOverrides(current, { window: '168', sport: null })}
+                    className="text-accent-700 underline"
+                  >
                     drop the sport filter
                   </Link>{' '}
-                  to include untagged baseball errors.
+                  to include untagged {filters.sport} errors.
                 </>
               ) : null}
             </p>
@@ -206,9 +223,20 @@ export default async function ErrorsPage({
             {sourceBreakdown.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2 border-t border-warm-200 pt-3">
                 {sourceBreakdown.map(([source, count]) => (
-                  <span key={source} className="inline-flex items-center gap-2 rounded border border-warm-200 bg-warm-50 px-2 py-1 font-fw-mono text-caption text-warm-600">
-                    {source}<span className="tabular-nums text-warm-900">{count}</span>
-                  </span>
+                  <Link
+                    key={source}
+                    href={chipHref(current, 'source', source)}
+                    aria-current={current.get('source') === source ? 'true' : undefined}
+                    className={cn(
+                      'inline-flex items-center gap-2 rounded border px-2 py-1 font-fw-mono text-caption transition-colors',
+                      current.get('source') === source
+                        ? 'border-warm-900 bg-warm-900 text-white'
+                        : 'border-warm-200 bg-warm-50 text-warm-600 hover:bg-warm-100',
+                    )}
+                  >
+                    {source}
+                    <span className={current.get('source') === source ? 'tabular-nums text-white' : 'tabular-nums text-warm-900'}>{count}</span>
+                  </Link>
                 ))}
               </div>
             ) : null}
@@ -272,6 +300,11 @@ export default async function ErrorsPage({
           <p className="mt-1 text-caption text-warm-500">
             All open Sentry issues — not windowed. Active groups above only count Sentry issues with activity in the selected window.
           </p>
+          {tab.sentry.status === 'ok' && tab.sentry.truncated ? (
+            <p className="mt-1 text-caption text-fw-warning">
+              Showing first {tab.sentry.data?.length ?? 0} unresolved issues — more exist beyond this page ceiling.
+            </p>
+          ) : null}
           {tab.sentry.status === 'ok' && tab.sentry.data ? (
             tab.sentry.data.length === 0 ? (
               <PanelAllClear label="No unresolved Sentry issues" checkedAt={tab.sentry.fetchedAt ?? new Date().toISOString()} />

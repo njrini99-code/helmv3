@@ -60,6 +60,10 @@ export type { SparklineProps } from './Sparkline';
 export { StatTile } from './StatTile';
 export type { StatTileProps } from './StatTile';
 
+// ── StatStrip: the ONE phone-shape rule for KPI/stat strips (RSC-safe) ──────
+export { StatStrip, STAT_STRIP_RAIL_THRESHOLD } from './StatStrip';
+export type { StatStripProps } from './StatStrip';
+
 export {
   useChartCrosshair,
   ChartCrosshairCursor,

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { getGameBoxScore } from '@/app/baseball/actions/games';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 import { BreadcrumbLabel } from '@/app/baseball/(dashboard)/_components/breadcrumb-label';
 import { BoxScoreView } from '@/components/baseball/box-score/BoxScoreView';
 import { BoxScoreUpload } from '@/components/baseball/box-score/BoxScoreUpload';
@@ -31,11 +32,15 @@ export default async function GameDetailPage({ params }: PageProps) {
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
+  // Cookie-aware, multi-row-safe team resolution (matches Command Center).
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!teamId) redirect('/baseball/dashboard/program');
+
   const { data: team } = await supabase
     .from('baseball_teams')
     .select('id, name')
-    .eq('organization_id', coach.organization_id)
-    .single() as { data: { id: string; name: string } | null };
+    .eq('id', teamId)
+    .maybeSingle() as { data: { id: string; name: string } | null };
 
   if (!team) redirect('/baseball/dashboard/program');
 

@@ -98,6 +98,14 @@
   --fw-color-success-bg: var(--fw-color-accent-50);
   --fw-color-warning:    oklch(0.74 0.15 70);    /* warm amber */
   --fw-color-warning-bg: oklch(0.96 0.05 80);
+  /* The on-warning-bg ink/ring pairing the app already converged on ad hoc
+     (warm-800 text, warm-300 ring/border in 7+ files: AttendancePanel,
+     badge.tsx, status-pill.tsx, FairwayEventEditor.tsx, FairwayMonthGrid.tsx,
+     InsightTrustChips.tsx, FairwayUnfinishedBanner.tsx). Named here so it
+     reads as an intentional pairing instead of a scattered coincidence —
+     values are IDENTICAL to warm-800/warm-300 (no visual change). */
+  --fw-color-warning-ink:  var(--fw-color-warm-800);
+  --fw-color-warning-ring: var(--fw-color-warm-300);
   --fw-color-danger:     oklch(0.586 0.222 27);  /* #DC2626 */
   --fw-color-danger-bg:  oklch(0.955 0.03 25);
 

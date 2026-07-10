@@ -43,19 +43,17 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
 import { CommandCard } from '@/components/baseball/ui/CommandCard';
 import {
   IconDumbbell,
-  IconInfo,
   IconChevronUp,
   IconChevronDown,
   IconWarning,
 } from '@/components/icons';
 import { ExerciseBin } from './ExerciseBin';
-import { PaperCard } from '@/components/baseball/living-annual';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 import { SessionBlock } from './SessionBlock';
 import type {
   BuilderExercise,
@@ -144,13 +142,10 @@ function DetailPane({
 
   if (!exercise) {
     return (
-      <Card className="flex h-full flex-col items-center justify-center p-6">
-        <EmptyState
-          icon={<IconInfo size={28} />}
-          title="Select an exercise"
-          description="Click any exercise in a block to see its stress profile and substitutes."
-        />
-      </Card>
+      <EditorsLetter
+        title="Select an exercise"
+        body="Click any exercise in a block to see its stress profile and substitutes."
+      />
     );
   }
 
@@ -176,7 +171,10 @@ function DetailPane({
           evidence={conflict.affectedRegions.slice(0, 3).map((r) => (
             <span
               key={r}
-              className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-eyebrow font-medium text-red-700"
+              className={cn(
+                'inline-flex items-center rounded-full px-2 py-0.5 text-eyebrow font-medium text-pursuit',
+                conflict.level === 'high' ? 'bg-pursuit/20' : 'bg-pursuit/10',
+              )}
             >
               {r}
             </span>
@@ -200,7 +198,7 @@ function DetailPane({
       )}
 
       {/* Detail card */}
-      <Card className="space-y-4 p-4">
+      <PaperCard className="space-y-4 p-4">
         {/* Identity */}
         <div>
           <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
@@ -214,7 +212,7 @@ function DetailPane({
 
         {/* Pitcher-sensitive flag */}
         {exercise.isPitcherSensitive && (
-          <div className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs text-red-700">
+          <div className="flex items-center gap-1.5 rounded-lg bg-pursuit/10 px-2.5 py-1.5 text-xs text-pursuit">
             <IconWarning size={13} aria-hidden />
             Pitcher-sensitive — caution in-season
           </div>
@@ -264,9 +262,9 @@ function DetailPane({
                   <span
                     className={
                       row.value === 'high'
-                        ? 'font-semibold text-red-600'
+                        ? 'font-semibold text-pursuit'
                         : row.value === 'medium'
-                        ? 'font-semibold text-amber-600'
+                        ? 'font-medium text-pursuit/80'
                         : 'text-warm-500'
                     }
                   >
@@ -314,7 +312,7 @@ function DetailPane({
             </div>
           </div>
         )}
-      </Card>
+      </PaperCard>
     </div>
   );
 }

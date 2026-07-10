@@ -75,7 +75,11 @@ function bucketDailyCounts(
 /** CALLER must have passed requireSuperAdmin(). */
 export async function fetchAuthTab(): Promise<{
   feed: AuthFeedRow[];
+  /** Real count of matching feed rows before the .limit(200) cap below. */
+  feedTotal: number;
   lockouts: LockoutRow[];
+  /** Real count of matching lockout rows before the .limit(50) cap below. */
+  lockoutsTotal: number;
   burst: boolean;
   funnel: { signups7d: number; activated7d: number; activationRate: number };
   signInSeries: DailyCount[];
@@ -87,13 +91,13 @@ export async function fetchAuthTab(): Promise<{
   const [feedRes, lockoutRes, failures24h, signupsRes, golfActive, baseballActive, liftActive] =
     await Promise.all([
       admin.from('admin_events')
-        .select('id, event_type, title, severity, user_email, sport, created_at')
+        .select('id, event_type, title, severity, user_email, sport, created_at', { count: 'exact' })
         .in('event_type', ['login', 'signup', 'security'])
         .gte('created_at', ago7d)
         .order('created_at', { ascending: false })
         .limit(200),
       admin.from('login_attempts')
-        .select('email, failed_attempts, locked_until, last_attempt')
+        .select('email, failed_attempts, locked_until, last_attempt', { count: 'exact' })
         .gt('failed_attempts', 0)
         .order('last_attempt', { ascending: false })
         .limit(50),
@@ -125,7 +129,9 @@ export async function fetchAuthTab(): Promise<{
 
   return {
     feed,
+    feedTotal: feedRes.count ?? feed.length,
     lockouts: (lockoutRes.data ?? []) as LockoutRow[],
+    lockoutsTotal: lockoutRes.count ?? (lockoutRes.data ?? []).length,
     burst: detectFailureBurst(failureRows, 15, 4, new Date()),
     funnel: {
       signups7d,
@@ -141,14 +147,25 @@ export async function fetchAuthTab(): Promise<{
   };
 }
 
-/** USER-SCOPED client — get_active_sessions() gates on auth.uid() via
- *  is_super_admin() and Forbids under service_role (by design). */
-export async function fetchActiveSessions(): Promise<SessionRow[]> {
+/**
+ * USER-SCOPED client — get_active_sessions() gates on auth.uid() via
+ * is_super_admin() and Forbids under service_role (by design).
+ *
+ * Pass `userId` to filter server-side (SQL `WHERE ... AND s.user_id =
+ * p_user_id`, applied BEFORE the function's internal `LIMIT 500`). Without
+ * it, the platform-wide top-500-by-recency view is returned — the same
+ * shape as before this param existed. A per-user caller that instead fetched
+ * the platform-wide list and filtered client-side would silently show "no
+ * active sessions" for any user outside that top-500 window; this param is
+ * what lets `/admin/users/[id]` avoid that failure mode.
+ */
+export async function fetchActiveSessions(userId?: string): Promise<SessionRow[]> {
   const supabase = await createClient();
   const rpc = supabase.rpc.bind(supabase) as unknown as (
     fn: 'get_active_sessions',
+    args: { p_user_id: string | null },
   ) => Promise<{ data: SessionRow[] | null; error: { message: string } | null }>;
-  const { data, error } = await rpc('get_active_sessions');
+  const { data, error } = await rpc('get_active_sessions', { p_user_id: userId ?? null });
   if (error) throw new Error(`get_active_sessions failed: ${error.message}`);
   return data ?? [];
 }

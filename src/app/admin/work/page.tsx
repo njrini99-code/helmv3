@@ -9,9 +9,41 @@ import { WorkTimeline } from './WorkTimeline';
 
 export const dynamic = 'force-dynamic';
 
+async function WorkLogBody() {
+  const workLog = await fetchWorkLog();
+
+  if (workLog.status === 'unconfigured') {
+    return (
+      <PanelNoData
+        label="GitHub PR feed not configured"
+        description="Set GITHUB_ISSUES_TOKEN (or GITHUB_TOKEN) with pull-request read access."
+      />
+    );
+  }
+  if (workLog.status === 'error' || !workLog.data) {
+    return <PanelStale label="Work log" error={workLog.error} />;
+  }
+  if (workLog.data.entries.length === 0) {
+    return (
+      <PanelNoData
+        label="No pull requests found"
+        description="Set GITHUB_PR_AUTHOR_LOGINS to your GitHub username, or open PRs on the configured repo."
+      />
+    );
+  }
+
+  return (
+    <WorkTimeline
+      entries={workLog.data.entries}
+      repoLabel={workLog.data.repoLabel}
+      authorLogins={workLog.data.authorLogins}
+      counts={workLog.data.counts}
+    />
+  );
+}
+
 export default async function WorkLogPage() {
   await requireSuperAdmin();
-  const workLog = await fetchWorkLog();
 
   return (
     <div className="space-y-6">
@@ -39,26 +71,7 @@ export default async function WorkLogPage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <PanelBoundary title="Your PR timeline">
-          {workLog.status === 'unconfigured' ? (
-            <PanelNoData
-              label="GitHub PR feed not configured"
-              description="Set GITHUB_ISSUES_TOKEN (or GITHUB_TOKEN) with pull-request read access."
-            />
-          ) : workLog.status === 'error' || !workLog.data ? (
-            <PanelStale label="Work log" error={workLog.error} />
-          ) : workLog.data.entries.length === 0 ? (
-            <PanelNoData
-              label="No pull requests found"
-              description="Set GITHUB_PR_AUTHOR_LOGINS to your GitHub username, or open PRs on the configured repo."
-            />
-          ) : (
-            <WorkTimeline
-              entries={workLog.data.entries}
-              repoLabel={workLog.data.repoLabel}
-              authorLogins={workLog.data.authorLogins}
-              counts={workLog.data.counts}
-            />
-          )}
+          <WorkLogBody />
         </PanelBoundary>
 
         <aside className="space-y-4">

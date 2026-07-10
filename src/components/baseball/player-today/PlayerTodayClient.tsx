@@ -119,6 +119,16 @@ interface PlayerTodayClientProps {
    * row or no actionable items.
    */
   performanceSlot: PerformanceCheckinSlot | null;
+  /**
+   * This player's recruiting-activation state, resolved server-side.
+   * `null` when the player is ineligible (college player — never activates)
+   * or the lookup failed (honest degrade: the banner just doesn't render).
+   * Drives the one-time "Activate Recruiting" nudge below — the registry
+   * entry is deliberately command-palette/direct-URL only (not a permanent
+   * rail tab), so Today is the one persistent surface that can tell an
+   * eligible, not-yet-activated player the feature exists at all.
+   */
+  recruitingActivation: { activated: boolean } | null;
 }
 
 // -----------------------------------------------------------------------------
@@ -319,23 +329,36 @@ function AssignmentsSection({
               const tone = liftStatusTone(a);
               return (
                 <Reveal key={a.id} staggerIndex={Math.min(i, 6)}>
-                  <li className="flex items-center gap-3 px-5 py-3.5">
-                    <span
-                      aria-hidden
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus"
+                  {/* Was a bare <li> ending in a chevron with no Link/onClick —
+                      a dead affordance duplicating PlayerLiftToday's identical,
+                      correctly-linked row below it. Now a real row-level link to
+                      the session detail screen, matching that sibling card's
+                      `/baseball/dashboard/lift/${id}` pattern. */}
+                  <li>
+                    <Link
+                      href={`/baseball/dashboard/lift/${a.id}`}
+                      className={pressableClass({
+                        ink: 'team',
+                        className: 'flex items-center gap-3 px-5 py-3.5',
+                      })}
                     >
-                      <IconDumbbell size={15} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-annual text-body-sm font-medium text-text-primary">{a.title}</p>
-                      <p className="text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
-                        {dateLabel}
-                        {a.estimatedMinutes ? ` · ~${a.estimatedMinutes} min` : ''}
-                        {a.baseballContext ? ` · ${prettyLabel(a.baseballContext)}` : ''}
-                      </p>
-                    </div>
-                    <InkBadge label={statusLabel} tone={tone.tone} variant={tone.variant} className="shrink-0" />
-                    <IconChevronRight size={14} className="shrink-0 text-text-tertiary" aria-hidden />
+                      <span
+                        aria-hidden
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grade-plus/10 text-grade-plus"
+                      >
+                        <IconDumbbell size={15} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-annual text-body-sm font-medium text-text-primary">{a.title}</p>
+                        <p className="text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+                          {dateLabel}
+                          {a.estimatedMinutes ? ` · ~${a.estimatedMinutes} min` : ''}
+                          {a.baseballContext ? ` · ${prettyLabel(a.baseballContext)}` : ''}
+                        </p>
+                      </div>
+                      <InkBadge label={statusLabel} tone={tone.tone} variant={tone.variant} className="shrink-0" />
+                      <IconChevronRight size={14} className="shrink-0 text-text-tertiary" aria-hidden />
+                    </Link>
                   </li>
                 </Reveal>
               );
@@ -1399,6 +1422,7 @@ export function PlayerTodayClient({
   activeRole,
   todayIso,
   performanceSlot,
+  recruitingActivation,
 }: PlayerTodayClientProps) {
   // Hooks run unconditionally before any early return (rules-of-hooks).
   const longDate = useMemo(() => formatLongDate(todayIso), [todayIso]);
@@ -1445,6 +1469,35 @@ export function PlayerTodayClient({
             hidden and never a colored warning box. */}
         {model.error && (
           <EditorsLetter className="mt-6" ink="team" title="Some of today's data is catching up." body={model.error} />
+        )}
+
+        {/* Activate Recruiting nudge — one-time opt-in gate before college
+            coaches can see this player's identity. The nav entry has no
+            permanent rail slot by design (see hub-definitions.ts), so this is
+            the persistent surface that keeps an eligible, not-yet-activated
+            player from never discovering the feature exists. */}
+        {recruitingActivation && !recruitingActivation.activated && (
+          <EditorsLetter
+            className="mt-6"
+            ink="team"
+            live
+            liveLabel="One-time"
+            title="Activate recruiting to be seen by college coaches"
+            body="Right now your Passport is invisible to recruiters. Turn on recruiting exposure once to let college coaches discover it."
+            action={
+              <Link
+                href="/baseball/dashboard/activate"
+                className={pressableClass({
+                  ink: 'team',
+                  className:
+                    'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+                })}
+              >
+                Activate Recruiting
+                <IconChevronRight size={16} aria-hidden />
+              </Link>
+            }
+          />
         )}
 
         {/* Next required event hero — first-viewport spec item (lines 67-68).

@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
@@ -74,22 +75,33 @@ export async function queryAppErrorEvents(
   const admin = createAdminClient();
   const since = new Date(Date.now() - filters.windowHours * 3600_000).toISOString();
 
-  let query = admin
-    .from('admin_events')
-    .select(APP_EVENT_SELECT)
-    .eq('event_type', 'error')
-    .eq('resolved', false)
-    .gte('created_at', since)
-    .order('created_at', { ascending: false })
-    .limit(500);
+  // Paginate past the PostgREST 1000-row cap instead of the prior flat
+  // `.limit(500)` — that cap fed Overview's KPIs, the triage queue, AND the
+  // Errors tab, all three silently under-counting once a window held more
+  // than 500 unresolved rows (an error storm — exactly when an honest count
+  // matters most). `.order('id')` as a tiebreaker keeps page boundaries
+  // stable alongside `created_at desc`, matching the fetchAllRowsResult
+  // pattern already used by golf.ts/briefing.ts.
+  const { data } = await fetchAllRowsResult((from, to) => {
+    let query = admin
+      .from('admin_events')
+      .select(APP_EVENT_SELECT)
+      .eq('event_type', 'error')
+      .eq('resolved', false)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to);
 
-  if (filters.severity !== 'info') query = query.neq('severity', 'info');
-  if (filters.sport) query = query.eq('sport', filters.sport);
-  if (filters.severity) query = query.eq('severity', filters.severity);
-  if (filters.source) query = query.eq('source', filters.source);
-  if (filters.feature) query = query.eq('feature', filters.feature);
+    if (filters.severity !== 'info') query = query.neq('severity', 'info');
+    if (filters.sport) query = query.eq('sport', filters.sport);
+    if (filters.severity) query = query.eq('severity', filters.severity);
+    if (filters.source) query = query.eq('source', filters.source);
+    if (filters.feature) query = query.eq('feature', filters.feature);
 
-  const { data } = await query;
+    return query;
+  });
+
   return (data ?? []) as unknown as AppTriageEventRow[];
 }
 

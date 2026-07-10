@@ -5,20 +5,21 @@
 //
 // V11 player readiness check-in (spec L480-485, L575-638). Sleep / energy /
 // stress / soreness / arm status / lower-body status / illness + bodyweight +
-// soreness map. Player-safe language only — NEVER medical. Cream/green, reuses
-// Card. Idempotent upsert via submitReadinessCheckin (no delete-then-insert).
+// soreness map. Player-safe language only — NEVER medical. "Living Annual"
+// kit: PaperCard sections, InkNotice for errors/notices, CommitSeal for the
+// done-screen ceremony. Idempotent upsert via submitReadinessCheckin (no
+// delete-then-insert).
 // =============================================================================
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { IconCheckCircle2, IconAlertCircle } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard, InkNotice, CommitSeal } from '@/components/baseball/living-annual';
 import { submitReadinessCheckin } from '@/app/baseball/actions/lifting';
 import { logBodyweight, saveSorenessMap } from '@/app/baseball/actions/lifting-v11';
 
@@ -94,12 +95,10 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
   if (isLoading) {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="Loading readiness check-in…">
-        <Card variant="glass">
-          <CardHeader>
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-56 mt-1" />
-          </CardHeader>
-          <CardContent className="space-y-5">
+        <PaperCard className="p-5">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-56 mt-1" />
+          <div className="mt-5 space-y-5">
             {/* Scale rows skeleton */}
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="space-y-2" style={{ animationDelay: `${i * 60}ms` }}>
@@ -109,7 +108,7 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
                 </div>
                 <div className="flex gap-2">
                   {Array.from({ length: 5 }).map((_, j) => (
-                    <Skeleton key={j} className="h-9 flex-1 rounded-lg" />
+                    <Skeleton key={j} className="h-9 flex-1 rounded-fw-sm" />
                   ))}
                 </div>
               </div>
@@ -119,16 +118,16 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
               <Skeleton className="h-4 w-20" />
               <div className="flex gap-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-9 flex-1 rounded-lg" />
+                  <Skeleton key={i} className="h-9 flex-1 rounded-fw-sm" />
                 ))}
               </div>
             </div>
             {/* Notes skeleton */}
-            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-fw-sm" />
             {/* Submit */}
-            <Skeleton className="h-11 w-32 rounded-xl" />
-          </CardContent>
-        </Card>
+            <Skeleton className="h-11 w-32 rounded-fw-sm" />
+          </div>
+        </PaperCard>
       </div>
     );
   }
@@ -190,33 +189,22 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.24 }}
       >
-        <Card className="border-primary-200 bg-primary-50/50">
-          <CardContent className="py-10 text-center">
-            <motion.div
-              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-primary-600"
-              initial={prefersReducedMotion ? false : { scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-              aria-hidden
-            >
-              <IconCheckCircle2 size={30} />
-            </motion.div>
-            <p className="mt-4 text-2xl font-semibold tracking-tight text-warm-900">Check-in saved</p>
-            <p className="mt-1 text-sm text-warm-500">Thanks — the staff has what they need before training.</p>
-            {secondaryNotice && (
-              <div role="status" aria-live="polite" className="mx-auto mt-3 flex max-w-sm items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-800">
-                <IconAlertCircle size={15} className="shrink-0" />
-                <span>{secondaryNotice}</span>
-              </div>
-            )}
-            <Link
-              href="/baseball/dashboard/lift"
-              className="mt-5 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
-            >
-              Go to Lift
-            </Link>
-          </CardContent>
-        </Card>
+        <PaperCard className="p-10 text-center">
+          <CommitSeal label="SAVED" size="sm" className="mx-auto" />
+          <p className="mt-4 font-annual text-2xl font-normal text-text-primary">Check-in saved</p>
+          <p className="mt-1 text-sm text-text-secondary">Thanks — the staff has what they need before training.</p>
+          {secondaryNotice && (
+            <InkNotice role="status" className="mx-auto mt-4 max-w-sm text-left">
+              {secondaryNotice}
+            </InkNotice>
+          )}
+          <Link
+            href="/baseball/dashboard/lift"
+            className="mt-5 inline-block rounded-fw-sm bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+          >
+            Go to Lift
+          </Link>
+        </PaperCard>
       </motion.div>
     );
   }
@@ -234,16 +222,11 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
         <p className="mt-1 text-sm text-warm-500">Tell the staff how you feel today. This is not a medical form.</p>
       </div>
 
-      {error && (
-        <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          <IconAlertCircle size={15} className="shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <InkNotice>{error}</InkNotice>}
 
-      <Card>
-        <CardHeader><h2 className="text-lg font-semibold text-warm-900">How you feel</h2></CardHeader>
-        <CardContent className="space-y-4">
+      <PaperCard className="p-5">
+        <h2 className="text-lg font-semibold text-warm-900">How you feel</h2>
+        <div className="mt-4 space-y-4">
           <Input
             label="Sleep last night (hours)"
             inputMode="decimal"
@@ -274,34 +257,32 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
             <Input id="illness-checkbox" type="checkbox" checked={illness} onChange={(e) => setIllness(e.target.checked)} className="h-4 w-4 rounded border-warm-300 accent-primary-600" />
             Feeling sick / under the weather
           </label>
-        </CardContent>
-      </Card>
+        </div>
+      </PaperCard>
 
-      <Card>
-        <CardHeader><h2 className="text-lg font-semibold text-warm-900">Bodyweight (optional)</h2></CardHeader>
-        <CardContent>
-          <div className="max-w-[8rem]">
-            <Input
-              inputMode="decimal"
-              value={bodyweight}
-              onChange={(e) => setBodyweight(e.target.value)}
-              placeholder="lb"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <PaperCard className="p-5">
+        <h2 className="text-lg font-semibold text-warm-900">Bodyweight (optional)</h2>
+        <div className="mt-3 max-w-[8rem]">
+          <Input
+            inputMode="decimal"
+            value={bodyweight}
+            onChange={(e) => setBodyweight(e.target.value)}
+            placeholder="lb"
+          />
+        </div>
+      </PaperCard>
 
-      <Card>
-        <CardHeader><h2 className="text-lg font-semibold text-warm-900">Anything the staff should know?</h2></CardHeader>
-        <CardContent>
+      <PaperCard className="p-5">
+        <h2 className="text-lg font-semibold text-warm-900">Anything the staff should know?</h2>
+        <div className="mt-3">
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="Optional note for the staff"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </PaperCard>
 
       <Button
         onClick={handleSubmit}

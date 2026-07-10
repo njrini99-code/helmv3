@@ -10,7 +10,7 @@
 // =============================================================================
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Activity, Scale, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,7 @@ const TABS: { key: Tab; label: string; icon: React.ComponentType<{ className?: s
 // ---------------------------------------------------------------------------
 
 export function CheckInsPageClient({ orgId, sport, groups, athletes }: Props) {
+  const reduceMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<Tab>('soreness');
   // Track created IDs for success state display
   const [lastCreated, setLastCreated] = useState<string | null>(null);
@@ -92,9 +93,9 @@ export function CheckInsPageClient({ orgId, sport, groups, athletes }: Props) {
             >
               {isActive && (
                 <motion.span
-                  layoutId="check-in-tab-indicator"
+                  layoutId={reduceMotion ? undefined : 'check-in-tab-indicator'}
                   className="absolute inset-0 rounded-xl bg-cream-50 shadow-sm"
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
               <Icon className="relative z-10 h-4 w-4" />

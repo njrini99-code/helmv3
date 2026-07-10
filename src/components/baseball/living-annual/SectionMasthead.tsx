@@ -33,7 +33,7 @@ export interface SectionMastheadProps {
 
 export function SectionMasthead({ eyebrow, title, ink = 'team', actions, children, className }: SectionMastheadProps) {
   return (
-    <header className={cn('flex flex-col gap-3', className)}>
+    <header data-fw-title-anchor className={cn('flex flex-col gap-3', className)}>
       {eyebrow ? <Eyebrow ink={ink}>{eyebrow}</Eyebrow> : null}
 
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">

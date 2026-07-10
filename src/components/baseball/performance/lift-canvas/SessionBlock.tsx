@@ -22,9 +22,9 @@ import { m, useReducedMotion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconArrowUpDown, IconCopy, IconX } from '@/components/icons';
+import { PaperCard, InkBadge } from '@/components/baseball/living-annual';
 import { PrescriptionChip } from './PrescriptionChip';
 import { hoverLift } from '@/lib/baseball/motion';
 import type {
@@ -35,16 +35,21 @@ import type {
   LiftBlockType,
 } from '@/lib/baseball/exercise-conflict';
 
-// ─── Block-type styling ───────────────────────────────────────────────────────
+// ─── Block-type labels ────────────────────────────────────────────────────────
+// Deliberately NOT a 7-color rainbow — the Living Annual two-ink law (spec
+// §4.2: green = team/dev, clay = recruiting/urgency, no other hue) has no
+// room for 7 distinct category colors, and the words already differentiate
+// the blocks. Every type gets the same quiet neutral InkBadge except `main`
+// (the centerpiece lift of the session), which gets the team-ink accent.
 
-const BLOCK_META: Record<LiftBlockType, { label: string; cls: string }> = {
-  warmup:       { label: 'Warmup',       cls: 'border-amber-200 bg-amber-50 text-amber-700' },
-  power:        { label: 'Power',        cls: 'border-red-200 bg-red-50 text-red-700' },
-  main:         { label: 'Main Strength',cls: 'border-primary-200 bg-primary-50 text-primary-700' },
-  accessory:    { label: 'Accessory',    cls: 'border-warm-200 bg-warm-50 text-warm-700' },
-  arm_care:     { label: 'Arm Care',     cls: 'border-blue-200 bg-blue-50 text-blue-700' },
-  conditioning: { label: 'Conditioning', cls: 'border-orange-200 bg-orange-50 text-orange-700' },
-  recovery:     { label: 'Recovery',     cls: 'border-green-200 bg-green-50 text-green-700' },
+const BLOCK_META: Record<LiftBlockType, { label: string }> = {
+  warmup:       { label: 'Warmup' },
+  power:        { label: 'Power' },
+  main:         { label: 'Main Strength' },
+  accessory:    { label: 'Accessory' },
+  arm_care:     { label: 'Arm Care' },
+  conditioning: { label: 'Conditioning' },
+  recovery:     { label: 'Recovery' },
 };
 
 // ─── Sortable exercise row ────────────────────────────────────────────────────
@@ -96,7 +101,7 @@ function SortableRow({
   // handles the full warning card — so the rule is rendered inline next to
   // the exercise name below, not just dropped.
   const conflictRule =
-    conflict?.level === 'high' ? 'bg-red-400' : conflict?.level === 'caution' ? 'bg-amber-400' : '';
+    conflict?.level === 'high' ? 'bg-pursuit' : conflict?.level === 'caution' ? 'bg-pursuit/50' : '';
 
   return (
     <m.div
@@ -219,19 +224,19 @@ export function SessionBlock({
   }
 
   return (
-    <Card
+    <PaperCard
       className={[
-        'overflow-hidden p-0 transition-all',
+        'p-0 transition-all',
         isOver ? 'ring-2 ring-primary-400/50 ring-offset-1' : '',
       ].join(' ')}
     >
       {/* ── Block header ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-b border-warm-100 px-3 py-2.5">
-        <span
-          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold ${meta.cls}`}
-        >
-          {meta.label}
-        </span>
+      <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] px-3 py-2.5">
+        <InkBadge
+          label={meta.label}
+          tone={block.type === 'main' ? 'team' : 'neutral'}
+          variant={block.type === 'main' ? 'solid' : 'soft'}
+        />
         <span className="flex-1 text-sm font-semibold text-warm-900">{block.title}</span>
         {block.exercises.length > 0 && (
           <span className="text-xs tabular-nums text-warm-400">
@@ -280,6 +285,6 @@ export function SessionBlock({
           </SortableContext>
         )}
       </div>
-    </Card>
+    </PaperCard>
   );
 }

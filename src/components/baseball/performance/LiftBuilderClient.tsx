@@ -34,21 +34,19 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 
-import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconPlus,
   IconSave,
   IconChevronLeft,
   IconChevronRight,
-  IconUsers,
   IconCheckCircle2,
-  IconAlertCircle,
+  IconWarning,
 } from '@/components/icons';
+import { PaperCard, EmptyIssue } from '@/components/baseball/living-annual';
 import { GroupAvailabilityGrid } from '@/components/baseball/ui';
 import { LiftCanvas } from '@/components/baseball/performance/lift-canvas';
 import { ExerciseWizard } from '@/components/baseball/performance/ExerciseWizard';
@@ -448,13 +446,7 @@ export function LiftBuilderClient({
         </div>
 
         {availability.length === 0 ? (
-          <Card className="p-8">
-            <EmptyState
-              icon={<IconUsers size={36} />}
-              title="No players in roster"
-              description="Add players to your team roster so they appear here for scheduling."
-            />
-          </Card>
+          <EmptyIssue variant="roster" ink="team" />
         ) : (
           <div
             className={
@@ -487,7 +479,7 @@ export function LiftBuilderClient({
       </section>
 
       {/* ── Save Bar ──────────────────────────────────────────────────────── */}
-      <Card className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-4 p-4">
+      <PaperCard className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-wrap gap-3">
           <Input
             className="min-w-[200px] flex-1"
@@ -511,11 +503,11 @@ export function LiftBuilderClient({
               role="status"
               aria-live="polite"
               className={`flex items-center gap-1.5 text-sm font-medium ${
-                saveMsg.tone === 'error' ? 'text-red-600' : 'text-primary-700'
+                saveMsg.tone === 'error' ? 'text-pursuit' : 'text-primary-700'
               }`}
             >
               {saveMsg.tone === 'error' ? (
-                <IconAlertCircle size={14} aria-hidden />
+                <IconWarning size={14} aria-hidden />
               ) : (
                 <IconCheckCircle2 size={14} aria-hidden />
               )}
@@ -532,7 +524,7 @@ export function LiftBuilderClient({
             {selectedPlayerIds.size === 1 ? '' : 's'}
           </Button>
         </div>
-      </Card>
+      </PaperCard>
 
       {/* ── Exercise Wizard (modal) ────────────────────────────────────────── */}
       {wizardOpen && (

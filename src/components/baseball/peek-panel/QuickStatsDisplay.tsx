@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 
 interface StatItem {
   label: string;
@@ -16,10 +17,26 @@ interface QuickStatsDisplayProps {
   className?: string;
 }
 
-function formatStatValue(value: string | number | null, unit?: string): string {
-  if (value === null || value === undefined) return '—';
-  const formatted = typeof value === 'number' ? value.toFixed(value % 1 === 0 ? 0 : 1) : value;
-  return unit ? `${formatted}${unit}` : String(formatted);
+/** Renders a stat's figure — numbers roll on the shared odometer, strings render statically. */
+function StatFigure({ value, unit }: { value: string | number | null; unit?: string }) {
+  if (value === null || value === undefined) {
+    return <>—</>;
+  }
+  if (typeof value === 'number') {
+    const decimals = value % 1 === 0 ? 0 : 1;
+    return (
+      <>
+        <AnimatedNumber value={value} decimals={decimals} />
+        {unit}
+      </>
+    );
+  }
+  return (
+    <>
+      {value}
+      {unit}
+    </>
+  );
 }
 
 const QuickStatsDisplayComponent = function QuickStatsDisplay({
@@ -60,7 +77,7 @@ const QuickStatsDisplayComponent = function QuickStatsDisplay({
                 stat.highlight ? 'text-primary-700' : 'text-warm-900'
               )}
             >
-              {formatStatValue(stat.value, stat.unit)}
+              <StatFigure value={stat.value} unit={stat.unit} />
             </div>
             <div className="text-xs font-medium text-warm-500 uppercase tracking-wide mt-0.5">
               {stat.label}
@@ -91,7 +108,7 @@ const QuickStatsDisplayComponent = function QuickStatsDisplay({
                 stat.highlight ? 'text-primary-700' : 'text-warm-900'
               )}
             >
-              {formatStatValue(stat.value, stat.unit)}
+              <StatFigure value={stat.value} unit={stat.unit} />
             </div>
             <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wide">
               {stat.label}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyAtRisk, deriveUserSports } from '@/lib/admin/data/users';
+import { classifyAtRisk, deriveUserSports, computeTotalUsersCount } from '@/lib/admin/data/users';
 
 const now = new Date('2026-07-01T12:00:00Z');
 const daysAgo = (d: number) => new Date(now.getTime() - d * 86400_000).toISOString();
@@ -41,5 +41,31 @@ describe('deriveUserSports', () => {
     // fetchUserDetail passes has.golf = Boolean(golfPlayerId || golfCoachId)
     // — independent of any team membership lookup.
     expect(deriveUserSports({ golf: true, baseball: false })).toEqual(['golf']);
+  });
+});
+
+describe('computeTotalUsersCount', () => {
+  // Regression: with no team filter, the SQL `count: 'exact'` (pre-500-cap,
+  // scoped only to {q, role}) is the honest "N total" figure — it's allowed
+  // to exceed `users.length` (that's exactly what "capped view" means).
+  it('uses the SQL count when there is no team filter', () => {
+    expect(computeTotalUsersCount({}, 850, 500)).toBe(850);
+  });
+
+  it('falls back to users.length when the SQL count is null and there is no team filter', () => {
+    expect(computeTotalUsersCount({}, null, 42)).toBe(42);
+  });
+
+  // Regression: `filters.team` is applied client-side against the already
+  // {q, role}-filtered/capped `users` array and never reaches the SQL count
+  // query, so the SQL count is unscoped to the team and must NOT be used
+  // once a team filter is active — a 20-person team must show 20, not the
+  // platform-wide 850, even though the SQL count still reports 850.
+  it('ignores the unscoped SQL count and uses users.length once a team filter is active', () => {
+    expect(computeTotalUsersCount({ team: 'team-123' }, 850, 20)).toBe(20);
+  });
+
+  it('uses users.length for a team filter even when the SQL count happens to already equal users.length', () => {
+    expect(computeTotalUsersCount({ team: 'team-123' }, 20, 20)).toBe(20);
   });
 });

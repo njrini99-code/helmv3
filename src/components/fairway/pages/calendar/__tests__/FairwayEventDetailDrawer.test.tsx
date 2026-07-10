@@ -225,7 +225,9 @@ describe('FairwayEventDetailDrawer — linked travel itinerary (P440)', () => {
     });
     renderDrawer();
     const link = await screen.findByRole('link', { name: /View itinerary/i });
-    expect(link).toHaveAttribute('href', '/golf/dashboard/travel');
+    // P440 symmetric fix: deep-links to the SPECIFIC trip (?trip=<id>) so
+    // Travel HQ auto-selects it, rather than just landing on the general hub.
+    expect(link).toHaveAttribute('href', '/golf/dashboard/travel?trip=trip-9');
     expect(link).toHaveTextContent('Pinehurst, NC');
     expect(getItineraryForEvent).toHaveBeenCalledWith('evt-1');
   });

@@ -24,6 +24,9 @@ export interface TaskAssignment {
   status: string;
   completed_at: string | null;
   player: {
+    /** The player's own id (golf_players.id) — drives the per-row "Message"
+     *  deep-link (/golf/dashboard/messages?player=<id>). */
+    id: string;
     first_name: string;
     last_name: string;
   };
@@ -229,7 +232,10 @@ export function useTaskRealtime(
                   id: row.id,
                   status,
                   completed_at: row.completed_at,
-                  player: { first_name: '', last_name: '' },
+                  // Player view = the viewer's own single assignment; playerId
+                  // is the scoping id passed into the hook (isPlayerView guard
+                  // above guarantees it's set here).
+                  player: { id: playerId!, first_name: '', last_name: '' },
                 },
               ],
             };
@@ -275,6 +281,10 @@ export function useTaskRealtime(
               status: a.status || 'pending',
               completed_at: a.completed_at,
               player: {
+                // Prefer the joined player.id; fall back to the assignment's own
+                // player_id FK (always present) so an unresolved join never
+                // drops the id the "Message" deep-link depends on.
+                id: a.player?.id || a.player_id,
                 first_name: a.player?.first_name || '',
                 last_name: a.player?.last_name || '',
               },

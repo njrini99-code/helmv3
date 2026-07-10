@@ -9,6 +9,7 @@ import { PanelNoData } from '../../_components/PanelStates';
 import { SportBadge } from '../../_components/SportBadge';
 import { enterViewAs } from '../../actions/view-as';
 import { EngagementPanel } from './EngagementPanel';
+import { ViewAsButton } from './ViewAsButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,10 @@ const SEVERITY_TONE: Record<string, FwStatusTone> = {
   warning: 'warning',
   info: 'neutral',
 };
+
+// `fetchUserDetail`'s `recentActivity` is cross-sport (golf rounds + Lift Lab
+// sessions) — kinds map 1:1 to the two queries that feed it in `users.ts`.
+const ACTIVITY_KIND_LABEL: Record<string, string> = { round: 'Round', lift: 'Lift' };
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -41,7 +46,10 @@ export default async function UserDetailPage({
       return <PanelNoData label="User not found" description={`No user with id ${id}.`} />;
     }
     const user = detail.user;
-    const sessions = (await fetchActiveSessions()).filter((s) => s.user_id === id);
+    // Server-side filter (SQL WHERE, before the RPC's internal LIMIT 500) —
+    // a client-side filter of the platform-wide top-500 window would
+    // silently show "No active sessions" for a user outside that window.
+    const sessions = await fetchActiveSessions(id);
     const enterViewAsForUser = enterViewAs.bind(null, id);
     const viewAsConfigured = Boolean(process.env.ADMIN_IMPERSONATION_SECRET);
 
@@ -61,11 +69,7 @@ export default async function UserDetailPage({
             </p>
           </div>
           {viewAsConfigured ? (
-            <form action={enterViewAsForUser}>
-              <Button type="submit" variant="secondary" size="sm">
-                View as (read-only, 15 min)
-              </Button>
-            </form>
+            <ViewAsButton onEnter={enterViewAsForUser} />
           ) : (
             <Button type="button" variant="secondary" size="sm" disabled title="ADMIN_IMPERSONATION_SECRET is not set">
               View as — not configured
@@ -90,6 +94,32 @@ export default async function UserDetailPage({
                 {detail.memberships.map((m) => (
                   <li key={`${m.sport}:${m.teamId}`} className="flex items-center gap-2 text-sm text-warm-800">
                     <SportBadge sport={m.sport} /> {m.teamName}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Surface>
+
+        <Surface padding="sm">
+          <SectionLabel>Recent activity</SectionLabel>
+          <div className="mt-3">
+            {detail.recentActivity.length === 0 ? (
+              <PanelNoData
+                label="No recent activity"
+                description="No rounds or lifting sessions logged for this user yet."
+              />
+            ) : (
+              <ul className="divide-y divide-warm-200/60">
+                {detail.recentActivity.map((a, i) => (
+                  <li key={`${a.kind}:${a.at}:${i}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-sm">
+                    <span className="w-14 shrink-0 font-fw-mono text-eyebrow uppercase text-warm-500">
+                      {ACTIVITY_KIND_LABEL[a.kind] ?? a.kind}
+                    </span>
+                    <span className="min-w-0 flex-1 basis-full truncate text-warm-800 sm:basis-auto">{a.label}</span>
+                    <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+                      {new Date(a.at).toLocaleString()}
+                    </span>
                   </li>
                 ))}
               </ul>

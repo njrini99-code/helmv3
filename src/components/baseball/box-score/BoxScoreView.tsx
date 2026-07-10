@@ -24,6 +24,7 @@
 // `pitching-totals-row`) are unchanged.
 // =============================================================================
 
+import Link from 'next/link';
 import type { BaseballGame, BaseballBoxScoreBatting, BaseballBoxScorePitching } from '@/lib/types';
 import { IconCalendar, IconMapPin } from '@/components/icons';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
@@ -208,12 +209,15 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
                   <tr key={row.id} className="hover:bg-[color:var(--paper-canvas)]">
                     <td className="sticky left-0 bg-[var(--paper)] px-4 py-2.5 font-annual text-body-sm font-medium text-text-primary">
                       {row.player ? (
-                        <span className="inline-flex items-center gap-1.5">
+                        <Link
+                          href={`/baseball/dashboard/players/${row.player_id}`}
+                          className="inline-flex items-center gap-1.5 transition-colors hover:text-grade-plus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus focus-visible:ring-offset-1"
+                        >
                           {row.player.first_name?.[0]}. {row.player.last_name}
                           {row.player.primary_position && (
                             <PositionChip label={row.player.primary_position} size="sm" />
                           )}
-                        </span>
+                        </Link>
                       ) : EMPTY_STAT}
                     </td>
                     <td className={TD_STAT}><StatReadout value={fmtStat(row.ab)} /></td>
@@ -290,7 +294,14 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
                 {pitching.map((row) => (
                   <tr key={row.id} className="hover:bg-[color:var(--paper-canvas)]">
                     <td className="sticky left-0 bg-[var(--paper)] px-4 py-2.5 font-annual text-body-sm font-medium text-text-primary">
-                      {row.player ? `${row.player.first_name?.[0]}. ${row.player.last_name}` : EMPTY_STAT}
+                      {row.player ? (
+                        <Link
+                          href={`/baseball/dashboard/players/${row.player_id}`}
+                          className="transition-colors hover:text-grade-plus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus focus-visible:ring-offset-1"
+                        >
+                          {row.player.first_name?.[0]}. {row.player.last_name}
+                        </Link>
+                      ) : EMPTY_STAT}
                     </td>
                     <td className={TD_STAT}><StatReadout value={fmtIP(row.ip)} /></td>
                     <td className={TD_STAT}><StatReadout value={fmtStat(row.h)} /></td>

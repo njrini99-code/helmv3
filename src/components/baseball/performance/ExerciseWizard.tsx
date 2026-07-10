@@ -44,6 +44,7 @@ import {
   IconInfo,
   IconWarning,
 } from '@/components/icons';
+import { InkNotice } from '@/components/baseball/living-annual';
 import { SORENESS_REGIONS, SORENESS_REGION_IDS } from '@/lib/lifting/soreness-regions';
 import type { SorenessRegionGroup } from '@/lib/lifting/soreness-regions';
 import { tabPanelMotion } from '@/lib/baseball/motion';
@@ -331,14 +332,9 @@ export function ExerciseWizard({ initial, onSubmit, onClose }: ExerciseWizardPro
       {/* Sticky footer */}
       <div className="sticky bottom-0 -mx-6 -mb-6 border-t border-warm-100 bg-cream-50/95 px-6 py-4">
         {(stepError ?? submitError) && (
-          <p
-            role="alert"
-            aria-live="assertive"
-            className="mb-3 flex items-center gap-1.5 text-sm font-medium text-red-600"
-          >
-            <IconWarning size={14} aria-hidden />
+          <InkNotice role="alert" className="mb-3">
             {stepError ?? submitError}
-          </p>
+          </InkNotice>
         )}
         <div className="flex items-center justify-between gap-3">
           {/* Left: Cancel or Back */}
@@ -538,6 +534,9 @@ function StepMovement({
 
 type RegionRole = 'primary' | 'secondary' | 'stress';
 
+// Lane-ink per role: `primary` is the team-ink brand fill (the exercise's main
+// load), `secondary` a quiet graphite tint (a lesser degree, not a warning),
+// `stress` the pursuit-ink lane (this region is genuinely a caution flag).
 const ROLE_META: Record<RegionRole, { label: string; activeCls: string }> = {
   primary: {
     label: 'Primary',
@@ -545,11 +544,11 @@ const ROLE_META: Record<RegionRole, { label: string; activeCls: string }> = {
   },
   secondary: {
     label: 'Secondary',
-    activeCls: 'border-amber-400 bg-amber-50 text-amber-800',
+    activeCls: 'border-grade-avg/40 bg-grade-avg/10 text-grade-avg',
   },
   stress: {
     label: 'Stress',
-    activeCls: 'border-red-400 bg-red-50 text-red-700',
+    activeCls: 'border-pursuit/50 bg-pursuit/10 text-pursuit',
   },
 };
 
@@ -733,11 +732,14 @@ function StressSelector({
   value: StressLevel;
   onChange: (v: StressLevel) => void;
 }) {
+  // Lane-ink ordinal ramp: `none`/`low` stay neutral/team (still fine), `medium`
+  // and `high` both read pursuit clay — the border/bg weight (not a new hue)
+  // carries the extra step of severity between them.
   const ACTIVE_CLS: Record<StressLevel, string> = {
     none: 'border-warm-300 bg-warm-100 text-warm-700',
     low: 'border-primary-400 bg-primary-50 text-primary-800',
-    medium: 'border-amber-400 bg-amber-50 text-amber-800',
-    high: 'border-red-400 bg-red-50 text-red-800',
+    medium: 'border-pursuit/40 bg-pursuit/10 text-pursuit',
+    high: 'border-pursuit bg-pursuit/20 text-pursuit',
   };
 
   return (
@@ -940,8 +942,8 @@ function StepDemoVideo({
 const STRESS_BADGE_CLS: Record<StressLevel, string> = {
   none: 'bg-warm-100 text-warm-500',
   low: 'bg-primary-50 text-primary-700',
-  medium: 'bg-amber-50 text-amber-700',
-  high: 'bg-red-50 text-red-700',
+  medium: 'bg-pursuit/10 text-pursuit',
+  high: 'bg-pursuit/20 text-pursuit',
 };
 
 function resolveRegionLabel(id: string): string {
@@ -1033,7 +1035,7 @@ function StepReview({ draft }: { draft: BuilderExercise }) {
           <StressReviewPill label="Rotational" value={draft.rotationalStress} />
           <StressReviewPill label="Grip" value={draft.gripStress} />
           {draft.isPitcherSensitive && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+            <div className="flex items-center gap-1.5 rounded-lg border border-pursuit/30 bg-pursuit/10 px-3 py-2 text-xs font-semibold text-pursuit">
               <IconWarning size={12} aria-hidden />
               Pitcher-sensitive
             </div>
@@ -1056,7 +1058,7 @@ function ReviewRow({
   return (
     <div className="flex items-baseline gap-3 px-4 py-2.5">
       <dt className="w-32 shrink-0 text-xs font-medium text-warm-500">{label}</dt>
-      <dd className={`text-sm ${highlight ? 'font-medium text-red-600' : 'text-warm-900'}`}>
+      <dd className={`text-sm ${highlight ? 'font-medium text-pursuit' : 'text-warm-900'}`}>
         {value}
       </dd>
     </div>

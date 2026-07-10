@@ -21,6 +21,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { IconFilter, IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/components/ui/sonner';
 import { SectionMasthead, EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
 import type { Player, Organization } from '@/lib/types';
 
@@ -65,6 +66,7 @@ interface DiscoverTeam extends Organization {
 function DiscoverContent() {
   const searchParams = useSearchParams();
   const { coach, loading: authLoading } = useAuth();
+  const { addToast } = useToast();
 
   // Mobile filter drawer state
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -314,12 +316,20 @@ function DiscoverContent() {
         const watchlistIds = await getWatchlistIds();
         setWatchlistIds(watchlistIds);
       } catch (err) {
+        // Leave the prior watchlistIds untouched — resetting to [] on a
+        // transient fetch failure clobbers real state and shows every heart
+        // as unwatched (a false negative), not just a stale one.
         console.error('Error fetching watchlist:', err);
-        setWatchlistIds([]);
+        addToast({
+          type: 'error',
+          title: "Couldn't refresh your watchlist",
+          description: 'Showing what we last knew. Reload to try again.',
+        });
       }
     }
 
     fetchWatchlist();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast is a fresh closure every render (useToast() isn't memoized); including it would re-run this fetch (and the getWatchlistIds() auth+query round trip) on every re-render instead of only on coach?.id change.
   }, [coach?.id]);
 
   // Fetch state counts for map visualization (all discoverable players/teams, not just current page)

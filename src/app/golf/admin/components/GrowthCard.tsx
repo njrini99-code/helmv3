@@ -2,6 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminAreaChart, AdminFunnelChart, AdminProgressBar } from './AdminChart';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown, IconWarning, IconSparkles } from '@/components/icons';
 
@@ -56,7 +57,9 @@ function HealthScoreRing({ score }: { score: number }) {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-warm-900 tabular-nums">{score}</span>
+          <span className="text-2xl font-bold text-warm-900 tabular-nums">
+            <AnimatedNumber value={score} />
+          </span>
         </div>
       </div>
       <span className={cn('text-xs font-medium mt-1.5', color)}>{label}</span>

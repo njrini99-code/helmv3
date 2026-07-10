@@ -38,6 +38,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, GraduationCap, Megaphone } from 'lucide-react';
 
 import { completeTask } from '@/app/golf/actions/tasks';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import {
   ViewHeader,
   Button,
@@ -378,6 +379,7 @@ export function FairwayTeamHubWrapper({
   initialTab,
 }: FairwayTeamHubWrapperProps) {
   const router = useRouter();
+  const badges = useNotificationBadges();
   const [tasks, setTasks] = useState(initialTasks);
   const [, startTransition] = useTransition();
 
@@ -403,13 +405,18 @@ export function FairwayTeamHubWrapper({
         );
         // Surface the failure so the silent revert is explained (gate B3 / Nielsen #1, #9).
         fairwayToast.error(result.error || 'Could not mark task complete. Please try again.');
+      } else {
+        // The sidebar "Tasks" badge is a separate polled feed — refetch it so it
+        // drops immediately instead of waiting up to 45s (conn-golf-player
+        // Finding 3).
+        badges.refetch();
       }
 
       startTransition(() => {
         router.refresh();
       });
     },
-    [router],
+    [router, badges],
   );
 
   return (

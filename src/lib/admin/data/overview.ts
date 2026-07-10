@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
 import type { AppTriageEventRow, TriageItem } from '@/lib/admin/data/triage';
+import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import {
   fetchIncidentFeed,
   DEFAULT_INCIDENT_WINDOW_HOURS,
@@ -19,7 +20,11 @@ export interface OverviewKpis {
   sentryUnresolved: number | null;
   /** Coalesced incident groups in the last 24h — same feed as Overview triage + Errors tab default. */
   incidentGroups24h: number;
-  authFailures24h: number;
+  /** ALL `event_type='security'` rows in 24h — password resets, view-as
+   *  enter/exit, and session revocations included, not just failed logins.
+   *  Named for what it actually counts (was "Auth failures 24h", which
+   *  overclaimed every non-failure security action as a failure). */
+  securityEvents24h: number;
   activeUsersToday: number;
   activityToday: { golf: number; baseball: number; lifting: number };
   lastDeploy: { state: string; ageMinutes: number } | null;
@@ -68,7 +73,7 @@ export function classifyKpiTone(count: number, redAt: number): KpiTone {
 
 /** "Sustained/high" lines for the Overview KPI tiles (classifyKpiTone). */
 export const ERRORS_24H_RED_AT = 10;
-export const AUTH_FAILURES_24H_RED_AT = 5;
+export const SECURITY_EVENTS_24H_RED_AT = 5;
 
 function isoHoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 3600_000).toISOString();
@@ -89,6 +94,42 @@ export function isoStartOfToday(now: Date = new Date()): string {
 
 export function activeAppErrorGroups(rows: AppTriageEventRow[]): TriageItem[] {
   return buildIncidentFeedFromSources(rows, [], DEFAULT_INCIDENT_WINDOW_HOURS).incidents;
+}
+
+/**
+ * Bridge chrome badge (M1 bridge-chrome, docs/MOBILE_DOCTRINE.md performance
+ * floor: "never add a heavy per-route fetch for chrome"). Deliberately NOT
+ * `fetchOverviewSnapshot` (an 11-way `Promise.all` — deploys, feature health,
+ * activity-today ×3, watcher signals — paid once per Overview render) and NOT
+ * `fetchIncidentFeed` (a Sentry API round-trip + a 500-row, many-column
+ * `admin_events` fetch + per-row `buildIncidentReport` text generation,
+ * ALSO already paid once per Overview render). Bridge's root layout re-runs
+ * on EVERY navigation across a dozen tabs — reusing either of those there
+ * would multiply an expensive query set by 12.
+ *
+ * Instead: a single `head: true` COUNT against the SAME `admin_events`
+ * table/window/severity split the Errors tab and Overview KPI already use,
+ * with NO Sentry call (an external network round-trip on every route change
+ * is not "cheap" chrome) and NO per-row report building. Trade-off: this is
+ * a raw high-severity ROW count, not the fingerprint-deduped GROUP count
+ * `IncidentFeedCounts.highSeverityGroups` reports elsewhere in Bridge — an
+ * honest approximation for a badge whose only job is "is there something to
+ * look at", and the bottom-nav caps display at "9+" regardless. Honest-only:
+ * a query error degrades to 0 (no badge) rather than guessing.
+ */
+export async function fetchBridgeErrorBadge(): Promise<number> {
+  const admin = createAdminClient();
+  const since = isoHoursAgo(24);
+  let query = admin
+    .from('admin_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_type', 'error')
+    .eq('resolved', false)
+    .in('severity', ['critical', 'error'])
+    .gte('created_at', since);
+  query = excludeAuthNoise(query);
+  const { count, error } = await query;
+  return error || count == null ? 0 : count;
 }
 
 /** CALLER must have passed requireSuperAdmin() (service-role reads). */
@@ -116,10 +157,15 @@ export async function fetchOverviewSnapshot() {
       .eq('event_type', 'security').gte('created_at', ago24h),
     admin.from('users').select('id', { count: 'exact', head: true })
       .gte('last_seen', today),
+    // .eq('status','completed') mirrors the Activity tab's identical query
+    // (src/app/admin/activity/_data.ts fetchActivityTodayStats) — without it
+    // this silently counted in-progress/abandoned rounds too, so "Activity
+    // today" here and "today" on the Activity tab disagreed on the same
+    // underlying metric.
     admin.from('golf_rounds').select('id', { count: 'exact', head: true })
-      .gte('created_at', today),
+      .eq('status', 'completed').gte('created_at', today),
     admin.from('baseball_games').select('id', { count: 'exact', head: true })
-      .gte('created_at', today),
+      .eq('status', 'completed').gte('created_at', today),
     admin.from('helm_lifting_sessions').select('id', { count: 'exact', head: true })
       .gte('created_at', today),
     admin.from('admin_events').select('created_at')
@@ -140,7 +186,7 @@ export async function fetchOverviewSnapshot() {
     sentryUnresolved:
       incidentFeed24h.sentry.status === 'ok' ? (incidentFeed24h.sentry.data?.length ?? 0) : null,
     incidentGroups24h: incidentFeed24h.counts.totalGroups,
-    authFailures24h: security24h.count ?? 0,
+    securityEvents24h: security24h.count ?? 0,
     activeUsersToday: activeToday.count ?? 0,
     activityToday: {
       golf: golfToday.count ?? 0,

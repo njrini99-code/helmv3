@@ -18,7 +18,17 @@ export const metadata: Metadata = {
 // Auth-dependent page — must render per-request so each user sees their own data
 export const dynamic = 'force-dynamic';
 
-export default async function GolfTravelPage() {
+interface GolfTravelPageProps {
+  /**
+   * `?trip=<id>` — the Calendar→Travel cross-link (FairwayEventDetailDrawer's
+   * "Linked travel itinerary" chip) deep-links here so the specific trip
+   * auto-selects instead of landing on the general travel hub.
+   */
+  searchParams: Promise<{ trip?: string }>;
+}
+
+export default async function GolfTravelPage({ searchParams }: GolfTravelPageProps) {
+  const { trip: initialTripId } = await searchParams;
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
@@ -142,6 +152,7 @@ export default async function GolfTravelPage() {
         teamId={teamId}
         isCoach={isCoach}
         nowISO={new Date().toISOString().slice(0, 10)}
+        initialTripId={initialTripId}
       />
     </div>
   );

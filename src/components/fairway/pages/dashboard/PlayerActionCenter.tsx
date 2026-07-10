@@ -37,6 +37,7 @@ import { useRouter } from 'next/navigation';
 import { completeTask } from '@/app/golf/actions/tasks';
 import { respondToEvent } from '@/app/golf/actions/golf';
 import { fairwayToast, Surface } from '@/components/fairway';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import {
   TaskRow,
@@ -71,6 +72,7 @@ export function PlayerActionCenter({
   announcementsLoadError = false,
 }: PlayerActionCenterProps) {
   const router = useRouter();
+  const badges = useNotificationBadges();
   const [tasks, setTasks] = useState(initialTasks);
   const [events, setEvents] = useState(initialEvents);
   const [, startTransition] = useTransition();
@@ -108,10 +110,15 @@ export function PlayerActionCenter({
           prev.map((t) => (t.id === taskId ? { ...t, status: 'pending' as const, completed_at: null } : t)),
         );
         fairwayToast.error(result.error ?? "Couldn't mark that task complete. Please try again.");
+      } else {
+        // The sidebar "Tasks" badge count is a separate polled feed — refetch it
+        // so it drops immediately instead of waiting up to 45s (conn-golf-player
+        // Finding 3).
+        badges.refetch();
       }
       startTransition(() => router.refresh());
     },
-    [router],
+    [router, badges],
   );
 
   const handleRSVP = useCallback(
@@ -129,10 +136,13 @@ export function PlayerActionCenter({
               ? 'RSVP saved — marked as maybe'
               : "RSVP saved — you can't go";
         fairwayToast.success(confirmation);
+        // The "Awaiting RSVP" calendar-notification badge is a separate polled
+        // feed — refetch it so it drops immediately (conn-golf-player Finding 3).
+        badges.refetch();
       }
       startTransition(() => router.refresh());
     },
-    [router, initialEvents],
+    [router, initialEvents, badges],
   );
 
   const openTrip = useCallback((trip: TripData) => {

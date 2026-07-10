@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { StatsUploadClient, UploadHistory } from '@/components/baseball/stats';
 import { EditorsLetter } from '@/components/baseball/living-annual';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 export default async function StatsUploadPage() {
   const supabase = await createClient();
@@ -34,13 +35,17 @@ export default async function StatsUploadPage() {
     redirect('/baseball/dashboard/program');
   }
 
-  // Get team for this organization
+  // Get team for this organization (cookie-aware, multi-row-safe — matches
+  // Command Center).
   type TeamInfo = { id: string; name: string; team_type: string };
-  const { data: team, error: teamError } = await supabase
-    .from('baseball_teams')
-    .select('id, name, team_type')
-    .eq('organization_id', coach.organization_id)
-    .single() as { data: TeamInfo | null; error: unknown };
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  const { data: team, error: teamError } = teamId
+    ? ((await supabase
+        .from('baseball_teams')
+        .select('id, name, team_type')
+        .eq('id', teamId)
+        .maybeSingle()) as { data: TeamInfo | null; error: unknown })
+    : { data: null, error: null };
 
   if (teamError || !team) {
     // LA ghost/EditorsLetter state (spec doctrine: no amber warning boxes
