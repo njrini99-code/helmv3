@@ -65,6 +65,7 @@ import {
   withBaseballAction,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { appendLiftTimelineEvent } from '@/lib/baseball/timeline-writer';
 import { appendGroupAudit, type GroupAuditEntry } from '@/lib/baseball/lifting/group-audit-writer';
 import {
@@ -2028,7 +2029,23 @@ export const logSetResult = withBaseballAction(
       )
       .select('id')
       .single();
-    if (error) throw error;
+    if (error) {
+      maybeCaptureRlsDenial(error, {
+        table: 'helm_lifting_set_results',
+        verb: 'insert',
+        action: 'logSetResult',
+        feature: 'baseball_lifting',
+        sport: 'baseball',
+        userId: ctx.user.id,
+      });
+      // Rethrow a generic BaseballActionError (not the raw `error`) so the
+      // wrapper's catch-all `maybeCaptureRlsDenial` fallback in
+      // with-baseball-action.ts doesn't see an RLS-shaped error and
+      // double-fire a second, imprecise denial (table: 'baseball-lifting')
+      // on top of the precise one just captured above. Matches
+      // watchlist.ts's addToWatchlist pattern.
+      throw new BaseballActionError();
+    }
     const setRowId = (data as { id: string }).id;
 
     // Auto-advance assigned -> started.

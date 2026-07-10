@@ -4,6 +4,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sanitizeDbError } from '@/lib/db-error';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { revalidatePath } from 'next/cache';
 import {
   parseCSV,
@@ -929,7 +930,16 @@ const saveFullBoxScoreAction = withBaseballAction(
       p_opponent_score: opponentScore,
     });
 
-    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+    if (error) {
+      maybeCaptureRlsDenial(error, {
+        table: 'baseball_games',
+        verb: 'rpc',
+        action: 'saveFullBoxScore',
+        feature: 'baseball_games',
+        sport: 'baseball',
+      });
+      return { success: false, error: sanitizeDbError(error, 'games') };
+    }
 
     const result = data as { success?: boolean; error?: string } | null;
     if (!result?.success) {

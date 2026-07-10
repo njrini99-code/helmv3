@@ -187,50 +187,14 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
           },
           handleNewEvent
         )
-        // Also listen for client errors as fallback
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'admin_client_errors',
-          },
-          (payload) => {
-            // Transform client error to AdminEvent format
-            const clientError = payload.new as {
-              id: string;
-              error_message: string;
-              error_stack: string | null;
-              page_url: string | null;
-              user_id: string | null;
-              user_agent: string | null;
-              metadata: Record<string, unknown> | null;
-              created_at: string;
-            };
-
-            const event: AdminEvent = {
-              id: clientError.id,
-              event_type: 'client_error',
-              severity: 'error',
-              title: 'Client Error',
-              message: clientError.error_message,
-              metadata: clientError.metadata,
-              user_id: clientError.user_id,
-              user_email: null,
-              url: clientError.page_url,
-              stack_trace: clientError.error_stack,
-              browser_info: clientError.user_agent ? { userAgent: clientError.user_agent } : null,
-              resolved: false,
-              resolved_at: null,
-              resolved_by: null,
-              created_at: clientError.created_at,
-            };
-
-            if (shouldIncludeEvent(event)) {
-              setEvents(prev => [event, ...prev].slice(0, maxEvents));
-            }
-          }
-        )
+        // NOTE: admin_client_errors was a prior-architecture table for client
+        // error capture, superseded when the client-error path was
+        // consolidated into error_logs + admin_events (the same pair the
+        // server-side logger writes to — see server-error-logger.ts and
+        // src/app/api/log-error/route.ts). Nothing writes to
+        // admin_client_errors anymore, so the realtime fallback subscription
+        // that used to live here was permanently inert; removed rather than
+        // kept as dead weight a future on-call could mistake for a live path.
         // Listen for API errors
         .on(
           'postgres_changes',

@@ -22,6 +22,8 @@ import {
   getProgramSettings,
   getSettingsAuditLog,
 } from '@/app/baseball/actions/program-settings';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { SettingsAuditClient } from '@/components/baseball/settings/SettingsAuditClient';
 
 export const metadata = {
@@ -38,8 +40,20 @@ export default async function SettingsAuditPage() {
     redirect('/baseball/login?returnTo=/baseball/dashboard/settings/audit');
   }
 
-  const settings = await getProgramSettings();
-  const entries = await getSettingsAuditLog(100);
+  // Both getters independently re-resolve auth (withBaseballAction). A
+  // session that expires in the narrow window between the check above and
+  // these calls throws BaseballUnauthorizedError, which must redirect to
+  // login rather than raw-throw to error.tsx/Sentry. Any OTHER failure (a
+  // real capability failure for a signed-in coach) keeps propagating.
+  const { settings, entries } = await redirectOnUnauthorized(
+    async () => {
+      const settings = await getProgramSettings();
+      const entries = await getSettingsAuditLog(100);
+      return { settings, entries };
+    },
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/settings/audit',
+  );
 
   return <SettingsAuditClient teamName={settings.teamName} entries={entries} />;
 }

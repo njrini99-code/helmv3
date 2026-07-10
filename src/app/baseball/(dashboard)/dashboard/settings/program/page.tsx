@@ -18,6 +18,8 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { getProgramSettings } from '@/app/baseball/actions/program-settings';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { ProgramSettingsClient } from '@/components/baseball/settings/ProgramSettingsClient';
 
 export const metadata = {
@@ -36,8 +38,16 @@ export default async function ProgramSettingsPage() {
   }
 
   // Resolves active team + settings doc + viewer caps; enforces auth/context
-  // server-side. Failures (no active team, no coach) bubble to error.tsx.
-  const data = await getProgramSettings();
+  // server-side (withBaseballAction), independently re-resolving auth. A
+  // session that expires in the narrow window between the check above and
+  // this call throws BaseballUnauthorizedError, which must redirect to login
+  // rather than raw-throw to error.tsx/Sentry. Any OTHER failure (no active
+  // team, no coach) keeps propagating to error.tsx.
+  const data = await redirectOnUnauthorized(
+    () => getProgramSettings(),
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/settings/program',
+  );
 
   return <ProgramSettingsClient data={data} />;
 }

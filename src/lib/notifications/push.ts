@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
+import { logServerEvent } from '@/lib/server-error-logger';
 
 /**
  * Check if user wants push notifications for a specific type
@@ -212,13 +213,31 @@ export async function sendPushNotification(
             .single() as { data: { failed_count: number } | null };
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
+          const { error: deactivateError } = await (supabase as any)
             .from('device_tokens')
             .update({
               failed_count: (currentToken?.failed_count || 0) + 1,
               ...(shouldDeactivateToken ? { active: false } : {}),
             })
-            .eq('token', deviceToken.token);
+            .eq('token', deviceToken.token) as { error: { message: string } | null };
+
+          // Prune confirmation: the row's `active: true` gate on the token
+          // read above means a deactivated token is never selected again, so
+          // this fires exactly once per dead token. Logged at info (not
+          // error/warning) so it surfaces as a routine Sentry message / admin
+          // feed entry, not an Error issue competing with real incidents.
+          if (shouldDeactivateToken && !deactivateError) {
+            await logServerEvent(
+              `device_tokens pruned: dead APNs token deactivated (user=${userId}, platform=${deviceToken.platform})`,
+              {
+                action: 'push.sendPushNotification.pruneDeadToken',
+                featureArea: 'notifications',
+                userId,
+                extra: { tokenPrefix: deviceToken.token.slice(0, 8), platform: deviceToken.platform },
+              },
+              'info',
+            );
+          }
         } else {
           // Update last_push_at
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

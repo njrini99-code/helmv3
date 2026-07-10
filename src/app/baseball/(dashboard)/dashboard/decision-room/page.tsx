@@ -29,6 +29,8 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { getDecisionRoomData } from '@/app/baseball/actions/decision-room';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { StaffDecisionRoomClient } from '@/components/baseball/staff-decision-room/StaffDecisionRoomClient';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -50,9 +52,17 @@ export default async function DecisionRoomPage() {
   }
 
   // getDecisionRoomData resolves the active team + viewer capability and
-  // enforces auth/context server-side. Any failure (no active team, no coach
-  // role, missing capability) surfaces through error.tsx.
-  const data = await getDecisionRoomData();
+  // enforces auth/context server-side, independently re-resolving auth
+  // (withBaseballAction). A session that expires in the narrow window between
+  // the check above and this call throws BaseballUnauthorizedError, which
+  // must redirect to login rather than raw-throw to error.tsx/Sentry. Any
+  // OTHER failure (no active team, no coach role, missing capability) is a
+  // genuine failure and keeps propagating to error.tsx.
+  const data = await redirectOnUnauthorized(
+    () => getDecisionRoomData(),
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/decision-room',
+  );
 
   return (
     <div className={fairwayScope('min-h-full')}>

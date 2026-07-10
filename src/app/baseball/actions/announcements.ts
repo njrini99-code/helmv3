@@ -14,6 +14,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
 import {
   withBaseballAction,
@@ -152,6 +153,13 @@ const createAnnouncementAction = withBaseballAction(
       .single();
 
     if (annError || !announcement) {
+      maybeCaptureRlsDenial(annError, {
+        table: 'baseball_announcements',
+        verb: 'insert',
+        action: 'createAnnouncement',
+        feature: 'baseball_announcements',
+        sport: 'baseball',
+      });
       return { success: false, error: 'Failed to create announcement' };
     }
 
@@ -194,7 +202,16 @@ async function getAnnouncementsWithMetaImpl(
       .eq('team_id', teamId)
       .order('published_at', { ascending: false });
 
-    if (error) return { success: false, error: 'Failed to load announcements' };
+    if (error) {
+      maybeCaptureRlsDenial(error, {
+        table: 'baseball_announcements',
+        verb: 'select',
+        action: 'getAnnouncementsWithMeta',
+        feature: 'baseball_announcements',
+        sport: 'baseball',
+      });
+      return { success: false, error: 'Failed to load announcements' };
+    }
     if (!announcements || announcements.length === 0) {
       return { success: true, data: [] };
     }
@@ -329,6 +346,13 @@ async function acknowledgeAnnouncementImpl(
       );
 
     if (insertError) {
+      maybeCaptureRlsDenial(insertError, {
+        table: 'baseball_announcement_acknowledgements',
+        verb: 'insert',
+        action: 'acknowledgeAnnouncement',
+        feature: 'baseball_announcements',
+        sport: 'baseball',
+      });
       return { success: false, error: 'Failed to acknowledge announcement' };
     }
 
@@ -393,7 +417,16 @@ const deleteAnnouncementAction = withBaseballAction(
       .delete()
       .eq('id', announcementId);
 
-    if (error) return { success: false, error: 'Failed to delete announcement' };
+    if (error) {
+      maybeCaptureRlsDenial(error, {
+        table: 'baseball_announcements',
+        verb: 'delete',
+        action: 'deleteAnnouncement',
+        feature: 'baseball_announcements',
+        sport: 'baseball',
+      });
+      return { success: false, error: 'Failed to delete announcement' };
+    }
 
     revalidatePath(ANNOUNCEMENTS_PATH);
     return { success: true };

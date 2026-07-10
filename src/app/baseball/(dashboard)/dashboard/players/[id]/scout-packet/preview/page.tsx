@@ -13,6 +13,7 @@ import Link from 'next/link';
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { getScoutPacketPreview } from '@/app/baseball/actions/scout-packet';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
 import { ScoutPacketView } from '@/components/baseball/passport/ScoutPacketView';
 import { IconArrowLeft } from '@/components/icons';
 
@@ -33,7 +34,27 @@ export default async function CoachScoutPacketPreviewPage({ params }: PageProps)
   if (context.activeRole !== 'coach') redirect('/baseball/player/passport');
 
   // Capability is enforced inside getScoutPacketPreview (can_export_reports).
-  const model = await getScoutPacketPreview(id);
+  //
+  // getScoutPacketPreview independently re-resolves auth (withBaseballAction),
+  // so a session that expires in the narrow window between the context check
+  // above and this call throws BaseballUnauthorizedError here. Left uncaught,
+  // that raw-throws through this Server Component's render straight to
+  // error.tsx and the error tracker (Sentry/Vercel) instead of the honest
+  // "please sign in again" redirect — the same class of bug fixed on the
+  // baseball announcements page. Redirect on that specific case; any other
+  // thrown error (e.g. a real capability failure for a signed-in coach) is a
+  // genuine failure and should keep propagating to error.tsx.
+  let model: Awaited<ReturnType<typeof getScoutPacketPreview>>;
+  try {
+    model = await getScoutPacketPreview(id);
+  } catch (error) {
+    if (error instanceof BaseballUnauthorizedError) {
+      redirect(
+        `/baseball/login?returnTo=${encodeURIComponent(`/baseball/dashboard/players/${id}/scout-packet/preview`)}`,
+      );
+    }
+    throw error;
+  }
 
   return (
     <div className="min-h-dvh bg-cream-100">
