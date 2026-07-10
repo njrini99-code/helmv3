@@ -67,6 +67,7 @@ import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
 import type { CalendarFeed } from '@/components/golf/calendar/FeedCard';
 import type { FeedType } from '@/components/golf/calendar/CalendarFeedManager';
@@ -109,6 +110,15 @@ export interface FairwayCalendarProps {
   loadedRangeStart?: string;
   /** ISO end of the server-loaded events window (page ±3 months). */
   loadedRangeEnd?: string;
+  /**
+   * `?event=<id>` from the route's searchParams — the Travel→Calendar
+   * cross-link (FairwayTripDetail's "Linked calendar event" chip). When the
+   * id matches a loaded event, its detail drawer auto-opens on mount instead
+   * of landing on the general calendar hub. Silently ignored if the event
+   * isn't found (outside the loaded window, deleted, wrong team) — honest,
+   * no error thrown for a stale link.
+   */
+  initialEventId?: string;
 }
 
 /** Local midnight of the day represented by the given Date. */
@@ -134,8 +144,10 @@ export function FairwayCalendar({
   teamId,
   loadedRangeStart,
   loadedRangeEnd,
+  initialEventId,
 }: FairwayCalendarProps) {
   const router = useRouter();
+  const badges = useNotificationBadges();
   // ── serverNow → nowRef deferred hydration (mirrors the legacy surface) ──────
   const initialFocus = React.useMemo(() => toLocalMidnight(new Date(serverNow)), [serverNow]);
   const [focusDate, setFocusDate] = React.useState<Date>(initialFocus);
@@ -621,6 +633,23 @@ export function FairwayCalendar({
     [isCoach, userRsvpStatuses],
   );
 
+  // ── Deep-link auto-open (Travel→Calendar cross-link, P440 symmetric fix) ──
+  // FairwayTripDetail's "Linked calendar event" chip deep-links here with
+  // `?event=<id>` instead of just landing on the general hub. Opens the
+  // matching event's drawer ONCE the id is found in the loaded range — a ref
+  // guards against re-opening after the coach/player closes it (events can
+  // reload via realtime/router.refresh()). Silently no-ops if the event never
+  // shows up (outside the ±3-month window, deleted, wrong team) — honest,
+  // never an error for a stale link.
+  const autoOpenedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!initialEventId || autoOpenedRef.current) return;
+    const match = events.find((e) => e.id === initialEventId);
+    if (!match) return;
+    autoOpenedRef.current = true;
+    void openDrawerForEvent(match);
+  }, [initialEventId, events, openDrawerForEvent]);
+
   // Player RSVP submit — REUSES the existing respondToEvent action UNCHANGED.
   // Typed lock codes (deadline passed / event started / cancelled) are passed
   // through so the drawer can render a specific locked state.
@@ -646,6 +675,11 @@ export function FairwayCalendar({
                   ? 'Marked not going'
                   : 'Response saved',
           );
+          // The "Awaiting RSVP" calendar-notification badge is a separate
+          // polled feed — refetch it so it drops immediately instead of
+          // waiting up to 45s (conn-golf-player Finding 3; this was the one
+          // RSVP entry point with no badge call at all).
+          badges.refetch();
           return { success: true };
         }
         return {
@@ -657,7 +691,7 @@ export function FairwayCalendar({
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
       }
     },
-    [],
+    [badges],
   );
 
   // ── The ONE primary action ──────────────────────────────────────────────────

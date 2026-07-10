@@ -28,7 +28,8 @@
 
 import { useState, useTransition, useCallback } from 'react';
 import Link from 'next/link';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -335,7 +336,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
   const activeStaffCount = staff.filter((s) => s.status !== 'removed').length;
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Back affordance + masthead */}
         <div className="mb-6">

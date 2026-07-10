@@ -31,7 +31,8 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadMaxFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { DUR, EASE_GLIDE } from '@/components/baseball/living-annual';
 import type { BaseballNavIcon } from '@/lib/baseball/nav-registry';
@@ -165,7 +166,7 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
   if (tabs.length === 0) return null;
 
   return (
-    <LazyMotion features={domAnimation} strict>
+    <LazyMotion features={loadMaxFeatures} strict>
       <nav
         aria-label={ariaLabel}
         data-slot="hub-sub-nav"

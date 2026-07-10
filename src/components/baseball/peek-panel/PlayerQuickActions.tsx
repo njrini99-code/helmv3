@@ -4,6 +4,7 @@ import { memo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/sonner';
 import {
   IconMessage,
   IconUser,
@@ -32,6 +33,7 @@ const PlayerQuickActionsComponent = function PlayerQuickActions({
   className,
 }: PlayerQuickActionsProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isOnWatchlist, setIsOnWatchlist] = useState(initialIsOnWatchlist);
   const [isTogglingWatchlist, setIsTogglingWatchlist] = useState(false);
 
@@ -43,13 +45,24 @@ const PlayerQuickActionsComponent = function PlayerQuickActions({
         const newState = result.action === 'added';
         setIsOnWatchlist(newState);
         onWatchlistChange?.(newState);
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Could not update watchlist',
+          description: result.error ?? 'Please try again.',
+        });
       }
     } catch (error) {
       console.error('Failed to toggle watchlist:', error);
+      addToast({
+        type: 'error',
+        title: 'Could not update watchlist',
+        description: 'Something went wrong. Please try again.',
+      });
     } finally {
       setIsTogglingWatchlist(false);
     }
-  }, [playerId, onWatchlistChange]);
+  }, [playerId, onWatchlistChange, addToast]);
 
   const handleViewProfile = useCallback(() => {
     onClose?.();

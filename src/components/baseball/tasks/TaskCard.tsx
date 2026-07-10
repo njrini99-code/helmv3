@@ -170,7 +170,13 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                     : 'border-warm-300 hover:border-primary-500'
                 )}
               >
-                {isCompletedByPlayer && <IconCheck size={12} />}
+                {isCompletedByPlayer && (
+                  <IconCheck
+                    size={12}
+                    className="motion-safe:animate-checkmark"
+                    style={{ strokeDasharray: 24 }}
+                  />
+                )}
               </IconButton>
             )}
             <div className="flex-1">

@@ -48,6 +48,28 @@ export function classifyAtRisk(
   return idleDays > 14 ? 'at-risk' : 'active';
 }
 
+/**
+ * `usersRes.count` (the `{ q, role }`-filtered SQL count, pre-500-cap) is
+ * only trustworthy when `filters.team` is absent — the team filter is
+ * applied afterward in JS, against the already-fetched/capped `users`
+ * array, and never reaches the SQL count query. Using the SQL count while a
+ * team filter is active would show the platform-wide total (e.g. 850) on a
+ * page scoped to one team's roster (e.g. 20), directly contradicting the
+ * roster the user is looking at. So: with no team filter, prefer the real
+ * pre-cap SQL count (falling back to `users.length` only if Postgres somehow
+ * didn't return one); with a team filter, `users.length` IS the accurate
+ * count already-scoped to every active filter (q + role + team) and is used
+ * as-is.
+ */
+export function computeTotalUsersCount(
+  filters: { team?: string },
+  sqlCount: number | null,
+  usersLength: number,
+): number {
+  if (filters.team) return usersLength;
+  return sqlCount ?? usersLength;
+}
+
 type IdRow = { id: string; user_id: string | null };
 type UserIdRow = { user_id: string | null };
 type TeamRow = { id: string; name: string };
@@ -145,6 +167,16 @@ export interface TeamRosterInsight extends GolfTeamHealthRow {
  */
 export async function fetchUsersTab(filters: { q?: string; role?: string; team?: string }): Promise<{
   users: DirectoryUser[];
+  /**
+   * Real count of users matching every active filter, BEFORE the 500-row
+   * cap below. Lets the UI say "500 of 812" instead of silently presenting
+   * the capped page size as if it were the whole directory. See
+   * `computeTotalUsersCount` — when `filters.team` is set this is
+   * `users.length` (the only value that's actually team-scoped); otherwise
+   * it's the `{ q, role }`-filtered SQL `count: 'exact'` (which costs
+   * nothing extra to fetch alongside the `.limit()`'d rows).
+   */
+  totalUsersCount: number;
   teams: TeamRosterInsight[];
   atRisk: DirectoryUser[];
 }> {
@@ -155,7 +187,7 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
 
   let userQuery = admin
     .from('users')
-    .select('id, email, role, created_at, last_seen')
+    .select('id, email, role, created_at, last_seen', { count: 'exact' })
     .order('last_seen', { ascending: false, nullsFirst: false })
     .limit(500);
   if (filters.q) userQuery = userQuery.ilike('email', `%${filters.q}%`);
@@ -275,7 +307,28 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     }
   }
 
-  const users: DirectoryUser[] = (usersRes.data ?? [])
+  // The platform-wide `userQuery` above is capped at 500 rows ordered by
+  // recency (`last_seen desc`) — filtering that already-capped page down to
+  // one team in JS silently drops any team member who hasn't been seen
+  // recently enough to land in the top 500, even though `usersInTeam` (built
+  // from the UNCAPPED team-membership queries above) knows their real user
+  // id. `/admin/users` treats the team filter as the path to viewing the
+  // FULL roster, so re-fetch directly by the resolved team-member ids
+  // (bypassing the 500-cap entirely) instead of filtering the capped page.
+  let teamUsersQuery = filters.team
+    ? admin
+        .from('users')
+        .select('id, email, role, created_at, last_seen')
+        .in('id', usersInTeam.size > 0 ? Array.from(usersInTeam) : [''])
+    : null;
+  if (teamUsersQuery && filters.q) teamUsersQuery = teamUsersQuery.ilike('email', `%${filters.q}%`);
+  if (teamUsersQuery && filters.role && (USER_ROLES as readonly string[]).includes(filters.role)) {
+    teamUsersQuery = teamUsersQuery.eq('role', filters.role as UserRole);
+  }
+  const teamUsersRes = teamUsersQuery ? await teamUsersQuery : null;
+  const userRows = filters.team ? (teamUsersRes?.data ?? []) : (usersRes.data ?? []);
+
+  const users: DirectoryUser[] = userRows
     .map((u) => {
       const row = u as { id: string; email: string; role: string; created_at: string | null; last_seen: string | null };
       const sports = deriveUserSports({
@@ -479,6 +532,7 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
 
   return {
     users,
+    totalUsersCount: computeTotalUsersCount(filters, usersRes.count, users.length),
     teams,
     atRisk: users.filter((u) => classifyAtRisk({ lastSeen: u.lastSeen, createdAt: u.createdAt }, now) !== 'active'),
   };

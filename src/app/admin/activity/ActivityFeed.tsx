@@ -48,6 +48,8 @@ function ActivityRow({ item }: { item: ActivityItem }) {
         <Icon size={16} className={chip.icon} />
       </span>
       <div className="min-w-0 flex-1">
+        {/* Dateline rule — replaces the retired border-l-2 leader stripe. */}
+        {isDemo && <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-accent-500" />}
         <p className="break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{item.title}</p>
         {isDemo ? (
           <DemoDetail detail={item.detail} />
@@ -64,11 +66,12 @@ function ActivityRow({ item }: { item: ActivityItem }) {
     </>
   );
 
-  // Leader row: soft green wash + 2px green left bar (GREEN CONTRACT — the
-  // one deliberately-highlighted kind).
+  // Leader row: soft green wash + a dateline rule above the title (GREEN
+  // CONTRACT — the one deliberately-highlighted kind). Replaces the retired
+  // border-l-2 left bar.
   const rowClass = cn(
     'flex min-w-0 items-start gap-3 rounded-fw-md px-3 py-3',
-    isDemo && 'border-l-2 border-accent-500 bg-accent-50/60',
+    isDemo && 'bg-accent-50/60',
   );
 
   // demo_session rows carry a mailto: <a> inside the detail — nesting that

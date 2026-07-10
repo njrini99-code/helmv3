@@ -6,6 +6,7 @@ import {
   type VercelDeployState,
 } from '@/lib/admin/vercel-api';
 import { fetchSentryReleaseHealth } from '@/lib/admin/sentry-api';
+import { githubIssuesRepo } from '@/lib/admin/github-issues-config';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -37,6 +38,15 @@ function sentryReleaseHref(sha: string | null): string | null {
   const org = process.env.SENTRY_ORG;
   if (!org || !sha) return null;
   return `https://sentry.io/organizations/${org}/issues/?query=${encodeURIComponent(`release:${sha}`)}`;
+}
+
+/** Deep-links a deployment's short sha to its GitHub commit. Reuses
+ *  githubIssuesRepo() (already resolves owner/repo for the GitHub Issues
+ *  links elsewhere) so this needs no new config or secret. */
+function githubCommitHref(sha: string | null): string | null {
+  if (!sha) return null;
+  const { owner, repo } = githubIssuesRepo();
+  return `https://github.com/${owner}/${repo}/commit/${sha}`;
 }
 
 /**
@@ -107,15 +117,37 @@ async function DeploymentsTable() {
         <tbody className="divide-y divide-warm-200/60">
           {deploys.data.map((d) => {
             const sentryHref = sentryReleaseHref(d.commitSha);
+            const commitSha = d.commitSha;
+            const deployHref = d.url ? `https://${d.url}` : null;
             return (
               <tr key={d.uid}>
                 <td className="sticky left-0 z-10 bg-surface py-2 pr-3">
-                  <p className="font-fw-mono text-xs text-warm-900">
-                    {d.commitSha ? d.commitSha.slice(0, 7) : d.uid.slice(0, 7)}
-                  </p>
-                  <p className="max-w-[260px] truncate text-xs text-warm-500">
-                    {d.commitMessage ?? d.url}
-                  </p>
+                  {commitSha ? (
+                    <a
+                      href={githubCommitHref(commitSha) ?? undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-fw-mono text-xs text-accent-700 underline"
+                    >
+                      {commitSha.slice(0, 7)}
+                    </a>
+                  ) : (
+                    <p className="font-fw-mono text-xs text-warm-900">{d.uid.slice(0, 7)}</p>
+                  )}
+                  {deployHref ? (
+                    <a
+                      href={deployHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block max-w-[260px] truncate text-xs text-warm-500 underline decoration-dotted hover:text-accent-700"
+                    >
+                      {d.commitMessage ?? d.url}
+                    </a>
+                  ) : (
+                    <p className="max-w-[260px] truncate text-xs text-warm-500">
+                      {d.commitMessage ?? d.url}
+                    </p>
+                  )}
                 </td>
                 <td className="px-3 font-fw-mono text-xs text-warm-600">{d.commitRef ?? '—'}</td>
                 <td className="px-3">

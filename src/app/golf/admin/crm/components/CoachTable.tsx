@@ -352,7 +352,7 @@ const CoachTableRow = React.memo(
       <tr
         className={cn(
           'border-b border-warm-50 cursor-pointer group transition-colors duration-150',
-          isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
+          isSelected && 'bg-primary-50/50',
           !isSelected && isFocused && 'bg-cream-100',
           !isSelected && !isFocused && 'hover:bg-cream-100',
         )}
@@ -713,7 +713,7 @@ const CoachTableCard = React.memo(
         className={cn(
           'flex flex-col items-stretch justify-start rounded-none min-h-0',
           'cursor-pointer group transition-colors duration-150 px-4 py-3.5 w-full text-left',
-          isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
+          isSelected && 'bg-primary-50/50',
           !isSelected && isFocused && 'bg-cream-100',
           !isSelected && !isFocused && 'hover:bg-cream-100',
         )}

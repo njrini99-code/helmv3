@@ -28,7 +28,8 @@
 // =============================================================================
 
 import * as React from 'react';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import {
   Drawer,
   DrawerContent,
@@ -624,7 +625,7 @@ export function SourceDrawer({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="sm:max-w-md sm:mx-auto">
-        <LazyMotion features={domAnimation} strict>
+        <LazyMotion features={loadFeatures} strict>
           <AnimatePresence mode="wait">
             {open && (
               <m.div
@@ -672,7 +673,7 @@ export function SignalSourceDrawer({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="sm:max-w-md sm:mx-auto">
-        <LazyMotion features={domAnimation} strict>
+        <LazyMotion features={loadFeatures} strict>
           <AnimatePresence mode="wait">
             {open && (
               <m.div

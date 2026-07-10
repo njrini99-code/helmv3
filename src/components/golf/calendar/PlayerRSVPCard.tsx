@@ -15,7 +15,8 @@
  */
 
 import { useState } from 'react';
-import { m, AnimatePresence, LazyMotion, domAnimation, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence, LazyMotion, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { formatTime } from '@/lib/calendar/premium-utils';
 import { StatusBadge, type StatusBadgeProps } from './StatusBadge';
@@ -288,7 +289,7 @@ export function PlayerRSVPCard({
             )}
 
             {/* Confirmation message */}
-            <LazyMotion features={domAnimation}>
+            <LazyMotion features={loadFeatures}>
               <AnimatePresence>
                 {selectedResponse && (
                   <m.div

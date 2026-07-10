@@ -491,7 +491,10 @@ export function StandingCard({ ready }: { ready: boolean }) {
         </p>
         <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
           {ready
-            ? 'See every metric vs your team and the PGA percentile — and turn your biggest gaps into goals.'
+            ? // conn-golf-player Finding 4: My Standing is read-only today (no
+              // goal-creation CTA is wired there yet — W17/W18) — the copy no
+              // longer promises a capability the page can't perform.
+              'See every metric vs your team and the PGA percentile, category by category.'
             : 'Log a few rounds to compare your game against your team and the PGA baseline.'}
         </p>
       </div>

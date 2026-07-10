@@ -8,8 +8,9 @@
  * `/baseball/player` route-group layouts (Coherence Ruling 1, 2026-07-08 —
  * see docs/baseball/COHERENCE_RULING_2026-07-08.md). Mirrors GolfHelm's
  * `FairwayDashboardShell` playbook: renders the shared Fairway `<AppShell>` —
- * the warm-black recessive rail on desktop, a slide-in glass drawer on
- * mobile, the one glass top bar.
+ * the warm-black recessive rail on desktop, a 4-tab bottom bar + More sheet
+ * on mobile (M1, 2026-07-10 — docs/MOBILE_DOCTRINE.md Rule 6/10; the old
+ * hamburger → slide-in drawer is retired), the one glass top bar.
  *
  * PRESENTATION ONLY. No server actions, no RLS, no new reads beyond what the
  * existing baseball auth/nav hooks already resolve:
@@ -28,10 +29,10 @@
  * Ruling 5). This file is the sole surviving shell for BaseballHelm.
  *
 
- * The AppShell drawer (`mobileOpen`) is BRIDGED to the SAME SidebarContext
+ * The AppShell sheet (`mobileOpen`) is BRIDGED to the SAME SidebarContext
  * every legacy baseball page's own menu button already calls `setMobileOpen`
- * against, so a not-yet-migrated page opens the SAME drawer. One nav surface,
- * no dead buttons, no double drawers.
+ * against, so a not-yet-migrated page opens the SAME More sheet. One nav
+ * surface, no dead buttons, no double overflow surfaces.
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo } from 'react';
@@ -39,7 +40,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-import { AppShell, FairwayBottomNav, useSidebarCollapsed } from '@/components/fairway/app-shell';
+import { AppShell, FairwayBottomNav, MoreSheetFooter, useSidebarCollapsed } from '@/components/fairway/app-shell';
+import { selectOverflow, summarizeMoreTab } from '@/components/fairway/app-shell/more-nav';
 import type { NavItem, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell';
 
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
@@ -63,6 +65,7 @@ import {
   type BaseballNavContext,
   type BaseballNavEntry,
 } from '@/lib/baseball/nav-registry';
+import { getBaseballBottomNavKeys } from '@/lib/baseball/bottom-nav';
 import {
   COACH_HUB_ORDER,
   COACH_HUB_DEFS,
@@ -103,51 +106,29 @@ const CommandPalette = dynamic(
 type Role = 'coach' | 'player';
 
 /**
- * P413-equivalent: mobile bottom-tab destinations derived from the SAME hub
- * sections as the desktop rail so active states agree across breakpoints.
- * Golf FairwayDashboardShell uses the same pattern (hub activeMatch).
- *
- * Ruling 2 (item 8): exactly the top 3 highest-frequency destinations per
- * role — the mobile drawer (opened via the top bar's hamburger, bridged to
- * the SAME SidebarContext this shell renders) is the "+ More" the ruling
- * describes, not a 4th bottom-tab button, so 3 named + the always-present
- * hamburger covers every remaining hub.
+ * M1 (baseball-nav-4): bottom-tab-only label shortening — the rail's full
+ * label doesn't fit the bottom bar's narrow per-tab column (`FairwayBottomNav`'s
+ * `truncate`). Keyed by `navKey` (NOT raw label text) so it can target ONE
+ * destination precisely — e.g. the showcase org-scope "Dashboard" row and the
+ * regular coach "Dashboard" hub row share the literal label "Dashboard" but
+ * resolve to different navKeys ('organization' vs 'dashboard'), and only the
+ * navKey-keyed map can tell them apart without ever touching the desktop
+ * rail's label (which reads `sections` directly, never this map).
  */
-function buildBottomNavFromSections(sections: NavSection[], role: Role): NavItem[] {
-  // Exclude the showcase "Back to Organization" row (buildShowcaseTeamSections)
-  // from the mobile bottom-tab bar — it's a rail-only affordance, not a
-  // top-3 destination, and would otherwise leak into the slice(0, 5) fallback
-  // below when a showcase coach's dashboard hub tab is capability-hidden.
-  // Matched by label (not href) since the org rail's own "Dashboard" row
-  // legitimately shares the same destination href and must stay eligible.
-  const items = sections
-    .flatMap((section) => section.items)
-    .filter((item) => item.label !== 'Back to Organization');
-  const preferredLabels =
-    role === 'coach'
-      ? (['Dashboard', 'Team', 'Stats & Performance'] as const)
-      : (['Today', 'Schedule', 'Messages'] as const);
-
-  const picked = preferredLabels
-    .map((label) => items.find((item) => item.label === label))
-    .filter((item): item is NavItem => Boolean(item));
-
-  if (picked.length >= 3) return picked.slice(0, 5).map(relabelForBottomNav);
-  return items.slice(0, 5).map(relabelForBottomNav);
-}
-
-/** Bottom-tab-only label shortening — the rail's full label doesn't fit the
- *  bottom bar's narrow per-tab column (`FairwayBottomNav`'s `truncate`). */
 const BOTTOM_NAV_LABEL_OVERRIDES: Partial<Record<string, string>> = {
-  'Stats & Performance': 'Stats',
+  'stats-performance': 'Stats',
+  dashboard: 'Home',
+  organization: 'Org',
 };
 
 /** Display-only relabel for the bottom bar — the desktop rail keeps the full
  *  label (a NEW object here, never mutating the shared NavItem the rail also
- *  renders). Applied to both `buildBottomNavFromSections` return paths so a
- *  showcase coach's fallback slice is shortened too. */
+ *  renders). exposureNoun-driven labels (Recruiting/Transfer Exposure/College
+ *  Interest/Exposure) are intentionally NOT overridden here — they stay their
+ *  mode word and truncate to the column via CSS (`FairwayBottomNav`'s
+ *  `truncate` class), never a second hand-maintained shortening map. */
 function relabelForBottomNav(item: NavItem): NavItem {
-  const short = BOTTOM_NAV_LABEL_OVERRIDES[item.label];
+  const short = item.navKey ? BOTTOM_NAV_LABEL_OVERRIDES[item.navKey] : undefined;
   return short ? { ...item, label: short } : item;
 }
 
@@ -165,8 +146,15 @@ function matchesRoutePrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+/**
+ * M1 (baseball-nav-4): a loose `id: string` (not `Pick<BaseballNavEntry, 'id'>`)
+ * so BASEBALL_MESSAGES_NAV — whose `id: 'messages'` is NOT a member of the
+ * BaseballNavId union — still structurally satisfies this shape. Both
+ * BaseballNavEntry and BASEBALL_MESSAGES_NAV already have narrower literal
+ * `id` types, which are assignable to `string`.
+ */
 function toNavItem(
-  entry: Pick<BaseballNavEntry, 'href' | 'label' | 'icon'>,
+  entry: { id: string; href: string; label: string; icon: BaseballNavEntry['icon'] },
   badge?: number,
   matchPrefixes: readonly string[] = [],
 ): NavItem {
@@ -175,6 +163,10 @@ function toNavItem(
     href: entry.href,
     icon: entry.icon as unknown as NavItem['icon'],
     badge,
+    // M1: the join key bottom-nav.ts's getBaseballBottomNavKeys resolves
+    // against — the registry/messages id doubles as the bottom-nav key for
+    // every entry built via this helper.
+    navKey: entry.id,
     activeMatch: (pathname) =>
       matchesRoutePrefix(pathname, entry.href) ||
       matchPrefixes.some((prefix) => matchesRoutePrefix(pathname, prefix)),
@@ -187,18 +179,24 @@ function playerHubToNavItem({
   icon,
   tabs,
   badge,
+  navKey,
 }: {
   label: string;
   href: string;
   icon: NavItem['icon'];
   tabs?: readonly HubSubNavTab[];
   badge?: number;
+  /** M1: the bottom-nav join key (a BaseballNavHub id or PLAYER_HUB_ROW_IDS
+   *  value) — this helper builds synthetic hub-landing rows that have no
+   *  underlying registry entry, so the key must be passed explicitly. */
+  navKey?: string;
 }): NavItem {
   return {
     label,
     href,
     icon,
     badge,
+    navKey,
     activeMatch: (pathname) =>
       matchesRoutePrefix(pathname, href) ||
       Boolean(
@@ -241,6 +239,7 @@ function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): N
       href: HUB_LANDING.playerStats,
       icon: HUB_ICONS.stats as unknown as NavItem['icon'],
       tabs: PLAYER_STATS_TABS,
+      navKey: PLAYER_HUB_ROW_IDS.stats,
     }),
   );
   itemsById.set(
@@ -250,6 +249,7 @@ function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): N
       href: HUB_LANDING.playerDevelopment,
       icon: HUB_ICONS.development as unknown as NavItem['icon'],
       tabs: PLAYER_DEVELOPMENT_TABS,
+      navKey: PLAYER_HUB_ROW_IDS.development,
     }),
   );
   itemsById.set(
@@ -259,6 +259,7 @@ function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): N
       href: HUB_LANDING.playerTeam,
       icon: HUB_ICONS.team as unknown as NavItem['icon'],
       tabs: PLAYER_TEAM_TABS,
+      navKey: PLAYER_HUB_ROW_IDS.team,
     }),
   );
   itemsById.set(
@@ -272,6 +273,7 @@ function buildPlayerNavSections(ctx: BaseballNavContext, unreadCount: number): N
       href: HUB_LANDING.playerRecruiting,
       icon: HUB_ICONS.recruiting as unknown as NavItem['icon'],
       tabs: PLAYER_RECRUITING_TABS,
+      navKey: PLAYER_HUB_ROW_IDS.recruiting,
     }),
   );
 
@@ -319,6 +321,10 @@ function buildCoachHubSections(ctx: BaseballNavContext, unreadCount: number): Na
         // the unread badge is the one piece of state that stays outside the
         // registry-derived tab list, so it's threaded in here by hub id.
         badge: hubId === 'messages' && unreadCount > 0 ? unreadCount : undefined,
+        // M1: the bottom-nav join key — every coach/both registry entry's hub
+        // IS the differentiator id program-type-variants.ts's
+        // `coachBottomNavHubs` names, so the hub id doubles as the navKey.
+        navKey: hubId,
       }),
     );
   }
@@ -339,6 +345,7 @@ function messagesNavItem(unreadCount: number): NavItem {
     icon: COACH_HUB_DEFS.messages.icon as unknown as NavItem['icon'],
     tabs: COACH_HUB_DEFS.messages.tabs,
     badge: unreadCount > 0 ? unreadCount : undefined,
+    navKey: BASEBALL_MESSAGES_NAV.id,
   });
 }
 
@@ -353,9 +360,11 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
     {
       heading: 'Organization',
       items: [
-        { label: 'Dashboard', href: SHOWCASE_ORG_HOME_HREF, icon: IconHome },
-        { label: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
-        { label: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
+        // M1 navKeys mirror the org bottom-nav bar's SHOWCASE_ORG_KEYS
+        // (bottom-nav.ts): 'organization' | 'teams' | 'events' | 'messages'.
+        { label: 'Dashboard', href: SHOWCASE_ORG_HOME_HREF, icon: IconHome, navKey: 'organization' },
+        { label: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers, navKey: 'teams' },
+        { label: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar, navKey: 'events' },
         messagesNavItem(unreadCount),
       ],
     },
@@ -378,6 +387,10 @@ function buildShowcaseOrgSections(unreadCount: number): NavSection[] {
  */
 function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number): NavSection[] {
   const items: NavItem[] = [
+    // M1: deliberately NO navKey — excludes this row from bottomNavKeys
+    // resolution by construction (getBaseballBottomNavKeys never returns a
+    // 'back to org' key), so it can only ever surface in the rail / More
+    // sheet, never the bottom bar. See bottom-nav.ts's team-scope branch.
     { label: 'Back to Organization', href: SHOWCASE_ORG_HOME_HREF, icon: IconArrowLeft },
   ];
   const dashboardTabs = filterHubTabsByCapabilities(COACH_HUB_DEFS.dashboard.tabs, 'coach', ctx.capabilities);
@@ -388,6 +401,7 @@ function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number)
         href: dashboardTabs[0]!.href,
         icon: COACH_HUB_DEFS.dashboard.icon as unknown as NavItem['icon'],
         tabs: dashboardTabs,
+        navKey: 'dashboard',
       }),
     );
     items.push(messagesNavItem(unreadCount));
@@ -403,6 +417,7 @@ function buildShowcaseTeamSections(ctx: BaseballNavContext, unreadCount: number)
         href: visibleTabs[0]!.href,
         icon: def.icon as unknown as NavItem['icon'],
         tabs: visibleTabs,
+        navKey: hubId,
       }),
     );
   }
@@ -447,18 +462,32 @@ function Brand({ homeHref }: { homeHref: string }) {
  * the link lives changed. See buildPlayerNavSections' doc comment and
  * hub-definitions.ts's PLAYER_RAIL_PRIMARY_IDS / PLAYER_RAIL_SECONDARY_IDS.
  */
-export function ShellFooter() {
+const BASEBALL_SETTINGS_HREF = '/baseball/dashboard/settings';
+
+/**
+ * Shared sign-out side effect (`useAuth().signOut()` + redirect) — used by
+ * BOTH the rail's dark `ShellFooter` and the More sheet's light
+ * `BaseballMoreSheetFooter` (M1) so the two footers never hand-maintain two
+ * copies of the same effectful call.
+ */
+function useBaseballSignOut() {
   const router = useRouter();
-  const pathname = usePathname();
   const { signOut } = useAuth();
-  const collapsed = useSidebarCollapsed();
-  const settingsHref = '/baseball/dashboard/settings';
-  const settingsActive = pathname === settingsHref || pathname.startsWith(`${settingsHref}/`);
 
   const handleSignOut = useCallback(async () => {
     await signOut();
     router.push('/baseball/login');
   }, [signOut, router]);
+
+  return { handleSignOut };
+}
+
+export function ShellFooter() {
+  const pathname = usePathname();
+  const { handleSignOut } = useBaseballSignOut();
+  const collapsed = useSidebarCollapsed();
+  const settingsHref = BASEBALL_SETTINGS_HREF;
+  const settingsActive = pathname === settingsHref || pathname.startsWith(`${settingsHref}/`);
 
   const rowBase = cn(
     'flex w-full items-center rounded-fw-md text-body-sm font-medium font-fw-sans tracking-[-0.005em]',
@@ -500,6 +529,30 @@ export function ShellFooter() {
         {!collapsed && <span className="min-w-0 flex-1 truncate text-left">Sign out</span>}
       </Button>
     </div>
+  );
+}
+
+/**
+ * M1: the More sheet's light-themed footer (Settings + Sign out row) — NOT
+ * the rail's dark `ShellFooter` above (that JSX is built for the black rail
+ * and reads wrong on the sheet's warm-cream `bg-elevated` body). Reuses the
+ * SAME sign-out side effect via `useBaseballSignOut`. Takes `linkComponent`
+ * as a prop (rather than hardcoding one) because the caller's `shellLink`
+ * adapter is a per-render value (it closes over the showcase team-store
+ * reset), not a module-scope constant.
+ */
+function BaseballMoreSheetFooter({ linkComponent }: { linkComponent?: ShellLinkComponent }) {
+  const pathname = usePathname();
+  const { handleSignOut } = useBaseballSignOut();
+  const settingsActive = pathname === BASEBALL_SETTINGS_HREF || pathname.startsWith(`${BASEBALL_SETTINGS_HREF}/`);
+
+  return (
+    <MoreSheetFooter
+      settingsHref={BASEBALL_SETTINGS_HREF}
+      settingsActive={settingsActive}
+      onSignOut={handleSignOut}
+      linkComponent={linkComponent}
+    />
   );
 }
 
@@ -553,16 +606,54 @@ function BaseballFairwayContent({
     () => buildBreadcrumbs(pathname, ctx, homeHref, breadcrumbOverride),
     [pathname, ctx, homeHref, breadcrumbOverride],
   );
-  const activeHub = resolveActiveHub({
-    pathname,
-    role,
-    programType: ctx.programType ?? null,
-    capabilities: ctx.capabilities,
-  });
-  // P413-equivalent: persistent mobile bottom-tab bar (subset of the rail).
-  const bottomNavItems = useMemo(
-    () => buildBottomNavFromSections(sections, role),
-    [sections, role],
+  // M1 (condensing-header, Decision 7): memoized so identity is stable
+  // across unrelated re-renders — feeds `subNav` below, which is itself
+  // memoized to keep AppShell's `subNav` prop element-stable.
+  const activeHub = useMemo(
+    () => resolveActiveHub({ pathname, role, programType: ctx.programType ?? null, capabilities: ctx.capabilities }),
+    [pathname, role, ctx],
+  );
+  // M1 (baseball-nav-4, docs/MOBILE_DOCTRINE.md Rule 10): the persistent
+  // mobile bottom-tab bar is the role's actual daily loop — 4 registry-driven
+  // destinations, never a hardcoded label array. showcaseScope mirrors the
+  // exact org/team split `sections` already branches on above.
+  const showcaseScope: 'org' | 'team' | null = isShowcaseCoach ? (selectedTeam ? 'team' : 'org') : null;
+  const bottomNavKeys = useMemo(
+    () => getBaseballBottomNavKeys({ role, programType: ctx.programType ?? null, showcaseScope }),
+    [role, ctx.programType, showcaseScope],
+  );
+  const flatNavItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
+  const bottomNavItems = useMemo(() => {
+    const byNavKey = new Map(flatNavItems.map((item) => [item.navKey, item] as const));
+    return bottomNavKeys
+      .map((key) => byNavKey.get(key))
+      .filter((item): item is NavItem => Boolean(item))
+      .map(relabelForBottomNav);
+  }, [flatNavItems, bottomNavKeys]);
+
+  // M1 (more-sheet-nav, docs/MOBILE_DOCTRINE.md Rule 6/10): the More sheet's
+  // content is the FULL rail `sections` (original labels, not the shortened
+  // bottom-nav-only relabeling) minus the 4 bottom-nav hrefs (`selectOverflow`
+  // — hrefs survive `relabelForBottomNav`, only labels change), and the
+  // bottom bar's 5th "More" column derives its active/badge state from that
+  // same overflow (`summarizeMoreTab`) — never a second hand-maintained list.
+  const bottomNavHrefs = useMemo(() => bottomNavItems.map((item) => item.href), [bottomNavItems]);
+  const overflow = useMemo(() => selectOverflow(sections, bottomNavHrefs), [sections, bottomNavHrefs]);
+  const more = useMemo(() => summarizeMoreTab(overflow, pathname), [overflow, pathname]);
+  const openMoreSheet = useCallback(() => setMobileOpen(true), [setMobileOpen]);
+
+  // M1 (condensing-header): the sub-nav is now part of AppShell's ONE sticky
+  // chrome unit (its own `subNav` prop), not a first child inside
+  // `{children}` — memoized (Decision 7) so it only changes identity when
+  // the active hub actually changes. Renders at EVERY breakpoint — its own
+  // `overflow-x-auto` row (hub-sub-nav.tsx) IS the mobile treatment, not a
+  // desktop-only affordance; `md:top-16` clears the desktop top bar.
+  const subNav = useMemo(
+    () =>
+      activeHub ? (
+        <HubSubNav key={activeHub.id} tabs={activeHub.tabs} ariaLabel={activeHub.ariaLabel} className="md:top-16" />
+      ) : null,
+    [activeHub],
   );
 
   useEffect(() => {
@@ -572,6 +663,21 @@ function BaseballFairwayContent({
   const name = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
   const avatarUrl = coach?.avatar_url || player?.avatar_url || undefined;
   const teamName = selectedTeam?.name || coach?.organization?.name;
+  // Stable identity across pathname-only re-renders (perf packet
+  // [shell-render-hygiene]) — was a fresh object literal every render,
+  // defeating FairwaySidebar's React.memo (it reads `user` from AppShell).
+  const shellUser = useMemo(
+    () => ({ name, teamName: teamName ?? undefined, avatarUrl: avatarUrl ?? undefined }),
+    [name, teamName, avatarUrl],
+  );
+
+  // Same packet, element props: inline JSX literals are fresh objects every
+  // render, so passing them straight into AppShell defeats the React.memo on
+  // FairwaySidebar/FairwayTopBar (which receive them verbatim) — and AppShell's
+  // own sidebarProps useMemo, which lists `brand` as a dependency.
+  const brand = useMemo(() => <Brand homeHref={homeHref} />, [homeHref]);
+  const sidebarFooter = useMemo(() => <ShellFooter />, []);
+  const topBarActions = useMemo(() => <NotificationBell />, []);
 
   // Imperative open (mirrors GolfHelm's FairwayDashboardShell): the shell's
   // own ⌘K entry point dispatches the same global event CommandPalette listens
@@ -609,6 +715,11 @@ function BaseballFairwayContent({
     [isShowcaseCoach, setSelectedTeamId],
   );
 
+  // M1: the More sheet's footer, threading the SAME showcase-aware `shellLink`
+  // adapter through so its Settings row gets prefetch/client-side navigation
+  // exactly like every other row in the sheet.
+  const moreSheetFooter = useMemo(() => <BaseballMoreSheetFooter linkComponent={shellLink} />, [shellLink]);
+
   // Same "Skip to main content" anchor the legacy BaseballDashboardShell
   // renders (and GolfHelm's FairwayDashboardShell mirrors) — keyboard/SR users
   // must keep skip-nav when the flag is ON, not just flag-OFF.
@@ -631,22 +742,60 @@ function BaseballFairwayContent({
 
       <AppShell
         sections={sections}
-        user={{ name, teamName: teamName ?? undefined, avatarUrl: avatarUrl ?? undefined }}
-        brand={<Brand homeHref={homeHref} />}
-        sidebarFooter={<ShellFooter />}
-        topBarActions={<NotificationBell />}
+        user={shellUser}
+        brand={brand}
+        sidebarFooter={sidebarFooter}
+        topBarActions={topBarActions}
         pathname={pathname}
         linkComponent={shellLink}
         breadcrumbs={breadcrumbs}
         collapsible
+        // The dashboard route `template.tsx` already owns the route-reveal
+        // fade (one keyed motion div). Disabling the shell's own
+        // RouteTransition here prevents BOTH from fading on navigation —
+        // that compounded the opacity and read as a heavy, laggy
+        // double-fade. One fade, one source of truth (mirrors golf's
+        // FairwayDashboardShell.tsx).
+        disableRouteTransition
         mobileOpen={mobileOpen}
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}
         searchPlaceholder="Search players, teams, pages…"
+        // M1 (condensing-header): the hub sub-nav strip now renders as part
+        // of AppShell's ONE sticky chrome unit; `pageTitle` is the
+        // condensed-bar fallback for routes without a `<FairwayLargeTitle>`
+        // (SectionMasthead stays a server component — see condensing-header
+        // §6's RSC edge case — so this breadcrumb fallback is what feeds the
+        // bar on every baseball route today).
+        subNav={subNav}
+        pageTitle={breadcrumbs.at(-1)?.label}
+        // M1: the More sheet's identity row links here; its footer is the
+        // light-themed Settings + Sign out row (moreSheetFooter, below).
+        settingsHref={BASEBALL_SETTINGS_HREF}
+        bottomNavHrefs={bottomNavHrefs}
+        moreSheetFooter={moreSheetFooter}
+        // Verifier fix: vaul portals the More sheet's `Drawer.Content` to
+        // `document.body` — outside the `.living-annual` wrapper's DOM
+        // subtree above, even though it's still a React child of it. CSS
+        // custom properties inherit by DOM ancestry, not the React tree, so
+        // without this the sheet would fall back to golf's default cream
+        // tokens. Applying the scope class directly to the sheet's own
+        // portaled node (via AppShell → MoreNavSheet → Sheet's className)
+        // restores baseball's deeper "living annual" cream.
+        sheetClassName="living-annual"
         // P413-equivalent: persistent mobile bottom-tab bar for the core
-        // destinations (md:hidden; drawer keeps the long tail).
+        // destinations (md:hidden; the 5th "More" column opens the sheet,
+        // which keeps the long tail — see docs/MOBILE_DOCTRINE.md Rule 6/10).
         bottomNav={
-          <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={shellLink} />
+          <FairwayBottomNav
+            items={bottomNavItems}
+            pathname={pathname}
+            linkComponent={shellLink}
+            onMoreOpen={openMoreSheet}
+            moreActive={more.active}
+            moreBadge={more.badge}
+            moreOpen={mobileOpen}
+          />
         }
         // Pages own their own gutters + titles (the legacy <main> in
         // dashboard-shell.tsx had no content padding either) — the shell keeps
@@ -655,18 +804,6 @@ function BaseballFairwayContent({
         constrainContent={false}
       >
         <div id="main-content" tabIndex={-1} className="outline-none">
-          {activeHub && (
-            // Renders at every breakpoint — its own `overflow-x-auto` row
-            // (hub-sub-nav.tsx) IS the mobile treatment (a horizontal scroll
-            // strip), not a desktop-only affordance hidden below `md:`.
-            // `md:top-16` clears the desktop top bar; mobile sticks flush.
-            <HubSubNav
-              key={activeHub.id}
-              tabs={activeHub.tabs}
-              ariaLabel={activeHub.ariaLabel}
-              className="md:top-16"
-            />
-          )}
           {children}
         </div>
       </AppShell>

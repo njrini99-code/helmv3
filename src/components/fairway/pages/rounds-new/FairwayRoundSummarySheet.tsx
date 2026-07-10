@@ -22,7 +22,8 @@
  * across the two files.
  * ========================================================================== */
 
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { Flag } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -85,7 +86,7 @@ export function FairwayRoundSummarySheet({
       hideClose
       className="p-0 overflow-y-auto"
     >
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={loadFeatures}>
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

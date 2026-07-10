@@ -40,12 +40,11 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
+import { EmptyIssue, InkNotice } from '@/components/baseball/living-annual';
 import {
   IconDumbbell,
   IconHeart,
   IconCheckCircle2,
-  IconAlertCircle,
   IconChevronRight,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
@@ -256,21 +255,19 @@ export default function PlayerLiftToday({
   return (
     <div className="space-y-4">
       {error && (
-        <div
-          role="alert"
-          className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          <IconAlertCircle size={16} className="shrink-0" />
-          <span className="flex-1">{error}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setError(null)}
-            className="font-medium text-red-700 hover:text-red-800"
-          >
-            Dismiss
-          </Button>
-        </div>
+        <InkNotice>
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex-1">{error}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setError(null)}
+              className="font-medium text-pursuit hover:opacity-80"
+            >
+              Dismiss
+            </Button>
+          </div>
+        </InkNotice>
       )}
 
       {/* Today's lift sessions (materialized V11 path). */}
@@ -281,11 +278,7 @@ export default function PlayerLiftToday({
         <CardContent className="p-0">
           {sessions.length === 0 ? (
             <div className="p-6">
-              <EmptyState
-                icon={<IconDumbbell size={24} />}
-                title="No lift assigned"
-                description="When your strength coach publishes a lift, it'll show up here to log."
-              />
+              <EmptyIssue variant="today" ink="team" />
             </div>
           ) : (
             <div className="divide-y divide-warm-200">
@@ -351,12 +344,15 @@ export default function PlayerLiftToday({
                         {s.estimated_minutes ? ` · ~${s.estimated_minutes} min` : ''}
                       </p>
                       {coachNote && (
-                        <p className="mt-1.5 rounded-lg border-l-2 border-amber-300 bg-amber-50/70 px-2.5 py-1.5 text-sm text-warm-700">
-                          <span className="font-medium text-amber-700">
-                            Coach adjusted this:
-                          </span>{' '}
-                          {coachNote}
-                        </p>
+                        <div className="mt-1.5 rounded-lg bg-grade-plus/10 px-2.5 py-1.5">
+                          <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-grade-plus" />
+                          <p className="text-sm text-warm-700">
+                            <span className="font-medium text-grade-plus">
+                              Coach adjusted this:
+                            </span>{' '}
+                            {coachNote}
+                          </p>
+                        </div>
                       )}
                     </div>
                     <IconChevronRight

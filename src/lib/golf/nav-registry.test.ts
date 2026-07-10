@@ -15,6 +15,9 @@
 //      right hub + tab for the same deep routes.
 //   5. The CoachHelm cluster fix (P410): /golf/dashboard/players is now part
 //      of the coach cluster (previously the rail lost its highlight there).
+//   6. M1 (2026-07-10, Doctrine Rule 9): isGolfLateralDestination classifies
+//      every registered rail/hub-tab/bottom-nav/CoachHelm href as a lateral
+//      (instant) swap, and every dynamic detail leaf as a forward push.
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
@@ -30,6 +33,7 @@ import {
   resolveActiveGolfHub,
   isCoachHelmCoachCluster,
   isCoachHelmPlayerCluster,
+  isGolfLateralDestination,
   type GolfNavBadgeCounts,
   type GolfHubDef,
 } from './nav-registry';
@@ -141,20 +145,18 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       expect(items).toHaveLength(8);
     });
 
-    it('mobile bottom nav keeps 5 items per role (Target IA)', () => {
+    it('mobile bottom nav keeps 4 items per role (M1, Doctrine Rule 10 — 4 + More)', () => {
       expect(buildCoachBottomNavItems(ZERO_BADGES).map((i) => i.label)).toEqual([
         'Home',
         'CoachHelm',
         'Team',
         'Calendar',
-        'Messages',
       ]);
       expect(buildPlayerBottomNavItems().map((i) => i.label)).toEqual([
         'Home',
         'CoachHelm',
         'Rounds',
         'Stats',
-        'Team',
       ]);
     });
   });
@@ -287,13 +289,15 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
   });
 
   describe('bottom-nav activeMatch stays lit on every sibling tab (kills the whole class)', () => {
-    // Regression: buildCoachBottomNavItems' Messages item and
-    // buildPlayerBottomNavItems' Team item used to omit `tabs` when building
-    // the NavItem, so their activeMatch only matched the item's own href —
-    // navigating to a SIBLING tab (announcements; team/team-hub/my-qualifiers)
-    // left the bottom tab dark even though the equivalent RAIL item (which did
-    // pass `tabs`) stayed lit. Every multi-tab hub represented on either
-    // bottom nav is asserted here so the whole class of bug can't recur.
+    // Regression: buildCoachBottomNavItems' Team/Calendar items used to omit
+    // `tabs` when building the NavItem, so their activeMatch only matched the
+    // item's own href — navigating to a SIBLING tab (recruiting; travel) left
+    // the bottom tab dark even though the equivalent RAIL item (which did pass
+    // `tabs`) stayed lit. M1 (2026-07-10, Doctrine Rule 10): the bottom nav
+    // trimmed 5→4 — coach dropped Messages, player dropped Team, both now
+    // reachable only via the More sheet (more-nav.test.ts covers that surface)
+    // — so only the two multi-tab hubs still ON the bottom nav are asserted
+    // here.
     it('coach bottom-nav Team item covers every Team sub-tab (roster, recruiting)', () => {
       const items = buildCoachBottomNavItems(ZERO_BADGES);
       const team = items.find((i) => i.label === 'Team')!;
@@ -310,30 +314,6 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       for (const tab of calendarHub.tabs) {
         expect(calendar.activeMatch?.(tab.href), `Calendar bottom-nav item should stay lit on ${tab.href}`).toBe(true);
       }
-    });
-
-    it('coach bottom-nav Messages item covers every Messages sub-tab (messages, announcements)', () => {
-      const items = buildCoachBottomNavItems(ZERO_BADGES);
-      const messages = items.find((i) => i.label === 'Messages')!;
-      const messagesHub = GOLF_COACH_HUBS.find((h) => h.id === 'messages')!;
-      for (const tab of messagesHub.tabs) {
-        expect(messages.activeMatch?.(tab.href), `Messages bottom-nav item should stay lit on ${tab.href}`).toBe(true);
-      }
-      // Explicit regression pin — announcements previously went dark.
-      expect(messages.activeMatch?.('/golf/dashboard/announcements')).toBe(true);
-    });
-
-    it('player bottom-nav Team item covers every Team sub-tab (roster, team-info, team-hub, my-qualifiers)', () => {
-      const items = buildPlayerBottomNavItems();
-      const team = items.find((i) => i.label === 'Team')!;
-      const teamHub = GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!;
-      for (const tab of teamHub.tabs) {
-        expect(team.activeMatch?.(tab.href), `Team bottom-nav item should stay lit on ${tab.href}`).toBe(true);
-      }
-      // Explicit regression pins — these previously went dark.
-      expect(team.activeMatch?.('/golf/dashboard/team')).toBe(true);
-      expect(team.activeMatch?.('/golf/dashboard/team-hub')).toBe(true);
-      expect(team.activeMatch?.('/golf/dashboard/my-qualifiers')).toBe(true);
     });
   });
 
@@ -423,6 +403,89 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       const zeroed = buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items);
       const messagesZero = zeroed.find((i) => i.label === 'Messages')!;
       expect(messagesZero.badge).toBeUndefined();
+    });
+  });
+
+  describe('isGolfLateralDestination — Doctrine Rule 9 (M1, 2026-07-10)', () => {
+    // Every declared destination across both roles — rail items, hub
+    // sub-tabs, and mobile bottom-nav items — must classify as lateral
+    // (instant tab swap, never a push reveal).
+    const railHrefs = [
+      ...buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items.map((i) => i.href)),
+      ...buildPlayerRailSections(ZERO_BADGES).flatMap((s) => s.items.map((i) => i.href)),
+    ];
+    const hubTabHrefs = [
+      ...GOLF_COACH_HUBS.flatMap((h) => h.tabs.map((t) => t.href)),
+      ...GOLF_PLAYER_HUBS.flatMap((h) => h.tabs.map((t) => t.href)),
+    ];
+    const bottomNavHrefs = [
+      ...buildCoachBottomNavItems(ZERO_BADGES).map((i) => i.href),
+      ...buildPlayerBottomNavItems().map((i) => i.href),
+    ];
+    const registeredHrefs = [...new Set([...railHrefs, ...hubTabHrefs, ...bottomNavHrefs])];
+
+    it('sanity: registered hrefs were actually collected', () => {
+      expect(registeredHrefs.length).toBeGreaterThan(10);
+    });
+
+    it.each(registeredHrefs.map((href) => [href] as const))(
+      '%s (registered destination) classifies as LATERAL',
+      (href) => {
+        expect(isGolfLateralDestination(href)).toBe(true);
+      },
+    );
+
+    // The CoachHelm cluster's own sub-nav strip (CoachHelmSubNav) is not
+    // modeled in GOLF_COACH_HUBS/GOLF_PLAYER_HUBS, so its tab hrefs are
+    // asserted explicitly here.
+    const coachHelmTabHrefs = [
+      '/golf/dashboard/intelligence',
+      '/golf/dashboard/alerts',
+      '/golf/dashboard/insights',
+      '/golf/dashboard/patterns',
+      '/golf/dashboard/development',
+      '/golf/dashboard/analytics/coachhelm',
+      '/golf/dashboard/coachhelm/chat',
+      '/golf/dashboard/coachhelm/genome',
+      '/golf/dashboard/coachhelm/genome/compare',
+      '/golf/dashboard/coachhelm',
+      '/golf/dashboard/my-development',
+      '/golf/dashboard/my-game-profile',
+      '/golf/dashboard/my-standing',
+    ];
+
+    it.each(coachHelmTabHrefs.map((href) => [href] as const))(
+      '%s (CoachHelm cluster tab) classifies as LATERAL',
+      (href) => {
+        expect(isGolfLateralDestination(href)).toBe(true);
+      },
+    );
+
+    // Fixture list of genuine dynamic detail leaves — never registered, so
+    // each must classify as a push reveal.
+    const detailFixtures = [
+      '/golf/dashboard/roster/player-1',
+      '/golf/dashboard/rounds/round-1',
+      '/golf/dashboard/rounds/round-1/review',
+      '/golf/dashboard/rounds/continue/round-1',
+      '/golf/dashboard/qualifiers/q-1',
+      '/golf/dashboard/players/player-1',
+      '/golf/dashboard/coachhelm/genome/player-1',
+      '/golf/dashboard/coachhelm/qualifying/q-1',
+      '/golf/admin/crm/coach/coach-1',
+    ];
+
+    it.each(detailFixtures.map((href) => [href] as const))(
+      '%s (dynamic detail leaf) classifies as PUSH',
+      (href) => {
+        expect(isGolfLateralDestination(href)).toBe(false);
+      },
+    );
+
+    it('the immersive round-entry route (/rounds/new) is a forward push, not lateral', () => {
+      // Doctrine edge case: entering a round is a genuine forward push even
+      // though it hangs off the Rounds & Stats hub.
+      expect(isGolfLateralDestination('/golf/dashboard/rounds/new')).toBe(false);
     });
   });
 });

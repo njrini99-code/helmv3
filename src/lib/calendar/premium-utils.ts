@@ -12,14 +12,21 @@
  * Get event type styling
  */
 function getEventTypeClass(eventType: string): string {
+  // Kept in lockstep with getEventDotColorVar()'s `known` set below and
+  // calendar-tokens.css's `--event-*` tokens — 'match'/'social' were removed
+  // here (CodeRabbit #797 cluster-4 finding 5): neither is a real DB event
+  // type (canonical set per calendar-tokens.css's own header comment and
+  // src/lib/types/calendar.ts's EventType union is practice/tournament/
+  // qualifier/meeting/travel/other + baseball's game/scrimmage/camp/tryout),
+  // and the classes they mapped to (.event-type-match/.event-type-social)
+  // were never defined in the stylesheet — an unreachable, doubly-broken
+  // split rather than an intentionally distinct one.
   const typeMap: Record<string, string> = {
     practice: 'event-type-practice',
-    match: 'event-type-match',
     tournament: 'event-type-tournament',
     qualifier: 'event-type-qualifier',
     meeting: 'event-type-meeting',
     travel: 'event-type-travel',
-    social: 'event-type-social',
     // Baseball event types — give games/scrimmages/camps/tryouts a distinct
     // colored ribbon instead of falling back to the neutral "other" grey.
     game: 'event-type-game',
@@ -55,6 +62,20 @@ export function getEventClasses(event: {
     getEventTypeClass(event.event_type),
     getEventStatusClass(event.status),
   ].filter(Boolean).join(' ');
+}
+
+/**
+ * CSS custom property for the event type's accent hue (see
+ * src/styles/calendar-tokens.css `--event-*`). Used for the small category
+ * dot next to the title — replaces the former left-border stripe.
+ */
+export function getEventDotColorVar(eventType: string): string {
+  const known = new Set([
+    'practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other',
+    'game', 'scrimmage', 'camp', 'tryout',
+  ]);
+  const key = known.has(eventType) ? eventType : 'other';
+  return `var(--event-${key})`;
 }
 
 // ============================================================================

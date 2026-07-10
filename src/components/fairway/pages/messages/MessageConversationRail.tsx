@@ -28,7 +28,6 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { Inbox, Users, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -269,8 +268,6 @@ export function MessageConversationRail({
   onOpenMessage,
   className,
 }: MessageConversationRailProps) {
-  const reduced = useReducedMotion() ?? false;
-
   // ── P259: cross-conversation message search ────────────────────────────────
   // Empty query → the normal triage list. >=2 chars → debounced server search
   // (searchGolfMessages: participant-scoped, wildcard-escaped, 50-row cap).
@@ -492,18 +489,17 @@ export function MessageConversationRail({
             </p>
             <ul className="flex flex-col gap-1">
               {unread.map((conv, i) => (
-                <motion.li
+                <li
                   key={conv.id}
-                  initial={reduced ? false : { opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1], delay: reduced ? 0 : Math.min(i, 8) * 0.035 }}
+                  className="animate-fade-in-up motion-reduce:animate-none"
+                  style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
                 >
                   <ConversationRow
                     conv={conv}
                     isSelected={selectedId === conv.id}
                     onSelect={() => onSelect(conv.id)}
                   />
-                </motion.li>
+                </li>
               ))}
             </ul>
           </div>
@@ -519,18 +515,17 @@ export function MessageConversationRail({
               </p>
               <ul className="flex flex-col gap-1">
                 {group.map((conv, i) => (
-                  <motion.li
+                  <li
                     key={conv.id}
-                    initial={reduced ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1], delay: reduced ? 0 : Math.min(i, 8) * 0.035 }}
+                    className="animate-fade-in-up motion-reduce:animate-none"
+                    style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
                   >
                     <ConversationRow
                       conv={conv}
                       isSelected={selectedId === conv.id}
                       onSelect={() => onSelect(conv.id)}
                     />
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
             </div>

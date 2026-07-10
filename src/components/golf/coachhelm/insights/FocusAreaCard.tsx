@@ -48,10 +48,25 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
     <Card variant="overlay"
       className={cn(
         'group transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-        onClick && 'cursor-pointer hover:-translate-y-[1px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_18px_36px_rgba(58,50,40,0.06)]'
+        onClick && 'cursor-pointer hover:-translate-y-[1px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_18px_36px_rgba(58,50,40,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2'
       )}
       padding="md"
       onClick={onClick}
+      // Keyboard-operable when clickable — a bare onClick div is a mouse-only
+      // trap otherwise (WCAG 2.1.1). Card renders a plain div, so the role/
+      // tabIndex/onKeyDown are added here, not in the shared primitive.
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
     >
       <div className="flex items-start gap-4">
         <div

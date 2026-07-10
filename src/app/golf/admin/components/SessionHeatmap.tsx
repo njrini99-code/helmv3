@@ -167,12 +167,7 @@ export default function SessionHeatmap({
 
       {/* Dead Features */}
       {deadFeatures.length > 0 && (
-        <div
-          className={cn(
-            'glass-standard rounded-2xl p-6',
-            'border-l-4 border-l-amber-400'
-          )}
-        >
+        <div className="glass-standard rounded-2xl p-6">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
               <span className="text-amber-600 text-sm font-bold">!</span>

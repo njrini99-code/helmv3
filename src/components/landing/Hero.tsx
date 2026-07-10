@@ -2,7 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { m, LazyMotion, domAnimation, useScroll, useTransform, useReducedMotion } from 'framer-motion'
+import { m, LazyMotion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
+import { loadFeatures } from '@/lib/motion/load-features'
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -116,7 +117,7 @@ export function Hero() {
   const opacity = useTransform(scrollYProgress, [0, 0.6], [1, enableParallax ? 0 : 1])
 
   return (
-    <LazyMotion features={domAnimation} strict>
+    <LazyMotion features={loadFeatures} strict>
     <section
       ref={containerRef}
       className="relative min-h-[100svh] min-h-[-webkit-fill-available] md:min-h-dvh overflow-hidden bg-stone-950"

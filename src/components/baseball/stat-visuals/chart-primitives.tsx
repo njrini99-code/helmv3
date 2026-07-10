@@ -13,6 +13,7 @@
 // =============================================================================
 
 import * as React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { BaseballDataContext } from '@/lib/types/baseball-stat-events';
 
@@ -208,6 +209,8 @@ export function TabStrip<T extends string>({
   ariaLabel: string;
   size?: 'sm' | 'md';
 }) {
+  const reduceMotion = useReducedMotion();
+  const pillId = React.useId();
   return (
     <div
       role="tablist"
@@ -231,14 +234,24 @@ export function TabStrip<T extends string>({
             disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'rounded-lg font-medium transition-[color,background-color,box-shadow] duration-200',
+              'relative rounded-lg font-medium transition-colors duration-200',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-50',
               'active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40',
               size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm',
-              active ? 'bg-primary-600 text-white shadow-sm' : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800',
+              active ? 'text-white' : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800',
             )}
           >
-            {opt.label}
+            {active && (
+              <motion.span
+                layoutId={reduceMotion ? undefined : `chart-tabstrip-${pillId}`}
+                aria-hidden="true"
+                className="absolute inset-0 rounded-lg bg-primary-600 shadow-sm"
+                transition={
+                  reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 36, mass: 0.6 }
+                }
+              />
+            )}
+            <span className="relative z-10">{opt.label}</span>
           </button>
         );
       })}

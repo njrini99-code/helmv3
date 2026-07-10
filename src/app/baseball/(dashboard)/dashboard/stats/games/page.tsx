@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { GamesList } from '@/components/baseball/games/GamesList';
 import { getTeamGames, getTeamSeasonRecord } from '@/app/baseball/actions/games';
 import { logServerError } from '@/lib/server-error-logger';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 export default async function GamesPage() {
   const supabase = await createClient();
@@ -20,11 +21,15 @@ export default async function GamesPage() {
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
+  // Cookie-aware, multi-row-safe team resolution (matches Command Center).
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!teamId) redirect('/baseball/dashboard/program');
+
   const { data: team } = await supabase
     .from('baseball_teams')
     .select('id, name')
-    .eq('organization_id', coach.organization_id)
-    .single() as { data: { id: string; name: string } | null };
+    .eq('id', teamId)
+    .maybeSingle() as { data: { id: string; name: string } | null };
 
   if (!team) redirect('/baseball/dashboard/program');
 

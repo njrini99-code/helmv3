@@ -104,7 +104,7 @@ export function PositionPlayerPill({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.8, y: -8 }}
       transition={prefersReducedMotion ? { duration: 0 } : ({
-        delay: index * 0.06,
+        delay: Math.min(index, 4) * 0.06,
         duration: 0.35,
         ease: [0.16, 1, 0.3, 1]
       })}
@@ -147,7 +147,7 @@ export function PositionPlayerPill({
         <motion.span
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.06 + 0.2, type: 'spring', stiffness: 500, damping: 25 })}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: Math.min(index, 4) * 0.06 + 0.2, type: 'spring', stiffness: 500, damping: 25 })}
           className={cn(
             'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full',
             'ring-2 ring-white/80',
@@ -162,7 +162,7 @@ export function PositionPlayerPill({
         <motion.span
           initial={{ opacity: 0, x: -4 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.06 + 0.1, duration: 0.25 })}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: Math.min(index, 4) * 0.06 + 0.1, duration: 0.25 })}
           className={cn(
             'text-xs font-semibold truncate max-w-[100px]',
             'tracking-tight',

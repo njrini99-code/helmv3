@@ -8,7 +8,7 @@
 :root {
   /* ===================================================================
      EVENT TYPE COLORS
-     Left border accent colors for instant event recognition
+     Category-dot accent colors for instant event recognition
      Canonical source: src/lib/calendar/event-styles.ts
      Golf DB types: practice, tournament, qualifier, meeting, travel, other
      Baseball DB types add: game, scrimmage, camp, tryout

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -304,7 +305,7 @@ export default function GolfCoachOnboarding() {
       </div>
 
       <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <LazyMotion features={domAnimation}>
+        <LazyMotion features={loadFeatures}>
           {/* Logo */}
           <m.div
             initial={{ opacity: 0, y: -10 }}

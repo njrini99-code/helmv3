@@ -403,17 +403,21 @@ export function buildPlayerRailSections(badges: GolfNavBadgeCounts): NavSection[
 }
 
 // -----------------------------------------------------------------------------
-// Mobile bottom-tab bar — 5 highest-frequency destinations per role (the
-// drawer keeps the long tail). Hrefs/labels updated to the new IA; a hub's
-// bottom-tab href is always its FIRST sub-tab (same "first tab = landing"
-// convention the rail + hub-definitions.ts use), so the bottom bar can never
-// disagree with the rail about where "Team"/"Calendar" lands.
+// Mobile bottom-tab bar — the role's 4 daily-loop destinations (Doctrine Rule
+// 10: "4 + More" — a 5th "More" button, rendered by FairwayBottomNav itself
+// when the shell passes `onMoreOpen`, opens a MoreNavSheet listing the rest of
+// the rail as overflow). M1 (2026-07-10): trimmed 5→4 — coach drops Messages,
+// player drops Team; both remain one tap away via the More sheet, which
+// mirrors the rail's own grouping (src/components/fairway/app-shell/more-nav.ts
+// `selectOverflow`), so nothing here is orphaned. Hrefs/labels match the new
+// IA; a hub's bottom-tab href is always its FIRST sub-tab (same "first tab =
+// landing" convention the rail + hub-definitions.ts use), so the bottom bar
+// can never disagree with the rail about where "Team"/"Calendar" lands.
 // -----------------------------------------------------------------------------
 
 export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] {
   const team = GOLF_COACH_HUBS.find((h) => h.id === 'team')!;
   const calendar = GOLF_COACH_HUBS.find((h) => h.id === 'calendar')!;
-  const messages = GOLF_COACH_HUBS.find((h) => h.id === 'messages')!;
 
   return [
     hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
@@ -432,19 +436,10 @@ export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] 
       tabs: calendar.tabs,
       badge: navBadge(badges.calendarNotifications),
     }),
-    hubToNavItem({
-      label: 'Messages',
-      href: messages.tabs[0]!.href,
-      icon: IconMessage,
-      tabs: messages.tabs,
-      badge: navBadge(badges.messages),
-    }),
   ];
 }
 
 export function buildPlayerBottomNavItems(): NavItem[] {
-  const team = GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!;
-
   return [
     hubToNavItem({ label: 'Home', href: '/golf/dashboard', icon: IconHome }),
     hubToNavItem({
@@ -455,6 +450,90 @@ export function buildPlayerBottomNavItems(): NavItem[] {
     }),
     hubToNavItem({ label: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf }),
     hubToNavItem({ label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar }),
-    hubToNavItem({ label: 'Team', href: team.tabs[0]!.href, icon: IconUsers, tabs: team.tabs }),
   ];
+}
+
+// -----------------------------------------------------------------------------
+// isGolfLateralDestination — Doctrine Rule 9 (docs/MOBILE_DOCTRINE.md): "Tab
+// switches are instant." src/lib/motion/route-motion.ts's useRouteRevealMotion
+// hook calls this to decide whether the CURRENT pathname is a lateral peer
+// (instant swap) or a detail leaf (forward-push reveal). Every declared
+// destination across BOTH roles (a coach never visits player-only hrefs, so
+// unioning is safe) is unioned into one exact-match Set:
+//   - every rail item href (coach + player)
+//   - every hub sub-tab href (coach + player)
+//   - every mobile bottom-nav item href (coach + player)
+//   - the CoachHelm AI cluster's own page hrefs — CoachHelmSubNav
+//     (src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx) renders its
+//     OWN 5-tab (coach) / 4-tab (player) strip independently of this module
+//     (see the module header), so those tab hrefs are not otherwise reachable
+//     from GOLF_COACH_HUBS/GOLF_PLAYER_HUBS and must be listed explicitly.
+// A dynamic detail leaf (roster/[id], rounds/[id]/review, players/[playerId],
+// coachhelm/genome/[playerId]) is never a member of this Set, so it correctly
+// falls through to a "push" reveal with zero maintenance per new route.
+// -----------------------------------------------------------------------------
+
+const ZERO_NAV_BADGES: GolfNavBadgeCounts = {
+  messages: 0,
+  coachhelm: 0,
+  calendarNotifications: 0,
+  announcements: 0,
+  travel: 0,
+  tasks: 0,
+};
+
+/**
+ * CoachHelm cluster page hrefs that are lateral tab destinations inside
+ * CoachHelmSubNav's own strip but are NOT otherwise present in any rail/hub/
+ * bottom-nav array. Coach tabs: Brief/Signals(x3)/Players/Effectiveness/Ask.
+ * Player tabs: Overview(already the rail href)/Development/Game Profile/
+ * Standing. Kept as literal page hrefs (not the looser activeMatch route
+ * PREFIXES above) so a genuinely dynamic leaf under the same cluster (e.g.
+ * coachhelm/genome/[playerId]) still classifies as a push.
+ */
+const COACHHELM_CLUSTER_PAGE_HREFS = [
+  '/golf/dashboard/intelligence',
+  '/golf/dashboard/alerts',
+  '/golf/dashboard/insights',
+  '/golf/dashboard/patterns',
+  '/golf/dashboard/development',
+  '/golf/dashboard/analytics/coachhelm',
+  '/golf/dashboard/coachhelm/chat',
+  '/golf/dashboard/coachhelm/genome',
+  '/golf/dashboard/coachhelm/genome/compare',
+  '/golf/dashboard/my-development',
+  '/golf/dashboard/my-game-profile',
+  '/golf/dashboard/my-standing',
+] as const;
+
+let golfLateralDestinations: Set<string> | null = null;
+
+function buildGolfLateralDestinations(): Set<string> {
+  const railHrefs = [
+    ...buildCoachRailSections(ZERO_NAV_BADGES).flatMap((s) => s.items.map((i) => i.href)),
+    ...buildPlayerRailSections(ZERO_NAV_BADGES).flatMap((s) => s.items.map((i) => i.href)),
+  ];
+  const hubTabHrefs = [
+    ...GOLF_COACH_HUBS.flatMap((h) => h.tabs.map((t) => t.href)),
+    ...GOLF_PLAYER_HUBS.flatMap((h) => h.tabs.map((t) => t.href)),
+  ];
+  const bottomNavHrefs = [
+    ...buildCoachBottomNavItems(ZERO_NAV_BADGES).map((i) => i.href),
+    ...buildPlayerBottomNavItems().map((i) => i.href),
+  ];
+  return new Set([...railHrefs, ...hubTabHrefs, ...bottomNavHrefs, ...COACHHELM_CLUSTER_PAGE_HREFS]);
+}
+
+/**
+ * True when `pathname` is a registered lateral navigation destination (tab
+ * root, rail item, hub sub-tab, or CoachHelm cluster tab) for either golf
+ * role. Built once, lazily, and memoized module-wide — the registry is
+ * static, so every subsequent navigation is an O(1) `Set.has` lookup, never a
+ * fresh array walk.
+ */
+export function isGolfLateralDestination(pathname: string): boolean {
+  if (!golfLateralDestinations) {
+    golfLateralDestinations = buildGolfLateralDestinations();
+  }
+  return golfLateralDestinations.has(pathname);
 }

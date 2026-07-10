@@ -65,6 +65,11 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import GolfCalendarPage from '@/app/golf/(dashboard)/dashboard/calendar/page';
 
+// The page now reads `searchParams` (P440 Travel↔Calendar `?event=` deep-link
+// auto-open) — every call site needs a resolved searchParams promise. These
+// tests exercise the no-deep-link path, so an empty object is the honest stand-in.
+const noSearchParams = () => ({ searchParams: Promise.resolve({}) });
+
 describe('GolfCalendarPage — events fetch contract', () => {
   beforeEach(() => {
     queryLog.length = 0;
@@ -77,13 +82,13 @@ describe('GolfCalendarPage — events fetch contract', () => {
   it('THROWS (route error boundary, retryable) when the events query errors', async () => {
     tableResults.set('golf_events', { data: null, error: { message: 'connection reset' } });
 
-    await expect(GolfCalendarPage()).rejects.toThrow('Failed to load calendar events');
+    await expect(GolfCalendarPage(noSearchParams())).rejects.toThrow('Failed to load calendar events');
   });
 
   it('selects series fields and does NOT filter out cancelled events', async () => {
     tableResults.set('golf_events', { data: [], error: null });
 
-    await GolfCalendarPage();
+    await GolfCalendarPage(noSearchParams());
 
     const eventsQuery = queryLog.find((q) => q.table === 'golf_events');
     expect(eventsQuery).toBeDefined();
@@ -129,7 +134,7 @@ describe('GolfCalendarPage — events fetch contract', () => {
       error: null,
     });
 
-    const jsx = (await GolfCalendarPage()) as React.ReactElement;
+    const jsx = (await GolfCalendarPage(noSearchParams())) as React.ReactElement;
     // Walk the element tree for the surface's `events` prop.
     const found: Array<Record<string, unknown>> = [];
     const visit = (node: unknown): void => {

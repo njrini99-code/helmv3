@@ -373,9 +373,13 @@ export function FairwayPlayerDashboard({ data, enhancedData, hubData }: FairwayP
               </div>
             </Surface>
 
-            {/* Focus areas — reused client component (own loading/empty/error) */}
+            {/* Focus areas — reused client component (own loading/empty/error).
+                Same "My development" link-out as the normal-state block below
+                (conn-golf-player Finding 2 — this was the one place missing it). */}
             <section>
-              <SectionTitle>My focus areas</SectionTitle>
+              <SectionTitle action={{ label: 'My development', href: '/golf/dashboard/my-development' }}>
+                My focus areas
+              </SectionTitle>
               <Surface padding="md">
                 <PlayerFocusAreas playerId={player.id} />
               </Surface>

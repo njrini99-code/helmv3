@@ -36,16 +36,28 @@
  * ========================================================================== */
 
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 
 import {
   InstrumentPanel,
   Readout,
   Surface,
-  GenomeRadar,
   Chip,
   Button,
+  Skeleton,
 } from '@/components/fairway';
 import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
+
+// Fairway GenomeRadar, lazy + ssr:false — mirrors the sibling player dashboard's
+// TrendChart split (FairwayPlayerDashboard.tsx) so the recharts bundle stays
+// out of this route's first paint too (perf audit 2026-07-09, bundle finding 6).
+const GenomeRadar = nextDynamic(
+  () => import('@/components/fairway').then((m) => ({ default: m.GenomeRadar })),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full rounded-card" />,
+  },
+);
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — fully-resolved, serializable data from the server page.

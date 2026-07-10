@@ -3,20 +3,28 @@
 /**
  * Dashboard route template — fires on every route segment change.
  *
- * Provides the ONE cinematic transition when the user navigates between
- * dashboard tabs (Dashboard → Roster → Calendar, etc.). Previously these
- * transitions were an abrupt cut.
+ * Doctrine Rule 9 (docs/MOBILE_DOCTRINE.md): "Tab switches are instant — no
+ * cross-fade between bottom-tab roots; motion is reserved for forward/detail
+ * pushes." Until this wave every navigation ran the SAME 280ms opacity
+ * cross-fade, so a lateral tab swap (Dashboard → Roster) dissolved the whole
+ * viewport exactly like a forward push into a detail leaf — the "not native,
+ * laggy SPA" tell. The classification + timing now live in the shared
+ * `useRouteRevealMotion` hook (src/lib/motion/route-motion.ts — see that file
+ * for the full decision table and why it depends only on the CURRENT
+ * pathname, never a previous/next comparison a template.tsx's per-navigation
+ * remount would make impossible anyway); `isGolfLateralDestination`
+ * (src/lib/golf/nav-registry.ts) is the golf-specific classifier: every rail
+ * item, hub sub-tab, bottom-nav item, and CoachHelm cluster tab is lateral
+ * (instant); a dynamic detail leaf (roster/[id], rounds/[id]/review,
+ * players/[playerId]) is absent from that registry and reveals.
  *
- * SINGLE SOURCE OF TRUTH (June 2026): this template is the only route-reveal in
- * the dashboard. The Fairway AppShell's own <RouteTransition> is disabled there
- * (FairwayDashboardShell passes `disableRouteTransition`) so the content is not
- * wrapped by TWO keyed motion divs that each fade on navigation — that compounded
- * the opacity (p·p at the midpoint) and read as a heavy, laggy fade. One fade now.
- *
- * Recipe — matches the canonical Fairway RouteTransition primitive EXACTLY:
- *   - Opacity-ONLY crossfade 0 → 1 over --fw-dur-base (280ms)
- *   - --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1) (the iOS out-quint used
- *     system-wide for DropdownMenu / Tooltip / Popover / Sheet / Tabs)
+ * SINGLE SOURCE OF TRUTH (June 2026, unchanged by this wave): this template
+ * is the only route-reveal in the dashboard. The Fairway AppShell's own
+ * <RouteTransition> is disabled there (FairwayDashboardShell passes
+ * `disableRouteTransition`) so the content is not wrapped by TWO keyed motion
+ * divs that each fade on navigation — that compounded the opacity (p·p at the
+ * midpoint) and read as a heavy, laggy fade. One reveal now, and for lateral
+ * swaps zero motion at all.
  *
  * Why opacity-only (no slide / no `will-change: transform`): a transform value —
  * or a persistent `will-change: transform` — establishes a CSS containing block,
@@ -27,30 +35,22 @@
  * crossfade sidesteps the hazard entirely while staying premium on the glide curve.
  *
  * This uses framer-motion's `m` (tree-shaken) via the LazyMotion already mounted
- * in the dashboard shell. Reduced-motion is honored by the parent MotionConfig
- * AND collapsed here to a faster linear fade.
+ * in the dashboard shell. Reduced-motion collapses every navigation — lateral
+ * AND push — to zero motion (handled inside useRouteRevealMotion).
  */
 
-import { m, useReducedMotion } from 'framer-motion';
-import { usePathname } from 'next/navigation';
-
-// --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1); --fw-dur-base = 280ms.
-const GLIDE = [0.16, 1, 0.3, 1] as const;
-const DURATION = 0.28;
+import { m } from 'framer-motion';
+import { useRouteRevealMotion } from '@/lib/motion/route-motion';
+import { isGolfLateralDestination } from '@/lib/golf/nav-registry';
 
 export default function DashboardTemplate({ children }: { children: React.ReactNode }) {
-  const prefersReducedMotion = useReducedMotion();
-  const pathname = usePathname();
+  const reveal = useRouteRevealMotion(isGolfLateralDestination);
   return (
     <m.div
-      key={pathname}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={
-        prefersReducedMotion
-          ? { duration: 0.18, ease: 'linear' }
-          : { duration: DURATION, ease: GLIDE }
-      }
+      key={reveal.routeKey}
+      initial={reveal.initial}
+      animate={reveal.animate}
+      transition={reveal.transition}
       className="min-h-full"
       // No `will-change: transform` — opacity-only never needs it, and asserting
       // it would create the containing block this recipe exists to avoid.

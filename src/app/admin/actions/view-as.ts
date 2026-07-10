@@ -44,11 +44,14 @@ export async function enterViewAs(targetUserId: string): Promise<void> {
   });
 
   await writeAudit('admin.view_as.enter', admin.userId, targetUserId);
-  logSecurityEvent(`Admin entered read-only view-as for user ${targetUserId}`, 'warning', {
+  // Pass targetUserId so this shows up on the viewed user's own event
+  // timeline (`/admin/users/[id]`) — not just buried in metadata.
+  logSecurityEvent(
+    `Admin entered read-only view-as for user ${targetUserId}`,
+    'warning',
+    { targetUserId, adminUserId: admin.userId, ttlMs: VIEW_AS_TTL_MS },
     targetUserId,
-    adminUserId: admin.userId,
-    ttlMs: VIEW_AS_TTL_MS,
-  }).catch(() => {});
+  ).catch(() => {});
 
   redirect(`/admin/users/${targetUserId}/view-as`);
 }
@@ -71,10 +74,12 @@ export async function exitViewAs(): Promise<void> {
   const targetUserId = existing.split('.')[0] || 'unknown';
 
   await writeAudit('admin.view_as.exit', admin.userId, targetUserId);
-  logSecurityEvent('Admin exited view-as', 'info', {
-    targetUserId,
-    adminUserId: admin.userId,
-  }).catch(() => {});
+  logSecurityEvent(
+    'Admin exited view-as',
+    'info',
+    { targetUserId, adminUserId: admin.userId },
+    targetUserId !== 'unknown' ? targetUserId : undefined,
+  ).catch(() => {});
 
   redirect('/admin/users');
 }

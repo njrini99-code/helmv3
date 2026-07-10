@@ -197,23 +197,27 @@ const PlayerPeekContentComponent = function PlayerPeekContent({
     value: string | number;
     unit?: string;
     highlight?: boolean;
+    decimals?: number;
   };
 
+  // Explicit per-stat precision — QuickStatsDisplay's generic "integer vs
+  // not" fallback mis-rounds any of these (e.g. a 3.75 GPA → 3.8, a 2.34s
+  // pop time → 2.3s), so pin the honest precision for each stat here.
   const stats: StatItem[] = [];
   if (player.stats.pitchVelo != null) {
-    stats.push({ label: 'Velo', value: player.stats.pitchVelo, unit: ' mph', highlight: true });
+    stats.push({ label: 'Velo', value: player.stats.pitchVelo, unit: ' mph', highlight: true, decimals: 0 });
   }
   if (player.stats.exitVelo != null) {
-    stats.push({ label: 'Exit Velo', value: player.stats.exitVelo, unit: ' mph' });
+    stats.push({ label: 'Exit Velo', value: player.stats.exitVelo, unit: ' mph', decimals: 1 });
   }
   if (player.stats.sixtyTime != null) {
-    stats.push({ label: '60 yd', value: player.stats.sixtyTime, unit: 's' });
+    stats.push({ label: '60 yd', value: player.stats.sixtyTime, unit: 's', decimals: 2 });
   }
   if (player.stats.popTime != null) {
-    stats.push({ label: 'Pop Time', value: player.stats.popTime, unit: 's' });
+    stats.push({ label: 'Pop Time', value: player.stats.popTime, unit: 's', decimals: 2 });
   }
   if (player.gpa != null) {
-    stats.push({ label: 'GPA', value: player.gpa });
+    stats.push({ label: 'GPA', value: player.gpa, decimals: 2 });
   }
 
   return (

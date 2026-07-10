@@ -56,7 +56,6 @@ const EventCardInner = forwardRef<
         onClick={onClick}
         className={cn(
           'w-full h-full rounded-md overflow-hidden text-left px-2.5 py-1.5',
-          'border-l-[2px]',
           'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
           'hover:scale-[1.015] hover:z-10 hover:shadow-[0_4px_12px_rgba(58,50,40,0.06)]',
 
@@ -65,13 +64,15 @@ const EventCardInner = forwardRef<
           isDraggable && !isDragging && 'cursor-grab',
           !isDraggable && 'cursor-pointer',
           styles.bgColor,
-          styles.borderColor,
           styles.textColor
         )}
         {...dragAttributes}
         {...dragListeners}
       >
-        <p className="font-medium text-caption truncate leading-tight tracking-[-0.005em]">{title}</p>
+        <div className="flex items-center gap-1.5">
+          <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', styles.dotColor)} aria-hidden="true" />
+          <p className="font-medium text-caption truncate leading-tight tracking-[-0.005em]">{title}</p>
+        </div>
       </Button>
     );
   }
@@ -82,7 +83,6 @@ const EventCardInner = forwardRef<
       onClick={onClick}
       className={cn(
         'w-full h-full rounded-lg overflow-hidden text-left px-3 py-2.5',
-        'border-l-[2px]',
         'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         'hover:scale-[1.01] hover:z-10 hover:shadow-[0_6px_16px_rgba(58,50,40,0.07)]',
 
@@ -91,7 +91,6 @@ const EventCardInner = forwardRef<
         isDraggable && !isDragging && 'cursor-grab',
         !isDraggable && 'cursor-pointer',
         styles.bgColor,
-        styles.borderColor,
         styles.textColor
       )}
       {...dragAttributes}
@@ -101,6 +100,7 @@ const EventCardInner = forwardRef<
         {isDraggable && (
           <GripVertical className="w-3 h-3 opacity-35 flex-shrink-0 mt-0.5" />
         )}
+        <span className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full', styles.dotColor)} aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <p className="font-medium text-caption truncate leading-tight mb-1 tracking-[-0.005em]">{title}</p>
           <p className="text-eyebrow opacity-70 leading-tight tabular-nums">

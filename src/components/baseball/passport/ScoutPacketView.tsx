@@ -24,7 +24,8 @@
 // No golf labels. Honest empty states; nothing fabricated.
 // =============================================================================
 
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import {
   IconShieldCheck,
@@ -144,7 +145,7 @@ export function ScoutPacketView({
   };
 
   return (
-    <LazyMotion features={domAnimation} strict>
+    <LazyMotion features={loadFeatures} strict>
     <div className="min-h-dvh bg-cream-100">
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:py-12">
         {/* ---- 1. HERO ---- */}

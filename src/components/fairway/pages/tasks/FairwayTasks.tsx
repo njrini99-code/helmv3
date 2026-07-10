@@ -38,6 +38,7 @@
  * ========================================================================== */
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ClipboardList, Bell, ChevronDown } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -68,6 +69,7 @@ import {
   IconMoreVertical,
   IconBell,
   IconTrash,
+  IconMessage,
 } from '@/components/icons';
 import {
   deleteTask,
@@ -88,6 +90,7 @@ export interface TaskAssignment {
   status: string;
   completed_at: string | null;
   player: {
+    id: string;
     first_name: string;
     last_name: string;
   };
@@ -706,6 +709,7 @@ function FairwayTaskCard({
   /** Refetch the live list after a coach mutation. */
   onManaged?: () => void | Promise<void>;
 }) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [completing, setCompleting] = useState(false);
   // P290 — true optimistic completion. We flip the card locally the instant the
@@ -1036,21 +1040,35 @@ function FairwayTaskCard({
             {task.assignments.map((assignment) => (
               <div
                 key={assignment.id}
-                className="flex items-center justify-between rounded-fw-md bg-surface-sunken px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3 py-2"
               >
-                <span className="font-fw-sans text-body-sm text-text-secondary">
+                <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-secondary">
                   {assignment.player.first_name} {assignment.player.last_name}
                 </span>
-                {assignment.status === 'completed' ? (
-                  <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption font-medium text-accent-700">
-                    <IconCheck size={15} />
-                    Completed
-                  </span>
-                ) : (
-                  <span className="font-fw-sans text-caption font-medium text-text-tertiary">
-                    Pending
-                  </span>
-                )}
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  {assignment.status === 'completed' ? (
+                    <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption font-medium text-accent-700">
+                      <IconCheck size={15} />
+                      Completed
+                    </span>
+                  ) : (
+                    <span className="font-fw-sans text-caption font-medium text-text-tertiary">
+                      Pending
+                    </span>
+                  )}
+                  {assignment.player.id ? (
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Message ${assignment.player.first_name} ${assignment.player.last_name}`}
+                      onClick={() =>
+                        router.push(`/golf/dashboard/messages?player=${assignment.player.id}`)
+                      }
+                    >
+                      <IconMessage size={15} />
+                    </IconButton>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>

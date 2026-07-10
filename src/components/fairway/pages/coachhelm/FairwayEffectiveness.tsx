@@ -96,6 +96,7 @@ import {
   // Supporting primitives (drill-downs + matte reads + states).
   Segmented,
   Button,
+  StatStrip,
   StatTile,
   ChartCard,
   BarCompare,
@@ -1090,7 +1091,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
         </InlineNotice>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatStrip count={4} columns={4} ariaLabel="Prediction performance">
         <StatTile
           label="Overall accuracy"
           value={data.summary.overallAccuracy}
@@ -1133,7 +1134,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           required={GLOBAL_LOW_CONFIDENCE_RESOLVED}
           unit="resolved predictions"
         />
-      </div>
+      </StatStrip>
 
       <Ribbon
         title="Prediction accuracy over time"

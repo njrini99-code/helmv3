@@ -58,7 +58,7 @@ const STATUS_TONE: Record<TrustStatus, TrustChipTone> = {
   },
   // Needs validation — amber caution: too few measured outcomes to trust.
   needs_validation: {
-    pill: 'bg-fw-warning-bg text-warm-800',
+    pill: 'bg-fw-warning-bg text-fw-warning-ink',
     dot: 'bg-fw-warning',
     word: 'Needs validation',
   },

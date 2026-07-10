@@ -7,7 +7,11 @@ const STATES: Record<BannerState, { icon: typeof CheckCircle2; dot: string; labe
   nominal: { icon: CheckCircle2, dot: 'bg-fw-success', label: () => 'All systems nominal' },
   attention: { icon: AlertTriangle, dot: 'bg-fw-warning', label: (n) => `${n} item${n === 1 ? '' : 's'} need attention` },
   critical: { icon: AlertOctagon, dot: 'bg-fw-danger', label: (n) => `${n} critical item${n === 1 ? '' : 's'} — immediate attention needed` },
-  stale: { icon: CloudOff, dot: 'bg-fw-warning', label: () => 'Status feed stale — showing last known state' },
+  // Honesty pattern from PanelStale (src/app/admin/_components/PanelStates.tsx):
+  // this state renders when the fetch FAILED and nothing is cached below it —
+  // "showing last known state" was never true and was flagged in the same
+  // 2026-07-03 Mission Control sweep that fixed the identical false claim there.
+  stale: { icon: CloudOff, dot: 'bg-fw-warning', label: () => 'Status feed unavailable — unable to confirm current state' },
 };
 
 /** Severity is icon + label + dot — never color alone. */

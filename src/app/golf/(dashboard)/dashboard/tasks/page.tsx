@@ -22,6 +22,7 @@ interface Task {
     status: string;
     completed_at: string | null;
     player: {
+      id: string;
       first_name: string;
       last_name: string;
     };
@@ -71,6 +72,7 @@ export default function GolfTasksPage() {
       status: a.status,
       completed_at: a.completed_at,
       player: {
+        id: a.player.id,
         first_name: a.player.first_name,
         last_name: a.player.last_name,
       },

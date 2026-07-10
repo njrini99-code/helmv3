@@ -1276,3 +1276,44 @@ export function getBaseballDefaultLandingHref(ctx: BaseballNavContext): string {
 export function getBaseballTerminology(ctx: BaseballNavContext) {
   return getProgramVariant(ctx.programType ?? null).terminology;
 }
+
+// -----------------------------------------------------------------------------
+// isBaseballLateralDestination — Doctrine Rule 9 (docs/MOBILE_DOCTRINE.md):
+// "Tab switches are instant." src/lib/motion/route-motion.ts's
+// useRouteRevealMotion hook calls this to decide whether the CURRENT pathname
+// is a lateral peer (instant swap) or a detail leaf (forward-push reveal).
+//
+// Backed by every href + playerHref declared in BASEBALL_NAV_REGISTRY (this
+// automatically covers every hub-landing page — operations/scouting/settings/
+// stats-center/etc. — since those are already registry rows, not a separately
+// hand-maintained list) plus the cross-cutting BASEBALL_MESSAGES_NAV entry
+// that deliberately lives outside the registry. `matchPrefixes` are NOT
+// unioned in — those exist precisely to light a parent tab from a DETAIL
+// route (dev-plans/[id], performance/players/[id], stats/games/[gameId]),
+// which must still reveal as a forward push.
+// -----------------------------------------------------------------------------
+
+let baseballLateralDestinations: Set<string> | null = null;
+
+function buildBaseballLateralDestinations(): Set<string> {
+  const hrefs: string[] = [BASEBALL_MESSAGES_NAV.href];
+  for (const entry of BASEBALL_NAV_REGISTRY) {
+    hrefs.push(entry.href);
+    if (entry.playerHref) hrefs.push(entry.playerHref);
+  }
+  return new Set(hrefs);
+}
+
+/**
+ * True when `pathname` is a registered lateral navigation destination (every
+ * BASEBALL_NAV_REGISTRY href/playerHref, plus Messages) for either baseball
+ * role. Built once, lazily, and memoized module-wide — the registry is
+ * static, so every subsequent navigation is an O(1) `Set.has` lookup, never a
+ * fresh array walk.
+ */
+export function isBaseballLateralDestination(pathname: string): boolean {
+  if (!baseballLateralDestinations) {
+    baseballLateralDestinations = buildBaseballLateralDestinations();
+  }
+  return baseballLateralDestinations.has(pathname);
+}

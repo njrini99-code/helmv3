@@ -2,6 +2,7 @@
 
 import { startTransition, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import {
   submitGolfRoundComprehensive,
@@ -30,8 +31,6 @@ import { saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { OfflineWarningBanner } from '@/components/golf';
 import { IconWarning } from '@/components/icons';
-import { FairwaySaveRoundModal } from '@/components/fairway/pages/rounds-new/FairwaySaveRoundModal';
-import { FairwayRoundSubmitOverlay } from '@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay';
 import { useToast } from '@/components/ui/sonner';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
@@ -49,7 +48,20 @@ import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/Fair
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
-import { FairwayRoundSummarySheet } from '@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet';
+
+// Round-completion-only overlays — never rendered until the round is
+// finished, so keep them out of the initial hole-entry bundle (perf audit
+// 2026-07-09, bundle finding 4). Same no-ssr-flag, .then((m) => m.X) pattern
+// as FairwayCalendar.tsx's CalendarFeedManager.
+const FairwaySaveRoundModal = dynamic(
+  () => import('@/components/fairway/pages/rounds-new/FairwaySaveRoundModal').then((m) => m.FairwaySaveRoundModal),
+);
+const FairwayRoundSubmitOverlay = dynamic(
+  () => import('@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay').then((m) => m.FairwayRoundSubmitOverlay),
+);
+const FairwayRoundSummarySheet = dynamic(
+  () => import('@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet').then((m) => m.FairwayRoundSummarySheet),
+);
 
 type Hole = RoundHole;
 

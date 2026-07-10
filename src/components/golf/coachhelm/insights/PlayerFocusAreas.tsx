@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FocusAreaCard } from './FocusAreaCard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
@@ -11,6 +12,7 @@ interface PlayerFocusAreasProps {
 }
 
 export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
+  const router = useRouter();
   const [focusAreas, setFocusAreas] = useState<PlayerFocusArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,16 @@ export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
   return (
     <div className="space-y-3">
       {focusAreas.map((area) => (
-        <FocusAreaCard key={area.id} focusArea={area} />
+        // conn-golf-player Finding 2: these cards were a dead-end duplicate of
+        // My Development (no onClick at all). My Development is the SAME
+        // golf_player_focus_areas row (id-for-id) rendered with the full
+        // detail + actions (progress, complete, drills) — send the player
+        // there instead of leaving a plain, unclickable card.
+        <FocusAreaCard
+          key={area.id}
+          focusArea={area}
+          onClick={() => router.push('/golf/dashboard/my-development')}
+        />
       ))}
     </div>
   );

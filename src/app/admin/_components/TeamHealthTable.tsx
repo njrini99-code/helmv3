@@ -55,8 +55,10 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
           {teams.map((t) => {
             const isLeader = t.health === 'active' && t.errors7d === 0;
             return (
-              <tr key={t.teamId} className={cn(isLeader && 'border-l-2 border-l-accent-500 bg-accent-50')}>
+              <tr key={t.teamId} className={cn(isLeader && 'bg-accent-50')}>
                 <td className={cn('sticky left-0 z-10 py-2 pr-3', isLeader ? 'bg-accent-50' : 'bg-surface')}>
+                  {/* Dateline rule — replaces the retired border-l-2 leader stripe. */}
+                  {isLeader && <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-accent-500" />}
                   <Link
                     href={t.href ?? `/admin/teams/${t.teamId}`}
                     className="font-medium text-warm-900 underline-offset-2 hover:underline"

@@ -122,12 +122,37 @@ export default async function PlayerTodayPage() {
   //    Performance check-in resolution runs in parallel with the baseball reads.
   //    We wrap each lifting fetch in try/catch so a lifting failure never breaks
   //    the baseball today page (the slot simply renders as null).
-  const [today, dailyContract, passport, liftingCtx] = await Promise.all([
+  //
+  //    recruitingRow is a small, separate read of this player's own activation
+  //    state (conn-baseball-player Finding 2: "Activate Recruiting" had no
+  //    persistent UI surface — the nav entry is command-palette/direct-URL
+  //    only by design). Today is the one screen every player lands on daily,
+  //    so it's where a one-time nudge belongs. Honest degrade: any failure
+  //    here just hides the banner, it never blocks the page.
+  const [today, dailyContract, passport, liftingCtx, recruitingRow] = await Promise.all([
     getPlayerToday(context.activeTeamId, { forDate: todayIso }),
     getPlayerDailyContract(context.activeTeamId, { forDate: todayIso }),
     getPlayerPassport(context.activeTeamId),
     resolveBaseballLiftingOrg(context.activeTeamId).catch(() => null),
+    context.activePlayerId
+      ? Promise.resolve(
+          supabase
+            .from('baseball_players')
+            .select('recruiting_activated, player_type')
+            .eq('id', context.activePlayerId)
+            .maybeSingle(),
+        )
+          .then(({ data }) => data)
+          .catch(() => null)
+      : Promise.resolve(null),
   ]);
+
+  // Eligible + not-yet-activated → the banner nudge; college players can never
+  // activate (product rule, enforced again server-side by the action itself).
+  const recruitingActivation =
+    recruitingRow && recruitingRow.player_type !== 'college'
+      ? { activated: recruitingRow.recruiting_activated === true }
+      : null;
 
   // 3. If the player has a lifting org, resolve athlete ID + fetch due items.
   let performanceSlot: PerformanceCheckinSlot | null = null;
@@ -244,6 +269,7 @@ export default async function PlayerTodayPage() {
       // The client uses it only for display; it does not re-fetch.
       todayIso={todayIso}
       performanceSlot={performanceSlot}
+      recruitingActivation={recruitingActivation}
     />
   );
 }

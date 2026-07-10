@@ -28,7 +28,8 @@
 // backgrounds.
 // =============================================================================
 
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import {
   IconSparkles,
   IconBrain,
@@ -234,7 +235,7 @@ export function DailyBriefPanel({
           )}
         </div>
       ) : (
-        <LazyMotion features={domAnimation}>
+        <LazyMotion features={loadFeatures}>
           <m.ul
             className="space-y-2.5"
             initial={reduceMotion ? false : 'hidden'}

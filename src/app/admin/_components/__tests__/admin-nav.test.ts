@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { ADMIN_NAV, ADMIN_COMMAND_SHORTCUTS, hrefForShortcut } from '@/app/admin/_components/admin-nav';
+import {
+  ADMIN_NAV,
+  ADMIN_COMMAND_SHORTCUTS,
+  hrefForShortcut,
+  BRIDGE_BOTTOM_NAV_HREFS,
+  BRIDGE_BOTTOM_NAV_LABELS,
+} from '@/app/admin/_components/admin-nav';
 
 describe('ADMIN_NAV', () => {
   it('declares the canonical tabs in order', () => {
@@ -35,5 +41,26 @@ describe('ADMIN_NAV', () => {
       expect(navHrefs.has(shortcut.href), `${shortcut.href} is not a registered admin tab`).toBe(true);
     }
     expect(ADMIN_COMMAND_SHORTCUTS.map((s) => s.href)).not.toContain('/admin/audit');
+  });
+});
+
+describe('BRIDGE_BOTTOM_NAV_HREFS', () => {
+  it('declares the daily-loop four in tab order (Synthesis Decision 6)', () => {
+    expect(BRIDGE_BOTTOM_NAV_HREFS).toEqual(['/admin', '/admin/errors', '/admin/health', '/admin/users']);
+  });
+
+  it('every bottom-nav href is a real registered ADMIN_NAV tab', () => {
+    const navHrefs = new Set(ADMIN_NAV.map((entry) => entry.href));
+    for (const href of BRIDGE_BOTTOM_NAV_HREFS) {
+      expect(navHrefs.has(href), `${href} is not a registered admin tab`).toBe(true);
+    }
+  });
+
+  it('has a short label for every bottom-nav href', () => {
+    for (const href of BRIDGE_BOTTOM_NAV_HREFS) {
+      expect(BRIDGE_BOTTOM_NAV_LABELS[href]).toBeTruthy();
+    }
+    // "Users & Teams" (the rail label) is deliberately shortened for the tab column.
+    expect(BRIDGE_BOTTOM_NAV_LABELS['/admin/users']).toBe('Users');
   });
 });

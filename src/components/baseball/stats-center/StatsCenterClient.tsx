@@ -25,7 +25,8 @@
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { IconDownload, IconFilter, IconFolder, IconUpload, IconX } from '@/components/icons';
@@ -579,7 +580,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
   // ---- Unauthorized envelope (not staff) — honest editorial letter ----------
   if (!model.authorized) {
     return (
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={loadFeatures}>
         <div className="mx-auto w-full max-w-[1536px] px-4 py-12 sm:px-6">
           <EditorsLetter
             ink="team"
@@ -598,7 +599,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
 
   // ---- Authorized record-book spread ---------------------------------------
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6">
         <SectionMasthead eyebrow={eyebrow} title="Stats Center" actions={mastheadActions} />
 

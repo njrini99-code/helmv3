@@ -3,9 +3,11 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   getTracerData,
+  getTracerEnrichedData,
   getTracerRoundDiagnostic,
   fixRoundData,
   type TracerData,
+  type TracerEnrichedData,
   type TracerRoundDiagnosticData,
 } from '@/app/golf/actions/admin-tracer-data';
 
@@ -23,6 +25,17 @@ import {
 export async function bridgeGetTracerData(): Promise<TracerData> {
   await requireSuperAdmin();
   return getTracerData();
+}
+
+/**
+ * Enriched data (30d daily round/error trend + stuck-round detector) — was
+ * computed by admin-tracer-data.ts and exported (`getTracerEnrichedData`)
+ * but had no Bridge delegation, so `/admin/golf/tracer` never called it.
+ * Same double-gate pattern as `bridgeGetTracerData` above.
+ */
+export async function bridgeGetTracerEnrichedData(): Promise<TracerEnrichedData> {
+  await requireSuperAdmin();
+  return getTracerEnrichedData();
 }
 
 export async function bridgeGetTracerRoundDiagnostic(

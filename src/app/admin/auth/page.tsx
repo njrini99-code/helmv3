@@ -61,6 +61,11 @@ async function AuthBody() {
       <Surface padding="md">
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Lockouts &amp; failed attempts
+          {tab.lockoutsTotal > tab.lockouts.length ? (
+            <span className="ml-2 normal-case tracking-normal text-warm-400">
+              (showing latest {tab.lockouts.length} of {tab.lockoutsTotal})
+            </span>
+          ) : null}
         </h2>
         <div className="mt-3">
           {tab.lockouts.length === 0 ? (
@@ -98,6 +103,11 @@ async function AuthBody() {
       <Surface padding="md">
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Sign-in &amp; auth feed (7d)
+          {tab.feedTotal > tab.feed.length ? (
+            <span className="ml-2 normal-case tracking-normal text-warm-400">
+              (showing latest {tab.feed.length} of {tab.feedTotal})
+            </span>
+          ) : null}
         </h2>
         <div className="mt-3">
           {tab.feed.length === 0 ? (

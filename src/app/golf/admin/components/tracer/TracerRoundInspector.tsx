@@ -417,7 +417,7 @@ function RoundRow({
       <tr
         className={cn(
           'border-b border-warm-50/80 cursor-pointer transition-colors',
-          stuck && 'border-l-[3px] border-l-red-400 bg-red-50/20',
+          stuck && 'bg-red-50/20',
           isExpanded ? 'bg-warm-50/40' : 'hover:bg-cream-100'
         )}
         onClick={onToggle}

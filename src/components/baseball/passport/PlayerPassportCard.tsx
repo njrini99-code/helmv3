@@ -28,7 +28,8 @@
 // =============================================================================
 
 import Link from 'next/link';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -500,7 +501,7 @@ export function PlayerPassportCard({
     model.identity.find((f) => f.key === 'name')?.value ?? 'Player Passport';
 
   return (
-    <LazyMotion features={domAnimation} strict>
+    <LazyMotion features={loadFeatures} strict>
       <m.div {...fade}>
         <Card variant="raised" padding={compact ? 'md' : 'lg'}>
           {/* Header */}

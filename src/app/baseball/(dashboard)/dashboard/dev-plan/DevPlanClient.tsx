@@ -245,7 +245,8 @@ function GoalCard({
                       <p className="font-annual text-body-sm leading-relaxed text-text-secondary">{goal.description}</p>
                     ) : null}
                     {goal.coach_notes ? (
-                      <div className="border-l-2 border-grade-plus pl-3">
+                      <div>
+                        <span aria-hidden className="mb-2 block h-[2px] w-7 rounded-full bg-grade-plus" />
                         <Eyebrow ink="team">Coach note</Eyebrow>
                         <p className="mt-1 font-annual text-body-sm italic leading-relaxed text-text-secondary">
                           {goal.coach_notes}
