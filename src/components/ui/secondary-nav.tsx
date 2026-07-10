@@ -60,7 +60,7 @@ export interface SecondaryNavProps extends Omit<React.HTMLAttributes<HTMLElement
   ariaLabel?: string;
 }
 
-/** Segment-boundary active match (mirrors GolfSidebar.isActive semantics). */
+/** Segment-boundary active match (mirrors FairwaySidebar's `matchActive` semantics). */
 function isItemActive(currentRoute: string, item: SecondaryNavItem): boolean {
   const target = item.match ?? item.href;
   return currentRoute === target || currentRoute.startsWith(`${target}/`);

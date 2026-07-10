@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Companion registry to docs/v3-master-plan.md; zero memory/registry.yml references. The wave sequence it enforced shim kill-dates for has run past W35 into the later clean-slate/production-readiness passes.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm v3 — Compatibility Shim Registry
 
 > **Every shim has a kill date or the PR is rejected.** This file enforces Rule 10 from [`docs/v3-master-plan.md` Part I](./v3-master-plan.md). A shim is any temporary bridge that lets v2 and v3 coexist; without an explicit removal wave, shims become permanent debt.

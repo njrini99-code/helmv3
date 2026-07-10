@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Self-declared: render-only wins #1 (putts/hole) and #4 (scrambling toggle) are already SHIPPED separately. Only the still-unshipped line items in this doc remain an active plan; the shipped items are historical.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Fairway Comprehensive Stats — Redesign Plan
 
 _Status: PLAN — awaiting approval before engine edits. Drafted 2026-06-01._

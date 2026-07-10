@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Generated 2026-01-01, a 19-user/6-coach/43-player toy-scale snapshot — not representative after 6+ months and hundreds of merged PRs. memory/registry.yml's auth_onboarding_join and team_access_control entries were re-pointed away from this doc (to docs/v3-rls-template.md) in this same sweep.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # USER ROLE & DATA OWNERSHIP MAPPING
 > PHASE 2 AUDIT REPORT
 > Generated: 2026-01-01

@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Completed-wave planning doc; the AI codebase-intelligence report it planned now lives at docs/ai-system/helmv3-ai-codebase-intelligence.md, the current reference.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Helmv3 AI Codebase Intelligence Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

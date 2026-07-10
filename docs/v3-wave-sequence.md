@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Companion ledger to docs/v3-master-plan.md; zero memory/registry.yml references. The wave sequence it tracks has run past W35 into the later clean-slate/production-readiness passes.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm v3 — Wave Sequence Tracker
 
 > **Live ship-status doc.** The full per-wave spec lives in [`docs/v3-master-plan.md` Part XXIII](./v3-master-plan.md). This file is the running ledger of what has shipped, what is in flight, and what is next. Update it as part of every wave's PR.

@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Deep-dive doc dated 2026-05-27, superseded by later, more comprehensive passes: docs/audits/COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md and docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Helm Database, Vercel, Supabase, and CoachHelm Deep Dive
 
 Date: 2026-05-27

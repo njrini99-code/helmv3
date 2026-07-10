@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: CoachHelm state-snapshot doc dated 2026-05-26, superseded by later, more comprehensive passes: docs/audits/COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md and COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21.md.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm — Complete State, Plan, and Build Reference
 
 > **Snapshot date:** 2026-05-26

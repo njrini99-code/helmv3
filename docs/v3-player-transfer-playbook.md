@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Companion doc to docs/v3-master-plan.md; zero memory/registry.yml references. The wave sequence it was written against has run past W35 into the later clean-slate/production-readiness passes.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm v3 — Player Transfer & Lifecycle Playbook
 
 > Edge cases the v3 engine and UI must handle correctly. Every wave that adds player-scoped data must read this and confirm its tables don't break these scenarios. If a wave introduces a new player-scoped table, add a row to the matrix at the bottom.

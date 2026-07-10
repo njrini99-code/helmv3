@@ -1,8 +1,15 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Per-unit detail links pointed at docs/audits/_e2e_tab_audit_2026-06-20/, which has moved to docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/ (links fixed in this 2026-07-10 pass). Findings describe the Fairway redesign as of 2026-06-20 — re-verify against current code before trusting as live state.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm End-to-End Tab Audit — Master Report
 
 **Date:** 2026-06-20
 **Scope:** 36 GolfHelm tab/feature units, each traced UI → server action → database, on the **live Fairway redesign** path (`NEXT_PUBLIC_REDESIGN=true`, prod-promoted from `main`).
-**Per-unit detail:** `docs/audits/_e2e_tab_audit_2026-06-20/` (one md per unit, linked throughout).
+**Per-unit detail:** `docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/` (one md per unit, linked throughout).
 
 ## Executive summary
 
@@ -54,42 +61,42 @@ Across 36 units we filed **204 findings**: **11 CRITICAL, 25 HIGH, 59 MEDIUM, 61
 
 | Unit | Role | C | H | M | L | I | Section |
 |---|---|--:|--:|--:|--:|--:|---|
-| Coach Dashboard home | coach | 0 | 0 | 2 | 2 | 1 | [coach-home.md](_e2e_tab_audit_2026-06-20/coach-home.md) |
-| CoachHelm AI / Intelligence hub + Chat | coach | 0 | 1 | 1 | 1 | 2 | [coachhelm-hub.md](_e2e_tab_audit_2026-06-20/coachhelm-hub.md) |
-| Insights | coach | 0 | 0 | 3 | 2 | 2 | [coachhelm-insights.md](_e2e_tab_audit_2026-06-20/coachhelm-insights.md) |
-| Alerts | coach | 0 | 1 | 2 | 1 | 1 | [coachhelm-alerts.md](_e2e_tab_audit_2026-06-20/coachhelm-alerts.md) |
-| Patterns | coach | 2 | 1 | 2 | 1 | 2 | [coachhelm-patterns.md](_e2e_tab_audit_2026-06-20/coachhelm-patterns.md) |
-| CoachHelm Analytics | coach | 0 | 0 | 3 | 1 | 2 | [coachhelm-analytics.md](_e2e_tab_audit_2026-06-20/coachhelm-analytics.md) |
-| Coaching Intelligence Settings | coach | 0 | 0 | 4 | 2 | 0 | [coaching-settings.md](_e2e_tab_audit_2026-06-20/coaching-settings.md) |
-| Development Plans (coach) | coach | 0 | 1 | 3 | 2 | 0 | [development-plans.md](_e2e_tab_audit_2026-06-20/development-plans.md) |
-| Recruiting HQ | coach | 0 | 1 | 1 | 1 | 0 | [recruiting-hq.md](_e2e_tab_audit_2026-06-20/recruiting-hq.md) |
-| Qualifiers (create/manage) | coach | 0 | 1 | 0 | 3 | 1 | [qualifiers-coach.md](_e2e_tab_audit_2026-06-20/qualifiers-coach.md) |
-| Team Stats | coach | 0 | 0 | 1 | 2 | 2 | [team-stats.md](_e2e_tab_audit_2026-06-20/team-stats.md) |
-| Player detail / game view (coach) | coach | 0 | 0 | 1 | 2 | 1 | [player-detail-coach.md](_e2e_tab_audit_2026-06-20/player-detail-coach.md) |
-| Player Dashboard home + Hub | player | 0 | 1 | 0 | 1 | 3 | [player-home.md](_e2e_tab_audit_2026-06-20/player-home.md) |
-| Player CoachHelm | player | 0 | 2 | 1 | 1 | 1 | [player-coachhelm.md](_e2e_tab_audit_2026-06-20/player-coachhelm.md) |
-| CoachHelm Genome + Compare | player | 0 | 0 | 1 | 2 | 1 | [coachhelm-genome.md](_e2e_tab_audit_2026-06-20/coachhelm-genome.md) |
-| CoachHelm Qualifying predictions | player | 0 | 0 | 0 | 1 | 2 | [coachhelm-qualifying.md](_e2e_tab_audit_2026-06-20/coachhelm-qualifying.md) |
-| My Development (player) | player | 1 | 0 | 3 | 1 | 1 | [my-development.md](_e2e_tab_audit_2026-06-20/my-development.md) |
-| Round create / continue / recover | player | 0 | 0 | 1 | 2 | 2 | [round-create.md](_e2e_tab_audit_2026-06-20/round-create.md) |
-| Round Review | player | 0 | 0 | 2 | 1 | 1 | [round-review.md](_e2e_tab_audit_2026-06-20/round-review.md) |
-| My Qualifiers (player) | player | 0 | 0 | 1 | 3 | 1 | [my-qualifiers.md](_e2e_tab_audit_2026-06-20/my-qualifiers.md) |
-| Classes | player | 0 | 2 | 2 | 1 | 2 | [classes.md](_e2e_tab_audit_2026-06-20/classes.md) |
-| My Game Profile + My Standing | player | 1 | 1 | 0 | 2 | 2 | [player-profile-self.md](_e2e_tab_audit_2026-06-20/player-profile-self.md) |
-| Rounds list | both | 0 | 0 | 2 | 2 | 1 | [rounds-list.md](_e2e_tab_audit_2026-06-20/rounds-list.md) |
-| Calendar & Events | both | 0 | 1 | 3 | 2 | 2 | [calendar.md](_e2e_tab_audit_2026-06-20/calendar.md) |
-| Roster + member detail | both | 1 | 1 | 1 | 2 | 0 | [roster.md](_e2e_tab_audit_2026-06-20/roster.md) |
-| Messaging | both | 1 | 1 | 2 | 2 | 1 | [messages.md](_e2e_tab_audit_2026-06-20/messages.md) |
-| Announcements | both | 0 | 0 | 1 | 3 | 2 | [announcements.md](_e2e_tab_audit_2026-06-20/announcements.md) |
-| Tasks | both | 2 | 3 | 3 | 1 | 1 | [tasks.md](_e2e_tab_audit_2026-06-20/tasks.md) |
-| Team Hub (player) + Team Info | both | 0 | 1 | 0 | 2 | 2 | [team-hub-and-info.md](_e2e_tab_audit_2026-06-20/team-hub-and-info.md) |
-| Documents + Travel | both | 1 | 2 | 2 | 1 | 2 | [docs-travel.md](_e2e_tab_audit_2026-06-20/docs-travel.md) |
-| Stats (personal) | both | 0 | 0 | 0 | 1 | 2 | [stats-personal.md](_e2e_tab_audit_2026-06-20/stats-personal.md) |
-| Course Library + What's New | both | 0 | 0 | 1 | 3 | 0 | [courses-whatsnew.md](_e2e_tab_audit_2026-06-20/courses-whatsnew.md) |
-| Settings + Notifications | both | 2 | 1 | 3 | 2 | 1 | [settings-core.md](_e2e_tab_audit_2026-06-20/settings-core.md) |
-| Auth (login/signup/forgot/reset/demo) | both | 0 | 1 | 2 | 2 | 1 | [auth-flows.md](_e2e_tab_audit_2026-06-20/auth-flows.md) |
-| Onboarding (coach + player) | both | 0 | 2 | 3 | 2 | 1 | [onboarding.md](_e2e_tab_audit_2026-06-20/onboarding.md) |
-| Join team by code | both | 0 | 0 | 2 | 1 | 2 | [join-team.md](_e2e_tab_audit_2026-06-20/join-team.md) |
+| Coach Dashboard home | coach | 0 | 0 | 2 | 2 | 1 | [coach-home.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coach-home.md) |
+| CoachHelm AI / Intelligence hub + Chat | coach | 0 | 1 | 1 | 1 | 2 | [coachhelm-hub.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-hub.md) |
+| Insights | coach | 0 | 0 | 3 | 2 | 2 | [coachhelm-insights.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-insights.md) |
+| Alerts | coach | 0 | 1 | 2 | 1 | 1 | [coachhelm-alerts.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-alerts.md) |
+| Patterns | coach | 2 | 1 | 2 | 1 | 2 | [coachhelm-patterns.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-patterns.md) |
+| CoachHelm Analytics | coach | 0 | 0 | 3 | 1 | 2 | [coachhelm-analytics.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-analytics.md) |
+| Coaching Intelligence Settings | coach | 0 | 0 | 4 | 2 | 0 | [coaching-settings.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coaching-settings.md) |
+| Development Plans (coach) | coach | 0 | 1 | 3 | 2 | 0 | [development-plans.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/development-plans.md) |
+| Recruiting HQ | coach | 0 | 1 | 1 | 1 | 0 | [recruiting-hq.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/recruiting-hq.md) |
+| Qualifiers (create/manage) | coach | 0 | 1 | 0 | 3 | 1 | [qualifiers-coach.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/qualifiers-coach.md) |
+| Team Stats | coach | 0 | 0 | 1 | 2 | 2 | [team-stats.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/team-stats.md) |
+| Player detail / game view (coach) | coach | 0 | 0 | 1 | 2 | 1 | [player-detail-coach.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-detail-coach.md) |
+| Player Dashboard home + Hub | player | 0 | 1 | 0 | 1 | 3 | [player-home.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-home.md) |
+| Player CoachHelm | player | 0 | 2 | 1 | 1 | 1 | [player-coachhelm.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-coachhelm.md) |
+| CoachHelm Genome + Compare | player | 0 | 0 | 1 | 2 | 1 | [coachhelm-genome.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-genome.md) |
+| CoachHelm Qualifying predictions | player | 0 | 0 | 0 | 1 | 2 | [coachhelm-qualifying.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-qualifying.md) |
+| My Development (player) | player | 1 | 0 | 3 | 1 | 1 | [my-development.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/my-development.md) |
+| Round create / continue / recover | player | 0 | 0 | 1 | 2 | 2 | [round-create.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/round-create.md) |
+| Round Review | player | 0 | 0 | 2 | 1 | 1 | [round-review.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/round-review.md) |
+| My Qualifiers (player) | player | 0 | 0 | 1 | 3 | 1 | [my-qualifiers.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/my-qualifiers.md) |
+| Classes | player | 0 | 2 | 2 | 1 | 2 | [classes.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/classes.md) |
+| My Game Profile + My Standing | player | 1 | 1 | 0 | 2 | 2 | [player-profile-self.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-profile-self.md) |
+| Rounds list | both | 0 | 0 | 2 | 2 | 1 | [rounds-list.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/rounds-list.md) |
+| Calendar & Events | both | 0 | 1 | 3 | 2 | 2 | [calendar.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/calendar.md) |
+| Roster + member detail | both | 1 | 1 | 1 | 2 | 0 | [roster.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/roster.md) |
+| Messaging | both | 1 | 1 | 2 | 2 | 1 | [messages.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/messages.md) |
+| Announcements | both | 0 | 0 | 1 | 3 | 2 | [announcements.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/announcements.md) |
+| Tasks | both | 2 | 3 | 3 | 1 | 1 | [tasks.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/tasks.md) |
+| Team Hub (player) + Team Info | both | 0 | 1 | 0 | 2 | 2 | [team-hub-and-info.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/team-hub-and-info.md) |
+| Documents + Travel | both | 1 | 2 | 2 | 1 | 2 | [docs-travel.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/docs-travel.md) |
+| Stats (personal) | both | 0 | 0 | 0 | 1 | 2 | [stats-personal.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/stats-personal.md) |
+| Course Library + What's New | both | 0 | 0 | 1 | 3 | 0 | [courses-whatsnew.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/courses-whatsnew.md) |
+| Settings + Notifications | both | 2 | 1 | 3 | 2 | 1 | [settings-core.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/settings-core.md) |
+| Auth (login/signup/forgot/reset/demo) | both | 0 | 1 | 2 | 2 | 1 | [auth-flows.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/auth-flows.md) |
+| Onboarding (coach + player) | both | 0 | 2 | 3 | 2 | 1 | [onboarding.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/onboarding.md) |
+| Join team by code | both | 0 | 0 | 2 | 1 | 2 | [join-team.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/join-team.md) |
 | **Totals (36 units)** | | **11** | **25** | **59** | **61** | **48** | |
 
 Per-role rollup: **coach** = 12 units (2C/6H), **player** = 10 units (2C/6H), **shared (both)** = 14 units (7C/13H).
@@ -192,52 +199,52 @@ The following confirmed CRITICAL/HIGH findings are flagged `needsLiveVerify=true
 
 ### Coach tabs
 
-- **Coach Dashboard home** — [coach-home.md](_e2e_tab_audit_2026-06-20/coach-home.md). Clean role-gate, honest KPIs, auth-first data fetch, paginated rounds. Redesign drops the legacy Today-timeline + Action-Items regions (data computed, never rendered) and per-KPI trend arrows/sparklines (MEDIUM×2); JoinRequest banner has no realtime (LOW). No C/H.
-- **CoachHelm AI / Intelligence hub + Chat** — [coachhelm-hub.md](_e2e_tab_audit_2026-06-20/coachhelm-hub.md). Real Sonnet tool-loop agent, coach-only mount, RLS-scoped persistence. **HIGH:** `create_goal_for_player` has no UI confirm gate despite the code claiming the UI is the real safety fence.
-- **Insights** — [coachhelm-insights.md](_e2e_tab_audit_2026-06-20/coachhelm-insights.md). RLS+v3-visibility scoped, paginated, optimistic with rollback. MEDIUMs: stats-vs-list scope divergence in multi-coach programs, absent error state, dead create-focus-area path. No C/H.
-- **Alerts** — [coachhelm-alerts.md](_e2e_tab_audit_2026-06-20/coachhelm-alerts.md). **HIGH:** default `urgent` preset never matches mapped `critical`, hiding top alerts. MEDIUMs: unreachable bulk-action bar (no selection control), badge↔feed count mismatch.
-- **Patterns** — [coachhelm-patterns.md](_e2e_tab_audit_2026-06-20/coachhelm-patterns.md). **2 CRITICAL / 1 HIGH:** Validate + Address write non-existent columns → 42703 atomic failure (live-reproduced); Resolve latent. Plus silent optimistic rollback masking the failure (MEDIUM) and read-side dead controls.
-- **CoachHelm Analytics** — [coachhelm-analytics.md](_e2e_tab_audit_2026-06-20/coachhelm-analytics.md). Real rollups (daily cron), honesty thresholds, no mocks. MEDIUMs: frozen 30-day summary cards vs range-aware panels, two divergent prediction-accuracy numbers, no SSR error state. No C/H.
-- **Coaching Intelligence Settings** — [coaching-settings.md](_e2e_tab_audit_2026-06-20/coaching-settings.md). Priorities/sensitivity/thresholds/master-switch/SG-baseline genuinely take effect. MEDIUMs: 11 alert toggles, weight sliders, display prefs, and (LOW) bubble-zone are write-only dead controls; no player self-gate (infinite skeleton). No C/H.
-- **Development Plans (coach)** — [development-plans.md](_e2e_tab_audit_2026-06-20/development-plans.md). **HIGH:** outcome-mix hero stuck on "Awaiting outcomes" (reads a non-existent/unselected field). MEDIUMs: provenance chips + per-area sparkline never render (columns not selected); `updateFocusArea` silent 0-row no-op for multi-coach.
-- **Recruiting HQ** — [recruiting-hq.md](_e2e_tab_audit_2026-06-20/recruiting-hq.md). Strong RLS, private bucket, signed downloads, orphan rollback. **HIGH:** 2 MB Server Action body cap silently kills 2–25 MB uploads vs the advertised 25 MB. MEDIUM: async `window.open` download popup-blocked on Safari.
-- **Qualifiers (create/manage)** — [qualifiers-coach.md](_e2e_tab_audit_2026-06-20/qualifiers-coach.md). Create/entries/leaderboard/RLS all correct. **HIGH:** `updateQualifierStatus` has no caller — qualifiers can never advance or close.
-- **Team Stats** — [team-stats.md](_e2e_tab_audit_2026-06-20/team-stats.md). Correctly wired; prior FW/GIR/Putts bugs appear remediated. MEDIUM: un-chunked `.in(roundIds)` URL-length risk at scale. No C/H.
-- **Player detail / game view (coach)** — [player-detail-coach.md](_e2e_tab_audit_2026-06-20/player-detail-coach.md). Honest sparse/awaiting states, paginated insights. MEDIUM: `/game`+`/print` use any-staffed-team access while the base page uses active-team — inconsistent scoping (not a leak). No C/H.
+- **Coach Dashboard home** — [coach-home.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coach-home.md). Clean role-gate, honest KPIs, auth-first data fetch, paginated rounds. Redesign drops the legacy Today-timeline + Action-Items regions (data computed, never rendered) and per-KPI trend arrows/sparklines (MEDIUM×2); JoinRequest banner has no realtime (LOW). No C/H.
+- **CoachHelm AI / Intelligence hub + Chat** — [coachhelm-hub.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-hub.md). Real Sonnet tool-loop agent, coach-only mount, RLS-scoped persistence. **HIGH:** `create_goal_for_player` has no UI confirm gate despite the code claiming the UI is the real safety fence.
+- **Insights** — [coachhelm-insights.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-insights.md). RLS+v3-visibility scoped, paginated, optimistic with rollback. MEDIUMs: stats-vs-list scope divergence in multi-coach programs, absent error state, dead create-focus-area path. No C/H.
+- **Alerts** — [coachhelm-alerts.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-alerts.md). **HIGH:** default `urgent` preset never matches mapped `critical`, hiding top alerts. MEDIUMs: unreachable bulk-action bar (no selection control), badge↔feed count mismatch.
+- **Patterns** — [coachhelm-patterns.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-patterns.md). **2 CRITICAL / 1 HIGH:** Validate + Address write non-existent columns → 42703 atomic failure (live-reproduced); Resolve latent. Plus silent optimistic rollback masking the failure (MEDIUM) and read-side dead controls.
+- **CoachHelm Analytics** — [coachhelm-analytics.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-analytics.md). Real rollups (daily cron), honesty thresholds, no mocks. MEDIUMs: frozen 30-day summary cards vs range-aware panels, two divergent prediction-accuracy numbers, no SSR error state. No C/H.
+- **Coaching Intelligence Settings** — [coaching-settings.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coaching-settings.md). Priorities/sensitivity/thresholds/master-switch/SG-baseline genuinely take effect. MEDIUMs: 11 alert toggles, weight sliders, display prefs, and (LOW) bubble-zone are write-only dead controls; no player self-gate (infinite skeleton). No C/H.
+- **Development Plans (coach)** — [development-plans.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/development-plans.md). **HIGH:** outcome-mix hero stuck on "Awaiting outcomes" (reads a non-existent/unselected field). MEDIUMs: provenance chips + per-area sparkline never render (columns not selected); `updateFocusArea` silent 0-row no-op for multi-coach.
+- **Recruiting HQ** — [recruiting-hq.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/recruiting-hq.md). Strong RLS, private bucket, signed downloads, orphan rollback. **HIGH:** 2 MB Server Action body cap silently kills 2–25 MB uploads vs the advertised 25 MB. MEDIUM: async `window.open` download popup-blocked on Safari.
+- **Qualifiers (create/manage)** — [qualifiers-coach.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/qualifiers-coach.md). Create/entries/leaderboard/RLS all correct. **HIGH:** `updateQualifierStatus` has no caller — qualifiers can never advance or close.
+- **Team Stats** — [team-stats.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/team-stats.md). Correctly wired; prior FW/GIR/Putts bugs appear remediated. MEDIUM: un-chunked `.in(roundIds)` URL-length risk at scale. No C/H.
+- **Player detail / game view (coach)** — [player-detail-coach.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-detail-coach.md). Honest sparse/awaiting states, paginated insights. MEDIUM: `/game`+`/print` use any-staffed-team access while the base page uses active-team — inconsistent scoping (not a leak). No C/H.
 
 ### Player tabs
 
-- **Player Dashboard home + Hub** — [player-home.md](_e2e_tab_audit_2026-06-20/player-home.md). Hub reads the correct `golf_task_assignments` (the doc's dual-table bug is stale/fixed). **HIGH (→MEDIUM):** root dashboard reads tasks from never-populated `golf_tasks.assigned_to` → home shows zero tasks.
-- **Player CoachHelm** — [player-coachhelm.md](_e2e_tab_audit_2026-06-20/player-coachhelm.md). Auth+pagination+honest empties all correct. **2 HIGH:** What-If panel always empty (`improvements` never returned) and the Simulate path is consequently dead. MEDIUM: `currentPrediction` never passed.
-- **CoachHelm Genome + Compare** — [coachhelm-genome.md](_e2e_tab_audit_2026-06-20/coachhelm-genome.md). Ownership gate solid at app + RLS layers; honest maturity floors. MEDIUM: non-coach redirect targets a non-existent `/forbidden` route (bare 404). No C/H.
-- **CoachHelm Qualifying predictions** — [coachhelm-qualifying.md](_e2e_tab_audit_2026-06-20/coachhelm-qualifying.md). Coach-only selection workspace; player correctly redirected; upserts non-destructive. LOW: error boundary "home" lands a coach on a player dead-end; INFO: "predictions" is a misnomer. No C/H.
-- **My Development (player)** — [my-development.md](_e2e_tab_audit_2026-06-20/my-development.md). **CRITICAL:** Log-progress/Mark-complete blocked by missing player-self UPDATE RLS, returns `{success:true}` on 0 rows. MEDIUMs: dead sparkline, mis-targeted review source link, no legacy error state.
-- **Round create / continue / recover** — [round-create.md](_e2e_tab_audit_2026-06-20/round-create.md). Exemplary: atomic RPCs, upsert+orphan-trim, beacon/keepalive unload save, optimistic locking. MEDIUM: `clearEmergencySave` over-removes the `_new` draft (narrow cross-draft loss). No C/H.
-- **Round Review** — [round-review.md](_e2e_tab_audit_2026-06-20/round-review.md). Auto-gen + upsert (no delete-then-insert); 9-hole normalization sound. MEDIUMs: `teamAvg` never passed (team comparison silently dead); `golf_round_reviews` over-broad anon grant (RLS backstops). No C/H.
-- **My Qualifiers (player)** — [my-qualifiers.md](_e2e_tab_audit_2026-06-20/my-qualifiers.md). Self-scoped, no N+1, deep-link consumed. MEDIUM: Fairway `formatDate` shows dates one day early in US timezones; LOWs: swallowed rounds error, fictional X/N denominator, hardcoded 18 holes/round. No C/H.
-- **Classes** — [classes.md](_e2e_tab_audit_2026-06-20/classes.md). Calendar-sync server action well-built. **HIGH (→CRITICAL):** edit always opens a blank form. (The `credits` int/float HIGH was refuted.) MEDIUMs: swallowed add/edit/delete errors, edit re-sync fails on empty semester.
-- **My Game Profile + My Standing** — [player-profile-self.md](_e2e_tab_audit_2026-06-20/player-profile-self.md). **CRITICAL:** `StandingStrip` ignores `pga_omitted` → misleading men's-PGA benchmark for women's players. **HIGH (→MEDIUM):** counterfactual line dropped in prod fork.
+- **Player Dashboard home + Hub** — [player-home.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-home.md). Hub reads the correct `golf_task_assignments` (the doc's dual-table bug is stale/fixed). **HIGH (→MEDIUM):** root dashboard reads tasks from never-populated `golf_tasks.assigned_to` → home shows zero tasks.
+- **Player CoachHelm** — [player-coachhelm.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-coachhelm.md). Auth+pagination+honest empties all correct. **2 HIGH:** What-If panel always empty (`improvements` never returned) and the Simulate path is consequently dead. MEDIUM: `currentPrediction` never passed.
+- **CoachHelm Genome + Compare** — [coachhelm-genome.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-genome.md). Ownership gate solid at app + RLS layers; honest maturity floors. MEDIUM: non-coach redirect targets a non-existent `/forbidden` route (bare 404). No C/H.
+- **CoachHelm Qualifying predictions** — [coachhelm-qualifying.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-qualifying.md). Coach-only selection workspace; player correctly redirected; upserts non-destructive. LOW: error boundary "home" lands a coach on a player dead-end; INFO: "predictions" is a misnomer. No C/H.
+- **My Development (player)** — [my-development.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/my-development.md). **CRITICAL:** Log-progress/Mark-complete blocked by missing player-self UPDATE RLS, returns `{success:true}` on 0 rows. MEDIUMs: dead sparkline, mis-targeted review source link, no legacy error state.
+- **Round create / continue / recover** — [round-create.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/round-create.md). Exemplary: atomic RPCs, upsert+orphan-trim, beacon/keepalive unload save, optimistic locking. MEDIUM: `clearEmergencySave` over-removes the `_new` draft (narrow cross-draft loss). No C/H.
+- **Round Review** — [round-review.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/round-review.md). Auto-gen + upsert (no delete-then-insert); 9-hole normalization sound. MEDIUMs: `teamAvg` never passed (team comparison silently dead); `golf_round_reviews` over-broad anon grant (RLS backstops). No C/H.
+- **My Qualifiers (player)** — [my-qualifiers.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/my-qualifiers.md). Self-scoped, no N+1, deep-link consumed. MEDIUM: Fairway `formatDate` shows dates one day early in US timezones; LOWs: swallowed rounds error, fictional X/N denominator, hardcoded 18 holes/round. No C/H.
+- **Classes** — [classes.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/classes.md). Calendar-sync server action well-built. **HIGH (→CRITICAL):** edit always opens a blank form. (The `credits` int/float HIGH was refuted.) MEDIUMs: swallowed add/edit/delete errors, edit re-sync fails on empty semester.
+- **My Game Profile + My Standing** — [player-profile-self.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-profile-self.md). **CRITICAL:** `StandingStrip` ignores `pga_omitted` → misleading men's-PGA benchmark for women's players. **HIGH (→MEDIUM):** counterfactual line dropped in prod fork.
 
 ### Shared tabs
 
-- **Rounds list** — [rounds-list.md](_e2e_tab_audit_2026-06-20/rounds-list.md). Role-scoped queries, scoped delete, no N+1. MEDIUMs: coach team-member query missing `status='active'` (ex-roster rounds linger); 50-round hard cap with no "load more". No C/H.
-- **Calendar & Events** — [calendar.md](_e2e_tab_audit_2026-06-20/calendar.md). Hardened by the 2026-06-10 audit; stable realtime, soft-cancel, additive attendee sync. **HIGH:** Restore-event button dead (`onRestore` never passed). MEDIUMs: all-day drag → 1-hour timed; status string inconsistency; availability-polling unimplemented.
-- **Roster + member detail** — [roster.md](_e2e_tab_audit_2026-06-20/roster.md). **CRITICAL (→HIGH):** Injured/Redshirt status options write invalid enum values. **HIGH:** `updatePlayerStatus` not cookie-aware → fails on 2-team orgs. MEDIUM: roster query shows pending/removed.
-- **Messaging** — [messages.md](_e2e_tab_audit_2026-06-20/messages.md). **CRITICAL:** `get_golf_conversations_with_details` is SECURITY DEFINER, anon/PUBLIC-executable, trusts `p_user_id` (IDOR, live-confirmed). **HIGH:** sent attachments never rendered/downloadable. MEDIUMs: soft-delete leaks into preview/unread; unread-badge staleness.
-- **Announcements** — [announcements.md](_e2e_tab_audit_2026-06-20/announcements.md). Staff-strict reads, upsert acks against a real UNIQUE, CASCADE deletes. MEDIUM: delete authorized only by original author (co-coaches blocked). LOWs: misleading persisted push/email flags, player assignment-fetch relies on RLS scoping. No C/H.
-- **Tasks** — [tasks.md](_e2e_tab_audit_2026-06-20/tasks.md). The worst-wired tab: **2 CRITICAL (→HIGH) + 3 HIGH** all stemming from read-model (`golf_tasks.assigned_to`) ≠ write-model (`golf_task_assignments`). Players see an empty tab, coaches see "0 of 0", completion never reflects, Hub stays pending.
-- **Team Hub (player) + Team Info** — [team-hub-and-info.md](_e2e_tab_audit_2026-06-20/team-hub-and-info.md). Team edits persist (UPDATE RLS present); reuses Hub queries. **HIGH (→MEDIUM):** player "Head coach" hidden on multi-coach orgs (`.maybeSingle()` on >1 row). LOWs: missing `status='active'` filters.
-- **Documents + Travel** — [docs-travel.md](_e2e_tab_audit_2026-06-20/docs-travel.md). **CRITICAL (→HIGH):** `golf_documents` SELECT RLS leaks coach-only docs to players. **2 HIGH:** Download uses public URL on a now-private bucket (Fairway + legacy). MEDIUMs: expense-splits + event-link dormant.
-- **Stats (personal)** — [stats-personal.md](_e2e_tab_audit_2026-06-20/stats-personal.md). Cleanest unit: full pagination, per-action `verifyPlayerAccess`, correct SG/leak-map math, no fabricated data. LOW: 9-hole normalized score vs raw to-par mismatch in Recent rounds. No C/H.
-- **Course Library + What's New** — [courses-whatsnew.md](_e2e_tab_audit_2026-06-20/courses-whatsnew.md). Soft-delete, stage-and-swap, UPDATE RLS present (the stale "no UPDATE policy" memory is corrected). MEDIUM: Course Library is in no nav/command-palette — undiscoverable. No C/H.
-- **Settings + Notifications** — [settings-core.md](_e2e_tab_audit_2026-06-20/settings-core.md). **2 CRITICAL (→HIGH):** the per-category notification matrix has no delivery consumer (`routeNotification` dead); coaches have no notification UI at all. **HIGH (→MEDIUM):** push defaults disagree between delivery and UI.
+- **Rounds list** — [rounds-list.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/rounds-list.md). Role-scoped queries, scoped delete, no N+1. MEDIUMs: coach team-member query missing `status='active'` (ex-roster rounds linger); 50-round hard cap with no "load more". No C/H.
+- **Calendar & Events** — [calendar.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/calendar.md). Hardened by the 2026-06-10 audit; stable realtime, soft-cancel, additive attendee sync. **HIGH:** Restore-event button dead (`onRestore` never passed). MEDIUMs: all-day drag → 1-hour timed; status string inconsistency; availability-polling unimplemented.
+- **Roster + member detail** — [roster.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/roster.md). **CRITICAL (→HIGH):** Injured/Redshirt status options write invalid enum values. **HIGH:** `updatePlayerStatus` not cookie-aware → fails on 2-team orgs. MEDIUM: roster query shows pending/removed.
+- **Messaging** — [messages.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/messages.md). **CRITICAL:** `get_golf_conversations_with_details` is SECURITY DEFINER, anon/PUBLIC-executable, trusts `p_user_id` (IDOR, live-confirmed). **HIGH:** sent attachments never rendered/downloadable. MEDIUMs: soft-delete leaks into preview/unread; unread-badge staleness.
+- **Announcements** — [announcements.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/announcements.md). Staff-strict reads, upsert acks against a real UNIQUE, CASCADE deletes. MEDIUM: delete authorized only by original author (co-coaches blocked). LOWs: misleading persisted push/email flags, player assignment-fetch relies on RLS scoping. No C/H.
+- **Tasks** — [tasks.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/tasks.md). The worst-wired tab: **2 CRITICAL (→HIGH) + 3 HIGH** all stemming from read-model (`golf_tasks.assigned_to`) ≠ write-model (`golf_task_assignments`). Players see an empty tab, coaches see "0 of 0", completion never reflects, Hub stays pending.
+- **Team Hub (player) + Team Info** — [team-hub-and-info.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/team-hub-and-info.md). Team edits persist (UPDATE RLS present); reuses Hub queries. **HIGH (→MEDIUM):** player "Head coach" hidden on multi-coach orgs (`.maybeSingle()` on >1 row). LOWs: missing `status='active'` filters.
+- **Documents + Travel** — [docs-travel.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/docs-travel.md). **CRITICAL (→HIGH):** `golf_documents` SELECT RLS leaks coach-only docs to players. **2 HIGH:** Download uses public URL on a now-private bucket (Fairway + legacy). MEDIUMs: expense-splits + event-link dormant.
+- **Stats (personal)** — [stats-personal.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/stats-personal.md). Cleanest unit: full pagination, per-action `verifyPlayerAccess`, correct SG/leak-map math, no fabricated data. LOW: 9-hole normalized score vs raw to-par mismatch in Recent rounds. No C/H.
+- **Course Library + What's New** — [courses-whatsnew.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/courses-whatsnew.md). Soft-delete, stage-and-swap, UPDATE RLS present (the stale "no UPDATE policy" memory is corrected). MEDIUM: Course Library is in no nav/command-palette — undiscoverable. No C/H.
+- **Settings + Notifications** — [settings-core.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/settings-core.md). **2 CRITICAL (→HIGH):** the per-category notification matrix has no delivery consumer (`routeNotification` dead); coaches have no notification UI at all. **HIGH (→MEDIUM):** push defaults disagree between delivery and UI.
 
 ### Entry flows
 
-- **Auth (login/signup/forgot/reset/demo)** — [auth-flows.md](_e2e_tab_audit_2026-06-20/auth-flows.md). Lockout/rate-limits, safe-path guards, server-side demo sign-in. **HIGH (→MEDIUM):** `DemoEnterTracker` not mounted in the Fairway shell → demo funnel blind on prod. MEDIUMs: forgot-password bypasses the hardened action; reset-password recovery-session unverified.
-- **Onboarding (coach + player)** — [onboarding.md](_e2e_tab_audit_2026-06-20/onboarding.md). Auth-first, compensating rollback, player resume. **HIGH (→MEDIUM):** player page uses `useSearchParams` with no Suspense boundary. (The coach role-escalation HIGH was refuted.) MEDIUMs: uploaded onboarding avatar discarded; orphan-coach on mid-flow throw; no coach resume.
-- **Join team by code** — [join-team.md](_e2e_tab_audit_2026-06-20/join-team.md). Auth-before-read, case-insensitive lookup, self-join RLS correct, exact-team auto-join. MEDIUMs: a coach clicking an invite link gets a stray player profile; login-from-invite (vs signup) drops the join code. No C/H.
+- **Auth (login/signup/forgot/reset/demo)** — [auth-flows.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/auth-flows.md). Lockout/rate-limits, safe-path guards, server-side demo sign-in. **HIGH (→MEDIUM):** `DemoEnterTracker` not mounted in the Fairway shell → demo funnel blind on prod. MEDIUMs: forgot-password bypasses the hardened action; reset-password recovery-session unverified.
+- **Onboarding (coach + player)** — [onboarding.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/onboarding.md). Auth-first, compensating rollback, player resume. **HIGH (→MEDIUM):** player page uses `useSearchParams` with no Suspense boundary. (The coach role-escalation HIGH was refuted.) MEDIUMs: uploaded onboarding avatar discarded; orphan-coach on mid-flow throw; no coach resume.
+- **Join team by code** — [join-team.md](../archive/2026-06/audits/_e2e_tab_audit_2026-06-20/join-team.md). Auth-before-read, case-insensitive lookup, self-join RLS correct, exact-team auto-join. MEDIUMs: a coach clicking an invite link gets a stray player profile; login-from-invite (vs signup) drops the join code. No C/H.
 
 ---
 
-*Report path: `/Users/ricknini/Downloads/helmv3/docs/audits/GOLFHELM_E2E_TAB_AUDIT_2026-06-20.md`. Source of truth for detail: the 36 per-unit md files in `docs/audits/_e2e_tab_audit_2026-06-20/`.*
+*Report path: `/Users/ricknini/Downloads/helmv3/docs/audits/GOLFHELM_E2E_TAB_AUDIT_2026-06-20.md`. Source of truth for detail: the 36 per-unit md files in `docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/`.*

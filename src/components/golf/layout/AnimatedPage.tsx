@@ -6,7 +6,8 @@
  * Uses the premium fade-slide entrance animation from premium-components.tsx.
  * Wrap any page content to get the staggered entrance animation.
  *
- * Reduced motion is handled by MotionConfig in GolfDashboardShell, which sets
+ * Reduced motion is handled by MotionConfig in FairwayDashboardShell (the
+ * successor to the deleted GolfDashboardShell), which sets
  * reducedMotion="always" when the user has disabled animations. We always
  * render the m.div (motion) path so that server and client produce identical
  * HTML during hydration — branching on useReducedMotion() produced different

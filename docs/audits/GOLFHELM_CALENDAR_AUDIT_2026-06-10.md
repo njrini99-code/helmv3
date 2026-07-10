@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: 30 of the 32 listed defects were fixed same-day in PR #259 ("remediate all 32 confirmed defects from the calendar audit"). Per project memory, 2 items remain knowingly open: availability debounce + restore-from-cancelled. Do not read the 32-item list as a live defect backlog.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm Shared Calendar Audit — 20/100
 
 ## Verdict

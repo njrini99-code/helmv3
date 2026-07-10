@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Describes itself as the operating contract for the flag-gated "Fairway" redesign (locked 2026-05-30). `grep -rl NEXT_PUBLIC_REDESIGN src/` now returns only 1 hit — Fairway is effectively the shipped-default UI (278 files under src/components/fairway/), not a flag-gated experiment.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm Redesign Playbook
 
 > The operating contract for the flag-gated "Fairway" redesign. Locked 2026-05-30.

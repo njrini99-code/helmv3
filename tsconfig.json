@@ -65,11 +65,9 @@
   ],
   "exclude": [
     "node_modules",
-    "next-shadcn-dashboard-starter",
     "archive",
     "helm-website-ui",
     "helm-intelligence",
-    "helm-vid",
     "scripts",
     "supabase/functions"
   ]

@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: 2026-02-20 perf plan. Performance work has continued well past this point (CI OOM fixes, the ui-performance-profiler skill, docs/perf-analysis-dashboard-timeouts-2026-03-09.md as a later, more current pass).
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm Performance Fix Architecture Plan
 
 **Created:** 2026-02-20  

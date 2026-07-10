@@ -39,7 +39,6 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     ignores: [
-      "next-shadcn-dashboard-starter/**",
       "node_modules/**",
       ".next/**",
       "eslint-rules/**",

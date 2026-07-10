@@ -1,3 +1,10 @@
+<!--
+STATUS: PARKED
+DATE: 2026-07-10
+PARKING DECISION: Entry point for the docs/qa/baseball-fairway-visual-audit-2026-07-04/ tree (~150 files: NAV_ISSUES.md, coach/player INDEX.md + ERRORS.md + manifest.json + labeled screenshots) — a point-in-time screenshot QA pack generated 2026-07-04. Kept as historical audit evidence (paper trail for NAV_ISSUES.md); do not treat these screenshots as current UI truth without re-running the audit, since the Fairway migration continued after this pass. This header applies to the whole directory.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # BaseballHelm Fairway Visual QA Pack
 
 **Generated:** 2026-07-04  

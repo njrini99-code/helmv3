@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Superseded by docs/audits/ISSUE_LEDGER_2026-07-03.md — a later, full pass over the same issue population ("Final deliverable of the HelmV3 stabilization brief Phase 14"). Two competing "final" ledgers existed with no explicit hand-off; treat the 07-03 ledger as authoritative.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # HelmV3 Issue Ledger — 2026-06-30
 
 Validated ledger of all 145 open GitHub issues against `origin/main` and PR #421 (`fix/coderabbit-planned-issues`), adversarially re-verified per issue with direct code/git evidence (file:line references, `git diff origin/main...fix/coderabbit-planned-issues`, migration reads, and in a few cases live `semgrep`/`vitest`/`gh` command output).

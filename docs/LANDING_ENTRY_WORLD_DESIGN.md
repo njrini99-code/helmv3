@@ -1,3 +1,10 @@
+<!--
+STATUS: PARKED
+DATE: 2026-07-10
+PARKING DECISION: REJECTED — parked, see #650. The Entry World / First Light landing design was rejected in favor of #650's flush-diamond login. src/app/page.tsx uses @/components/landing/{Hero,Footer}, not the Entry-World scene system this doc specs.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # HELM — The Entry World
 ### Landing · Login · Onboarding as one continuous experience
 *Fable's design spec · 2026-07-02 · synthesized from 4-stream research (cinematic patterns / real-glass cookbook / art direction / scroll narrative) + Nick's brief + his 4 references. Companion doc: docs/baseball/ENTRY_SCENES_DESIGN.md (the painterly SVG scenes).*
