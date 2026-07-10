@@ -399,7 +399,9 @@ function DetailItem({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Round-by-round matte table — drops the skeuomorphic surface-matte card chrome
+ * Round-by-round breakdown — coach-only. Below `md` this is card rows
+ * (player + per-round scores as compact inline chips + total/to-par), not a
+ * squeezed table (Rule 8). The `md+` table is byte-identical to before.
  * ──────────────────────────────────────────────────────────────────────── */
 
 function RoundBreakdownTable({
@@ -410,99 +412,177 @@ function RoundBreakdownTable({
   maxRoundNumber: number;
 }) {
   const roundColumns = Array.from({ length: maxRoundNumber }, (_, i) => i + 1);
+
   // Only rank players who actually posted a round (honest position).
+  // Computed once, up front, so both the phone card list and the md+ table
+  // read identical ranks off the same map — two independent render passes
+  // must never share a mutable counter.
   let scoredSeen = 0;
+  const positions = new Map<string, number | null>();
+  for (const [playerId, data] of breakdown) {
+    positions.set(playerId, data.rounds.length > 0 ? ++scoredSeen : null);
+  }
 
   return (
-    <div className="overflow-x-auto overscroll-x-contain">
-      <table className="w-full min-w-[480px] border-collapse font-fw-sans text-body">
-        <thead>
-          <tr className="border-b border-border-strong text-left">
-            <th className="w-8 pb-2 pr-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
-              #
-            </th>
-            <th className="pb-2 pr-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
-              Player
-            </th>
-            {roundColumns.map((n) => (
-              <th
-                key={n}
-                className="px-2 pb-2 text-center font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary"
-              >
-                R{n}
-              </th>
-            ))}
-            <th className="pb-2 pl-3 text-right font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
-              Total
-            </th>
-            <th className="pb-2 pl-3 text-right font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
-              To par
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {breakdown.map(([playerId, data]) => {
-            const hasRounds = data.rounds.length > 0;
-            const position = hasRounds ? ++scoredSeen : null;
-            const leader = position === 1;
+    <>
+      {/* Phone — card rows: player + per-round chips + total (Rule 8) */}
+      <ul className="divide-y divide-border-subtle md:hidden">
+        {breakdown.map(([playerId, data]) => {
+          const hasRounds = data.rounds.length > 0;
+          const position = positions.get(playerId) ?? null;
+          const leader = position === 1;
 
-            return (
-              <tr
-                key={playerId}
-                className={cn(
-                  'border-b border-border-subtle last:border-b-0',
-                  leader && 'bg-accent-50/60',
-                )}
-              >
-                <td className="py-2.5 pr-3 tabular-nums">
-                  <span className={cn(leader ? 'font-medium text-accent-700' : 'text-text-tertiary')}>
+          return (
+            <li
+              key={playerId}
+              className={cn('flex flex-col gap-2.5 py-3 first:pt-0 last:pb-0', leader && 'bg-accent-50/60')}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span
+                    className={cn(
+                      'w-5 shrink-0 text-right font-fw-mono text-body-sm tabular-nums',
+                      leader ? 'font-medium text-accent-700' : 'text-text-tertiary',
+                    )}
+                  >
                     {position ?? '—'}
                   </span>
-                </td>
-                <td className="whitespace-nowrap py-2.5 pr-3 font-medium text-text-primary">
                   <Link
                     href={`/golf/dashboard/stats?player=${playerId}`}
-                    className="rounded-fw-sm underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                    className="min-w-0 flex-1 truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                   >
                     {data.playerName}
                   </Link>
-                </td>
-                {roundColumns.map((n) => {
-                  const round = data.rounds.find((r) => r.roundNumber === n);
-                  return (
-                    <td key={n} className="px-2 py-2.5 text-center">
-                      {round ? (
-                        <div className="flex flex-col items-center">
-                          <span className="font-fw-mono text-body-sm font-medium text-text-primary tabular-nums">
-                            {round.score ?? '—'}
-                          </span>
-                          <span className={cn('font-fw-mono text-caption tabular-nums', toParToneClass(round.toPar))}>
-                            {formatToPar(round.toPar)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-caption text-text-tertiary">—</span>
-                      )}
-                    </td>
-                  );
-                })}
-                <td className="py-2.5 pl-3 text-right font-fw-mono font-medium text-text-primary tabular-nums">
-                  {hasRounds ? data.totalScore : '—'}
-                </td>
-                <td
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-fw-mono text-body font-semibold tabular-nums text-text-primary">
+                    {hasRounds ? data.totalScore : '—'}
+                  </p>
+                  <p
+                    className={cn(
+                      'font-fw-mono text-caption tabular-nums',
+                      hasRounds ? toParToneClass(data.totalToPar) : 'text-text-tertiary',
+                    )}
+                  >
+                    {hasRounds ? formatToPar(data.totalToPar) : '—'}
+                  </p>
+                </div>
+              </div>
+
+              {hasRounds ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {roundColumns.map((n) => {
+                    const round = data.rounds.find((r) => r.roundNumber === n);
+                    if (!round) return null;
+                    return (
+                      <span
+                        key={n}
+                        className="inline-flex items-center gap-1 rounded-fw-sm bg-surface-sunken px-2 py-1 font-fw-mono text-caption tabular-nums"
+                      >
+                        <span className="text-text-tertiary">R{n}</span>
+                        <span className="font-medium text-text-primary">{round.score ?? '—'}</span>
+                        <span className={toParToneClass(round.toPar)}>{formatToPar(round.toPar)}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* md+ — the original matte table, unchanged */}
+      <div className="hidden overflow-x-auto overscroll-x-contain md:block">
+        <table className="w-full min-w-[480px] border-collapse font-fw-sans text-body">
+          <thead>
+            <tr className="border-b border-border-strong text-left">
+              <th className="w-8 pb-2 pr-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+                #
+              </th>
+              <th className="pb-2 pr-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+                Player
+              </th>
+              {roundColumns.map((n) => (
+                <th
+                  key={n}
+                  className="px-2 pb-2 text-center font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary"
+                >
+                  R{n}
+                </th>
+              ))}
+              <th className="pb-2 pl-3 text-right font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+                Total
+              </th>
+              <th className="pb-2 pl-3 text-right font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+                To par
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {breakdown.map(([playerId, data]) => {
+              const hasRounds = data.rounds.length > 0;
+              const position = positions.get(playerId) ?? null;
+              const leader = position === 1;
+
+              return (
+                <tr
+                  key={playerId}
                   className={cn(
-                    'py-2.5 pl-3 text-right font-fw-mono font-medium tabular-nums',
-                    hasRounds ? toParToneClass(data.totalToPar) : 'text-text-tertiary',
+                    'border-b border-border-subtle last:border-b-0',
+                    leader && 'bg-accent-50/60',
                   )}
                 >
-                  {hasRounds ? formatToPar(data.totalToPar) : '—'}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  <td className="py-2.5 pr-3 tabular-nums">
+                    <span className={cn(leader ? 'font-medium text-accent-700' : 'text-text-tertiary')}>
+                      {position ?? '—'}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap py-2.5 pr-3 font-medium text-text-primary">
+                    <Link
+                      href={`/golf/dashboard/stats?player=${playerId}`}
+                      className="rounded-fw-sm underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                    >
+                      {data.playerName}
+                    </Link>
+                  </td>
+                  {roundColumns.map((n) => {
+                    const round = data.rounds.find((r) => r.roundNumber === n);
+                    return (
+                      <td key={n} className="px-2 py-2.5 text-center">
+                        {round ? (
+                          <div className="flex flex-col items-center">
+                            <span className="font-fw-mono text-body-sm font-medium text-text-primary tabular-nums">
+                              {round.score ?? '—'}
+                            </span>
+                            <span className={cn('font-fw-mono text-caption tabular-nums', toParToneClass(round.toPar))}>
+                              {formatToPar(round.toPar)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-caption text-text-tertiary">—</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td className="py-2.5 pl-3 text-right font-fw-mono font-medium text-text-primary tabular-nums">
+                    {hasRounds ? data.totalScore : '—'}
+                  </td>
+                  <td
+                    className={cn(
+                      'py-2.5 pl-3 text-right font-fw-mono font-medium tabular-nums',
+                      hasRounds ? toParToneClass(data.totalToPar) : 'text-text-tertiary',
+                    )}
+                  >
+                    {hasRounds ? formatToPar(data.totalToPar) : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
