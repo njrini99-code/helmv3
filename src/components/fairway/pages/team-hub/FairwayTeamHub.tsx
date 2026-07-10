@@ -409,7 +409,7 @@ export function FairwayTeamHubWrapper({
         // The sidebar "Tasks" badge is a separate polled feed — refetch it so it
         // drops immediately instead of waiting up to 45s (conn-golf-player
         // Finding 3).
-        badges.refetch();
+        void badges.refetch();
       }
 
       startTransition(() => {

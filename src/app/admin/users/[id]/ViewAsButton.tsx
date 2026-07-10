@@ -23,8 +23,16 @@ export function ViewAsButton({ onEnter }: { onEnter: () => Promise<void> }) {
 
   if (confirming) {
     return (
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => setConfirming(false)}>
+      <div role="group" aria-label="Confirm view-as" className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={pending}
+          // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: move focus into the confirm row when it replaces the trigger button, so keyboard/screen-reader users aren't dropped to <body>
+          autoFocus
+          onClick={() => setConfirming(false)}
+        >
           Cancel
         </Button>
         <Button

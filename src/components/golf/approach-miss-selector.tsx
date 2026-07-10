@@ -60,6 +60,8 @@ export function ApproachMissSelector({
                 type="button"
                 onClick={() => onDirectionChange(cell)}
                 disabled={disabled}
+                aria-label={config.label}
+                aria-pressed={isSelected}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
                   'relative flex flex-col items-center justify-center rounded-fw-md border transition-all duration-200 aspect-square',

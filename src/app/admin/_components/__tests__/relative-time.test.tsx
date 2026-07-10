@@ -58,4 +58,26 @@ describe('RelativeTime', () => {
     });
     expect(screen.getByText('updated 0s ago')).toBeInTheDocument();
   });
+
+  // Regression: useVisibilityAwareInterval's effect cleanup must actually run
+  // on unmount (clearInterval + removeEventListener) — if it didn't, the
+  // interval callback would keep firing setLabel() on a torn-down component
+  // ("Can't perform a state update on an unmounted component"), and every
+  // remaining tab on the page would keep polling document.visibilitychange
+  // for a component that no longer exists.
+  it('stops ticking and does not update state after unmount', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const since = Date.now();
+    const { unmount } = render(<RelativeTime sinceMs={since} intervalMs={10_000} />);
+    unmount();
+
+    expect(() => {
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+    }).not.toThrow();
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
 });

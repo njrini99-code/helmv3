@@ -114,7 +114,7 @@ export function PlayerActionCenter({
         // The sidebar "Tasks" badge count is a separate polled feed — refetch it
         // so it drops immediately instead of waiting up to 45s (conn-golf-player
         // Finding 3).
-        badges.refetch();
+        void badges.refetch();
       }
       startTransition(() => router.refresh());
     },
@@ -138,7 +138,7 @@ export function PlayerActionCenter({
         fairwayToast.success(confirmation);
         // The "Awaiting RSVP" calendar-notification badge is a separate polled
         // feed — refetch it so it drops immediately (conn-golf-player Finding 3).
-        badges.refetch();
+        void badges.refetch();
       }
       startTransition(() => router.refresh());
     },

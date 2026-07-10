@@ -446,6 +446,25 @@ function FairwayDashboardContent({
   const brand = useMemo(() => <Brand />, []);
   const sidebarFooter = useMemo(() => <ShellFooter />, []);
   const moreSheetFooter = useMemo(() => <GolfMoreSheetFooter />, []);
+  // Same stability contract as the five props above — was the one element
+  // prop entering AppShell built as a fresh JSX literal every render,
+  // undermining AppShell's shallow-prop-comparison memoization for this one
+  // prop regardless of the other five being stable (CodeRabbit #797
+  // cluster-4 finding 4 / React Doctor).
+  const bottomNav = useMemo(
+    () => (
+      <FairwayBottomNav
+        items={bottomNavItems}
+        pathname={pathname}
+        linkComponent={ShellLink}
+        onMoreOpen={openMoreSheet}
+        moreActive={more.active}
+        moreBadge={more.badge}
+        moreOpen={mobileOpen}
+      />
+    ),
+    [bottomNavItems, pathname, openMoreSheet, more.active, more.badge, mobileOpen],
+  );
 
   // Live shot-entry flows own their full screen (their own sticky control header
   // + immersive scoring UI), so render them WITHOUT the shell chrome — the glass
@@ -536,17 +555,7 @@ function FairwayDashboardContent({
         // P413: persistent mobile bottom-tab bar for the core destinations
         // (md:hidden; the 5th "More" column opens the sheet, which keeps the
         // long tail — see docs/MOBILE_DOCTRINE.md Rule 6/10).
-        bottomNav={
-          <FairwayBottomNav
-            items={bottomNavItems}
-            pathname={pathname}
-            linkComponent={ShellLink}
-            onMoreOpen={openMoreSheet}
-            moreActive={more.active}
-            moreBadge={more.badge}
-            moreOpen={mobileOpen}
-          />
-        }
+        bottomNav={bottomNav}
         className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
       >
         <div id="main-content" tabIndex={-1} className="outline-none">

@@ -21,10 +21,12 @@
 
 import type { NavItem, NavSection } from './types';
 
-/** Segment-boundary active match — mirrors FairwayBottomNav/FairwaySidebar's
- *  own local `matchActive` (kept as its own small copy here, not a shared
- *  import, so this module stays free of any 'use client' dependency). */
-function matchActive(href: string, pathname?: string): boolean {
+/** Segment-boundary active match — the single implementation `MoreNavSheet`
+ *  imports (`more-nav.ts` is "the single overflow mechanism... never a
+ *  second hand-maintained list"). Exported as a plain function (no React,
+ *  no 'use client' dependency introduced) so isomorphic consumers can still
+ *  import this module server-side. */
+export function matchActive(href: string, pathname?: string): boolean {
   if (!pathname) return false;
   const segments = href.split('/').filter(Boolean);
   if (segments.length <= 2) return pathname === href;

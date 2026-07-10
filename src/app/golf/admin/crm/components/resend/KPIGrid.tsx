@@ -31,9 +31,9 @@ interface CardSpec {
 const ACCENT_CONFIG = {
   neutral: { icon: 'text-warm-500',    text: 'text-warm-900' },
   success: { icon: 'text-primary-600', text: 'text-warm-900' },
-  info:    { icon: 'text-blue-600',    text: 'text-warm-900' },
-  warning: { icon: 'text-amber-600',   text: 'text-warm-900' },
-  error:   { icon: 'text-red-600',     text: 'text-warm-900' },
+  info:    { icon: 'text-info',        text: 'text-warm-900' },
+  warning: { icon: 'text-warning',     text: 'text-warm-900' },
+  error:   { icon: 'text-destructive', text: 'text-warm-900' },
 };
 
 export function KPIGrid({ stats, loading }: KPIGridProps) {

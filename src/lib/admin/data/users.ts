@@ -307,7 +307,28 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     }
   }
 
-  const users: DirectoryUser[] = (usersRes.data ?? [])
+  // The platform-wide `userQuery` above is capped at 500 rows ordered by
+  // recency (`last_seen desc`) — filtering that already-capped page down to
+  // one team in JS silently drops any team member who hasn't been seen
+  // recently enough to land in the top 500, even though `usersInTeam` (built
+  // from the UNCAPPED team-membership queries above) knows their real user
+  // id. `/admin/users` treats the team filter as the path to viewing the
+  // FULL roster, so re-fetch directly by the resolved team-member ids
+  // (bypassing the 500-cap entirely) instead of filtering the capped page.
+  let teamUsersQuery = filters.team
+    ? admin
+        .from('users')
+        .select('id, email, role, created_at, last_seen')
+        .in('id', usersInTeam.size > 0 ? Array.from(usersInTeam) : [''])
+    : null;
+  if (teamUsersQuery && filters.q) teamUsersQuery = teamUsersQuery.ilike('email', `%${filters.q}%`);
+  if (teamUsersQuery && filters.role && (USER_ROLES as readonly string[]).includes(filters.role)) {
+    teamUsersQuery = teamUsersQuery.eq('role', filters.role as UserRole);
+  }
+  const teamUsersRes = teamUsersQuery ? await teamUsersQuery : null;
+  const userRows = filters.team ? (teamUsersRes?.data ?? []) : (usersRes.data ?? []);
+
+  const users: DirectoryUser[] = userRows
     .map((u) => {
       const row = u as { id: string; email: string; role: string; created_at: string | null; last_seen: string | null };
       const sports = deriveUserSports({

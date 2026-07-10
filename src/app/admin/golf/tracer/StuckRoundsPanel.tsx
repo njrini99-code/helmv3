@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/fairway';
@@ -12,6 +12,15 @@ import { formatStuckDuration } from './tracer-shared';
 import type { TracerEnrichedData } from '@/app/golf/actions/admin-tracer-data';
 
 type StuckRound = TracerEnrichedData['stuckRounds'][number];
+
+// React #418 fix (same pattern as RelativeTime.tsx/LocalTime.tsx): a fixed,
+// non-time-derived constant so the "all clear" placeholder is byte-identical
+// on the server render and the client's pre-hydration first pass — reading
+// `new Date().toISOString()` directly during render of a 'use client'
+// component resolves differently across those two passes, and this is the
+// FIRST thing a clean tracer page load renders (most rounds lists are
+// empty), so the mismatch would fire on nearly every visit.
+const PLACEHOLDER_CHECKED_AT = new Date(0).toISOString();
 
 /**
  * Drill-down + fix for the highest-value case in the tracer's read-only
@@ -29,6 +38,11 @@ export function StuckRoundsPanel({ rounds }: { rounds: readonly StuckRound[] }) 
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<ReadonlyMap<string, { ok: boolean; message: string }>>(new Map());
   const [, startTransition] = useTransition();
+  const [checkedAt, setCheckedAt] = useState(PLACEHOLDER_CHECKED_AT);
+
+  useEffect(() => {
+    setCheckedAt(new Date().toISOString());
+  }, []);
 
   const visible = rounds.filter((r) => !removedIds.has(r.round_id));
 
@@ -40,7 +54,7 @@ export function StuckRoundsPanel({ rounds }: { rounds: readonly StuckRound[] }) 
             ? 'All stuck rounds resolved'
             : 'No stuck rounds — every in-progress round has moved in the last hour'
         }
-        checkedAt={new Date().toISOString()}
+        checkedAt={checkedAt}
       />
     );
   }

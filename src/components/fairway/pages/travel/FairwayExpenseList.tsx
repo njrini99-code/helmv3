@@ -47,10 +47,9 @@ import {
   type TravelExpense,
   type ExpenseCategory,
 } from '@/app/golf/actions/travel';
-// Deep import — the sequential viz ramp is a pure CSS-var token module (no
-// recharts pulled in), matching FairwayExpenseSummary's category swatch so
-// this list's dots and that panel's pie legend share one palette.
-import { VIZ_SEQUENTIAL } from '@/components/fairway/charts/theme';
+// Shared with FairwayExpenseSummary's pie-chart legend so this list's dots
+// and that panel's swatches can never independently drift.
+import { CATEGORY_CONFIG } from './expense-category';
 
 export interface FairwayExpenseListProps {
   expenses: TravelExpense[];
@@ -68,25 +67,6 @@ const CATEGORY_ICON: Record<ExpenseCategory, ExpenseIcon> = {
   entry_fees: IconAward,
   equipment: IconFlag,
   other: IconLayers,
-};
-
-const CATEGORY_LABEL: Record<ExpenseCategory, string> = {
-  lodging: 'Lodging',
-  transportation: 'Transportation',
-  meals: 'Meals',
-  entry_fees: 'Entry Fees',
-  equipment: 'Equipment',
-  other: 'Other',
-};
-
-// IDENTICAL mapping to FairwayExpenseSummary's CATEGORY_CONFIG.color.
-const CATEGORY_SWATCH: Record<ExpenseCategory, string> = {
-  lodging: VIZ_SEQUENTIAL[1],
-  transportation: VIZ_SEQUENTIAL[2],
-  meals: VIZ_SEQUENTIAL[5],
-  entry_fees: VIZ_SEQUENTIAL[3],
-  equipment: VIZ_SEQUENTIAL[4],
-  other: 'var(--fw-color-text-tertiary)',
 };
 
 const PAID_BY_LABELS: Record<string, string> = {
@@ -156,8 +136,8 @@ export function FairwayExpenseList({ expenses, onEdit, onRefresh, isCoach }: Fai
     <div className="flex flex-col gap-2.5">
       {expenses.map((expense) => {
         const CategoryIcon = CATEGORY_ICON[expense.category] ?? CATEGORY_ICON.other;
-        const categoryLabel = CATEGORY_LABEL[expense.category] ?? 'Other';
-        const swatch = CATEGORY_SWATCH[expense.category] ?? CATEGORY_SWATCH.other;
+        const categoryLabel = CATEGORY_CONFIG[expense.category]?.label ?? 'Other';
+        const swatch = CATEGORY_CONFIG[expense.category]?.color ?? CATEGORY_CONFIG.other.color;
         const isExpanded = expandedId === expense.id;
 
         return (
@@ -368,6 +348,11 @@ export function FairwayExpenseList({ expenses, onEdit, onRefresh, isCoach }: Fai
                   src={viewingReceipt}
                   className="h-96 w-full rounded-fw-md border-0"
                   title="Receipt PDF"
+                  // `viewingReceipt` is a coach-uploaded `receipt_url` — a
+                  // mis-typed URL, compromised storage object, or malicious
+                  // link would otherwise get full script/form/top-nav rights.
+                  // Empty sandbox = no script, no forms, no top-frame nav.
+                  sandbox=""
                   onLoad={() => setReceiptStatus('loaded')}
                   onError={() => setReceiptStatus('error')}
                 />

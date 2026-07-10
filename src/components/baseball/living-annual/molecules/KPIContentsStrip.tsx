@@ -59,13 +59,19 @@ export function KPIContentsStrip({ items, columns = 3, className }: KPIContentsS
   // is moved to index 0 so it's visible in the initial peek without a swipe.
   // A stable partition — NOT a re-sort of the whole list — peer order is
   // preserved within each half.
+  // Carry each item's ORIGINAL index through the partition (rather than
+  // keying off its post-reorder position below) — otherwise a leader/emphasis
+  // flag flipping between renders relocates the item to a different index,
+  // React sees a new key, and it unmounts/remounts instead of reusing the
+  // node (replaying the numeral's mount-roll animation for an unchanged item).
+  const indexed = items.map((it, i) => ({ it, originalIndex: i }));
   const ordered =
     items.length >= RAIL_THRESHOLD
       ? [
-          ...items.filter((it) => it.leader || it.emphasis),
-          ...items.filter((it) => !it.leader && !it.emphasis),
+          ...indexed.filter(({ it }) => it.leader || it.emphasis),
+          ...indexed.filter(({ it }) => !it.leader && !it.emphasis),
         ]
-      : items;
+      : indexed;
 
   // StatStrip's `columns` prop covers 2–6 (a lone column is expressed by
   // omitting it and letting StatStrip default from `count` instead — its
@@ -75,9 +81,9 @@ export function KPIContentsStrip({ items, columns = 3, className }: KPIContentsS
 
   return (
     <StatStrip count={items.length} columns={statStripColumns} ariaLabel="Key figures" className={className}>
-      {ordered.map((it, i) => (
+      {ordered.map(({ it, originalIndex }) => (
         <RuledStatLine
-          key={`${it.label}-${i}`}
+          key={`${it.label}-${originalIndex}`}
           label={it.label}
           value={it.value}
           unit={it.unit}

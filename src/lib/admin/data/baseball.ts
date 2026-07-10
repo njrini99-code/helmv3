@@ -69,11 +69,21 @@ export async function fetchBaseballTab(): Promise<{
 }> {
   const admin = createAdminClient();
   const now = new Date();
-  const todayIso = now.toISOString().slice(0, 10);
-  const ago7dIso = new Date(now.getTime() - 7 * 86400_000).toISOString().slice(0, 10);
-  const ago14dIso = new Date(now.getTime() - 14 * 86400_000).toISOString().slice(0, 10);
-  const ago30dIso = new Date(now.getTime() - 30 * 86400_000).toISOString().slice(0, 10);
-  const ago84dIso = new Date(now.getTime() - 84 * 86400_000).toISOString().slice(0, 10); // 12 weeks
+  // Truncate to a UTC date boundary BEFORE doing calendar-day arithmetic —
+  // `game_date` is a date-only column with no time-of-day component, so
+  // cutoffs must be computed the same way (whole UTC days), not by
+  // subtracting N*86400000ms from `now` and truncating the result afterward.
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  function daysAgoIso(days: number): string {
+    const d = new Date(todayUTC);
+    d.setUTCDate(d.getUTCDate() - days);
+    return d.toISOString().slice(0, 10);
+  }
+  const todayIso = daysAgoIso(0);
+  const ago7dIso = daysAgoIso(7);
+  const ago14dIso = daysAgoIso(14);
+  const ago30dIso = daysAgoIso(30);
+  const ago84dIso = daysAgoIso(84); // 12 weeks
   const ago30dTs = new Date(now.getTime() - 30 * 86400_000).toISOString();
 
   const [gamesRes, liftCountRes, liftAthletesRes] = await Promise.all([
@@ -112,6 +122,22 @@ export async function fetchBaseballTab(): Promise<{
     ),
   ]);
 
+  // The 3 queries above never throw on a Supabase/RLS/schema error — they
+  // resolve to `{ data: null, error }` or `{ count: null, error }` — so
+  // without this check, `?? []`/`?? 0` below would quietly render "0 games /
+  // 0 sessions / 0 athletes" as if that were real data, and PanelBoundary
+  // (wrapping this tab's whole body) would never get the chance to show its
+  // PanelStale fallback for a genuine backend failure.
+  if (gamesRes.error) {
+    throw new Error(`fetchBaseballTab: baseball_games query failed: ${gamesRes.error.message}`);
+  }
+  if (liftCountRes.error) {
+    throw new Error(`fetchBaseballTab: helm_lifting_sessions count query failed: ${liftCountRes.error.message}`);
+  }
+  if (liftAthletesRes.error) {
+    throw new Error(`fetchBaseballTab: helm_lifting_sessions athlete query failed: ${liftAthletesRes.error.message}`);
+  }
+
   const games = (gamesRes.data ?? []) as Array<{ game_date: string; status: string | null }>;
 
   const weekBuckets = new Map<string, number>();
@@ -125,8 +151,13 @@ export async function fetchBaseballTab(): Promise<{
     const bucket = weekStart(g.game_date);
     weekBuckets.set(bucket, (weekBuckets.get(bucket) ?? 0) + 1);
 
-    if (g.game_date >= ago7dIso) gamesThisWeek += 1;
-    else if (g.game_date >= ago14dIso) gamesLastWeek += 1;
+    // Strict `>` (not `>=`): a cutoff of "exactly N days back" combined with
+    // an inclusive `>=` spans N+1 calendar days (today back through today-N),
+    // not N — that extra day was inflating `gamesThisWeek` by up to one day
+    // of games relative to the true 7-day `gamesLastWeek` bucket, skewing the
+    // week-over-week delta on the KPI tile.
+    if (g.game_date > ago7dIso) gamesThisWeek += 1;
+    else if (g.game_date > ago14dIso) gamesLastWeek += 1;
 
     if (g.game_date === todayIso) gamesToday += 1;
     if (g.status === 'completed' && g.game_date >= ago30dIso) completedGames30d += 1;

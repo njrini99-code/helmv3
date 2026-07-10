@@ -251,6 +251,12 @@ export function PassportVisibilityControls({
   );
 
   const exposureEnabled = state === 'public_profile' || state === 'scout_packet';
+  // The SERVER-CONFIRMED equivalent of exposureEnabled — gates the live "Copy
+  // link"/"Open" affordances, which point at a real public route. Deriving
+  // those from `state` (the unsaved draft) would let a player flip the
+  // exposure tile and immediately copy/share a link that 403s until Save
+  // actually persists it.
+  const publicLinkActive = initialState === 'public_profile' || initialState === 'scout_packet';
 
   const dirty = useMemo(
     () => state !== initialState || (headline.trim() || null) !== (initialHeadline ?? null),
@@ -410,33 +416,40 @@ export function PassportVisibilityControls({
           })}
         </div>
 
-        {exposureEnabled && (
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-warm-200 bg-cream-50 px-3.5 py-2.5">
-            <div className="flex min-w-0 items-center gap-2">
-              <IconEye size={14} className="shrink-0 text-warm-400" />
-              <p className="truncate text-sm text-warm-600">{publicProfilePath}</p>
+        {publicLinkActive && (
+          <div className="mt-3 rounded-xl border border-warm-200 bg-cream-50 px-3.5 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <IconEye size={14} className="shrink-0 text-warm-400" />
+                <p className="truncate text-sm text-warm-600">{publicProfilePath}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCopyPublicLink}
+                  title="Copy public link"
+                  leftIcon={<IconCopy size={14} />}
+                >
+                  Copy link
+                </Button>
+                <a
+                  href={publicProfilePath}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open your public profile"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700"
+                >
+                  <IconExternalLink size={15} />
+                </a>
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onCopyPublicLink}
-                title="Copy public link"
-                leftIcon={<IconCopy size={14} />}
-              >
-                Copy link
-              </Button>
-              <a
-                href={publicProfilePath}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open your public profile"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700"
-              >
-                <IconExternalLink size={15} />
-              </a>
-            </div>
+            {dirty && (
+              <p className="mt-2 text-eyebrow text-warm-400">
+                Unsaved changes — this link reflects what&apos;s currently live, not your pending edits.
+              </p>
+            )}
           </div>
         )}
       </section>

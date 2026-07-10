@@ -26,6 +26,13 @@ const REVALIDATE_SECONDS = 60;
 // if the loop exhausts the ceiling while a next-page cursor still exists,
 // the result comes back `truncated: true` instead of quietly looking complete.
 const MAX_PAGES = 20;
+// This route is `force-dynamic` (re-run on every request) and each page is a
+// sequential, blocking Sentry call — 20 pages is exactly the multi-hundred-
+// issue org this change targets, so a wall-clock ceiling (not just a page
+// ceiling) keeps one degraded/huge org from stalling every admin's dashboard
+// load. Same `truncated: true` contract as the page ceiling: if the deadline
+// hits while a next-page cursor still exists, the caller is told honestly.
+const MAX_WALL_CLOCK_MS = 8_000;
 
 function isPlaceholderSecret(value: string): boolean {
   return /^(your-|replace-|changeme|todo|example)/i.test(value.trim());
@@ -122,9 +129,11 @@ export async function fetchSentryIssues(opts?: {
   const limit = String(opts?.limit ?? 50);
   const issues: SentryIssue[] = [];
   let cursor: string | null = null;
+  const startedAt = Date.now();
 
   try {
     for (let page = 0; page < MAX_PAGES; page++) {
+      if (Date.now() - startedAt > MAX_WALL_CLOCK_MS) break;
       const params = new URLSearchParams({
         query,
         limit,

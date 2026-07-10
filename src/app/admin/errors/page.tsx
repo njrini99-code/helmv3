@@ -229,6 +229,10 @@ export default async function ErrorsPage({
                     aria-current={current.get('source') === source ? 'true' : undefined}
                     className={cn(
                       'inline-flex items-center gap-2 rounded border px-2 py-1 font-fw-mono text-caption transition-colors',
+                      // Same stray-blue-ring fix KpiTile.tsx applies to its own
+                      // Link chips: the browser's default focus ring must not
+                      // paint through on these keyboard-focusable filter chips.
+                      'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
                       current.get('source') === source
                         ? 'border-warm-900 bg-warm-900 text-white'
                         : 'border-warm-200 bg-warm-50 text-warm-600 hover:bg-warm-100',

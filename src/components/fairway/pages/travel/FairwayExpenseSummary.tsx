@@ -28,16 +28,15 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { IconTrendingUp, IconTrendingDown, IconEdit } from '@/components/icons';
 import { Button, IconButton, fairwayToast } from '@/components/fairway';
 import { Input } from '@/components/fairway/forms';
-// Deep import of the chart theme (DOM-free, self-contained) rather than the
-// charts barrel — avoids pulling the heavy recharts/visx graph into this
-// bundle a second time (recharts itself is already required below).
-import { VIZ_SEQUENTIAL } from '@/components/fairway/charts/theme';
 import {
   type ExpenseSummary as ExpenseSummaryType,
   type ExpenseCategory,
   type TravelBudget,
   setBudget,
 } from '@/app/golf/actions/travel';
+// Shared with FairwayExpenseList's row swatches so the pie legend and the
+// list's category dots can never independently drift.
+import { CATEGORY_CONFIG, ALL_CATEGORIES } from './expense-category';
 
 export interface FairwayExpenseSummaryProps {
   summary: ExpenseSummaryType;
@@ -46,29 +45,6 @@ export interface FairwayExpenseSummaryProps {
   isCoach: boolean;
   onBudgetUpdated: () => void;
 }
-
-// Category swatch colors map onto the Fairway sequential viz ramp (cream →
-// green → amber) — token-backed `var(--fw-viz-seq-*)` references that resolve
-// to the locked warm palette, so this surface never reintroduces the old raw
-// blue/purple/orange hex. One stable stop per category (order = ALL_CATEGORIES).
-// IDENTICAL mapping to FairwayExpenseList's CATEGORY_SWATCH.
-const CATEGORY_CONFIG: Record<ExpenseCategory, { label: string; color: string }> = {
-  lodging: { label: 'Lodging', color: VIZ_SEQUENTIAL[1] },
-  transportation: { label: 'Transportation', color: VIZ_SEQUENTIAL[2] },
-  meals: { label: 'Meals', color: VIZ_SEQUENTIAL[5] },
-  entry_fees: { label: 'Entry Fees', color: VIZ_SEQUENTIAL[3] },
-  equipment: { label: 'Equipment', color: VIZ_SEQUENTIAL[4] },
-  other: { label: 'Other', color: 'var(--fw-color-text-tertiary)' },
-};
-
-const ALL_CATEGORIES: ExpenseCategory[] = [
-  'lodging',
-  'transportation',
-  'meals',
-  'entry_fees',
-  'equipment',
-  'other',
-];
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {

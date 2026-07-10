@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Activity, GitBranch, RadioTower, ShieldCheck, Users, AlertTriangle, Gauge, SearchCheck } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
@@ -84,6 +85,51 @@ async function BriefingStrip() {
 
 async function BannerAndKpis() {
   const { kpis, banner, watcher } = await fetchOverviewSnapshot();
+  // Built as a list (not 6 hand-written <KpiTile> literals) so `StatStrip`'s
+  // `count` — which drives its phone grid-vs-rail breakpoint — is always
+  // derived from what's actually rendered, never a hand-maintained literal
+  // that can silently drift out of sync the next time a tile is added/removed.
+  const kpiTiles: Array<{ key: string } & ComponentProps<typeof KpiTile>> = [
+    {
+      key: 'sentry-unresolved',
+      label: 'Sentry unresolved',
+      value: kpis.sentryUnresolved,
+      href: '/admin/errors',
+      tone: kpis.sentryUnresolved ? 'danger' : 'neutral',
+      goodDirection: 'down',
+    },
+    {
+      key: 'incident-groups-24h',
+      label: 'Incident groups 24h',
+      value: kpis.incidentGroups24h,
+      href: '/admin/errors',
+      goodDirection: 'down',
+      tone: classifyKpiTone(kpis.incidentGroups24h, ERRORS_24H_RED_AT),
+    },
+    {
+      key: 'security-events-24h',
+      label: 'Security events 24h',
+      value: kpis.securityEvents24h,
+      href: '/admin/auth',
+      goodDirection: 'down',
+      tone: classifyKpiTone(kpis.securityEvents24h, SECURITY_EVENTS_24H_RED_AT),
+    },
+    { key: 'active-users-today', label: 'Active users today', value: kpis.activeUsersToday, href: '/admin/users' },
+    {
+      key: 'activity-today',
+      label: 'Activity today',
+      value: kpis.activityToday.golf + kpis.activityToday.baseball + kpis.activityToday.lifting,
+      href: '/admin/golf',
+    },
+    {
+      key: 'last-deploy',
+      label: 'Last deploy (min ago)',
+      value: kpis.lastDeploy?.ageMinutes ?? null,
+      href: '/admin/deploys',
+      tone: kpis.lastDeploy?.state === 'ERROR' ? 'danger' : 'neutral',
+      goodDirection: 'down',
+    },
+  ];
   return (
     <>
       <AdminStatusBanner
@@ -97,7 +143,7 @@ async function BannerAndKpis() {
         </PanelBoundary>
       </div>
       <StatStrip
-        count={6}
+        count={kpiTiles.length}
         columns={6}
         mdColumns={3}
         xlColumns={6}
@@ -105,34 +151,9 @@ async function BannerAndKpis() {
         ariaLabel="Platform KPIs"
         className="mt-4"
       >
-        <KpiTile label="Sentry unresolved" value={kpis.sentryUnresolved} href="/admin/errors" tone={kpis.sentryUnresolved ? 'danger' : 'neutral'} goodDirection="down" />
-        <KpiTile
-          label="Incident groups 24h"
-          value={kpis.incidentGroups24h}
-          href="/admin/errors"
-          goodDirection="down"
-          tone={classifyKpiTone(kpis.incidentGroups24h, ERRORS_24H_RED_AT)}
-        />
-        <KpiTile
-          label="Security events 24h"
-          value={kpis.securityEvents24h}
-          href="/admin/auth"
-          goodDirection="down"
-          tone={classifyKpiTone(kpis.securityEvents24h, SECURITY_EVENTS_24H_RED_AT)}
-        />
-        <KpiTile label="Active users today" value={kpis.activeUsersToday} href="/admin/users" />
-        <KpiTile
-          label="Activity today"
-          value={kpis.activityToday.golf + kpis.activityToday.baseball + kpis.activityToday.lifting}
-          href="/admin/golf"
-        />
-        <KpiTile
-          label="Last deploy (min ago)"
-          value={kpis.lastDeploy?.ageMinutes ?? null}
-          href="/admin/deploys"
-          tone={kpis.lastDeploy?.state === 'ERROR' ? 'danger' : 'neutral'}
-          goodDirection="down"
-        />
+        {kpiTiles.map(({ key, ...tile }) => (
+          <KpiTile key={key} {...tile} />
+        ))}
       </StatStrip>
       <SignalBoard kpis={kpis} watcher={watcher} />
       <MetricTruthPanel kpis={kpis} watcher={watcher} />
@@ -353,7 +374,13 @@ async function TriagePanel() {
   const sportCounts = [
     ['Golf', items.filter((i) => i.sport === 'golf').length, 'golf'],
     ['Baseball', items.filter((i) => i.sport === 'baseball').length, 'baseball'],
-    ['Shared', items.filter((i) => i.sport === 'shared' || i.sport === null).length, 'shared'],
+    // Strict `=== 'shared'` — matches the drill-down link's `?sport=shared`
+    // and fetchIncidentFeed's `.eq('sport', filters.sport)` exactly (both
+    // treat `shared` as a strict tag, never `null`). Folding untagged rows
+    // in here made the badge count exceed what the drill-down actually
+    // shows; legacy untagged rows are already their own distinct category
+    // elsewhere (see `widerWindowUntagged` in errors/page.tsx).
+    ['Shared', items.filter((i) => i.sport === 'shared').length, 'shared'],
   ] as const;
   const topSources = Array.from(
     items.reduce((map, item) => {

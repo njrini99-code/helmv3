@@ -1,5 +1,6 @@
 import { Surface, StatusPill, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
+import { DatelineRule } from '@/components/ui/card';
 import { fetchUserEngagement, type EngagementBand } from '@/lib/admin/data/user-engagement';
 import { PanelNoData } from '../../_components/PanelStates';
 import { LocalTime } from '../../_components/LocalTime';
@@ -17,7 +18,9 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 /**
  * GREEN CONTRACT: the ring's progress stroke is the ONE green element here —
  * the score itself renders in heavy graphite (warm-900, bold, tabular) in
- * the center, never as a green numeral.
+ * the center, never as a green numeral. Uses the canonical `primary-600`
+ * brand green, not the Fairway-opt-in `accent-*` family (this panel isn't a
+ * Fairway component).
  */
 function EngagementRing({ score }: { score: number }) {
   const offset = RING_CIRCUMFERENCE * (1 - score / 100);
@@ -31,7 +34,7 @@ function EngagementRing({ score }: { score: number }) {
           r={RING_RADIUS}
           strokeWidth={8}
           strokeLinecap="round"
-          className="fill-none stroke-accent-500"
+          className="fill-none stroke-primary-600"
           strokeDasharray={RING_CIRCUMFERENCE}
           strokeDashoffset={offset}
         />
@@ -57,7 +60,7 @@ export async function EngagementPanel({ userId }: { userId: string }) {
   return (
     <Surface padding="sm">
       {/* Dateline rule — replaces the retired border-l-2 "key panel" stripe. */}
-      <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />
+      <DatelineRule className="mb-3" />
       <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Engagement</h2>
       <div className="mt-3">
         {engagement === null ? (
@@ -105,7 +108,7 @@ export async function EngagementPanel({ userId }: { userId: string }) {
       </div>
 
       {engagement !== null && engagement.recentActivity.length > 0 ? (
-        <ul className={cn('mt-4 divide-y divide-warm-200/60 border-t border-accent-600/25 pt-2')}>
+        <ul className={cn('mt-4 divide-y divide-warm-200/60 border-t border-primary-600/25 pt-2')}>
           {engagement.recentActivity.map((item) => (
             <li key={`${item.kind}:${item.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-sm">
               <span className="text-eyebrow uppercase tracking-widest text-warm-500">

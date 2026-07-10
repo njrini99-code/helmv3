@@ -38,6 +38,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { useReducedMotion } from 'framer-motion';
 import { Plane } from 'lucide-react';
 
 import {
@@ -113,6 +114,7 @@ export function FairwayTravel({
 }: FairwayTravelProps) {
   const router = useRouter();
   const badges = useNotificationBadges();
+  const prefersReducedMotion = useReducedMotion();
 
   const [itineraries, setItineraries] = React.useState(initialItineraries);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -170,9 +172,12 @@ export function FairwayTravel({
     setActiveTab('details');
     // Defer to the next paint so the detail panel exists before scrolling.
     requestAnimationFrame(() => {
-      detailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      detailPanelRef.current?.scrollIntoView({
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
     });
-  }, [initialTripId, itineraries]);
+  }, [initialTripId, itineraries, prefersReducedMotion]);
 
   /* ── expense state (parent-owned, verbatim) ─────────────────────────────── */
   const [expenses, setExpenses] = React.useState<TravelExpense[]>([]);

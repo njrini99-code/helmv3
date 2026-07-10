@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { IconChevronDown, IconCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
+import { DatelineRule } from '@/components/ui/card';
 import { acknowledgeAnnouncement } from '@/app/baseball/actions/announcements';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
 import { PaperCard, InkBadge } from '@/components/baseball/living-annual';
@@ -61,7 +62,7 @@ function AnnouncementSkeleton() {
     <PaperCard className="animate-pulse" grain={false}>
       <div className="px-5 py-4 flex items-start gap-4">
         <div className="flex-1 min-w-0 space-y-2">
-          <div aria-hidden className="h-[2px] w-7 rounded-full bg-warm-200" />
+          <DatelineRule tone="bg-warm-200" className="mb-0" />
           <div className="h-4 bg-warm-100 rounded w-3/5" />
           <div className="h-3 bg-warm-100 rounded w-4/5" />
           <div className="h-3 bg-warm-100 rounded w-2/5" />
@@ -157,7 +158,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
         <div className="flex-1 min-w-0">
           {/* Dateline rule — replaces the retired border-l-[3px] stripe;
               urgency stays distinguishable via rule tone + the InkBadge below. */}
-          <span aria-hidden className={cn('mb-1.5 block h-[2px] w-7 rounded-full', urgencyRule)} />
+          <DatelineRule tone={urgencyRule} />
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
             {ann.is_pinned && (

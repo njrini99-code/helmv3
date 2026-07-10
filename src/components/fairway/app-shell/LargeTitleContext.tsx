@@ -132,9 +132,19 @@ const BAR_HEIGHT_PX = 64;
  * standard technique for reading env() from JS. Returns 0 on non-notched
  * devices/desktop and in any environment without a real layout engine (SSR,
  * jsdom under test).
+ *
+ * PERF FIX (2026-07-10): the probe append/measure/remove forces a synchronous
+ * layout reflow, and this function used to re-run on every provider effect —
+ * which fires on every navigation (`titleNode` changes identity per route).
+ * The inset only actually changes on rotation/fullscreen toggle, so the
+ * resolved value is cached at module scope and the DOM probe only ever runs
+ * once per page load.
  */
+let cachedSafeAreaInsetTop: number | null = null;
+
 function measureSafeAreaInsetTop(): number {
   if (typeof document === 'undefined') return 0;
+  if (cachedSafeAreaInsetTop !== null) return cachedSafeAreaInsetTop;
   const probe = document.createElement('div');
   probe.style.position = 'fixed';
   probe.style.top = '0';
@@ -146,7 +156,8 @@ function measureSafeAreaInsetTop(): number {
   document.body.appendChild(probe);
   const resolved = parseFloat(getComputedStyle(probe).height);
   document.body.removeChild(probe);
-  return Number.isFinite(resolved) ? resolved : 0;
+  cachedSafeAreaInsetTop = Number.isFinite(resolved) ? resolved : 0;
+  return cachedSafeAreaInsetTop;
 }
 
 export interface FairwayLargeTitleProviderProps {

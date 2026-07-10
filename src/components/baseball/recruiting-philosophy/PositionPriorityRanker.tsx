@@ -205,7 +205,7 @@ export function PositionPriorityRanker({
                     aria-label={`Move ${info?.label ?? position} up`}
                     onClick={() => handleMove(index, -1)}
                     disabled={index === 0}
-                    className="min-h-0 rounded p-0.5 text-warm-400 hover:text-warm-700 disabled:pointer-events-none disabled:opacity-30 transition-colors"
+                    className="min-h-[44px] min-w-[44px] rounded p-2 text-warm-400 hover:text-warm-700 disabled:pointer-events-none disabled:opacity-30 transition-colors"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
                   </Button>
@@ -213,7 +213,7 @@ export function PositionPriorityRanker({
                     aria-label={`Move ${info?.label ?? position} down`}
                     onClick={() => handleMove(index, 1)}
                     disabled={index === priorities.length - 1}
-                    className="min-h-0 rounded p-0.5 text-warm-400 hover:text-warm-700 disabled:pointer-events-none disabled:opacity-30 transition-colors"
+                    className="min-h-[44px] min-w-[44px] rounded p-2 text-warm-400 hover:text-warm-700 disabled:pointer-events-none disabled:opacity-30 transition-colors"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </Button>

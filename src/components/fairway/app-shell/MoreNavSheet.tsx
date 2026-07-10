@@ -28,30 +28,9 @@ import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { IconChevronRight } from '@/components/icons';
 import { Sheet } from '@/components/fairway/overlays';
-import { selectOverflow } from './more-nav';
+import { Avatar } from '@/components/fairway/controls/avatar';
+import { selectOverflow, matchActive } from './more-nav';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
-
-/** Segment-boundary active match — mirrors FairwayBottomNav/FairwaySidebar's
- *  own local `matchActive` (kept as its own small copy per the existing
- *  in-repo convention rather than a new shared import). */
-function matchActive(href: string, pathname?: string): boolean {
-  if (!pathname) return false;
-  const segments = href.split('/').filter(Boolean);
-  if (segments.length <= 2) return pathname === href;
-  return pathname === href || pathname.startsWith(href + '/');
-}
-
-function initialsOf(name: string): string {
-  return (
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .filter(Boolean)
-      .join('')
-      .slice(0, 2)
-      .toUpperCase() || 'U'
-  );
-}
 
 const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
   <a href={href} {...rest}>
@@ -193,18 +172,13 @@ export const MoreNavSheet = memo(function MoreNavSheet({
               'transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none hover:bg-surface-sunken',
             )}
           >
-            <div
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-fw-md bg-gradient-to-br from-accent-400 to-accent-700 bg-cover bg-center"
-              style={user.avatarUrl ? { backgroundImage: `url("${user.avatarUrl}")` } : undefined}
-              role="img"
-              aria-label={user.avatarUrl ? `${user.name} avatar` : undefined}
-            >
-              {!user.avatarUrl && (
-                <span className="font-fw-sans text-body-sm font-medium text-text-on-accent">
-                  {initialsOf(user.name)}
-                </span>
-              )}
-            </div>
+            <Avatar
+              name={user.name}
+              src={user.avatarUrl ?? undefined}
+              size="md"
+              square
+              className="bg-gradient-to-br from-accent-400 to-accent-700 text-text-on-accent"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">{user.name}</p>
               {user.teamName && (

@@ -37,12 +37,18 @@ export function TracerPlayerList({
   }
 
   const openPlayer = players.find((p) => p.player_id === openPlayerId) ?? null;
+  // This list's own render cap — independent of `truncated` (which only
+  // reflects the SERVER's bounded-query row ceiling). A team with >100
+  // players but an uncapped server query would otherwise lose every row
+  // past #100 with zero indication in the footer below.
+  const visiblePlayers = players.slice(0, 100);
+  const clientCapped = players.length > visiblePlayers.length;
 
   return (
     <>
       <p className="mt-1 text-xs text-warm-500">Click a player to inspect their rounds and run data-quality fixes.</p>
       <ul className="mt-2 divide-y divide-warm-200/60">
-        {players.slice(0, 100).map((p, i) => (
+        {visiblePlayers.map((p, i) => (
           <li key={p.player_id}>
             {/* Fairway <Button variant="ghost">, not a raw <button> (helm/no-raw-button)
                 — display overridden to block + all row content wrapped in ONE owned
@@ -77,7 +83,13 @@ export function TracerPlayerList({
           </li>
         ))}
       </ul>
-      {truncated ? <p className="mt-2 text-xs text-warm-500">Showing latest data — the bounded query hit its row cap.</p> : null}
+      {truncated || clientCapped ? (
+        <p className="mt-2 text-xs text-warm-500">
+          {truncated
+            ? 'Showing latest data — the bounded query hit its row cap.'
+            : `Showing the first ${visiblePlayers.length} of ${players.length} players.`}
+        </p>
+      ) : null}
 
       <Sheet
         open={openPlayerId !== null}

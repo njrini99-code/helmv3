@@ -75,10 +75,15 @@ const RoundReviewLlmCard = dynamic(
       (mod) => mod.RoundReviewLlmCard,
     ),
   {
+    // Shape-matches the mounted card: eyebrow + a text-body-lg/md:text-h3
+    // paragraph that can wrap onto a 2nd line, inside the same surface-stone
+    // shell — a single skeleton line under-reserved height for the common
+    // 2-line case (CodeRabbit #797 cluster-4 finding 1).
     loading: () => (
-      <div className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6">
-        <FwSkeleton className="h-3 w-24 mb-3" />
+      <div className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6 space-y-3">
+        <FwSkeleton className="h-3 w-24" />
         <FwSkeleton className="h-6 w-full" />
+        <FwSkeleton className="h-6 w-2/3" />
       </div>
     ),
   },
@@ -88,14 +93,62 @@ const HoleByHoleShotPaths = dynamic(
     import('@/components/golf/coachhelm/round-review/HoleByHoleShotPaths').then(
       (mod) => mod.HoleByHoleShotPaths,
     ),
-  { loading: () => <FwSkeleton className="h-40 w-full rounded-fw-md" /> },
+  {
+    // Mirrors the component's OWN internal skeleton (shown while its shot
+    // ledger fetch is in flight): a surface-stone header block, then a
+    // surface-matte frame holding the same aspect-[140/320] card grid — not
+    // a single h-40 bar, which reserved far less height than the real
+    // header+grid that mounts (CodeRabbit #797 cluster-4 finding 1).
+    loading: () => (
+      <div>
+        <div className="surface-stone rounded-3xl p-6 md:p-8 mb-4 space-y-2">
+          <FwSkeleton className="h-3 w-28" />
+          <FwSkeleton className="h-6 w-64 max-w-full" />
+          <FwSkeleton className="h-4 w-full max-w-md" />
+        </div>
+        <div className="surface-matte rounded-2xl p-4 md:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 max-w-[860px] mx-auto justify-items-center">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <FwSkeleton
+                key={i}
+                className="w-full max-w-[240px] aspect-[140/320] rounded-2xl"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+  },
 );
 const RoundIntelligence = dynamic(
   () =>
     import('@/components/golf/coachhelm/round-review/RoundIntelligence').then(
       (mod) => mod.RoundIntelligence,
     ),
-  { loading: () => null },
+  {
+    // Panel-sized skeleton matching InstrumentPanel's bezel (eyebrow +
+    // header) + opportunity-row body — was `null`, which reserved zero
+    // height for a real multi-row panel (CodeRabbit #797 cluster-4 finding 1).
+    loading: () => (
+      <div className="rounded-card border border-border-subtle bg-surface p-6 space-y-5">
+        <div className="space-y-1">
+          <FwSkeleton className="h-3 w-32" />
+          <FwSkeleton className="h-5 w-64 max-w-full" />
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="space-y-1.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <FwSkeleton className="h-3.5 w-24" />
+                <FwSkeleton className="h-3.5 w-12" />
+              </div>
+              <FwSkeleton className="h-1.5 w-full rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
 );
 
 // ============================================================================

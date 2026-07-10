@@ -218,6 +218,21 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
 
 Card.displayName = 'Card';
 
+// Dateline rule — the shared "key panel" chrome primitive that replaced the
+// retired border-l-2 left-edge stripe (ACCENT-CARD anti-pattern) tree-wide: a
+// short h-[2px] w-7 rounded-full rule above a card/row title. Was being
+// hand-copied (identical geometry, ad hoc tone) at every call site; centralized
+// here so tone is the only thing that varies and the geometry can't drift.
+export interface DatelineRuleProps {
+  /** Tone utility class, e.g. "bg-primary-600" (default) or "bg-destructive". */
+  tone?: string;
+  className?: string;
+}
+
+export function DatelineRule({ tone = 'bg-primary-600', className }: DatelineRuleProps) {
+  return <span aria-hidden className={cn('mb-1.5 block h-[2px] w-7 rounded-full', tone, className)} />;
+}
+
 // StatCard — canonical stat composition over <Card>. Absorbs the surfaces
 // formerly provided by GlassStatCard / PremiumStatCard. Accepts either trend
 // shape so existing call sites migrate without rewriting their data:
@@ -261,15 +276,9 @@ export function StatCard({ className, label, value, trend, icon, suffix, ...prop
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {/* Dateline rule — replaces the retired border-l-2 stripe. Tone
-              follows the trend (green up / red down) when one is present,
-              otherwise the neutral brand rule. */}
-          <span
-            aria-hidden
-            className={cn(
-              'mb-1.5 block h-[2px] w-7 rounded-full',
-              resolvedTrend ? (resolvedTrend.positive ? 'bg-primary-600' : 'bg-red-600') : 'bg-primary-600'
-            )}
-          />
+              follows the trend (green up / destructive down) when one is
+              present, otherwise the neutral brand rule. */}
+          <DatelineRule tone={resolvedTrend && !resolvedTrend.positive ? 'bg-destructive' : 'bg-primary-600'} />
           <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
             {label}
           </p>
@@ -280,11 +289,11 @@ export function StatCard({ className, label, value, trend, icon, suffix, ...prop
           {resolvedTrend && (
             <p className={cn(
               'text-sm mt-2 flex items-center gap-1 font-medium',
-              resolvedTrend.positive ? 'text-primary-600' : 'text-red-600'
+              resolvedTrend.positive ? 'text-primary-600' : 'text-destructive'
             )}>
               <span className={cn(
                 'inline-flex items-center justify-center w-5 h-5 rounded-full text-xs',
-                resolvedTrend.positive ? 'bg-primary-50' : 'bg-red-50'
+                resolvedTrend.positive ? 'bg-primary-50' : 'bg-destructive/10'
               )}>
                 {resolvedTrend.positive ? (
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -177,7 +177,7 @@ function PlayerCardGridComponent({
         animate="visible"
       >
         {players.map((player) => (
-          <motion.div key={player.id} variants={fadeUp} initial="hidden" animate="visible">
+          <motion.div key={player.id} variants={fadeUp}>
             <MemoizedCardItem
               player={player}
               variant="compact"
@@ -207,7 +207,7 @@ function PlayerCardGridComponent({
       animate="visible"
     >
       {players.map((player) => (
-        <motion.div key={player.id} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.div key={player.id} variants={fadeUp}>
           <MemoizedCardItem
             player={player}
             variant={variant}

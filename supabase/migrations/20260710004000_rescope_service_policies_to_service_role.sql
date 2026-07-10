@@ -4,22 +4,43 @@
 -- BYPASSRLS - so re-scoping them TO service_role changes no access outcome;
 -- it only stops Postgres evaluating them on every anon/authenticated query.
 -- Applied to prod 2026-07-10 via MCP (verified 19/19 scoped post-apply).
-alter policy "percentile_write_service" on graveyard.golf_percentile_cache to service_role;
-alter policy "baselines_write_service" on graveyard.golf_player_baselines to service_role;
-alter policy "golf_tracer_health_snapshot_service_write" on graveyard.golf_tracer_health_snapshot to service_role;
-alter policy "Service role can manage validations" on graveyard.golf_validations to service_role;
-alter policy "api_call_logs_service_write" on public.api_call_logs to service_role;
-alter policy "auth_metrics_hourly_service_write" on public.auth_metrics_hourly to service_role;
-alter policy "background_job_logs_service_write" on public.background_job_logs to service_role;
-alter policy "Service role full access" on public.device_tokens to service_role;
-alter policy "error_rate_hourly_service_write" on public.error_rate_hourly to service_role;
-alter policy "golf_causal_relationships_service_role_all" on public.golf_causal_relationships to service_role;
-alter policy "golf_confidence_calibration_service_role_all" on public.golf_confidence_calibration to service_role;
-alter policy "global_patterns_write_service" on public.golf_global_patterns to service_role;
-alter policy "Service role can manage learned behavior" on public.golf_learned_behavior to service_role;
-alter policy "Service role can insert patterns" on public.golf_patterns_v2 to service_role;
-alter policy "Service role can update patterns" on public.golf_patterns_v2 to service_role;
-alter policy "golf_platform_metrics_daily_service_write" on public.golf_platform_metrics_daily to service_role;
-alter policy "Service role can manage predictions" on public.golf_predictions to service_role;
-alter policy "Service role full access" on public.golf_task_reminders to service_role;
-alter policy "Service role full access on push_subscriptions" on public.push_subscriptions to service_role;
+-- REPLAY-SAFE REWRITE (same day): a fresh migrations-chain replay (CI shadow
+-- DB) may lack some of these policies (prod drift), so each ALTER is guarded
+-- on pg_policies existence and skipped with a NOTICE where absent.
+do $$
+declare
+  spec record;
+begin
+  for spec in
+    select * from (values
+      ('graveyard', 'golf_percentile_cache', 'percentile_write_service'),
+      ('graveyard', 'golf_player_baselines', 'baselines_write_service'),
+      ('graveyard', 'golf_tracer_health_snapshot', 'golf_tracer_health_snapshot_service_write'),
+      ('graveyard', 'golf_validations', 'Service role can manage validations'),
+      ('public', 'api_call_logs', 'api_call_logs_service_write'),
+      ('public', 'auth_metrics_hourly', 'auth_metrics_hourly_service_write'),
+      ('public', 'background_job_logs', 'background_job_logs_service_write'),
+      ('public', 'device_tokens', 'Service role full access'),
+      ('public', 'error_rate_hourly', 'error_rate_hourly_service_write'),
+      ('public', 'golf_causal_relationships', 'golf_causal_relationships_service_role_all'),
+      ('public', 'golf_confidence_calibration', 'golf_confidence_calibration_service_role_all'),
+      ('public', 'golf_global_patterns', 'global_patterns_write_service'),
+      ('public', 'golf_learned_behavior', 'Service role can manage learned behavior'),
+      ('public', 'golf_patterns_v2', 'Service role can insert patterns'),
+      ('public', 'golf_patterns_v2', 'Service role can update patterns'),
+      ('public', 'golf_platform_metrics_daily', 'golf_platform_metrics_daily_service_write'),
+      ('public', 'golf_predictions', 'Service role can manage predictions'),
+      ('public', 'golf_task_reminders', 'Service role full access'),
+      ('public', 'push_subscriptions', 'Service role full access on push_subscriptions')
+    ) as t(sch, tbl, pol)
+  loop
+    if exists (
+      select 1 from pg_policies
+      where schemaname = spec.sch and tablename = spec.tbl and policyname = spec.pol
+    ) then
+      execute format('alter policy %I on %I.%I to service_role', spec.pol, spec.sch, spec.tbl);
+    else
+      raise notice 'skipping policy % on %.% - absent in this environment', spec.pol, spec.sch, spec.tbl;
+    end if;
+  end loop;
+end $$;

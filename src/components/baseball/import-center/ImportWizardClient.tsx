@@ -37,6 +37,7 @@ import { Button } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DatelineRule } from '@/components/ui/card';
 import { useToast } from '@/components/ui/sonner';
 import { IconWarning } from '@/components/icons';
 
@@ -1119,10 +1120,10 @@ export function ImportWizardClient({
                           )}
                         >
                           {/* Dateline rule — replaces the retired border-l-2
-                              stripe for blocking rows. */}
-                          {blocking && (
-                            <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-sodium" />
-                          )}
+                              stripe for blocking rows. Shared primitive
+                              (src/components/ui/card.tsx) so the geometry
+                              can't drift from its sibling call sites. */}
+                          {blocking && <DatelineRule tone="bg-sodium" className="mb-1" />}
                           {m.sourceName || '—'}
                         </td>
                         <td className="px-3 py-2">

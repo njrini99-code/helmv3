@@ -9,6 +9,14 @@ interface StatItem {
   value: string | number | null;
   unit?: string;
   highlight?: boolean;
+  /**
+   * Explicit decimal precision for this stat (e.g. GPA/60-time/pop-time = 2,
+   * velocities = 0-1). When omitted, falls back to a generic "integer vs not"
+   * heuristic — but that heuristic silently mis-rounds any stat whose honest
+   * precision differs from 1 decimal (a 3.75 GPA reads as 3.8, a 2.34s pop
+   * time reads as 2.3s), so callers with known stat semantics should set this.
+   */
+  decimals?: number;
 }
 
 interface QuickStatsDisplayProps {
@@ -18,12 +26,20 @@ interface QuickStatsDisplayProps {
 }
 
 /** Renders a stat's figure — numbers roll on the shared odometer, strings render statically. */
-function StatFigure({ value, unit }: { value: string | number | null; unit?: string }) {
+function StatFigure({
+  value,
+  unit,
+  decimals: decimalsProp,
+}: {
+  value: string | number | null;
+  unit?: string;
+  decimals?: number;
+}) {
   if (value === null || value === undefined) {
     return <>—</>;
   }
   if (typeof value === 'number') {
-    const decimals = value % 1 === 0 ? 0 : 1;
+    const decimals = decimalsProp ?? (value % 1 === 0 ? 0 : 1);
     return (
       <>
         <AnimatedNumber value={value} decimals={decimals} />
@@ -77,7 +93,7 @@ const QuickStatsDisplayComponent = function QuickStatsDisplay({
                 stat.highlight ? 'text-primary-700' : 'text-warm-900'
               )}
             >
-              <StatFigure value={stat.value} unit={stat.unit} />
+              <StatFigure value={stat.value} unit={stat.unit} decimals={stat.decimals} />
             </div>
             <div className="text-xs font-medium text-warm-500 uppercase tracking-wide mt-0.5">
               {stat.label}
@@ -108,7 +124,7 @@ const QuickStatsDisplayComponent = function QuickStatsDisplay({
                 stat.highlight ? 'text-primary-700' : 'text-warm-900'
               )}
             >
-              <StatFigure value={stat.value} unit={stat.unit} />
+              <StatFigure value={stat.value} unit={stat.unit} decimals={stat.decimals} />
             </div>
             <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wide">
               {stat.label}

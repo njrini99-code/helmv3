@@ -615,6 +615,10 @@ export function FairwayPlayerInsight({
     if (!el) return;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    // Strip the one-shot hash once consumed — `insightsLoading` also flips
+    // true→false on a manual Refresh, and without this an already-scrolled
+    // coach gets yanked back to the anchored card on every subsequent refresh.
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
   }, [insightsLoading, displayInsights]);
 
   // ── Zero-data honesty guard (P104) ───────────────────────────────────────

@@ -1,6 +1,7 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchJobsTab, type CronBoardRow, type IntegrityRow } from '@/lib/admin/data/jobs';
 import { Surface, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
+import { DatelineRule } from '@/components/ui/card';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -20,7 +21,7 @@ const CRON_STATUS_TONE: Record<CronBoardRow['status'], FwStatusTone> = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+    <h2 className="border-b border-primary-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
       {children}
     </h2>
   );
@@ -28,9 +29,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // Dateline rule — replaces the retired border-l-2 "key panel" left-edge
 // stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
-// rule above the card title.
+// rule above the card title. Uses the shared `DatelineRule` primitive
+// (src/components/ui/card.tsx) so the geometry can't drift from its sibling
+// call sites; tone is the canonical brand green (`primary-600`), not the
+// Fairway-opt-in `accent-*` family (this page isn't a Fairway component).
 function KeyPanelRule() {
-  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
+  return <DatelineRule className="mb-3" />;
 }
 
 function formatDuration(ms: number | null): string {

@@ -112,6 +112,22 @@ export function useUnreadCount() {
             fetchUnreadCount();
           }
         )
+        // Being newly added to a conversation is an INSERT on this user's own
+        // participant row, not an UPDATE — without this listener,
+        // conversationIdsRef never repopulates for a freshly-joined
+        // conversation until an unrelated refetch (e.g. page reload).
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'baseball_conversation_participants',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
         .subscribe();
 
       return () => {

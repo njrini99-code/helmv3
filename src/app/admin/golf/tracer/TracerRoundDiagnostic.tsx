@@ -150,6 +150,12 @@ export function TracerRoundDiagnostic({
               variant="secondary"
               size="sm"
               busy={pendingFix === action.type}
+              // Only one fix may be in flight against this round at a time —
+              // without this, clicking a DIFFERENT recalc button (or "Resolve
+              // as stuck…") while one is already running races two mutations
+              // against the same round's data (`busy` alone only disables the
+              // button it's set on, not its siblings).
+              disabled={pendingFix !== null && pendingFix !== action.type}
               onClick={() => runFix(action.type)}
             >
               {action.label}
@@ -162,7 +168,7 @@ export function TracerRoundDiagnostic({
                   type="button"
                   variant="secondary"
                   size="sm"
-                  disabled={pendingFix === 'resolve_stuck_round'}
+                  disabled={pendingFix !== null}
                   onClick={() => setConfirmingResolve(false)}
                 >
                   Cancel
@@ -172,13 +178,20 @@ export function TracerRoundDiagnostic({
                   variant="danger"
                   size="sm"
                   busy={pendingFix === 'resolve_stuck_round'}
+                  disabled={pendingFix !== null && pendingFix !== 'resolve_stuck_round'}
                   onClick={() => runFix('resolve_stuck_round')}
                 >
                   Confirm remove round
                 </Button>
               </span>
             ) : (
-              <Button type="button" variant="danger" size="sm" onClick={() => setConfirmingResolve(true)}>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                disabled={pendingFix !== null}
+                onClick={() => setConfirmingResolve(true)}
+              >
                 Resolve as stuck…
               </Button>
             )

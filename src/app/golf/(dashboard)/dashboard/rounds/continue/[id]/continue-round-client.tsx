@@ -28,19 +28,30 @@ import { useToast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+import { Skeleton } from '@/components/fairway';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
 // 2026-07-09, bundle finding 4). Same no-ssr-flag, .then((m) => m.X) pattern
 // as FairwayCalendar.tsx's CalendarFeedManager.
+//
+// Each of these is mounted unconditionally (open/visible state gates them
+// internally), so on a slow or offline-then-reconnecting course connection
+// the chunk can still be in flight the moment the player taps "finish" —
+// a `loading` fallback (matching GenomeRadar's pattern in
+// FairwayMyGameProfile.tsx) means that tap shows a shape-matched sheet
+// skeleton instead of nothing (CodeRabbit #797 cluster-4 finding 2).
 const FairwaySaveRoundModal = dynamic(
   () => import('@/components/fairway/pages/rounds-new/FairwaySaveRoundModal').then((m) => m.FairwaySaveRoundModal),
+  { loading: () => <Skeleton className="h-64 w-full rounded-fw-lg" /> },
 );
 const FairwayRoundSubmitOverlay = dynamic(
   () => import('@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay').then((m) => m.FairwayRoundSubmitOverlay),
+  { loading: () => <Skeleton className="h-64 w-full rounded-fw-lg" /> },
 );
 const FairwayRoundSummarySheet = dynamic(
   () => import('@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet').then((m) => m.FairwayRoundSummarySheet),
+  { loading: () => <Skeleton className="h-64 w-full rounded-fw-lg" /> },
 );
 
 type Hole = RoundHole;

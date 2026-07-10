@@ -184,7 +184,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
   // Gates the poll while the tab/app is backgrounded — ported from golf's
   // notification-badge-context.tsx (isVisibleRef + visibilitychange), which
   // already skips fetches while hidden instead of polling every 60s regardless.
-  const isVisibleRef = useRef(true);
+  const isVisibleRef = useRef(typeof document === 'undefined' || !document.hidden);
 
   // -------------------------------------------------------------------------
   // Poll unread count every 60 s (skipped while the tab is hidden)

@@ -191,7 +191,7 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
       >
         <PaperCard className="p-10 text-center">
           <CommitSeal label="SAVED" size="sm" className="mx-auto" />
-          <p className="mt-4 font-annual text-2xl font-normal text-text-primary">Check-in saved</p>
+          <p role="status" className="mt-4 font-annual text-2xl font-normal text-text-primary">Check-in saved</p>
           <p className="mt-1 text-sm text-text-secondary">Thanks — the staff has what they need before training.</p>
           {secondaryNotice && (
             <InkNotice role="status" className="mx-auto mt-4 max-w-sm text-left">
