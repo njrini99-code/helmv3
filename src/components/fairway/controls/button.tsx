@@ -17,6 +17,13 @@
  *
  * Composability: `asChild` renders the styling onto a child element (e.g. a
  * Next <Link>) via @radix-ui/react-slot. forwardRef for both.
+ *
+ * CHILDREN CONTRACT (non-asChild): `children` is wrapped in a single bare
+ * <span>. Passing multiple sibling elements intending a flex-row layout gets
+ * silently split across lines by CSS anonymous-box rules the moment one child
+ * is itself display:flex — with no lint or type error. Pass ONE child; if you
+ * need a multi-element row, pre-compose it in your own flex-row span first
+ * (see FeatureDotGrid's FeatureChip for the pattern).
  * ========================================================================== */
 
 import { type ButtonHTMLAttributes, type MouseEvent, type ReactNode, forwardRef } from 'react';

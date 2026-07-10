@@ -58,7 +58,12 @@ export default async function UserDetailPage({
         <header className="flex flex-wrap items-center gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold text-warm-900">{user.email}</h1>
+              {/* `min-w-0` on the h1 itself — it's a flex item of THIS inner
+                  row (nested inside the outer `min-w-0 flex-1` header cell),
+                  so without its own min-w-0 the default min-width:auto keeps
+                  it pinned to the email's full un-clipped width, and
+                  `truncate` never engages for a long address. */}
+              <h1 className="min-w-0 truncate text-xl font-semibold text-warm-900">{user.email}</h1>
               {user.sports.map((s) => (
                 <SportBadge key={s} sport={s} />
               ))}

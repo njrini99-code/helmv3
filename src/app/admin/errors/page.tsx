@@ -8,7 +8,7 @@ import {
   buildFilteredIncidentsReport,
 } from '@/lib/admin/data/errors';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
-import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
+import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import { TriageQueue } from '../_components/TriageQueue';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
 import { KpiTile } from '../_components/KpiTile';
@@ -77,8 +77,12 @@ function hrefWithOverrides(current: URLSearchParams, overrides: Record<string, s
   return qs ? `/admin/errors?${qs}` : '/admin/errors';
 }
 
-function ErrorTraceabilityStrip({ incidents }: { incidents: Awaited<ReturnType<typeof fetchErrorsTab>>['incidents'] }) {
-  const appIncidents = incidents.filter((incident) => incident.origin === 'app');
+/** Takes the already-filtered app-origin subset — never the raw mixed
+ *  incidents array — so the render guard at the call site and the metrics
+ *  computed in here are provably the same population (see repair-round
+ *  fix below: a Sentry-only incidents array must not produce a "0 / 1 = 0%"
+ *  strip). */
+function ErrorTraceabilityStrip({ appIncidents }: { appIncidents: Awaited<ReturnType<typeof fetchErrorsTab>>['incidents'] }) {
   const withFeature = appIncidents.filter((incident) => incident.feature).length;
   const withRoute = appIncidents.filter((incident) => incident.route).length;
   const withAction = appIncidents.filter((incident) => incident.actionName).length;
@@ -106,7 +110,18 @@ function ErrorTraceabilityStrip({ incidents }: { incidents: Awaited<ReturnType<t
           {unknownUsers > 0 || noisyLooking > 0 ? 'needs mapping' : 'mapped'}
         </StatusPill>
       </div>
-      <div className="mt-3 grid gap-2 md:grid-cols-5">
+      {/* Below md: 5 peer stat cells become a contained, edge-bled horizontal
+          snap-rail (Mobile Doctrine rule 3 — cap the scroll, never stack 5
+          full-width rows) via the shared StatStrip primitive. `mdColumns={5}`
+          pins the desktop shape back to the original single-row 5-col grid
+          starting exactly at md so md+ is byte-for-byte unchanged. */}
+      <StatStrip
+        count={rows.length}
+        mdColumns={5}
+        edgeBleedClassName="-mx-4 px-4"
+        ariaLabel="Error traceability breakdown"
+        className="mt-3"
+      >
         {rows.map(([label, value, caption]) => (
           <div key={label} className="rounded-fw-md bg-surface-sunken px-3 py-2">
             <p className="text-caption uppercase tracking-widest text-warm-500">{label}</p>
@@ -114,7 +129,7 @@ function ErrorTraceabilityStrip({ incidents }: { incidents: Awaited<ReturnType<t
             <p className="text-caption text-warm-500">{caption}</p>
           </div>
         ))}
-      </div>
+      </StatStrip>
       <p className="mt-3 text-caption text-warm-500">
         Goal: every app incident should carry feature, route or action, and identity when auth exists. Unknown does not mean unaffected.
       </p>
@@ -141,6 +156,12 @@ export default async function ErrorsPage({
   async function Body() {
     const tab = await fetchErrorsTab(filters);
     const { counts } = tab;
+    // Sentry-origin and app-origin incidents are concatenated independently
+    // by mergeTriage() with no invariant coupling them — tab.incidents can be
+    // non-empty (legacy Sentry issues) while app incidents are genuinely zero
+    // for this window/filter set. Compute once here so the traceability strip's
+    // render guard and its metrics agree on the same population.
+    const appIncidents = tab.incidents.filter((incident) => incident.origin === 'app');
     const showWiderWindowHint =
       tab.incidents.length === 0 &&
       filters.windowHours < 168 &&
@@ -201,7 +222,11 @@ export default async function ErrorsPage({
         ) : null}
         <section className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
           <Surface padding="sm" className="min-w-0">
-            <div className="grid gap-3 sm:grid-cols-3">
+            {/* Below sm: 2-col + a full-width trailing cell (Mobile Doctrine
+                rule 2/11 — a compact "2+1" rhythm instead of 3 KPI blocks
+                stacked full-width). sm+ reverts to the original 3-equal-column
+                row untouched (desktop stays as-is). */}
+            <div className="grid grid-cols-2 gap-3 [&>*:last-child]:col-span-2 sm:grid-cols-3 sm:[&>*:last-child]:col-span-1">
               <div>
                 <p className="text-eyebrow uppercase text-warm-500">active groups</p>
                 <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.totalGroups}</p>
@@ -295,7 +320,11 @@ export default async function ErrorsPage({
           />
         </section>
 
-        <ErrorTraceabilityStrip incidents={tab.incidents} />
+        {/* Rule 3: empty sections never render — an all-zero coverage strip
+            when there's nothing to trace is noise, not signal. Gated on
+            appIncidents (not the raw incidents array): Sentry-only incident
+            sets must not slip past this guard and render a "0 / 1 = 0%" strip. */}
+        {appIncidents.length > 0 ? <ErrorTraceabilityStrip appIncidents={appIncidents} /> : null}
 
         <Surface as="section" padding="sm">
           <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">

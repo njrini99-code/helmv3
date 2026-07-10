@@ -217,6 +217,10 @@ export interface InsetProps extends HTMLAttributes<HTMLDivElement> {
   padding?: SurfacePadding;
   /** Render as another element/component. Defaults to `div`. */
   as?: ElementType;
+  /** Destination when rendered as an anchor / Next `Link` via `as`. Ignored by
+   *  the default `div`. Enables `<Inset as={Link} href=…>` tap-through rows —
+   *  the same contract Surface documents above. */
+  href?: string;
 }
 
 /**
