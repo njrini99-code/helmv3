@@ -17,8 +17,19 @@ import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supa
 
 let fake: FakeSupabase;
 
+// The notify fan-outs run via next/server's after(), which throws outside a
+// request scope — collect callbacks instead (same idiom as
+// golf-events.test.ts) so the actions succeed and fan-outs stay testable.
+let afterCallbacks: Array<() => Promise<void> | void> = [];
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => fake),
+}));
+
+vi.mock('next/server', () => ({
+  after: vi.fn((cb: () => Promise<void> | void) => {
+    afterCallbacks.push(cb);
+  }),
 }));
 
 vi.mock('next/cache', () => ({
@@ -276,6 +287,7 @@ function failNthInsert(n: number): void {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  afterCallbacks = [];
   seed('u-coach');
 });
 

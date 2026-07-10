@@ -211,3 +211,37 @@ describe('commitImport — trust + visibility stamping', () => {
     expect(runHeader?.source_config_id).toBeNull();
   });
 });
+
+describe('commitImport — canonical-table routing withholds create-conflicts (repair round)', () => {
+  it('a create-conflict row never reaches baseball_player_season_stats', async () => {
+    sourcePolicyRow = {
+      id: 'src-3',
+      trust_level: 'official',
+      default_visibility: 'player_visible',
+      required_review: false,
+      // 'loose' so the dedupe pass never fires — isolates the create-conflict
+      // check below (a 'strict'/'standard' policy would short-circuit the
+      // existing row as a duplicate-skip before the create-conflict check runs).
+      dedupe_strictness: 'loose',
+      player_match_strategy: 'name_then_external_id',
+      external_id_namespace: null,
+      enabled: true,
+    };
+    // The recorder resolves EVERY baseball_player_stats lookup to this row
+    // (table-keyed, not row-keyed) — so the row's explicit 'create' action
+    // below collides with it, exactly like the legacy loop's own "reject a
+    // Create that collides" guard.
+    existingStatRow = { id: 'existing-stat-1', source: 'import:gamechanger' };
+
+    const res = await commitImport({
+      ...baseArgs(),
+      dataShape: 'season_totals',
+    });
+
+    expect(res.createConflicts).toBe(1);
+    expect(res.created).toBe(0);
+    // Before the repair-round fix, this withheld row still reached the
+    // canonical table via the unfiltered `writes` array — assert it doesn't.
+    expect(inserted['baseball_player_season_stats'] ?? []).toHaveLength(0);
+  });
+});

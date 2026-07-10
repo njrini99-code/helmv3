@@ -26,6 +26,7 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/lib/supabase/server';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import { requireBaseballCapability } from '@/lib/baseball/capabilities';
 import { appendRosterTimelineEvent } from '@/lib/baseball/timeline-writer';
 
 // -----------------------------------------------------------------------------
@@ -62,11 +63,22 @@ function playerDisplayName(
 // -----------------------------------------------------------------------------
 
 /**
- * Add (or re-activate) a player on the active team's roster.
+ * Add (or edit) a player on the active team's roster.
  *
- * NON-DESTRUCTIVE: upserts the (team_id, player_id) membership rather than
- * deleting + re-inserting, so a transient failure can never drop an existing
- * membership. If the player is already on the team, this is a no-op-ish update.
+ * NON-DESTRUCTIVE: checks for an existing (team_id, player_id) membership
+ * first, then either UPDATEs just the editable fields (jersey/position) or
+ * INSERTs a brand-new row — never delete-then-reinsert.
+ *
+ * `joined_at` and `status` are membership-lifecycle fields, not editable
+ * jersey/position fields: they are set ONLY on the insert branch (a genuinely
+ * new membership). An update of an already-rostered player's jersey number
+ * or position must NEVER touch either — `joined_at` is read straight through
+ * to the public player profile ("Joined {month year}") and drives roster
+ * sort order, so resetting it on every edit would corrupt both. Likewise
+ * `status` defaults to 'pending' in Postgres; a brand-new membership created
+ * through this manual "add existing player" flow is explicitly vouched for
+ * by the coach, so it should land 'active', not silently join the same
+ * pending/awaiting-join bucket the approve/reject flow exists to clear.
  *
  * Capability: can_manage_roster (enforced server-side by withBaseballAction).
  */
@@ -97,30 +109,57 @@ export const assignPlayerToTeam = withBaseballAction(
       return { success: false, error: 'That player could not be found.' };
     }
 
-    // NON-DESTRUCTIVE upsert on the unique (team_id, player_id) pair.
-    const { error: upsertError } = await supabase
+    // Determine INSERT vs UPDATE up front so joined_at/status are only ever
+    // set on a genuinely new membership, never reset on an edit.
+    const { data: existing, error: existingError } = await supabase
       .from('baseball_team_members')
-      .upsert(
-        {
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (existing) {
+      // EDIT of an already-rostered player: jersey/position only.
+      // joined_at and status are left completely untouched.
+      const { error: updateError } = await supabase
+        .from('baseball_team_members')
+        .update({ jersey_number: jerseyNumber, position })
+        .eq('id', existing.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+    } else {
+      // Brand-new membership: a coach-initiated manual add is an explicit
+      // vouch, so it lands 'active' rather than the DB's 'pending' default
+      // (which exists for the self-serve invite-link join path).
+      const { error: insertError } = await supabase
+        .from('baseball_team_members')
+        .insert({
           team_id: teamId,
           player_id: playerId,
           jersey_number: jerseyNumber,
           position,
           joined_at: new Date().toISOString(),
-        },
-        { onConflict: 'team_id,player_id', ignoreDuplicates: false },
-      );
+          status: 'active',
+        });
 
-    if (upsertError) {
-      // Let the wrapper sanitize + log the raw DB error.
-      throw upsertError;
+      if (insertError) {
+        throw insertError;
+      }
     }
 
     // Best-effort timeline side-effect — never rolls back the roster change.
     await appendRosterTimelineEvent({
       teamId,
       playerId,
-      title: `${playerDisplayName(player)} added to the roster`,
+      title: existing
+        ? `${playerDisplayName(player)}'s roster details were updated`
+        : `${playerDisplayName(player)} added to the roster`,
       visibility: 'team',
       source: 'manual',
       createdBy: ctx.user.id,
@@ -264,5 +303,232 @@ export const getTeamPlayers = withBaseballAction(
     });
 
     return { success: true, data: result };
+  },
+);
+
+// -----------------------------------------------------------------------------
+// approvePendingMember / rejectPendingMember
+// -----------------------------------------------------------------------------
+//
+// Closes the pending-joiner gap (bb-roster-profiles + auth-onboarding-join):
+// joinTeamImpl (teams.ts) lands every new joiner in status='pending' whenever
+// the team's require_coach_approval is true (the default for every real team),
+// but nothing anywhere ever transitioned that row to 'active' — a pending
+// player was permanently invisible to team-context resolution with no coach
+// control to fix it. These two actions are that missing control.
+//
+// The team_id needed for the capability check is not known up front — the
+// caller only has a baseball_team_members row id — so, mirroring
+// revokeTeamInvitation in teams.ts, the capability check is done manually
+// inside the body (resolve the membership's team_id first, THEN enforce
+// can_manage_roster) rather than via the wrapper's `teamFrom` option.
+
+interface PendingMemberActionResult extends RosterActionResult {
+  /** Present on success so the caller can drop the row from a local list. */
+  memberId?: string;
+}
+
+async function loadPendingMembership(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  memberId: string,
+) {
+  return supabase
+    .from('baseball_team_members')
+    .select('id, team_id, player_id, status, baseball_players!inner ( first_name, last_name )')
+    .eq('id', memberId)
+    .maybeSingle();
+}
+
+/**
+ * Approve a pending join request: baseball_team_members.status
+ * 'pending' -> 'active'. Records the approving coach + timestamp (the
+ * approved_by/approved_at columns provisioned for exactly this flow).
+ */
+export const approvePendingMember = withBaseballAction(
+  'approvePendingMember',
+  { featureArea: 'baseball-roster' },
+  async (ctx, args: { memberId: string }): Promise<PendingMemberActionResult> => {
+    const { memberId } = args;
+    if (!memberId) {
+      return { success: false, error: 'A membership is required.' };
+    }
+
+    const supabase = await createClient();
+    const { data: membership, error: memberError } = await loadPendingMembership(supabase, memberId);
+
+    if (memberError || !membership) {
+      return { success: false, error: 'That join request could not be found.' };
+    }
+
+    try {
+      await requireBaseballCapability(membership.team_id, 'can_manage_roster');
+    } catch {
+      return { success: false, error: 'You do not have permission to manage this roster.' };
+    }
+
+    if (membership.status !== 'pending') {
+      return { success: false, error: 'This request has already been processed.' };
+    }
+
+    const { data: coach } = await supabase
+      .from('baseball_coaches')
+      .select('id')
+      .eq('user_id', ctx.user.id)
+      .maybeSingle();
+
+    const { error: updateError } = await supabase
+      .from('baseball_team_members')
+      .update({
+        status: 'active',
+        approved_by: coach?.id ?? null,
+        approved_at: new Date().toISOString(),
+      })
+      .eq('id', memberId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    const playerRow = (membership as unknown as {
+      baseball_players: { first_name: string | null; last_name: string | null } | null;
+    }).baseball_players;
+
+    // Best-effort timeline side-effect — never rolls back the approval.
+    await appendRosterTimelineEvent({
+      teamId: membership.team_id,
+      playerId: membership.player_id,
+      title: `${playerDisplayName(playerRow)}'s join request was approved`,
+      visibility: 'team',
+      source: 'manual',
+      createdBy: ctx.user.id,
+    });
+
+    revalidateRoster();
+    return { success: true, memberId };
+  },
+);
+
+/**
+ * Decline a pending join request. This is a scoped single-membership DELETE
+ * (never the player's account/stats) — the player can rejoin later via the
+ * team's invite link if the decline was in error.
+ */
+export const rejectPendingMember = withBaseballAction(
+  'rejectPendingMember',
+  { featureArea: 'baseball-roster' },
+  async (ctx, args: { memberId: string }): Promise<PendingMemberActionResult> => {
+    const { memberId } = args;
+    if (!memberId) {
+      return { success: false, error: 'A membership is required.' };
+    }
+
+    const supabase = await createClient();
+    const { data: membership, error: memberError } = await loadPendingMembership(supabase, memberId);
+
+    if (memberError || !membership) {
+      return { success: false, error: 'That join request could not be found.' };
+    }
+
+    try {
+      await requireBaseballCapability(membership.team_id, 'can_manage_roster');
+    } catch {
+      return { success: false, error: 'You do not have permission to manage this roster.' };
+    }
+
+    if (membership.status !== 'pending') {
+      return { success: false, error: 'This request has already been processed.' };
+    }
+
+    const playerRow = (membership as unknown as {
+      baseball_players: { first_name: string | null; last_name: string | null } | null;
+    }).baseball_players;
+
+    const { error: deleteError } = await supabase
+      .from('baseball_team_members')
+      .delete()
+      .eq('id', memberId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    // Best-effort timeline side-effect.
+    await appendRosterTimelineEvent({
+      teamId: membership.team_id,
+      playerId: membership.player_id,
+      title: `${playerDisplayName(playerRow)}'s join request was declined`,
+      visibility: 'team',
+      source: 'manual',
+      createdBy: ctx.user.id,
+    });
+
+    revalidateRoster();
+    return { success: true, memberId };
+  },
+);
+
+// -----------------------------------------------------------------------------
+// searchAssignablePlayers
+// -----------------------------------------------------------------------------
+
+export interface AssignablePlayerResult {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  primary_position: string | null;
+  grad_year: number | null;
+}
+
+/**
+ * Search existing baseball_players by name or email for the "Add existing
+ * player" flow (mid-season transfer / manual add), excluding anyone already a
+ * member (any status) of the active team. Read-only, gated to
+ * can_manage_roster like every other roster mutation surface. Requires a
+ * non-trivial query so this never degrades into a full-table browse.
+ */
+export const searchAssignablePlayers = withBaseballAction(
+  'searchAssignablePlayers',
+  { featureArea: 'baseball-roster', requiredCapability: 'can_manage_roster' },
+  async (
+    ctx,
+    args: { query: string },
+  ): Promise<{ success: boolean; data?: AssignablePlayerResult[]; error?: string }> => {
+    // Strip characters that are reserved in PostgREST's `.or()` filter DSL
+    // (comma separates conditions, parens group them, quotes/backslashes
+    // escape) before it ever reaches the query builder — a name/email search
+    // has no legitimate use for any of them, and this guarantees the
+    // interpolated filter string below can never be mis-parsed.
+    const query = (args.query ?? '').replace(/[,()"\\]/g, ' ').trim();
+    if (query.length < 2) {
+      return { success: true, data: [] };
+    }
+
+    const supabase = await createClient();
+    const teamId = ctx.targetTeamId;
+
+    const { data: existingMembers, error: membersError } = await supabase
+      .from('baseball_team_members')
+      .select('player_id')
+      .eq('team_id', teamId);
+
+    if (membersError) {
+      throw membersError;
+    }
+    const existingIds = new Set((existingMembers ?? []).map((m) => m.player_id));
+
+    const escaped = query.replace(/[%_]/g, (c) => `\\${c}`);
+    const { data: players, error: searchError } = await supabase
+      .from('baseball_players')
+      .select('id, first_name, last_name, email, primary_position, grad_year')
+      .or(`first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%`)
+      .limit(10);
+
+    if (searchError) {
+      throw searchError;
+    }
+
+    const data = (players ?? []).filter((p) => !existingIds.has(p.id));
+    return { success: true, data };
   },
 );

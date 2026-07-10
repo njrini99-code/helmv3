@@ -514,6 +514,17 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     icon: IconClipboardList,
     role: 'both',
     // Coaches need can_manage_practice to plan; players see the published plan.
+    // Stays null here (not can_manage_practice) because this ONE entry's role
+    // is 'both' and covers two distinct hrefs -- setting requiredCapability
+    // would hide the entry (and its playerHref) from every player too, since
+    // the nav filter gates per-entry, not per-href. NOTE: middleware does NOT
+    // gate '/baseball/dashboard/practice' (STAFF_CAPABILITY_ROUTES only lists
+    // practice-effectiveness; adding this route conflicts with the locked
+    // route-shell contract). The real boundaries are (a) every practice WRITE
+    // action enforcing requireBaseballCapability('can_manage_practice')
+    // server-side via withBaseballAction, and (b) PracticePlannerClient's
+    // getCanManagePractice() probe degrading the page honestly (read-only
+    // view, no plan controls) for staff without the capability.
     requiredCapability: null,
     section: 'primary',
     // Ruling 2: Practice Planner + Practice Effectiveness moved OFF

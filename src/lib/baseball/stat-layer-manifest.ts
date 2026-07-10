@@ -152,6 +152,19 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     note: 'Joins baseball_player_aggregates onto the roster row shape directly instead of via stats-center.ts.',
   },
   {
+    path: 'src/lib/baseball/read-models/roster-aggregates-merge.ts',
+    group: 'read-model',
+    status: 'pending migration',
+    note:
+      'Bridging shim for roster.ts above (feature-flow sweep 2026-07-10): merges current-season baseball_player_season_stats OVER the legacy baseball_player_aggregates row so box-score-tracked players stop reading as "Needs Data". Retires together with roster.ts\'s direct aggregate join when that moves behind stats-center.ts.',
+  },
+  {
+    path: 'src/lib/baseball/read-models/__tests__/roster-aggregates-merge.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note: 'Unit tests for the roster-aggregates-merge bridging shim; retires with it.',
+  },
+  {
     path: 'src/lib/baseball/read-models/player-today.ts',
     group: 'read-model',
     status: 'pending migration',

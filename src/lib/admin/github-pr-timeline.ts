@@ -82,6 +82,44 @@ function matchesAuthor(pr: RawPullRequest, authors: string[]): boolean {
   return authors.some((author) => author.toLowerCase() === login);
 }
 
+/**
+ * Shape of an item returned by GitHub's Search Issues API
+ * (`/search/issues?q=...+is:pr`). Unlike the `/repos/{owner}/{repo}/pulls`
+ * list endpoint, this endpoint nests merge state under `pull_request`
+ * instead of exposing a top-level `merged_at` — normalize to
+ * `RawPullRequest` immediately after fetch so `lifecycleState()` and every
+ * downstream consumer only ever deal with one shape.
+ */
+interface SearchIssueItem {
+  number: number;
+  html_url: string;
+  title: string;
+  state: 'open' | 'closed';
+  body: string | null;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  user: { login: string } | null;
+  draft?: boolean;
+  pull_request?: { merged_at: string | null } | null;
+}
+
+function normalizeSearchIssueItem(item: SearchIssueItem): RawPullRequest {
+  return {
+    number: item.number,
+    html_url: item.html_url,
+    title: item.title,
+    state: item.state,
+    body: item.body,
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+    merged_at: item.pull_request?.merged_at ?? null,
+    closed_at: item.closed_at,
+    user: item.user,
+    draft: item.draft,
+  };
+}
+
 async function fetchPullRequests(
   token: string,
   owner: string,
@@ -106,8 +144,8 @@ async function fetchPullRequests(
   });
 
   if (searchRes.ok) {
-    const body = (await searchRes.json()) as { items?: RawPullRequest[] };
-    return body.items ?? [];
+    const body = (await searchRes.json()) as { items?: SearchIssueItem[] };
+    return (body.items ?? []).map(normalizeSearchIssueItem);
   }
 
   // Fallback when search is unavailable — list pulls and filter locally.

@@ -10,9 +10,7 @@ import {
   logSecurityEvent,
 } from '@/lib/validation/server-action-validator';
 import { MessageSchemas } from '@/lib/validation/action-schemas';
-import { notifyNewMessage } from '@/lib/notifications';
-import { sendPushNotification } from '@/lib/notifications/push';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { notifyGolfMessageRecipients } from '@/lib/notifications/golf-message-fanout';
 import { logServerError } from '@/lib/server-error-logger';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -418,17 +416,41 @@ export async function markMessagesAsRead({
   // so this write is what clears the 1:1 badge and stays reconciled with that count.
   // last_read_at already committed above, so a failure here is non-fatal: log it but
   // still revalidate + report success so the badge isn't stuck on a transient error.
-  const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
-  const { error: messagesError } = await supabase
-    .from(messagesTable as any)
-    .update({ read: true })
-    .eq('conversation_id', conversationId)
-    .neq('sender_id', user.id);
+  //
+  // Golf-only wrinkle: `golf_messages_update_v2` is `USING (sender_id =
+  // auth.uid()) WITH CHECK (sender_id = auth.uid())` — mutually exclusive
+  // with the `sender_id != viewer` filter this write needs, so a plain
+  // client-side update here always affects 0 rows on golf_messages (the 1:1
+  // badge could never clear). Route golf through the participant-checked
+  // `mark_golf_messages_read` SECURITY DEFINER RPC instead (see migration
+  // 20260710160000_mark_golf_messages_read_rpc.sql), which bypasses that
+  // sender-only policy from inside a function that itself verifies the
+  // caller is a participant. Baseball's `baseball_messages_update`/
+  // `_update_read` policies already permit any conversation participant
+  // (not sender-only) to flip the column, so the direct update keeps
+  // working there unchanged. If the RPC migration hasn't been applied yet,
+  // this degrades gracefully: the call errors, is logged as non-fatal below
+  // (same as any other messagesError), and last_read_at (committed above)
+  // still clears the group-chat badge.
+  let messagesError: { message: string } | null = null;
+  if (sport === 'golf') {
+    const { error } = await (supabase as any).rpc('mark_golf_messages_read', {
+      p_conversation_id: conversationId,
+    });
+    messagesError = error;
+  } else {
+    const { error } = await supabase
+      .from('baseball_messages' as any)
+      .update({ read: true })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', user.id);
+    messagesError = error;
+  }
 
   if (messagesError) {
     await logServerError(`[Messages] Failed to mark messages as read: ${messagesError instanceof Error ? messagesError.message : String(messagesError)}`, { action: 'messages.markMessagesAsRead' });
     maybeCaptureRlsDenial(messagesError, {
-      table: messagesTable,
+      table: sport === 'golf' ? 'golf_messages' : 'baseball_messages',
       verb: 'update',
       action: 'messages.markMessagesAsRead',
       feature: sport === 'golf' ? 'messaging' : 'baseball_messages',
@@ -466,88 +488,12 @@ async function sendGolfMessageImpl(conversationId: string, content: string) {
   const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false });
 
   if (result.success) {
-    // Send email notifications to other participants (fire-and-forget)
-    try {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-        // Get other participants' user IDs
-        const { data: otherParticipants } = await (supabase as any)
-          .from('golf_conversation_participants')
-          .select('user_id')
-          .eq('conversation_id', conversationId)
-          .neq('user_id', user.id) as { data: { user_id: string }[] | null };
-
-        if (otherParticipants && otherParticipants.length > 0) {
-          const recipientUserIds = otherParticipants.map(p => p.user_id);
-
-          // Batch every lookup into ONE round-trip of parallel queries: sender name
-          // (coach → player → email fallback) and all recipient emails via a single
-          // .in() instead of sequential per-recipient fetches.
-          const [
-            { data: senderCoach },
-            { data: senderPlayer },
-            { data: senderUser },
-            { data: recipientProfiles },
-          ] = await Promise.all([
-            supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle(),
-            supabase.from('golf_players').select('first_name, last_name').eq('user_id', user.id).maybeSingle(),
-            supabase.from('users').select('email').eq('id', user.id).maybeSingle(),
-            supabase.from('users').select('id, email').in('id', recipientUserIds),
-          ]);
-
-          const senderName = senderCoach?.full_name
-            || (senderPlayer ? `${senderPlayer.first_name || ''} ${senderPlayer.last_name || ''}`.trim() : '')
-            || senderUser?.email
-            || 'Someone';
-          const preview = content.length > 80 ? content.substring(0, 80) + '…' : content;
-
-          if (recipientProfiles) {
-            // Email notifications
-            await Promise.allSettled(
-              recipientProfiles.map(r =>
-                r.email
-                  ? notifyNewMessage(r.id, r.email, senderName, preview, conversationId, 'golf')
-                  : Promise.resolve()
-              )
-            );
-
-            // Push notifications — carry the conversation id so the push payload
-            // deep-links straight to the thread that fired it (P260).
-            await Promise.allSettled(
-              recipientProfiles.map(r =>
-                sendPushNotification('new_message', r.id, {
-                  senderName,
-                  preview,
-                  conversationId,
-                })
-              )
-            );
-
-            // In-app notifications (golf_calendar_notifications)
-            // P260: deep-link to the conversation that fired the notification via
-            // ?conversation=<id> (NotificationCenter does router.push(action_url),
-            // and FairwayMessages pre-selects from this param). Mirrors the existing
-            // ?event= / ?task= deep-link convention used elsewhere in this codebase.
-            const inAppNotifs = recipientProfiles.map(r => ({
-              user_id: r.id,
-              notification_type: 'message',
-              title: `Message from ${senderName}`,
-              message: preview,
-              action_url: `/golf/dashboard/messages?conversation=${conversationId}`,
-            }));
-            // Use admin client to bypass RLS — inserting notifications for other users
-            const adminClient = createAdminClient();
-            await (adminClient as any)
-              .from('golf_calendar_notifications')
-              .insert(inAppNotifs);
-          }
-        }
-      }
-    } catch (notifErr) {
-      // Never block message delivery on notification failure
-      await logServerError(`[sendGolfMessage] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'messages.sendGolfMessage' });
+    if (user) {
+      const preview = content.length > 80 ? content.substring(0, 80) + '…' : content;
+      await notifyGolfMessageRecipients(conversationId, user.id, preview);
     }
   }
 
@@ -612,7 +558,7 @@ async function createGolfTeamBroadcastImpl({
   teamId,
   title,
   selectedPlayerIds,
-}: CreateTeamBroadcastOptions): Promise<{ conversationId: string } | { error: string }> {
+}: CreateTeamBroadcastOptions): Promise<{ conversationId: string; reused?: boolean } | { error: string }> {
   try {
     const supabase = await createClient();
 
@@ -673,18 +619,78 @@ async function createGolfTeamBroadcastImpl({
       throw new Error('No players with accounts found on this team');
     }
 
-    // Check if a team broadcast with this title already exists
-    const { data: existingConv } = await supabase
+    // Check if a team broadcast with this title + audience already exists.
+    // Dedupe by (team_id, title, participant set) instead of title alone —
+    // title-only dedupe (the prior behavior) silently reused a STALE
+    // conversation whenever a coach reused a title (the sheet's own
+    // TITLE_SUGGESTIONS chips actively encourage this — "Practice" for the
+    // JV squad after already using "Practice" for varsity) for a DIFFERENT
+    // audience, discarding the freshly-selected selectedPlayerIds entirely.
+    const desiredParticipantIds = [...new Set([user.id, ...playerUserIds])].sort();
+
+    const { data: existingConvs } = await supabase
       .from('golf_conversations')
       .select('id')
       .eq('team_id', teamId)
       .eq('is_team_chat', true)
       .eq('title', title)
-      .single();
+      .order('created_at', { ascending: true });
 
-    if (existingConv) {
-      // Return existing conversation instead of creating duplicate
-      return { conversationId: existingConv.id };
+    if (existingConvs && existingConvs.length > 0) {
+      for (const candidate of existingConvs) {
+        const { data: candidateParticipants } = await supabase
+          .from('golf_conversation_participants')
+          .select('user_id')
+          .eq('conversation_id', candidate.id);
+
+        const candidateIds = [...new Set((candidateParticipants ?? []).map((p) => p.user_id))].sort();
+        const sameAudience =
+          candidateIds.length === desiredParticipantIds.length &&
+          candidateIds.every((id, i) => id === desiredParticipantIds[i]);
+
+        if (sameAudience) {
+          // Exact audience match — reuse in place, nothing to reconcile.
+          return { conversationId: candidate.id, reused: true };
+        }
+      }
+
+      // A broadcast with this title exists, but for a DIFFERENT audience
+      // than the one just selected. Reuse the oldest such thread (rather
+      // than fragmenting into yet another same-titled conversation) but
+      // reconcile membership first: add anyone newly selected who isn't
+      // already a participant, so the message the coach is about to send
+      // actually reaches every recipient they just chose. Never remove
+      // existing participants here — golf messaging never does destructive
+      // participant writes.
+      const reuseTarget = existingConvs[0];
+      if (reuseTarget) {
+        const { data: existingParticipants } = await supabase
+          .from('golf_conversation_participants')
+          .select('user_id')
+          .eq('conversation_id', reuseTarget.id);
+
+        const existingIds = new Set((existingParticipants ?? []).map((p) => p.user_id));
+        const missingIds = desiredParticipantIds.filter((id) => !existingIds.has(id));
+
+        if (missingIds.length > 0) {
+          const { error: syncError } = await supabase
+            .from('golf_conversation_participants')
+            .insert(
+              missingIds.map((userId) => ({
+                conversation_id: reuseTarget.id,
+                user_id: userId,
+                joined_at: new Date().toISOString(),
+              })),
+            );
+
+          if (syncError) {
+            await logServerError(`[Broadcast] Failed to sync participants on reuse: ${syncError instanceof Error ? syncError.message : String(syncError)}`, { action: 'messages.createGolfTeamBroadcast' });
+            throw new Error(`Failed to update broadcast recipients: ${syncError.message}`);
+          }
+        }
+
+        return { conversationId: reuseTarget.id, reused: true };
+      }
     }
 
     // Create new group conversation
@@ -742,7 +748,7 @@ async function createGolfTeamBroadcastImpl({
 
     revalidatePath('/golf/dashboard/messages');
 
-    return { conversationId };
+    return { conversationId, reused: false };
   } catch (err) {
     return formatSafeErrorResponse(err);
   }
@@ -756,7 +762,7 @@ const observedCreateGolfTeamBroadcast = withAdminObserved(
 
 export async function createGolfTeamBroadcast(
   options: CreateTeamBroadcastOptions,
-): Promise<{ conversationId: string } | { error: string }> {
+): Promise<{ conversationId: string; reused?: boolean } | { error: string }> {
   return observedCreateGolfTeamBroadcast(options);
 }
 

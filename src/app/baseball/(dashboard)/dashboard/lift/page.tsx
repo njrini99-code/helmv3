@@ -136,7 +136,12 @@ export default async function PlayerLiftPage() {
   if (!athleteCtx) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-6">
-        <PlayerLiftHomeClient upcoming={[]} recent={[]} readinessSubmittedToday={false} />
+        <PlayerLiftHomeClient
+          upcoming={[]}
+          recent={[]}
+          readinessSubmittedToday={false}
+          basePath="/baseball/dashboard"
+        />
       </div>
     );
   }
@@ -167,6 +172,7 @@ export default async function PlayerLiftPage() {
         upcoming={upcoming}
         recent={recent}
         readinessSubmittedToday={readinessSubmittedToday}
+        basePath="/baseball/dashboard"
       />
       <LiftOnboardingGate
         athleteId={onboarding.athleteId}

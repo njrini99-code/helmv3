@@ -33,7 +33,7 @@
  * inside the `.fairway-ds` scope on a bg-canvas page.
  * ========================================================================== */
 
-import { Fragment, useMemo } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Flag } from 'lucide-react';
 
@@ -42,6 +42,7 @@ import { Surface, EmptyState, InlineNotice, StatusPill, Skeleton } from '@/compo
 import type { FwStatusTone } from '@/components/fairway/controls';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 
 interface FairwayQualifierLeaderboardProps {
   qualifierId: string;
@@ -88,6 +89,48 @@ export function FairwayQualifierLeaderboard({
 }: FairwayQualifierLeaderboardProps) {
   // VERBATIM: same hook, same realtime subscription as the legacy leaderboard.
   const { leaderboard: entries, qualifier, loading, error } = useQualifierRealtime(qualifierId);
+
+  // W32 follow-up: once the coach confirms the roster, the "Locked"/"Bubble"
+  // tiers below are a live merit PROJECTION that never reflects the coach's
+  // actual committed decision (coach picks can override merit). When the
+  // qualifier's selection has been finalized, overlay an authoritative
+  // "Selected"/"Not selected" badge sourced straight from
+  // golf_qualifier_selections instead. A self-contained query (not routed
+  // through useQualifierRealtime, which doesn't track selection state) — RLS
+  // (qualifier_selections_player_read) already grants players read access.
+  const [committedSelections, setCommittedSelections] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+
+    async function loadCommittedSelections() {
+      const { data: q } = await supabase
+        .from('golf_qualifiers')
+        .select('selection_state')
+        .eq('id', qualifierId)
+        .maybeSingle();
+
+      if (q?.selection_state !== 'selected') {
+        if (!cancelled) setCommittedSelections(null);
+        return;
+      }
+
+      const { data: sels } = await supabase
+        .from('golf_qualifier_selections')
+        .select('player_id')
+        .eq('qualifier_id', qualifierId);
+
+      if (!cancelled) {
+        setCommittedSelections(new Set((sels ?? []).map((s) => s.player_id)));
+      }
+    }
+
+    if (qualifierId) loadCommittedSelections();
+    return () => {
+      cancelled = true;
+    };
+  }, [qualifierId]);
 
   // Mirror the legacy QualifierViewTabs sort/tie data path, but track an honest
   // `hasScore` flag so 0-round players never render a position or even-par.
@@ -179,6 +222,7 @@ export function FairwayQualifierLeaderboard({
             rows={rows}
             selectionSlotsTotal={selectionSlotsTotal}
             selectionSlotsCoachPick={selectionSlotsCoachPick}
+            committedSelections={committedSelections}
           />
         )}
       </Surface.Body>
@@ -200,10 +244,14 @@ function StandingsTable({
   rows,
   selectionSlotsTotal,
   selectionSlotsCoachPick,
+  committedSelections,
 }: {
   rows: StandingRow[];
   selectionSlotsTotal: number;
   selectionSlotsCoachPick: number;
+  /** Authoritative golf_qualifier_selections player_ids once the coach has
+   *  confirmed the roster; null while selection is still open/in progress. */
+  committedSelections: Set<string> | null;
 }) {
   // ── College travel-squad model ────────────────────────────────────────────
   // total spots = (top-score auto-qualify) + (coach's discretionary picks).
@@ -252,7 +300,16 @@ function StandingsTable({
           {decorated.map(({ row, scoredRank: rank }) => {
             const leader = row.position === 1;
             const tier = tierFor(rank);
-            const badge = tier === 'locked' || tier === 'bubble' ? TIER_BADGE[tier] : null;
+            // Once the coach has confirmed, the committed ledger wins over the
+            // live merit projection — a coach pick can put a player in the
+            // squad even when their rank alone would read "bubble"/"out".
+            const badge = committedSelections
+              ? committedSelections.has(row.playerId)
+                ? { tone: 'success' as FwStatusTone, label: 'Selected' }
+                : { tone: 'neutral' as FwStatusTone, label: 'Not selected' }
+              : tier === 'locked' || tier === 'bubble'
+                ? TIER_BADGE[tier]
+                : null;
             return (
               <Fragment key={row.playerId}>
                 <tr

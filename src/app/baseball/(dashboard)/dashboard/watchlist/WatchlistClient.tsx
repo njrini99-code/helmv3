@@ -7,13 +7,17 @@
  * docs/baseball/ui-migration-execution-plan.md §3.2 watchlist row).
  * ----------------------------------------------------------------------------
  * PRESENTATION ONLY (P4.20). Same read/write paths as before — `useWatchlist`
- * (read-only), the watchlist server actions, the direct client add-search
- * query, and CSV export are untouched. Only the chrome is re-skinned onto the
- * kit (`RecruitCard`-style rows, `SectionMasthead`, `EmptyIssue`, `CommitSeal`,
- * `ModalShell`, …).
+ * (read-only), the watchlist server actions, and CSV export are untouched.
+ * Only the chrome is re-skinned onto the kit (`RecruitCard`-style rows,
+ * `SectionMasthead`, `EmptyIssue`, `CommitSeal`, `ModalShell`, …).
+ * EXCEPTION (P0 fix): the quick-add search now calls the shared
+ * `searchRecruitablePlayers` server action (see compare/actions.ts) instead
+ * of a bare client-side `.eq('recruiting_activated', true)` query — the old
+ * query surfaced private, college, and off-territory players with no
+ * eligibility check.
  * ========================================================================== */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -67,8 +71,8 @@ import {
   addWatchlistNote,
   addToWatchlist,
 } from '@/app/baseball/actions/watchlist';
+import { searchRecruitablePlayers } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { getFullName, getPipelineStageLabel, cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
 import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
 import type { PipelineStage, Player, WatchlistWithPlayer } from '@/lib/types';
 
@@ -280,8 +284,6 @@ export function WatchlistClient() {
   const { showToast } = useToast();
   const { coach } = useAuth();
   const { watchlist, loading, refetch } = useWatchlist();
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
   const reducedMotion = useReducedMotion() ?? false;
 
   // Filters
@@ -579,27 +581,20 @@ export function WatchlistClient() {
 
     setSearchingPlayers(true);
     try {
+      // Server-gated (P0 fix, same pattern as Compare's add-search):
+      // searchRecruitablePlayers excludes private profiles, college
+      // players, off-territory players, and the coach's own roster — the
+      // raw client-side query here previously applied none of those checks
+      // (only `recruiting_activated`).
       const existingIds = watchlist.map(w => w.player_id);
-
-      let queryBuilder = supabase
-        .from('baseball_players')
-        .select('*')
-        .eq('recruiting_activated', true)
-        .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
-        .limit(10);
-
-      if (existingIds.length > 0) {
-        queryBuilder = queryBuilder.not('id', 'in', `(${existingIds.join(',')})`);
-      }
-
-      const { data } = await queryBuilder;
+      const data = await searchRecruitablePlayers(query, existingIds);
       setPlayerSearchResults(data || []);
     } catch {
       setPlayerSearchResults([]);
     } finally {
       setSearchingPlayers(false);
     }
-  }, [watchlist, supabase]);
+  }, [watchlist]);
 
   const handleAddPlayer = async (player: Player) => {
     if (!coach) return;

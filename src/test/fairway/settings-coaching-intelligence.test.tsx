@@ -76,13 +76,12 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }));
 
+const { useCoachPhilosophyMock } = vi.hoisted(() => ({
+  useCoachPhilosophyMock: vi.fn(),
+}));
+
 vi.mock('@/hooks/coachhelm/useCoachPhilosophy', () => ({
-  useCoachPhilosophy: () => ({
-    philosophy,
-    loading: false,
-    saving: false,
-    save: saveMock,
-  }),
+  useCoachPhilosophy: (...args: unknown[]) => useCoachPhilosophyMock(...args),
 }));
 
 vi.mock('@/app/golf/actions/coaching-philosophy', () => ({
@@ -116,7 +115,12 @@ vi.mock('@/lib/golf/resolve-team', () => ({
 }));
 
 vi.mock('@/components/fairway', () => ({
-  ViewHeader: ({ title }: { title: string }) => <header>{title}</header>,
+  ViewHeader: ({ title, meta }: { title: string; meta?: React.ReactNode }) => (
+    <header>
+      {title}
+      {meta}
+    </header>
+  ),
   Surface: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
   // Minimal Button test double — renders children so `asChild` back-link /
   // EmptyState CTA content is queryable (the real primitive merges onto a slot).
@@ -191,6 +195,14 @@ describe('FairwaySettingsCoachingIntelligence', () => {
     weightDistributorMock.mockClear();
     getTeamCoachHelmAccessMock.mockClear();
     getTeamCoachHelmAccessMock.mockResolvedValue({ success: true, isHeadCoach: true });
+    useCoachPhilosophyMock.mockReset();
+    useCoachPhilosophyMock.mockReturnValue({
+      philosophy,
+      loading: false,
+      saving: false,
+      error: null,
+      save: saveMock,
+    });
   });
 
   function renderPage() {
@@ -297,5 +309,29 @@ describe('FairwaySettingsCoachingIntelligence', () => {
     const sw = await screen.findByLabelText('Team CoachHelm enabled');
     await waitFor(() => expect(sw).toBeDisabled());
     expect(screen.getByText('Only the head coach can change this.')).toBeInTheDocument();
+  });
+
+  // ── A save failure AFTER the initial load must surface, not silently
+  //    snap the control back with zero explanation ──────────────────────────
+  it('surfaces a post-load save failure via the meta chip and an InlineNotice', async () => {
+    useCoachPhilosophyMock.mockReturnValue({
+      philosophy,
+      loading: false,
+      saving: false,
+      error: 'permission denied for table golf_coach_philosophy',
+      save: saveMock,
+    });
+
+    await renderPage();
+
+    await screen.findByText('Decline Threshold');
+    // The meta chip (next to where "Saving…"/"Saved" render) reflects failure.
+    expect(screen.getByText('Couldn’t save')).toBeInTheDocument();
+    // The InlineNotice banner carries the actual server error for context.
+    expect(
+      screen.getByText(/permission denied for table golf_coach_philosophy/),
+    ).toBeInTheDocument();
+    // A failed save must never ALSO claim "Saved" — that would contradict it.
+    expect(screen.queryByText('Saved')).not.toBeInTheDocument();
   });
 });

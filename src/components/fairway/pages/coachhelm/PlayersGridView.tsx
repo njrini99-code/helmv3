@@ -92,6 +92,7 @@ import {
   deleteFocusArea,
   updateFocusAreaProgress,
   recordFocusAreaOutcome,
+  reactivateFocusArea,
   type FocusAreaOutcome,
 } from '@/app/golf/actions/development';
 
@@ -258,6 +259,8 @@ export function PlayersGridView({
   /** Player to preselect when opening the create modal (coach prescribe flow). */
   const [createPlayerId, setCreatePlayerId] = React.useState<string>('');
   const [completingId, setCompletingId] = React.useState<string | null>(null);
+  // Which completed area is mid-reopen (busy flag for its card's "Reopen" button).
+  const [reopeningId, setReopeningId] = React.useState<string | null>(null);
 
   // Log-progress dialog — a focused Fairway ModalShell that replaces the
   // off-brand native window.prompt. The write wiring (updateFocusAreaProgress)
@@ -428,6 +431,27 @@ export function PlayersGridView({
       fairwayToast.error('Could not complete focus area');
     } finally {
       setCompletingId(null);
+    }
+  }
+
+  // Reopen a completed focus area — the coach-side inverse of handleComplete.
+  // Mirrors FairwayMyDevelopment's player-facing handleReopen (same
+  // reactivateFocusArea write); the coach previously had NO way to undo a
+  // completion from this surface.
+  async function handleReopen(fa: FocusAreaCardData) {
+    setReopeningId(fa.id);
+    try {
+      const res = await reactivateFocusArea(fa.id);
+      if (res.success) {
+        fairwayToast.success('Focus area reopened');
+        router.refresh();
+      } else {
+        fairwayToast.error(res.error ?? 'Could not reopen focus area');
+      }
+    } catch {
+      fairwayToast.error('Could not reopen focus area');
+    } finally {
+      setReopeningId(null);
     }
   }
 
@@ -839,11 +863,13 @@ export function PlayersGridView({
               areas={visibleAreas}
               players={players}
               completingId={completingId}
+              reopeningId={reopeningId}
               onEdit={openEdit}
               onComplete={handleComplete}
               onLogProgress={handleLogProgress}
               onDelete={handleDelete}
               onRecordOutcome={handleRecordOutcome}
+              onReopen={handleReopen}
               onCreate={() => openCreate()}
               showPlayerName={!selectedPlayerId}
             />
@@ -1008,24 +1034,28 @@ export function PlayersGridView({
 }
 
 /* ---------------------------------------------------------------------------
- * FocusAreaBoard — the flat focus-area grid (active first, completed collapsed)
+ * FocusAreaBoard — the flat focus-area grid (active first, then pending
+ * acceptance / declined / completed — see the bucket split below)
  * ------------------------------------------------------------------------- */
 
 function FocusAreaBoard({
   areas,
   players,
   completingId,
+  reopeningId,
   onEdit,
   onComplete,
   onLogProgress,
   onDelete,
   onRecordOutcome,
+  onReopen,
   onCreate,
   showPlayerName,
 }: {
   areas: PlayersGridFocusArea[];
   players: PlayersGridPlayer[];
   completingId: string | null;
+  reopeningId: string | null;
   onEdit: (fa: FocusAreaCardData) => void;
   onComplete: (fa: FocusAreaCardData) => void;
   onLogProgress: (fa: FocusAreaCardData) => void;
@@ -1034,13 +1064,24 @@ function FocusAreaBoard({
     fa: FocusAreaCardData,
     outcome: FocusAreaOutcome,
   ) => Promise<{ success: boolean; error?: string; notice?: string }>;
+  onReopen: (fa: FocusAreaCardData) => void;
   onCreate: () => void;
   showPlayerName: boolean;
 }) {
   const byId = React.useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
 
-  const active = areas.filter((a) => a.status !== 'completed');
+  // Three-way split (was a single "active" bucket that also silently absorbed
+  // 'proposed' and 'declined' rows — both rendered with a misleading "Active"
+  // badge and live Complete/Log-progress/Outcome buttons). 'proposed' is a
+  // coach prescription the player hasn't accepted yet; 'declined' was
+  // explicitly rejected. Both get their own labeled section below so a coach
+  // can tell them apart from real, ongoing work at a glance.
+  const proposed = areas.filter((a) => a.status === 'proposed');
+  const declined = areas.filter((a) => a.status === 'declined');
   const completed = areas.filter((a) => a.status === 'completed');
+  const active = areas.filter(
+    (a) => a.status !== 'completed' && a.status !== 'proposed' && a.status !== 'declined',
+  );
 
   // The board mounts on a warm-glass instrument bezel (the focus-areas hero
   // surface). The FocusAreaCards INSIDE stay matte for legibility — glass frames
@@ -1108,6 +1149,57 @@ function FocusAreaBoard({
         </div>
       ) : null}
 
+      {/* Pending acceptance — coach-prescribed, awaiting the player's accept/
+          decline. No live Complete/Log-progress/Outcome (FocusAreaCard hides
+          them for a non-actionable status); Edit/Delete stay so the coach can
+          fix or retract the prescription before the player acts on it. */}
+      {proposed.length > 0 ? (
+        <div className="space-y-3">
+          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+            Pending acceptance ({proposed.length})
+          </p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {proposed.map((fa, i) => (
+              <FocusAreaCard
+                key={fa.id}
+                focusArea={fa}
+                // eslint-disable-next-line jsx-a11y/aria-role
+                role="coach"
+                index={i}
+                playerName={showPlayerName ? playerName(byId.get(fa.player_id)) : undefined}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Declined — the player explicitly rejected the prescription. Kept
+          visible (not deleted) so the coach isn't left guessing why a
+          prescribed area never shows up as active; Edit/Delete only. */}
+      {declined.length > 0 ? (
+        <div className="space-y-3">
+          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+            Declined ({declined.length})
+          </p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {declined.map((fa, i) => (
+              <FocusAreaCard
+                key={fa.id}
+                focusArea={fa}
+                // eslint-disable-next-line jsx-a11y/aria-role
+                role="coach"
+                index={i}
+                playerName={showPlayerName ? playerName(byId.get(fa.player_id)) : undefined}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {completed.length > 0 ? (
         <div className="space-y-3">
           <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
@@ -1122,6 +1214,8 @@ function FocusAreaBoard({
                 role="coach"
                 index={i}
                 playerName={showPlayerName ? playerName(byId.get(fa.player_id)) : undefined}
+                onReopen={onReopen}
+                reopening={reopeningId === fa.id}
               />
             ))}
           </div>

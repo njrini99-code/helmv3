@@ -755,8 +755,12 @@ async function getPlayerPracticesImpl(): Promise<
     const eventEndIso: string | null = event?.end_time ?? null;
     const startTime: string | null = isoToClock(eventStartIso);
 
+    // Allow-list, not deny-list: only 'player_visible' (or legacy NULL)
+    // blocks reach the player view — a deny of 'staff_only' alone leaked
+    // 'restricted' blocks. Mirrors the RLS SELECT policy exactly
+    // (20260710150000_baseball_practice_blocks_visibility_rls.sql).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const visibleBlocks = (p.blocks ?? []).filter((b: any) => b.visibility !== 'staff_only');
+    const visibleBlocks = (p.blocks ?? []).filter((b: any) => b.visibility == null || b.visibility === 'player_visible');
     const totalMinutes = visibleBlocks.reduce(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (sum: number, b: any) => Math.max(sum, b.start_offset_min + b.duration_min),

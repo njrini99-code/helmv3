@@ -455,7 +455,48 @@ async function setTaskReminderImpl(
       return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
-    // Update task with reminder
+    // Arm the dispatch queue BEFORE touching golf_tasks' display columns, so a
+    // failure here surfaces as an error toast instead of a false "Reminder
+    // set." — the hourly cron (task-reminders.ts getDueReminders/
+    // processReminders) reads EXCLUSIVELY from golf_task_reminders; a task
+    // whose reminder_at is set but has no golf_task_reminders row is never
+    // dispatched. Update-or-insert (never delete-then-insert — the
+    // no-destructive-writes rule): re-arm any existing unsent row in place so
+    // a transient failure can never leave the task with NO armed reminder.
+    const { data: existingQueueRow, error: queueLookupError } = await supabase
+      .from('golf_task_reminders')
+      .select('id')
+      .eq('task_id', taskId)
+      .eq('sent', false)
+      .limit(1)
+      .maybeSingle();
+
+    if (queueLookupError) {
+      await logServerError(`[setTaskReminder Error]: ${queueLookupError instanceof Error ? queueLookupError.message : String(queueLookupError)}`, { action: 'tasks.setTaskReminder' });
+      return { success: false, error: queueLookupError.message };
+    }
+
+    const { error: queueError } = existingQueueRow
+      ? await supabase
+          .from('golf_task_reminders')
+          .update({ scheduled_for: reminderAt, reminder_type: 'in_app' })
+          .eq('id', existingQueueRow.id)
+      : await supabase
+          .from('golf_task_reminders')
+          .insert({
+            task_id: taskId,
+            scheduled_for: reminderAt,
+            reminder_type: 'in_app',
+            sent: false,
+          });
+
+    if (queueError) {
+      await logServerError(`[setTaskReminder Error]: ${queueError instanceof Error ? queueError.message : String(queueError)}`, { action: 'tasks.setTaskReminder' });
+      return { success: false, error: queueError.message };
+    }
+
+    // Update task with reminder (drives the Bell badge / "Reminder · ..."
+    // label — display-only; the queue row above is what actually dispatches).
     const { error: updateError } = await supabase
       .from('golf_tasks')
       .update({
@@ -540,7 +581,21 @@ async function clearTaskReminderImpl(taskId: string): Promise<ActionResult> {
       return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
-    // Update task to clear reminder
+    // Disarm the dispatch queue FIRST — if this fails we must not report
+    // "Reminder cleared." while a not-yet-sent golf_task_reminders row is
+    // still live, since the cron would fire it anyway.
+    const { error: queueError } = await supabase
+      .from('golf_task_reminders')
+      .delete()
+      .eq('task_id', taskId)
+      .eq('sent', false);
+
+    if (queueError) {
+      await logServerError(`[clearTaskReminder Error]: ${queueError instanceof Error ? queueError.message : String(queueError)}`, { action: 'tasks.clearTaskReminder' });
+      return { success: false, error: queueError.message };
+    }
+
+    // Update task to clear reminder (display-only columns).
     const { error: updateError } = await supabase
       .from('golf_tasks')
       .update({

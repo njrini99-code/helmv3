@@ -88,6 +88,7 @@ import type {
   BaseballScrimmageWithDetail,
 } from '@/lib/types/baseball-practice-deep';
 import { getPracticeObjectives, type PracticeObjectiveView } from '@/app/baseball/actions/practice-effectiveness';
+import { getCanManagePractice } from '@/app/baseball/actions/practice-planner-capability';
 import {
   SectionMasthead,
   Eyebrow,
@@ -95,6 +96,7 @@ import {
   InkBadge,
   PaperCard,
   EmptyIssue,
+  EditorsLetter,
   Reveal,
   StatReadout,
 } from '@/components/baseball/living-annual';
@@ -192,6 +194,16 @@ export function PracticePlannerClient() {
   // The logged-in player's baseball_players.id, used to look up their own
   // attendance status when viewing a published practice as a player.
   const ownPlayerId = isCoach ? null : (ownPlayerProfile?.id ?? null);
+
+  // can_manage_practice, resolved server-side (null = not yet resolved).
+  // Every mutation below is already independently enforced server-side
+  // (withBaseballAction) — this only lets the client render an honest
+  // read-only state up front instead of showing the full editor to a
+  // staffer who lacks the capability and having every save silently fail.
+  const [canManagePractice, setCanManagePractice] = useState<boolean | null>(null);
+  // Write affordances (New Practice, editor, publish, attendance, recap) are
+  // gated on this, not on isCoach alone.
+  const canWrite = isCoach && canManagePractice === true;
 
   const [practices, setPractices] = useState<BaseballPracticeWithDetail[]>([]);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
@@ -332,6 +344,9 @@ export function PracticePlannerClient() {
     if (isCoach) {
       void loadRosterAndStaff();
       void loadIntelligence();
+      getCanManagePractice()
+        .then(setCanManagePractice)
+        .catch(() => setCanManagePractice(false));
     }
   }, [authLoading, isCoach, loadPractices, loadRosterAndStaff, loadIntelligence]);
 
@@ -566,7 +581,7 @@ export function PracticePlannerClient() {
 
   // ---- Render ---------------------------------------------------------------
 
-  if (authLoading || loading) {
+  if (authLoading || loading || (isCoach && canManagePractice === null)) {
     return (
       <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6 lg:px-8">
         <SectionMasthead
@@ -583,7 +598,7 @@ export function PracticePlannerClient() {
   }
 
   const mastheadActions =
-    isCoach && selectedTeamId && !editing ? (
+    canWrite && selectedTeamId && !editing ? (
       <Button onClick={startNew} leftIcon={<Plus className="h-4 w-4" />}>
         New Practice
       </Button>
@@ -592,7 +607,7 @@ export function PracticePlannerClient() {
   return (
     <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6 lg:px-8">
       <SectionMasthead
-        eyebrow={isCoach ? 'BUILD & PUBLISH' : 'YOUR SCHEDULE'}
+        eyebrow={canWrite ? 'BUILD & PUBLISH' : 'YOUR SCHEDULE'}
         title="Practice Planner"
         actions={mastheadActions}
       />
@@ -623,8 +638,23 @@ export function PracticePlannerClient() {
           </Reveal>
         )}
 
+        {/* Honest read-only state for staff without can_manage_practice — the
+            write actions below are already independently enforced server-side
+            (withBaseballAction); this just tells the coach up front instead of
+            letting them build a whole plan that silently fails to save. */}
+        {isCoach && canManagePractice === false && (
+          <Reveal>
+            <EditorsLetter
+              ink="team"
+              title="You can view, not build"
+              body="Building, publishing, and taking attendance for practices requires the “Manage Practice” permission. Ask your head coach to grant it on the staff roles page — every practice below is still visible to you."
+              action={<InkBadge label="Restricted" tone="neutral" variant="solid" />}
+            />
+          </Reveal>
+        )}
+
         {/* ---------- Editor (coach only) ---------- */}
-        {isCoach && editing && (
+        {canWrite && editing && (
           <Reveal>
             <PaperCard className="space-y-5 p-5 sm:p-6" registrationTick>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -899,7 +929,7 @@ export function PracticePlannerClient() {
             variant="generic"
             ink="team"
             action={
-              isCoach && selectedTeamId ? (
+              canWrite && selectedTeamId ? (
                 <Button onClick={startNew} leftIcon={<Plus className="h-4 w-4" />}>
                   New Practice
                 </Button>
@@ -921,6 +951,7 @@ export function PracticePlannerClient() {
                   <PracticeCard
                     practice={p}
                     isCoach={isCoach}
+                    canWrite={canWrite}
                     roster={roster}
                     ownPlayerId={ownPlayerId}
                     onEdit={() => startEdit(p)}
@@ -961,6 +992,7 @@ const ATTENDANCE_STATUS_DISPLAY: Record<
 function PracticeCard({
   practice,
   isCoach,
+  canWrite,
   roster,
   ownPlayerId,
   onEdit,
@@ -971,6 +1003,11 @@ function PracticeCard({
 }: {
   practice: BaseballPracticeWithDetail;
   isCoach: boolean;
+  /** isCoach AND holds can_manage_practice — gates every mutation affordance
+   * below (Edit/publish/attendance/recap). isCoach alone still gates purely
+   * read-only staff displays (e.g. the class-conflict badge), since RLS lets
+   * every staffer read regardless of capability. */
+  canWrite: boolean;
   roster: RosterPlayer[];
   /** The logged-in player's baseball_players.id (null for coaches). */
   ownPlayerId: string | null;
@@ -1090,7 +1127,7 @@ function PracticeCard({
           )}
         </div>
 
-        {isCoach && (
+        {canWrite && (
           <div className="flex flex-wrap items-center gap-2">
             {!published && (
               <Button variant="ghost" onClick={onEdit}>
@@ -1130,7 +1167,7 @@ function PracticeCard({
       </div>
 
       {/* Calendar attach (inline, coach only, draft only) */}
-      {isCoach && !published && !isBacklog && showCalendarAttach && (
+      {canWrite && !published && !isBacklog && showCalendarAttach && (
         <div className="flex flex-wrap items-center gap-2 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-3 py-2.5">
           <CalendarPlus className="h-4 w-4 shrink-0 text-grade-plus" />
           <span className="font-annual text-caption font-medium text-text-secondary">
@@ -1200,8 +1237,8 @@ function PracticeCard({
         )}
       </ol>
 
-      {/* Attendance (coach only) */}
-      {isCoach && (
+      {/* Attendance (coach with can_manage_practice only) */}
+      {canWrite && (
         <div className="border-t border-[color:var(--hairline)] pt-4">
           {!takingAttendance ? (
             <div className="flex items-center gap-3">
@@ -1269,9 +1306,10 @@ function PracticeCard({
         </div>
       )}
 
-      {/* Practice recap + effectiveness measurement (coach, published only) —
-          the v10 human-entered completion flow that feeds the engine. */}
-      {isCoach && published && (
+      {/* Practice recap + effectiveness measurement (coach with
+          can_manage_practice, published only) — the v10 human-entered
+          completion flow that feeds the engine. */}
+      {canWrite && published && (
         <PracticeRecapPanel
           practiceId={practice.id}
           roster={roster.map((p) => ({ id: p.id, name: p.name }))}

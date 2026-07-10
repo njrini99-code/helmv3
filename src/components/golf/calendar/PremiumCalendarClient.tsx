@@ -1132,10 +1132,18 @@ export function PremiumCalendarClient({
               </div>
             )}
 
-            {/* Header. NOTE: no desktop NotificationCenter here — the global
-                bell in FairwayDashboardShell (successor to the deleted
-                GolfDashboardShell) already covers desktop; mounting a
-                second one doubled the 30s notification poller (audit #32). */}
+            {/* Header + desktop notification bell. The comment that used to
+                sit here claimed "the global bell in FairwayDashboardShell …
+                already covers desktop" — verified false: neither
+                FairwayDashboardShell nor FairwayTopBar render a
+                NotificationCenter/bell anywhere (grepped, zero hits), so a
+                'Message from X' / event notification had NO in-app surface
+                at all outside this file's mobile branch. Mount the bell here
+                for desktop too until the shell-level consolidation lands
+                (single instance app-wide) — see sharedComponentRequests.
+                Mobile keeps its own mount above (mobile player-filter
+                header); the two are mutually exclusive via isMobile, so this
+                never doubles the 30s notification poller (audit #32). */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-white/20">
               <CalendarHeader
                 view={view}
@@ -1147,6 +1155,11 @@ export function PremiumCalendarClient({
                 secondaryTimezone={secondaryTimezone}
                 onSecondaryTimezoneChange={setSecondaryTimezone}
               />
+              {!isMobile && (
+                <div className="flex items-center pl-3 flex-shrink-0">
+                  <NotificationCenter />
+                </div>
+              )}
             </div>
 
             {/* Range-fetch affordances: loading when navigating into a

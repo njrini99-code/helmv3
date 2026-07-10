@@ -12,6 +12,10 @@ vi.mock('@/lib/notifications', () => ({
   notifyDevPlanAssigned: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('@/lib/coachhelm/v3/effectiveness/event-ledger', () => ({
+  recordInsightAction: vi.fn().mockResolvedValue(undefined),
+}));
+
 const verifyPlayerAccessMock = vi.fn();
 vi.mock('@/lib/auth/verify-player-access', () => ({
   verifyPlayerAccess: (...args: unknown[]) => verifyPlayerAccessMock(...args),
@@ -24,6 +28,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import {
   createFocusAreaFromInsight,
+  createFocusAreaFromInsightV2,
   updateFocusAreaProgress,
   deleteFocusArea,
   reactivateFocusArea,
@@ -98,6 +103,97 @@ describe('createFocusAreaFromInsight', () => {
   });
 });
 
+/**
+ * A coach promoting an insight into a focus area (e.g. via
+ * PromoteToFocusAreaButton on the Players tab) is PRESCRIBING it — it must
+ * land as 'proposed'/started_at=null so the player has to accept, exactly
+ * like the primary FocusAreaModal->createFocusArea flow. A player promoting
+ * their OWN insight needs no consent step and starts 'active' immediately.
+ * Pins the access.reason branch that closes that consent-model gap.
+ */
+describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function harness(reason: 'coach' | 'self') {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason });
+    const insertSpy = vi.fn().mockReturnValue({
+      select: () => ({
+        single: async () => ({ data: { id: 'fa-new' }, error: null }),
+      }),
+    });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: (table: string) => {
+        if (table === 'golf_team_members') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  limit: () => ({
+                    maybeSingle: async () => ({ data: { team_id: 'team-1' }, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_team_coach_staff') {
+          return {
+            select: () => ({
+              eq: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({ data: { coach_id: 'coach-1' }, error: null }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_player_focus_areas') {
+          return { insert: insertSpy };
+        }
+        return {};
+      },
+    });
+    return insertSpy;
+  }
+
+  it('inserts status="proposed" and started_at=null when a coach promotes', async () => {
+    const insertSpy = harness('coach');
+
+    const result = await createFocusAreaFromInsightV2({
+      playerId: 'player-1',
+      insightId: 'insight-1',
+      title: 'Work on putts',
+      description: 'desc',
+      areaType: 'putting',
+    });
+
+    expect(result.success).toBe(true);
+    const payload = insertSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('status', 'proposed');
+    expect(payload).toHaveProperty('started_at', null);
+  });
+
+  it('inserts status="active" and a real started_at when the player self-promotes', async () => {
+    const insertSpy = harness('self');
+
+    const result = await createFocusAreaFromInsightV2({
+      playerId: 'player-1',
+      insightId: 'insight-1',
+      title: 'Work on putts',
+      description: 'desc',
+      areaType: 'putting',
+    });
+
+    expect(result.success).toBe(true);
+    const payload = insertSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('status', 'active');
+    expect(typeof payload.started_at).toBe('string');
+  });
+});
+
 describe('updateFocusAreaProgress — ownership guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -135,12 +231,14 @@ describe('updateFocusAreaProgress — ownership guard', () => {
       from: () => ({
         select: () => ({
           eq: () => ({
-            maybeSingle: async () => ({ data: { player_id: 'p-1' }, error: null }),
+            maybeSingle: async () => ({ data: { player_id: 'p-1', status: 'active' }, error: null }),
           }),
         }),
         update: () => ({
           eq: () => ({
-            select: async () => ({ data: [{ id: 'fa-1' }], error: null }),
+            in: () => ({
+              select: async () => ({ data: [{ id: 'fa-1' }], error: null }),
+            }),
           }),
         }),
       }),
@@ -148,6 +246,44 @@ describe('updateFocusAreaProgress — ownership guard', () => {
 
     const result = await updateFocusAreaProgress('fa-1', 42);
     expect(result.success).toBe(true);
+  });
+
+  it('rejects a proposed (not yet accepted) focus area', async () => {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: { player_id: 'p-1', status: 'proposed' }, error: null }),
+          }),
+        }),
+      }),
+    });
+
+    const result = await updateFocusAreaProgress('fa-1', 42);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/hasn.t been accepted/i);
+  });
+
+  it('rejects a declined focus area', async () => {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: { player_id: 'p-1', status: 'declined' }, error: null }),
+          }),
+        }),
+      }),
+    });
+
+    const result = await updateFocusAreaProgress('fa-1', 42);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/declined/i);
   });
 });
 
@@ -167,7 +303,9 @@ describe('updateFocusAreaProgress — progress_notes append (Sparkline source)',
   function harness(existingProgressNotes: unknown) {
     const updateSpy = vi.fn().mockReturnValue({
       eq: () => ({
-        select: async () => ({ data: [{ id: 'fa-1' }], error: null }),
+        in: () => ({
+          select: async () => ({ data: [{ id: 'fa-1' }], error: null }),
+        }),
       }),
     });
     createClientMock.mockResolvedValue({
@@ -176,7 +314,7 @@ describe('updateFocusAreaProgress — progress_notes append (Sparkline source)',
         select: () => ({
           eq: () => ({
             maybeSingle: async () => ({
-              data: { player_id: 'p-1', progress_notes: existingProgressNotes },
+              data: { player_id: 'p-1', status: 'active', progress_notes: existingProgressNotes },
               error: null,
             }),
           }),

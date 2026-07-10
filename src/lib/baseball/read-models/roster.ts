@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import type { BaseballPlayerAggregates } from '@/lib/types';
+import { mergeSeasonStatsIntoAggregates } from './roster-aggregates-merge';
 
 export type RosterMemberStatus =
   | 'pending'
@@ -134,11 +135,32 @@ export async function getRoster(teamId: string): Promise<RosterReadModel> {
     error: unknown;
   };
 
-  const aggregates: Record<string, BaseballPlayerAggregates> = {};
+  let aggregates: Record<string, BaseballPlayerAggregates> = {};
   if (!aggregatesError && aggregatesData) {
     for (const agg of aggregatesData) {
       aggregates[agg.player_id] = agg;
     }
+  }
+
+  // Box-score-canonical season stats (baseball_player_season_stats, written by
+  // recalculate_baseball_season_stats on every box-score save) is the source
+  // of truth the rest of the product treats as current — the Player Profile
+  // Stats tab and Passport both read it. The legacy baseball_player_aggregates
+  // fetched above is only ever written by the deprecated CSV/manual stat-log
+  // recompute path, so a team that logs games via box scores (the modern,
+  // promoted path) has a real, current season_stats row with NO matching
+  // aggregates row. Merge season_stats OVER the legacy aggregates so the
+  // roster wall/leaderboard/dev-board never show em-dash/0 for a player who
+  // genuinely has recent performance data one click away on their own profile.
+  const currentSeasonYear = new Date().getFullYear();
+  const { data: seasonStatsData, error: seasonStatsError } = await supabase
+    .from('baseball_player_season_stats')
+    .select('player_id, avg, obp, slg, ops, g, last_updated')
+    .eq('team_id', teamId)
+    .eq('season_year', currentSeasonYear);
+
+  if (!seasonStatsError && seasonStatsData) {
+    aggregates = mergeSeasonStatsIntoAggregates(aggregates, seasonStatsData, teamId);
   }
 
   return {
@@ -147,6 +169,6 @@ export async function getRoster(teamId: string): Promise<RosterReadModel> {
     members,
     aggregates,
     rosterError: false,
-    aggregatesError: Boolean(aggregatesError),
+    aggregatesError: Boolean(aggregatesError) || Boolean(seasonStatsError),
   };
 }

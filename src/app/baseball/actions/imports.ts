@@ -34,6 +34,9 @@ import { assertImportSourceEnabled } from '@/lib/baseball/import-source-enabled'
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { appendImportTimelineEvent } from '@/lib/baseball/timeline-writer';
 import { runBaseballEngine } from '@/app/baseball/actions/coachhelm';
+import { createGame, saveFullBoxScore } from '@/app/baseball/actions/games';
+import { mapBattingToInput, mapPitchingToInput } from '@/components/baseball/box-score/mappers';
+import { recalculatePlayerAggregates } from '@/app/baseball/actions/stats';
 import { fingerprintBody } from '@/lib/baseball/adapters/file-fingerprint';
 import {
   uploadImportRawFile,
@@ -70,6 +73,13 @@ import type {
   BaseballImportRowSnapshot,
   BaseballImportRowDuplicate,
 } from '@/lib/types/baseball-imports';
+import type {
+  BoxScoreBattingInput,
+  BoxScorePitchingInput,
+  BaseballBoxScoreBatting,
+  BaseballBoxScorePitching,
+  BaseballPitchingResult,
+} from '@/lib/types';
 import type {
   BaseballSourceTrustLevel,
   BaseballDefaultVisibility,
@@ -274,6 +284,23 @@ export interface CommitImportArgs {
    * (the coach explicitly chose to re-import the identical file). Default false.
    */
   forceReimport?: boolean;
+  /**
+   * ISSUE #379 — the wizard's Step 1 "What are you uploading?" choice
+   * (ImportWizardClient's `ImportDataShape`). Drives which CANONICAL table this
+   * commit ALSO writes to, in addition to the legacy baseball_player_stats row
+   * below (kept unchanged so My Stats' raw session list, rollback, and the
+   * external-id/timeline/signal pipeline all keep working exactly as before):
+   *   'game_box_score' -> baseball_box_score_batting/_pitching (+ baseball_games)
+   *                       via the same save_baseball_full_box_score RPC the
+   *                       manual box-score entry and per-game CSV upload use.
+   *   'season_totals'  -> baseball_player_season_stats, keyed by the table's
+   *                       (player_id, team_id, season_year) unique constraint.
+   * Both writes are best-effort (never throw / never fail the commit) — the
+   * legacy row is the write of record if either fails. Optional so a legacy
+   * caller (or a re-import approved from a run staged before this field
+   * existed) safely falls back to the pre-existing legacy-only write.
+   */
+  dataShape?: 'season_totals' | 'game_box_score' | 'event_log';
 }
 
 export interface CommitImportResult {
@@ -804,6 +831,7 @@ export const commitImport = withBaseballAction(
       mapping,
       rows,
       matches,
+      dataShape,
     } = args;
 
     const coachId = ctx.activeCoachId;
@@ -974,6 +1002,9 @@ export const commitImport = withBaseballAction(
             matches,
             headers,
             rows,
+            // ISSUE #379 — carried so an approved held run still routes to the
+            // canonical box-score/season-stats tables, not just the legacy one.
+            dataShape: dataShape ?? null,
             policy: {
               trustLevel: policy.trustLevel,
               defaultVisibility: policy.defaultVisibility,
@@ -1022,6 +1053,7 @@ export const commitImport = withBaseballAction(
       mapping,
       rows,
       matches,
+      dataShape,
       // Carry the already-computed report so committed WARNINGS surface as
       // Import Dossier signals (the spec's import-validation generation source).
       validation,
@@ -1079,7 +1111,71 @@ interface ApplyImportPlanArgs {
    * the Import Dossier as signals after the commit succeeds. Optional so the
    * review-approval path (which re-validates) can omit it without breaking. */
   validation?: ImportValidationReport;
+  /** ISSUE #379 — see CommitImportArgs.dataShape. Optional; undefined/'event_log'
+   * both fall back to the legacy-only write (never a hard failure). */
+  dataShape?: 'season_totals' | 'game_box_score' | 'event_log';
 }
+
+/** A single row's resolved write intent — hoisted to module scope so the
+ * canonical-table routing helpers below (applyGameBoxScoreImport,
+ * upsertSeasonTotalsImport) can share the same shape applyImportPlan builds. */
+type StatWrite = {
+  rowIndex: number;
+  playerId: string;
+  /** The coach's EXPLICIT per-row intent from the wizard (honored below — a
+   * 'create' that collides is rejected, not silently turned into an update). */
+  action: 'create' | 'update';
+  externalId: string | null;
+  values: Record<string, number | null>;
+  /** Carried from the row's match so the chosen resolution + confidence are
+   * stamped on the committed stat row (player_matching_v2.md). */
+  matchConfidence: number;
+  matchTier: BaseballImportRowMatch['matchTier'];
+};
+
+/**
+ * REPAIR ROUND — before-state snapshot of a `game_box_score` import's
+ * canonical write, persisted alongside the legacy `snapshot` array so
+ * `rollbackImport` can reverse `baseball_box_score_batting`/`_pitching` (and
+ * the game's own score/status) to their exact pre-import state, the same
+ * before/after contract already kept for `baseball_player_stats`.
+ */
+type GameBoxScoreSnapshot = {
+  gameId: string;
+  /** True when `findOrCreateImportGame` itself created this game — rollback
+   * deletes it (cascading its box-score rows) rather than leaving a
+   * scoreless phantom game behind, the exact inverse of a create. */
+  gameCreatedByImport: boolean;
+  /** The game's own status/scores immediately before this import's write —
+   * `save_baseball_full_box_score` always overwrites both scores and flips
+   * status to 'completed', so a non-completed pre-import status must be
+   * restored explicitly. */
+  beforeStatus: string | null;
+  beforeOurScore: number | null;
+  beforeOpponentScore: number | null;
+  /** The FULL batting/pitching rows that existed for this game before this
+   * import touched it (both sides) — i.e. the exact end-state a rollback
+   * must restore via the same atomic RPC the write side uses. */
+  beforeBatting: BoxScoreBattingInput[];
+  beforePitching: BoxScorePitchingInput[];
+};
+
+/**
+ * REPAIR ROUND — one row's before-state for a `season_totals` import's
+ * upsert into `baseball_player_season_stats`, so rollback can restore (or,
+ * if this run created the row, delete) each affected player's line.
+ */
+type SeasonTotalsSnapshotEntry = {
+  /** The row's own id post-upsert (created or pre-existing) — rollback keys
+   * off this directly rather than the (player_id, team_id, season_year)
+   * natural key. Null only if the upsert didn't return a row for this write. */
+  rowId: string | null;
+  playerId: string;
+  seasonYear: number;
+  /** Full pre-import row, or null when this run CREATED the row (no prior
+   * season-stats line existed for this player + year). */
+  before: (Record<string, unknown> & { id: string }) | null;
+};
 
 async function applyImportPlan(
   db: LooseClient,
@@ -1094,7 +1190,7 @@ async function applyImportPlan(
   const {
     importRunId, teamId, coachId, userId, sourceId, sourceLabel, sourceTag,
     policy, statType, sessionDate, sessionName, fileName, headers, mapping, rows, matches,
-    validation,
+    validation, dataShape,
   } = a;
 
   // Resolve the rows we will actually write (matched + not skipped).
@@ -1107,19 +1203,6 @@ async function applyImportPlan(
   // identity duplicate detection keys on across re-imports).
   const extIdColForWrite = findExternalIdColumn(headers);
 
-  type StatWrite = {
-    rowIndex: number;
-    playerId: string;
-    /** The coach's EXPLICIT per-row intent from the wizard (honored below — a
-     * 'create' that collides is rejected, not silently turned into an update). */
-    action: 'create' | 'update';
-    externalId: string | null;
-    values: Record<string, number | null>;
-    /** Carried from the row's match so the chosen resolution + confidence are
-     * stamped on the committed stat row (player_matching_v2.md). */
-    matchConfidence: number;
-    matchTier: BaseballImportRowMatch['matchTier'];
-  };
   const writes: StatWrite[] = actionable.map((m) => ({
     rowIndex: m.rowIndex,
     playerId: m.playerId as string,
@@ -1145,6 +1228,13 @@ async function applyImportPlan(
   // overwrite, so we INSERT the wanted data and count it honestly (the gap's
   // "warn on an 'Update' with no existing target").
   let updateFellBackToInsert = 0;
+  // REPAIR ROUND — the SAME-shaped subset of `writes` that actually survives
+  // the dedupe-duplicate-skip and create-conflict-reject checks below. This,
+  // NOT the raw `writes` array, is what the canonical-table routing further
+  // down is allowed to see: a row the checks below withhold from
+  // baseball_player_stats must never still land in
+  // baseball_box_score_batting/_pitching or baseball_player_season_stats.
+  const canonicalWrites: StatWrite[] = [];
 
   type TouchedPlayer = { playerId: string; created: number; updated: number };
   const touchedByPlayer = new Map<string, TouchedPlayer>();
@@ -1204,6 +1294,11 @@ async function applyImportPlan(
     if (w.action === 'update' && !existing) {
       updateFellBackToInsert++;
     }
+
+    // This row survived both withholding checks above — it is one of the rows
+    // about to actually be written to baseball_player_stats below, so (and
+    // only so) it is also eligible for the canonical-table routing.
+    canonicalWrites.push(w);
 
     const baseRow = {
       player_id: w.playerId,
@@ -1267,6 +1362,30 @@ async function applyImportPlan(
     }
   }
 
+  // ISSUE #379 — ALSO write to the canonical table Stats Center actually reads
+  // (baseball_player_stats above is kept as-is so My Stats' raw session list,
+  // rollback, external-id matching, timeline events, and signals all keep
+  // working unchanged). REPAIR ROUND: this MUST use `canonicalWrites`, not the
+  // raw `writes` array — `writes` is every actionable row BEFORE the dedupe
+  // and create-conflict checks above run, so it still includes rows the loop
+  // just withheld from baseball_player_stats. Routing those into
+  // baseball_box_score_batting/_pitching (which REPLACES every row for
+  // players present in its payload) or baseball_player_season_stats would
+  // defeat the exact "reject a colliding Create" / "don't overwrite" guards
+  // this loop just enforced. Both helpers are best-effort and never throw: a
+  // failure here never undoes or blocks the legacy write above.
+  let boxScoreSnapshot: GameBoxScoreSnapshot | null = null;
+  let seasonTotalsSnapshot: SeasonTotalsSnapshotEntry[] = [];
+  if (dataShape === 'game_box_score') {
+    boxScoreSnapshot = await applyGameBoxScoreImport(db, {
+      teamId, sessionDate, sessionName, writes: canonicalWrites, headers, rows,
+    });
+  } else if (dataShape === 'season_totals') {
+    seasonTotalsSnapshot = await upsertSeasonTotalsImport(db, {
+      teamId, sessionDate, writes: canonicalWrites,
+    });
+  }
+
   // Persist external-id mappings for deterministic future matching, scoped to
   // the registered namespace when configured (read + write must agree on key).
   const nameCol = resolveNameColumn(headers, mapping);
@@ -1328,6 +1447,16 @@ async function applyImportPlan(
           // coach's 'Create' was withheld / an 'Update' became an insert.
           createConflicts,
           updateFellBackToInsert,
+          // REPAIR ROUND — carried so rollbackImport can also reverse the
+          // canonical-table write this run made (Stats Center's actual read
+          // model), not just the legacy baseball_player_stats rows above.
+          dataShape: dataShape ?? null,
+          canonicalSnapshot:
+            dataShape === 'game_box_score'
+              ? boxScoreSnapshot
+              : dataShape === 'season_totals'
+                ? seasonTotalsSnapshot
+                : null,
         },
         status: 'completed',
         import_run_id: importRunId,
@@ -1369,6 +1498,15 @@ async function applyImportPlan(
           createdBy: userId,
         });
       }),
+    );
+
+    // Refresh baseball_player_aggregates (Command Center roster rows, My Stats
+    // season-summary tiles) for every touched player — previously these stayed
+    // stale after an Import Center commit since nothing here called this.
+    // recalculatePlayerAggregates never throws (it returns {success:false} on
+    // failure), so no try/catch is needed to keep this best-effort.
+    await Promise.allSettled(
+      touched.map((t) => recalculatePlayerAggregates(t.playerId, teamId)),
     );
   }
 
@@ -1416,6 +1554,404 @@ async function applyImportPlan(
 }
 
 // -----------------------------------------------------------------------------
+// ISSUE #379 — canonical-table routing helpers for applyImportPlan.
+//
+// Row-level fields that only exist on one side of the box score (e.g.
+// doubles/triples/home_runs/rbis for batting; innings_pitched/earned_runs/
+// home_runs_allowed for pitching) discriminate whether a given imported row
+// contributes a batting line, a pitching line, or both (a two-way player).
+// 'walks' and 'strikeouts' are the importer's ONE shared canonical field for
+// both sides (HEADER_MAPPINGS has no separate bb_allowed/k_thrown alias) — a
+// two-way player's row stamps the same captured number onto both sides. This
+// is a pre-existing limit of the CSV column-mapping vocabulary (also visible
+// in DATA_SHAPE_META's own column templates), not something introduced here.
+// -----------------------------------------------------------------------------
+
+const BATTING_ONLY_FIELDS = [
+  'doubles', 'triples', 'home_runs', 'rbis', 'stolen_bases', 'caught_stealing',
+  'hit_by_pitch', 'sacrifice_bunts', 'sacrifice_flies', 'left_on_base', 'batting_order',
+] as const;
+const PITCHING_ONLY_FIELDS = [
+  'innings_pitched', 'hits_allowed', 'runs_allowed', 'earned_runs',
+  'home_runs_allowed', 'pitch_count',
+] as const;
+const VALID_PITCHING_RESULTS: readonly BaseballPitchingResult[] = ['W', 'L', 'S', 'H', 'BS', 'ND'];
+
+function hasAny(values: Record<string, number | null>, fields: readonly string[]): boolean {
+  return fields.some((f) => values[f] != null);
+}
+
+/**
+ * Find an existing game for this exact (team, date, opponent), or create one
+ * via games.ts's `createGame` — reused rather than a raw insert so game
+ * creation stays gated by `can_manage_stats`, the SAME capability the manual
+ * Games UI requires, distinct from this action's own `can_manage_imports`
+ * gate. `createGame` never throws (it catches internally and returns
+ * `{success:false}`), so a coach who can import but not manage games simply
+ * degrades to the pre-existing legacy-only write rather than a hard failure.
+ */
+async function findOrCreateImportGame(
+  db: LooseClient,
+  args: { teamId: string; gameDate: string; opponentName: string | null },
+): Promise<{ gameId: string; wasCreated: boolean } | null> {
+  const { teamId, gameDate, opponentName } = args;
+  let query = db
+    .from('baseball_games')
+    .select('id')
+    .eq('team_id', teamId)
+    .eq('game_date', gameDate);
+  query = opponentName ? query.eq('opponent_name', opponentName) : query.is('opponent_name', null);
+  const { data: existing } = await query.limit(1).maybeSingle();
+  if (existing) return { gameId: (existing as { id: string }).id, wasCreated: false };
+
+  const created = await createGame(teamId, {
+    game_date: gameDate,
+    game_type: 'game',
+    opponent_name: opponentName,
+  });
+  return created.success && created.data ? { gameId: created.data.id, wasCreated: true } : null;
+}
+
+/**
+ * ISSUE #379 — routes a 'game_box_score' import to the SAME atomic
+ * save_baseball_full_box_score RPC the manual box-score entry and per-game CSV
+ * upload (games.ts) already use, instead of leaving the committed rows
+ * invisible to Stats Center (which never reads baseball_player_stats).
+ * Merges in any EXISTING box-score rows for players NOT touched by this
+ * import (mirrors games.ts's saveCsvBoxScoreViaRpc) so a partial re-import —
+ * e.g. batting lines now, pitching lines in a follow-up file — never wipes
+ * the other side; the RPC replaces every row not present in its payload.
+ * Best-effort: never throws. baseball_player_stats (written above, unchanged)
+ * remains the write of record if this fails for any reason.
+ * Returns a `GameBoxScoreSnapshot` of the pre-import state (or null if
+ * nothing was written) so `rollbackImport` can reverse this write later.
+ */
+async function applyGameBoxScoreImport(
+  db: LooseClient,
+  args: {
+    teamId: string;
+    sessionDate: string;
+    sessionName: string | null;
+    writes: StatWrite[];
+    headers: string[];
+    rows: CSVRow[];
+  },
+): Promise<GameBoxScoreSnapshot | null> {
+  try {
+    const { teamId, sessionDate, sessionName, writes, headers, rows } = args;
+    if (writes.length === 0) return null;
+
+    const resultCol = findColumnMapping(headers, 'result');
+    const battingRows: BoxScoreBattingInput[] = [];
+    const pitchingRows: BoxScorePitchingInput[] = [];
+
+    for (const w of writes) {
+      const v = w.values;
+      if (v.at_bats != null || hasAny(v, BATTING_ONLY_FIELDS)) {
+        battingRows.push({
+          player_id: w.playerId,
+          batting_order: v.batting_order ?? undefined,
+          ab: v.at_bats ?? 0,
+          r: v.runs ?? 0,
+          h: v.hits ?? 0,
+          doubles: v.doubles ?? 0,
+          triples: v.triples ?? 0,
+          hr: v.home_runs ?? 0,
+          rbi: v.rbis ?? 0,
+          bb: v.walks ?? 0,
+          k: v.strikeouts ?? 0,
+          sb: v.stolen_bases ?? 0,
+          cs: v.caught_stealing ?? 0,
+          hbp: v.hit_by_pitch ?? 0,
+          sac: v.sacrifice_bunts ?? 0,
+          sf: v.sacrifice_flies ?? 0,
+          lob: v.left_on_base ?? 0,
+        });
+      }
+      if (hasAny(v, PITCHING_ONLY_FIELDS)) {
+        const rawResult = resultCol ? (rows[w.rowIndex]?.[resultCol] ?? '').toUpperCase() : '';
+        const result = (VALID_PITCHING_RESULTS as readonly string[]).includes(rawResult)
+          ? (rawResult as BaseballPitchingResult)
+          : undefined;
+        pitchingRows.push({
+          player_id: w.playerId,
+          ip: v.innings_pitched ?? 0,
+          h: v.hits_allowed ?? 0,
+          r: v.runs_allowed ?? 0,
+          er: v.earned_runs ?? 0,
+          bb: v.walks ?? 0,
+          k: v.strikeouts ?? 0,
+          hr: v.home_runs_allowed ?? 0,
+          pitch_count: v.pitch_count ?? undefined,
+          result,
+        });
+      }
+    }
+
+    if (battingRows.length === 0 && pitchingRows.length === 0) return null;
+
+    const gameResult = await findOrCreateImportGame(db, {
+      teamId,
+      gameDate: sessionDate,
+      opponentName: sessionName?.trim() || null,
+    });
+    if (!gameResult) return null;
+    const { gameId, wasCreated } = gameResult;
+
+    // REPAIR ROUND — snapshot the game's own score/status columns before this
+    // import overwrites them (save_baseball_full_box_score always flips
+    // status to 'completed' and sets both scores), so rollback can restore
+    // them exactly.
+    const { data: gameRow } = await db
+      .from('baseball_games')
+      .select('status, our_score, opponent_score')
+      .eq('id', gameId)
+      .maybeSingle();
+    const beforeGame = gameRow as
+      | { status: string | null; our_score: number | null; opponent_score: number | null }
+      | null;
+
+    // Preserve any player NOT touched by THIS import on either side so a
+    // partial re-import never silently deletes the other side's rows.
+    const touchedBattingIds = new Set(battingRows.map((b) => b.player_id));
+    const touchedPitchingIds = new Set(pitchingRows.map((p) => p.player_id));
+    const [{ data: existingBatting }, { data: existingPitching }] = await Promise.all([
+      db.from('baseball_box_score_batting').select('*').eq('game_id', gameId),
+      db.from('baseball_box_score_pitching').select('*').eq('game_id', gameId),
+    ]);
+    // REPAIR ROUND — the FULL pre-import box score for this game (both
+    // sides), captured before the merge-in below mutates battingRows/
+    // pitchingRows — this is the exact end-state a rollback must restore.
+    const beforeBatting = ((existingBatting ?? []) as BaseballBoxScoreBatting[]).map(mapBattingToInput);
+    const beforePitching = ((existingPitching ?? []) as BaseballBoxScorePitching[]).map(mapPitchingToInput);
+    for (const row of (existingBatting ?? []) as BaseballBoxScoreBatting[]) {
+      if (!touchedBattingIds.has(row.player_id)) battingRows.push(mapBattingToInput(row));
+    }
+    for (const row of (existingPitching ?? []) as BaseballBoxScorePitching[]) {
+      if (!touchedPitchingIds.has(row.player_id)) pitchingRows.push(mapPitchingToInput(row));
+    }
+
+    const ourScore = battingRows.reduce((sum, b) => sum + (b.r ?? 0), 0);
+    const opponentScore = pitchingRows.reduce((sum, p) => sum + (p.r ?? 0), 0);
+
+    // saveFullBoxScore computes rates + calls save_baseball_full_box_score +
+    // recalculates season stats internally (never throws — returns a result).
+    await saveFullBoxScore(gameId, battingRows, pitchingRows, ourScore, opponentScore);
+
+    return {
+      gameId,
+      gameCreatedByImport: wasCreated,
+      beforeStatus: beforeGame?.status ?? null,
+      beforeOurScore: beforeGame?.our_score ?? null,
+      beforeOpponentScore: beforeGame?.opponent_score ?? null,
+      beforeBatting,
+      beforePitching,
+    };
+  } catch {
+    // Non-fatal: baseball_player_stats already holds this import's data.
+    return null;
+  }
+}
+
+/**
+ * ISSUE #379 — upserts a 'season_totals' import into the canonical
+ * baseball_player_season_stats row Stats Center actually reads, keyed by the
+ * table's (player_id, team_id, season_year) unique constraint. `sessionDate`
+ * carries the season YEAR for this shape (the wizard's Step 2 swaps its
+ * date input for a year number input when 'season_totals' is chosen).
+ *
+ * NOTE: baseball_player_season_stats is also the sole write target of
+ * recalculate_baseball_season_stats(), which FULLY recomputes every column
+ * from box-score rows whenever any game for this player+season is saved
+ * afterward. Once real per-game box scores exist for the season, they become
+ * authoritative and supersede this bulk-imported baseline — the same
+ * "derived data wins" behavior the season-stats cache already has everywhere
+ * else, not a regression introduced here.
+ *
+ * Best-effort: never throws. baseball_player_stats (written above, unchanged)
+ * remains the write of record if this fails for any reason.
+ * Returns a `SeasonTotalsSnapshotEntry[]` of the pre-import state for every
+ * touched row (or `[]` if nothing was written) so `rollbackImport` can
+ * reverse this upsert later.
+ */
+async function upsertSeasonTotalsImport(
+  db: LooseClient,
+  args: { teamId: string; sessionDate: string; writes: StatWrite[] },
+): Promise<SeasonTotalsSnapshotEntry[]> {
+  try {
+    const { teamId, sessionDate, writes } = args;
+    if (writes.length === 0) return [];
+
+    const seasonYear = parseInt(sessionDate, 10);
+    if (!Number.isFinite(seasonYear)) return [];
+
+    // REPAIR ROUND — snapshot the pre-import row (if any) for every touched
+    // player, keyed by the table's own unique constraint, so rollback can
+    // restore (or delete, if this run created it) each affected line.
+    const playerIds = [...new Set(writes.map((w) => w.playerId))];
+    const { data: existingRows } = await db
+      .from('baseball_player_season_stats')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('season_year', seasonYear)
+      .in('player_id', playerIds);
+    const beforeByPlayer = new Map(
+      ((existingRows ?? []) as Array<{ id: string; player_id: string } & Record<string, unknown>>).map(
+        (r) => [r.player_id, r]
+      )
+    );
+
+    const round = (n: number, digits: number) => parseFloat(n.toFixed(digits));
+
+    const rows = writes.map((w) => {
+      const v = w.values;
+      const ab = v.at_bats ?? 0;
+      const h = v.hits ?? 0;
+      const doubles = v.doubles ?? 0;
+      const triples = v.triples ?? 0;
+      const hr = v.home_runs ?? 0;
+      const bb = v.walks ?? 0;
+      const hbp = v.hit_by_pitch ?? 0;
+      const sf = v.sacrifice_flies ?? 0;
+      const ip = v.innings_pitched ?? 0;
+      const er = v.earned_runs ?? 0;
+      const hAllowed = v.hits_allowed ?? 0;
+      // 'walks'/'strikeouts' are the importer's ONE shared canonical field for
+      // both batting and pitching (see the file-level note above) — the same
+      // captured number stamps bb/bb_allowed and k/k_thrown for a two-way row.
+      const bbAllowed = v.walks ?? 0;
+      const kThrown = v.strikeouts ?? 0;
+
+      const avg = ab > 0 ? round(h / ab, 3) : null;
+      const singles = h - doubles - triples - hr;
+      const slg = ab > 0 ? round((singles + 2 * doubles + 3 * triples + 4 * hr) / ab, 3) : null;
+      const pa = ab + bb + hbp + sf;
+      const obp = pa > 0 ? round((h + bb + hbp) / pa, 3) : null;
+      const ops = obp != null && slg != null ? round(obp + slg, 3) : null;
+      const era = ip > 0 ? round((9 * er) / ip, 2) : null;
+      const whip = ip > 0 ? round((bbAllowed + hAllowed) / ip, 3) : null;
+      const k9 = ip > 0 ? round((9 * kThrown) / ip, 2) : null;
+      const bb9 = ip > 0 ? round((9 * bbAllowed) / ip, 2) : null;
+
+      return {
+        player_id: w.playerId,
+        team_id: teamId,
+        season_year: seasonYear,
+        ab, r: v.runs ?? 0, h, doubles, triples, hr,
+        rbi: v.rbis ?? 0, bb, k: v.strikeouts ?? 0,
+        sb: v.stolen_bases ?? 0, cs: v.caught_stealing ?? 0,
+        hbp, sac: v.sacrifice_bunts ?? 0, sf,
+        avg, obp, slg, ops,
+        ip, h_allowed: hAllowed, r_allowed: v.runs_allowed ?? 0, er,
+        bb_allowed: bbAllowed, k_thrown: kThrown, hr_allowed: v.home_runs_allowed ?? 0,
+        era, whip, k9, bb9,
+        last_updated: new Date().toISOString(),
+      };
+    });
+
+    const { data: upserted } = await db
+      .from('baseball_player_season_stats')
+      .upsert(rows, { onConflict: 'player_id,team_id,season_year' })
+      .select('id, player_id');
+    const idByPlayer = new Map(
+      ((upserted ?? []) as Array<{ id: string; player_id: string }>).map((r) => [r.player_id, r.id])
+    );
+
+    return writes.map((w) => ({
+      rowId: idByPlayer.get(w.playerId) ?? null,
+      playerId: w.playerId,
+      seasonYear,
+      before: (beforeByPlayer.get(w.playerId) as (Record<string, unknown> & { id: string }) | undefined) ?? null,
+    }));
+  } catch {
+    // Non-fatal: baseball_player_stats already holds this import's data.
+    return [];
+  }
+}
+
+/**
+ * REPAIR ROUND — reverses a `game_box_score` import's canonical write
+ * (mirrors applyGameBoxScoreImport). Best-effort: never throws — the same
+ * "canonical routing is best-effort" contract the write side established;
+ * a failure here never blocks reverting the legacy baseball_player_stats
+ * rows or marking the run rolled_back.
+ */
+async function revertGameBoxScoreImport(
+  db: LooseClient,
+  snap: GameBoxScoreSnapshot,
+): Promise<void> {
+  try {
+    if (snap.gameCreatedByImport) {
+      // This game exists ONLY because this import created it — deleting it
+      // is the exact inverse of that create. ON DELETE CASCADE on
+      // baseball_box_score_batting/_pitching.game_id removes this run's
+      // box-score rows as part of the same delete.
+      await db.from('baseball_games').delete().eq('id', snap.gameId);
+      return;
+    }
+
+    // Restore the box score to its pre-import state via the SAME atomic RPC
+    // the write side uses — this also re-recalculates season stats for every
+    // affected player off the restored rows (the "derived data wins"
+    // recalculation already documented on upsertSeasonTotalsImport).
+    await saveFullBoxScore(
+      snap.gameId,
+      snap.beforeBatting,
+      snap.beforePitching,
+      snap.beforeOurScore ?? 0,
+      snap.beforeOpponentScore ?? 0,
+    );
+    // save_baseball_full_box_score always flips status to 'completed' — put
+    // a non-'completed' pre-import status back explicitly.
+    if (snap.beforeStatus && snap.beforeStatus !== 'completed') {
+      await db
+        .from('baseball_games')
+        .update({ status: snap.beforeStatus })
+        .eq('id', snap.gameId);
+    }
+  } catch {
+    // Non-fatal: the legacy baseball_player_stats rows are still reverted
+    // below; the canonical box score may retain this import's numbers until
+    // retried.
+  }
+}
+
+/**
+ * REPAIR ROUND — reverses a `season_totals` import's canonical upsert into
+ * baseball_player_season_stats. Same best-effort contract as
+ * revertGameBoxScoreImport.
+ */
+async function revertSeasonTotalsImport(
+  db: LooseClient,
+  entries: SeasonTotalsSnapshotEntry[],
+): Promise<void> {
+  try {
+    for (const entry of entries) {
+      if (!entry.rowId) continue;
+      if (entry.before) {
+        // Restore the pre-import values (stage-and-swap via a targeted update).
+        const { id: _id, ...restoreCols } = entry.before;
+        void _id;
+        await db
+          .from('baseball_player_season_stats')
+          .update(restoreCols)
+          .eq('id', entry.rowId);
+      } else {
+        // This run CREATED the row (no prior season-stats line existed) —
+        // remove exactly the row it created. NOT delete-then-reinsert; the
+        // single inverse of the insert.
+        await db
+          .from('baseball_player_season_stats')
+          .delete()
+          .eq('id', entry.rowId);
+      }
+    }
+  } catch {
+    // Non-fatal: see revertGameBoxScoreImport.
+  }
+}
+
+// -----------------------------------------------------------------------------
 // rollbackImport — reverse ONLY this run's records via the stored snapshot
 // -----------------------------------------------------------------------------
 
@@ -1455,9 +1991,38 @@ export const rollbackImport = withBaseballAction(
       .eq('team_id', teamId)
       .maybeSingle();
 
+    const lineageData =
+      (lineage as { unmatched_data?: Record<string, unknown> } | null)?.unmatched_data ?? null;
+
+    // EVENT-GRAIN GUARD — an event-level run's committed lineage row (stat-
+    // event-imports.ts) stores `{ grain_counts, validation }`, with NO
+    // `snapshot` KEY AT ALL (not just an empty array). Silently treating that
+    // as "zero rows to revert" would report `0 removed · 0 restored` as a
+    // false success and still mark the run 'rolled_back' below, permanently
+    // hiding the Roll-back control while the event rows still fully exist.
+    // getImportRuns already excludes event-grain runs from this wizard's list;
+    // this is defense-in-depth for a stale client / direct call.
+    if (lineageData && !('snapshot' in lineageData)) {
+      throw new Error(
+        'This run has no box-score rollback snapshot (it looks like an event-level import) and cannot be rolled back from here.'
+      );
+    }
+
     const snapshot: BaseballImportRowSnapshot[] =
-      ((lineage as { unmatched_data?: { snapshot?: BaseballImportRowSnapshot[] } } | null)
-        ?.unmatched_data?.snapshot) ?? [];
+      (lineageData?.snapshot as BaseballImportRowSnapshot[] | undefined) ?? [];
+
+    // REPAIR ROUND — carried by applyImportPlan (commit-time) so this run's
+    // canonical-table write (Stats Center's actual read model) can also be
+    // reversed, not just the legacy baseball_player_stats rows below. Absent
+    // on a run committed before this field existed — degrades to a
+    // legacy-only revert, same as every other optional field in this file.
+    const dataShape = lineageData?.dataShape as
+      | 'season_totals'
+      | 'game_box_score'
+      | 'event_log'
+      | null
+      | undefined;
+    const canonicalSnapshot = lineageData?.canonicalSnapshot;
 
     let reverted = 0; // created rows removed
     let restored = 0; // updated rows put back to before-state
@@ -1488,6 +2053,16 @@ export const rollbackImport = withBaseballAction(
           .eq('id', snap.statId);
         if (!error) restored++;
       }
+    }
+
+    // REPAIR ROUND — also reverse the canonical-table write this run made, so
+    // Stats Center (which reads box-score/season-stats, never
+    // baseball_player_stats) reflects the roll-back too, not just the legacy
+    // numbers above.
+    if (dataShape === 'game_box_score' && canonicalSnapshot) {
+      await revertGameBoxScoreImport(db, canonicalSnapshot as GameBoxScoreSnapshot);
+    } else if (dataShape === 'season_totals' && Array.isArray(canonicalSnapshot)) {
+      await revertSeasonTotalsImport(db, canonicalSnapshot as SeasonTotalsSnapshotEntry[]);
     }
 
     // Mark the run + lineage row rolled back (status only; we keep the audit).
@@ -1532,13 +2107,41 @@ export const getImportRuns = withBaseballAction(
   ): Promise<BaseballImportRunRow[]> => {
     const supabase = await createClient();
     const db = supabase as unknown as LooseClient;
+    const limit = args.limit ?? 20;
+    // Over-fetch a wider raw window before filtering out event-grain runs
+    // below, so a run of consecutive event-level imports doesn't starve this
+    // list down to fewer than `limit` box-score entries.
     const { data } = await db
       .from('baseball_import_runs')
       .select('*')
       .eq('team_id', args.teamId)
       .order('created_at', { ascending: false })
-      .limit(args.limit ?? 20);
-    return (data ?? []) as unknown as BaseballImportRunRow[];
+      .limit(limit * 3);
+    const runs = (data ?? []) as unknown as BaseballImportRunRow[];
+    if (runs.length === 0) return runs;
+
+    // ISSUE #379 (2nd finding) — exclude EVENT-GRAIN runs (created by the
+    // Event-level wizard / stat-event-imports.ts) from this box-score wizard's
+    // "Recent imports" list. Their staged/committed lineage rows carry a
+    // different shape (CanonicalEventRow[] rows; no `.matches`/`.snapshot`)
+    // that this wizard's Approve/Reject/Roll-back buttons cannot safely act
+    // on (see the hardened guards in reviewImportRun/rollbackImport below).
+    // Discriminated by the SAME convention stat-event-imports.ts documents at
+    // its own staging site: mapping_config.adapter present => event-grain.
+    const runIds = runs.map((r) => r.id);
+    const { data: lineageRows } = await db
+      .from('baseball_stat_uploads')
+      .select('import_run_id, mapping_config')
+      .in('import_run_id', runIds);
+    const eventRunIds = new Set(
+      ((lineageRows ?? []) as Array<{
+        import_run_id: string;
+        mapping_config: { adapter?: string } | null;
+      }>)
+        .filter((r) => typeof r.mapping_config?.adapter === 'string')
+        .map((r) => r.import_run_id),
+    );
+    return runs.filter((r) => !eventRunIds.has(r.id)).slice(0, limit);
   }
 );
 
@@ -1690,12 +2293,31 @@ export const reviewImportRun = withBaseballAction(
         matches?: BaseballImportRowMatch[];
         headers?: string[];
         rows?: CSVRow[];
+        // ISSUE #379 — absent on a run staged before this field existed; falls
+        // back to the legacy-only write, same as an omitted commit-time value.
+        dataShape?: 'season_totals' | 'game_box_score' | 'event_log' | null;
       } | null;
     };
+
+    // EVENT-GRAIN GUARD — an event-level run's staged lineage row (stat-event-
+    // imports.ts) carries `rows: CanonicalEventRow[]` with NO `.matches` field
+    // at all. Approving here would resolve `stagedMatches` to `[]`, run
+    // `applyImportPlan` over zero actionable rows, and still finalize the run
+    // as 'committed'/'approved' — a false "0 created · 0 updated" success that
+    // permanently discards the staged vendor data (the idempotent
+    // pending_review guard above means it can never be re-approved). Fail
+    // loud instead. getImportRuns already excludes event-grain runs from this
+    // wizard's list; this is defense-in-depth for a stale client / direct call.
+    if (staged.unmatched_data && !Array.isArray(staged.unmatched_data.matches)) {
+      throw new Error(
+        'This run was staged by the event-level importer and must be approved from the Event-level wizard, not here.'
+      );
+    }
 
     const stagedMatches = staged.unmatched_data?.matches ?? [];
     const stagedHeaders = staged.unmatched_data?.headers ?? [];
     const stagedRows = staged.unmatched_data?.rows ?? [];
+    const stagedDataShape = staged.unmatched_data?.dataShape ?? undefined;
     if (stagedRows.length === 0) {
       throw new Error(
         'This run was staged before row payloads were retained; re-upload to apply it.'
@@ -1738,6 +2360,7 @@ export const reviewImportRun = withBaseballAction(
       mapping: staged.mapping_config ?? {},
       rows: stagedRows,
       matches: stagedMatches,
+      dataShape: stagedDataShape,
       validation: stagedValidation,
     });
 

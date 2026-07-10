@@ -268,6 +268,12 @@ describe('global tripwire', () => {
     // zero auth in a 'use server' file — Next.js makes every such export a
     // public, directly-POSTable action regardless of who actually imports it.
     // 425 - 1 - 1 - 4 = 419.
-    expect(total).toBe(419);
+    //
+    // 421 as of the 2026-07-10 feature-flow sweep (+2): golf.ts gains
+    // `updateGolfQualifierDetails` (the previously-missing qualifier edit
+    // flow) and `reconcileQualifierStatus` (view-time lifecycle self-heal on
+    // the qualifier detail page) — both withAdminObserved-wrapped and listed
+    // in FEATURE_REGISTRY's qualifiers manifest.
+    expect(total).toBe(421);
   });
 });

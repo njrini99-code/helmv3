@@ -406,7 +406,6 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                                 objective={o}
                                 roster={roster ?? []}
                                 onClose={() => setTaskForObjective(null)}
-                                onError={setError}
                               />
                             )}
                           </div>
@@ -544,24 +543,30 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
 // =============================================================================
 // RecapTaskComposer — inline "assign player task" form for one objective. Posts
 // to assignRecapTask (capability-enforced, source-linked to the objective).
+//
+// Owns its OWN error state (taskError) rather than reporting up to the parent
+// panel's `error` — that state drives the panel's load-failure branch, which
+// replaces the ENTIRE recap body (every other objective + the scrimmage
+// section + Save/Cancel). A per-task validation error (e.g. "assign at least
+// one player") must never wipe out the rest of the recap the coach is mid-
+// editing.
 // =============================================================================
 
 function RecapTaskComposer({
   objective,
   roster,
   onClose,
-  onError,
 }: {
   objective: PracticeObjectiveView;
   roster: RecapRosterPlayer[];
   onClose: () => void;
-  onError: (msg: string | null) => void;
 }) {
   const [title, setTitle] = useState(`Follow-up: ${objective.focusArea}`);
   const [dueDate, setDueDate] = useState('');
   // Default the assignee set to the objective's players; coach can adjust.
   const [selected, setSelected] = useState<Set<string>>(new Set(objective.playerIds));
   const [done, setDone] = useState(false);
+  const [taskError, setTaskError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const toggle = (id: string) =>
@@ -573,7 +578,7 @@ function RecapTaskComposer({
     });
 
   const submit = () => {
-    onError(null);
+    setTaskError(null);
     startTransition(async () => {
       const ids = [...selected];
       const res = await assignRecapTask({
@@ -584,7 +589,7 @@ function RecapTaskComposer({
         playerIds: ids.length > 0 ? ids : undefined,
       });
       if (!res.success) {
-        onError(res.error ?? 'Could not assign the task.');
+        setTaskError(res.error ?? 'Could not assign the task.');
         return;
       }
       setDone(true);
@@ -654,6 +659,10 @@ function RecapTaskComposer({
         <p className="text-micro text-warm-400">
           Assigning to the {objective.playerIds.length} player(s) on this objective.
         </p>
+      )}
+
+      {taskError && (
+        <p className="text-micro text-error">{taskError}</p>
       )}
 
       <div className="flex items-center gap-2 pt-0.5">

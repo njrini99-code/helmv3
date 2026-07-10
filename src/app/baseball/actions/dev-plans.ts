@@ -135,7 +135,16 @@ const getDevPlanForCoachAction = withBaseballAction(
   'getDevPlanForCoach',
   {
     featureArea: 'baseball-dev-plans',
-    requiredCapability: 'can_manage_settings',
+    // No requiredCapability: dev plans are gated by OWNERSHIP (coach_id ===
+    // ctx.activeCoachId, enforced in the body below), not by a team-settings
+    // permission. 'can_manage_settings' governs team configuration, not
+    // player development — gating on it meant any assistant coach without
+    // that unrelated permission (the default for non-primary/non-head
+    // staff) could create a plan (nav-registry shows this route to every
+    // coach; CreateDevPlanModal's insert has no capability check) and then
+    // be 403'd viewing/completing the very plan they just made. See the
+    // matching fix on completeGoal/uncompleteGoal below.
+    //
     // Read-only (a single .select().single(), no mutation) so it's safe for
     // the shared BaseballHelm demo coach session — without this the demo
     // coach gets BaseballDemoReadOnlyError on every /dev-plans/[id] detail
@@ -373,7 +382,10 @@ export async function completeGoal(
 
 const completeGoalAction = withBaseballAction(
   'completeGoal',
-  { featureArea: 'baseball-dev-plans', requiredCapability: 'can_manage_settings' },
+  // No requiredCapability: see getDevPlanForCoachAction above — this is
+  // gated by the plan.coach_id === coachId ownership check below, not by
+  // the unrelated 'can_manage_settings' (team-settings) permission.
+  { featureArea: 'baseball-dev-plans' },
   async (ctx, planId: string, goalId: string): Promise<void> => {
     const supabase = await createClient();
     const coachId = ctx.activeCoachId;
@@ -454,7 +466,10 @@ export async function uncompleteGoal(
 
 const uncompleteGoalAction = withBaseballAction(
   'uncompleteGoal',
-  { featureArea: 'baseball-dev-plans', requiredCapability: 'can_manage_settings' },
+  // No requiredCapability: see getDevPlanForCoachAction above — this is
+  // gated by the plan.coach_id === coachId ownership check below, not by
+  // the unrelated 'can_manage_settings' (team-settings) permission.
+  { featureArea: 'baseball-dev-plans' },
   async (ctx, planId: string, goalId: string): Promise<void> => {
     const supabase = await createClient();
     const coachId = ctx.activeCoachId;

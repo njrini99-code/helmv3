@@ -213,6 +213,7 @@ export default async function PlayerLiftPage() {
       upcoming={sessions.upcoming}
       recent={sessions.recent}
       readinessSubmittedToday={readinessSubmittedToday}
+      basePath="/lifting/dashboard"
     />
   );
 }

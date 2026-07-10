@@ -53,6 +53,12 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  /**
+   * Discriminated code for the known team-resolution failure branches, so
+   * callers can render a dedicated UI (e.g. "No Team Assigned" + CTA) instead
+   * of pattern-matching the free-text `error` string.
+   */
+  errorCode?: 'no_team' | 'no_coach';
 }
 
 const FIELD_LIMITS = {
@@ -101,7 +107,7 @@ function validateRecruitInput(input: Partial<RecruitInput>): string | null {
 
 async function resolveCoachAndTeam(): Promise<
   | { ok: true; coachId: string; teamId: string; supabase: Awaited<ReturnType<typeof createClient>> }
-  | { ok: false; error: string }
+  | { ok: false; error: string; errorCode?: 'no_team' | 'no_coach' }
 > {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -113,11 +119,11 @@ async function resolveCoachAndTeam(): Promise<
     .eq('user_id', user.id)
     .maybeSingle();
   if (!coach || !coach.organization_id) {
-    return { ok: false, error: 'Coach profile required' };
+    return { ok: false, error: 'Coach profile required', errorCode: 'no_coach' };
   }
 
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-  if (!teamId) return { ok: false, error: 'No team found for coach' };
+  if (!teamId) return { ok: false, error: 'No team found for coach', errorCode: 'no_team' };
 
   return { ok: true, coachId: coach.id, teamId, supabase };
 }
@@ -125,7 +131,7 @@ async function resolveCoachAndTeam(): Promise<
 async function getRecruitsImpl(): Promise<ActionResult<Recruit[]>> {
   try {
     const ctx = await resolveCoachAndTeam();
-    if (!ctx.ok) return { success: false, error: ctx.error };
+    if (!ctx.ok) return { success: false, error: ctx.error, errorCode: ctx.errorCode };
 
     const { data, error } = await (ctx.supabase as any)
       .from('golf_recruits')

@@ -5,7 +5,7 @@ import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
-import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
+import { getQualifierRoundCourses, reconcileQualifierStatus } from '@/app/golf/actions/golf';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -49,6 +49,11 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   const isPlayer = !!player;
 
   const supabase = await createClient();
+
+  // Lifecycle self-heal: close out an 'in_progress' qualifier whose
+  // deadline passed with no further submissions (the submit-time
+  // auto-advance never re-fires once play stops). No-op otherwise.
+  await reconcileQualifierStatus(id);
 
   // Get qualifier with entries
   const { data: qualifier } = await supabase

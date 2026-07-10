@@ -55,6 +55,11 @@ export interface QualifyingWorkspace {
   name: string;
   start_date: string;
   end_date: string | null;
+  /** golf_qualifiers.status — the play lifecycle (upcoming/in_progress/
+   *  completed), a SEPARATE state machine from selection_state below. The
+   *  workspace surfaces it so a coach can conclude the qualifier once the
+   *  roster is committed, without leaving this screen. */
+  status: string;
   selection_state: QualifierSelectionState;
   selection_slots_total: number;
   selection_slots_coach_pick: number;

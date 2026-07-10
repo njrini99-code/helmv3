@@ -19,6 +19,7 @@ import { loadQualifyingWorkspace } from './loader';
 import type { QualifierSelectionState } from './types';
 import { composeTravelBrief } from './travel-brief';
 import { pushTravelBriefToChat } from './chat-push';
+import { notifyPlayersOfSelectionOutcome } from './player-notify';
 import { logServerError } from '@/lib/server-error-logger';
 
 type Sb = SupabaseClient<Database>;
@@ -207,6 +208,18 @@ export async function confirmSelection(
     await logServerError(
       `travel-brief push failed for qualifier ${args.qualifier_id}: ${err instanceof Error ? err.message : String(err)}`,
       { action: 'v3.qualifying.confirmSelection.travelBrief' },
+    );
+  }
+
+  // Players never learned the outcome before this — only the coach's own
+  // chat got the travel brief. Best-effort, same reasoning as above: never
+  // let a notify failure undo a selection that already committed.
+  try {
+    await notifyPlayersOfSelectionOutcome(supabase, workspace);
+  } catch (err) {
+    await logServerError(
+      `player selection-outcome notify failed for qualifier ${args.qualifier_id}: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'v3.qualifying.confirmSelection.notifyPlayers' },
     );
   }
 
