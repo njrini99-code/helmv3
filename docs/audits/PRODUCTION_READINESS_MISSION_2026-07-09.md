@@ -193,3 +193,92 @@ Footer: Settings · Sign out.
 - Workflow executors: always `model:'sonnet'`; capture real exit codes
   (never `cmd | tail` as a gate).
 - add columns BEFORE bulk-ingest; verify migrations via information_schema.
+
+---
+
+- **Phase D — adversarial verify loop** until 2 consecutive dry rounds
+  (ledger below; loop still open as of `8f820639`).
+- **Phase E — advisors re-run + ONE production deploy + final report**
+  (checklist below; merge/deploy both pending Nick).
+
+## Phase D — verification ledger
+
+Six numbered adversarial-verify rounds plus one mega-wave have landed on
+`integration/mission-verify` (15 commits ahead of `origin/main` as of
+`8f820639`). Each round: an adversarial pass re-reads the diff/runtime
+behavior against its own claims, fixes what it confirms, and gates before
+merge — no round has yet come back dry.
+
+| Round | Commit | Scope | Confirmed findings | Gates |
+|---|---|---|---|---|
+| 1 | `c9935b63` | P0 recruiting-guard trigger widened (flip-type-then-activate laundering closed); golf CoachHelm breadcrumb derivation; 16 baseball `loading.tsx` rebuilds; docs/registry truth | **19** | tsc 0, lint 0, unit 4614, build 0 |
+| 2 | `fbcac248` | JUCO write-ordering fix (2nd `recruiting_activated` site the round-1 trigger note missed); golf mobile-nav active-state; glass purge on 46 baseball files + 14 more emerald-hue files; 3 pre-existing CodeQL findings; box-score colspan; stale e2e specs deleted | **6** + follow-ups | tsc 0, lint 0, unit green, build 0 |
+| — | `2019db30` | **W7 re-grade** (docs, not an adversarial round): every one of 22 readiness-matrix rows re-verified against live source + prod migrations. Rollup moved **0 ready / 18 partial → 10 ready / 10 partial / 1 route-only / 1 hidden**. `check:readiness-matrix` exit 0; `readiness-matrix-routes` 204 tests passed | n/a | n/a |
+| 3 | `afa2bfaa` | Final glass residue: `glass-standard/prominent/subtle` → **zero** under `src/app/baseball/**` (join/staff-join/demo-sessions/public-program); `EventsClient` badges onto `InkBadge` tone matrix | not itemized in commit trailer [verify] | tsc 0, lint 0, unit green, build 0 |
+| 4 | `70aa5dab` | Signal Inbox silently discarded mutation results (toast now surfaces failures, convert-dialog stays open on failure); program-profile loading-header color flash fixed | **2** | tsc 0, lint 0, unit 4611/455 files |
+| 5 | `2f0eb19f` | One finding-class, 7 sites: client awaits a server action and discards the result, so failures render as success (golf insight rate/dismiss ×3, baseball import approve, readiness check-in, lift program editor, recruiting pipeline) | **7** | tsc 0, lint 0, unit 4611/455 files |
+| **mega** | `11180c54` | **"Phase D mega-wave"** — 4 fleets in one gated commit: Defect Sweep 1 (CRM unsubscribe false-ok, LLM spend-record logging, JUCO revert-only-if-it-flipped, 4 silent-failure fixes, double-submit guards, bounded chat fetch, paginated admin queries past the 1000-row cap, 4 tz day-bucketing fixes, round-submit a11y, 2 error boundaries); Defect Sweep 2 (email-route truth, HTML-injection escaping, 6 settings-stub regressions, Datadog client env, idempotent digest crons, registered refresh-engagement cron, batched golf N+1s, auth-redirect fallback chain, 2 mission tests made to actually gate); Authz Hardening (4 unauthenticated admin-client drivers de-exported from `'use server'` modules, zero client callers, coverage tripwire honestly re-derived **425 → 419**, −6 verified); Taste-Polish Wave (28 packets from a 15-cluster Opus design review: ~14 `loading.tsx` rewrites, legacy-island rebuilds onto Living Annual/Fairway, date/numeral unification) | **22 + 16** (Defect Sweeps 1+2); 28 polish packets not counted as "findings" | build 0, tsc 0, lint 0, unit 4616/455 files (4 test files repaired in-wave) |
+| 6 | `8f820639` | Rebuild regressions from the mega-wave's own rewrites (Escape-key focus trap, overdue-task badge collision, deterministic aria-labels, off-by-one date anchoring, unearned "verified" checkmark, `InkNotice` error-ink var, Messages scroll guard + dead-component deletion, safe-area double-counting, 4 skeleton/board mismatches); missed-adjacent glass/color residue (PositionPlanner/PositionPlayerPill, 5 more components onto `InkBadge`/`InkNotice`, `CalendarFairway` event-ink map); 2 comment-terminator bugs from the fixer wave itself, caught by gates | **26** | build 0, tsc 0, lint 0, unit 0 (no count restated in trailer) |
+
+Running total of discretely-counted confirmed findings across rounds 1, 2,
+4, 5, 6 and the mega-wave's two defect sweeps: **19 + 6 + 2 + 7 + 22 + 16 +
+26 = 98** [verify — sum of trailer-stated counts; round 3's residue batch
+and the mega-wave's 28 taste packets are excluded as not discretely
+numbered in their own commits].
+
+**Status**: no round has come back dry yet, so the stated exit criterion
+(2 consecutive dry rounds) is not met. A round-7 pass is in flight —
+**uncommitted at HEAD** as of this ledger — touching
+`snapshot-cards/shared.tsx`, `SnapshotHeaderBand.tsx`, `ProfileTimeline.tsx`,
+`PlayerProfileClient.tsx`, and `PositionPlayerPill.tsx`: raw
+`amber-*`/`warm-*`/`red-*` Tailwind swatches on the player-profile snapshot
+cards and the position-planner pill are being converted to the ink system
+(`--notice-error-ink` via `color-mix()`, `pursuit` clay-ink ramp), with
+`PlayerNotesSection.tsx` and `PlayerPerformanceTab.tsx` explicitly
+name-flagged in-code as deferred siblings still carrying raw color. This is
+the same class of fix as round 6's residue sweep and overlaps the
+ink-conversion follow-up wave below — it has not been gated or committed.
+
+## Phase E — closeout checklist
+
+- [x] **Advisors re-run** — Supabase advisors re-checked against live prod
+  post-Phase-D fixes.
+- [ ] **Merge to `main`** — pending Nick. Branch `integration/mission-verify`
+  is 15 commits ahead of `origin/main` (`a3946332`); not yet opened/merged
+  as a PR.
+- [ ] **Production deploy** — pending, and gated on the merge above. Standing
+  constraint: ONE intentional production deploy for the whole mission, no
+  incremental previews.
+- [x] **Trigger apply sequenced** — `supabase/migrations/20260709010200_baseball_players_recruiting_guard.sql`
+  (the `BEFORE UPDATE` guard on `recruiting_activated`) carries a header
+  banner marking it **DEPLOY-SEQUENCED**: it must land together with, or
+  immediately after, the production deploy that ships W0a's
+  `activateRecruitingExposure`/`deactivateRecruitingExposure` rewrite in
+  `src/app/baseball/actions/player-access.ts` (now writing via
+  `createAdminClient()`/service_role). Applying the trigger before that
+  deploy lands would `42501` every legitimate activation/withdrawal on live
+  prod. Its two W0b siblings — `20260709010000` (public-view visibility
+  filters) and `20260709010100` (gate `get_admin_event_summary`) — have
+  **already been applied to prod**, independently, with no such dependency.
+- [ ] **Final report** — not yet written; blocked on the merge/deploy above.
+
+## Two follow-up waves (queued after Phase D/E close — both already have a down payment in flight)
+
+- **Agent-legibility sweep** (repo map doc, stale-doc truth pass, dead-code
+  deletion) — tracked as not-yet-started, but the current uncommitted diff
+  already contains one instance of the stale-doc truth pass: `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md`'s
+  Stats/Box-Score row cited a nonexistent migration filename
+  (`20260709042343`); corrected in-flight to the real applied migration
+  (`20260708150000_baseball_box_score_upsert_and_error_detail.sql`).
+- **Tree-wide red/amber → ink conversion remainder** — tracked at 182 hits /
+  57 baseball files [verify — this session's own broader grep for
+  `(bg|text|border)-...-(red|amber)-[0-9]+` under `src/app/baseball` +
+  `src/components/baseball` at HEAD returns a substantially higher count
+  (~470 hits / ~75 files); the tracked figure likely predates several
+  since-landed conversions (round 6, mega-wave taste-polish) or excludes
+  the deliberately-preserved graduated readiness/status-color legends —
+  reconcile scope before treating either number as authoritative]. In
+  flight uncommitted right now on the player-profile snapshot-card cluster
+  and `PositionPlayerPill` (see Phase D status above); `PlayerNotesSection.tsx`
+  and `PlayerPerformanceTab.tsx` are explicitly flagged in-code as the next
+  deferred targets.
