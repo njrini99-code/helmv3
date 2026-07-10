@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,7 +76,10 @@ function CronJobCard({ row }: { row: CronBoardRow }) {
         </StatusPill>
       </div>
       <div className="mt-2.5 space-y-1.5 text-xs">
-        <StatLine label="Last run" value={row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : 'awaiting first run'} />
+        <StatLine
+          label="Last run"
+          value={row.lastRunAt ? <LocalTime iso={row.lastRunAt} variant="datetime" /> : 'awaiting first run'}
+        />
         <StatLine label="Duration" value={formatDuration(row.lastDurationMs)} />
         <StatLine label="Cadence" value={`${row.cadenceMinutes}m`} />
       </div>
@@ -116,7 +120,7 @@ function CronBoardCards({ rows }: { rows: CronBoardRow[] }) {
       )}
       {restRows.length > 0 ? (
         <details>
-          <summary className="cursor-pointer text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
             {restRows.length} other job{restRows.length === 1 ? '' : 's'} — view schedule
           </summary>
           <div className="mt-3 space-y-2">
@@ -171,7 +175,7 @@ function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
                   ) : null}
                 </td>
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                  {row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : 'awaiting first run'}
+                  {row.lastRunAt ? <LocalTime iso={row.lastRunAt} variant="datetime" /> : 'awaiting first run'}
                 </td>
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
                   {formatDuration(row.lastDurationMs)}
@@ -204,11 +208,11 @@ function IntegrityCheckCard({ check }: { check: IntegrityRow }) {
       </div>
       <div className="mt-2.5 space-y-1.5 text-xs">
         <StatLine label="Offending rows" value={check.count} />
-        <StatLine label="Last run" value={new Date(check.lastRunAt).toLocaleString()} />
+        <StatLine label="Last run" value={<LocalTime iso={check.lastRunAt} variant="datetime" />} />
       </div>
       {isFail && check.sample.length > 0 ? (
         <details className="mt-2">
-          <summary className="cursor-pointer text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
             view sample rows
           </summary>
           <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-all border-t border-warm-200/60 pt-2 text-xs text-warm-700">
@@ -240,7 +244,7 @@ function IntegrityCards({ checks }: { checks: IntegrityRow[] }) {
       )}
       {passing.length > 0 && failing.length > 0 ? (
         <details>
-          <summary className="cursor-pointer text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
             {passing.length} passing check{passing.length === 1 ? '' : 's'} — view
           </summary>
           <div className="mt-3 space-y-2">
@@ -302,7 +306,7 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
                   )}
                 </td>
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                  {new Date(c.lastRunAt).toLocaleString()}
+                  <LocalTime iso={c.lastRunAt} variant="datetime" />
                 </td>
               </tr>
             ))}

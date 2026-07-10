@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { StatusPill } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { TeamHealth } from '@/lib/admin/data/golf';
+import { LocalTime } from './LocalTime';
 
 const HEALTH_TONE: Record<TeamHealth, 'success' | 'warning' | 'danger'> = {
   active: 'success',
@@ -62,7 +63,7 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
                   <p className="truncate text-sm font-medium text-warm-900">{t.name}</p>
                   <p className="mt-1 font-fw-mono text-xs tabular-nums text-warm-500">
                     {t.playerCount} players · last{' '}
-                    {t.lastActivity ? new Date(t.lastActivity).toLocaleDateString() : 'never'}
+                    {t.lastActivity ? <LocalTime iso={t.lastActivity} variant="date" fallback="never" /> : 'never'}
                   </p>
                 </div>
                 <StatusPill tone={HEALTH_TONE[t.health]} dot size="sm" className="shrink-0">
@@ -108,7 +109,7 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
                 </td>
                 <td className="px-3 font-fw-mono font-semibold tabular-nums text-warm-900">{t.playerCount}</td>
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                  {t.lastActivity ? new Date(t.lastActivity).toLocaleDateString() : 'never'}
+                  {t.lastActivity ? <LocalTime iso={t.lastActivity} variant="date" fallback="never" /> : 'never'}
                 </td>
                 <td className="px-3">
                   <StatusPill tone={HEALTH_TONE[t.health]} dot size="sm">

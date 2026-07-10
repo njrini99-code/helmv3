@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import type { BenLeahTrackedIssue } from '@/lib/admin/ben-leah-issue-tracker';
@@ -31,6 +32,26 @@ function formatWhen(iso: string): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+/**
+ * This is a Client Component: `formatWhen` resolves against the RUNTIME's
+ * timezone, so calling it directly in render bakes the server's UTC render
+ * into the SSR HTML and recomputes to the viewer's local zone on hydration —
+ * a guaranteed text mismatch (the same bug class LocalTime.tsx documents;
+ * that shared component doesn't apply here as-is since its variants don't
+ * carry these custom month/day/hour/minute options). Same fix, replicated:
+ * a deterministic placeholder until a post-hydration effect swaps in the
+ * localized string.
+ */
+function FormattedWhen({ iso }: { iso: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLabel(formatWhen(iso));
+  }, [iso]);
+
+  return <span suppressHydrationWarning>{label ?? '—'}</span>;
 }
 
 function IssueRow({ issue }: { issue: BenLeahTrackedIssue }) {
@@ -65,9 +86,11 @@ function IssueRow({ issue }: { issue: BenLeahTrackedIssue }) {
       </td>
       <td className="px-3 text-xs capitalize text-warm-600">{issue.priority ?? '—'}</td>
       <td className="px-3 text-xs text-warm-600">{issue.category ?? '—'}</td>
-      <td className="px-3 text-xs text-warm-500">{formatWhen(issue.updated_at)}</td>
       <td className="px-3 text-xs text-warm-500">
-        {issue.closed_at ? formatWhen(issue.closed_at) : '—'}
+        <FormattedWhen iso={issue.updated_at} />
+      </td>
+      <td className="px-3 text-xs text-warm-500">
+        {issue.closed_at ? <FormattedWhen iso={issue.closed_at} /> : '—'}
       </td>
     </tr>
   );
@@ -115,8 +138,14 @@ function IssueCard({ issue }: { issue: BenLeahTrackedIssue }) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-warm-500">
-        <span>Updated {formatWhen(issue.updated_at)}</span>
-        {issue.closed_at ? <span>Closed {formatWhen(issue.closed_at)}</span> : null}
+        <span>
+          Updated <FormattedWhen iso={issue.updated_at} />
+        </span>
+        {issue.closed_at ? (
+          <span>
+            Closed <FormattedWhen iso={issue.closed_at} />
+          </span>
+        ) : null}
       </div>
 
       <div>
@@ -140,9 +169,15 @@ export function BenLeahIssueTable({ issues }: { issues: BenLeahTrackedIssue[] })
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-xl border border-warm-200/70 md:block">
+      {/* max-h + overflow-auto (not just overflow-x-auto) — the sticky thead
+          below only pins relative to a scroll container that actually
+          scrolls internally; matches the `<thead className="sticky top-0
+          z-10 ...">` inside a `max-h-[28rem] overflow-auto` wrapper idiom
+          already used for a long reviewed-item list in
+          src/components/baseball/import-center/ImportWizardClient.tsx. */}
+      <div className="hidden max-h-[28rem] overflow-auto rounded-xl border border-warm-200/70 md:block">
         <table className="w-full min-w-[980px] text-sm">
-          <thead>
+          <thead className="sticky top-0 z-20 bg-surface-sunken">
             <tr className="text-left text-xs uppercase tracking-widest text-warm-500">
               <th className="sticky left-0 z-10 bg-surface-sunken py-2 pl-3 pr-3">Issue</th>
               <th className="px-3">Derived status</th>
