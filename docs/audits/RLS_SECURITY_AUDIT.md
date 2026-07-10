@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Generated 2026-01-01 against the same 19-user snapshot DB as docs/architecture/USER_ROLE_DATA_OWNERSHIP.md. Superseded by the Wave A IDOR/RLS/anon-grant hardening (#327) and docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # RLS POLICY & SECURITY AUDIT
 > PHASE 3 AUDIT REPORT
 > Generated: 2026-01-01

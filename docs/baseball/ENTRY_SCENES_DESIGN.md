@@ -1,3 +1,10 @@
+<!--
+STATUS: PARKED
+DATE: 2026-07-10
+PARKING DECISION: Companion "painterly SVG scenes" doc to docs/LANDING_ENTRY_WORLD_DESIGN.md. The Entry World / First Light landing was rejected and parked; #650 merged the flush-diamond login instead. Filed inside docs/baseball/ but is not actually a baseball doc — it is a homepage design that never shipped.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Helm Entry Scenes — Baseball & Lift Lab
 ### Fable's design spec · 2026-07-02 · for the login/onboarding worlds
 *Sibling system to golf's `CoastalScene`/`CourseScene` (src/components/golf/scenes/) — same craft DNA, new sports, new moods. Painterly layered SVG, no photography, no people. This is the "svg type thing," grown up.*

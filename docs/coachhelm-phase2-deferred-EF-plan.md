@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Deferred design doc dated 2026-06-01, superseded by later, more comprehensive passes: docs/audits/COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md and COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21.md.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm Phase 2 — Deferred E/F plan (band reconciliation, standing, persistence)
 
 > **Status:** DESIGNED + prod-verified, NOT built. Parked under the "do only high

@@ -15,7 +15,7 @@
 --     row for the same user still grants that org.
 --
 -- Idempotent (CREATE OR REPLACE FUNCTION; DROP TRIGGER IF EXISTS + CREATE).
--- Written NOT applied -- part of the 2026-07-08 integration-verification pass.
+-- Applied -- part of the 2026-07-08 integration-verification pass.
 
 CREATE OR REPLACE FUNCTION public.bridge_baseball_coach_lifting_access()
 RETURNS trigger

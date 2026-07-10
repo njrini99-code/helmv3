@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Generated 2026-01-01 against a 19-user/6-coach/43-player toy-scale snapshot DB. Superseded by the Wave A IDOR/RLS/anon-grant hardening (#327) and docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md, which cover identical ground with current production data.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # PHASE 4: DATA INTEGRITY & FOREIGN KEY AUDIT
 
 **Generated:** 2026-01-01

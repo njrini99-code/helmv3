@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: 2026-07-01 parallel job list sourced from docs/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md §4. The clean-slate train it tracked has concluded (project memory: "lint 0 locked; graveyard 16 tables"), and the underlying issue ledger has a later iteration, docs/audits/ISSUE_LEDGER_2026-07-03.md.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # BaseballHelm Clean-Slate — Parallel Job List
 
 > Hand each **GROUP** below to a separate Claude session. Each group is file-disjoint from the others,

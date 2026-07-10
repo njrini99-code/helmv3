@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Pre-build "everything you need to implement CoachHelm" Cursor-IDE prompt package, untouched since 2026-01-14. CoachHelm has since shipped a full V2 engine and been through docs/audits/COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md and COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21.md. Live reference: memory/context/coachhelm-ai.md.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm Documentation Package
 
 ## What's Inside

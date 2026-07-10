@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: 2026-07-01 workload-split plan for "Lane B = Fairway Phase B" work. Superseded by later iterations of the same Fairway-migration planning lineage: docs/baseball/ui-migration-execution-plan.md (07-03) and docs/baseball/ui-migration-map.md (07-09).
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Item-2 Workload-Sharing Plan — Two Sessions (2026-07-01)
 
 > Follows the BaseballHelm clean-slate landing: **all 53 PRs merged + 19 migrations applied to prod**.

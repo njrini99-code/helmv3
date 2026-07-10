@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Completed-wave planning doc (Inngest/env-drift guards) for work now shipped and further iterated.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Helm Database / Vercel / Supabase / CoachHelm Alignment Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -801,13 +801,12 @@ features:
       feature: memory/features/auth-onboarding-join.md
       flows:
         - memory/context/golfhelm-features.md
-        - docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md
         - docs/security/auth-config.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
       business_logic:
-        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
+        - docs/v3-rls-template.md
         - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
@@ -842,7 +841,7 @@ features:
     review:
       required_docs:
         - memory/features/auth-onboarding-join.md
-        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
+        - docs/v3-rls-template.md
         - docs/security/auth-config.md
       required_checks:
         - npm run typecheck
@@ -1018,7 +1017,6 @@ features:
     docs:
       feature: memory/features/team-access-control.md
       flows:
-        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
         - docs/v3-rls-template.md
       ui:
         - AGENTS.md
@@ -1029,6 +1027,7 @@ features:
         - docs/SECURITY_AUDIT.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
+        - docs/operations/2026-07-03-p0-service-role-key-rotation-runbook.md
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/settings/**

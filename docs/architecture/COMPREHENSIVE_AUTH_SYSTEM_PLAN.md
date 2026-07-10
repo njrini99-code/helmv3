@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Header dated 2026-01-01, "Ready for Implementation" pre-build plan. Auth has since shipped a dedicated W01 auth-foundation wave plus multiple P0/key-rotation runbooks (docs/operations/2026-05-17-p0-runbook.md, docs/operations/2026-07-03-p0-service-role-key-rotation-runbook.md). memory/registry.yml's auth_onboarding_join entry was re-pointed away from this doc (to docs/security/auth-config.md / docs/v3-rls-template.md) in this same sweep.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # COMPREHENSIVE AUTH SYSTEM ANALYSIS & FIX PLAN
 
 **Created:** 2026-01-01

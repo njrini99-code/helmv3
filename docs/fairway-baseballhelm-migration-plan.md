@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Self-declared "Status: PLAN / NOT STARTED. Authored 2026-06-30" — but per project memory, the Lane B Fairway migration Wave 1 has MERGED and Wave 2 is partial. See docs/baseball/ui-migration-map.md (07-09) for current state.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # Fairway UI Migration Plan — BaseballHelm
 
 > **Status:** PLAN / NOT STARTED. Authored 2026-06-30.

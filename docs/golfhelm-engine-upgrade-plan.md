@@ -1,3 +1,10 @@
+<!--
+STATUS: PARKED
+DATE: 2026-07-10
+PARKING DECISION: Self-declared "Status: DESIGN ONLY. No product code, no migrations applied." Dated 2026-06-24. No evidence found of the proposed DB objects being applied as of this 2026-07-10 pass.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm / CoachHelm Engine Upgrade Plan
 
 **Make the engine (a) more golf-aware and (b) genuinely trained/learning on real golf data**

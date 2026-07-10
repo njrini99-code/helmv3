@@ -1,3 +1,10 @@
+<!--
+STATUS: SUPERSEDED
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: March 2026 point-in-time perf report; dashboard performance has continued to be iterated on since (CI OOM fixes, ui-performance-profiler skill).
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # GolfHelm Dashboard Timeout Analysis
 _Generated: 2026-03-09 (overnight cron)_
 

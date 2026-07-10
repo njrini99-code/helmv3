@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Front-matter says last_mapped: 2026-01-13, total_files: 1752. Actual current counts (2026-07-10): `find src -type f` = 3103, `git ls-files` = 6477 — the map understates the codebase by ~1.8-3.7x. Content was never regenerated after that date.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 ---
 last_mapped: 2026-01-13T00:00:00Z
 total_files: 1752

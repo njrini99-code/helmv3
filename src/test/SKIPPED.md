@@ -22,12 +22,9 @@ Single-chain mock can't return different shapes for select vs delete in the same
 
 These component tests drifted because the user's uncommitted WIP modified component behavior (e.g. Button now renders children alongside loading spinner for accessibility). The user is expected to update these specs as part of finalizing the sweep. Skip them now so CI is green; the user's next commit on the sweep should re-enable them with updated assertions.
 
+_Updated 2026-07-09: 5 of the original 9 entries are resolved and removed from this list — `stat-card-sparkline.test.tsx`, `team-pulse-card.test.tsx`, `today-timeline.test.tsx`, and `PlayerCoachHelmDashboard.test.tsx` were deleted (components consolidated away) during the production-readiness mission; `CoachInsightCard.test.tsx`'s skipped spec was superseded by a rewritten `InsightsFeed (coach)` describe block with no remaining `it.skip`. The 4 below are still genuinely pending._
+
 - `src/components/ui/button.test.tsx` — `shows loading state` (children no longer hidden under spinner)
-- `src/components/golf/dashboard/__tests__/stat-card-sparkline.test.tsx` — `renders Sparkline component when data has 2+ points` + 3 trend-color specs (gray/green/red — likely affected by slate→warm token sweep)
-- `src/components/golf/dashboard/__tests__/team-pulse-card.test.tsx` — whole file
-- `src/components/golf/dashboard/__tests__/today-timeline.test.tsx` — `empty state > shows suggestion text for empty schedule`
-- `src/test/app/golf/dashboard/coachhelm/PlayerCoachHelmDashboard.test.tsx` — 3 specs in `Insight Delivery refactor` describe
-- `src/test/golf/components/CoachInsightCard.test.tsx` — `fetches insights for the viewed player and renders hero + secondary cards`
 - `src/test/golf/components/EvidencePanel.test.tsx` — `compact mode renders the four key facts in a single row`
 - `src/test/golf/components/InsightCard.test.tsx` — `fires coach actions including create_focus_area`, `renders different action buttons for player vs coach`
 - `src/test/golf/components/RoundTakeaway.test.tsx` — `shows the "bright spot" pre-header when the tone is celebratory`

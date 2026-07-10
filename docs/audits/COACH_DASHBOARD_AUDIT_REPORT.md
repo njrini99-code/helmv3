@@ -1,3 +1,10 @@
+<!--
+STATUS: STALE
+DATE: 2026-07-10
+SUPERSEDED BY / WHY: Dated 2026-01-25 (baseball coach dashboard, scored 62/100). Superseded by docs/audits/BASEBALLHELM_CANONICAL_SPEC.md and docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md, the current sources of truth for BaseballHelm state.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # BaseballHelm Coach Dashboard - Production Readiness Audit Report
 
 > **Audit Date:** January 25, 2026
