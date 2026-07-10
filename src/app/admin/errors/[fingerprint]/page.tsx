@@ -66,7 +66,12 @@ export default async function FingerprintDetailPage({
                 </Link>
               ) : null}
               {e.stack_trace ? (
-                <pre className="mt-2 max-h-48 overflow-auto rounded bg-warm-100 p-2 text-caption">{e.stack_trace}</pre>
+                // Contained CODE block, never a page-level pan: w-full + min-w-0
+                // keep it from ever donating its long-line width to an ancestor,
+                // overflow-auto gives it its own horizontal+vertical scroller
+                // instead (classic min-w offender otherwise — Mobile Doctrine
+                // rule 8 territory even though this isn't literally a table).
+                <pre className="mt-2 max-h-48 w-full min-w-0 overflow-auto rounded bg-warm-100 p-2 text-caption">{e.stack_trace}</pre>
               ) : null}
             </Surface>
           ))}

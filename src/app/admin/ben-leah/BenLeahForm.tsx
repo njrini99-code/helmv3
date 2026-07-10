@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { AlertCircle, CheckCircle2, GitPullRequest, ImageUp, Send } from 'lucide-react';
 import { Button, StatusPill } from '@/components/fairway';
@@ -12,17 +12,33 @@ import { submitBenLeahFeedback, type BenLeahSubmitState } from './actions';
 
 const initialState: BenLeahSubmitState = { ok: false, message: '' };
 
+// Mobile Doctrine (no zoom-on-focus): every field sharing this class was
+// pinned to a flat `text-sm` (14px) at all breakpoints, which overrode the
+// Input/Textarea/NativeSelect components' own iOS-safe `text-base` mobile
+// tier (twMerge keeps the LAST conflicting class, and this className is
+// always passed last) — every text entry field on the ONE Bridge surface a
+// non-technical phone user touches was silently forcing Safari's
+// zoom-on-focus. `text-base md:text-sm` restores 16px below `md` and keeps
+// the original 14px density at `md`+. `min-h-[48px]` gives NativeSelect the
+// same touch target Input already had (its own default has no min-height).
 const fieldClass = cn(
-  'w-full rounded-fw-md border border-border-subtle bg-surface px-3 py-2 text-sm text-warm-900 shadow-flat outline-none',
+  'w-full min-h-[48px] rounded-fw-md border border-border-subtle bg-surface px-3 py-2 text-base md:text-sm text-warm-900 shadow-flat outline-none',
   'placeholder:text-warm-400 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20',
 );
 
 const textareaClass = cn(fieldClass, 'min-h-28 resize-y leading-6');
 
-function SubmitButton() {
+function SubmitButton({ className, fullWidth }: { className?: string; fullWidth?: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="md" busy={pending} leftIcon={<Send size={16} aria-hidden />}>
+    <Button
+      type="submit"
+      size="md"
+      busy={pending}
+      fullWidth={fullWidth}
+      leftIcon={<Send size={16} aria-hidden />}
+      className={className}
+    >
       {pending ? 'Submitting' : 'Submit to GitHub'}
     </Button>
   );
@@ -48,9 +64,45 @@ function Field({
 
 export function BenLeahForm() {
   const [state, formAction] = useActionState(submitBenLeahFeedback, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+  // REPAIR (verified defect, see docs/MOBILE_DOCTRINE.md rule 5): the fixed
+  // CTA bar below is `position: fixed`, which anchors to the viewport, not
+  // to this form's own scroll extent (confirmed no transform/filter/
+  // will-change/contain ancestor breaks that — admin/template.tsx is
+  // opacity-only specifically to avoid creating one). Rendering it
+  // unconditionally meant it stayed on screen for the ENTIRE page scroll —
+  // including while the user scrolled through the unrelated aside cards and
+  // the "Issue tracker" panel far below this form, permanently covering the
+  // tail of that content. An IntersectionObserver on the form scopes the
+  // bar's screen-time to the form's OWN presence: visible while any part of
+  // the form is on screen (so it tracks through every field), gone once the
+  // user has scrolled past the whole form into content this bar has nothing
+  // to do with. Default state is `true` so SSR output and first client paint
+  // match (no hydration mismatch) before the observer's first callback.
+  const [ctaInView, setCtaInView] = useState(true);
+
+  useEffect(() => {
+    const node = formRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCtaInView(entry?.isIntersecting ?? true),
+      { threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="space-y-5">
+    <form
+      ref={formRef}
+      action={formAction}
+      encType="multipart/form-data"
+      // Rule 5 (docs/MOBILE_DOCTRINE.md) — the fixed mobile CTA bar below
+      // docks over the tail of the form, so the scroll area reserves space
+      // for it (bar + Bridge's fixed bottom-tab bar) below `md`; desktop
+      // keeps the inline button in flow, so no reserve is needed there.
+      className="space-y-5 pb-28 md:pb-0"
+    >
       <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)_220px]">
         <Field label="Request type">
           <NativeSelect name="kind" required className={fieldClass} defaultValue="bug">
@@ -93,7 +145,7 @@ export function BenLeahForm() {
           </NativeSelect>
         </Field>
         <Field label="Screenshots">
-          <span className="flex min-h-[42px] items-center gap-2 rounded-fw-md border border-dashed border-border-strong bg-surface px-3 py-2 text-sm text-warm-600">
+          <span className="flex min-h-[48px] items-center gap-2 rounded-fw-md border border-dashed border-border-strong bg-surface px-3 py-2 text-sm text-warm-600">
             <ImageUp size={16} aria-hidden />
             <Input
               name="screenshots"
@@ -156,8 +208,33 @@ export function BenLeahForm() {
             Signal URL optional
           </StatusPill>
         </div>
-        <SubmitButton />
+        {/* Desktop keeps the inline CTA; below `md` the primary action moves
+            to the fixed thumb-zone bar (Rule 5) so it isn't duplicated on
+            screen. */}
+        <SubmitButton className="hidden md:inline-flex" />
       </div>
+
+      {/* Rule 5 (docs/MOBILE_DOCTRINE.md) — thumb-zone commit: below `md` the
+          primary action is reachable without scroll-to-save no matter which
+          field is focused, docked just above Bridge's fixed bottom-tab bar
+          (56px tall, see FairwayBottomNav, + the iOS home-indicator safe
+          area). AdminTemplate is opacity-only specifically so `position:
+          fixed` here stays anchored to the viewport, not a transformed
+          ancestor (see admin/template.tsx). Gated on `ctaInView` (see the
+          IntersectionObserver above) so it only occupies the viewport while
+          this form is actually the thing on screen — it must not keep
+          floating over the aside cards / issue tracker once the user has
+          scrolled past the form. */}
+      {ctaInView ? (
+        <div
+          className={cn(
+            'fixed inset-x-0 z-[calc(var(--fw-z-nav)+1)] border-t border-warm-200 bg-surface/95 px-4 py-3 md:hidden',
+            'bottom-[calc(56px+env(safe-area-inset-bottom,0px))]',
+          )}
+        >
+          <SubmitButton fullWidth />
+        </div>
+      ) : null}
 
       {state.message ? (
         <div

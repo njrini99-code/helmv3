@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ExternalLink, GitPullRequest } from 'lucide-react';
 import type { WorkLogEntry } from '@/lib/admin/github-pr-timeline';
 import type { WorkArea } from '@/lib/admin/pr-body-parser';
-import { StatusPill, Surface, StatTile, type FwStatusTone } from '@/components/fairway';
+import { StatusPill, Surface, StatTile, StatStrip, type FwStatusTone } from '@/components/fairway';
 
 const AREA_META: Record<WorkArea, { label: string; tone: FwStatusTone }> = {
   golf: { label: 'GolfHelm', tone: 'success' },
@@ -57,18 +57,21 @@ function TimelineCard({ entry }: { entry: WorkLogEntry }) {
     'Add a Partner-readable summary or Git Activity Timeline note to this PR.';
 
   return (
-    <article className="relative pl-8">
+    <article className="relative min-w-0 pl-4 md:pl-8">
+      {/* Timeline rail: a slim always-on line on phone (no marker — the
+          32px desktop gutter + 16px circle is desktop chrome, doctrine
+          rule 7); the full line+marker treatment returns at md. */}
       <span
-        className="absolute left-[7px] top-5 h-[calc(100%-0.5rem)] w-px bg-gradient-to-b from-accent-500/50 to-warm-200/40"
+        className="absolute left-0 top-1 h-[calc(100%-0.5rem)] w-px bg-gradient-to-b from-accent-500/50 to-warm-200/40 md:left-[7px] md:top-5"
         aria-hidden
       />
       <span
-        className="absolute left-0 top-5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-accent-500 bg-surface shadow-sm"
+        className="absolute left-0 top-5 hidden h-4 w-4 items-center justify-center rounded-full border-2 border-accent-500 bg-surface shadow-sm md:flex"
         aria-hidden
       />
 
-      <Surface padding="sm" className="border border-warm-200/70 shadow-glass">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <Surface padding="sm" className="min-w-0 border border-warm-200/70 shadow-glass">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <StatusPill tone={area.tone} dot size="sm">
@@ -83,15 +86,15 @@ function TimelineCard({ entry }: { entry: WorkLogEntry }) {
                 </StatusPill>
               ))}
             </div>
-            <h3 className="text-base font-semibold text-warm-900">
+            <h3 className="min-w-0 text-base font-semibold text-warm-900">
               <Link
                 href={entry.html_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-start gap-1 hover:text-accent-700 hover:underline"
+                className="inline-flex min-w-0 items-start gap-1 hover:text-accent-700 hover:underline"
               >
-                <span className="font-fw-mono text-sm text-warm-500">#{entry.number}</span>
-                <span>{entry.title}</span>
+                <span className="shrink-0 font-fw-mono text-sm text-warm-500">#{entry.number}</span>
+                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{entry.title}</span>
                 <ExternalLink size={14} className="mt-1 shrink-0 opacity-60" aria-hidden />
               </Link>
             </h3>
@@ -102,19 +105,23 @@ function TimelineCard({ entry }: { entry: WorkLogEntry }) {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="min-w-0 rounded-fw-md bg-surface-sunken px-3 py-2">
             <p className="text-caption font-semibold uppercase tracking-widest text-warm-500">Problem</p>
-            <p className="mt-1 text-sm leading-relaxed text-warm-800">{problem}</p>
+            <p className="mt-1 break-words text-sm leading-relaxed text-warm-800 [overflow-wrap:anywhere]">
+              {problem}
+            </p>
           </div>
-          <div className="rounded-fw-md bg-accent-50/60 px-3 py-2">
+          <div className="min-w-0 rounded-fw-md bg-accent-50/60 px-3 py-2">
             <p className="text-caption font-semibold uppercase tracking-widest text-accent-700">Fix / outcome</p>
-            <p className="mt-1 text-sm leading-relaxed text-warm-800">{fix}</p>
+            <p className="mt-1 break-words text-sm leading-relaxed text-warm-800 [overflow-wrap:anywhere]">
+              {fix}
+            </p>
           </div>
         </div>
 
         {entry.parsed.timelineNote && entry.parsed.timelineNote !== fix ? (
-          <p className="mt-3 border-t border-warm-200/70 pt-3 text-xs text-warm-600">
+          <p className="mt-3 break-words border-t border-warm-200/70 pt-3 text-xs text-warm-600 [overflow-wrap:anywhere]">
             <span className="font-semibold text-warm-700">Partner line:</span> {entry.parsed.timelineNote}
           </p>
         ) : null}
@@ -146,8 +153,8 @@ export function WorkTimeline({
     .slice(0, 4);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="min-w-0 space-y-6">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <StatusPill tone="success" dot size="sm">
             GitHub PRs
@@ -173,7 +180,15 @@ export function WorkTimeline({
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Count tiles: StatStrip is the ONE phone-shape primitive for KPI rows
+          (doctrine rules 2/3/11 — docs/MOBILE_DOCTRINE.md). 3 peers → a 2-col
+          phone grid with the last cell (Open — the actionable count for a
+          triage-first ops surface) spanning full width. The heterogeneous
+          "Top areas" chip cluster is NOT a KPI peer, so it gets its own
+          full-width card below instead of a cramped 4th grid cell — mixed
+          row/card rhythm per the craft bar, not a monolith and not a
+          mis-matched grid cell. */}
+      <StatStrip count={3} ariaLabel="Work log summary">
         <div className="rounded-xl border border-warm-200/70 bg-surface px-3 py-2">
           <StatTile label="PRs tracked" value={counts.total} tone="neutral" mono />
         </div>
@@ -183,24 +198,23 @@ export function WorkTimeline({
         <div className="rounded-xl border border-warm-200/70 bg-surface px-3 py-2">
           <StatTile label="Open" value={counts.open} tone="neutral" mono />
         </div>
-        <div className="rounded-xl border border-warm-200/70 bg-surface px-3 py-2">
+      </StatStrip>
+
+      {topAreas.length > 0 ? (
+        <div className="min-w-0 rounded-xl border border-warm-200/70 bg-surface px-3 py-2.5">
           <p className="text-caption uppercase tracking-widest text-warm-500">Top areas</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {topAreas.length > 0 ? (
-              topAreas.map(([area, count]) => (
-                <StatusPill key={area} tone={AREA_META[area].tone} dot={false} size="sm">
-                  {AREA_META[area].label} · {count}
-                </StatusPill>
-              ))
-            ) : (
-              <span className="text-xs text-warm-500">—</span>
-            )}
+            {topAreas.map(([area, count]) => (
+              <StatusPill key={area} tone={AREA_META[area].tone} dot={false} size="sm">
+                {AREA_META[area].label} · {count}
+              </StatusPill>
+            ))}
           </div>
         </div>
-      </div>
+      ) : null}
 
-      <Surface padding="sm" className="border border-dashed border-warm-300/80 bg-surface-sunken/40">
-        <p className="text-sm text-warm-700">
+      <Surface padding="sm" className="min-w-0 border border-dashed border-warm-300/80 bg-surface-sunken/40">
+        <p className="break-words text-sm text-warm-700 [overflow-wrap:anywhere]">
           Summaries are parsed from your PR template — fill in{' '}
           <code className="text-xs">Partner-readable summary</code>,{' '}
           <code className="text-xs">Area</code>, and{' '}

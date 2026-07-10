@@ -20,7 +20,11 @@ export default async function BenLeahPage() {
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-warm-900">Submission desk</h1>
-            <p className="mt-1 max-w-3xl text-sm text-warm-600">
+            {/* Rule 2 (docs/MOBILE_DOCTRINE.md) — an eyebrow + title + full
+                sentence is a desktop cover treatment; below `md` it condenses
+                to one line so the intake form (the actual above-fold action)
+                isn't pushed down by masthead copy. */}
+            <p className="mt-1 line-clamp-1 max-w-3xl text-sm text-warm-600 md:line-clamp-none">
               Capture changes, bugs, additions, screenshots, and source signals as GitHub issues without losing context.
             </p>
           </div>

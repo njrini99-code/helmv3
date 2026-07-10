@@ -3,6 +3,7 @@ import { fetchAuthTab, fetchActiveSessions } from '@/lib/admin/data/auth';
 import {
   StatusPill,
   MetricCard,
+  StatStrip,
   TrendChart,
   InlineNotice,
   Surface,
@@ -13,6 +14,7 @@ import { SportBadge, type BridgeSport } from '../_components/SportBadge';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +39,14 @@ async function AuthBody() {
         </InlineNotice>
       ) : null}
 
-      <section className="grid gap-3 md:grid-cols-3">
+      {/* StatStrip (docs/MOBILE_DOCTRINE.md rule 11): below md this was a bare
+          `grid` with no column count, so each MetricCard fell back to one
+          full-bleed row — three stacked monolith cards on a 390px phone.
+          StatStrip's count=3 phone shape (2-col + a full-width 3rd cell) plus
+          mdColumns=3 reproduces the original `md:grid-cols-3` desktop recipe
+          byte-for-byte, matching the same migration already done in
+          admin/golf, admin/baseball, and admin/page.tsx. */}
+      <StatStrip count={3} columns={3} mdColumns={3} ariaLabel="Signup funnel KPIs">
         <MetricCard label="Signups · 7d" value={tab.funnel.signups7d} tone="neutral" />
         <MetricCard label="Activated within 7d" value={tab.funnel.activated7d} tone="neutral" />
         <MetricCard
@@ -47,7 +56,7 @@ async function AuthBody() {
           decimals={1}
           tone="neutral"
         />
-      </section>
+      </StatStrip>
 
       <TrendChart
         title="Sign-ins, last 7 days"
@@ -89,7 +98,7 @@ async function AuthBody() {
                     </span>
                     {isLocked && lockedUntilDate ? (
                       <span className="font-fw-mono text-xs tabular-nums text-fw-danger">
-                        until {lockedUntilDate.toLocaleTimeString()}
+                        until <LocalTime iso={lockedUntilDate.toISOString()} variant="time" />
                       </span>
                     ) : null}
                   </li>
@@ -131,7 +140,7 @@ async function AuthBody() {
                   </span>
                   <SportBadge sport={(row.sport as BridgeSport) ?? null} />
                   <span className="font-fw-mono text-xs tabular-nums text-warm-500">
-                    {new Date(row.created_at).toLocaleString()}
+                    <LocalTime iso={row.created_at} variant="datetime" />
                   </span>
                 </li>
               ))}

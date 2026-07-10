@@ -54,7 +54,7 @@ export default async function WorkLogPage() {
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-warm-900">Shipping timeline</h1>
-            <p className="mt-1 max-w-3xl text-sm text-warm-600">
+            <p className="mt-1 hidden max-w-3xl text-sm text-warm-600 md:block">
               A partner-readable history of your pull requests — what broke, what shipped, and which Helm surface it touched.
             </p>
           </div>
@@ -69,12 +69,14 @@ export default async function WorkLogPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <PanelBoundary title="Your PR timeline">
-          <WorkLogBody />
-        </PanelBoundary>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0">
+          <PanelBoundary title="Your PR timeline">
+            <WorkLogBody />
+          </PanelBoundary>
+        </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <Surface padding="sm">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">How summaries work</h2>
             <ul className="mt-3 space-y-3 text-sm text-warm-700">

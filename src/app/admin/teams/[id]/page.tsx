@@ -123,7 +123,13 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
           <div className="min-w-0">
             <KeyPanelRule />
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold text-warm-900">{team.name}</h1>
+              {/* `min-w-0` on an h1 that's itself a flex item — without it
+                  `truncate`'s text-overflow:ellipsis never engages, since a
+                  flex item's default min-width:auto keeps it at its full
+                  content size. Long team names would otherwise just push
+                  the health pill/grade badge onto their own row instead of
+                  truncating. */}
+              <h1 className="min-w-0 truncate text-xl font-semibold text-warm-900">{team.name}</h1>
               <StatusPill tone={HEALTH_TONE[health]} dot size="sm">
                 {health}
               </StatusPill>

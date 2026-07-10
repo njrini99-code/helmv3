@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchUsersTab, type RosterPlayerInsight, type TeamRosterInsight } from '@/lib/admin/data/users';
-import { Surface, StatTile, StatusPill, SearchField, Button, type FwStatusTone } from '@/components/fairway';
+import { Surface, Inset, StatTile, StatStrip, StatusPill, SearchField, Button, type FwStatusTone } from '@/components/fairway';
+import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelAllClear, PanelNoData } from '../_components/PanelStates';
 import { SportBadge } from '../_components/SportBadge';
@@ -61,7 +63,11 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
         <div className="min-w-0 flex-1 basis-full md:basis-auto">
           <div className="flex flex-wrap items-center gap-2">
             <SportBadge sport={team.sport} />
-            <Link href={teamHref} className="truncate font-semibold text-warm-900 hover:underline">
+            {/* min-w-0 on the Link — it's a flex item of this row alongside
+                the badge/pill; without it, truncate never engages for a
+                long team name (default flex min-width:auto pins it to its
+                full content width). */}
+            <Link href={teamHref} className="min-w-0 truncate font-semibold text-warm-900 hover:underline">
               {team.name}
             </Link>
             <StatusPill tone={HEALTH_TONE[team.health]} dot size="sm">
@@ -92,61 +98,135 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
         </div>
       </summary>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4">
         {topPlayers.length === 0 ? (
           <PanelNoData label="No roster rows" description="This team exists, but no active players are attached." />
         ) : (
-          <table className="w-full min-w-[760px] text-sm">
-            <thead>
-              <tr className="border-b border-accent-600/25 text-left text-xs uppercase tracking-widest text-warm-500">
-                <th className="sticky left-0 z-10 bg-surface py-2 pr-3">Player</th>
-                <th className="px-3">Roster</th>
-                <th className="px-3">Activity 30d</th>
-                <th className="px-3">Last signal</th>
-                <th className="px-3">Profile</th>
-                <th className="px-3">Errors</th>
-                <th className="px-3">Detail</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-warm-200/60">
-              {topPlayers.map((player) => (
-                <tr key={`${player.sport}:${player.playerId}`}>
-                  <td className="sticky left-0 z-10 bg-surface py-2 pr-3">
-                    {player.href ? (
-                      <Link href={player.href} className="font-medium text-warm-900 hover:underline">
-                        {player.name}
-                      </Link>
-                    ) : (
-                      <span className="font-medium text-warm-900">{player.name}</span>
-                    )}
-                    <span className="block truncate text-xs text-warm-500">{player.email ?? 'no email'}</span>
-                  </td>
-                  <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                    {player.jerseyNumber ? `#${player.jerseyNumber}` : 'no #'}
-                    {player.position ? ` · ${player.position}` : ''}
-                  </td>
-                  <td className="px-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-fw-mono font-semibold tabular-nums text-warm-900">
-                        {player.activity30d}
-                      </span>
-                      <ActivityBar value={player.activity30d} max={maxActivity} />
+          <>
+            {/* Phone (doctrine rule 8): identity + key-stat CARDS, not a
+                min-w table inside overflow-x-auto — that's a phone-scroll
+                surface, not the doctrine treatment, on a reading surface
+                this dense. Whole row is the tap-through when a detail page
+                exists (ActivityFeed's "EVERYTHING CLICKS" convention). */}
+            <ul className="space-y-2 md:hidden">
+              {topPlayers.map((player) => {
+                const meta = [
+                  player.jerseyNumber ? `#${player.jerseyNumber}` : 'no #',
+                  player.position,
+                  player.detail,
+                ]
+                  .filter(Boolean)
+                  .join(' · ');
+                const rowContent = (
+                  <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-warm-900">{player.name}</p>
+                      <p className="mt-0.5 break-words text-xs text-warm-500">{player.email ?? 'no email'}</p>
+                      <p className="mt-1.5 font-fw-mono text-xs tabular-nums text-warm-500">{meta}</p>
+                      <p className="mt-0.5 text-xs text-warm-400">
+                        last signal {shortDate(player.lastActivity ?? player.lastSeen)}
+                      </p>
                     </div>
-                  </td>
-                  <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-500">
-                    {shortDate(player.lastActivity ?? player.lastSeen)}
-                  </td>
-                  <td className="px-3">
-                    <StatusPill tone={PROFILE_TONE[player.profileQuality]} dot={player.profileQuality !== 'complete'} size="sm">
-                      {player.profileQuality}
-                    </StatusPill>
-                  </td>
-                  <td className="px-3 font-fw-mono font-semibold tabular-nums text-fw-danger">{player.errors7d}</td>
-                  <td className="px-3 text-xs text-warm-600">{player.detail}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <StatusPill
+                        tone={PROFILE_TONE[player.profileQuality]}
+                        dot={player.profileQuality !== 'complete'}
+                        size="sm"
+                      >
+                        {player.profileQuality}
+                      </StatusPill>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-fw-mono text-sm font-semibold tabular-nums text-warm-900">
+                          {player.activity30d}
+                        </span>
+                        <ActivityBar value={player.activity30d} max={maxActivity} />
+                      </div>
+                      {player.errors7d > 0 ? (
+                        <span className="font-fw-mono text-xs font-semibold tabular-nums text-fw-danger">
+                          {player.errors7d} errors
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+                return (
+                  <li key={`card:${player.sport}:${player.playerId}`}>
+                    {player.href ? (
+                      <Inset
+                        as={Link}
+                        href={player.href}
+                        padding="sm"
+                        className={cn(
+                          'flex items-start gap-2 transition-colors hover:bg-surface',
+                          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
+                        )}
+                      >
+                        {rowContent}
+                        <ChevronRight size={16} className="mt-1 shrink-0 text-warm-300" aria-hidden />
+                      </Inset>
+                    ) : (
+                      <Inset padding="sm">{rowContent}</Inset>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Tablet/desktop: dense table, contained to its own scroller. */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead>
+                  <tr className="border-b border-accent-600/25 text-left text-xs uppercase tracking-widest text-warm-500">
+                    <th className="sticky left-0 z-10 bg-surface py-2 pr-3">Player</th>
+                    <th className="px-3">Roster</th>
+                    <th className="px-3">Activity 30d</th>
+                    <th className="px-3">Last signal</th>
+                    <th className="px-3">Profile</th>
+                    <th className="px-3">Errors</th>
+                    <th className="px-3">Detail</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-warm-200/60">
+                  {topPlayers.map((player) => (
+                    <tr key={`${player.sport}:${player.playerId}`}>
+                      <td className="sticky left-0 z-10 bg-surface py-2 pr-3">
+                        {player.href ? (
+                          <Link href={player.href} className="font-medium text-warm-900 hover:underline">
+                            {player.name}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-warm-900">{player.name}</span>
+                        )}
+                        <span className="block truncate text-xs text-warm-500">{player.email ?? 'no email'}</span>
+                      </td>
+                      <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
+                        {player.jerseyNumber ? `#${player.jerseyNumber}` : 'no #'}
+                        {player.position ? ` · ${player.position}` : ''}
+                      </td>
+                      <td className="px-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-fw-mono font-semibold tabular-nums text-warm-900">
+                            {player.activity30d}
+                          </span>
+                          <ActivityBar value={player.activity30d} max={maxActivity} />
+                        </div>
+                      </td>
+                      <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-500">
+                        {shortDate(player.lastActivity ?? player.lastSeen)}
+                      </td>
+                      <td className="px-3">
+                        <StatusPill tone={PROFILE_TONE[player.profileQuality]} dot={player.profileQuality !== 'complete'} size="sm">
+                          {player.profileQuality}
+                        </StatusPill>
+                      </td>
+                      <td className="px-3 font-fw-mono font-semibold tabular-nums text-fw-danger">{player.errors7d}</td>
+                      <td className="px-3 text-xs text-warm-600">{player.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
         {!isFocused && team.players.length > topPlayers.length ? (
           <p className="mt-2 text-xs text-warm-500">
@@ -201,13 +281,17 @@ function RosterIntelligence({
 
   return (
     <div className="space-y-4">
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      {/* StatStrip, not a hand-rolled grid — 5 peers on phone is exactly the
+          "ragged trailing cell" case (rows of 2/2/1) the primitive exists to
+          avoid (MOBILE_DOCTRINE rules 3 + 11); phone gets one snap-rail,
+          desktop keeps the original md:grid-cols-5. */}
+      <StatStrip count={5} mdColumns={5} ariaLabel="Roster overview KPIs">
         <StatTile label="Teams mapped" value={teams.length} tone="neutral" mono />
         <StatTile label="Players mapped" value={players.length} tone="neutral" mono />
         <StatTile label="Teams with errors" value={teamsWithErrors} tone="neutral" mono />
         <StatTile label="Quiet players" value={inactivePlayers} tone="neutral" mono />
         <StatTile label="Profile gaps" value={profileGaps} tone="neutral" mono />
-      </section>
+      </StatStrip>
 
       <Surface padding="sm">
         <SectionLabel>Roster command map</SectionLabel>
@@ -226,8 +310,8 @@ function RosterIntelligence({
             </Button>
           ))}
         </div>
-        <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div>
+        <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0">
             <div className="mb-3 flex flex-wrap gap-2 text-xs text-warm-600">
               <StatusPill tone="accent" size="sm">{golfTeams} GolfHelm teams</StatusPill>
               <StatusPill tone="accent" size="sm">{baseballTeams} BaseballHelm teams</StatusPill>
@@ -264,12 +348,16 @@ function RosterIntelligence({
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <SportBadge sport={player.sport} />
+                          {/* min-w-0 — flex item of this row alongside the
+                              badge; without it truncate never engages for a
+                              long player name (see TeamRosterPanel's
+                              matching fix above). */}
                           {player.href ? (
-                            <Link href={player.href} className="truncate font-medium text-warm-900 hover:underline">
+                            <Link href={player.href} className="min-w-0 truncate font-medium text-warm-900 hover:underline">
                               {player.name}
                             </Link>
                           ) : (
-                            <span className="truncate font-medium text-warm-900">{player.name}</span>
+                            <span className="min-w-0 truncate font-medium text-warm-900">{player.name}</span>
                           )}
                         </div>
                         <p className="mt-1 text-xs text-warm-500">
@@ -351,12 +439,12 @@ export default async function UsersPage({
           ) : null}
         </form>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatStrip count={4} mdColumns={4} ariaLabel="User directory KPIs">
           <StatTile label="Total users" value={tab.totalUsersCount} tone="neutral" mono />
           <StatTile label="Golf" value={golfCount} tone="neutral" mono />
           <StatTile label="Baseball" value={baseballCount} tone="neutral" mono />
           <StatTile label="At-risk" value={tab.atRisk.length} tone="neutral" mono goodDirection="down" />
-        </section>
+        </StatStrip>
         {tab.totalUsersCount > tab.users.length ? (
           <p className="text-xs text-warm-500">
             Showing the {tab.users.length} most recently seen users (capped view — {tab.totalUsersCount} total match
