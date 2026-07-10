@@ -69,13 +69,26 @@ import { createCoachNote } from '@/app/baseball/actions/coach-notes';
 // (design-system-living-annual.md §6 P0 #1 "The Player Passport Spread" idiom,
 // applied to the coach-facing player profile island).
 //
-// PRESENTATION ONLY. Every backdrop-blur card is now a `<PaperCard>`, the
-// gradient accent bar + gradient avatar are gone, trend/class/priority
-// semantics route through `<InkBadge>` tones + graphite/green ink instead of
-// raw amber/red, and the tab bar is the same Fairway-pattern tab system used
-// elsewhere in baseball (raw `<button role="tab">` + `pressableClass` +
-// `<InkBadge>`, with per-tab counts as a trailing `<InkBadge>`). Every empty
-// state renders through `<EditorsLetter>` per the kit's empty-state doctrine.
+// PRESENTATION ONLY, and scoped to this file's own JSX: the hero card, the
+// tab bar, and every panel rendered inline here (Overview/Stats/Videos/
+// Passport/Tasks, plus the Performance/Timeline/Notes tab shells) are built
+// from `<PaperCard>` — no backdrop-blur, no gradient accent bar/avatar — and
+// trend/class/priority semantics route through `<InkBadge>` tones +
+// graphite/green ink instead of raw amber/red. The tab bar is the same
+// Fairway-pattern tab system used elsewhere in baseball (raw
+// `<button role="tab">` + `pressableClass` + `<InkBadge>`, with per-tab
+// counts as a trailing `<InkBadge>`). Every empty state renders through
+// `<EditorsLetter>` per the kit's empty-state doctrine.
+//
+// Imported BASEBALL children (SnapshotHeaderBand/shared.tsx, ProfileTimeline,
+// PlayerNotesSection, and the rest of the baseball tab bodies) were converted
+// in the 2026-07-09 tree-wide red/amber → ink sweep — a raw amber/red class in
+// one of those is a regression against that sweep. KNOWN EXCEPTION: the
+// Performance tab body is src/components/lifting/performance/PlayerPerformanceTab.tsx
+// (Lift Lab, outside the baseball sweep's scope) — it still uses
+// <Card variant="glass"> + raw amber/red, tracked with the tree-wide
+// glass-Card→PaperCard migration debt (36 sites / 19 files;
+// docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md).
 //
 // Data wiring, handlers, computed values, and prop contracts are unchanged.
 // =============================================================================

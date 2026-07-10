@@ -32,6 +32,7 @@ import {
   VideoSnapshotCard,
   TaskDevSnapshotCard,
 } from './SnapshotCards';
+import { PaperCard, InkNotice } from '@/components/baseball/living-annual';
 import type { PlayerSnapshotCardsReadModel } from '@/lib/baseball/read-models/player-snapshot-cards';
 
 export function SnapshotCardGrid({
@@ -46,9 +47,9 @@ export function SnapshotCardGrid({
   // tab still renders its existing content; this just omits the staff cards.
   if (!model.authorized) {
     return (
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5 text-center">
+      <PaperCard className="p-5 text-center">
         <p className="text-sm text-warm-400">The operating snapshot is visible to team staff only.</p>
-      </div>
+      </PaperCard>
     );
   }
 
@@ -97,9 +98,9 @@ export function SnapshotCardGrid({
       <SnapshotHeaderBand header={header} playerId={model.playerId} />
 
       {model.error && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-xs text-amber-800">
+        <InkNotice ink="pursuit" role="status" className="text-xs">
           Some snapshot data could not be loaded right now. The cards below show what is available.
-        </div>
+        </InkNotice>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">

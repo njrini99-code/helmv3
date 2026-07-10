@@ -395,7 +395,7 @@ export function ScoutPacketView({
                 <h2 className="text-sm font-semibold text-warm-800">Contact</h2>
                 <p className="mt-1 text-sm text-warm-600">{model.contactRules.note}</p>
                 {model.contactRules.earlyProspect && (
-                  <p className="mt-2 text-eyebrow font-medium text-amber-700">
+                  <p className="mt-2 text-eyebrow font-medium text-pursuit">
                     Early prospect — confirm the applicable NCAA recruiting window before any
                     outreach.
                   </p>

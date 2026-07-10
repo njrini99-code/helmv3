@@ -235,8 +235,9 @@ export function ScrimmagePanel({ practiceId, roster }: ScrimmagePanelProps) {
             <Button variant="ghost" onClick={resetEditor} disabled={saving}>
               Cancel
             </Button>
+            {/* Living Annual ink: clay (`pursuit`) warning, never raw amber. */}
             {validation && !validation.ok && (
-              <span className="text-xs text-amber-600">
+              <span className="text-xs text-pursuit">
                 {validation.errors.length} conflict
                 {validation.errors.length === 1 ? '' : 's'} must be resolved before publishing.
               </span>

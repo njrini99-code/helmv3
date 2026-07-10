@@ -209,9 +209,9 @@ function ProvenanceBody({
         <MotionSection index={nextIndex()} reduce={reduce}>
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-xl bg-red-50/70 px-3 py-2.5 text-body-sm text-red-800 ring-1 ring-red-600/20"
+            className="flex items-start gap-2 rounded-xl bg-[var(--notice-error-ink)]/10 px-3 py-2.5 text-body-sm text-text-primary ring-1 ring-[var(--notice-error-ink)]/20"
           >
-            <IconShieldAlert size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
+            <IconShieldAlert size={16} className="mt-0.5 flex-shrink-0 text-[color:var(--notice-error-ink)]" />
             <span className="leading-relaxed">{presentation.caption}</span>
           </div>
         </MotionSection>
@@ -230,11 +230,11 @@ function ProvenanceBody({
                   'tabular-nums inline-flex items-center justify-end gap-1',
                   // Missing confidence "—" must stay readable (AA floor).
                   confMissing && 'text-warm-500 font-normal',
-                  // amber-700 (~4.9:1 on cream) clears AA for this small figure;
-                  // amber-600 (~3.4:1) is only borderline for normal text.
+                  // --pursuit-ink clears AA for this small figure and keeps
+                  // the caution reading as a soft warning, not an error.
                   // WCAG 1.4.1: pair the hue with a glyph + a "Low" qualifier so
                   // the caution is never carried by color alone.
-                  confLow && 'text-amber-700 font-semibold',
+                  confLow && 'text-pursuit font-semibold',
                 )}
               >
                 {confLow && (
@@ -242,7 +242,7 @@ function ProvenanceBody({
                 )}
                 <span>{confText}</span>
                 {confLow && (
-                  <span className="text-caption font-medium text-amber-700">Low</span>
+                  <span className="text-caption font-medium text-pursuit">Low</span>
                 )}
               </span>
             }
@@ -446,10 +446,10 @@ function SignalSourceSection({
       <div className="p-4">
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200/80 px-3 py-2.5"
+          className="flex items-start gap-2 rounded-xl bg-pursuit/10 border border-pursuit/20 px-3 py-2.5"
         >
-          <IconWarning size={15} className="text-amber-600 mt-0.5 flex-shrink-0" aria-hidden />
-          <p className="text-body-sm text-amber-800 leading-relaxed">
+          <IconWarning size={15} className="text-pursuit mt-0.5 flex-shrink-0" aria-hidden />
+          <p className="text-body-sm text-text-primary leading-relaxed">
             Source not yet attached — this signal cannot be acted upon.
           </p>
         </div>
@@ -503,7 +503,7 @@ function SignalSourceSection({
                 className={cn(
                   'tabular-nums inline-flex items-center justify-end gap-1',
                   confMissing && 'text-warm-500 font-normal',
-                  confLow && 'text-amber-700 font-semibold',
+                  confLow && 'text-pursuit font-semibold',
                 )}
               >
                 {confLow && (
@@ -511,7 +511,7 @@ function SignalSourceSection({
                 )}
                 <span>{confText}</span>
                 {confLow && (
-                  <span className="text-caption font-medium text-amber-700">Low</span>
+                  <span className="text-caption font-medium text-pursuit">Low</span>
                 )}
               </span>
             }
@@ -557,8 +557,8 @@ function DrawerInner({
               className={cn(
                 'inline-flex h-9 w-9 items-center justify-center rounded-xl flex-shrink-0',
                 presentation.tone === 'primary' && 'bg-primary-50 text-primary-600',
-                presentation.tone === 'red' && 'bg-red-50 text-red-600',
-                presentation.tone === 'amber' && 'bg-amber-50 text-amber-600',
+                presentation.tone === 'red' && 'bg-[var(--notice-error-ink)]/10 text-[color:var(--notice-error-ink)]',
+                presentation.tone === 'amber' && 'bg-pursuit/10 text-pursuit',
                 presentation.tone === 'warm' && 'bg-warm-100 text-warm-500',
               )}
             >
@@ -691,7 +691,7 @@ export function SignalSourceDrawer({
 
                 {/* Glass card wrapping the signal-specific section */}
                 <div className="px-6 pb-2">
-                  <div className="rounded-2xl border border-warm-200/40 bg-cream-50 shadow-glass overflow-hidden">
+                  <div className="rounded-2xl border border-warm-200/40 bg-cream-50 overflow-hidden">
                     <SignalSourceSection
                       sourceChips={sourceChips}
                       signalConfidence={signalConfidence}

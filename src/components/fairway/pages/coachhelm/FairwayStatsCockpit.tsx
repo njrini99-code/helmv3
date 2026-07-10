@@ -2593,7 +2593,7 @@ function RecentRounds({ rounds }: { rounds: TrendAnalysisResponse['rounds'] }) {
         {recent.map((round) => {
           const toPar = round.toPar ?? 0;
           const toneClass =
-            toPar < 0 ? 'text-accent-600' : toPar > 0 ? 'text-danger' : 'text-text-secondary';
+            toPar < 0 ? 'text-accent-600' : toPar > 0 ? 'text-fw-warning' : 'text-text-secondary';
           const formattedDate = new Date(round.date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',

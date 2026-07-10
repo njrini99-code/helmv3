@@ -27,6 +27,7 @@ import {
   IconCheckCircle2,
 } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
+import { InkBadge, PaperCard } from '@/components/baseball/living-annual';
 import type {
   RiskFeedItem,
   RiskSeverity,
@@ -56,28 +57,44 @@ interface RiskFeedStripProps {
 // Severity styling
 // -----------------------------------------------------------------------------
 
+// Ink system, not raw Tailwind severity colors (Living Annual doctrine — no
+// raw red/amber). `critical` reads pursuit clay at InkBadge's "solid" weight
+// (mirrors signalSeverityPresentation's 'critical' branch elsewhere in the
+// baseball tree), `warning` the same lane at "soft" weight, and `info` stays
+// the already-tokenized neutral/graphite lane — the solid/soft split is the
+// non-color cue that keeps critical vs. watch visually distinguishable.
 const SEVERITY_META: Record<
   RiskSeverity,
-  { label: string; ring: string; chip: string; icon: React.ReactNode; dot: string }
+  {
+    label: string;
+    ring: string;
+    tone: NonNullable<React.ComponentProps<typeof InkBadge>['tone']>;
+    variant: NonNullable<React.ComponentProps<typeof InkBadge>['variant']>;
+    icon: React.ReactNode;
+    dot: string;
+  }
 > = {
   critical: {
     label: 'Critical',
-    ring: 'border-red-200/70',
-    chip: 'bg-red-50 text-red-700 border border-red-200',
-    icon: <IconShieldAlert size={15} className="text-red-600" />,
-    dot: 'bg-red-500',
+    ring: 'border-pursuit/40',
+    tone: 'pursuit',
+    variant: 'solid',
+    icon: <IconShieldAlert size={15} className="text-pursuit" />,
+    dot: 'bg-pursuit',
   },
   warning: {
     label: 'Watch',
-    ring: 'border-amber-200/70',
-    chip: 'bg-amber-50 text-amber-700 border border-amber-200',
-    icon: <IconWarning size={15} className="text-amber-600" />,
-    dot: 'bg-amber-500',
+    ring: 'border-pursuit/15',
+    tone: 'pursuit',
+    variant: 'soft',
+    icon: <IconWarning size={15} className="text-pursuit" />,
+    dot: 'bg-pursuit/60',
   },
   info: {
     label: 'Info',
     ring: 'border-warm-200/60',
-    chip: 'bg-warm-50 text-warm-600 border border-warm-200',
+    tone: 'neutral',
+    variant: 'soft',
     icon: <IconInfo size={15} className="text-warm-500" />,
     dot: 'bg-warm-400',
   },
@@ -112,11 +129,7 @@ function RiskRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-semibold text-warm-900 truncate">{item.title}</p>
-            <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-eyebrow font-semibold uppercase tracking-wide ${meta.chip}`}
-            >
-              {meta.label}
-            </span>
+            <InkBadge label={meta.label} tone={meta.tone} variant={meta.variant} />
           </div>
           {item.body && (
             <p className="text-xs text-warm-600 mt-1 line-clamp-2">{item.body}</p>
@@ -182,10 +195,7 @@ export function RiskFeedStrip({
   const criticalCount = items.filter((i) => i.severity === 'critical').length;
 
   return (
-    <section
-      aria-label="Risk and AI flags"
-      className="bg-cream-100/75 backdrop-blur-glass border border-warm-200/45 rounded-2xl shadow-glass p-4 sm:p-5"
-    >
+    <PaperCard as="section" aria-label="Risk and AI flags" className="p-4 sm:p-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
@@ -202,8 +212,8 @@ export function RiskFeedStrip({
         {!loading && items.length > 0 && (
           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-warm-50 border border-warm-200 text-eyebrow font-semibold text-warm-600 tabular-nums">
             {criticalCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-red-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              <span className="inline-flex items-center gap-1 text-pursuit">
+                <span className="w-1.5 h-1.5 rounded-full bg-pursuit" />
                 {criticalCount}
               </span>
             )}
@@ -221,10 +231,10 @@ export function RiskFeedStrip({
         </div>
       ) : error ? (
         // Honest error — feed degraded, not silently empty.
-        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-center">
-          <IconWarning size={20} className="text-amber-500 mx-auto mb-1.5" />
-          <p className="text-sm text-amber-800 font-medium">{error}</p>
-          <p className="text-xs text-amber-600 mt-0.5">Some signals could not be loaded.</p>
+        <div className="rounded-xl border border-pursuit/20 bg-pursuit/10 p-4 text-center">
+          <IconWarning size={20} className="text-pursuit mx-auto mb-1.5" />
+          <p className="text-sm text-pursuit font-medium">{error}</p>
+          <p className="text-xs text-warm-500 mt-0.5">Some signals could not be loaded.</p>
         </div>
       ) : shown.length === 0 ? (
         // Honest empty — no risks is a GOOD state, shown as such.
@@ -260,6 +270,6 @@ export function RiskFeedStrip({
           </m.ul>
         </LazyMotion>
       )}
-    </section>
+    </PaperCard>
   );
 }

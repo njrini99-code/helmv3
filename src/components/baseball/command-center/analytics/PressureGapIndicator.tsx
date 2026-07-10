@@ -37,13 +37,15 @@ function formatGap(gap: number): string {
 
 export function getGapColor(gap: number): string {
   if (gap > 0.02) return 'text-primary-600';
-  if (gap < -0.02) return 'text-red-500';
+  // Negative (pressure-struggle) gap reads pursuit clay — Living Annual ink
+  // system, never raw red.
+  if (gap < -0.02) return 'text-pursuit';
   return 'text-warm-500';
 }
 
 export function getGapBgColor(gap: number): string {
   if (gap > 0.02) return 'bg-primary-50';
-  if (gap < -0.02) return 'bg-red-50';
+  if (gap < -0.02) return 'bg-pursuit/10';
   return 'bg-warm-50';
 }
 
@@ -73,7 +75,7 @@ function CompactIndicator({
       {gap > 0.01 ? (
         <IconTrendingUp size={iconSize} className="text-primary-500" />
       ) : gap < -0.01 ? (
-        <IconTrendingDown size={iconSize} className="text-red-500" />
+        <IconTrendingDown size={iconSize} className="text-pursuit" />
       ) : (
         <IconMinus size={iconSize} className="text-warm-400" />
       )}
@@ -139,7 +141,8 @@ function FullIndicator({
         <div
           className={cn(
             'absolute top-0 bottom-0 rounded-full transition-all duration-300',
-            isPositive ? 'bg-primary-400' : 'bg-red-400',
+            // Negative fill reads pursuit clay — Living Annual ink system, never raw red.
+            isPositive ? 'bg-primary-400' : 'bg-pursuit',
             isPositive ? 'left-1/2' : 'right-1/2'
           )}
           style={{
@@ -153,7 +156,7 @@ function FullIndicator({
         {gap > 0.01 ? (
           <IconTrendingUp size={iconSize} className="text-primary-500" />
         ) : gap < -0.01 ? (
-          <IconTrendingDown size={iconSize} className="text-red-500" />
+          <IconTrendingDown size={iconSize} className="text-pursuit" />
         ) : (
           <IconMinus size={iconSize} className="text-warm-400" />
         )}

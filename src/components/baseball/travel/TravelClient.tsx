@@ -393,7 +393,7 @@ function ItineraryCard({
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                    className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100"
+                    className="gap-2 text-pursuit hover:text-pursuit hover:bg-pursuit/10 active:bg-pursuit/15"
                   >
                     <IconTrash size={14} />
                     Delete

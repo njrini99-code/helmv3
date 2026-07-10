@@ -30,7 +30,8 @@ const CATEGORIES = [
 const PRIORITIES = [
   { value: 'low', label: 'Low', color: 'bg-warm-100 text-warm-700' },
   { value: 'normal', label: 'Normal', color: 'bg-primary-100 text-primary-700' },
-  { value: 'high', label: 'High', color: 'bg-red-100 text-red-700' },
+  // Living Annual ink system: clay (`pursuit`), never raw red, for "high".
+  { value: 'high', label: 'High', color: 'bg-pursuit/10 text-pursuit' },
 ];
 
 interface CreateTaskModalProps {

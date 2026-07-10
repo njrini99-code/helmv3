@@ -55,7 +55,7 @@ const EVENT_LABEL: Record<BaseballSettingsAuditEvent, string> = {
   settings_changed: 'Settings changed',
 };
 
-// Sensitive-access events get a warm-amber accent; routine changes stay green.
+// Sensitive-access events get a pursuit (clay) ink accent; routine changes stay green.
 const SENSITIVE: ReadonlySet<BaseballSettingsAuditEvent> = new Set([
   'role_changed',
   'capability_changed',
@@ -254,7 +254,7 @@ export function SettingsAuditClient({ teamName, entries }: Props) {
                           <span
                             className={cn(
                               'mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full',
-                              sensitive ? 'bg-amber-500' : 'bg-primary-500',
+                              sensitive ? 'bg-pursuit' : 'bg-primary-500',
                             )}
                             aria-hidden
                           />
@@ -264,7 +264,7 @@ export function SettingsAuditClient({ teamName, entries }: Props) {
                                 className={cn(
                                   'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
                                   sensitive
-                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    ? 'bg-pursuit/10 text-pursuit border-pursuit/30'
                                     : 'bg-primary-50 text-primary-700 border-primary-200',
                                 )}
                               >

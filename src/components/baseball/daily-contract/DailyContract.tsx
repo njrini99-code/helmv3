@@ -30,6 +30,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { InkNotice } from '@/components/baseball/living-annual';
 import {
   IconTarget,
   IconCheck,
@@ -93,7 +94,7 @@ function StreakHeader({ streak }: { streak: number }) {
       </span>
       <h2 className="text-xl font-semibold tracking-tight text-warm-900">Daily Contract</h2>
       {streak > 0 && (
-        <span className="ml-0.5 flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-eyebrow font-semibold text-amber-700">
+        <span className="ml-0.5 flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-eyebrow font-semibold text-primary-700">
           <IconFlame size={12} />
           {streak}-day streak
         </span>
@@ -190,7 +191,7 @@ function ContractItemRow({
           type="button"
           onClick={onRemove}
           aria-label="Remove intention"
-          className="shrink-0 rounded-lg p-1.5 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
+          className="shrink-0 rounded-lg p-1.5 text-warm-400 transition-colors hover:bg-[var(--notice-error-ink)]/10 hover:text-[color:var(--notice-error-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--notice-error-ink)]/30"
         >
           <IconTrash size={14} />
         </button>
@@ -483,18 +484,15 @@ function CompletedSummary({ contract }: { contract: DailyContractView }) {
 function MissedSummary({ contract }: { contract: DailyContractView }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-        <IconAlertCircle size={18} className="mt-0.5 shrink-0 text-amber-600" />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-amber-800">
-            Commitment missed — {contract.honoredCount}/{contract.totalCount} honored
-          </p>
-          <p className="mt-0.5 text-eyebrow leading-snug text-amber-700">
-            You committed to this day but didn’t close it out. It’s shown honestly
-            so your streak and story stay true — pick it back up today.
-          </p>
-        </div>
-      </div>
+      <InkNotice ink="pursuit" role="status">
+        <p className="text-sm font-semibold">
+          Commitment missed — {contract.honoredCount}/{contract.totalCount} honored
+        </p>
+        <p className="mt-0.5 text-eyebrow leading-snug">
+          You committed to this day but didn’t close it out. It’s shown honestly
+          so your streak and story stay true — pick it back up today.
+        </p>
+      </InkNotice>
       <div className="space-y-2">
         {contract.items.map((it) => (
           <ContractItemRow
@@ -524,9 +522,8 @@ function MissedNudge({
   missedCount: number;
 }) {
   return (
-    <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5">
-      <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-      <p className="text-sm text-amber-800">
+    <InkNotice ink="pursuit" role="status" className="mt-3">
+      <p className="text-sm">
         {missedCount > 1
           ? `${missedCount} recent commitments lapsed`
           : 'A recent commitment lapsed'}
@@ -537,7 +534,7 @@ function MissedNudge({
         closed at {lastMissed.honoredCount}/{lastMissed.totalCount} honored. Today
         is a fresh start.
       </p>
-    </div>
+    </InkNotice>
   );
 }
 
@@ -765,12 +762,7 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
           />
         )}
 
-        {error && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
-            <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-            <p className="text-sm text-amber-800">{error}</p>
-          </div>
-        )}
+        {error && <InkNotice className="mt-3">{error}</InkNotice>}
 
         <m.div {...fade} className="mt-3">
           <Card variant="raised" padding="md">
@@ -920,8 +912,8 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
             already includes. Each pip is a clickable cell with a title tooltip
             (date, honored/total, status). This is the parity feature: the coach
             sees a sparkline of shared days; the player deserves to see their OWN
-            full history (not just a streak number). Honest: missed days amber,
-            credited days green, in-progress/partial warm. */}
+            full history (not just a streak number). Honest: missed days pursuit
+            clay, credited days green, in-progress/partial warm. */}
         {model.history.length > 0 && (
           <div className="mt-3">
             <p className="mb-2 text-eyebrow uppercase tracking-wide text-warm-400">
@@ -940,7 +932,7 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
                       credited
                         ? 'border-primary-200 bg-primary-50 text-primary-700'
                         : missed
-                          ? 'border-amber-200 bg-amber-50 text-amber-700'
+                          ? 'border-pursuit/25 bg-pursuit/10 text-pursuit'
                           : d.status === 'completed'
                             ? 'border-warm-200 bg-warm-50 text-warm-500'
                             : 'border-warm-200 bg-warm-50 text-warm-400'

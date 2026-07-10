@@ -346,19 +346,42 @@ export default function SettingsPage() {
                 {passwordStrength && (
                   <div className="mt-2 flex items-center gap-2">
                     <div className="flex-1 flex gap-1">
-                      <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-amber-400' : 'bg-primary-500'
-                      }`} />
-                      <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'medium' ? 'bg-amber-400' : passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-warm-200'
-                      }`} />
+                      <div
+                        className={`h-1.5 rounded-full flex-1 transition-colors ${
+                          passwordStrength === 'strong' ? 'bg-primary-500' : ''
+                        }`}
+                        style={
+                          passwordStrength === 'weak'
+                            ? { backgroundColor: 'var(--notice-error-ink)' }
+                            : passwordStrength === 'medium'
+                            ? { backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 55%, var(--paper))' }
+                            : undefined
+                        }
+                      />
+                      <div
+                        className={`h-1.5 rounded-full flex-1 transition-colors ${
+                          passwordStrength === 'strong' ? 'bg-primary-500' : passwordStrength === 'weak' ? 'bg-warm-200' : ''
+                        }`}
+                        style={
+                          passwordStrength === 'medium'
+                            ? { backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 55%, var(--paper))' }
+                            : undefined
+                        }
+                      />
                       <div className={`h-1.5 rounded-full flex-1 transition-colors ${
                         passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-warm-200'
                       }`} />
                     </div>
-                    <span className={`text-xs font-medium ${
-                      passwordStrength === 'weak' ? 'text-red-600' : passwordStrength === 'medium' ? 'text-amber-600' : 'text-primary-600'
-                    }`}>
+                    <span
+                      className={`text-xs font-medium ${passwordStrength === 'strong' ? 'text-primary-600' : ''}`}
+                      style={
+                        passwordStrength === 'weak'
+                          ? { color: 'var(--notice-error-ink)' }
+                          : passwordStrength === 'medium'
+                          ? { color: 'var(--pursuit-ink)' }
+                          : undefined
+                      }
+                    >
                       {passwordStrength === 'weak' ? 'Weak' : passwordStrength === 'medium' ? 'Medium' : 'Strong'}
                     </span>
                   </div>

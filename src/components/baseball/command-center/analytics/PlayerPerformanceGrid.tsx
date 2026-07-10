@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { BaseballRosterPlayer } from '@/lib/types';
 import { IconChevronDown, IconChevronUp } from '@/components/icons';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 interface PlayerPerformanceGridProps {
   players: BaseballRosterPlayer[];
@@ -95,12 +96,15 @@ function getHeatmapColor(
     else level = 'below';
   }
 
-  // Return Tailwind classes for heat map colors
+  // Return Tailwind classes for heat map colors. Living Annual ink system:
+  // both below-average tiers read pursuit clay (never amber/red), at two
+  // weights — soft tint for "average", a firmer tint + hairline for "below"
+  // — so the two remain visually distinguishable without relying on hue alone.
   const colors: Record<string, string> = {
     excellent: 'bg-primary-500 text-white',
     good: 'bg-primary-200 text-primary-900',
-    average: 'bg-amber-100 text-amber-800',
-    below: 'bg-red-100 text-red-700',
+    average: 'bg-pursuit/10 text-pursuit',
+    below: 'bg-pursuit/20 text-pursuit border border-pursuit/40',
   };
 
   return colors[level] ?? 'bg-warm-100 text-warm-600';
@@ -132,18 +136,18 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
 
   if (players.length === 0) {
     return (
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <PaperCard className="p-6">
         <h3 className="font-semibold text-warm-900 mb-2">Performance Grid</h3>
         <p className="text-sm text-warm-500">
           No player data available.
         </p>
-      </div>
+      </PaperCard>
     );
   }
 
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
-      <div className="p-4 border-b border-white/20">
+    <PaperCard className="overflow-clip">
+      <div className="p-4 border-b border-[color:var(--hairline)]">
         <h3 className="font-semibold text-warm-900">Performance Grid</h3>
         <p className="text-xs text-warm-500 mt-1">
           Click column headers to sort · Colors indicate performance level
@@ -185,7 +189,7 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
                   key={player.id}
                   className="border-t border-warm-100 hover:bg-warm-50/50 transition-colors"
                 >
-                  <td className="px-4 py-2 sticky left-0 bg-cream-100/60 backdrop-blur-sm">
+                  <td className="px-4 py-2 sticky left-0 bg-[var(--paper)]">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-warm-900 truncate max-w-32">
                         {name}
@@ -239,23 +243,23 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
             <span className="text-warm-600">Good</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-amber-100" />
+            <div className="w-3 h-3 rounded bg-pursuit/10" />
             <span className="text-warm-600">Average</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-red-100" />
+            <div className="w-3 h-3 rounded bg-pursuit/20 border border-pursuit/40" />
             <span className="text-warm-600">Below Avg</span>
           </div>
         </div>
       </div>
-    </div>
+    </PaperCard>
   );
 }
 
 export function PlayerPerformanceGridSkeleton() {
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
-      <div className="p-4 border-b border-white/20">
+    <PaperCard className="overflow-clip">
+      <div className="p-4 border-b border-[color:var(--hairline)]">
         <div className="h-5 w-32 bg-warm-200 rounded animate-pulse" />
         <div className="h-3 w-48 bg-warm-200 rounded animate-pulse mt-2" />
       </div>
@@ -280,6 +284,6 @@ export function PlayerPerformanceGridSkeleton() {
           ))}
         </div>
       </div>
-    </div>
+    </PaperCard>
   );
 }

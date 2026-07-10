@@ -1,8 +1,14 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 /**
  * Game detail / box score loading skeleton — mirrors the real layout:
  * breadcrumb → game header card → batting table → pitching section.
+ *
+ * Card shells use the same `PaperCard` primitive as the real page.tsx
+ * (flat `--paper` + `--hairline`, letterpress inset shadow) instead of a
+ * frosted-glass panel, so the skeleton doesn't flash a different surface
+ * treatment than the content it's standing in for.
  */
 export default function GameDetailLoading() {
   return (
@@ -11,7 +17,7 @@ export default function GameDetailLoading() {
       <Skeleton className="h-4 w-40" />
 
       {/* Game header card */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+      <PaperCard className="p-5 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="space-y-2">
             <Skeleton className="h-6 w-56" />
@@ -23,13 +29,13 @@ export default function GameDetailLoading() {
             <Skeleton className="h-14 w-16 rounded-xl" />
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* Tab strip */}
       <Skeleton className="h-9 w-44 rounded-xl" />
 
       {/* Table skeleton */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+      <PaperCard className="shadow-sm">
         <div className="p-4 border-b border-warm-100">
           <Skeleton className="h-4 w-16" />
         </div>
@@ -38,7 +44,7 @@ export default function GameDetailLoading() {
             <Skeleton key={i} className="h-8 rounded-lg" />
           ))}
         </div>
-      </div>
+      </PaperCard>
     </div>
   );
 }

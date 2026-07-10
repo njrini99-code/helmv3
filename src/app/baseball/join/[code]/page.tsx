@@ -164,8 +164,14 @@ export default async function JoinTeamPage({ params }: PageProps) {
     return (
       <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
         <PaperCard className="max-w-md w-full rounded-2xl p-6 sm:p-8 text-center">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconX size={32} className="text-red-600" />
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border"
+            style={{
+              backgroundColor: 'color-mix(in oklch, var(--notice-error-ink) 16%, transparent)',
+              borderColor: 'color-mix(in oklch, var(--notice-error-ink) 32%, transparent)',
+            }}
+          >
+            <IconX size={32} className="text-[color:var(--notice-error-ink)]" />
           </div>
           <h1 className="text-xl font-semibold text-warm-900 mb-2">Invalid Invite Code</h1>
           <p className="text-warm-600 mb-6">
@@ -188,8 +194,11 @@ export default async function JoinTeamPage({ params }: PageProps) {
     return (
       <div className="min-h-dvh bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
         <PaperCard className="max-w-md w-full rounded-2xl p-6 sm:p-8 text-center">
-          <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconWarning size={32} className="text-amber-600" />
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 8%, transparent)' }}
+          >
+            <IconWarning size={32} className="text-pursuit" />
           </div>
           <h1 className="text-xl font-semibold text-warm-900 mb-2">
             Invitation {isExpired ? 'Expired' : 'Inactive'}

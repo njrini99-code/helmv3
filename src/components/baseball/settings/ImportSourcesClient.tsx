@@ -96,7 +96,9 @@ const TRUST_TONE: Record<BaseballSourceTrustLevel, string> = {
   staff_entered: 'bg-warm-100 text-warm-700 border-warm-300',
   player_entered: 'bg-warm-100 text-warm-700 border-warm-300',
   ai_derived: 'bg-warm-100 text-warm-600 border-warm-300',
-  unreviewed: 'bg-amber-50 text-amber-700 border-amber-200',
+  // Ink system, not raw amber — "unreviewed" is a caution/warning status
+  // (doctrine: warning -> pursuit soft), same pill shape as its siblings above.
+  unreviewed: 'bg-pursuit/10 text-pursuit border-pursuit/30',
 };
 
 interface DraftSource {
@@ -628,7 +630,7 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
                                 aria-label={`Remove ${s.source_name}`}
                                 className={cn(
                                   'shrink-0 rounded-lg p-2 text-warm-400 transition-colors',
-                                  'hover:bg-red-50 hover:text-red-600',
+                                  'hover:bg-[var(--notice-error-ink)]/10 hover:text-[color:var(--notice-error-ink)]',
                                   isPending && 'cursor-not-allowed opacity-50',
                                 )}
                               >

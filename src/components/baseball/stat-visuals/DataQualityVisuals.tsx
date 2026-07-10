@@ -54,18 +54,24 @@ const EFFECTIVENESS_META: Record<
   { label: string; tone: string; ring: string }
 > = {
   too_early: { label: 'Too early', tone: 'text-warm-600', ring: 'bg-warm-100 ring-warm-200' },
+  // Caution-tier statuses read the pursuit (clay) ink lane at the SOFT
+  // intensity — Living Annual doctrine: warning is pursuit soft, never a
+  // stock yellow/amber pill.
   not_enough_sample: {
     label: 'Not enough sample',
-    tone: 'text-amber-700',
-    ring: 'bg-amber-50 ring-amber-600/20',
+    tone: 'text-pursuit',
+    ring: 'bg-pursuit/10 ring-pursuit/20',
   },
   correlated_not_proven: {
     label: 'Correlated, not proven',
-    tone: 'text-amber-700',
-    ring: 'bg-amber-50 ring-amber-600/20',
+    tone: 'text-pursuit',
+    ring: 'bg-pursuit/10 ring-pursuit/20',
   },
   moved_up: { label: 'Moved up', tone: 'text-primary-700', ring: 'bg-primary-50 ring-primary-600/20' },
-  moved_down: { label: 'Moved down', tone: 'text-red-700', ring: 'bg-red-50 ring-red-600/20' },
+  // "Moved down" is the higher-severity regression status — pursuit at the
+  // SOLID (heavier) intensity, so it stays visually distinct from the soft
+  // caution tiers above, without falling back to raw red.
+  moved_down: { label: 'Moved down', tone: 'text-pursuit', ring: 'bg-pursuit/15 ring-pursuit/35' },
   no_change: { label: 'No change', tone: 'text-warm-600', ring: 'bg-warm-100 ring-warm-200' },
 };
 
@@ -159,11 +165,14 @@ export function PracticeFocusOutcomeBoard({
 // Import Diff Viewer
 // =============================================================================
 
+// 'changed' (caution) reads pursuit SOFT; 'warning' (the higher-severity kind
+// in this diff, previously raw red) reads pursuit SOLID — same clay ink lane,
+// distinguished by intensity rather than hue (Living Annual doctrine).
 const DIFF_META: Record<ImportDiffKind, { label: string; icon: React.ReactNode; tone: string }> = {
   added: { label: 'Added', icon: <IconPlus size={13} />, tone: 'text-primary-700 bg-primary-50' },
-  changed: { label: 'Changed', icon: <IconArrowUpDown size={13} />, tone: 'text-amber-700 bg-amber-50' },
+  changed: { label: 'Changed', icon: <IconArrowUpDown size={13} />, tone: 'text-pursuit bg-pursuit/10' },
   duplicate: { label: 'Duplicate', icon: <IconCopy size={13} />, tone: 'text-warm-600 bg-warm-100' },
-  warning: { label: 'Warning', icon: <IconAlertCircle size={13} />, tone: 'text-red-700 bg-red-50' },
+  warning: { label: 'Warning', icon: <IconAlertCircle size={13} />, tone: 'text-pursuit bg-pursuit/20' },
 };
 
 export interface ImportDiffViewerProps {
@@ -248,7 +257,7 @@ export function ImportDiffViewer({ rows, sources, height = 340, className }: Imp
                   <IconArrowUpDown size={11} className="text-warm-400" aria-hidden />
                   <span className="font-medium text-warm-800">{r.after ?? '—'}</span>
                 </p>
-                {r.note ? <p className="mt-0.5 text-xs text-amber-700">{r.note}</p> : null}
+                {r.note ? <p className="mt-0.5 text-xs text-pursuit">{r.note}</p> : null}
               </div>
             </div>
           );
@@ -271,15 +280,18 @@ const FRESHNESS_META: Record<
     icon: <IconCheckCircle2 size={13} />,
     ring: 'text-primary-700 bg-primary-50 ring-primary-600/20',
   },
+  // 'stale' (caution) reads pursuit SOFT; 'missing' (the real problem state,
+  // previously raw red) reads pursuit SOLID — intensity carries the severity
+  // step, never a hue swap to red (Living Annual doctrine).
   stale: {
     label: 'Stale',
     icon: <IconClock size={13} />,
-    ring: 'text-amber-700 bg-amber-50 ring-amber-600/20',
+    ring: 'text-pursuit bg-pursuit/10 ring-pursuit/20',
   },
   missing: {
     label: 'Missing',
     icon: <IconAlertCircle size={13} />,
-    ring: 'text-red-700 bg-red-50 ring-red-600/20',
+    ring: 'text-pursuit bg-pursuit/20 ring-pursuit/40',
   },
 };
 
@@ -376,7 +388,7 @@ function Meta({
   return (
     <div className="flex flex-col">
       <dt className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">{label}</dt>
-      <dd className={cn('tabular-nums text-warm-700', tone === 'amber' && 'text-amber-700')}>
+      <dd className={cn('tabular-nums text-warm-700', tone === 'amber' && 'text-pursuit')}>
         {value ?? '—'}
       </dd>
     </div>

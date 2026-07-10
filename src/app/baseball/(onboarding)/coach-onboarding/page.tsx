@@ -709,7 +709,7 @@ export default function BaseballCoachOnboarding() {
                         />
                         <p className={cn(
                           'mt-1.5 text-xs',
-                          password && !passwordCheck.valid ? 'text-red-600' : 'text-text-tertiary'
+                          password && !passwordCheck.valid ? 'text-[color:var(--notice-error-ink)]' : 'text-text-tertiary'
                         )}>
                           {password && !passwordCheck.valid
                             ? passwordCheck.feedback[0]

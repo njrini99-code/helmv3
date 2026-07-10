@@ -463,7 +463,7 @@ export function BaserunningBoard({ rows, sources, height = 320, className }: Bas
                 <span
                   className={cn(
                     'text-xs tabular-nums',
-                    sbRate === null ? 'text-warm-400' : sbRate >= 0.75 ? 'text-primary-600' : 'text-amber-600',
+                    sbRate === null ? 'text-warm-400' : sbRate >= 0.75 ? 'text-primary-600' : 'text-pursuit',
                   )}
                 >
                   {r.stolenBases ?? 0}/{sbTotal} SB

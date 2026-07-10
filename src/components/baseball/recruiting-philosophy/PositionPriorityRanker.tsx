@@ -184,7 +184,7 @@ export function PositionPriorityRanker({
                 {/* Remove button */}
                 <IconButton variant="default" aria-label="Close"
                   onClick={() => handleRemove(index)}
-                  className="p-1 text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 rounded transition-colors flex-shrink-0"
+                  className="p-1 text-warm-400 hover:text-pursuit hover:bg-pursuit/10 active:bg-pursuit/15 rounded transition-colors flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </IconButton>

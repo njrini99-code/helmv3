@@ -23,6 +23,7 @@ import {
 } from '@/components/icons';
 import { IconButton } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { InkNotice } from '@/components/baseball/living-annual';
 import {
   getVersionHistory,
   revertToVersion,
@@ -160,9 +161,7 @@ export function DocumentVersionHistoryModal({
             {loading ? (
               <div className="py-10 text-center text-sm text-warm-500">Loading versions&hellip;</div>
             ) : loadError ? (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                {loadError}
-              </div>
+              <InkNotice>{loadError}</InkNotice>
             ) : sortedVersions.length === 0 ? (
               <div className="py-10 text-center text-sm text-warm-500">No version history available</div>
             ) : (

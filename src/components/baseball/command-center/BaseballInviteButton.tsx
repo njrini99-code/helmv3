@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { IconPlus, IconCopy, IconCheck, IconX, IconRefresh } from '@/components/icons';
+import { IconPlus, IconCopy, IconCheck, IconRefresh } from '@/components/icons';
 import { generateTeamInviteCode, regenerateTeamInviteCode } from '@/app/baseball/actions/teams';
 import { useToast } from '@/components/ui/sonner';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 interface BaseballInviteButtonProps {
   teamId: string;
@@ -159,25 +160,20 @@ export function BaseballInviteButton({
 
           {/* Error State */}
           {error && !loading && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <IconX size={12} className="text-red-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-red-800">
-                  Failed to generate invite
-                </p>
-                <p className="text-sm text-red-600 mt-1">{error}</p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleGenerate}
-                  className="mt-3"
-                >
-                  Try Again
-                </Button>
-              </div>
-            </div>
+            <InkNotice>
+              <p className="text-sm font-medium text-text-primary">
+                Failed to generate invite
+              </p>
+              <p className="text-sm text-text-secondary mt-1">{error}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleGenerate}
+                className="mt-3"
+              >
+                Try Again
+              </Button>
+            </InkNotice>
           )}
 
           {/* Success State */}

@@ -31,13 +31,17 @@ const STATUS_CONFIG: Record<RibbonStatus, StatusConfig> = {
     activeText: 'text-white',
     ghostBorder: 'border-primary-300',
   },
+  // Ink system (Living Annual doctrine — no raw amber/red): `watch` is the
+  // warning-weight state, so it reads pursuit clay soft (mirrors
+  // UrgencyPicker's 'high' tier). `limited` stays orange — out of the
+  // red/amber ban, unchanged.
   watch: {
     label: 'Watch',
-    bg: 'bg-amber-100',
-    text: 'text-amber-700',
-    activeBg: 'bg-amber-500',
+    bg: 'bg-pursuit/10',
+    text: 'text-pursuit',
+    activeBg: 'bg-pursuit/60',
     activeText: 'text-white',
-    ghostBorder: 'border-amber-300',
+    ghostBorder: 'border-pursuit/30',
   },
   limited: {
     label: 'Limited',
@@ -47,13 +51,16 @@ const STATUS_CONFIG: Record<RibbonStatus, StatusConfig> = {
     activeText: 'text-white',
     ghostBorder: 'border-orange-300',
   },
+  // `missing` is the true error/blocking state — the same pursuit lane at
+  // full solid weight (mirrors UrgencyPicker's 'urgent' tier), one notch
+  // deeper than `watch` so the two stay visually distinguishable.
   missing: {
     label: 'Missing',
-    bg: 'bg-red-100',
-    text: 'text-red-700',
-    activeBg: 'bg-red-600',
+    bg: 'bg-pursuit/15',
+    text: 'text-pursuit',
+    activeBg: 'bg-pursuit',
     activeText: 'text-white',
-    ghostBorder: 'border-red-300',
+    ghostBorder: 'border-pursuit/50',
   },
   complete: {
     label: 'Complete',

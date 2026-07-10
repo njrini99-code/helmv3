@@ -20,6 +20,7 @@ import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from '
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
+import { PaperCard, InkNotice } from '@/components/baseball/living-annual';
 import {
   IconTarget,
   IconCheck,
@@ -111,7 +112,7 @@ export function CoachPlayerDailyContractPanel({
 
   return (
     <LazyMotion features={domAnimation} strict>
-    <div className="rounded-2xl border border-white/20 bg-cream-100/75 p-6 shadow-sm backdrop-blur-xl">
+    <PaperCard className="p-6">
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
@@ -120,19 +121,14 @@ export function CoachPlayerDailyContractPanel({
           <h3 className="font-semibold text-warm-900">Daily Contract</h3>
         </div>
         {model.sharedStreak > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-eyebrow font-semibold text-amber-700">
+          <span className="flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-eyebrow font-semibold text-primary-700">
             <IconFlame size={12} />
             {model.sharedStreak}-day shared streak
           </span>
         )}
       </div>
 
-      {error && (
-        <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
-          <IconAlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-          <p className="text-sm text-amber-800">{error}</p>
-        </div>
-      )}
+      {error && <InkNotice className="mb-3">{error}</InkNotice>}
 
       {/* Today's shared day */}
       {day ? (
@@ -142,20 +138,20 @@ export function CoachPlayerDailyContractPanel({
               day.status === 'completed'
                 ? 'border-primary-200 bg-primary-50/60'
                 : day.status === 'missed'
-                  ? 'border-amber-200 bg-amber-50'
+                  ? 'border-pursuit/25 bg-pursuit/10'
                   : 'border-warm-200 bg-warm-50'
             }`}
           >
             {day.status === 'completed' ? (
               <IconCheckCircle2 size={16} className="text-primary-600" />
             ) : day.status === 'missed' ? (
-              <IconAlertCircle size={16} className="text-amber-600" />
+              <IconAlertCircle size={16} className="text-pursuit" />
             ) : (
               <IconClock size={15} className="text-warm-400" />
             )}
             <p
               className={`text-sm font-medium ${
-                day.status === 'missed' ? 'text-amber-800' : 'text-warm-800'
+                day.status === 'missed' ? 'text-pursuit' : 'text-warm-800'
               }`}
             >
               {day.status === 'completed'
@@ -229,7 +225,7 @@ export function CoachPlayerDailyContractPanel({
                   d.status === 'completed'
                     ? 'border-primary-200 bg-primary-50 text-primary-700'
                     : d.status === 'missed'
-                      ? 'border-amber-200 bg-amber-50 text-amber-700'
+                      ? 'border-pursuit/25 bg-pursuit/10 text-pursuit'
                       : 'border-warm-200 bg-warm-50 text-warm-500'
                 }`}
               >
@@ -246,7 +242,7 @@ export function CoachPlayerDailyContractPanel({
           </div>
         </div>
       )}
-    </div>
+    </PaperCard>
     </LazyMotion>
   );
 }

@@ -22,7 +22,7 @@ import {
   IconRefresh,
 } from '@/components/icons';
 import { uploadStatsCSV } from '@/app/baseball/actions/stats';
-import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
+import { PaperCard, EditorsLetter, InkNotice } from '@/components/baseball/living-annual';
 import {
   parseCSV,
   findBestPlayerMatch,
@@ -510,9 +510,8 @@ export function StatsUploadClient({
 
         {/* Step: Upload */}
         {step === 'upload' && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag-and-drop zone, no click interaction
-          <div
-            className={`bg-cream-100/75 backdrop-blur-xl border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
+          <PaperCard
+            className={`border-2 border-dashed p-12 text-center transition-colors ${
               isDragging
                 ? 'border-primary-500 bg-primary-50/50'
                 : 'border-warm-200'
@@ -576,7 +575,7 @@ export function StatsUploadClient({
                 ))}
               </div>
             </div>
-          </div>
+          </PaperCard>
         )}
 
         {/* Step: Preview */}
@@ -617,13 +616,14 @@ export function StatsUploadClient({
                   </p>
                 </div>
               ) : (
-                <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-sm text-amber-700 flex items-center gap-1">
-                    <IconAlertCircle size={16} />
+                // Advisory (not blocking): icon-less polite strip, visually
+                // lighter than the Required alert in the validation block.
+                <InkNotice role="status" icon={null} className="mb-4">
+                  <p className="text-sm">
                     Could not detect player name column. You'll need to map it
                     manually.
                   </p>
-                </div>
+                </InkNotice>
               )}
 
               {mappedStatColumns.length > 0 && (
@@ -775,15 +775,12 @@ export function StatsUploadClient({
 
               {/* Validation */}
               {!playerNameColumn && (
-                <div className="mt-6 p-4 bg-red-50 rounded-xl border border-red-200">
-                  <p className="text-sm text-red-700 flex items-center gap-2">
-                    <IconAlertCircle size={16} />
-                    <span>
-                      <strong>Required:</strong> Please map a column to "Player
-                      Name"
-                    </span>
+                <InkNotice className="mt-6">
+                  <p className="text-sm">
+                    <strong>Required:</strong> Please map a column to "Player
+                    Name"
                   </p>
-                </div>
+                </InkNotice>
               )}
             </PaperCard>
 
@@ -846,8 +843,8 @@ export function StatsUploadClient({
             {poorMatches.length > 0 && (
               <PaperCard className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                    <IconAlertCircle size={16} className="text-amber-600" />
+                  <div className="w-8 h-8 rounded-full bg-pursuit/10 flex items-center justify-center">
+                    <IconAlertCircle size={16} className="text-pursuit" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-warm-900">
@@ -874,7 +871,7 @@ export function StatsUploadClient({
                         className={`border rounded-xl transition-all ${
                           isExpanded
                             ? 'border-primary-300 bg-cream-50 shadow-sm'
-                            : 'border-amber-200 bg-amber-50'
+                            : 'border-pursuit/30 bg-pursuit/5'
                         }`}
                       >
                         <Button variant="ghost"
@@ -889,7 +886,7 @@ export function StatsUploadClient({
                             <p className="font-medium text-warm-900">
                               {match.csvName}
                             </p>
-                            <p className="text-xs text-amber-600">
+                            <p className="text-xs text-pursuit">
                               No automatic match found
                             </p>
                           </div>
@@ -1111,7 +1108,7 @@ export function StatsUploadClient({
                   {goodMatches.length} players will be matched
                 </li>
                 {poorMatches.length > 0 && (
-                  <li className="flex items-center gap-2 text-amber-700">
+                  <li className="flex items-center gap-2 text-pursuit">
                     <IconAlertCircle size={16} />
                     {poorMatches.length} players will be skipped
                   </li>
@@ -1184,23 +1181,26 @@ export function StatsUploadClient({
               className={`rounded-2xl p-8 text-center ${
                 uploadResult.success
                   ? 'bg-primary-50 border border-primary-200'
-                  : 'bg-red-50 border border-red-200'
+                  // Error weight: pursuit ink at "solid" intensity — deliberately
+                  // more saturated than the soft pursuit warnings elsewhere on
+                  // this page, so a true failure stays visually distinct.
+                  : 'bg-pursuit/15 border border-pursuit/30'
               }`}
             >
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                  uploadResult.success ? 'bg-primary-100' : 'bg-red-100'
+                  uploadResult.success ? 'bg-primary-100' : 'bg-pursuit/20'
                 }`}
               >
                 {uploadResult.success ? (
                   <IconCheck size={32} className="text-primary-600" />
                 ) : (
-                  <IconX size={32} className="text-red-600" />
+                  <IconX size={32} className="text-pursuit" />
                 )}
               </div>
               <h2
                 className={`text-xl font-semibold mb-2 ${
-                  uploadResult.success ? 'text-primary-800' : 'text-red-800'
+                  uploadResult.success ? 'text-primary-800' : 'text-pursuit'
                 }`}
               >
                 {uploadResult.success ? 'Upload Complete!' : 'Upload Failed'}
@@ -1213,7 +1213,7 @@ export function StatsUploadClient({
                     and stats recorded
                   </p>
                   {(uploadResult.unmatchedRows ?? 0) > 0 && (
-                    <p className="text-amber-700">
+                    <p className="text-pursuit">
                       <strong>{uploadResult.unmatchedRows}</strong> players
                       could not be matched
                     </p>
@@ -1222,20 +1222,20 @@ export function StatsUploadClient({
               )}
 
               {uploadResult.error && (
-                <p className="mt-4 text-sm text-red-700">{uploadResult.error}</p>
+                <p className="mt-4 text-sm text-pursuit">{uploadResult.error}</p>
               )}
 
               {uploadResult.unmatchedNames &&
                 uploadResult.unmatchedNames.length > 0 && (
                   <div className="mt-4 bg-cream-50 rounded-lg p-4 text-left">
-                    <p className="text-xs font-semibold text-amber-600 uppercase mb-2">
+                    <p className="text-xs font-semibold text-pursuit uppercase mb-2">
                       Unmatched Names
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {uploadResult.unmatchedNames.map((name) => (
                         <span
                           key={name}
-                          className="px-2 py-1 bg-amber-100 rounded text-xs text-amber-700"
+                          className="px-2 py-1 bg-pursuit/10 rounded text-xs text-pursuit"
                         >
                           {name}
                         </span>

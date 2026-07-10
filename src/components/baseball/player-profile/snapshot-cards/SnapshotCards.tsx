@@ -9,11 +9,11 @@
 //
 // Presentational only (cream/green, baseball labels). No I/O.
 //
-// PALETTE NOTE: Pitching and Classes cards use accent="amber" (amber-100/400/700
-// shade ramp) as semantic role/category colors — amber maps to the design
-// system's official #F59E0B warning/secondary accent, used here to visually
-// distinguish pitching and academic card types from the primary green batting
-// cards. This is intentional and within-spec per CLAUDE.md status colors.
+// PALETTE NOTE: Pitching and Classes cards use accent="amber" as a semantic
+// role/category key — SnapshotCardShell's ACCENT map (shared.tsx) resolves it
+// to the Living Annual `pursuit` clay ink (bg-pursuit/10 text-pursuit), never
+// raw amber-*, used here to visually distinguish pitching and academic card
+// types from the primary green batting cards.
 // =============================================================================
 
 import Link from 'next/link';
@@ -90,7 +90,7 @@ export function PerformanceSnapshotCard({ card, statsHref }: { card: Performance
       <div className="flex items-center justify-between gap-2 mt-3 text-xs">
         <span className="text-warm-500">{card.sessions} captured sessions</span>
         {card.pressureGapPts != null && (
-          <span className={card.pressureGapPts >= 0 ? 'text-primary-700 font-medium' : 'text-amber-700 font-medium'}>
+          <span className={card.pressureGapPts >= 0 ? 'text-primary-700 font-medium' : 'text-pursuit font-medium'}>
             {fmtSigned(card.pressureGapPts, ' pts')} game vs scrim
           </span>
         )}
@@ -347,7 +347,7 @@ export function ClassesSnapshotCard({ card }: { card: ClassesCard }) {
         <ul className="mt-3 space-y-1">
           {card.classNames.map((name) => (
             <li key={name} className="flex items-center gap-2 text-xs text-warm-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-pursuit flex-shrink-0" />
               <span className="truncate">{name}</span>
             </li>
           ))}
@@ -364,7 +364,7 @@ export function ClassesSnapshotCard({ card }: { card: ClassesCard }) {
           </div>
           <div className="mt-1.5 h-1.5 rounded-full bg-warm-100 overflow-hidden">
             <div
-              className="h-full rounded-full bg-amber-400"
+              className="h-full rounded-full bg-pursuit"
               style={{ width: `${creditPct}%` }}
             />
           </div>

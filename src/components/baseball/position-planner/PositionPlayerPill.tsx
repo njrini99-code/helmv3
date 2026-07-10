@@ -11,55 +11,51 @@ interface StageColorConfig {
   border: string;
   text: string;
   dot: string;
-  glow: string;
-  gradient: string;
 }
 
-// Premium pipeline stage colors with glassmorphism
+// Pipeline stage colors — clay-ink opacity ramp, War Room lane (spec §4.2
+// rule 1: never mix inks within a lane's chrome). Matches PositionPlanner's
+// LEGEND_ITEMS ramp exactly (bg-pursuit/[0.3] → /[0.55] → /[0.8] → solid
+// bg-pursuit) so the legend key stays true; `uninterested` extends the same
+// ramp one rung below `watchlist` since a passed recruit carries less signal
+// than one still being watched. One ink family at increasing intensity toward
+// a commitment — never a second "success green" (primary-*) or a raw
+// amber/warm swatch.
 // Note: Only 5 valid PipelineStage values: watchlist, high_priority, offer_extended, committed, uninterested
 const STAGE_COLORS: Record<PipelineStage, StageColorConfig> = {
+  uninterested: {
+    bg: 'bg-pursuit/[0.04]',
+    border: 'border-pursuit/[0.1]',
+    text: 'text-pursuit/[0.55]',
+    dot: 'bg-pursuit/[0.15]',
+  },
   watchlist: {
-    bg: 'bg-warm-50/90',
-    border: 'border-warm-200/60',
-    text: 'text-warm-700',
-    dot: 'bg-warm-400',
-    glow: 'shadow-[0_0_20px_rgba(168,162,158,0.3)]',
-    gradient: 'from-warm-100/50 to-warm-50/30',
+    bg: 'bg-pursuit/[0.08]',
+    border: 'border-pursuit/[0.18]',
+    text: 'text-pursuit/[0.75]',
+    dot: 'bg-pursuit/[0.3]',
   },
   high_priority: {
-    bg: 'bg-amber-50/90',
-    border: 'border-amber-300/60',
-    text: 'text-amber-800',
-    dot: 'bg-amber-500',
-    glow: 'shadow-[0_0_20px_rgba(245,158,11,0.35)]',
-    gradient: 'from-amber-100/50 to-amber-50/30',
+    bg: 'bg-pursuit/[0.14]',
+    border: 'border-pursuit/[0.28]',
+    text: 'text-pursuit',
+    dot: 'bg-pursuit/[0.55]',
   },
   offer_extended: {
-    bg: 'bg-primary-50/90',
-    border: 'border-primary-300/60',
-    text: 'text-primary-800',
-    dot: 'bg-primary-500',
-    glow: 'shadow-[0_0_20px_rgba(22,163,74,0.4)]',
-    gradient: 'from-primary-100/50 to-primary-50/30',
+    bg: 'bg-pursuit/[0.2]',
+    border: 'border-pursuit/[0.38]',
+    text: 'text-pursuit',
+    dot: 'bg-pursuit/[0.8]',
   },
   committed: {
     // Deepest tone in the funnel (watchlist → high_priority → offer_extended
-    // → committed) — one hue family (primary) at increasing intensity, never
-    // a second "success green" (emerald-*).
-    bg: 'bg-primary-100/90',
-    border: 'border-primary-400/60',
-    text: 'text-primary-900',
-    dot: 'bg-primary-700',
-    glow: 'shadow-[0_0_24px_rgba(22,101,52,0.45)]',
-    gradient: 'from-primary-200/50 to-primary-100/30',
-  },
-  uninterested: {
-    bg: 'bg-warm-50/80',
-    border: 'border-warm-200/50',
-    text: 'text-warm-500',
-    dot: 'bg-warm-400',
-    glow: 'shadow-none',
-    gradient: 'from-warm-100/50 to-warm-50/30',
+    // → committed) — full-strength clay ink, never oxblood (--pursuit-deep
+    // is reserved for seals/stamps only, spec §4.2) and never a second
+    // "success green" (primary-*).
+    bg: 'bg-pursuit/[0.28]',
+    border: 'border-pursuit/[0.5]',
+    text: 'text-pursuit',
+    dot: 'bg-pursuit',
   },
 };
 
@@ -81,13 +77,12 @@ interface PositionPlayerPillProps {
 }
 
 // Default colors for fallback (declared after STAGE_COLORS to ensure it's available)
+// Mirrors `watchlist` — the same clay-ink ramp, never a raw warm swatch.
 const DEFAULT_COLORS: StageColorConfig = {
-  bg: 'bg-warm-50/90',
-  border: 'border-warm-200/60',
-  text: 'text-warm-700',
-  dot: 'bg-warm-400',
-  glow: 'shadow-[0_0_20px_rgba(168,162,158,0.3)]',
-  gradient: 'from-warm-100/50 to-warm-50/30',
+  bg: 'bg-pursuit/[0.08]',
+  border: 'border-pursuit/[0.18]',
+  text: 'text-pursuit/[0.75]',
+  dot: 'bg-pursuit/[0.3]',
 };
 
 export function PositionPlayerPill({
@@ -126,33 +121,19 @@ export function PositionPlayerPill({
         'transition-all duration-300 cursor-pointer',
         'pointer-events-auto',
 
-        // Glass effect
-        'bg-gradient-to-br',
-        colors.gradient,
+        // Flat paper fill — clay-ink tint + letterpress depth (spec §4.3),
+        // the same treatment PositionPlanner uses for its expanded stack
+        // container. Never a gradient, never a glass highlight.
         colors.bg,
         colors.border,
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.06)]',
 
-        // Hover glow effect
-        'hover:shadow-lg',
-        stage !== 'uninterested' && 'hover:' + colors.glow,
+        // Hover — border deepens to full clay ink, no colored glow
+        'hover:border-pursuit',
 
-        // Selection state
-        isSelected && [
-          'ring-2 ring-primary-500/50 ring-offset-2 ring-offset-white/50',
-          colors.glow
-        ],
-
-        // Inner highlight
-        'before:absolute before:inset-0 before:rounded-full',
-        'before:bg-gradient-to-b before:from-white/40 before:to-transparent',
-        'before:opacity-60 before:pointer-events-none'
+        // Selection state — clay-ink ring, never a raw primary swatch
+        isSelected && 'ring-2 ring-pursuit ring-offset-2 ring-offset-[var(--paper)]'
       )}
-      style={{
-        // Subtle inner shadow for depth
-        boxShadow: isSelected
-          ? undefined
-          : 'inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 8px rgba(0,0,0,0.08)'
-      }}
     >
       {/* Avatar with ring effect */}
       <div className="relative">

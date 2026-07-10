@@ -21,6 +21,7 @@ import {
   IconBaseball,
 } from '@/components/icons';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
+import { PaperCard } from '@/components/baseball/living-annual';
 import { ToneChip, fmtDate } from './shared';
 import type {
   SnapshotHeader,
@@ -80,9 +81,9 @@ export function SnapshotHeaderBand({
       : null;
 
   return (
-    <section className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+    <PaperCard as="section">
       {/* Status + role + trust row */}
-      <div className="flex flex-wrap items-center gap-2 px-5 pt-4 pb-3 border-b border-warm-100">
+      <div className="flex flex-wrap items-center gap-2 px-5 pt-4 pb-3 border-b border-[color:var(--hairline)]">
         <ToneChip tone={status.tone} icon={<IconActivity size={12} />}>
           {status.label}
           {!header.status.present && <span className="opacity-60 font-normal"> · assumed</span>}
@@ -128,7 +129,7 @@ export function SnapshotHeaderBand({
             <span className="inline-flex items-center gap-1.5">
               <ToneChip tone={header.readiness.tone ?? 'neutral'}>{header.readiness.label}</ToneChip>
               {header.readiness.stale && (
-                <span className="text-amber-600 font-normal text-xs">stale</span>
+                <span className="text-pursuit font-normal text-xs">stale</span>
               )}
             </span>
           ) : (
@@ -174,6 +175,6 @@ export function SnapshotHeaderBand({
           )}
         </HeaderCell>
       </div>
-    </section>
+    </PaperCard>
   );
 }

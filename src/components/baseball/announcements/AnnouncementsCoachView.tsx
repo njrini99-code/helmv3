@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/sonner';
 import { AcknowledgementPill } from './AcknowledgementTracker';
 import { deleteAnnouncement } from '@/app/baseball/actions/announcements';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
-import { PaperCard } from '@/components/baseball/living-annual';
+import { PaperCard, InkBadge } from '@/components/baseball/living-annual';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -25,15 +25,22 @@ const itemVariants = {
 const urgencyBorderColors: Record<string, string> = {
   low: 'border-l-warm-300',
   normal: 'border-l-primary-400',
-  high: 'border-l-amber-400',
-  urgent: 'border-l-red-400',
+  // 'high' (warning) reads the shared pursuit ink; 'urgent' (error) reads the
+  // dedicated --notice-error-ink so it stays clay/oxide even inside the
+  // SAGE-recolored entry scopes (see InkNotice.tsx header) — never raw amber/red.
+  high: 'border-l-pursuit',
+  urgent: 'border-l-[color:var(--notice-error-ink)]',
 };
 
-const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
-  low: { bg: 'bg-warm-100', text: 'text-warm-600' },
-  normal: { bg: 'bg-primary-50', text: 'text-primary-600' },
-  high: { bg: 'bg-amber-50', text: 'text-amber-600' },
-  urgent: { bg: 'bg-red-50', text: 'text-red-600' },
+// Ink tone/variant for the urgency <InkBadge>: 'normal' reads team (green —
+// primary-600 IS the canonical brand green, same value as --grade-plus).
+// 'high' (warning) is pursuit/soft; 'urgent' (error) is pursuit/solid — the
+// two stay visually distinct via ink intensity, never amber vs red.
+const urgencyBadgeTone: Record<string, { tone: 'team' | 'pursuit' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  low: { tone: 'neutral', variant: 'soft' },
+  normal: { tone: 'team', variant: 'soft' },
+  high: { tone: 'pursuit', variant: 'soft' },
+  urgent: { tone: 'pursuit', variant: 'solid' },
 };
 
 interface AnnouncementsCoachViewProps {
@@ -95,7 +102,9 @@ function CoachAnnouncementCard({ announcement: ann, onDeleted }: { announcement:
   const [deleting, setDeleting] = useState(false);
 
   const urgencyBorder = urgencyBorderColors[ann.urgency || 'normal'];
-  const urgencyBadge = urgencyBadgeColors[ann.urgency || 'normal'] ?? { bg: 'bg-primary-50', text: 'text-primary-600' };
+  // Typed fallback constant (not an indexed access) so noUncheckedIndexedAccess
+  // fully strips `undefined` from the union — matches the map's 'normal' entry.
+  const urgencyBadge = urgencyBadgeTone[ann.urgency || 'normal'] ?? ({ tone: 'team', variant: 'soft' } as const);
 
   async function handleDelete() {
     setDeleting(true);
@@ -150,9 +159,7 @@ function CoachAnnouncementCard({ announcement: ann, onDeleted }: { announcement:
             <p className="text-sm text-warm-500 line-clamp-2 break-words">{ann.content}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className="text-xs text-warm-400">{publishedDate}</span>
-              <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
-                {ann.urgency || 'normal'}
-              </span>
+              <InkBadge label={ann.urgency || 'normal'} tone={urgencyBadge.tone} variant={urgencyBadge.variant} />
               {ann.recipient_count > 0 ? (
                 <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                   <IconUsers size={10} />
@@ -232,7 +239,7 @@ function CoachAnnouncementCard({ announcement: ann, onDeleted }: { announcement:
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors active:bg-red-100"
+                      className="text-pursuit hover:text-pursuit hover:bg-pursuit/10 transition-colors active:bg-pursuit/15"
                     >
                       <IconTrash size={14} className="mr-1.5" />
                       Delete Announcement

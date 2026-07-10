@@ -6,6 +6,7 @@ import type { RecruitingMinimumStandards } from '@/lib/types';
 import { AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InkNotice } from '@/components/baseball/living-annual';
 
 interface MinimumStandardsProps {
   values: RecruitingMinimumStandards;
@@ -145,17 +146,14 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
 
       {/* Warning banner */}
       {activeCount > 0 && (
-        <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-amber-800">
-              {activeCount} minimum standard{activeCount > 1 ? 's' : ''} active
-            </p>
-            <p className="text-xs text-amber-700 mt-0.5">
-              Players not meeting these requirements will have their match score capped at 40%
-            </p>
-          </div>
-        </div>
+        <InkNotice ink="pursuit" role="status" icon={AlertTriangle}>
+          <p className="text-sm font-medium">
+            {activeCount} minimum standard{activeCount > 1 ? 's' : ''} active
+          </p>
+          <p className="text-xs mt-0.5">
+            Players not meeting these requirements will have their match score capped at 40%
+          </p>
+        </InkNotice>
       )}
 
       {/* Standards list */}

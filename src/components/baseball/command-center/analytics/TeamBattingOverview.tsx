@@ -9,6 +9,7 @@ import {
   IconTrendingUp,
   IconChartBar,
 } from '@/components/icons';
+import { PaperCard } from '@/components/baseball/living-annual';
 
 interface TeamBattingOverviewProps {
   players: BaseballRosterPlayer[];
@@ -105,7 +106,8 @@ function getStatColor(value: number | null, type: 'avg' | 'obp' | 'slg' | 'ops')
   if (!t) return 'text-warm-900';
   if (value >= t.good) return 'text-primary-600';
   if (value >= t.average) return 'text-warm-900';
-  return 'text-amber-600';
+  // Below-average tier reads pursuit clay (Living Annual ink system), never amber.
+  return 'text-pursuit';
 }
 
 export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
@@ -144,17 +146,17 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
 
   if (stats.playersWithData === 0) {
     return (
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <PaperCard className="p-6">
         <h3 className="font-semibold text-warm-900 mb-2">Team Batting</h3>
         <p className="text-sm text-warm-500">
           No batting data available yet. Upload stats to see team performance.
         </p>
-      </div>
+      </PaperCard>
     );
   }
 
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <PaperCard className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-warm-900">Team Batting</h3>
         <span className="text-xs text-warm-500">
@@ -181,13 +183,13 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
           </div>
         ))}
       </div>
-    </div>
+    </PaperCard>
   );
 }
 
 export function TeamBattingOverviewSkeleton() {
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <PaperCard className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="h-5 w-28 bg-warm-200 rounded animate-pulse" />
         <div className="h-4 w-32 bg-warm-200 rounded animate-pulse" />
@@ -208,6 +210,6 @@ export function TeamBattingOverviewSkeleton() {
           </div>
         ))}
       </div>
-    </div>
+    </PaperCard>
   );
 }

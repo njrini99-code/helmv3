@@ -11,17 +11,24 @@ import { useToast } from '@/components/ui/sonner';
 import { Button, IconButton } from '@/components/ui/button';
 import { PaperCard } from '@/components/baseball/living-annual';
 
+// Living Annual ink system (no raw red/amber): `conditioning`/`academic` are
+// plain category labels, not error/warning states, so they read the clay
+// (`pursuit`) and graphite (`grade-avg`) inks at two different weights —
+// distinguishable from each other via intensity, never via alarm color.
+// general/administrative/practice/game_prep are unchanged (out of scope).
 const categoryColors: Record<string, string> = {
   general: 'bg-warm-100 text-warm-600',
-  conditioning: 'bg-red-100 text-red-700',
-  academic: 'bg-amber-100 text-amber-700',
+  conditioning: 'bg-pursuit/10 text-pursuit',
+  academic: 'bg-grade-avg/10 text-grade-avg',
   administrative: 'bg-blue-100 text-blue-700',
   practice: 'bg-primary-100 text-primary-700',
   game_prep: 'bg-purple-100 text-purple-700',
 };
 
+// `high` reads the clay `pursuit` ink solid (never raw red) — same weight as
+// the other two solid dots below, just a different ink.
 const priorityColors: Record<string, string> = {
-  high: 'bg-red-500',
+  high: 'bg-pursuit',
   normal: 'bg-primary-500',
   low: 'bg-warm-400',
 };
@@ -197,7 +204,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
               <IconButton variant="default" aria-label="Delete"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
+                className="p-1.5 rounded-lg text-warm-400 hover:text-[color:var(--notice-error-ink)] hover:bg-[var(--notice-error-ink)]/10 active:bg-[var(--notice-error-ink)]/20 transition-colors"
                 title="Delete task"
               >
                 <IconTrash size={14} />
@@ -234,7 +241,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
             {task.due_date && (
               <span className={cn(
                 'flex items-center gap-1',
-                isOverdue ? 'text-red-600' : 'text-warm-500'
+                isOverdue ? 'text-[color:var(--notice-error-ink)]' : 'text-warm-500'
               )}>
                 <IconClock size={14} />
                 {formatDate(task.due_date)}

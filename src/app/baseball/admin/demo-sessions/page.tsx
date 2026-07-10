@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getBaseballDemoSessions } from '@/app/baseball/actions/demo-tracking';
 import { IconUsers, IconChevronRight, IconActivity } from '@/components/icons';
-import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
+import { PaperCard, EditorsLetter, InkNotice } from '@/components/baseball/living-annual';
 
 export const metadata = { title: 'Demo Sessions — BaseballHelm' };
 
@@ -91,10 +91,10 @@ export default async function BaseballDemoSessionsPage() {
 
       {/* ── Error state ────────────────────────────────────────────────── */}
       {fetchError && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-red-700 text-sm">
+        <InkNotice>
           <strong className="font-semibold">Could not load sessions.</strong>
-          <p className="mt-1 text-red-600">{fetchError}</p>
-        </div>
+          <p className="mt-1">{fetchError}</p>
+        </InkNotice>
       )}
 
       {/* ── Empty state ────────────────────────────────────────────────── */}

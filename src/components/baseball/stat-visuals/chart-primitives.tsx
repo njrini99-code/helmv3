@@ -330,8 +330,10 @@ export function BulletBar({
   trackClassName?: string;
 }) {
   const pctFill = value === null || max <= 0 ? 0 : Math.max(0, Math.min(1, value / max));
+  // 'amber' tone reads the pursuit (clay) ink lane, not raw Tailwind amber
+  // (Living Annual ink system — warning tint never a stock yellow/amber fill).
   const fillClass =
-    tone === 'amber' ? 'bg-amber-500' : tone === 'warm' ? 'bg-warm-400' : 'bg-primary-600';
+    tone === 'amber' ? 'bg-pursuit' : tone === 'warm' ? 'bg-warm-400' : 'bg-primary-600';
   return (
     <div
       className={cn('relative w-full overflow-hidden rounded-full bg-warm-100', trackClassName)}

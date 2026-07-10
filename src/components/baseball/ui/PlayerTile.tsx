@@ -35,8 +35,10 @@ function SorenessPill({ level }: { level: number }) {
       aria-label={`Soreness level ${level}`}
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums flex-shrink-0',
+        // Ink system (Living Annual doctrine — no raw amber): elevated soreness
+        // reads pursuit clay soft, same lane as ProfileTimeline/shared.tsx warning.
         isElevated
-          ? 'bg-amber-50 text-amber-700'
+          ? 'bg-pursuit/10 text-pursuit'
           : 'bg-warm-100 text-warm-600'
       )}
     >
@@ -44,7 +46,7 @@ function SorenessPill({ level }: { level: number }) {
         aria-hidden
         className={cn(
           'w-1.5 h-1.5 rounded-full flex-shrink-0',
-          isElevated ? 'bg-amber-500' : 'bg-warm-400'
+          isElevated ? 'bg-pursuit' : 'bg-warm-400'
         )}
       />
       {level}

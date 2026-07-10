@@ -211,18 +211,21 @@ function DeleteTeamDialog({
     <div
       role="presentation"
       className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onCancel}
+      onClick={(e) => {
+        // Close only on a true backdrop click — clicks inside the dialog
+        // bubble here with a different target, so no stopPropagation is
+        // needed on the content (which would also swallow the keydown
+        // path useFocusTrap's document listener relies on).
+        if (e.target === e.currentTarget) onCancel();
+      }}
       onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Delete ${team.name}`}
         className="relative w-full max-w-md overflow-hidden rounded-2xl bg-cream-50 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-warm-100 px-6 py-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">

@@ -81,9 +81,9 @@ const sentimentConfig: Record<
     label: 'Solid Round',
   },
   challenging: {
-    bg: 'bg-amber-100',
-    text: 'text-amber-700',
-    icon: 'text-amber-600',
+    bg: 'bg-fw-warning-bg',
+    text: 'text-fw-warning',
+    icon: 'text-fw-warning',
     label: 'Room to Grow',
   },
 };
@@ -94,7 +94,7 @@ const gradeConfig: Record<
 > = {
   A: { bg: 'bg-primary-500', text: 'text-white', border: 'border-primary-600' },
   B: { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-600' },
-  C: { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-600' },
+  C: { bg: 'bg-fw-warning', text: 'text-white', border: 'border-fw-warning' },
   D: { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-600' },
   F: { bg: 'bg-fw-danger', text: 'text-white', border: 'border-fw-danger' },
 };
@@ -110,7 +110,7 @@ const comparisonConfig: Record<
   },
   below: {
     icon: <IconTrendingDown size={14} />,
-    color: 'text-amber-600',
+    color: 'text-fw-warning',
     label: 'Below avg',
   },
   average: {
@@ -258,7 +258,7 @@ export function RoundReviewDisplay({
                       scoreToPar < 0
                         ? 'text-primary-600'
                         : scoreToPar > 0
-                          ? 'text-amber-600'
+                          ? 'text-fw-warning'
                           : 'text-warm-500'
                     )}
                   >
@@ -394,7 +394,7 @@ export function RoundReviewDisplay({
           title="Areas for Improvement"
           icon={<IconTarget size={16} />}
           badge={
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
+            <span className="px-2 py-0.5 bg-fw-warning-bg text-fw-warning text-xs rounded-full font-medium">
               {review.areasForImprovement.length}
             </span>
           }
@@ -406,7 +406,7 @@ export function RoundReviewDisplay({
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 })}
-                className="p-3 rounded-lg bg-amber-50/50 border border-amber-100"
+                className="p-3 rounded-lg bg-fw-warning-bg/50 border border-fw-warning/20"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-medium text-warm-900 text-sm">{area.area}</div>
@@ -716,10 +716,10 @@ export function RoundReviewDisplay({
             {/* Three-putt detail */}
             {review.puttingBreakdown.threePuttHoles.length > 0 && (
               <div className="pt-2 border-t border-border-subtle">
-                <div className="text-xs font-medium text-amber-700 mb-1">Three-Putts</div>
+                <div className="text-xs font-medium text-fw-warning mb-1">Three-Putts</div>
                 <div className="flex flex-wrap gap-2">
                   {review.puttingBreakdown.threePuttHoles.map(tp => (
-                    <span key={tp.hole} className="px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                    <span key={tp.hole} className="px-2 py-1 bg-fw-warning-bg border border-fw-warning/30 rounded-lg text-xs text-fw-warning">
                       #{tp.hole} {tp.firstPuttFeet ? `from ${Math.round(tp.firstPuttFeet)}ft` : ''}
                     </span>
                   ))}

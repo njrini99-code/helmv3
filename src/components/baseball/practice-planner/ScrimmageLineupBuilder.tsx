@@ -275,8 +275,9 @@ export function ScrimmageLineupBuilder({
                       }
                       className={cn(
                         'min-h-0 flex min-w-[52px] flex-col items-center rounded-lg border px-1.5 py-1 text-center shadow-sm',
+                        // Living Annual ink: true conflict reads --notice-error-ink, never raw red.
                         conflict
-                          ? 'border-red-400 bg-red-50'
+                          ? 'border-[color:var(--notice-error-ink)] bg-[var(--notice-error-ink)]/10'
                           : player
                             ? 'border-primary-300 bg-cream-50'
                             : 'border-dashed border-warm-300 bg-cream-50/70 hover:bg-cream-100',
@@ -297,7 +298,7 @@ export function ScrimmageLineupBuilder({
                           {player.bats ? `B:${player.bats}` : ''} {player.throws ? `T:${player.throws}` : ''}
                         </span>
                       )}
-                      {conflict && <AlertTriangle className="h-3 w-3 text-red-500" />}
+                      {conflict && <AlertTriangle className="h-3 w-3 text-[color:var(--notice-error-ink)]" />}
                     </Button>
                   </div>
                 );
@@ -344,7 +345,7 @@ export function ScrimmageLineupBuilder({
                             onClick={() => removeSlot(s.playerId)}
                             haptic="none"
                             aria-label="Remove"
-                            className="min-h-0 p-0 text-warm-400 hover:bg-transparent hover:text-red-500"
+                            className="min-h-0 p-0 text-warm-400 hover:bg-transparent hover:text-[color:var(--notice-error-ink)]"
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -444,7 +445,8 @@ export function ScrimmageLineupBuilder({
                         aria-label={`Batting order for ${p?.name ?? 'player'}`}
                         className={cn(
                           'w-12 rounded border px-1 py-0.5 text-xs tabular-nums',
-                          orderDup ? 'border-red-400 bg-red-50' : 'border-warm-200',
+                          // Living Annual ink: true duplicate reads --notice-error-ink, never raw red.
+                          orderDup ? 'border-[color:var(--notice-error-ink)] bg-[var(--notice-error-ink)]/10' : 'border-warm-200',
                         )}
                       >
                         <option value="">—</option>
@@ -463,7 +465,7 @@ export function ScrimmageLineupBuilder({
                         </span>
                       )}
                       {p?.bats && <span className="shrink-0 text-micro text-warm-400">B:{p.bats}</span>}
-                      {orderDup && <AlertTriangle className="h-3 w-3 shrink-0 text-red-500" />}
+                      {orderDup && <AlertTriangle className="h-3 w-3 shrink-0 text-[color:var(--notice-error-ink)]" />}
                     </li>
                   );
                 })}

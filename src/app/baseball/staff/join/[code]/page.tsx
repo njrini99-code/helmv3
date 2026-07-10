@@ -67,8 +67,14 @@ export default async function StaffJoinPage({ params }: PageProps) {
   if (!invite) {
     return (
       <CenteredCard>
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
-          <IconX size={32} className="text-red-600" />
+        <div
+          className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border"
+          style={{
+            backgroundColor: 'color-mix(in oklch, var(--notice-error-ink) 16%, transparent)',
+            borderColor: 'color-mix(in oklch, var(--notice-error-ink) 32%, transparent)',
+          }}
+        >
+          <IconX size={32} className="text-[color:var(--notice-error-ink)]" />
         </div>
         <h1 className="mb-2 text-center text-xl font-semibold text-warm-900">
           Invitation not found
@@ -99,8 +105,11 @@ export default async function StaffJoinPage({ params }: PageProps) {
     const accepted = invite.status === 'accepted';
     return (
       <CenteredCard>
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-          <IconWarning size={32} className="text-amber-600" />
+        <div
+          className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+          style={{ backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 8%, transparent)' }}
+        >
+          <IconWarning size={32} className="text-pursuit" />
         </div>
         <h1 className="mb-2 text-center text-xl font-semibold text-warm-900">
           {accepted ? 'Already accepted' : isExpired ? 'Invitation expired' : 'Invitation inactive'}
@@ -128,8 +137,11 @@ export default async function StaffJoinPage({ params }: PageProps) {
   if (userEmail !== String(invite.email).trim().toLowerCase()) {
     return (
       <CenteredCard>
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-          <IconWarning size={32} className="text-amber-600" />
+        <div
+          className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+          style={{ backgroundColor: 'color-mix(in oklch, var(--pursuit-ink) 8%, transparent)' }}
+        >
+          <IconWarning size={32} className="text-pursuit" />
         </div>
         <h1 className="mb-2 text-center text-xl font-semibold text-warm-900">
           Wrong account

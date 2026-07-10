@@ -205,7 +205,7 @@ export function PlayerInspectorPanel({
       {/* ── Backdrop ───────────────────────────────────────────────────── */}
       <motion.div
         {...backdropVariants}
-        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px] cursor-pointer"
+        className="fixed inset-0 z-40 bg-black/20 cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -220,7 +220,7 @@ export function PlayerInspectorPanel({
         className={cn(
           'fixed top-0 right-0 z-50 h-full w-full max-w-[400px]',
           'flex flex-col',
-          'bg-cream-50/95 backdrop-blur-xl',
+          'bg-cream-50/95',
           'shadow-2xl shadow-black/10',
           'border-l border-warm-200/50',
           'overflow-hidden',
@@ -235,7 +235,7 @@ export function PlayerInspectorPanel({
           className={cn(
             'absolute top-4 right-4 z-10',
             'w-11 h-11 flex items-center justify-center',
-            'rounded-xl bg-warm-100/80 backdrop-blur-sm',
+            'rounded-xl bg-warm-100/80',
             'text-warm-500 hover:text-warm-700 hover:bg-warm-200/80',
             'transition-colors duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',

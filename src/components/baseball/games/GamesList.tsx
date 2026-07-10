@@ -235,13 +235,16 @@ export function GamesList({
           ))}
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center">
-          <p className="text-sm font-medium text-red-700 mb-1">Couldn&apos;t load games</p>
-          <p className="text-sm text-red-600/90 mb-4">{error}</p>
-          <Button variant="secondary" size="sm" onClick={() => fetchGames()}>
-            Try again
-          </Button>
-        </div>
+        <EditorsLetter
+          ink="pursuit"
+          title="Couldn't load games"
+          body={error}
+          action={
+            <Button variant="secondary" size="sm" onClick={() => fetchGames()}>
+              Try again
+            </Button>
+          }
+        />
       ) : games.length === 0 ? (
         <EditorsLetter
           title="No games yet"
@@ -264,7 +267,10 @@ export function GamesList({
             <div key={game.id} className="relative group">
               <GameCard game={game} />
               {deletingId === game.id && (
-                <div className="absolute inset-0 bg-cream-100/82 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                // Solid Paper tint, no blur — this is a card-local overlay, not
+                // a full-screen scrim, so backdrop-blur doesn't qualify for the
+                // scrim exemption (Living Annual doctrine).
+                <div className="absolute inset-0 bg-cream-100/95 rounded-2xl flex items-center justify-center">
                   <span className="text-sm text-warm-500">Deleting...</span>
                 </div>
               )}
@@ -279,7 +285,7 @@ export function GamesList({
               <Button variant="danger"
                 onClick={() => handleDelete(game.id)}
                 disabled={deletingId === game.id}
-                className="absolute top-3 right-3 text-xs text-warm-300 hover:text-red-500 transition-all opacity-60 pointer-events-auto [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+                className="absolute top-3 right-3 text-xs text-warm-300 hover:text-pursuit transition-all opacity-60 pointer-events-auto [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
                 aria-label="Delete game"
               >
                 ×

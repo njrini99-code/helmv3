@@ -178,7 +178,7 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
           // key off of; `md:top-16` (passed by BaseballFairwayShell via
           // `className`) overrides it for the fixed-height desktop top bar.
           'sticky top-[var(--golf-mobile-header-offset)] z-20 w-full',
-          'border-b border-[color:var(--hairline)] bg-[color:var(--paper)]/85 backdrop-blur-xl',
+          'border-b border-[color:var(--hairline)] bg-[color:var(--paper)]',
           className,
         )}
       >

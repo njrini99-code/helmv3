@@ -520,7 +520,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               variant="danger"
                               size="icon-sm"
                               onClick={() => removePitcher(row.player_id)}
-                              className="text-warm-300 hover:text-red-400 transition-colors"
+                              className="text-warm-300 hover:text-[color:var(--notice-error-ink)] transition-colors"
                               aria-label={`Remove ${playerFullName(player)} from pitching lines`}
                               title="Remove"
                             >

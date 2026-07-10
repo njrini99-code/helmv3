@@ -220,7 +220,7 @@ export function RecruitingWeightDistributor({
       <div
         className={cn(
           'flex items-center justify-between pt-4 border-t border-warm-200 text-sm font-semibold',
-          isValid ? 'text-primary-600' : 'text-amber-600'
+          isValid ? 'text-primary-600' : 'text-pursuit'
         )}
       >
         <span>Total Weight</span>
@@ -228,7 +228,7 @@ export function RecruitingWeightDistributor({
       </div>
 
       {!isValid && (
-        <p className="text-xs text-amber-600 flex items-center gap-1.5">
+        <p className="text-xs text-pursuit flex items-center gap-1.5">
           <span>⚠️</span>
           Weights should add up to approximately 100%
         </p>

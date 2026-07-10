@@ -789,7 +789,7 @@ function DecisionSeal({ label }: { label: string }) {
   return (
     <div
       aria-hidden
-      className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--paper)]/92 backdrop-blur-[1px]"
+      className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--paper)]/92"
     >
       <CommitSeal label={label} size="md" />
     </div>

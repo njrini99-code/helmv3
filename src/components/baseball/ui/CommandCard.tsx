@@ -59,14 +59,15 @@ export interface CommandCardProps {
 
 // ---------------------------------------------------------------------------
 // Tone → accent class map
-// Spec: ready→bg-primary-500, watch→bg-amber-500, urgent→bg-red-500,
-//       info→bg-blue-400, complete→bg-primary-300
+// Ink doctrine (2026-07-09 sweep): ready→primary-500, watch→pursuit/60,
+// urgent→pursuit (full clay), info→blue-400, complete→primary-300 —
+// urgency reads as clay intensity, never raw amber/red.
 // ---------------------------------------------------------------------------
 
 const ACCENT_CLASS: Record<CommandCardTone, string> = {
   ready:    'bg-primary-500',
-  watch:    'bg-amber-500',
-  urgent:   'bg-red-500',
+  watch:    'bg-pursuit/60',
+  urgent:   'bg-pursuit',
   info:     'bg-blue-400',
   complete: 'bg-primary-300',
 };
