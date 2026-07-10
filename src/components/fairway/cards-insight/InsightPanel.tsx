@@ -393,7 +393,12 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
         <Sheet
           open={open}
           onOpenChange={onOpenChange}
-          side="right"
+          // resolvedMode === 'sheet' only happens when !isWide (narrow /
+          // phone-class viewport) — doctrine rule 4 requires a bottom sheet
+          // here, never the desktop-only docked side="right" panel (which
+          // was rendering centered/clipped on phone, same defect class as
+          // FairwayNewMessageSheet).
+          side="bottom"
           title={typeof title === 'string' ? title : 'Signal'}
           description={
             typeof overline === 'string' ? overline : undefined

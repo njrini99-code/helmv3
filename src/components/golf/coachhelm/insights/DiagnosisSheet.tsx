@@ -15,11 +15,14 @@
  *     data provenance — so the claim is auditable, not just assertive
  *   • the confidence reason + the strokes-per-round the fix is worth.
  *
- * Built on the Fairway `Sheet` (right side on desktop, bottom on mobile via the
- * library). ADDITIVE — opened by a host that owns the open state.
+ * Built on the Fairway `Sheet` — right side on desktop, bottom sheet below
+ * `md` (Mobile Doctrine rule 4; the primitive does NOT auto-switch, the
+ * side prop is media-query gated here like every other call site).
+ * ADDITIVE — opened by a host that owns the open state.
  * ========================================================================== */
 
 import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import type { Diagnosis } from '@/lib/coachhelm/v2/insights/types';
 import { formatValue } from './EvidencePanel';
@@ -86,12 +89,13 @@ export function DiagnosisSheet({
   sg,
 }: DiagnosisSheetProps) {
   const measured = diagnosis.causality_level === 'observed_sequence';
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   return (
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      side="right"
+      side={isDesktop ? 'right' : 'bottom'}
       title={title}
       description={category ? `Root cause · ${category}` : 'Root cause'}
     >

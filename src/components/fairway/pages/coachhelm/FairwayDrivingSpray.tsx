@@ -143,11 +143,11 @@ function ellipsePath(
 
 function Header({ takeaway }: { takeaway: string | null }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="min-w-0 flex flex-col gap-0.5">
       <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-accent-700">
         Off the tee
       </span>
-      <h3 className="font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary">
+      <h3 className="truncate font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary">
         Driving spray
       </h3>
       <p className="font-fw-sans text-caption text-text-tertiary">
@@ -246,10 +246,14 @@ export function FairwayDrivingSpray({ group, className }: FairwayDrivingSprayPro
   return (
     <Surface elevation="border" padding="lg" className={className}>
       <div className="flex flex-col gap-5">
-        <div className="flex items-start justify-between gap-4">
+        {/* Phones (< sm): stack the header above the avg-carry readout instead
+            of crowding them into one row — same fix as InstrumentPanel's
+            bezel (doctrine rule 11). `sm:` and up restores the side-by-side
+            header row. */}
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <Header takeaway={takeaway} />
           {avgCarry != null ? (
-            <div className="shrink-0 text-right">
+            <div className="w-full shrink-0 text-right sm:w-auto">
               <div className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
                 {avgCarry}
                 <span className="ml-1 font-fw-sans text-caption font-medium text-text-tertiary">yds</span>
