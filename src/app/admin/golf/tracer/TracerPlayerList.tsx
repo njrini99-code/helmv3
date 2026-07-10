@@ -135,7 +135,13 @@ function PlayerRoundsList({ playerId, rounds }: { playerId: string; rounds: Trac
               className="block h-auto w-full rounded-xl border-0 px-3 py-2.5 text-left text-sm font-normal leading-5"
             >
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="min-w-0 flex-1 truncate font-medium text-warm-900">
+                {/* basis-full below `sm` — same identity-gets-its-own-line
+                    treatment as the player row above and TracerIncidentRow's
+                    title: at the Sheet's ~342px phone width the status pill +
+                    issue count + date already eat the row, so without this a
+                    long course name was squeezed to a near-illegible sliver
+                    instead of wrapping the meta below it (mobile audit). */}
+                <span className="min-w-0 flex-1 basis-full truncate font-medium text-warm-900 sm:basis-auto">
                   {round.course_name || 'Unknown course'}
                 </span>
                 <StatusPill tone={ROUND_STATUS_TONE[round.status] ?? 'neutral'} dot size="sm">

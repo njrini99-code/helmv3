@@ -9,11 +9,33 @@ vi.mock('@/lib/coachhelm/v2/trigger-insights-bridge', () => ({
   triggerPlayerInsightsAfterRound: (...args: unknown[]) => mockTrigger(...args),
 }));
 
+// Spy on the actual severity/skipSentry passed to the two logging entry
+// points. postRoundTrigger is a SECOND independent consumer of the
+// triggerPlayerInsightsAfterRound result (alongside the withAdminObserved
+// path in insights.ts, verified separately in
+// src/lib/admin/__tests__/observe-action-result.test.ts) — these tests pin
+// that both consumers classify the same `code` identically instead of this
+// one always falling through to default 'error' + live Sentry capture.
+const mocks = vi.hoisted(() => ({
+  logServerError: vi.fn<
+    (message: string, context: Record<string, unknown>, severity?: string) => Promise<void>
+  >(async () => {}),
+  logServerEvent: vi.fn<
+    (message: string, context: Record<string, unknown>, severity?: string) => Promise<void>
+  >(async () => {}),
+}));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: mocks.logServerError,
+  logServerEvent: mocks.logServerEvent,
+}));
+
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 
 describe('postRoundTrigger', () => {
   beforeEach(() => {
     mockTrigger.mockReset();
+    mocks.logServerError.mockClear();
+    mocks.logServerEvent.mockClear();
   });
 
   it('sets coachhelm_analyzed_at and clears failure fields on success', async () => {
@@ -90,5 +112,66 @@ describe('postRoundTrigger', () => {
     mockTrigger.mockRejectedValue(new Error('boom'));
 
     await expect(postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r5' })).resolves.not.toThrow();
+  });
+
+  describe('engine-failure severity classification (verdict-softfail-severity)', () => {
+    it('code: engine_no_recent_rounds logs via logServerEvent at info + skipSentry, never logServerError', async () => {
+      const admin = createFakeSupabase({
+        tables: { golf_rounds: [{ id: 'r6', player_id: 'p1', coachhelm_analyzed_at: null }] },
+      });
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: 'No completed rounds in the last 90 days yet — insights will populate after the next round',
+        code: 'engine_no_recent_rounds',
+      });
+
+      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r6' });
+
+      expect(mocks.logServerEvent).toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger engine failed'),
+        expect.objectContaining({ skipSentry: true, errorCode: 'engine_no_recent_rounds' }),
+        'info',
+      );
+      expect(mocks.logServerError).not.toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger engine failed'),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it('code: engine_session_expired logs via logServerError at warning + skipSentry (handled, not a live Sentry exception)', async () => {
+      const admin = createFakeSupabase({
+        tables: { golf_rounds: [{ id: 'r7', player_id: 'p1', coachhelm_analyzed_at: null }] },
+      });
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: 'Player analysis failed (likely session expired in background context)',
+        code: 'engine_session_expired',
+      });
+
+      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r7' });
+
+      expect(mocks.logServerError).toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger engine failed'),
+        expect.objectContaining({ skipSentry: true, errorCode: 'engine_session_expired' }),
+        'warning',
+      );
+    });
+
+    it('regression guard: an unrecognized code/message still logs at default error severity with no skipSentry', async () => {
+      const admin = createFakeSupabase({
+        tables: { golf_rounds: [{ id: 'r8', player_id: 'p1', coachhelm_analyzed_at: null }] },
+      });
+      mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
+
+      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r8' });
+
+      const call = mocks.logServerError.mock.calls.find(([msg]) =>
+        String(msg).startsWith('postRoundTrigger engine failed'),
+      );
+      expect(call).toBeTruthy();
+      expect(call?.[2]).toBe('error');
+      expect((call?.[1] as Record<string, unknown> | undefined)?.skipSentry).toBeUndefined();
+    });
   });
 });

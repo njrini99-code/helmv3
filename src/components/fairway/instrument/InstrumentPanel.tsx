@@ -125,7 +125,12 @@ export const InstrumentPanel = forwardRef<HTMLDivElement, InstrumentPanelProps>(
           <div
             data-slot="instrument-bezel"
             className={cn(
-              'flex items-start justify-between gap-4',
+              // Phones (< sm): stack eyebrow → heading → readout in one column
+              // so a wide readout (e.g. Ribbon's value+delta figure) never
+              // crowds the heading into an overlap. `sm:` and up restores the
+              // side-by-side bezel row (doctrine rule 11 — stacked, composed,
+              // never overlapping at 390px).
+              'flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4',
               // only reserve a gap below the bezel when there's an instrument body
               children ? 'mb-5' : undefined,
             )}
@@ -137,7 +142,7 @@ export const InstrumentPanel = forwardRef<HTMLDivElement, InstrumentPanelProps>(
                 </p>
               ) : null}
               {typeof header === 'string' ? (
-                <h3 className="font-fw-display text-h3 font-semibold leading-tight text-text-primary">
+                <h3 className="truncate font-fw-display text-h3 font-semibold leading-tight text-text-primary">
                   {header}
                 </h3>
               ) : (
@@ -145,7 +150,7 @@ export const InstrumentPanel = forwardRef<HTMLDivElement, InstrumentPanelProps>(
               )}
             </div>
             {readout ? (
-              <div className="flex shrink-0 items-start">{readout}</div>
+              <div className="flex w-full shrink-0 items-start justify-end sm:w-auto">{readout}</div>
             ) : null}
           </div>
         ) : null}

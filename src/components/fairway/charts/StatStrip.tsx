@@ -123,6 +123,15 @@ const GRID_BASE: Record<1 | 2, string> = {
 const GRID_LAST_SPAN_3 =
   '[&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1';
 
+// When a caller grows the template to 3+ real columns already at `md` (via
+// `mdColumns`), the count===3 trailing-cell span must hand its width back
+// there too — otherwise the 768–1023px range renders a 3-col template whose
+// last cell still spans 2, and grid auto-placement can't fit it into row 1's
+// single remaining column, pushing it to a mostly-empty row 2 (visible gap).
+// Not emitted for `mdColumns={2}`, where the "2 + 1-wide" rhythm is still the
+// intended shape.
+const MD_LAST_SPAN_RESET_3 = 'md:[&>*:last-child]:col-span-1';
+
 // Desktop suffix for the GRID branch — byte-for-byte the original
 // KPIContentsStrip `COLS` map. `columns` (desktop target) is independent of
 // `count` (the phone-shape decision above).
@@ -245,6 +254,7 @@ export function StatStrip({
       className={cn(
         GRID_BASE[count === 1 ? 1 : 2],
         count === 3 && GRID_LAST_SPAN_3,
+        count === 3 && mdColumns !== undefined && mdColumns >= 3 && MD_LAST_SPAN_RESET_3,
         'sm:gap-x-8 sm:gap-y-7',
         gridDesktopTier,
         mdColumns && MD_COLS[mdColumns],

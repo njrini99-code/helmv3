@@ -1,4 +1,5 @@
 import { CheckCircle2, Inbox, CloudOff } from 'lucide-react';
+import { LocalTime } from './LocalTime';
 
 /** All-clear ≠ no-data ≠ fetch-failed. Three distinct states so a silent
  *  dashboard is never mistaken for a healthy system. */
@@ -9,7 +10,11 @@ export function PanelAllClear({ label, checkedAt }: { label: string; checkedAt: 
       <CheckCircle2 size={20} className="text-fw-success" aria-hidden />
       <p className="text-sm font-medium text-accent-700">{label}</p>
       <p className="font-fw-mono text-xs tabular-nums text-warm-500">
-        checked {new Date(checkedAt).toLocaleTimeString()}
+        {/* LocalTime, not toLocaleTimeString(): rendered from Server
+            Components, the raw call bakes in the server's UTC clock — the
+            viewer sees a wrong-timezone time with no marker (same bug class
+            LocalTime.tsx documents). */}
+        checked <LocalTime iso={checkedAt} />
       </p>
     </div>
   );

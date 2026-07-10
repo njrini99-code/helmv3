@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { StatusPill } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { TeamHealth } from '@/lib/admin/data/golf';
+import { LocalTime } from './LocalTime';
 
 const HEALTH_TONE: Record<TeamHealth, 'success' | 'warning' | 'danger'> = {
   active: 'success',
@@ -24,11 +25,12 @@ export interface TeamHealthEntry {
 /**
  * Shared with W9 (baseball) / W10 (users) — sport-agnostic.
  *
- * PHONE-FORMAT RESPONSIVE (owner directive 2026-07-02): `overflow-x-auto`
- * scopes the horizontal scroll to the table itself (never the page), and the
- * first column stays `sticky` so the team's identity is never scrolled out
- * of view on a 375px viewport. Mirrors the cron-board table pattern in
- * `/admin/jobs`.
+ * MOBILE (doctrine Rule 8, 2026-07-10): below `md` each team renders as a
+ * full-width tap-through card row (identity + roster/last-activity line +
+ * health pill + honest error count) — the min-w table would otherwise force
+ * a horizontal scroller on a phone-primary reading surface, which Rule 8
+ * bans even when scroll-contained. The table (sticky identity column,
+ * `overflow-x-auto` scoped to itself) still owns `md` and up, unchanged.
  *
  * GREEN CONTRACT (Bridge V2, 2026-07-02): a hairline helm-green rule under
  * the header, heavy graphite (never green) numerals for roster/error counts,
@@ -40,7 +42,46 @@ export interface TeamHealthEntry {
  */
 export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Phone: doctrine-8 card rows, whole row is the link. */}
+      <div className="divide-y divide-warm-200/60 md:hidden">
+        {teams.map((t) => {
+          const isLeader = t.health === 'active' && t.errors7d === 0;
+          return (
+            <Link
+              key={t.teamId}
+              href={t.href ?? `/admin/teams/${t.teamId}`}
+              className={cn(
+                'block rounded-fw-md px-2 py-3 transition-colors hover:bg-surface-sunken',
+                isLeader && 'bg-accent-50',
+              )}
+            >
+              {/* Dateline rule — replaces the retired border-l-2 leader stripe. */}
+              {isLeader && <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-accent-500" />}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-warm-900">{t.name}</p>
+                  <p className="mt-1 font-fw-mono text-xs tabular-nums text-warm-500">
+                    {t.playerCount} players · last{' '}
+                    {t.lastActivity ? <LocalTime iso={t.lastActivity} variant="date" fallback="never" /> : 'never'}
+                  </p>
+                </div>
+                <StatusPill tone={HEALTH_TONE[t.health]} dot size="sm" className="shrink-0">
+                  {t.health}
+                </StatusPill>
+              </div>
+              {t.errors7d > 0 ? (
+                <p className="mt-2 font-fw-mono text-xs font-semibold tabular-nums text-fw-danger">
+                  {t.errors7d} errors this week
+                </p>
+              ) : null}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* md+: the original sticky-identity table, byte-for-byte. */}
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[520px] text-sm">
         <thead>
           <tr className="border-b border-accent-600/25 text-left text-xs uppercase tracking-widest text-warm-500">
@@ -68,7 +109,7 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
                 </td>
                 <td className="px-3 font-fw-mono font-semibold tabular-nums text-warm-900">{t.playerCount}</td>
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                  {t.lastActivity ? new Date(t.lastActivity).toLocaleDateString() : 'never'}
+                  {t.lastActivity ? <LocalTime iso={t.lastActivity} variant="date" fallback="never" /> : 'never'}
                 </td>
                 <td className="px-3">
                   <StatusPill tone={HEALTH_TONE[t.health]} dot size="sm">
@@ -88,6 +129,7 @@ export function TeamHealthTable({ teams }: { teams: TeamHealthEntry[] }) {
           })}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

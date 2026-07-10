@@ -192,7 +192,17 @@ export function Ribbon({
                 label={seriesName}
                 delta={
                   typeof trendDelta === 'number'
-                    ? { value: trendDelta, format: (v) => `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v))}` }
+                    ? {
+                        value: trendDelta,
+                        format: (v) => {
+                          // `fmt` (the caller's valueFormatter, e.g. FairwayBrief's
+                          // fmtSG) may ALREADY prefix its own +/− sign. Strip any
+                          // leading sign glyph before prepending ours, or a signed
+                          // formatter double-signs ("▼ −+0.56" instead of "▼ −0.56").
+                          const magnitude = fmt(Math.abs(v)).replace(/^[+\-−]/, '');
+                          return `${v >= 0 ? '+' : '−'}${magnitude}`;
+                        },
+                      }
                     : undefined
                 }
               />

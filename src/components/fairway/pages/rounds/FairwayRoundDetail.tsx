@@ -57,6 +57,7 @@ import {
   EmptyState,
   Button,
 } from '@/components/fairway';
+import { cn } from '@/lib/utils';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — fully-resolved, serializable data from the server page.
@@ -583,7 +584,12 @@ function Scorecard({
 }
 
 /** A single nine-hole block: a hole-number header row + par/score/putts/FW/GIR
- *  rows, then a nine total. */
+ *  rows, then a nine total.
+ *
+ *  Below `md` this renders as a real phone scorecard — per-hole row strips
+ *  (hole · par · score-vs-par pill · putts · FW/GIR marks), the shape a
+ *  golfer actually recognizes — NOT the desktop table squeezed into a
+ *  scroll box (Rule 8). The `md+` table is byte-identical to before. */
 function ScorecardNine({
   label,
   holes,
@@ -601,87 +607,206 @@ function ScorecardNine({
   const puttTotal = holes.reduce((s, h) => s + (finite(h.putts) ?? 0), 0);
 
   return (
-    <div className="overflow-x-auto px-2 py-3">
-      <table className="w-full min-w-[560px] border-collapse text-center">
-        <caption className="sr-only">{label} nine scorecard</caption>
-        <thead>
-          <tr>
-            <Th className="text-left">{label}</Th>
-            {holes.map((h) => (
-              <Th key={h.hole_number}>{h.hole_number}</Th>
-            ))}
-            <Th className="bg-surface-tint">Out</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* Par */}
-          <tr>
-            <RowLabel>Par</RowLabel>
-            {holes.map((h) => (
-              <Td key={h.hole_number} className="text-text-tertiary">
-                {finite(h.par) ?? '—'}
-              </Td>
-            ))}
-            <Td className="bg-surface-tint font-semibold text-text-secondary">{parTotal || '—'}</Td>
-          </tr>
-          {/* Score — tone-coded vs par (never color-only: glyph-free but the
-              number itself is the primary channel; tone is a quiet reinforcement) */}
-          <tr>
-            <RowLabel>Score</RowLabel>
-            {holes.map((h) => {
-              const s = finite(h.score);
-              const p = finite(h.par);
-              const tone =
-                s != null && p != null
-                  ? s < p
-                    ? 'text-fw-success'
-                    : s > p
-                      ? 'text-fw-warning'
-                      : 'text-text-primary'
-                  : 'text-text-tertiary';
-              return (
-                <Td key={h.hole_number} className={`font-semibold ${tone}`}>
-                  {s ?? '—'}
-                </Td>
-              );
-            })}
-            <Td className="bg-surface-tint font-semibold text-text-primary">
+    <div className="flex flex-col">
+      {/* Phone — per-hole row strips (Rule 8: never a squeezed table) */}
+      <div className="flex flex-col gap-2 px-3 py-3 md:hidden">
+        <div className="flex items-center justify-between px-1">
+          <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+            {label} nine
+          </span>
+          {parTotal ? (
+            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+              Par {parTotal}
+            </span>
+          ) : null}
+        </div>
+        <ul className="divide-y divide-border-subtle">
+          {holes.map((h) => (
+            <ScorecardHoleRow key={h.hole_number} hole={h} />
+          ))}
+        </ul>
+        <div className="mt-1 flex items-center justify-between rounded-fw-md bg-surface-tint px-3 py-2.5">
+          <span className="font-fw-display text-caption font-medium uppercase tracking-[0.1em] text-text-tertiary">
+            {label} total
+          </span>
+          <div className="flex items-baseline gap-3">
+            <span className="font-fw-mono text-caption tabular-nums text-text-secondary">
+              {puttTotal || '—'} putts
+            </span>
+            <span className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
               {scoreTotal || '—'}
-            </Td>
-          </tr>
-          {/* Putts */}
-          <tr>
-            <RowLabel>Putts</RowLabel>
-            {holes.map((h) => (
-              <Td key={h.hole_number} className="text-text-secondary">
-                {finite(h.putts) ?? '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* md+ — the original matte table, unchanged */}
+      <div className="hidden overflow-x-auto px-2 py-3 md:block">
+        <table className="w-full min-w-[560px] border-collapse text-center">
+          <caption className="sr-only">{label} nine scorecard</caption>
+          <thead>
+            <tr>
+              <Th className="text-left">{label}</Th>
+              {holes.map((h) => (
+                <Th key={h.hole_number}>{h.hole_number}</Th>
+              ))}
+              <Th className="bg-surface-tint">Out</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Par */}
+            <tr>
+              <RowLabel>Par</RowLabel>
+              {holes.map((h) => (
+                <Td key={h.hole_number} className="text-text-tertiary">
+                  {finite(h.par) ?? '—'}
+                </Td>
+              ))}
+              <Td className="bg-surface-tint font-semibold text-text-secondary">{parTotal || '—'}</Td>
+            </tr>
+            {/* Score — tone-coded vs par (never color-only: glyph-free but the
+                number itself is the primary channel; tone is a quiet reinforcement) */}
+            <tr>
+              <RowLabel>Score</RowLabel>
+              {holes.map((h) => {
+                const s = finite(h.score);
+                const p = finite(h.par);
+                const tone =
+                  s != null && p != null
+                    ? s < p
+                      ? 'text-fw-success'
+                      : s > p
+                        ? 'text-fw-warning'
+                        : 'text-text-primary'
+                    : 'text-text-tertiary';
+                return (
+                  <Td key={h.hole_number} className={`font-semibold ${tone}`}>
+                    {s ?? '—'}
+                  </Td>
+                );
+              })}
+              <Td className="bg-surface-tint font-semibold text-text-primary">
+                {scoreTotal || '—'}
               </Td>
-            ))}
-            <Td className="bg-surface-tint text-text-secondary">{puttTotal || '—'}</Td>
-          </tr>
-          {/* Fairway hit — par-3s have no fairway (fairway_hit NULL → blank dot) */}
-          <tr>
-            <RowLabel>FW</RowLabel>
-            {holes.map((h) => (
-              <Td key={h.hole_number}>
-                <HitMark value={h.fairway_hit} />
-              </Td>
-            ))}
-            <Td className="bg-surface-tint" />
-          </tr>
-          {/* GIR */}
-          <tr>
-            <RowLabel>GIR</RowLabel>
-            {holes.map((h) => (
-              <Td key={h.hole_number}>
-                <HitMark value={h.gir} />
-              </Td>
-            ))}
-            <Td className="bg-surface-tint" />
-          </tr>
-        </tbody>
-      </table>
+            </tr>
+            {/* Putts */}
+            <tr>
+              <RowLabel>Putts</RowLabel>
+              {holes.map((h) => (
+                <Td key={h.hole_number} className="text-text-secondary">
+                  {finite(h.putts) ?? '—'}
+                </Td>
+              ))}
+              <Td className="bg-surface-tint text-text-secondary">{puttTotal || '—'}</Td>
+            </tr>
+            {/* Fairway hit — par-3s have no fairway (fairway_hit NULL → blank dot) */}
+            <tr>
+              <RowLabel>FW</RowLabel>
+              {holes.map((h) => (
+                <Td key={h.hole_number}>
+                  <HitMark value={h.fairway_hit} />
+                </Td>
+              ))}
+              <Td className="bg-surface-tint" />
+            </tr>
+            {/* GIR */}
+            <tr>
+              <RowLabel>GIR</RowLabel>
+              {holes.map((h) => (
+                <Td key={h.hole_number}>
+                  <HitMark value={h.gir} />
+                </Td>
+              ))}
+              <Td className="bg-surface-tint" />
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+  );
+}
+
+/** Phone-only per-hole row: hole · par · score-vs-par pill · putts · FW/GIR
+ *  marks. Same underlying data + tone rules as the md+ table's Score row
+ *  (glyph-free color reinforcement backed by the explicit to-par pill text —
+ *  never color-only). */
+function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
+  const s = finite(hole.score);
+  const p = finite(hole.par);
+  const toPar = s != null && p != null ? s - p : null;
+
+  const scoreTone =
+    toPar == null
+      ? 'text-text-tertiary'
+      : toPar < 0
+        ? 'text-fw-success'
+        : toPar > 0
+          ? 'text-fw-warning'
+          : 'text-text-primary';
+
+  const pillTone =
+    toPar == null
+      ? 'bg-surface-sunken text-text-tertiary'
+      : toPar < 0
+        ? 'bg-fw-success-bg text-fw-success'
+        : toPar > 0
+          ? 'bg-fw-warning-bg text-fw-warning'
+          : 'bg-surface-sunken text-text-secondary';
+
+  return (
+    <li className="flex items-center gap-2.5 py-2.5 first:pt-0 last:pb-0">
+      <span
+        aria-hidden="true"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken font-fw-mono text-body-sm font-semibold tabular-nums text-text-secondary"
+      >
+        {hole.hole_number}
+      </span>
+      <div className="w-8 shrink-0 leading-tight">
+        <p className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+          Par
+        </p>
+        <p className="font-fw-mono text-body-sm font-medium tabular-nums text-text-secondary">
+          {p ?? '—'}
+        </p>
+      </div>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className={cn('font-fw-mono text-h3 font-semibold tabular-nums', scoreTone)}>
+          {s ?? '—'}
+        </span>
+        <span
+          className={cn(
+            'shrink-0 rounded-full px-1.5 py-0.5 font-fw-mono text-caption font-medium tabular-nums',
+            pillTone,
+          )}
+        >
+          {formatToPar(toPar)}
+        </span>
+      </div>
+      {/* Label-over-value, mirroring the Par block — one micro-pattern
+          across the row's small data blocks. */}
+      <div className="w-10 shrink-0 text-right leading-tight">
+        <p className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+          Putts
+        </p>
+        <p className="font-fw-mono text-body-sm tabular-nums text-text-secondary">
+          {finite(hole.putts) ?? '—'}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1 pl-1">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+            FW
+          </span>
+          <HitMark value={hole.fairway_hit} />
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+            GIR
+          </span>
+          <HitMark value={hole.gir} />
+        </span>
+      </div>
+    </li>
   );
 }
 

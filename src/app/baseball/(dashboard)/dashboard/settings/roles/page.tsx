@@ -16,6 +16,8 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { getRoleTemplates } from '@/app/baseball/actions/roles-permissions';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { IconUsers, IconChevronRight, IconShield } from '@/components/icons';
 import { SectionMasthead } from '@/components/baseball/living-annual';
@@ -41,7 +43,16 @@ export default async function RolesPage() {
     redirect('/baseball/login?returnTo=/baseball/dashboard/settings/roles');
   }
 
-  const data = await getRoleTemplates();
+  // getRoleTemplates independently re-resolves auth (withBaseballAction). A
+  // session that expires in the narrow window between the check above and
+  // this call throws BaseballUnauthorizedError, which must redirect to login
+  // rather than raw-throw to error.tsx/Sentry. Any OTHER failure keeps
+  // propagating.
+  const data = await redirectOnUnauthorized(
+    () => getRoleTemplates(),
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/settings/roles',
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">

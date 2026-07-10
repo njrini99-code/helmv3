@@ -63,6 +63,7 @@ import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerException } from '@/lib/server-error-logger';
 import { observeActionSoftFailure } from '@/lib/admin/observe-action-result';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import type { ActiveBaseballContext } from '@/lib/baseball/active-context-shared';
 import {
@@ -482,6 +483,38 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           );
           throw error;
         }
+
+        // RLS-denial capture (Helm Bridge capture class #1) — centralized here
+        // so every one of the 60+ withBaseballAction call sites gets it for
+        // free, matching golf's per-call-site maybeCaptureRlsDenial coverage
+        // (golf.ts, teams.ts, event-documents.ts, etc.) without hand-adding a
+        // call to each action file. This generic wrapper layer never sees the
+        // specific table a query targeted (that context lives in the action
+        // body, several calls deep), so `table` falls back to `featureArea`
+        // and `verb` to the catch-all 'rpc' bucket — good enough to route a
+        // denial into /admin/errors?source=rls_denial and the rls_denials
+        // feature-health rollup. `feature` is deliberately omitted: this
+        // file's `feature` option is a free-form string (not the registry's
+        // FeatureKey union), so featureForTable's lookup is left to resolve
+        // it (or fall back to null) rather than passing a mistyped value.
+        // Action files that know their real table name add a precise
+        // maybeCaptureRlsDenial call at the swallow site instead (see e.g.
+        // games.ts saveFullBoxScore, lifting-v11.ts logSetResult). Checked
+        // against the RAW error, not `normalized` below — normalizing a
+        // plain PostgrestError-like object into `new Error(String(error))`
+        // would drop its `.code`.
+        maybeCaptureRlsDenial(
+          error && typeof error === 'object'
+            ? (error as { code?: string | null; message?: string | null })
+            : null,
+          {
+            table: featureArea,
+            verb: 'rpc',
+            action: name,
+            sport: 'baseball',
+            userId: observedUserId,
+          },
+        );
 
         // Unexpected failure: capture the FULL error (stack, pg detail/hint)
         // through the central logger so it lands in error_logs + admin_events +

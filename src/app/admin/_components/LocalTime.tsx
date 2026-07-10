@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-export type LocalTimeVariant = 'time' | 'datetime';
+export type LocalTimeVariant = 'time' | 'datetime' | 'date';
 
 /**
  * Renders a timestamp in the VIEWER's local timezone without causing a
@@ -40,7 +40,13 @@ export function LocalTime({
 
   useEffect(() => {
     const d = new Date(iso);
-    setLabel(variant === 'time' ? d.toLocaleTimeString() : d.toLocaleString());
+    setLabel(
+      variant === 'time'
+        ? d.toLocaleTimeString()
+        : variant === 'date'
+          ? d.toLocaleDateString()
+          : d.toLocaleString(),
+    );
   }, [iso, variant]);
 
   return <span suppressHydrationWarning>{label ?? fallback}</span>;

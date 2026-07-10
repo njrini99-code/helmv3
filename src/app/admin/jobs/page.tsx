@@ -1,10 +1,12 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchJobsTab, type CronBoardRow, type IntegrityRow } from '@/lib/admin/data/jobs';
-import { Surface, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
+import { Surface, Inset, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
-import { PanelNoData } from '../_components/PanelStates';
+import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,56 +45,215 @@ function formatDuration(ms: number | null): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+/** A single label→value line inside a card. Value wraps (never clips —
+ *  MOBILE_DOCTRINE rule 8 "identity + key stats", not truncated text). */
+function StatLine({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="shrink-0 text-warm-500">{label}</span>
+      <span className="min-w-0 flex-1 break-words text-right font-fw-mono tabular-nums text-warm-600">
+        {value}
+      </span>
+    </div>
+  );
+}
+
 /**
- * PHONE-FORMAT RESPONSIVE (owner directive 2026-07-02): every admin table —
- * including this cron board and the integrity grid below — must render
- * cleanly at ~375px. `overflow-x-auto` scopes the horizontal scroll to the
- * table itself (never the page), and the first column stays `sticky` so the
- * row's identity is never scrolled out of view.
+ * One cron job as a phone-width card: identity + status up top, three key
+ * stats below (MOBILE_DOCTRINE rule 8 — no per-job detail route exists, so
+ * there's no tap-through target). Alarm rows (`overdue`/`failed`) get a
+ * hairline danger ring so they read as distinct from the routine list even
+ * without scrolling back up to compare pills.
+ */
+function CronJobCard({ row }: { row: CronBoardRow }) {
+  const isAlarm = row.status === 'overdue' || row.status === 'failed';
+  return (
+    <Inset padding="sm" className={cn(isAlarm && 'ring-1 ring-fw-danger/30')}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900">{row.jobType}</p>
+        <StatusPill tone={CRON_STATUS_TONE[row.status]} dot size="sm" className="shrink-0">
+          {row.status}
+        </StatusPill>
+      </div>
+      <div className="mt-2.5 space-y-1.5 text-xs">
+        <StatLine
+          label="Last run"
+          value={row.lastRunAt ? <LocalTime iso={row.lastRunAt} variant="datetime" /> : 'awaiting first run'}
+        />
+        <StatLine label="Duration" value={formatDuration(row.lastDurationMs)} />
+        <StatLine label="Cadence" value={`${row.cadenceMinutes}m`} />
+      </div>
+      {row.status === 'failed' && row.lastError ? (
+        <p className="mt-2 break-words border-t border-warm-200/60 pt-2 text-xs text-fw-danger">
+          {row.lastError}
+        </p>
+      ) : null}
+    </Inset>
+  );
+}
+
+/**
+ * Phone card-ify of the cron board (MOBILE_DOCTRINE rule 8: a `min-w-[###px]`
+ * table in `overflow-x-auto` is NOT the doctrine treatment on a phone-primary
+ * surface — it just moves the pan sideways inside a smaller box). Triage
+ * first (rule 1 + the craft bar's "ops surface, checked from a phone"): jobs
+ * that actually need attention (`overdue`/`failed`) render as cards
+ * immediately; everything on schedule rolls into ONE all-clear card (rule 3
+ * "empty sections never render — one all-caught-up card") with the routine
+ * rows tucked behind a collapsed disclosure so 18 registry entries don't
+ * blow the ~3-screen-height scroll budget.
+ */
+function CronBoardCards({ rows }: { rows: CronBoardRow[] }) {
+  const alarmRows = rows.filter((r) => r.status === 'overdue' || r.status === 'failed');
+  const restRows = rows.filter((r) => r.status !== 'overdue' && r.status !== 'failed');
+
+  return (
+    <div className="space-y-3">
+      {alarmRows.length > 0 ? (
+        <div className="space-y-2">
+          {alarmRows.map((row) => (
+            <CronJobCard key={row.jobType} row={row} />
+          ))}
+        </div>
+      ) : (
+        <PanelAllClear label={`All ${rows.length} cron jobs on schedule`} checkedAt={new Date().toISOString()} />
+      )}
+      {restRows.length > 0 ? (
+        <details>
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+            {restRows.length} other job{restRows.length === 1 ? '' : 's'} — view schedule
+          </summary>
+          <div className="mt-3 space-y-2">
+            {restRows.map((row) => (
+              <CronJobCard key={row.jobType} row={row} />
+            ))}
+          </div>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * PHONE-FORMAT RESPONSIVE: the table stays the `md:`+ presentation
+ * unchanged. Below `md`, this renders `CronBoardCards` instead — a
+ * `min-w-[640px]` table scoped by `overflow-x-auto` still forces a sideways
+ * pan on a 390px phone, which is exactly the treatment MOBILE_DOCTRINE rule
+ * 8 rules out for a phone-primary reading surface.
  */
 function CronBoardTable({ rows }: { rows: CronBoardRow[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-sm">
-        <thead>
-          <tr className="text-left text-xs uppercase tracking-widest text-warm-500">
-            <th className="sticky left-0 z-10 bg-surface py-2 pr-3">Job</th>
-            <th className="px-3">Status</th>
-            <th className="px-3">Last run</th>
-            <th className="px-3">Duration</th>
-            <th className="px-3">Cadence</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-warm-200/60">
-          {rows.map((row) => (
-            <tr key={row.jobType}>
-              <td className="sticky left-0 z-10 bg-surface py-2 pr-3 font-fw-mono text-xs text-warm-900">
-                {row.jobType}
-              </td>
-              <td className="px-3">
-                <StatusPill tone={CRON_STATUS_TONE[row.status]} dot size="sm">
-                  {row.status}
-                </StatusPill>
-                {row.status === 'failed' && row.lastError ? (
-                  <p
-                    title={row.lastError}
-                    className="mt-1 max-w-[260px] truncate text-xs text-fw-danger"
-                  >
-                    {row.lastError}
-                  </p>
-                ) : null}
-              </td>
-              <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                {row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : 'awaiting first run'}
-              </td>
-              <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                {formatDuration(row.lastDurationMs)}
-              </td>
-              <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">{row.cadenceMinutes}m</td>
+    <>
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-widest text-warm-500">
+              <th className="sticky left-0 z-10 bg-surface py-2 pr-3">Job</th>
+              <th className="px-3">Status</th>
+              <th className="px-3">Last run</th>
+              <th className="px-3">Duration</th>
+              <th className="px-3">Cadence</th>
             </tr>
+          </thead>
+          <tbody className="divide-y divide-warm-200/60">
+            {rows.map((row) => (
+              <tr key={row.jobType}>
+                <td className="sticky left-0 z-10 bg-surface py-2 pr-3 font-fw-mono text-xs text-warm-900">
+                  {row.jobType}
+                </td>
+                <td className="px-3">
+                  <StatusPill tone={CRON_STATUS_TONE[row.status]} dot size="sm">
+                    {row.status}
+                  </StatusPill>
+                  {row.status === 'failed' && row.lastError ? (
+                    <p
+                      title={row.lastError}
+                      className="mt-1 max-w-[260px] truncate text-xs text-fw-danger"
+                    >
+                      {row.lastError}
+                    </p>
+                  ) : null}
+                </td>
+                <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
+                  {row.lastRunAt ? <LocalTime iso={row.lastRunAt} variant="datetime" /> : 'awaiting first run'}
+                </td>
+                <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
+                  {formatDuration(row.lastDurationMs)}
+                </td>
+                <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">{row.cadenceMinutes}m</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="md:hidden">
+        <CronBoardCards rows={rows} />
+      </div>
+    </>
+  );
+}
+
+/** One integrity check as a phone-width card — mirrors `CronJobCard`'s
+ *  rhythm so the two sections read as one composed page, not two bolted-on
+ *  treatments (MOBILE_DOCTRINE rule 11). */
+function IntegrityCheckCard({ check }: { check: IntegrityRow }) {
+  const isFail = check.status === 'fail';
+  return (
+    <Inset padding="sm" className={cn(isFail && 'ring-1 ring-fw-danger/30')}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900">{check.check}</p>
+        <StatusPill tone={isFail ? 'danger' : 'success'} dot size="sm" className="shrink-0">
+          {check.status}
+        </StatusPill>
+      </div>
+      <div className="mt-2.5 space-y-1.5 text-xs">
+        <StatLine label="Offending rows" value={check.count} />
+        <StatLine label="Last run" value={<LocalTime iso={check.lastRunAt} variant="datetime" />} />
+      </div>
+      {isFail && check.sample.length > 0 ? (
+        <details className="mt-2">
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+            view sample rows
+          </summary>
+          <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-all border-t border-warm-200/60 pt-2 text-xs text-warm-700">
+            {JSON.stringify(check.sample, null, 2)}
+          </pre>
+        </details>
+      ) : null}
+    </Inset>
+  );
+}
+
+/** Phone card-ify of the integrity grid (rule 8), same alarm-first / rolled-
+ *  up-clean rhythm as `CronBoardCards` — a passing suite collapses into one
+ *  all-clear card instead of N repeated "pass" rows. */
+function IntegrityCards({ checks }: { checks: IntegrityRow[] }) {
+  const failing = checks.filter((c) => c.status === 'fail');
+  const passing = checks.filter((c) => c.status === 'pass');
+
+  return (
+    <div className="space-y-3">
+      {failing.length > 0 ? (
+        <div className="space-y-2">
+          {failing.map((c) => (
+            <IntegrityCheckCard key={c.check} check={c} />
           ))}
-        </tbody>
-      </table>
+        </div>
+      ) : (
+        <PanelAllClear label={`All ${checks.length} integrity checks passing`} checkedAt={new Date().toISOString()} />
+      )}
+      {passing.length > 0 && failing.length > 0 ? (
+        <details>
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+            {passing.length} passing check{passing.length === 1 ? '' : 's'} — view
+          </summary>
+          <div className="mt-3 space-y-2">
+            {passing.map((c) => (
+              <IntegrityCheckCard key={c.check} check={c} />
+            ))}
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }
@@ -108,49 +269,54 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] text-sm">
-        <thead>
-          <tr className="text-left text-xs uppercase tracking-widest text-warm-500">
-            <th className="sticky left-0 z-10 bg-surface py-2 pr-3">Check</th>
-            <th className="px-3">Status</th>
-            <th className="px-3">Offending rows</th>
-            <th className="px-3">Last run</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-warm-200/60">
-          {checks.map((c) => (
-            <tr key={c.check}>
-              <td className="sticky left-0 z-10 bg-surface py-2 pr-3 font-fw-mono text-xs text-warm-900">
-                {c.check}
-              </td>
-              <td className="px-3">
-                <StatusPill tone={c.status === 'pass' ? 'success' : 'danger'} dot size="sm">
-                  {c.status}
-                </StatusPill>
-              </td>
-              <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                {c.status === 'fail' && c.sample.length > 0 ? (
-                  <details>
-                    <summary className="cursor-pointer text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
-                      {c.count} — view rows
-                    </summary>
-                    <pre className="mt-2 max-w-[420px] whitespace-pre-wrap break-all rounded-lg bg-surface-sunken p-2 text-xs text-warm-700">
-                      {JSON.stringify(c.sample, null, 2)}
-                    </pre>
-                  </details>
-                ) : (
-                  c.count
-                )}
-              </td>
-              <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
-                {new Date(c.lastRunAt).toLocaleString()}
-              </td>
+    <>
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-widest text-warm-500">
+              <th className="sticky left-0 z-10 bg-surface py-2 pr-3">Check</th>
+              <th className="px-3">Status</th>
+              <th className="px-3">Offending rows</th>
+              <th className="px-3">Last run</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-warm-200/60">
+            {checks.map((c) => (
+              <tr key={c.check}>
+                <td className="sticky left-0 z-10 bg-surface py-2 pr-3 font-fw-mono text-xs text-warm-900">
+                  {c.check}
+                </td>
+                <td className="px-3">
+                  <StatusPill tone={c.status === 'pass' ? 'success' : 'danger'} dot size="sm">
+                    {c.status}
+                  </StatusPill>
+                </td>
+                <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
+                  {c.status === 'fail' && c.sample.length > 0 ? (
+                    <details>
+                      <summary className="cursor-pointer text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+                        {c.count} — view rows
+                      </summary>
+                      <pre className="mt-2 max-w-[420px] whitespace-pre-wrap break-all rounded-lg bg-surface-sunken p-2 text-xs text-warm-700">
+                        {JSON.stringify(c.sample, null, 2)}
+                      </pre>
+                    </details>
+                  ) : (
+                    c.count
+                  )}
+                </td>
+                <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
+                  <LocalTime iso={c.lastRunAt} variant="datetime" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="md:hidden">
+        <IntegrityCards checks={checks} />
+      </div>
+    </>
   );
 }
 

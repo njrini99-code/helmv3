@@ -18,8 +18,13 @@ const WORKFLOW_OPTIONS: Array<{ value: BenLeahWorkflowSelection; label: string }
   { value: 'wont_fix', label: "Won't fix" },
 ];
 
+// Below `md` this control now surfaces inside the mobile issue card (see
+// BenLeahIssueTable's card-ify split, docs/MOBILE_DOCTRINE.md rule 8) — the
+// same breakpoint the table/card swap happens at. `text-xs` at every size
+// was below iOS Safari's 16px zoom-on-focus floor; `text-base` restores that
+// on the card, `md:text-xs` keeps the original dense desktop-table look.
 const selectClass = cn(
-  'min-w-[9.5rem] rounded-fw-md border border-border-subtle bg-surface px-2 py-1 text-xs text-warm-900 shadow-flat outline-none',
+  'min-w-[9.5rem] min-h-[44px] md:min-h-0 rounded-fw-md border border-border-subtle bg-surface px-2 py-1 text-base md:text-xs text-warm-900 shadow-flat outline-none',
   'focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20 disabled:opacity-60',
 );
 
@@ -64,7 +69,7 @@ export function BenLeahIssueWorkflowSelect({ issue }: { issue: BenLeahTrackedIss
           </option>
         ))}
       </NativeSelect>
-      {error ? <p className="max-w-[12rem] text-caption text-fw-danger">{error}</p> : null}
+      {error ? <p className="max-w-[12rem] break-words text-caption text-fw-danger">{error}</p> : null}
     </div>
   );
 }

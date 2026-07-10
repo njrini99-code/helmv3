@@ -9,7 +9,7 @@ import { Surface, StatStrip, StatTile, StatusPill, TrendChart } from '@/componen
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
-import { TeamHealthTable } from '../_components/TeamHealthTable';
+import { TeamHealthTable, type TeamHealthEntry } from '../_components/TeamHealthTable';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 
@@ -181,6 +181,10 @@ async function BaseballBody() {
       return b.playerCount - a.playerCount;
     })
     .slice(0, 6);
+  const teamsWithHref: TeamHealthEntry[] = teams.map((team) => ({
+    ...team,
+    href: `/admin/users?team=${team.teamId}`,
+  }));
 
   return (
     <div className="space-y-6">
@@ -190,10 +194,16 @@ async function BaseballBody() {
             <div>
               <KeyPanelRule />
               <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Baseball command center</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-normal text-warm-900">
+              {/* Mobile Doctrine rule 2: eyebrow + long title + paragraph is a
+                  desktop cover treatment. Below `md` the headline condenses to
+                  the smaller text-h3 step and the descriptive paragraph is
+                  dropped entirely (mirrors admin/page.tsx CommandHeader) so
+                  the KPI row below is reachable at 390px without scrolling
+                  past decoration first. */}
+              <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">
                 Team-by-team, player-by-player visibility
               </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-warm-600">
+              <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-warm-600 md:block">
                 Baseball is now a real Helm Bridge operating view: roster posture, quiet players, profile gaps, and
                 production errors are pulled from the same sources as Users, Errors, and Overview.
               </p>
@@ -307,7 +317,9 @@ async function BaseballBody() {
           {teams.length === 0 ? (
             <PanelNoData label="No baseball teams yet" description="Teams appear here once a coach creates one." />
           ) : (
-            <TeamHealthTable teams={teams.map((team) => ({ ...team, href: `/admin/users?team=${team.teamId}` }))} />
+            // TeamHealthTable owns its own doctrine-8 split: card rows below
+            // `md`, the sticky-identity table at `md` and up.
+            <TeamHealthTable teams={teamsWithHref} />
           )}
         </div>
       </Surface>

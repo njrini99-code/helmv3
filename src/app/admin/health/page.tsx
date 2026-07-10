@@ -47,8 +47,16 @@ export default async function FeatureHealthPage() {
         <Eyebrow as="p" tone="accent">
           Feature Health
         </Eyebrow>
-        <h1 className="mt-1 text-2xl font-semibold text-warm-900">Every GolfHelm, CoachHelm, and BaseballHelm feature, at a glance</h1>
-        <p className="mt-1 max-w-2xl text-sm text-warm-500">
+        {/* Mobile Doctrine rule 2: eyebrow + long title + paragraph is a
+            desktop cover treatment. Below `md` the headline condenses to
+            text-h3 and the descriptive paragraph is dropped entirely
+            (mirrors admin/page.tsx CommandHeader and admin/baseball's
+            masthead) so the feature grid — the actual daily-loop content —
+            is reachable at 390px without scrolling past decoration first. */}
+        <h1 className="mt-1 text-h3 font-semibold text-warm-900 md:text-2xl">
+          Every GolfHelm, CoachHelm, and BaseballHelm feature, at a glance
+        </h1>
+        <p className="mt-1 hidden max-w-2xl text-sm text-warm-500 md:block">
           Computed from get_feature_health() with 2-window hysteresis — a single blip never flips a dot. Features with
           no feature-tagged data yet render neutral, never red or fake-green. Baseball client errors are promoted into
           feature tags before they reach this board.

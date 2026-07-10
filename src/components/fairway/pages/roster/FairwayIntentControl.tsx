@@ -32,6 +32,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { StatusPill, type StatusPillProps } from '@/components/fairway/controls/status-pill';
 import { Button } from '@/components/fairway/controls/button';
@@ -304,6 +305,11 @@ function IntentSheet({
     }
   }
 
+  // Doctrine rule 4: authoring flows are a bottom sheet under `md` — the
+  // desktop-only docked side="right" panel is what was rendering
+  // centered/clipped on phone (same defect as FairwayNewMessageSheet).
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   return (
     <Sheet
       open={open}
@@ -311,7 +317,7 @@ function IntentSheet({
         // Never persist on dismiss — closing is a pure no-op for the data.
         if (!saving) onOpenChange(next);
       }}
-      side="right"
+      side={isDesktop ? 'right' : 'bottom'}
       title="Set intent"
       description={
         <>

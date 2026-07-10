@@ -15,6 +15,8 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { listSeasons } from '@/app/baseball/actions/team-season-settings';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { SeasonSettingsClient } from '@/components/baseball/settings/SeasonSettingsClient';
 
 export const metadata = {
@@ -32,7 +34,16 @@ export default async function SeasonSettingsPage() {
     redirect('/baseball/login?returnTo=/baseball/dashboard/settings/season');
   }
 
-  const data = await listSeasons();
+  // listSeasons independently re-resolves auth (withBaseballAction). A
+  // session that expires in the narrow window between the check above and
+  // this call throws BaseballUnauthorizedError, which must redirect to login
+  // rather than raw-throw to error.tsx/Sentry. Any OTHER failure keeps
+  // propagating.
+  const data = await redirectOnUnauthorized(
+    () => listSeasons(),
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/settings/season',
+  );
 
   return <SeasonSettingsClient data={data} />;
 }

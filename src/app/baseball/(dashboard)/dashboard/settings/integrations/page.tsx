@@ -21,6 +21,8 @@ import {
   getProgramSettings,
   listIntegrations,
 } from '@/app/baseball/actions/program-settings';
+import { BaseballUnauthorizedError } from '@/lib/baseball/with-baseball-action';
+import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized';
 import { IntegrationsClient } from '@/components/baseball/settings/IntegrationsClient';
 
 export const metadata = {
@@ -38,8 +40,20 @@ export default async function IntegrationsPage() {
     redirect('/baseball/login?returnTo=/baseball/dashboard/settings/integrations');
   }
 
-  const settings = await getProgramSettings();
-  const integrations = await listIntegrations();
+  // Both getters independently re-resolve auth (withBaseballAction). A
+  // session that expires in the narrow window between the check above and
+  // these calls throws BaseballUnauthorizedError, which must redirect to
+  // login rather than raw-throw to error.tsx/Sentry. Any OTHER failure keeps
+  // propagating.
+  const { settings, integrations } = await redirectOnUnauthorized(
+    async () => {
+      const settings = await getProgramSettings();
+      const integrations = await listIntegrations();
+      return { settings, integrations };
+    },
+    (error) => error instanceof BaseballUnauthorizedError,
+    '/baseball/dashboard/settings/integrations',
+  );
 
   return (
     <IntegrationsClient

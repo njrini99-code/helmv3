@@ -18,7 +18,11 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import {
+  isExpectedEmptyStateCode,
+  isExpectedSoftFailureMessage,
+} from '@/lib/admin/observe-action-result';
 
 export interface PostRoundTriggerArgs {
   playerId: string;
@@ -52,6 +56,26 @@ type FailureCode =
  * columns honestly without a schema change.
  */
 const PARTIAL_FAILURE_REASON = 'engine_partial_failure' as const;
+
+/**
+ * `postRoundTrigger` is a SECOND, independent consumer of the same
+ * `triggerPlayerInsightsAfterRound` result that `observeActionSoftFailure`
+ * classifies for the withAdminObserved-wrapped path (see
+ * src/lib/admin/observe-action-result.ts `severityForSoftFailure`). Both
+ * consumers must agree on severity for the identical `code` — otherwise a
+ * routine outcome (no rounds yet, background-context session expiry) is
+ * simultaneously logged as a handled 'warning'/'info' by one consumer AND as
+ * a live Sentry exception at 'error' by this one, defeating the whole point
+ * of the classification.
+ */
+function classifyEngineFailureSeverity(
+  message: string,
+  code: string | null,
+): { severity: 'info' | 'warning' | 'error'; skipSentry: boolean } {
+  if (isExpectedEmptyStateCode(code)) return { severity: 'info', skipSentry: true };
+  if (isExpectedSoftFailureMessage(message, code)) return { severity: 'warning', skipSentry: true };
+  return { severity: 'error', skipSentry: false };
+}
 
 function sanitizeFailureReason(reason: string): FailureCode {
   const lower = reason.toLowerCase();
@@ -130,12 +154,21 @@ export async function postRoundTrigger(
         },
         'postRoundTrigger.engineFailure',
       );
-      await logServerError(`postRoundTrigger engine failed: ${reason}`, {
+      const code = result.code ?? null;
+      const { severity, skipSentry } = classifyEngineFailureSeverity(reason, code);
+      const logContext = {
         action: 'postRoundTrigger.engineFailure',
         featureArea: 'coachhelm',
         playerId: args.playerId,
+        ...(skipSentry ? { skipSentry: true } : {}),
+        ...(code ? { errorCode: code } : {}),
         extra: { roundId: args.roundId, triggerReason: args.triggerReason ?? 'round_submitted' },
-      });
+      };
+      if (severity === 'info') {
+        await logServerEvent(`postRoundTrigger engine failed: ${reason}`, logContext, 'info');
+      } else {
+        await logServerError(`postRoundTrigger engine failed: ${reason}`, logContext, severity);
+      }
       return { success: false, error: reason };
     }
 

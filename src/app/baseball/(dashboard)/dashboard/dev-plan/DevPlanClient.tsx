@@ -559,9 +559,15 @@ export default function DevPlanClient() {
                 </PaperCard>
               ) : null}
 
-              {/* Goals with Tabs */}
+              {/* Goals with Tabs. The four icon+label+badge triggers are
+                  whitespace-nowrap and sum past the ~338px content width at
+                  390px, and TabsList has no scroll handling of its own — so
+                  below md the list rides a contained edge-bled scroller
+                  (matching the page's px-4 shell) instead of overflowing the
+                  page. md+ is untouched (overflow-visible, no bleed). */}
               <Tabs defaultValue="active" value={activeTab} onChange={setActiveTab}>
-                <TabsList className="mb-4">
+                <div className="-mx-4 mb-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:overflow-visible md:px-0">
+                <TabsList>
                   <TabsTrigger value="active" icon={<IconTarget size={16} />} badge={activeCount > 0 ? activeCount : undefined}>
                     Active
                   </TabsTrigger>
@@ -575,6 +581,7 @@ export default function DevPlanClient() {
                     All
                   </TabsTrigger>
                 </TabsList>
+                </div>
 
                 <TabsContent value="active">
                   <GoalsList

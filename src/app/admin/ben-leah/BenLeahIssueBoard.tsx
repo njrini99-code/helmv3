@@ -5,7 +5,7 @@ import {
   type BenLeahTrackStatus,
 } from '@/lib/admin/ben-leah-issues';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
-import { StatusPill, StatTile, type FwStatusTone } from '@/components/fairway';
+import { StatusPill, StatTile, StatStrip, type FwStatusTone } from '@/components/fairway';
 import { BenLeahIssueTable } from './BenLeahIssueTable';
 
 const TRACK_META: Record<
@@ -113,7 +113,21 @@ export async function BenLeahIssueBoard() {
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* StatStrip (Mobile Doctrine rules 2/3/11) — the shared phone-shape
+          primitive for KPI rows: a 2x2 grid below `md` instead of 4 stacked
+          full-width rows, so the KPI count doesn't eat the scroll budget
+          before the issue list is reached. REPAIR (verified defect): desktop
+          is NOT byte-identical to the prior hand-rolled `grid gap-3
+          sm:grid-cols-2 lg:grid-cols-4` recipe — column count at `sm`/`lg`
+          is unchanged, but StatStrip's own `sm:gap-x-8 sm:gap-y-7` (32px/
+          28px) unconditionally replaces the old flat `gap-3` (12px) at every
+          breakpoint from `sm` up (src/components/fairway/charts/
+          StatStrip.tsx:248, grid branch — this call has count=4, so it never
+          hits the rail branch's own `sm:gap-x-8 sm:gap-y-7` at line 144).
+          That gap widening is accepted here as a shared-primitive tradeoff —
+          StatStrip.tsx is out of this packet's edit scope — not asserted as
+          unchanged. */}
+      <StatStrip count={4}>
         {(
           [
             ['Open / in progress', openCount, 'Needs attention'],
@@ -127,7 +141,7 @@ export async function BenLeahIssueBoard() {
             <p className="mt-1 text-xs text-warm-500">{caption}</p>
           </div>
         ))}
-      </div>
+      </StatStrip>
 
       {productionReadyAt ? (
         <p className="flex items-center gap-2 text-xs text-warm-500">
@@ -151,6 +165,12 @@ export async function BenLeahIssueBoard() {
         <BenLeahIssueTable issues={issues} />
       )}
 
+      {/* Stays 1-up below `sm`: the longest legend label ("Fixed · pending
+          deploy") is a `whitespace-nowrap` StatusPill sharing its row with a
+          count — at a 390px viewport a 2-up grid leaves that pill ~145px of
+          content width for a label that needs ~160px, which would spill out
+          of the sunken-well card (defect class 1: non-shrinkable chip in a
+          too-narrow row). Full-width rows are the safe compaction here. */}
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {(Object.keys(TRACK_META) as BenLeahTrackStatus[]).map((status) => (
           <div key={status} className="rounded-fw-md bg-surface-sunken px-3 py-2">

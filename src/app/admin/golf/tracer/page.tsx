@@ -1,6 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { bridgeGetTracerData, bridgeGetTracerEnrichedData } from '@/app/admin/actions/golf-tracer';
-import { Surface, InlineNotice, Sparkline } from '@/components/fairway';
+import { Surface, InlineNotice, Sparkline, StatStrip } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelAllClear } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
@@ -32,13 +32,17 @@ async function TracerBody() {
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <KpiTile label="Players tracked" value={data.playerSummaries.length} href="/admin/golf/tracer" />
+      {/* StatStrip, not a hand-rolled grid — 5 peers on phone is exactly the
+          "ragged trailing cell" case (rows of 2/2/1) the primitive exists to
+          avoid (MOBILE_DOCTRINE rules 3 + 11): phone gets ONE snap-rail,
+          "Stuck rounds" pinned first since it's this page's most actionable
+          triage signal, desktop keeps the original md:grid-cols-5. */}
+      <StatStrip count={5} mdColumns={5} ariaLabel="Tracer KPIs">
         <KpiTile
-          label="Errors 7d"
-          value={data.errorStats.total7d}
-          href="/admin/errors?sport=golf"
-          tone={data.errorStats.total7d > 0 ? 'warning' : 'neutral'}
+          label="Stuck rounds"
+          value={enriched.stuckRounds.length}
+          href="/admin/golf/tracer#stuck-rounds"
+          tone={enriched.stuckRounds.length > 0 ? 'danger' : 'neutral'}
           goodDirection="down"
         />
         <KpiTile
@@ -49,19 +53,20 @@ async function TracerBody() {
           goodDirection="down"
         />
         <KpiTile
+          label="Errors 7d"
+          value={data.errorStats.total7d}
+          href="/admin/errors?sport=golf"
+          tone={data.errorStats.total7d > 0 ? 'warning' : 'neutral'}
+          goodDirection="down"
+        />
+        <KpiTile
           label="Warnings 7d"
           value={data.errorStats.warnings7d}
           href="/admin/errors?sport=golf&severity=warning"
           goodDirection="down"
         />
-        <KpiTile
-          label="Stuck rounds"
-          value={enriched.stuckRounds.length}
-          href="/admin/golf/tracer#stuck-rounds"
-          tone={enriched.stuckRounds.length > 0 ? 'danger' : 'neutral'}
-          goodDirection="down"
-        />
-      </section>
+        <KpiTile label="Players tracked" value={data.playerSummaries.length} href="/admin/golf/tracer" />
+      </StatStrip>
 
       <Surface padding="sm">
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Daily activity (30d)</h2>

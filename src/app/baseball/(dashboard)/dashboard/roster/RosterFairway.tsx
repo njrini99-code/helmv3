@@ -123,6 +123,24 @@ function buildWallStats(agg: BaseballPlayerAggregates | undefined, leader: boole
   ];
 }
 
+// Phone read (doctrine Rule 8): a coach triages the wall by contact (AVG)
+// and overall production (OPS) — OBP/SLG/SESS live on the player detail page
+// this row already taps through to. Labels render inline (PlayerRowStat's
+// "standalone row" mode) since there's no shared `PlayerRowPlateHeader` at
+// this width to carry the column labels instead.
+function buildWallStatsMobile(agg: BaseballPlayerAggregates | undefined, leader: boolean): PlayerRowStat[] {
+  if (!agg) {
+    return [
+      { label: 'AVG', value: EM_DASH },
+      { label: 'OPS', value: EM_DASH },
+    ];
+  }
+  return [
+    { label: 'AVG', value: agg.career_avg == null ? EM_DASH : formatRate(agg.career_avg, 3) },
+    { label: 'OPS', value: agg.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3), leader },
+  ];
+}
+
 function RosterWall({
   members,
   aggregates,
@@ -152,40 +170,78 @@ function RosterWall({
   }, [members, aggregates]);
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[680px]">
-        <PlayerRowPlateHeader columns={WALL_COLUMNS} />
-        <div className="flex flex-col">
-          {members.map((member, i) => {
-            const playerName = `${member.player.first_name ?? ''} ${member.player.last_name ?? ''}`.trim() || 'this player';
-            return (
-              <Reveal key={member.id} staggerIndex={Math.min(i, 10)}>
-                <div className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1">
-                    <PlayerRowPlate
-                      firstName={member.player.first_name ?? ''}
-                      lastName={member.player.last_name ?? ''}
-                      jerseyNumber={member.jersey_number ?? undefined}
-                      position={member.player.primary_position ?? undefined}
-                      stats={buildWallStats(aggregates[member.player.id], member.player.id === opsLeaderId)}
-                      onClick={() => onSelect(member.player.id)}
-                    />
-                  </div>
-                  <RosterRowMenu
-                    playerId={member.player.id}
-                    playerName={playerName}
-                    jerseyNumber={member.jersey_number}
-                    position={member.player.primary_position}
-                    onAssign={onAssignPlayer}
-                    onRemove={onRemoveMember}
+    <>
+      {/* Below md (Rule 8): identity + the two stats a coach actually
+          triages by, full-width rows, tap-through to the detail page for
+          the rest of the record book — never the five-column table's
+          horizontal scroll on a reading surface. Row menu (jersey/position
+          edit, remove) rides alongside on both breakpoints. */}
+      <div className="flex flex-col md:hidden">
+        {members.map((member, i) => {
+          const playerName = `${member.player.first_name ?? ''} ${member.player.last_name ?? ''}`.trim() || 'this player';
+          return (
+            <Reveal key={member.id} staggerIndex={Math.min(i, 10)}>
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <PlayerRowPlate
+                    firstName={member.player.first_name ?? ''}
+                    lastName={member.player.last_name ?? ''}
+                    jerseyNumber={member.jersey_number ?? undefined}
+                    position={member.player.primary_position ?? undefined}
+                    stats={buildWallStatsMobile(aggregates[member.player.id], member.player.id === opsLeaderId)}
+                    onClick={() => onSelect(member.player.id)}
                   />
                 </div>
-              </Reveal>
-            );
-          })}
+                <RosterRowMenu
+                  playerId={member.player.id}
+                  playerName={playerName}
+                  jerseyNumber={member.jersey_number}
+                  position={member.player.primary_position}
+                  onAssign={onAssignPlayer}
+                  onRemove={onRemoveMember}
+                />
+              </div>
+            </Reveal>
+          );
+        })}
+      </div>
+
+      {/* md+: the full five-column record book, unchanged. */}
+      <div className="hidden overflow-x-auto md:block">
+        <div className="min-w-[680px]">
+          <PlayerRowPlateHeader columns={WALL_COLUMNS} />
+          <div className="flex flex-col">
+            {members.map((member, i) => {
+              const playerName = `${member.player.first_name ?? ''} ${member.player.last_name ?? ''}`.trim() || 'this player';
+              return (
+                <Reveal key={member.id} staggerIndex={Math.min(i, 10)}>
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <PlayerRowPlate
+                        firstName={member.player.first_name ?? ''}
+                        lastName={member.player.last_name ?? ''}
+                        jerseyNumber={member.jersey_number ?? undefined}
+                        position={member.player.primary_position ?? undefined}
+                        stats={buildWallStats(aggregates[member.player.id], member.player.id === opsLeaderId)}
+                        onClick={() => onSelect(member.player.id)}
+                      />
+                    </div>
+                    <RosterRowMenu
+                      playerId={member.player.id}
+                      playerName={playerName}
+                      jerseyNumber={member.jersey_number}
+                      position={member.player.primary_position}
+                      onAssign={onAssignPlayer}
+                      onRemove={onRemoveMember}
+                    />
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

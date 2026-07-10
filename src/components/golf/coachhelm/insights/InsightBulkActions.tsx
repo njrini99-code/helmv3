@@ -124,7 +124,12 @@ export function InsightBulkActions({
             exit={{ opacity: 0, y: 20 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 25, stiffness: 400 })}
             className={cn(
-              'fixed bottom-[calc(var(--golf-mobile-bottom-nav-offset)+env(safe-area-inset-bottom))] left-1/2 z-40 -translate-x-1/2 lg:bottom-6',
+              // `--golf-mobile-bottom-nav-offset` already bakes in
+              // env(safe-area-inset-bottom) (globals.css) — adding it again
+              // here double-counted the safe area on top of the bar's own
+              // height. `+0.75rem` is breathing room above the bar, not a
+              // second safe-area add.
+              'fixed bottom-[calc(var(--golf-mobile-bottom-nav-offset)+0.75rem)] left-1/2 z-40 -translate-x-1/2 lg:bottom-6',
               'w-full max-w-2xl px-4',
               className
             )}
