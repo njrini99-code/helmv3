@@ -56,7 +56,7 @@ import { PlayerDetailModal } from '@/components/coach/PlayerDetailModal';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { PositionPlanner } from '@/components/baseball/position-planner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { IconUsers, IconLayoutGrid, IconList, IconTarget, IconTrash, IconTrendingUp, IconChevronDown, IconChevronUp } from '@/components/icons';
+import { IconUsers, IconLayoutGrid, IconList, IconTarget, IconTrash, IconTrendingUp, IconChevronDown, IconChevronUp, IconChevronRight } from '@/components/icons';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
@@ -537,10 +537,15 @@ function PipelineListRow({
           onClick={onOpenPeek}
           className="h-auto min-h-0 justify-start gap-3 rounded-fw-sm px-2 py-1 text-left font-normal"
         >
-          <Avatar src={item.player?.avatar_url} name={name} size="md" />
-          <div className="min-w-0">
-            <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
-            <span className="text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</span>
+          {/* ONE pre-composed flex child — Button wraps children in a bare
+              <span>, so Avatar + div as siblings stack vertically (see
+              Button's CHILDREN CONTRACT doc). Same pattern as the card row. */}
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Avatar src={item.player?.avatar_url} name={name} size="md" />
+            <div className="min-w-0">
+              <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
+              <span className="text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</span>
+            </div>
           </div>
         </Button>
       </td>
@@ -604,6 +609,147 @@ function PipelineListRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+// Rule 8 (docs/MOBILE_DOCTRINE.md) — a `min-w` table wrapped only in
+// `overflow-x-auto` is not the phone treatment on a reading surface. Below
+// `lg` each row becomes a composed card (identity + position/grad-year +
+// status + updated + tap-through/actions), mirroring the `hidden lg:block` /
+// `lg:hidden` split already shipped in AcademicsClient.tsx:291/294 in this
+// same app. The desktop `<table>` above stays byte-identical; this card
+// consumes the exact same row props/callbacks — no new read/write path.
+function PipelineListCard({
+  item,
+  focused,
+  selected,
+  editing,
+  noteValue,
+  onFocus,
+  onOpenPeek,
+  onToggleSelect,
+  onStatusChange,
+  onStartEditNote,
+  onNoteValueChange,
+  onSaveNote,
+  onCancelNote,
+  onViewProfile,
+  onRemove,
+}: PipelineListRowProps) {
+  const name = getFullName(item.player?.first_name, item.player?.last_name);
+  const location = item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A';
+
+  return (
+    <PaperCard
+      onClick={onFocus}
+      className={cn(
+        'p-4',
+        pressableClass({ ink: 'pursuit', lift: true }),
+        focused && 'ring-2 ring-inset ring-pursuit',
+      )}
+    >
+      <div className="flex items-start gap-3">
+        {/* Long-press multi-select isn't available on a card row — a compact,
+            always-visible checkbox keeps single-tap selection reachable. */}
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select ${name}`} className="mt-1 shrink-0" />
+        <Button
+          variant="ghost"
+          onClick={onOpenPeek}
+          rightIcon={<IconChevronRight size={16} aria-hidden className="text-text-tertiary" />}
+          className="h-auto min-h-0 flex-1 justify-between gap-3 rounded-fw-sm px-2 py-1 text-left font-normal"
+        >
+          {/* Fairway's <Button> renders non-icon children inside a single bare
+              <span> (no className) as a direct child of its inline-flex
+              container — that span gets blockified, and an inline Avatar
+              followed by a block-level name/school div inside it triggers
+              anonymous-block-box generation (Avatar stacks above the name
+              instead of beside it). An explicit flex wrapper here establishes
+              its own flex formatting context so Avatar + text lay out as a
+              real identity row, matching the Avatar+name idiom used elsewhere
+              (MessagesClient.tsx, AcademicsClient.tsx) instead of relying on
+              the Button's auto-wrapping children slot. */}
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Avatar src={item.player?.avatar_url} name={name} size="md" />
+            <div className="min-w-0 flex-1">
+              <span className="block truncate font-annual text-body-lg text-text-primary">{name}</span>
+              <span className="block truncate text-eyebrow text-text-tertiary">{item.player?.high_school_name || 'No school'}</span>
+            </div>
+          </div>
+        </Button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-annual text-body-sm text-text-secondary">
+        <span>{item.player?.primary_position || '—'}</span>
+        <span aria-hidden className="text-text-tertiary">·</span>
+        <span>{item.player?.grad_year ?? '—'}</span>
+        <span aria-hidden className="text-text-tertiary">·</span>
+        <span className="truncate">{location}</span>
+      </div>
+
+      <HairlineRule ink="hairline" className="my-3" />
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="w-40">
+          <Select
+            size="sm"
+            aria-label={`Change stage for ${name}`}
+            value={item.pipeline_stage ?? 'watchlist'}
+            onValueChange={(v) => v && onStatusChange(v as PipelineStage)}
+            options={statusOptions}
+          />
+        </div>
+        <span className="shrink-0 font-annual text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+          {formatDate(item.updated_at)}
+        </span>
+      </div>
+
+      <div className="mt-3">
+        {editing ? (
+          <div className="space-y-2">
+            <TextArea
+              size="sm"
+              value={noteValue}
+              onChange={(e) => onNoteValueChange(e.target.value)}
+              placeholder="Add notes about this player…"
+              rows={3}
+              className="w-full resize-none focus-visible:ring-pursuit"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onSaveNote} className="min-h-[44px] flex-1">
+                Save
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onCancelNote} className="min-h-[44px] flex-1">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onStartEditNote}
+            className="h-auto min-h-0 w-full justify-start truncate px-2 py-1 text-left font-normal underline decoration-[color:var(--hairline)] underline-offset-2"
+          >
+            {item.notes ? (item.notes.length > 48 ? `${item.notes.slice(0, 48)}…` : item.notes) : 'Add note'}
+          </Button>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <Button variant="secondary" size="sm" onClick={onViewProfile} className="min-h-[44px] flex-1">
+          View profile
+        </Button>
+        <IconButton
+          variant="danger"
+          size="sm"
+          aria-label={`Remove ${name} from pipeline`}
+          onClick={onRemove}
+          className="min-h-[44px] min-w-[44px]"
+        >
+          <IconTrash size={16} />
+        </IconButton>
+      </div>
+    </PaperCard>
   );
 }
 
@@ -1173,14 +1319,53 @@ export default function PipelinePage() {
                   />
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+                    <p className="hidden font-annual text-eyebrow uppercase tracking-[0.14em] text-text-tertiary lg:block">
                       <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">j</kbd>/
                       <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">k</kbd> navigate ·{' '}
                       <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">Enter</kbd> view ·{' '}
                       <kbd className="rounded-fw-sm border border-[color:var(--hairline)] bg-surface-sunken px-1.5 py-0.5 font-mono text-text-secondary">x</kbd> select
                     </p>
 
-                    <PaperCard className="overflow-hidden p-0">
+                    {/* Rule 8 — cards below `lg`, byte-identical table at `lg`+. The
+                        thead's "select all" checkbox has no card-list equivalent, so
+                        a lightweight select-all/deselect-all row replaces it here
+                        rather than dropping the capability on phone. */}
+                    <div className="flex items-center justify-between gap-3 lg:hidden">
+                      <span className="font-annual text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+                        {filteredWatchlist.length} player{filteredWatchlist.length !== 1 ? 's' : ''}
+                      </span>
+                      <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
+                        {selectedPlayers.size === filteredWatchlist.length && filteredWatchlist.length > 0 ? 'Deselect all' : 'Select all'}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3 lg:hidden">
+                      {filteredWatchlist.map((item, index) => (
+                        <PipelineListCard
+                          key={item.id}
+                          item={item}
+                          focused={focusedIndex === index}
+                          selected={selectedPlayers.has(item.id)}
+                          editing={editingNote === item.id}
+                          noteValue={noteValue}
+                          onFocus={() => setFocusedIndex(index)}
+                          onOpenPeek={() => setPeekPlayerId(item.player?.id || null)}
+                          onToggleSelect={() => togglePlayerSelection(item.id)}
+                          onStatusChange={(stage) => handleStatusChange(item.id, stage)}
+                          onStartEditNote={() => startEditingNote(item.id, item.notes)}
+                          onNoteValueChange={setNoteValue}
+                          onSaveNote={() => handleSaveNote(item.id)}
+                          onCancelNote={() => {
+                            setEditingNote(null);
+                            setNoteValue('');
+                          }}
+                          onViewProfile={() => item.player && setSelectedPlayer(item.player)}
+                          onRemove={() => setRemoveConfirm(item.id)}
+                        />
+                      ))}
+                    </div>
+
+                    <PaperCard className="hidden overflow-hidden p-0 lg:block">
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>

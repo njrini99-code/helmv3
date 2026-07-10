@@ -114,8 +114,17 @@ export function FairwayCalendarHero({
           )}
         </div>
 
-        {/* Action cluster — nav + the ONE primary action. */}
-        <div className="flex flex-shrink-0 items-center gap-2">
+        {/* Action cluster — nav + the ONE primary action.
+            DESKTOP (md+): byte-identical single row — unchanged.
+            PHONE (<md): the four controls (2× 44px IconButton + Today + a
+            primary CTA) blow the ~294px content budget at 390px in one row
+            (Surface padding="lg" + page px-4), so the phone treatment is
+            hand-composed, not wrapped: a centered Prev · Today · Next nav row,
+            then the ONE primary action full-width on its own row in the
+            thumb zone. "Today" drops to `size="sm"` on phone — a compact
+            affordance, not a full chip — while Prev/Next stay `md` (44px,
+            the touch-target minimum). */}
+        <div className="hidden flex-shrink-0 items-center gap-2 md:flex">
           <IconButton
             variant="secondary"
             size="md"
@@ -148,6 +157,51 @@ export function FairwayCalendarHero({
               onClick={onPrimaryAction}
               leftIcon={isCoach ? <Plus /> : undefined}
               className="ml-1"
+            >
+              {primaryActionLabel ?? (isCoach ? 'New event' : 'Respond')}
+            </Button>
+          ) : null}
+        </div>
+
+        {/* PHONE ONLY — nav row (centered Today) + full-width primary CTA. */}
+        <div className="flex flex-col gap-3 md:hidden">
+          <div className="grid grid-cols-3 items-center">
+            <IconButton
+              variant="secondary"
+              size="md"
+              aria-label="Previous"
+              className="justify-self-start"
+              onClick={() => onNavigate('prev')}
+            >
+              <ChevronLeft />
+            </IconButton>
+            <Button
+              variant={focusIsToday ? 'secondary' : 'ghost'}
+              size="sm"
+              className="justify-self-center"
+              onClick={() => onNavigate('today')}
+              aria-pressed={focusIsToday}
+            >
+              Today
+            </Button>
+            <IconButton
+              variant="secondary"
+              size="md"
+              aria-label="Next"
+              className="justify-self-end"
+              onClick={() => onNavigate('next')}
+            >
+              <ChevronRight />
+            </IconButton>
+          </div>
+
+          {onPrimaryAction ? (
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              onClick={onPrimaryAction}
+              leftIcon={isCoach ? <Plus /> : undefined}
             >
               {primaryActionLabel ?? (isCoach ? 'New event' : 'Respond')}
             </Button>

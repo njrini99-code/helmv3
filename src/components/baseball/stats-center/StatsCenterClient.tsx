@@ -143,6 +143,22 @@ const PITCHING_COLS: ReadonlyArray<StatColSpec<PitchingSplit>> = [
   { label: 'SV', read: (p) => p.sv, dir: 'high', cell: (p) => p.sv },
 ];
 
+// -----------------------------------------------------------------------------
+// Mobile record-book "headline" columns (Rule 8, docs/MOBILE_DOCTRINE.md): below
+// `md` a spread renders as full-width identity + 2 cards rather than the fixed
+// six-column plate, so each row only carries the two figures a coach reads a
+// season by at a glance — batting AVG/OPS, pitching ERA/WHIP. Pitching reuses
+// the first two full-column specs verbatim (same read/cell/leader logic); AVG
+// is likewise shared with the full batting spec — OPS is the one addition.
+// -----------------------------------------------------------------------------
+
+const MOBILE_BATTING_COLS: ReadonlyArray<StatColSpec<BattingSplit>> = [
+  ...BATTING_COLS.slice(0, 1), // AVG
+  { label: 'OPS', read: (b) => b.ops, dir: 'high', cell: (b) => (b.ops === null ? EM_DASH : formatRate(b.ops, 3)) },
+];
+
+const MOBILE_PITCHING_COLS: ReadonlyArray<StatColSpec<PitchingSplit>> = PITCHING_COLS.slice(0, 2); // ERA, WHIP
+
 /**
  * For each column, the set of player ids that lead it (green). A column needs at
  * least two non-null values to have a meaningful "leader" — so a lone qualifier
@@ -179,35 +195,78 @@ const playerHref = (row: StatsCenterRow) => `/baseball/dashboard/players/${row.p
 function StatSpread({
   heading,
   columns,
+  mobileColumns,
   realRows,
   ghostRows,
   buildStats,
+  buildMobileStats,
   emptyTitle,
   emptyBody,
 }: {
   heading: string;
   columns: string[];
+  /** Headline labels for the below-`md` card stats (2 cols — see MOBILE_*_COLS). */
+  mobileColumns: string[];
   realRows: StatsCenterRow[];
   ghostRows: StatsCenterRow[];
   buildStats: (row: StatsCenterRow) => PlayerRowStat[];
+  buildMobileStats: (row: StatsCenterRow) => PlayerRowStat[];
   emptyTitle: string;
   emptyBody: string;
 }) {
   const hasRows = realRows.length > 0 || ghostRows.length > 0;
   const ghostStats: PlayerRowStat[] = columns.map(() => ({ value: EM_DASH }));
+  // Self-labeled (each card stands alone — there's no shared column header below md).
+  const mobileGhostStats: PlayerRowStat[] = mobileColumns.map((label) => ({ label, value: EM_DASH }));
 
   return (
     <section className="flex flex-col gap-3">
       <Eyebrow ink="team">{heading}</Eyebrow>
       {hasRows ? (
-        // Mobile: the fixed stat-column grid scrolls horizontally as one plate.
-        <div className="overflow-x-auto">
-          <div className="min-w-[680px]">
-            <PlayerRowPlateHeader columns={columns} />
-            {/* Interaction layer (Stage-0): the wall settles top-to-bottom on
-                load via `<Reveal>` — the same ink-settle curve `<Masthead>`
-                uses, just extended to a whole spread. Capped at row 10 so a
-                deep roster doesn't stretch the cascade into a slow crawl. */}
+        <>
+          {/* md+: the fixed stat-column grid scrolls horizontally as one plate. */}
+          <div className="hidden md:block overflow-x-auto">
+            <div className="min-w-[680px]">
+              <PlayerRowPlateHeader columns={columns} />
+              {/* Interaction layer (Stage-0): the wall settles top-to-bottom on
+                  load via `<Reveal>` — the same ink-settle curve `<Masthead>`
+                  uses, just extended to a whole spread. Capped at row 10 so a
+                  deep roster doesn't stretch the cascade into a slow crawl. */}
+              {realRows.map((row, i) => (
+                <Reveal key={row.playerId} staggerIndex={Math.min(i, 10)}>
+                  <PlayerRowPlate
+                    firstName={row.firstName ?? ''}
+                    lastName={row.lastName ?? ''}
+                    jerseyNumber={row.jerseyNumber ?? undefined}
+                    position={row.primaryPosition ?? undefined}
+                    stats={buildStats(row)}
+                    href={playerHref(row)}
+                  />
+                </Reveal>
+              ))}
+              {/* noData players — quiet ghost rows, honest em-dashes, sorted last. */}
+              {ghostRows.map((row, i) => (
+                <div key={row.playerId} className="opacity-45">
+                  <Reveal staggerIndex={Math.min(realRows.length + i, 10)}>
+                    <PlayerRowPlate
+                      firstName={row.firstName ?? ''}
+                      lastName={row.lastName ?? ''}
+                      jerseyNumber={row.jerseyNumber ?? undefined}
+                      position={row.primaryPosition ?? undefined}
+                      stats={ghostStats}
+                      href={playerHref(row)}
+                    />
+                  </Reveal>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Below md (Rule 8): the six-column plate can't card-ify by shrinking
+              — it becomes full-width identity rows carrying only the 2 headline
+              figures for this side, each self-labeled, full-row tap-through to
+              the player's stats page. No horizontal scroll on a reading surface. */}
+          <div className="md:hidden flex flex-col">
             {realRows.map((row, i) => (
               <Reveal key={row.playerId} staggerIndex={Math.min(i, 10)}>
                 <PlayerRowPlate
@@ -215,12 +274,11 @@ function StatSpread({
                   lastName={row.lastName ?? ''}
                   jerseyNumber={row.jerseyNumber ?? undefined}
                   position={row.primaryPosition ?? undefined}
-                  stats={buildStats(row)}
+                  stats={buildMobileStats(row)}
                   href={playerHref(row)}
                 />
               </Reveal>
             ))}
-            {/* noData players — quiet ghost rows, honest em-dashes, sorted last. */}
             {ghostRows.map((row, i) => (
               <div key={row.playerId} className="opacity-45">
                 <Reveal staggerIndex={Math.min(realRows.length + i, 10)}>
@@ -229,14 +287,14 @@ function StatSpread({
                     lastName={row.lastName ?? ''}
                     jerseyNumber={row.jerseyNumber ?? undefined}
                     position={row.primaryPosition ?? undefined}
-                    stats={ghostStats}
+                    stats={mobileGhostStats}
                     href={playerHref(row)}
                   />
                 </Reveal>
               </div>
             ))}
           </div>
-        </div>
+        </>
       ) : (
         <EditorsLetter ink="team" title={emptyTitle} body={emptyBody} />
       )}
@@ -514,6 +572,16 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
     () => computeLeaders(pitchingRows, (r) => (gameSet === 'official' ? r.pitchingOfficial : r.pitchingAll), PITCHING_COLS),
     [pitchingRows, gameSet],
   );
+  // Mobile headline-column leaders (Rule 8 card stats) — computed separately
+  // since OPS isn't a full-plate column and leader sets are column-specific.
+  const mobileBattingLeaders = useMemo(
+    () => computeLeaders(battingRows, (r) => (gameSet === 'official' ? r.battingOfficial : r.battingAll), MOBILE_BATTING_COLS),
+    [battingRows, gameSet],
+  );
+  const mobilePitchingLeaders = useMemo(
+    () => computeLeaders(pitchingRows, (r) => (gameSet === 'official' ? r.pitchingOfficial : r.pitchingAll), MOBILE_PITCHING_COLS),
+    [pitchingRows, gameSet],
+  );
 
   const buildBattingStats = useCallback(
     (row: StatsCenterRow): PlayerRowStat[] => {
@@ -528,6 +596,29 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
       return PITCHING_COLS.map((col, i) => ({ value: col.cell(p), leader: pitchingLeaders[i]?.has(row.playerId) ?? false }));
     },
     [gameSet, pitchingLeaders],
+  );
+  // Mobile card stats are self-labeled (no shared column header below md).
+  const buildMobileBattingStats = useCallback(
+    (row: StatsCenterRow): PlayerRowStat[] => {
+      const b = gameSet === 'official' ? row.battingOfficial : row.battingAll;
+      return MOBILE_BATTING_COLS.map((col, i) => ({
+        label: col.label,
+        value: col.cell(b),
+        leader: mobileBattingLeaders[i]?.has(row.playerId) ?? false,
+      }));
+    },
+    [gameSet, mobileBattingLeaders],
+  );
+  const buildMobilePitchingStats = useCallback(
+    (row: StatsCenterRow): PlayerRowStat[] => {
+      const p = gameSet === 'official' ? row.pitchingOfficial : row.pitchingAll;
+      return MOBILE_PITCHING_COLS.map((col, i) => ({
+        label: col.label,
+        value: col.cell(p),
+        leader: mobilePitchingLeaders[i]?.has(row.playerId) ?? false,
+      }));
+    },
+    [gameSet, mobilePitchingLeaders],
   );
 
   const showBatting = side !== 'pitching';
@@ -755,9 +846,11 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                 <StatSpread
                   heading="Batting"
                   columns={BATTING_COLS.map((c) => c.label)}
+                  mobileColumns={MOBILE_BATTING_COLS.map((c) => c.label)}
                   realRows={battingRows}
                   ghostRows={battingGhosts}
                   buildStats={buildBattingStats}
+                  buildMobileStats={buildMobileBattingStats}
                   emptyTitle="No batting lines yet."
                   emptyBody="Batting production prints here after your first captured box score in this game set."
                 />
@@ -766,9 +859,11 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                 <StatSpread
                   heading="Pitching"
                   columns={PITCHING_COLS.map((c) => c.label)}
+                  mobileColumns={MOBILE_PITCHING_COLS.map((c) => c.label)}
                   realRows={pitchingRows}
                   ghostRows={pitchingGhosts}
                   buildStats={buildPitchingStats}
+                  buildMobileStats={buildMobilePitchingStats}
                   emptyTitle="No pitching lines yet."
                   emptyBody="Pitching lines print here after your first captured appearance in this game set."
                 />
