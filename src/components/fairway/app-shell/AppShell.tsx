@@ -11,9 +11,29 @@
  * mount their content into.
  *
  * Composition (all from this group's own files):
- *   FairwaySidebar  → the rail (fixed on desktop; a slide-in glass drawer on mobile)
+ *   FairwaySidebar  → the rail (fixed on desktop; owns navigation there — no
+ *                     mobile copy anymore, see M1 below)
  *   FairwayTopBar   → the ONE glass surface (breadcrumbs + ⌘K + actions)
+ *   MoreNavSheet    → the ONE mobile overflow surface (see M1 below)
  *   RouteTransition → slow cinematic content reveal on navigation
+ *
+ * M1 (2026-07-10, docs/MOBILE_DOCTRINE.md Rule 6): the old slide-in mobile
+ * DRAWER (a re-mounted `FairwaySidebar` behind a hand-rolled focus-trap +
+ * Escape effect, opened by a top-bar hamburger) is RETIRED — vaul's `Sheet`
+ * already provides focus-trap/Esc/scrim-click/focus-restore natively, and a
+ * left drawer on a phone is the doctrine's banned pattern. The bridged
+ * `mobileOpen`/`onMobileOpenChange` state this shell has always exposed now
+ * drives `MoreNavSheet` instead — so any not-yet-migrated page that still
+ * calls `setMobileOpen(true)` (via SidebarContext) opens the SAME sheet, not
+ * a dead drawer.
+ *
+ * M1 (condensing-header, rules 2/7): the top bar + an optional `subNav` render
+ * as ONE sticky chrome unit wrapped in `FairwayLargeTitleProvider` — at `<md`
+ * the bar's center cross-fades in the page's condensed title once its
+ * in-content large title (an adopted `<FairwayLargeTitle>`, or the breadcrumb
+ * fallback) scrolls under it. The condense toggle lives entirely in that
+ * provider's own state so a scroll-driven re-render never reaches this
+ * component (see `LargeTitleContext.tsx`'s module doc).
  *
  * Layout / spacing (§A "light & airy"): page gutters 48–56px, the content column
  * sits on `bg-canvas` and is the brightest, warmest thing; the rail recedes.
@@ -23,16 +43,20 @@
  * presentation-only and owns no data.
  * ========================================================================== */
 
-import { forwardRef, useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { forwardRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
-import { IconX } from '@/components/icons';
-import { IconButton } from '@/components/fairway/controls/button';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { FairwaySidebar, type FairwaySidebarProps } from './FairwaySidebar';
 import { FairwayTopBar, type FairwayTopBarProps } from './FairwayTopBar';
+import { FairwayLargeTitleProvider, FairwayHeaderSentinel, FairwayContentAnchor } from './LargeTitleContext';
+import { MoreNavSheet } from './MoreNavSheet';
 import { RouteTransition } from './RouteTransition';
 import type { Breadcrumb, NavSection, ShellLinkComponent, ShellUser } from './types';
+
+/** Stable empty array — `bottomNavHrefs` defaults to this rather than a fresh
+ *  `[]` literal every render (AppShell re-renders on every pathname change). */
+const EMPTY_HREFS: readonly string[] = [];
 
 export interface AppShellProps {
   /** Grouped nav for the rail (primary + secondary + …). */
@@ -61,6 +85,24 @@ export interface AppShellProps {
   /** Top-bar right action cluster. */
   topBarActions?: React.ReactNode;
   /**
+   * M1 (condensing-header): a hub sub-tab strip rendered as part of the ONE
+   * sticky chrome unit — immediately below the top bar, above the header
+   * sentinel/`{children}`. Presence sets `flush` on the top bar (drops its
+   * own bottom hairline at `<md` so bar+strip read as one surface) and adds
+   * the strip's height to the condense observer's shrunk root. Memoize at
+   * the call site exactly like `sidebarFooter`/`brand` (Decision 7).
+   */
+  subNav?: React.ReactNode;
+  /**
+   * M1 (condensing-header): the page's title, used ONLY as the top bar's
+   * condensed-copy fallback on routes that haven't adopted
+   * `<FairwayLargeTitle>` yet — `pageTitle ?? breadcrumbs.at(-1)?.label`.
+   * A mounted `<FairwayLargeTitle>` always wins over this (see
+   * `LargeTitleContext`'s `registeredTitle`). A plain string — never an
+   * object/array — so it can't defeat any memoization downstream.
+   */
+  pageTitle?: string;
+  /**
    * Optional accent (any CSS color / `var(...)`) for an app that themes its top
    * chrome — renders a faint top wash behind the content column plus a 2px
    * underline under the glass top bar, both cross-fading when it changes. Omit
@@ -81,21 +123,52 @@ export interface AppShellProps {
   collapsible?: boolean;
 
   /**
-   * Controlled mobile-drawer open state. When omitted, the shell manages it
+   * Controlled More-sheet open state. When omitted, the shell manages it
    * internally (mirrors the `collapsed` controlled/uncontrolled pattern above).
-   * Pass these to bridge the drawer to an external nav context so OTHER triggers
-   * (e.g. a not-yet-migrated page's own menu button) open the SAME drawer.
+   * Pass these to bridge the sheet to an external nav context so OTHER triggers
+   * (e.g. a not-yet-migrated page's own menu button) open the SAME sheet.
    */
   mobileOpen?: boolean;
   onMobileOpenChange?: (next: boolean) => void;
 
   /**
    * P413: a persistent mobile bottom-tab bar (rendered `md:hidden`). Additive —
-   * when omitted the shell behaves exactly as before (hamburger drawer only).
-   * The shell adds bottom content padding on mobile when this is present so the
-   * bar never overlaps page content.
+   * when omitted the shell renders no mobile nav at all (no bar, no More
+   * sheet trigger). The shell adds bottom content padding on mobile when
+   * this is present so the bar never overlaps page content.
    */
   bottomNav?: React.ReactNode;
+
+  /**
+   * M1 (bridge-chrome): rendered inside `MoreNavSheet`'s `header` slot, above
+   * the identity row — additive room for a per-product banner (Bridge mounts
+   * its prod pill + "updated Xs ago" + a full-width Refresh button here).
+   * Omitted (golf/baseball) is a no-op. Memoize at the call site exactly like
+   * `sidebarFooter`/`moreSheetFooter`.
+   */
+  moreSheetHeader?: React.ReactNode;
+  /**
+   * M1: rendered inside `MoreNavSheet`'s pinned footer (Settings + Sign out —
+   * product-specific side effects, so this is product-owned). Memoize at the
+   * call site exactly like `sidebarFooter`.
+   */
+  moreSheetFooter?: React.ReactNode;
+  /**
+   * M1: the bottom bar's own hrefs — excluded from `MoreNavSheet`'s computed
+   * overflow (`selectOverflow(sections, bottomNavHrefs)`) so a daily-loop
+   * destination never ALSO shows up in the sheet. Memoize at the call site.
+   */
+  bottomNavHrefs?: readonly string[];
+  /** M1: the More sheet's identity-row destination. */
+  settingsHref?: string;
+  /**
+   * Verifier fix: forwarded verbatim to `MoreNavSheet`'s `sheetClassName` —
+   * a scope class (e.g. BaseballHelm's `.living-annual`) applied directly to
+   * the sheet's own portaled DOM node so its `--fw-color-*` re-points hold
+   * even though vaul renders `Drawer.Content` into `document.body`, outside
+   * this shell's React subtree. Omit on golf (never scoped).
+   */
+  sheetClassName?: string;
 
   /** The page content. */
   children: React.ReactNode;
@@ -128,6 +201,8 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     searchPlaceholder = DEFAULT_PLACEHOLDER,
     searchSlot,
     topBarActions,
+    subNav,
+    pageTitle,
     accentColor,
     pathname,
     linkComponent,
@@ -137,6 +212,11 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     mobileOpen: mobileOpenProp,
     onMobileOpenChange,
     bottomNav,
+    moreSheetHeader,
+    moreSheetFooter,
+    bottomNavHrefs,
+    settingsHref,
+    sheetClassName,
     children,
     disableRouteTransition = false,
     constrainContent = true,
@@ -145,8 +225,6 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   },
   ref,
 ) {
-  const reduceMotion = useReducedMotion();
-
   // Uncontrolled collapse — seed from localStorage on first render so the
   // user's choice survives page navigation. SSR-safe: localStorage access
   // only runs in the effect (client side).
@@ -161,8 +239,6 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   }, []);
 
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<Element | null>(null);
 
   const isControlled = collapsedProp !== undefined;
   const collapsed = isControlled ? collapsedProp : internalCollapsed;
@@ -188,72 +264,43 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     onMobileOpenChange?.(next);
   }, [isMobileControlled, onMobileOpenChange]);
 
-  const closeMobile = useCallback(() => setMobileOpen(false), [setMobileOpen]);
-  const openMobile = useCallback(() => setMobileOpen(true), [setMobileOpen]);
-
-  // Close the mobile drawer on route change.
+  // Close the mobile sheet on route change (vaul owns Esc/scrim-close/focus-
+  // trap/focus-restore for the sheet itself while OPEN — this effect only
+  // handles the "navigated to a new route" case).
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname, setMobileOpen]);
 
-  // Escape closes the mobile drawer.
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [mobileOpen, setMobileOpen]);
-
-  // Focus management for the mobile drawer (a11y): store the trigger, move focus
-  // into the drawer, trap Tab/Shift+Tab within it, restore focus on close.
-  // (Ported from the legacy GolfDashboardShell. Body-scroll-lock is handled by
-  // SidebarProvider via the bridged mobileOpen — NOT duplicated here.)
-  useEffect(() => {
-    if (!mobileOpen || !drawerRef.current) return;
-
-    // Remember whatever had focus before the drawer opened.
-    triggerRef.current = document.activeElement;
-
-    const drawer = drawerRef.current;
-    const focusable = drawer.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  // Stable identity across pathname-only re-renders (perf packet
+  // [shell-render-hygiene]) — paired with FairwaySidebar's React.memo below,
+  // this keeps the desktop rail from re-rendering when a parent re-render
+  // didn't actually change any of these inputs.
+  const sidebarProps: Omit<FairwaySidebarProps, 'isMobile' | 'onNavigate' | 'collapsed' | 'onToggleCollapsed'> =
+    useMemo(
+      () => ({
+        sections,
+        user,
+        brand,
+        footer: sidebarFooter,
+        identityExtra: sidebarIdentityExtra,
+        pathname,
+        linkComponent,
+      }),
+      [sections, user, brand, sidebarFooter, sidebarIdentityExtra, pathname, linkComponent],
     );
-    const first = focusable[0];
-    if (first) first.focus();
 
-    function trapFocus(e: KeyboardEvent) {
-      if (e.key !== 'Tab' || focusable.length === 0) return;
-      const firstEl = focusable[0]!;
-      const lastEl = focusable[focusable.length - 1]!;
-      if (e.shiftKey && document.activeElement === firstEl) {
-        e.preventDefault();
-        lastEl.focus();
-      } else if (!e.shiftKey && document.activeElement === lastEl) {
-        e.preventDefault();
-        firstEl.focus();
-      }
-    }
-    document.addEventListener('keydown', trapFocus);
-    return () => {
-      document.removeEventListener('keydown', trapFocus);
-      // Restore focus to the trigger when the drawer closes.
-      if (triggerRef.current instanceof HTMLElement) {
-        triggerRef.current.focus();
-      }
-    };
-  }, [mobileOpen]);
-
-  const sidebarProps: Omit<FairwaySidebarProps, 'isMobile' | 'onNavigate' | 'collapsed' | 'onToggleCollapsed'> = {
-    sections,
-    user,
-    brand,
-    footer: sidebarFooter,
-    identityExtra: sidebarIdentityExtra,
-    pathname,
-    linkComponent,
-  };
+  // Gate the desktop rail's MOUNT (not just its CSS visibility) behind an
+  // actual matchMedia check — perf packet [shell-render-hygiene] / scout
+  // render-paint finding 2. Previously `<div className="hidden md:block">`
+  // kept a second full FairwaySidebar tree alive at all times, CSS-hidden on
+  // mobile; every nav-affecting re-render (badge ticks, route changes)
+  // reconciled BOTH the desktop rail and the mobile drawer's copy even though
+  // a phone can only ever show one. `useMediaQuery` is SSR-safe (server
+  // snapshot = false, mobile-first) so the very first client render matches
+  // the SSR markup exactly (neither renders the rail) — no hydration
+  // mismatch — then corrects synchronously before paint on an actual desktop
+  // viewport via useSyncExternalStore's snapshot check.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const topBarProps: FairwayTopBarProps = {
     breadcrumbs,
@@ -262,8 +309,13 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     searchSlot,
     actions: topBarActions,
     accentColor,
-    onMenuOpen: openMobile,
     linkComponent,
+    // M1: the condensed-title FALLBACK (a mounted `<FairwayLargeTitle>`
+    // always overrides this internally via context — see FairwayTopBar's own
+    // doc comment). A plain string derived from props that only change on
+    // navigation, so this stays stable across scroll.
+    condensedTitle: pageTitle ?? breadcrumbs?.at(-1)?.label,
+    flush: !!subNav,
   };
 
   // Desktop content column offset by the (collapsed) rail width.
@@ -278,57 +330,21 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         className,
       )}
     >
-      {/* ── Desktop rail (fixed) ── */}
-      <div className="hidden md:block">
-        <FairwaySidebar
-          {...sidebarProps}
-          collapsed={collapsed}
-          onToggleCollapsed={collapsible ? toggleCollapsed : undefined}
-        />
-      </div>
-
-      {/* ── Mobile drawer ── */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <div id="mobile-sidebar" className="fixed inset-0 z-[var(--fw-z-modal)] md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-            {/* Dim scrim (cheap, not blurred — §4.3) */}
-            <motion.button
-              type="button"
-              aria-label="Close navigation"
-              onClick={closeMobile}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: reduceMotion ? 0.18 : 0.28 }}
-              className="absolute inset-0 bg-[rgb(28_25_23_/_0.28)]"
-            />
-            <motion.div
-              ref={drawerRef}
-              initial={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
-              animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
-              transition={{ duration: reduceMotion ? 0.18 : 0.52, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute left-0 top-0 h-full w-[280px] max-w-[85vw] overflow-hidden rounded-r-[22px] shadow-fw-modal"
-            >
-              <FairwaySidebar {...sidebarProps} isMobile onNavigate={closeMobile} />
-              {/* In-drawer close affordance */}
-              <IconButton
-                type="button"
-                variant="ghost"
-                onClick={closeMobile}
-                aria-label="Close navigation"
-                className={cn(
-                  'on-dark absolute right-3 top-4 h-9 w-9 rounded-fw-md border-transparent',
-                  'text-nav-text-dim transition-colors [transition-duration:var(--fw-dur-fast)]',
-                  'hover:bg-nav-surface hover:text-nav-text active:translate-y-[0.5px]',
-                )}
-              >
-                <IconX size={18} aria-hidden />
-              </IconButton>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* ── Desktop rail (fixed) ──
+          Mount gated on `isDesktop` (matchMedia) — see the doc comment above.
+          The `hidden md:block` wrapper is kept as defense-in-depth (harmless
+          if isDesktop and the CSS breakpoint ever briefly disagree) but the
+          real cost-avoidance is not mounting the FairwaySidebar tree at all
+          on phone-width viewports. */}
+      {isDesktop && (
+        <div className="hidden md:block">
+          <FairwaySidebar
+            {...sidebarProps}
+            collapsed={collapsed}
+            onToggleCollapsed={collapsible ? toggleCollapsed : undefined}
+          />
+        </div>
+      )}
 
       {/* ── Content column (offset by the rail) ── */}
       <div
@@ -353,38 +369,77 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
             style={{ backgroundColor: `color-mix(in oklch, ${accentColor} 12%, transparent)` }}
           />
         )}
-        <FairwayTopBar {...topBarProps} />
+        {/* M1: the ONE condensing chrome unit — top bar, then an optional
+            hub sub-nav strip immediately below it (both sticky; together
+            they occlude the observer's shrunk root, see `hasSubNav` below),
+            then the header sentinel, then the actual content. `enabled`
+            mirrors the desktop-rail mount gate above so the observer never
+            runs at md+ (the desktop masthead/breadcrumb never condenses).
+            DEFECT FIX: `FairwayContentAnchor` (inside RouteTransition, not
+            around it) registers the page's real first element as the
+            observer's target — see LargeTitleContext.tsx's module doc —
+            so condense fires once the true title has scrolled under the
+            bar, not after ~1px because the static sentinel's resting
+            position happened to cancel out the rootMargin shrink. */}
+        <FairwayLargeTitleProvider enabled={!isDesktop} hasSubNav={!!subNav}>
+          <FairwayTopBar {...topBarProps} />
+          {subNav}
+          <FairwayHeaderSentinel />
 
-        <main className="flex-1">
-          <div
-            className={cn(
-              // The bottom pad clears the iOS home indicator (env() is 0 on
-              // non-notched/desktop, so this is a no-op there) — KEPT in both
-              // modes so home-indicator clearance never regresses.
-              'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
-              // P413: when the mobile bottom-tab bar is mounted, add its height
-              // (~56px) to the mobile bottom pad so it never overlaps content.
-              // Desktop (md+) is unaffected — the bar is md:hidden.
-              bottomNav && 'pb-[calc(2rem+56px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
-              // Generous gutters (§A: 48–56px page gutters) + premium reading
-              // width — applied only when the shell owns the page frame. When
-              // `contentPadding` is false, PAGES own their gutters + titles
-              // (matching the legacy <main> which had no content padding).
-              contentPadding && 'px-6 pt-8 sm:px-8 lg:px-12 lg:pt-10',
-              contentPadding && constrainContent && 'mx-auto w-full max-w-[1280px]',
-            )}
-          >
-            {disableRouteTransition ? (
-              children
-            ) : (
-              <RouteTransition routeKey={pathname}>{children}</RouteTransition>
-            )}
-          </div>
-        </main>
+          <main className="flex-1">
+            <div
+              className={cn(
+                // The bottom pad clears the iOS home indicator (env() is 0 on
+                // non-notched/desktop, so this is a no-op there) — KEPT in both
+                // modes so home-indicator clearance never regresses.
+                'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
+                // P413: when the mobile bottom-tab bar is mounted, add its height
+                // (~56px) to the mobile bottom pad so it never overlaps content.
+                // Desktop (md+) is unaffected — the bar is md:hidden.
+                bottomNav && 'pb-[calc(2rem+56px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
+                // Generous gutters (§A: 48–56px page gutters) + premium reading
+                // width — applied only when the shell owns the page frame. When
+                // `contentPadding` is false, PAGES own their gutters + titles
+                // (matching the legacy <main> which had no content padding).
+                contentPadding && 'px-6 pt-8 sm:px-8 lg:px-12 lg:pt-10',
+                contentPadding && constrainContent && 'mx-auto w-full max-w-[1280px]',
+              )}
+            >
+              {disableRouteTransition ? (
+                <FairwayContentAnchor>{children}</FairwayContentAnchor>
+              ) : (
+                <RouteTransition routeKey={pathname}>
+                  <FairwayContentAnchor>{children}</FairwayContentAnchor>
+                </RouteTransition>
+              )}
+            </div>
+          </main>
+        </FairwayLargeTitleProvider>
       </div>
 
       {/* P413: persistent mobile bottom-tab bar (md:hidden, viewport-fixed). */}
       {bottomNav}
+
+      {/* M1: the ONE mobile overflow surface — mount-gated on `!isDesktop`
+          exactly like the bottom bar, so rotating across the `md` boundary
+          with the sheet open closes it cleanly (unmount) rather than leaving
+          an orphaned dialog. `mobileOpen`/`setMobileOpen` is the SAME bridged
+          state a not-yet-migrated page's own menu button already toggles. */}
+      {!isDesktop && (
+        <MoreNavSheet
+          open={mobileOpen}
+          onOpenChange={setMobileOpen}
+          sections={sections}
+          excludeHrefs={bottomNavHrefs ?? EMPTY_HREFS}
+          user={user}
+          header={moreSheetHeader}
+          footer={moreSheetFooter}
+          settingsHref={settingsHref}
+          pathname={pathname}
+          linkComponent={linkComponent}
+          sheetClassName={sheetClassName}
+        />
+      )}
     </div>
   );
 });

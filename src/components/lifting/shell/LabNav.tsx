@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   BarChart3,
   Dumbbell,
@@ -41,6 +41,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function LabNav() {
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
 
   return (
     <nav aria-label="Lab navigation" className="flex flex-col gap-1">
@@ -67,9 +68,9 @@ export function LabNav() {
           >
             {isActive && (
               <motion.div
-                layoutId="lab-nav-indicator"
+                layoutId={reduceMotion ? undefined : 'lab-nav-indicator'}
                 className="absolute inset-0 bg-primary-50 rounded-xl border border-primary-100"
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
               />
             )}
             <Icon className={cn('relative z-10 w-4 h-4 flex-shrink-0 transition-colors', isActive ? 'text-primary-600' : 'text-warm-400 group-hover:text-warm-600')} />
@@ -93,9 +94,9 @@ export function LabNav() {
         >
           {pathname.startsWith('/lifting/dashboard/settings') && (
             <motion.div
-              layoutId="lab-nav-indicator"
+              layoutId={reduceMotion ? undefined : 'lab-nav-indicator'}
               className="absolute inset-0 bg-primary-50 rounded-xl border border-primary-100"
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
             />
           )}
           <Settings className={cn('relative z-10 w-4 h-4 flex-shrink-0 transition-colors', pathname.startsWith('/lifting/dashboard/settings') ? 'text-primary-600' : 'text-warm-400 group-hover:text-warm-600')} />

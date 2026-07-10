@@ -19463,7 +19463,7 @@ export type Database = {
       }
       current_coach_id: { Args: never; Returns: string }
       current_player_id: { Args: never; Returns: string }
-      get_active_sessions: { Args: never; Returns: Json }
+      get_active_sessions: { Args: { p_user_id?: string }; Returns: Json }
       get_admin_analytics_rollup: {
         Args: { p_ago12w: string; p_ago30d: string; p_ago7d: string }
         Returns: Json

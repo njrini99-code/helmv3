@@ -48,7 +48,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, X, Target, ChevronDown, ChevronRight, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { Check, X, Target, ChevronDown, ChevronRight, RefreshCw, SlidersHorizontal, User } from 'lucide-react';
 
 import { CoachHelmShell } from './CoachHelmShell';
 import {
@@ -1366,6 +1366,25 @@ export function FairwayCoachHelmSignals({
 
   const panelActions = useMemo(() => {
     if (!openRow) return [];
+    // "View player" — a quiet cross-link to the player's stats surface. Shown
+    // on every signal that carries a real playerId (both insights and
+    // patterns always set it — see SignalRow.playerId). Not a canonical
+    // acknowledge/dismiss/focus-area/ask key, so it gets its own icon/variant
+    // rather than inheriting ACTION_ICON/ACTION_VARIANT defaults.
+    const viewPlayerAction = openRow.playerId
+      ? [
+          {
+            key: 'view-player',
+            label: 'View player',
+            icon: <User aria-hidden className="h-4 w-4" strokeWidth={2} />,
+            variant: 'ghost' as const,
+            onClick: () => {
+              setOpenRowId(null);
+              router.push(`/golf/dashboard/stats?player=${openRow.playerId}`);
+            },
+          },
+        ]
+      : [];
     if (openRow.source === 'patterns') {
       return [
         {
@@ -1396,6 +1415,7 @@ export function FairwayCoachHelmSignals({
             setOpenRowId(null);
           },
         },
+        ...viewPlayerAction,
       ];
     }
     return [
@@ -1426,9 +1446,11 @@ export function FairwayCoachHelmSignals({
           setOpenRowId(null);
         },
       },
+      ...viewPlayerAction,
     ];
   }, [
     openRow,
+    router,
     handleAddressPattern,
     handleConfirmPattern,
     handleDismissPattern,

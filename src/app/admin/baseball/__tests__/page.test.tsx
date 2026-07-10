@@ -57,6 +57,37 @@ vi.mock('@/lib/admin/data/errors', () => ({
   })),
 }));
 
+// bridge-baseball-rollup-parity: fetchBaseballTab() is the new sport-specific
+// engine rollup (games trend + Lift Lab) wired into BaseballBody.
+vi.mock('@/lib/admin/data/baseball', () => ({
+  fetchBaseballTab: vi.fn(async () => ({
+    games: {
+      gamesThisWeek: 2,
+      gamesLastWeek: 1,
+      gamesToday: 0,
+      completedGames30d: 3,
+      lastGameAt: '2026-07-04',
+      gamesByWeek: [{ week: '2026-06-29', count: 2 }],
+    },
+    liftLab: { sessions30d: 5, activeAthletes30d: 2 },
+  })),
+}));
+
+// Only fetchFeatureHealth touches Supabase (user-scoped RPC) — keep
+// summarizeFeatureHealth (pure) real so the app='baseballhelm' filter path
+// is exercised for real.
+vi.mock('@/lib/admin/data/feature-health', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/admin/data/feature-health')>();
+  return {
+    ...actual,
+    fetchFeatureHealth: vi.fn(async () => ({
+      features: [],
+      generatedAt: '2026-07-04T12:00:00.000Z',
+      degraded: false,
+    })),
+  };
+});
+
 import BaseballTabPage from '@/app/admin/baseball/page';
 
 /**

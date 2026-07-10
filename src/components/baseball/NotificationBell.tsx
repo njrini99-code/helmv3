@@ -12,6 +12,11 @@
 //     getBaseballNotifications(10).
 //   - "Mark all as read" button stamps read_at on every unread row and
 //     clears the badge optimistically.
+//   - Clicking a row marks it read AND navigates: resolveNotificationHref()
+//     maps `type` (+ `data` where a record id is present) to a destination
+//     route, the popover closes, then router.push(). Mirrors golf's
+//     NotificationCenter.tsx, which reads `action_url` directly off the row —
+//     baseball's schema has no such column, so this derives the route instead.
 //
 // Design tokens: cream/green palette — no blue/purple. Matches the shared
 // BaseballFairwayShell header aesthetic (warm-matte surfaces, subtle
@@ -20,7 +25,8 @@
 // Integration: mounted in BaseballFairwayShell's top bar actions slot.
 // =============================================================================
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useState, useEffect, useTransition, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 import { IconBell } from '@/components/icons';
@@ -64,24 +70,63 @@ function formatTimeAgo(dateString: string | null): string {
 }
 
 // ---------------------------------------------------------------------------
+// Notification routing
+//
+// `data` is untyped JSON written at 3 call sites (practice.ts publish flow,
+// messages.ts on new message, lifting-v11.ts quick-message) — this only ever
+// narrows a known shape out of it for a route param, never trusts it beyond
+// that. Mirrors golf's NotificationCenter.tsx, which reads `action_url`
+// directly off the row; baseball's schema has no such column, so routing is
+// derived from `type` (+ `data` where a specific record id exists).
+// ---------------------------------------------------------------------------
+
+function resolveNotificationHref(
+  type: string,
+  data: BaseballNotification['data'],
+): string | null {
+  const record =
+    data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : null;
+
+  switch (type) {
+    case 'message': {
+      const conversationId = record?.conversation_id;
+      return typeof conversationId === 'string'
+        ? `/baseball/dashboard/messages/${conversationId}`
+        : '/baseball/dashboard/messages';
+    }
+    case 'practice_published':
+      // Practice-publish notifications are only ever created for rostered
+      // players (practice.ts resolves player user_ids) — always the
+      // player-facing practice view.
+      return '/baseball/player/practice';
+    case 'lift_message':
+      // Coach quick-messages from the weight room always target a player;
+      // PlayerLiftToday (their lift-execution surface) lives on Player Today.
+      return '/baseball/player/today';
+    default:
+      return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Notification row
 // ---------------------------------------------------------------------------
 
 interface NotificationRowProps {
   notification: BaseballNotification;
-  onMarkRead: (id: string) => void;
+  onSelect: (notification: BaseballNotification) => void;
 }
 
-function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
+function NotificationRow({ notification, onSelect }: NotificationRowProps) {
   const isUnread = notification.read_at === null;
 
   return (
     <Button
       variant="ghost"
       type="button"
-      onClick={() => {
-        if (isUnread) onMarkRead(notification.id);
-      }}
+      onClick={() => onSelect(notification)}
       className={cn(
         'w-full text-left px-3 py-2.5 rounded-xl transition-colors duration-150',
         'hover:bg-warm-50 active:bg-warm-100',
@@ -130,17 +175,23 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ className }: NotificationBellProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<BaseballNotification[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // Gates the poll while the tab/app is backgrounded — ported from golf's
+  // notification-badge-context.tsx (isVisibleRef + visibilitychange), which
+  // already skips fetches while hidden instead of polling every 60s regardless.
+  const isVisibleRef = useRef(typeof document === 'undefined' || !document.hidden);
 
   // -------------------------------------------------------------------------
-  // Poll unread count every 60 s
+  // Poll unread count every 60 s (skipped while the tab is hidden)
   // -------------------------------------------------------------------------
 
   const refreshCount = useCallback(async () => {
+    if (!isVisibleRef.current) return;
     try {
       const result = await getUnreadNotificationCount();
       if (result.success && result.count !== undefined) {
@@ -152,9 +203,19 @@ export function NotificationBell({ className }: NotificationBellProps) {
   }, []);
 
   useEffect(() => {
+    function handleVisibilityChange() {
+      isVisibleRef.current = !document.hidden;
+      if (!document.hidden) void refreshCount(); // Refetch when tab becomes visible
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     void refreshCount();
     const interval = setInterval(() => void refreshCount(), POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, [refreshCount]);
 
   // -------------------------------------------------------------------------
@@ -208,6 +269,26 @@ export function NotificationBell({ className }: NotificationBellProps) {
       });
     },
     [fetchNotifications, refreshCount],
+  );
+
+  // -------------------------------------------------------------------------
+  // Select a row: mark read (if unread), navigate to its destination, close
+  // the popover. Rows with no resolvable destination (unknown/future `type`)
+  // still mark read on click but don't navigate — never a dead click, but
+  // never a broken one either.
+  // -------------------------------------------------------------------------
+
+  const handleSelect = useCallback(
+    (notification: BaseballNotification) => {
+      if (notification.read_at === null) handleMarkRead(notification.id);
+
+      const href = resolveNotificationHref(notification.type, notification.data);
+      if (href) {
+        setIsOpen(false);
+        router.push(href);
+      }
+    },
+    [handleMarkRead, router],
   );
 
   // -------------------------------------------------------------------------
@@ -329,7 +410,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
                 <NotificationRow
                   key={notification.id}
                   notification={notification}
-                  onMarkRead={handleMarkRead}
+                  onSelect={handleSelect}
                 />
               ))}
             </div>

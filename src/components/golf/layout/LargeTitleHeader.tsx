@@ -2,17 +2,25 @@
 
 /**
  * LargeTitleHeader — the page-owned title block WITHOUT a sticky top nav-bar
- * row and WITHOUT a hamburger (the Fairway shell owns that chrome via the
- * sticky glass FairwayTopBar and the mobile hamburger + slide-in drawer).
- * Keeps the semantic <h1>, subtitle, action buttons, optional inline
+ * row (the Fairway shell owns that chrome via the sticky glass
+ * FairwayTopBar; mobile overflow is the single `MoreNavSheet`, not a
+ * hamburger/drawer — see `docs/MOBILE_DOCTRINE.md` rule 6). Keeps the
+ * semantic <h1>, subtitle, action buttons, optional inline
  * (non-sticky) back link, breadcrumb, and the belowContent slot. Uses the
  * legacy warm-token utilities (NOT --fw-* tokens) because non-migrated pages
  * render this outside the `.fairway-ds` scope.
+ *
+ * M1 (condensing-header): registers `title` with the shell's condensed top
+ * bar (`useLargeTitle().setRegisteredTitle`) so the bar's copy matches this
+ * page's real `<h1>` exactly — no other wiring needed. Safe outside an
+ * `AppShell`/`FairwayLargeTitleProvider` (e.g. legacy non-Fairway routes):
+ * `useLargeTitle()` degrades to a no-op setter there.
  *
  * Audit reference: ultra-audit master synthesis A4 (header sprawl) + A7
  * (single semantic <h1> per page).
  */
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -21,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { IconChevronLeft } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { useLargeTitle } from '@/components/fairway/app-shell/LargeTitleContext';
 
 export type LargeTitleHeaderProps = Omit<VariantProps, 'variant'>;
 
@@ -35,6 +44,16 @@ export function LargeTitleHeader({
   breadcrumb,
 }: LargeTitleHeaderProps) {
   const router = useRouter();
+  const { setRegisteredTitle } = useLargeTitle();
+
+  // M1 (condensing-header): unregister on unmount so navigating to a route
+  // that hasn't adopted a large-title primitive never inherits a stale title
+  // left behind by whichever page rendered last (LargeTitleContext's
+  // registeredTitle contract).
+  useEffect(() => {
+    setRegisteredTitle(title);
+    return () => setRegisteredTitle(null);
+  }, [title, setRegisteredTitle]);
 
   const backNav = backHref ? (
     typeof backHref === 'string' ? (
@@ -80,7 +99,7 @@ export function LargeTitleHeader({
   ) : null;
 
   return (
-    <div className={cn('max-w-7xl mx-auto px-4 md:px-6 pt-1 pb-3 md:py-5', className)}>
+    <div data-fw-title-anchor className={cn('max-w-7xl mx-auto px-4 md:px-6 pt-1 pb-3 md:py-5', className)}>
       {breadcrumb && <div className="mb-1.5">{breadcrumb}</div>}
       {backNav}
       <div className="flex items-start justify-between gap-3">

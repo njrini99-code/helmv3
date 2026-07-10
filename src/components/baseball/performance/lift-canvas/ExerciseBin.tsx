@@ -19,17 +19,16 @@
 import { useMemo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
-  IconDumbbell,
   IconSearch,
   IconShieldCheck,
   IconWarning,
   IconPlus,
 } from '@/components/icons';
+import { EditorsLetter } from '@/components/baseball/living-annual';
 import type { BuilderExercise, GroupSorenessFlag, StressLevel } from '@/lib/baseball/exercise-conflict';
 import {
   SORENESS_REGIONS,
@@ -70,11 +69,18 @@ function maxStressLevel(ex: BuilderExercise): StressLevel {
   return (['none', 'low', 'medium', 'high'] as const)[w as 0 | 1 | 2 | 3];
 }
 
+// Dateline-rule tone (replaces the retired border-l-2 stress stripe) — a
+// short h-[2px] w-7 rounded-full rule above the card title, same color per
+// stress level. The existing stress pill (below) still carries the label;
+// the rule is the quieter graphic echo of it, not a replacement for it.
+// Lane-ink ordinal ramp (spec §4.2 two-ink law): `low` stays team-quiet,
+// `medium`/`high` both read pursuit clay at increasing weight — no amber,
+// no orange, no red.
 const STRESS_CLS: Record<StressLevel, string> = {
   none: '',
-  low: 'border-l-amber-300',
-  medium: 'border-l-orange-400',
-  high: 'border-l-red-500',
+  low: 'bg-grade-plus/50',
+  medium: 'bg-pursuit/60',
+  high: 'bg-pursuit',
 };
 
 // ─── Draggable exercise card ──────────────────────────────────────────────────
@@ -103,11 +109,7 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
   );
 
   const stress = maxStressLevel(exercise);
-  const borderAccent = hasSorenessOverlap
-    ? 'border-l-2 border-l-amber-400'
-    : stress !== 'none'
-    ? `border-l-2 ${STRESS_CLS[stress]}`
-    : '';
+  const ruleAccent = hasSorenessOverlap ? 'bg-pursuit' : stress !== 'none' ? STRESS_CLS[stress] : '';
 
   return (
     <div
@@ -116,7 +118,6 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
       className={[
         'group relative rounded-xl border bg-cream-50 px-3 py-2.5 transition-shadow',
         isDragging ? 'opacity-40 shadow-xl' : 'border-warm-100 hover:border-warm-200 hover:shadow-sm',
-        borderAccent,
       ].join(' ')}
     >
       {/* Drag handle area covering most of the card */}
@@ -128,12 +129,13 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
+            {ruleAccent && <span aria-hidden className={`mb-1 block h-[2px] w-7 rounded-full ${ruleAccent}`} />}
             <p className="truncate text-sm font-medium text-warm-900">{exercise.name}</p>
             <p className="text-eyebrow text-warm-400">{exercise.category}</p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
             {exercise.isPitcherSensitive && (
-              <span className="inline-flex items-center rounded-full bg-red-50 px-1.5 py-0.5 text-micro font-medium text-red-700">
+              <span className="inline-flex items-center rounded-full bg-pursuit/10 px-1.5 py-0.5 text-micro font-medium text-pursuit">
                 Pitcher ⚡
               </span>
             )}
@@ -142,10 +144,10 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
                 className={[
                   'inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
                   stress === 'high'
-                    ? 'border-red-200 bg-red-50 text-red-700'
+                    ? 'border-pursuit/50 bg-pursuit/20 text-pursuit'
                     : stress === 'medium'
-                    ? 'border-orange-200 bg-orange-50 text-orange-700'
-                    : 'border-amber-200 bg-amber-50 text-amber-700',
+                    ? 'border-pursuit/30 bg-pursuit/10 text-pursuit'
+                    : 'border-grade-plus/30 bg-grade-plus/10 text-grade-plus',
                 ].join(' ')}
               >
                 {stress}
@@ -294,7 +296,7 @@ export function ExerciseBin({
             }
           />
           <label htmlFor="avoid-sore-filter" className="flex cursor-pointer items-center gap-1 text-xs text-warm-600">
-            <IconWarning size={13} className="text-amber-500" aria-hidden />
+            <IconWarning size={13} className="text-pursuit" aria-hidden />
             Avoid sore regions
           </label>
         </div>
@@ -342,10 +344,14 @@ export function ExerciseBin({
       {/* ── Exercise list ────────────────────────────────────────────── */}
       <div className="flex-1 space-y-2 overflow-y-auto" aria-label="Exercise list">
         {filtered.length === 0 ? (
-          <EmptyState
-            icon={<IconDumbbell size={28} />}
-            title="No exercises match"
-            description="Adjust filters or search to find exercises."
+          // No EMPTY_ISSUE_PRESETS variant covers "filtered to zero" for the
+          // exercise library, so this composes EditorsLetter directly with the
+          // exact prior copy (narrow-sidebar padding override — this mounts in
+          // a lg:w-64 column, where the letter's default px-7 py-8 overflows).
+          <EditorsLetter
+            title="No exercises match."
+            body="Adjust filters or search to find exercises."
+            className="px-4 py-6"
           />
         ) : (
           filtered.map((ex) => (

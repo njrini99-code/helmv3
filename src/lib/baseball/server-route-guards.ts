@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getSessionProfile, type CoachType } from '@/lib/auth/session';
+import { getSessionProfile, type CoachType, type SessionProfile } from '@/lib/auth/session';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -67,9 +67,14 @@ export async function requireBaseballCoachRoute(options?: {
   allowedCoachTypes?: readonly CoachType[];
   allowedProgramTypes?: readonly BaseballProgramType[];
   redirectTo?: string;
+  // Callers that already resolved the session server-side (e.g. a page that
+  // branches on coach vs. player before deciding whether to gate at all) can
+  // pass it here to skip the extra `getSessionProfile()` call. Left
+  // undefined by every existing caller, which fetches it as before.
+  session?: SessionProfile;
 }) {
   const redirectTo = options?.redirectTo ?? '/baseball/dashboard/command-center';
-  const session = await getSessionProfile();
+  const session = options?.session !== undefined ? options.session : await getSessionProfile();
 
   if (!session) redirect('/baseball/login');
   if (session.role !== 'coach' || !session.coach) redirect(redirectTo);
@@ -92,11 +97,15 @@ export async function requireBaseballCoachRoute(options?: {
   return session;
 }
 
-export async function requireRecruitingCoachRoute(redirectTo = '/baseball/dashboard/command-center') {
+export async function requireRecruitingCoachRoute(
+  redirectTo = '/baseball/dashboard/command-center',
+  session?: SessionProfile,
+) {
   return requireBaseballCoachRoute({
     allowedCoachTypes: ['college', 'juco', 'showcase'],
     allowedProgramTypes: [...RECRUITING_PROGRAM_TYPES],
     redirectTo,
+    session,
   });
 }
 

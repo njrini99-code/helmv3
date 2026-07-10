@@ -16,7 +16,8 @@
 // plus capability-aware callbacks. It owns NO data fetching.
 // =============================================================================
 
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import {
   IconShieldAlert,
   IconWarning,
@@ -246,7 +247,7 @@ export function RiskFeedStrip({
           </p>
         </div>
       ) : (
-        <LazyMotion features={domAnimation}>
+        <LazyMotion features={loadFeatures}>
           <m.ul
             className="space-y-2"
             initial={reduceMotion ? false : 'hidden'}

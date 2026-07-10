@@ -21,7 +21,7 @@
  *   • Motion: slow width/opacity transitions (--fw-ease-glide), reduced-motion safe.
  * ========================================================================== */
 
-import { createContext, forwardRef, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, forwardRef, memo, useCallback, useContext, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
@@ -207,7 +207,12 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
   );
 }
 
-export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(function FairwaySidebar(
+// React.memo (perf packet [shell-render-hygiene]): the desktop rail + mobile
+// drawer both mount an instance of this component, and AppShell re-renders on
+// every pathname change — memo skips FairwaySidebar's own render (row mapping,
+// active-match recompute) whenever its actual props are referentially equal,
+// which callers now uphold by memoizing `sections`/`user` upstream.
+export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(function FairwaySidebar(
   {
     sections,
     user,
@@ -376,4 +381,4 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
     </aside>
     </SidebarCollapseContext.Provider>
   );
-});
+}));

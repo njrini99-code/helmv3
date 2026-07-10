@@ -19,6 +19,7 @@ export interface IntegrityRow {
   status: 'pass' | 'fail';
   count: number;
   lastRunAt: string;
+  sample: unknown[];
 }
 
 export interface LogHealth {
@@ -45,7 +46,7 @@ interface BackgroundJobLogRow {
 interface IntegrityEventRow {
   title: string;
   severity: string;
-  metadata: { count?: number } | null;
+  metadata: { count?: number; sample?: unknown[] } | null;
   created_at: string;
 }
 
@@ -107,6 +108,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
         status: row.severity === 'info' ? 'pass' : 'fail',
         count: row.metadata?.count ?? 0,
         lastRunAt: row.created_at,
+        sample: row.metadata?.sample ?? [],
       });
     }
   }

@@ -21,7 +21,12 @@ import {
   manifestHrefsByStatus,
   type NavManifestEntry,
 } from '../nav-manifest';
-import { BASEBALL_NAV_REGISTRY, BASEBALL_MESSAGES_NAV, type BaseballNavHub } from '../nav-registry';
+import {
+  BASEBALL_NAV_REGISTRY,
+  BASEBALL_MESSAGES_NAV,
+  isBaseballLateralDestination,
+  type BaseballNavHub,
+} from '../nav-registry';
 import { BASEBALL_CAPABILITY_KEYS, type BaseballCapabilityMap } from '../capabilities';
 import { BASEBALL_PROGRAM_TYPES, type BaseballProgramType } from '@/lib/types/baseball-settings';
 import {
@@ -383,5 +388,57 @@ describe('BASEBALL_NAV_MANIFEST', () => {
         ).toBe(true);
       }
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // M1 (2026-07-10, Doctrine Rule 9) — isBaseballLateralDestination classifies
+  // every registered href/playerHref as a lateral (instant) tab swap, and
+  // every dynamic detail leaf as a forward push.
+  // ---------------------------------------------------------------------------
+  describe('isBaseballLateralDestination — Doctrine Rule 9 (M1, 2026-07-10)', () => {
+    it('every BASEBALL_NAV_REGISTRY href classifies as LATERAL', () => {
+      for (const entry of BASEBALL_NAV_REGISTRY) {
+        expect(
+          isBaseballLateralDestination(entry.href),
+          `registry entry "${entry.id}" href ${entry.href} should classify as lateral`,
+        ).toBe(true);
+      }
+    });
+
+    it('every BASEBALL_NAV_REGISTRY playerHref override classifies as LATERAL', () => {
+      const withPlayerHref = BASEBALL_NAV_REGISTRY.filter((e) => e.playerHref);
+      expect(withPlayerHref.length).toBeGreaterThan(0);
+      for (const entry of withPlayerHref) {
+        expect(
+          isBaseballLateralDestination(entry.playerHref!),
+          `registry entry "${entry.id}" playerHref ${entry.playerHref} should classify as lateral`,
+        ).toBe(true);
+      }
+    });
+
+    it('the cross-cutting Messages entry classifies as LATERAL', () => {
+      expect(isBaseballLateralDestination(BASEBALL_MESSAGES_NAV.href)).toBe(true);
+    });
+
+    // Fixture list of genuine dynamic detail leaves — never registered
+    // (each hangs off a registry entry via matchPrefixes instead), so each
+    // must classify as a push reveal.
+    const detailFixtures = [
+      '/baseball/dashboard/players/player-1',
+      '/baseball/dashboard/dev-plans/dp-1',
+      '/baseball/dashboard/lift/session-1',
+      '/baseball/dashboard/messages/thread-1',
+      '/baseball/dashboard/performance/players/player-1',
+      '/baseball/dashboard/performance/programs/program-1',
+      '/baseball/dashboard/stats/games/game-1',
+      '/baseball/dashboard/camps/camp-1',
+    ];
+
+    it.each(detailFixtures.map((href) => [href] as const))(
+      '%s (dynamic detail leaf) classifies as PUSH',
+      (href) => {
+        expect(isBaseballLateralDestination(href)).toBe(false);
+      },
+    );
   });
 });

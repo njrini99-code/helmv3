@@ -16,7 +16,8 @@
  */
 
 import { useMemo, useState } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import {
   buildPuttHeatmap,
   formatPct,
@@ -47,7 +48,7 @@ export function PuttHeatmap({
   const hasData = data.total_putts > 0;
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <m.div
         className={['surface-matte rounded-2xl p-5 md:p-7', className ?? ''].filter(Boolean).join(' ')}
         variants={enterVariants}

@@ -42,7 +42,8 @@
 import * as React from 'react';
 import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { VideoUpload } from '@/components/features/video-upload';
 import { VideoPlayer } from '@/components/features/video-player';
 import { Card, CardContent } from '@/components/ui/card';
@@ -553,7 +554,7 @@ function LibraryView({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((video, i) => (
-            <LazyMotion key={video.id} features={domAnimation}>
+            <LazyMotion key={video.id} features={loadFeatures}>
               <m.div
                 initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1057,7 +1058,7 @@ function TaggedView({ data }: { data: TaggedReadModel }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((clip, i) => (
-            <LazyMotion key={clip.id} features={domAnimation}>
+            <LazyMotion key={clip.id} features={loadFeatures}>
               <m.div
                 initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1173,7 +1174,7 @@ function EvidenceView({ data }: { data: EvidenceReadModel }) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {clips.map((clip, i) => (
-                  <LazyMotion key={clip.id} features={domAnimation}>
+                  <LazyMotion key={clip.id} features={loadFeatures}>
                     <m.div
                       initial={reduce ? false : { opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1267,7 +1268,7 @@ export function VideoLibraryClient({
         </div>
 
         {/* Panel */}
-        <LazyMotion features={domAnimation}>
+        <LazyMotion features={loadFeatures}>
           <AnimatePresence mode="wait">
             <m.div
               key={activeView}

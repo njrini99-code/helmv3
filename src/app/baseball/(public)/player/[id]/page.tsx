@@ -202,6 +202,12 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
     <PlayerProfileClient
       player={playerData}
       isCoachViewing={isCoachViewing}
+      // conn-baseball-player Finding 4: access.reason === 'self' is the ONLY
+      // signal that this viewer is the profile's own player (the self-bypass
+      // in resolvePublicProfileAccess skips every visibility check for them).
+      // Thread it through so the client can honestly disclose when what
+      // they're seeing would be invisible to anyone else.
+      isSelfViewing={access.reason === 'self'}
       initialIsInWatchlist={isInWatchlist}
       profileViewCount={profileViewCount || 0}
       watchlistCount={watchlistCount || 0}

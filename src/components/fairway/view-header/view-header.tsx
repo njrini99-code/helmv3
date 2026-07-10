@@ -200,7 +200,12 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
     const content = (
       <>
         {/* ── Masthead: eyebrow + title + actions + description + meta ─────── */}
+        {/* data-fw-title-anchor: the condense observer's anchor (see
+            FairwayContentAnchor in app-shell/LargeTitleContext.tsx) — marks
+            the masthead block, never the full header (which can carry tabs/
+            toolbars below and would defer condensing). */}
         <div
+          data-fw-title-anchor
           className={cn(
             "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
             compact ? "gap-3" : "gap-5",

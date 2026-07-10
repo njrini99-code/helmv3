@@ -27,7 +27,8 @@
 // same hover-lift motion (src/lib/coachhelm/v3/motion), same a11y labels.
 // =============================================================================
 
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -236,7 +237,7 @@ export function VideoCard(props: VideoCardProps) {
     const title = video.title;
 
     return (
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={loadFeatures}>
         <m.div
           whileHover={reduce ? undefined : liftHover}
           transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
@@ -332,7 +333,7 @@ export function VideoCard(props: VideoCardProps) {
   const reviewStatus = reviewStatusPresentation(clip.review_status);
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <m.div
         whileHover={reduce ? undefined : liftHover}
         transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}

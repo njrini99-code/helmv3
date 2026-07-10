@@ -5,11 +5,20 @@
 // migrated onto "The Living Annual" kit (War Room lane, clay ink — spec §5
 // Lane 2, alongside Discover / Watchlist / Signals; P4.30).
 //
-// PRESENTATION ONLY. Every data path below is byte-for-byte unchanged:
-// fetchCoachTeam, fetchInterests (the engagement-event query, the filter/sort
-// math), and — LOAD-BEARING, do not touch — the `isAnonymous = !event.coach_id`
-// derivation that nulls out coach_name/coach_school/coach_division for a
-// not-yet-activated viewer. Only the render moved to the kit.
+// PRESENTATION ONLY (data-fetch exception below). fetchInterests (the
+// engagement-event query, the filter/sort math), and — LOAD-BEARING, do not
+// touch — the `isAnonymous = !event.coach_id` derivation that nulls out
+// coach_name/coach_school/coach_division for a not-yet-activated viewer, are
+// byte-for-byte unchanged.
+//
+// EXCEPTION: `teamId` is now a prop resolved server-side (page.tsx, via the
+// same cookie-aware `resolveCoachTeamIdWithCookie` Command Center uses) —
+// the old client-side `fetchCoachTeam()` called `.single()` on
+// `baseball_team_coach_staff` filtered only by `coach_id`, which threw for
+// any coach with 2+ staff rows (showcase/multi-team coaches) and left the
+// page on the skeleton loader forever with no error. It also ignored the
+// team-switcher cookie entirely. Do not reintroduce client-side team
+// resolution here.
 //
 // The 3 player-gate states are preserved EXACTLY — same 3 branches, same
 // conditions (college-player lock → not-yet-activated lock → in-flight-redirect
@@ -19,6 +28,7 @@
 // =============================================================================
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
@@ -188,42 +198,24 @@ function getEngagementLabel(type: string) {
   }
 }
 
-export default function CollegeInterestClient() {
-  const { user, coach, loading: authLoading } = useAuth();
+export default function CollegeInterestClient({ teamId }: { teamId: string | null }) {
+  const { user, loading: authLoading } = useAuth();
   const { playerType, isActivated, isLoading: gateLoading } = usePlayerRecruitingGate();
   const [interests, setInterests] = useState<PlayerInterest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [teamId, setTeamId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'high' | 'recent'>('all');
-
-  useEffect(() => {
-    if (coach?.id) {
-      fetchCoachTeam();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchCoachTeam only depends on coach.id which is already in deps
-  }, [coach?.id]);
 
   useEffect(() => {
     if (teamId) {
       fetchInterests();
+    } else {
+      // No team resolved server-side (coach has no program/team yet) — stop
+      // spinning on the skeleton so the honest "no team" empty state below
+      // can render instead of loading forever.
+      setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchInterests only depends on teamId which is already in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchInterests only depends on teamId/filter, already in deps
   }, [teamId, filter]);
-
-  async function fetchCoachTeam() {
-    if (!coach?.id) return;
-
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('baseball_team_coach_staff')
-      .select('team_id')
-      .eq('coach_id', coach.id)
-      .single();
-
-    if (data?.team_id) {
-      setTeamId(data.team_id);
-    }
-  }
 
   async function fetchInterests() {
     if (!teamId) return;
@@ -410,6 +402,29 @@ export default function CollegeInterestClient() {
           ink="team"
           title="Coaches only"
           body="Only coaches can access college interest tracking."
+        />
+      </div>
+    );
+  }
+
+  // No team resolved server-side — a brand-new coach account with no
+  // program/team set up yet. Honest next-action state instead of an
+  // indefinite skeleton or a silent zero-players view.
+  if (!teamId) {
+    return (
+      <div className={GATE_SHELL}>
+        <EditorsLetter
+          ink="pursuit"
+          title="No team set up yet"
+          body="Once your program has a team, you'll be able to track which colleges are viewing your players here."
+          action={
+            <Link
+              href="/baseball/dashboard/command-center"
+              className="inline-flex min-h-0 items-center rounded-md bg-pursuit px-4 py-2 text-sm font-medium text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pursuit focus-visible:ring-offset-2"
+            >
+              Go to Command Center
+            </Link>
+          }
         />
       </div>
     );

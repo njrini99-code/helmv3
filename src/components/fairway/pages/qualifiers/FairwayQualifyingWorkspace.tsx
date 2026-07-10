@@ -256,9 +256,12 @@ function SlotLeaderboard({
                   >
                     {c.leaderboard_rank ?? '—'}
                   </span>
-                  <span className="flex-1 font-fw-sans text-body font-medium text-text-primary">
+                  <Link
+                    href={`/golf/dashboard/stats?player=${c.player_id}`}
+                    className="flex-1 truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                  >
                     {c.player_first_name} {c.player_last_name}
-                  </span>
+                  </Link>
                   <span className="w-12 text-right font-fw-mono text-body-sm tabular-nums text-text-tertiary">
                     {c.rounds_completed}r
                   </span>
@@ -417,9 +420,12 @@ function CoachPicks({
                     <span className="w-7 font-fw-mono text-body-sm tabular-nums text-text-tertiary">
                       {c.leaderboard_rank ?? '—'}
                     </span>
-                    <span className="flex-1 font-fw-sans text-body font-medium text-text-primary">
+                    <Link
+                      href={`/golf/dashboard/stats?player=${c.player_id}`}
+                      className="flex-1 truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                    >
                       {c.player_first_name} {c.player_last_name}
-                    </span>
+                    </Link>
                     <span className="w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-secondary">
                       {formatToPar(c.total_to_par)}
                     </span>

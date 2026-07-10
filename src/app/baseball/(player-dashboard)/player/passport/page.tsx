@@ -41,7 +41,8 @@ import {
 import { EditorsLetter, pressableClass } from '@/components/baseball/living-annual';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { cn } from '@/lib/utils';
-import { IconArrowLeft } from '@/components/icons';
+import { IconArrowLeft, IconChevronRight } from '@/components/icons';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata = {
   title: 'Passport · BaseballHelm',
@@ -67,6 +68,27 @@ export default async function PlayerPassportPage() {
     getPassportSettingsForEditor(context.activeTeamId),
   ]);
 
+  // Activate Recruiting nudge (conn-baseball-player Finding 2 — same
+  // persistent-surface rationale as Player Today: the nav entry has no rail
+  // slot by design, so the daily/identity surfaces carry the one-time nudge
+  // instead). Honest degrade: a failed read just hides the banner.
+  let recruitingActivation: { activated: boolean } | null = null;
+  if (settings.playerId) {
+    try {
+      const supabase = await createClient();
+      const { data: recruitingRow } = await supabase
+        .from('baseball_players')
+        .select('recruiting_activated, player_type')
+        .eq('id', settings.playerId)
+        .maybeSingle();
+      if (recruitingRow && recruitingRow.player_type !== 'college') {
+        recruitingActivation = { activated: recruitingRow.recruiting_activated === true };
+      }
+    } catch {
+      recruitingActivation = null;
+    }
+  }
+
   return (
     <div className={cn(fairwayScope('min-h-dvh'), 'living-annual')}>
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
@@ -83,6 +105,32 @@ export default async function PlayerPassportPage() {
           <IconArrowLeft size={14} aria-hidden />
           Back to Today
         </Link>
+
+        {/* Activate Recruiting nudge — see the module-header comment on the
+            recruitingActivation fetch above. */}
+        {recruitingActivation && !recruitingActivation.activated && (
+          <EditorsLetter
+            className="mb-6"
+            ink="team"
+            live
+            liveLabel="One-time"
+            title="Activate recruiting to be seen by college coaches"
+            body="Right now your Passport is invisible to recruiters, no matter what you set below. Turn on recruiting exposure once to let college coaches discover it."
+            action={
+              <Link
+                href="/baseball/dashboard/activate"
+                className={pressableClass({
+                  ink: 'team',
+                  className:
+                    'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+                })}
+              >
+                Activate Recruiting
+                <IconChevronRight size={16} aria-hidden />
+              </Link>
+            }
+          />
+        )}
 
         {/* Exposure-state callout — surfaced prominently so the player always
             knows whether their passport is visible to scouts or locked internally.
@@ -125,6 +173,7 @@ export default async function PlayerPassportPage() {
         {settings.playerId && (
           <div className="mt-8">
             <PassportVisibilityControls
+              publicProfilePlayerId={settings.playerId}
               initialState={settings.visibilityState}
               initialHeadline={settings.headline}
               initialFieldVisibility={settings.fieldVisibility}

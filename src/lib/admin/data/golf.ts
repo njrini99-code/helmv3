@@ -37,6 +37,16 @@ export interface GolfTeamHealthRow {
   errors7d: number;
 }
 
+/** Golf half of the cross-sport Lift Lab visibility gap (bridge-golf-rollup-wiring
+ *  Finding 3) — the BaseballHelm counterpart lives in `fetchBaseballTab()`
+ *  (src/lib/admin/data/baseball.ts), same shape, same `helm_lifting_sessions`
+ *  source table filtered to `sport = 'golf'` instead of `'baseball'`. */
+export interface GolfLiftLab {
+  sessions30d: number;
+  /** Distinct athletes with >=1 lift session in the trailing 30d. */
+  activeAthletes30d: number;
+}
+
 /**
  * CALLER must have passed requireSuperAdmin(). fetchAdminRollupA uses the
  * invoking admin's USER-SCOPED client internally (rollup-a.ts) — the
@@ -62,6 +72,7 @@ export async function fetchGolfTab(): Promise<{
   teams: GolfTeamHealthRow[];
   llm: { calls30d: number; cost30d: number; budgetRemaining: number | null };
   demos: { demoSessions30d: number; demoRequests: number };
+  liftLab: GolfLiftLab;
 }> {
   const admin = createAdminClient();
   const ago30d = new Date(Date.now() - 30 * 86400_000).toISOString();
@@ -69,8 +80,19 @@ export async function fetchGolfTab(): Promise<{
   const today = new Date();
   const todayDate = today.toISOString().slice(0, 10);
 
-  const [rollup, teamsRes, membersRes, errorRes, llmCallsCountRes, llmCostRes, llmBudgetRes, demoSessionsRes, demoRequestsRes] =
-    await Promise.all([
+  const [
+    rollup,
+    teamsRes,
+    membersRes,
+    errorRes,
+    llmCallsCountRes,
+    llmCostRes,
+    llmBudgetRes,
+    demoSessionsRes,
+    demoRequestsRes,
+    liftCountRes,
+    liftAthletesRes,
+  ] = await Promise.all([
       fetchAdminRollupA(),
       admin.from('golf_teams').select('id, name'),
       admin.from('golf_team_members').select('team_id').eq('status', 'active'),
@@ -93,6 +115,23 @@ export async function fetchGolfTab(): Promise<{
       admin.from('golf_coachhelm_llm_budget').select('budget_usd, spent_usd').eq('date', todayDate),
       admin.from('golf_demo_sessions').select('id', { count: 'exact', head: true }).gte('entered_at', ago30d),
       admin.from('demo_requests').select('id', { count: 'exact', head: true }),
+      // Lift Lab (golf half) — helm_lifting_sessions is the unified
+      // cross-sport table (see fetchBaseballTab's identical baseball-side
+      // slice); pure count never triggers the PostgREST 1000-row cap.
+      admin.from('helm_lifting_sessions').select('id', { count: 'exact', head: true })
+        .eq('sport', 'golf').gte('created_at', ago30d),
+      // Need every row's athlete_id to dedupe — paginate past the cap
+      // rather than `.limit(1000)`, which would silently under-count
+      // activeAthletes30d once trailing-30d golf lift sessions pass 1000.
+      fetchAllRowsResult((from, to) =>
+        admin
+          .from('helm_lifting_sessions')
+          .select('athlete_id')
+          .eq('sport', 'golf')
+          .gte('created_at', ago30d)
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
     ]);
 
   const memberCounts = new Map<string, number>();
@@ -132,6 +171,12 @@ export async function fetchGolfTab(): Promise<{
     ? budgetRows.reduce((sum, row) => sum + (row.budget_usd - row.spent_usd), 0)
     : null;
 
+  const liftAthleteIds = new Set(
+    (liftAthletesRes.data ?? [])
+      .map((r) => (r as { athlete_id: string | null }).athlete_id)
+      .filter((id): id is string => Boolean(id)),
+  );
+
   return {
     rollup,
     teams: sortTeamsByHealth(teams),
@@ -143,6 +188,10 @@ export async function fetchGolfTab(): Promise<{
     demos: {
       demoSessions30d: demoSessionsRes.count ?? 0,
       demoRequests: demoRequestsRes.count ?? 0,
+    },
+    liftLab: {
+      sessions30d: liftCountRes.count ?? 0,
+      activeAthletes30d: liftAthleteIds.size,
     },
   };
 }

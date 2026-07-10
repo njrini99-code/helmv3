@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { HelmMark } from '@/components/brand/HelmMark';
 import {
   completeCoachOnboarding,
   signupAndCompleteCoachOnboarding,
@@ -433,7 +434,7 @@ export default function BaseballCoachOnboarding() {
       />
 
       <div className="relative z-10 flex w-full flex-col items-center pb-[env(safe-area-inset-bottom)]">
-        <LazyMotion features={domAnimation}>
+        <LazyMotion features={loadFeatures}>
           {/* Masthead */}
           <m.div
             initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
@@ -441,17 +442,17 @@ export default function BaseballCoachOnboarding() {
             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.1 })}
             className="mb-7 flex flex-col items-center gap-2 sm:mb-9"
           >
-            <div className="relative h-10 w-10 sm:h-12 sm:w-12">
-              <Image
-                src="/helm-baseball-logo.png"
-                alt="BaseballHelm Logo"
-                width={48}
-                height={48}
-                className="h-10 w-10 object-contain sm:h-12 sm:w-12"
-                priority
-                unoptimized
-              />
-            </div>
+            <HelmMark
+              sport="baseball"
+              size={48}
+              className="h-10 w-10 sm:h-12 sm:w-12"
+              glow
+              glowClassName="blur-xl scale-150"
+              glowOpacity={0.2}
+              alt="BaseballHelm Logo"
+              priority
+              unoptimized
+            />
             <Eyebrow ink="team">BaseballHelm · Coach Onboarding</Eyebrow>
           </m.div>
 

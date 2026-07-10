@@ -107,6 +107,15 @@ import {
   PerformancePrediction,
   FocusAreasGrid,
 } from '@/components/golf/coachhelm/player';
+// Focus-area detail sheet helpers — reused verbatim from FocusAreasGrid so the
+// expanded read renders the SAME formatted name + native-unit value as the
+// card (conn-golf-player Finding 1: the card's fallback Link used to dead-end
+// on the SAME page/anchor it was already mounted at — now a real detail sheet).
+import {
+  formatAreaName,
+  resolveDisplay,
+  type FocusArea,
+} from '@/components/golf/coachhelm/player/FocusAreasGrid';
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
 import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { ShotAnalysisCard } from '@/components/golf/coachhelm/player/ShotAnalysisCard';
@@ -212,6 +221,30 @@ function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
 
+/** Priority tint for a focus-area detail sheet — a declining area reads more
+ * urgent, an improving one calmer, matching the InsightCard/Panel vocabulary. */
+function focusAreaPriority(fa: FocusArea): InsightPriority {
+  switch (fa.trend) {
+    case 'declining':
+      return 'high';
+    case 'improving':
+      return 'low';
+    default:
+      return 'medium';
+  }
+}
+
+function focusAreaTrendLabel(trend: FocusArea['trend']): string {
+  switch (trend) {
+    case 'improving':
+      return 'Improving';
+    case 'declining':
+      return 'Needs work';
+    default:
+      return 'Stable';
+  }
+}
+
 /**
  * Format a 0..100 PERCENTILE as an ordinal string: 82 → "82nd", 100 → "100th".
  * Paired with a "team percentile" label so it reads as a percentile (you beat
@@ -246,6 +279,10 @@ export function FairwayPlayerCoachHelm({
 
   // Which secondary insight is expanded in place (kills the View-N-more dead-end).
   const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(null);
+  // Which focus-area card is expanded in place (conn-golf-player Finding 1 —
+  // the card used to fall back to a same-page anchor Link; now a real detail
+  // sheet with the untruncated recommendation + native-unit evidence).
+  const [openFocusArea, setOpenFocusArea] = useState<FocusArea | null>(null);
   const [deepDiveOpen, setDeepDiveOpen] = useState(false);
   const [bottomTab, setBottomTab] = useState<'shot-analysis' | 'what-if'>(
     'shot-analysis',
@@ -552,8 +589,13 @@ export function FairwayPlayerCoachHelm({
               <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 <div className="min-w-0 lg:col-span-7">
                   <section id="focus-areas" className="scroll-mt-24">
-                    {/* Reused unchanged — owns its own honest empty state. */}
-                    <FocusAreasGrid focusAreas={data.focusAreas} />
+                    {/* Reused (own honest empty state) — onAreaClick now opens a
+                        real detail sheet below instead of the card's dead-end
+                        same-page anchor fallback (conn-golf-player Finding 1). */}
+                    <FocusAreasGrid
+                      focusAreas={data.focusAreas}
+                      onAreaClick={setOpenFocusArea}
+                    />
                   </section>
                 </div>
                 <div className="min-w-0 lg:col-span-5">
@@ -764,7 +806,54 @@ export function FairwayPlayerCoachHelm({
           <PracticeRxPanel drills={openInsight.drills ?? []} variant="sheet" />
         </InsightPanel>
       ) : null}
+
+      {/* Focus-area detail sheet — the card's real destination (conn-golf-player
+          Finding 1). Shows the FULL recommendation (the card truncates it to
+          2 lines) alongside the trend + native-unit read. */}
+      {openFocusArea ? (
+        <FocusAreaDetailSheet
+          focusArea={openFocusArea}
+          onClose={() => setOpenFocusArea(null)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * FOCUS-AREA DETAIL SHEET — the expand-in-place read for a Focus Areas card.
+ * Reuses the SAME InsightPanel primitive as the secondary-insight expand, so a
+ * focus area "reads" with the identical vocabulary (tint bar, overline/title,
+ * evidence Inset) instead of introducing a second detail-surface pattern.
+ * ══════════════════════════════════════════════════════════════════════════ */
+function FocusAreaDetailSheet({
+  focusArea,
+  onClose,
+}: {
+  focusArea: FocusArea;
+  onClose: () => void;
+}) {
+  const display = resolveDisplay(focusArea);
+  return (
+    <InsightPanel
+      mode="sheet"
+      open
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+      priority={focusAreaPriority(focusArea)}
+      overline={`Focus area · ${focusAreaTrendLabel(focusArea.trend)}`}
+      title={formatAreaName(focusArea.area)}
+      evidence={
+        <span>
+          <span className="font-medium text-text-primary">{display.text}</span>{' '}
+          {display.unitLabel}
+        </span>
+      }
+      evidenceLabel="The read"
+    >
+      {focusArea.recommendation}
+    </InsightPanel>
   );
 }
 

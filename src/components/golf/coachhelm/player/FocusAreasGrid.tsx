@@ -19,9 +19,9 @@ import {
 // LABELLED strokes/round. `value`+`unit` carry each row's native quantity so a
 // distance error (yards) or a causal effect-size (opportunity) is never shown as
 // strokes/round. `unit` is optional so legacy callers default to strokes/round.
-type FocusAreaUnit = 'strokes/round' | 'yd from target' | 'opportunity';
+export type FocusAreaUnit = 'strokes/round' | 'yd from target' | 'opportunity';
 
-interface FocusArea {
+export interface FocusArea {
   area: string;
   strokesGained: number;
   value?: number;
@@ -33,7 +33,7 @@ interface FocusArea {
 // Area strings come from the DB in varied casings/snake_case — normalize for display.
 // Keep hyphens within tokens so labels like "Mid-Long (160-190)" survive intact;
 // only snake_case underscores collapse to spaces.
-function formatAreaName(area: string): string {
+export function formatAreaName(area: string): string {
   if (!area) return '';
   // If the label already contains spaces or hyphens with proper casing, treat
   // it as a human-formatted label and leave it alone (e.g. "Mid-Long (160-190) Shots").
@@ -99,13 +99,15 @@ function getStrokesColor(value: number | string) {
 // P2-18: render each focus area in its NATIVE unit. Only stroke-impact rows are
 // labelled strokes/round; distance-error rows show yards; causal effect-size
 // rows show a qualitative opportunity tier (never a fabricated stroke value).
-function resolveDisplay(focusArea: FocusArea): {
+export interface FocusAreaDisplay {
   text: string;
   unitLabel: string;
   color: string;
   /** Only the strokes/round unit gets the bipolar strokes bar. */
   showStrokesBar: boolean;
-} {
+}
+
+export function resolveDisplay(focusArea: FocusArea): FocusAreaDisplay {
   const unit: FocusAreaUnit = focusArea.unit ?? 'strokes/round';
 
   if (unit === 'yd from target') {
@@ -268,10 +270,15 @@ function FocusAreaCard({
 
   // Task C14: link to the focus areas anchor on the same CoachHelm page,
   // not /my-development (which only shows coach-assigned focus areas and
-  // would not contain these AI-derived ones).
+  // would not contain these AI-derived ones). This fallback only fires when
+  // no onAreaClick is wired by the caller (currently: never — the sole
+  // caller, FairwayPlayerCoachHelm, always wires a real detail-sheet
+  // onAreaClick — see conn-golf-player Finding 1). `interactive` is passed
+  // through honestly (was hardcoded `true` via JSX shorthand, so the "View
+  // details" hint rendered even on this non-interactive fallback card).
   return (
     <Link href="/golf/dashboard/coachhelm#focus-areas" className={sharedClassName}>
-      <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
+      <FocusAreaCardContent focusArea={focusArea} index={index} interactive={interactive} />
     </Link>
   );
 }

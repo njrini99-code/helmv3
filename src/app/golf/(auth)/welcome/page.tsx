@@ -2,7 +2,8 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { createClient } from '@/lib/supabase/client';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
@@ -132,7 +133,7 @@ function WelcomeContent() {
   const roleLabel = role === 'coach' ? 'coach' : role === 'player' ? 'player' : 'user';
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <main
         className="relative overflow-hidden"
         aria-label={`Welcome back, ${roleLabel}`}

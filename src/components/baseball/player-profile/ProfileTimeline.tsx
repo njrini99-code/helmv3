@@ -17,7 +17,8 @@
 // =============================================================================
 
 import { useMemo } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import {
   IconActivity,
@@ -317,7 +318,7 @@ export function ProfileTimeline({
   }
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="space-y-6">
         {/* Hidden-events honesty banner (staff context). PaperCard idiom —
             opaque paper + hairline, no glass/blur (Living Annual doctrine). */}

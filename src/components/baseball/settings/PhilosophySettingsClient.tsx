@@ -12,7 +12,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
@@ -236,7 +237,7 @@ export function PhilosophySettingsClient({
   };
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <SectionMasthead
           eyebrow="THE PRESSBOX · SETTINGS"

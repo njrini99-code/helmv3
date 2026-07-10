@@ -75,7 +75,7 @@ export function ConflictWarning({
   const uniqueUsers = new Set(conflicts.map(c => c.userId)).size;
 
   return (
-    <div className="border-l-4 border-amber-500 bg-amber-50 p-4 rounded-r-xl backdrop-blur-sm">
+    <div className="bg-amber-50 p-4 rounded-xl backdrop-blur-sm">
       <div className="flex items-start gap-3">
         {/* Warning Icon */}
         <div className="flex-shrink-0 mt-0.5">

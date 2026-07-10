@@ -20,7 +20,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
@@ -450,7 +451,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
   })();
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6">
         {/* Hero plinth */}
         <Reveal>

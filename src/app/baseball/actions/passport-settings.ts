@@ -42,8 +42,10 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
+import { requirePlayerAccess, PlayerAccessError } from '@/lib/baseball/player-access';
 import {
   PASSPORT_FIELD_KEYS,
   clampOverrideToBase,
@@ -96,7 +98,7 @@ export interface PassportSettingsActionResult {
 async function authorizeTarget(
   supabase: Awaited<ReturnType<typeof createClient>>,
   args: { teamId: string; callerPlayerId: string | null; requestedPlayerId?: string },
-): Promise<{ ok: boolean; targetPlayerId: string | null; error?: string }> {
+): Promise<{ ok: boolean; targetPlayerId: string | null; isSelf: boolean; error?: string }> {
   const { teamId, callerPlayerId, requestedPlayerId } = args;
 
   // Self path: no explicit target, or target is the caller's own player id.
@@ -110,12 +112,12 @@ async function authorizeTarget(
       // self target. If they're not staff either, reject.
       const staff = await hasBaseballCapability(teamId, 'can_manage_roster');
       if (!staff) {
-        return { ok: false, targetPlayerId: null, error: 'You can only manage your own passport.' };
+        return { ok: false, targetPlayerId: null, isSelf: false, error: 'You can only manage your own passport.' };
       }
       // Staff with no named target is a programming error from the UI.
-      return { ok: false, targetPlayerId: null, error: 'A player is required.' };
+      return { ok: false, targetPlayerId: null, isSelf: false, error: 'A player is required.' };
     }
-    return { ok: true, targetPlayerId: callerPlayerId };
+    return { ok: true, targetPlayerId: callerPlayerId, isSelf: true };
   }
 
   // Cross-player path: caller is editing someone else → must be team staff.
@@ -124,6 +126,7 @@ async function authorizeTarget(
     return {
       ok: false,
       targetPlayerId: null,
+      isSelf: false,
       error: 'You can only manage your own passport.',
     };
   }
@@ -137,9 +140,9 @@ async function authorizeTarget(
     .eq('player_id', requestedPlayerId)
     .maybeSingle();
   if (!member) {
-    return { ok: false, targetPlayerId: null, error: 'That player is not on this team.' };
+    return { ok: false, targetPlayerId: null, isSelf: false, error: 'That player is not on this team.' };
   }
-  return { ok: true, targetPlayerId: requestedPlayerId };
+  return { ok: true, targetPlayerId: requestedPlayerId, isSelf: false };
 }
 
 /**
@@ -200,6 +203,76 @@ export const updatePassportVisibility = withBaseballAction(
       return { success: false, error: auth.error ?? 'Not authorized.' };
     }
 
+    // ---------------------------------------------------------------------
+    // Merge the two visibility systems (conn-baseball-player Finding 3).
+    //
+    // This action only ever wrote baseball_player_passport_settings.
+    // visibility_state — a completely separate flag from
+    // baseball_players.recruiting_activated, the ONE gate
+    // resolvePublicProfileAccess (public-profile-access.ts) actually checks
+    // for /baseball/player/[id]. Before this, a player could set Public
+    // Profile / Scout Packet here, see "Exposure is ON" (this file's own UI
+    // copy), and still be completely invisible on the real public page.
+    //
+    // Self path: choosing Public/Scout Packet IS the activation decision —
+    // fold it into one action so the UI's claim becomes true end-to-end.
+    // Mirrors player-access.ts#activateRecruitingExposure's exact gate
+    // (recruiting_exposure_enabled, deliberately NOT staff-bypassable — see
+    // player-access-policy.ts) and its service-role write (trigger
+    // 20260709010200 blocks authenticated-role writes to recruiting_activated).
+    //
+    // Staff path: a coach cannot flip a player's own recruiting consent on
+    // their behalf just by editing the Passport — require the player to have
+    // already activated themselves, otherwise reject the write outright
+    // rather than let staff create the same misleading "on" state.
+    const wantsPublicExposure =
+      input.visibilityState === 'public_profile' || input.visibilityState === 'scout_packet';
+
+    if (wantsPublicExposure) {
+      const { data: subjectRow } = await fromUntyped(supabase, 'baseball_players')
+        .select('recruiting_activated, player_type')
+        .eq('id', auth.targetPlayerId)
+        .maybeSingle();
+      const subject = subjectRow as
+        | { recruiting_activated?: boolean | null; player_type?: string | null }
+        | null;
+
+      if (subject?.player_type === 'college') {
+        return { success: false, error: 'Recruiting exposure is not available for college players.' };
+      }
+
+      if (subject?.recruiting_activated !== true) {
+        if (!auth.isSelf) {
+          return {
+            success: false,
+            error: 'This player needs to activate recruiting themselves before their passport can go public.',
+          };
+        }
+
+        try {
+          await requirePlayerAccess(ctx.activeTeamId, 'recruiting_exposure_enabled');
+        } catch (err) {
+          if (err instanceof PlayerAccessError) {
+            return { success: false, error: err.message };
+          }
+          throw err;
+        }
+
+        const admin = createAdminClient();
+        const { error: activateError } = await fromUntyped(admin, 'baseball_players')
+          .update({
+            recruiting_activated: true,
+            recruiting_activated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', auth.targetPlayerId);
+        if (activateError) throw activateError;
+
+        revalidatePath('/baseball/dashboard/activate');
+        revalidatePath('/baseball/dashboard');
+      }
+    }
+
     const headline =
       typeof input.headline === 'string'
         ? input.headline.trim().slice(0, MAX_HEADLINE) || null
@@ -230,6 +303,10 @@ export const updatePassportVisibility = withBaseballAction(
 
     revalidatePath(PLAYER_TODAY_PATH);
     revalidatePath(PLAYER_PASSPORT_PATH);
+    // The public profile reads recruiting_activated directly (public-profile-
+    // access.ts) — revalidate it too so a freshly-activated player's link is
+    // never stale.
+    revalidatePath(`/baseball/player/${auth.targetPlayerId}`);
 
     return {
       success: true,

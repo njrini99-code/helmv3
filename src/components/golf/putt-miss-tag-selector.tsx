@@ -43,7 +43,7 @@ export function PuttMissTagSelector({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-warm-600 font-medium">Miss (optional)</p>
+      <p className="font-fw-sans text-caption font-medium text-text-tertiary">Miss (optional)</p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {tags.map((tag) => {
           const isSelected = selectedTags.includes(tag);
@@ -56,11 +56,12 @@ export function PuttMissTagSelector({
               disabled={disabled}
               whileTap={prefersReducedMotion ? undefined : ({ scale: 0.96 })}
               className={cn(
-                'relative px-4 py-3 rounded-xl border transition-all duration-200',
-                'text-sm font-medium',
+                'relative px-4 py-3 rounded-fw-md border transition-all duration-200',
+                'font-fw-sans text-sm font-medium',
+                'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                 isSelected
-                  ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-950/10'
-                  : 'bg-cream-100/75 backdrop-blur-sm border-warm-200 text-warm-700 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100',
+                  ? 'bg-accent-500 border-accent-500 text-text-on-accent shadow-flat'
+                  : 'bg-surface-sunken border-border-subtle text-text-secondary hover:border-accent-300 hover:bg-surface-tint active:bg-surface-tint',
                 disabled && 'opacity-50 cursor-not-allowed'
               )}
             >

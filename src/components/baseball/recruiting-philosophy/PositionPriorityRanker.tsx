@@ -3,9 +3,9 @@
 import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { POSITIONS } from '@/lib/types';
-import { GripVertical, X, Plus } from 'lucide-react';
+import { GripVertical, X, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/button';
-import { PaperCard } from '@/components/baseball/living-annual';
+import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 
 interface PositionPriorityRankerProps {
   priorities: string[];
@@ -85,6 +85,23 @@ export function PositionPriorityRanker({
     onChange([]);
   }, [onChange]);
 
+  // Keyboard-equivalent reorder — the row itself is a drag-only `draggable`
+  // div (mouse/touch pointer events only, no onKeyDown), so this is the only
+  // way a keyboard or screen-reader user can reorder priorities.
+  const handleMove = useCallback(
+    (index: number, offset: number) => {
+      const target = index + offset;
+      if (target < 0 || target >= priorities.length) return;
+      const next = [...priorities];
+      const [item] = next.splice(index, 1);
+      if (item !== undefined) {
+        next.splice(target, 0, item);
+        onChange(next);
+      }
+    },
+    [priorities, onChange],
+  );
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -108,12 +125,13 @@ export function PositionPriorityRanker({
       {/* Priority list */}
       <div className="space-y-2">
         {priorities.length === 0 ? (
-          <div className="bg-warm-50 rounded-xl p-8 text-center">
-            <p className="text-warm-500 mb-4">No position priorities set</p>
-            <p className="text-sm text-warm-400">
-              Add positions to give bonus points to players at those positions
-            </p>
-          </div>
+          // No EMPTY_ISSUE_PRESETS variant covers position-priority scoring
+          // specifically, so this composes EditorsLetter directly with the
+          // exact prior copy rather than force-fitting an unrelated preset.
+          <EditorsLetter
+            title="No position priorities set"
+            body="Add positions to give bonus points to players at those positions."
+          />
         ) : (
           priorities.map((position, index) => {
             const info = POSITION_INFO[position];
@@ -121,7 +139,7 @@ export function PositionPriorityRanker({
             const isDragTarget = dragOverIndex === index;
 
             return (
-              // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- draggable list item, keyboard reordering not yet implemented
+              // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- draggable list item; the up/down buttons below are the keyboard/screen-reader-equivalent reorder path
               <div
                 key={position}
                 draggable
@@ -181,8 +199,28 @@ export function PositionPriorityRanker({
                   </span>
                 </div>
 
+                {/* Keyboard-equivalent reorder (the row itself is drag-only) */}
+                <div className="flex flex-col flex-shrink-0">
+                  <Button variant="ghost"
+                    aria-label={`Move ${info?.label ?? position} up`}
+                    onClick={() => handleMove(index, -1)}
+                    disabled={index === 0}
+                    className="min-h-[44px] min-w-[44px] rounded p-2 text-warm-400 hover:text-warm-700 disabled:pointer-events-none disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button variant="ghost"
+                    aria-label={`Move ${info?.label ?? position} down`}
+                    onClick={() => handleMove(index, 1)}
+                    disabled={index === priorities.length - 1}
+                    className="min-h-[44px] min-w-[44px] rounded p-2 text-warm-400 hover:text-warm-700 disabled:pointer-events-none disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+
                 {/* Remove button */}
-                <IconButton variant="default" aria-label="Close"
+                <IconButton variant="default" aria-label={`Remove ${info?.label ?? position}`}
                   onClick={() => handleRemove(index)}
                   className="p-1 text-warm-400 hover:text-pursuit hover:bg-pursuit/10 active:bg-pursuit/15 rounded transition-colors flex-shrink-0"
                 >

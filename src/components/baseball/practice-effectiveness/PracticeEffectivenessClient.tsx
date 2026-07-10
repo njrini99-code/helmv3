@@ -27,7 +27,8 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -183,7 +184,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
   };
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
         {/* Masthead — the page's ONE job stated up front, honesty note as the lede. */}
         <SectionMasthead

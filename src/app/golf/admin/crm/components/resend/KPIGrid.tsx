@@ -29,11 +29,11 @@ interface CardSpec {
 }
 
 const ACCENT_CONFIG = {
-  neutral: { border: 'border-l-warm-400',     icon: 'text-warm-500',    text: 'text-warm-900' },
-  success: { border: 'border-l-primary-500',  icon: 'text-primary-600', text: 'text-warm-900' },
-  info:    { border: 'border-l-blue-500',     icon: 'text-blue-600',    text: 'text-warm-900' },
-  warning: { border: 'border-l-amber-500',    icon: 'text-amber-600',   text: 'text-warm-900' },
-  error:   { border: 'border-l-red-500',      icon: 'text-red-600',     text: 'text-warm-900' },
+  neutral: { icon: 'text-warm-500',    text: 'text-warm-900' },
+  success: { icon: 'text-primary-600', text: 'text-warm-900' },
+  info:    { icon: 'text-info',        text: 'text-warm-900' },
+  warning: { icon: 'text-warning',     text: 'text-warm-900' },
+  error:   { icon: 'text-destructive', text: 'text-warm-900' },
 };
 
 export function KPIGrid({ stats, loading }: KPIGridProps) {
@@ -44,7 +44,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="glass-standard rounded-2xl p-6 border-l-[4px] border-l-warm-200 animate-pulse"
+            className="glass-standard rounded-2xl p-6 animate-pulse"
           >
             <div className="h-3 w-20 bg-warm-100 rounded mb-3" />
             <div className="h-9 w-24 bg-warm-100 rounded mb-2" />
@@ -131,8 +131,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.03, duration: 0.25 })}
             className={cn(
-              'glass-standard rounded-2xl p-6 border-l-[4px]',
-              cfg.border,
+              'glass-standard rounded-2xl p-6',
               'hover:bg-cream-100 hover:shadow-card-hover transition-all duration-200'
             )}
           >

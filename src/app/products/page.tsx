@@ -3,7 +3,8 @@
 import { Button } from '@/components/ui/button';
 import Image from "next/image"
 import Link from "next/link"
-import { m, LazyMotion, domAnimation, useReducedMotion } from "framer-motion"
+import { m, LazyMotion, useReducedMotion } from "framer-motion"
+import { loadFeatures } from '@/lib/motion/load-features'
 import { Navigation } from "@/components/landing/Navigation"
 import { Footer } from "@/components/landing/Footer"
 import { HelmFlipAnimation } from "@/components/products/HelmFlipAnimation"
@@ -45,7 +46,7 @@ const staggerContainer = {
 export default function ProductsPage() {
   const prefersReducedMotion = useReducedMotion();
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
     <main className="min-h-dvh bg-background overflow-x-hidden">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
         Skip to main content

@@ -31,7 +31,8 @@
  */
 
 import { ReactNode } from 'react';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import {
   containerVariants,
@@ -51,7 +52,7 @@ export function AnimatedPage({ children, className }: AnimatedPageProps) {
   // Always render m.div so server and client produce the same HTML.
   // MotionConfig in the dashboard shell handles reduced-motion preference.
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <m.div
         variants={containerVariants}
         initial="hidden"

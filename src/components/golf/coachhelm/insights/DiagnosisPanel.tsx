@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import type { Diagnosis, DiagnosisDriver } from '@/lib/coachhelm/v2/insights/types';
 import { formatValue } from './EvidencePanel';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import { InsightCallout } from './InsightCallout';
 
 /** Effectiveness-ledger trust status (P1-12). Optional decoration. */
 export type DiagnosisTrust =
@@ -183,12 +184,9 @@ export function DiagnosisPanel({
         </div>
       ) : null}
 
-      <div className="rounded-fw-md border-l-2 border-accent-500 bg-accent-50 px-3 py-2.5">
-        <p className="text-caption font-medium uppercase tracking-wide text-accent-700">
-          Practice focus
-        </p>
+      <InsightCallout label="Practice focus">
         <p className="text-body-sm text-text-primary">{diagnosis.recommended_action}</p>
-      </div>
+      </InsightCallout>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-0.5">
         {confPct !== null ? (

@@ -259,6 +259,9 @@ export {
   type SparklineProps,
   StatTile,
   type StatTileProps,
+  StatStrip,
+  type StatStripProps,
+  STAT_STRIP_RAIL_THRESHOLD,
   // ChartCrosshair: the keyboard + aria-live a11y path for every line/area chart
   useChartCrosshair,
   ChartCrosshairCursor,

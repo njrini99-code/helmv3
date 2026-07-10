@@ -19,6 +19,9 @@ describe('AdminStatusBanner', () => {
   });
   it('renders an explicit STALE state distinct from healthy-quiet', () => {
     render(<AdminStatusBanner state="stale" attentionCount={0} checkedAt="2026-07-01T12:00:00Z" />);
-    expect(screen.getByText(/status feed stale/i)).toBeInTheDocument();
+    // Honest copy (2026-07-10 bridge-overview fix): must NOT claim "showing
+    // last known state" — nothing is cached; it says the feed is unavailable.
+    expect(screen.getByText(/status feed unavailable — unable to confirm current state/i)).toBeInTheDocument();
+    expect(screen.queryByText(/last known state/i)).not.toBeInTheDocument();
   });
 });

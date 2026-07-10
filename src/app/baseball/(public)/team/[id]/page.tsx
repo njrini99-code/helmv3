@@ -9,6 +9,7 @@ import {
 } from '@/components/icons';
 import { Metadata } from 'next';
 import Image from 'next/image';
+import { HelmMark } from '@/components/brand/HelmMark';
 import { resolveRecruitingViewerAccess } from '@/lib/baseball/recruiting-viewer-access';
 import { cn } from '@/lib/utils';
 import {
@@ -424,14 +425,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
         <div className="max-w-[1536px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group">
-              <Image
-                src="/helm-baseball-logo.png"
-                alt=""
-                width={32}
-                height={32}
-                className="h-8 w-8 object-contain"
-                unoptimized
-              />
+              <HelmMark sport="baseball" size={32} className="h-8 w-8" unoptimized />
               <span className="font-annual font-semibold text-text-primary">Helm</span>
             </Link>
           </div>

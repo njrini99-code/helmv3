@@ -17,7 +17,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { Turf } from './turf';
 import { Hazards } from './hazards';
 import {
@@ -157,7 +158,7 @@ export function HoleShotPath({
           : 'text-rose-600';
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <m.div
         className={[
           'group relative',

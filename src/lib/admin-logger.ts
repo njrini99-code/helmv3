@@ -213,18 +213,27 @@ export async function logAIGeneration(
 }
 
 /**
- * Log security event
+ * Log security event.
+ *
+ * `userId` attributes the event to the person the action was TAKEN ON (e.g.
+ * the target of a revoke/view-as, not necessarily the acting admin) — that's
+ * what makes it show up on `/admin/users/[id]` via `fetchUserDetail`'s
+ * `.eq('user_id', userId)` filter (`admin_events.user_id`). Optional and
+ * additive: every pre-existing 2-3 arg call site (password resets, etc.)
+ * still logs exactly as before, just without a user-scoped attribution.
  */
 export async function logSecurityEvent(
   title: string,
   severity: AdminEventSeverity,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  userId?: string,
 ): Promise<string | null> {
   return logAdminEvent({
     eventType: 'security',
     title,
     severity,
     metadata,
+    userId,
     source: 'auth',
   });
 }

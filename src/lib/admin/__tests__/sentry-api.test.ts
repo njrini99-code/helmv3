@@ -77,7 +77,7 @@ describe('fetchSentryIssues', () => {
     expect(url).toContain('query=is%3Aunresolved');
   });
 
-  it('follows the Link cursor at most 3 pages', async () => {
+  it('follows the Link cursor up to the bounded 20-page ceiling and flags truncation', async () => {
     const linked = (results: string) => new Response(JSON.stringify([issuePayload(results)]), {
       status: 200,
       headers: {
@@ -91,7 +91,20 @@ describe('fetchSentryIssues', () => {
     fetchMock.mockImplementation(() => Promise.resolve(linked('n')));
     const res = await fetchSentryIssues();
     expect(res.status).toBe('ok');
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(20);
+    // A next-page cursor still existed when the ceiling was hit — the
+    // result is a real but partial slice, not "the complete unresolved list".
+    expect(res.truncated).toBe(true);
+  });
+
+  it('does NOT flag truncation when the Link cursor runs out before the ceiling', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const res = await fetchSentryIssues();
+    expect(res.status).toBe('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.truncated).toBe(false);
   });
 
   it('fails soft on 429 without throwing', async () => {

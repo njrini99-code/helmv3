@@ -13,6 +13,11 @@ export function useUnreadCount() {
   const supabase = supabaseRef.current;
   // Stable, unique-per-mount realtime channel name (see subscribe block below).
   const channelNameRef = useRef(`unread-baseball-messages-${Math.random().toString(36).slice(2)}`);
+  // Conversation IDs this user participates in — populated by fetchUnreadCount,
+  // used to discard `baseball_conversations` UPDATE events for conversations
+  // this user isn't part of (that table has no user_id column to filter on
+  // server-side; same client-side-filter pattern as use-messages.ts fix #451).
+  const conversationIdsRef = useRef<Set<string>>(new Set());
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user) {
@@ -28,10 +33,13 @@ export function useUnreadCount() {
         .eq('user_id', user.id);
 
       if (!participantData || participantData.length === 0) {
+        conversationIdsRef.current = new Set();
         setUnreadCount(0);
         setLoading(false);
         return;
       }
+
+      conversationIdsRef.current = new Set(participantData.map((p) => p.conversation_id));
 
       // Count unread messages across all conversations
       let totalUnread = 0;
@@ -66,23 +74,55 @@ export function useUnreadCount() {
       // subscribe()". A per-mount id guarantees a fresh channel each time.
       const channel = supabase
         .channel(channelNameRef.current)
+        // OPTIMIZED: was an unfiltered `baseball_messages` INSERT subscription
+        // — any message sent by any user in the org re-triggered this
+        // client's full unread refetch, not just messages in this user's own
+        // conversations. sendMessage() (src/app/actions/messages.ts) bumps
+        // baseball_conversations.updated_at on every new message, so listen
+        // there instead. That table has no user_id column to filter on
+        // server-side, so — same pattern as use-messages.ts fix #451 —
+        // accept the unfiltered UPDATE stream and discard rows outside the
+        // viewer's own conversations client-side via conversationIdsRef.
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: 'UPDATE',
             schema: 'public',
-            table: 'baseball_messages',
+            table: 'baseball_conversations',
           },
-          () => {
-            fetchUnreadCount();
+          (payload) => {
+            if (conversationIdsRef.current.has(payload.new.id as string)) {
+              fetchUnreadCount();
+            }
           }
         )
+        // OPTIMIZED: scoped to this user's own participant rows (read-state
+        // changes from another of the user's own devices/tabs) instead of an
+        // unfiltered table-wide subscription that re-fired on every user's
+        // read-receipt update platform-wide.
         .on(
           'postgres_changes',
           {
             event: 'UPDATE',
             schema: 'public',
             table: 'baseball_conversation_participants',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        // Being newly added to a conversation is an INSERT on this user's own
+        // participant row, not an UPDATE — without this listener,
+        // conversationIdsRef never repopulates for a freshly-joined
+        // conversation until an unrelated refetch (e.g. page reload).
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'baseball_conversation_participants',
+            filter: `user_id=eq.${user.id}`,
           },
           () => {
             fetchUnreadCount();

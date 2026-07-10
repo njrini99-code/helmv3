@@ -16,7 +16,8 @@
 // =============================================================================
 
 import { useState, useTransition, useCallback } from 'react';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
@@ -111,7 +112,7 @@ export function CoachPlayerDailyContractPanel({
       };
 
   return (
-    <LazyMotion features={domAnimation} strict>
+    <LazyMotion features={loadFeatures} strict>
     <PaperCard className="p-6">
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">

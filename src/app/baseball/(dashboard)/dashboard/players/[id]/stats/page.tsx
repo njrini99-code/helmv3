@@ -6,6 +6,7 @@ import { SeasonStatsTable } from '@/components/baseball/season-stats/SeasonStats
 import { PlayerGameLog } from '@/components/baseball/season-stats/PlayerGameLog';
 import type { BaseballPlayerSeasonStats, BaseballBoxScoreBatting, BaseballBoxScorePitching, BaseballGame } from '@/lib/types';
 import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,11 +28,15 @@ export default async function PlayerStatsPage({ params }: PageProps) {
   if (!coach) redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
+  // Cookie-aware, multi-row-safe team resolution (matches Command Center).
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!teamId) redirect('/baseball/dashboard/program');
+
   const { data: team } = await supabase
     .from('baseball_teams')
     .select('id, name')
-    .eq('organization_id', coach.organization_id)
-    .single() as { data: { id: string; name: string } | null };
+    .eq('id', teamId)
+    .maybeSingle() as { data: { id: string; name: string } | null };
 
   if (!team) redirect('/baseball/dashboard/program');
 

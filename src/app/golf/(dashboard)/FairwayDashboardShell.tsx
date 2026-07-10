@@ -6,13 +6,16 @@
  * ----------------------------------------------------------------------------
  * The dashboard frame mounted unconditionally by (dashboard)/layout.tsx.
  * Renders the premium Fairway `AppShell` — the warm-black recessive rail on
- * desktop, a slide-in glass drawer on mobile (the hamburger), and the one
- * glass top bar. The legacy GolfDashboardShell / GolfSidebar fork it used to
- * be gated against was deleted in Wave W1 (2026-07-09).
+ * desktop, a 4-tab bottom bar + More sheet on mobile (M1, 2026-07-10 —
+ * docs/MOBILE_DOCTRINE.md Rule 6/10; the old hamburger → slide-in drawer is
+ * retired), and the one glass top bar. The legacy GolfDashboardShell /
+ * GolfSidebar fork it used to be gated against was deleted in Wave W1
+ * (2026-07-09).
  *
- * The AppShell drawer (`mobileOpen`) is BRIDGED to SidebarContext, so a
- * not-yet-migrated page's own menu button — which calls `setMobileOpen` — opens
- * the SAME drawer. One nav surface, no dead buttons, no double drawers.
+ * The AppShell sheet (`mobileOpen`) is BRIDGED to SidebarContext, so a
+ * not-yet-migrated page's own menu button — which calls `setMobileOpen` —
+ * opens the SAME More sheet. One nav surface, no dead buttons, no double
+ * overflow surfaces.
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -20,13 +23,16 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
+import { LazyMotion, MotionConfig } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { AppShell } from '@/components/fairway/app-shell/AppShell';
 import { useSidebarCollapsed } from '@/components/fairway/app-shell/FairwaySidebar';
 import { FairwayBottomNav } from '@/components/fairway/app-shell/FairwayBottomNav';
 import { FairwayHubSubNav } from '@/components/fairway/app-shell/FairwayHubSubNav';
+import { MoreSheetFooter } from '@/components/fairway/app-shell/MoreSheetFooter';
+import { selectOverflow, summarizeMoreTab } from '@/components/fairway/app-shell/more-nav';
 import type { Breadcrumb, ShellLinkComponent } from '@/components/fairway/app-shell/types';
 import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
 import {
@@ -204,16 +210,15 @@ function Brand() {
   );
 }
 
-/** Pinned rail footer — Settings + Sign out, styled for the warm-black rail.
- * Reads collapsed state from SidebarCollapseContext to render icon-only when
- * the rail is collapsed. */
-function ShellFooter() {
+/**
+ * Shared sign-out side effects (haptic + clear active team + Supabase
+ * signOut + redirect) — used by BOTH the rail's dark `ShellFooter` and the
+ * More sheet's light `GolfMoreSheetFooter` (M1) so the two footers never
+ * hand-maintain two copies of the same effectful call.
+ */
+function useGolfSignOut() {
   const router = useRouter();
-  const pathname = usePathname();
-  const { setMobileOpen } = useSidebar();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const collapsed = useSidebarCollapsed();
-  const settingsActive = pathname.startsWith('/golf/dashboard/settings');
 
   const handleSignOut = useCallback(async () => {
     if (isSigningOut) return; // guard double-tap (legacy shell guarded this too)
@@ -224,6 +229,19 @@ function ShellFooter() {
     await supabase.auth.signOut();
     router.push('/golf/login');
   }, [router, isSigningOut]);
+
+  return { isSigningOut, handleSignOut };
+}
+
+/** Pinned rail footer — Settings + Sign out, styled for the warm-black rail.
+ * Reads collapsed state from SidebarCollapseContext to render icon-only when
+ * the rail is collapsed. */
+function ShellFooter() {
+  const pathname = usePathname();
+  const { setMobileOpen } = useSidebar();
+  const { isSigningOut, handleSignOut } = useGolfSignOut();
+  const collapsed = useSidebarCollapsed();
+  const settingsActive = pathname.startsWith('/golf/dashboard/settings');
 
   const rowBase = cn(
     'flex w-full items-center rounded-fw-md text-body-sm font-medium font-fw-sans tracking-[-0.005em]',
@@ -271,6 +289,28 @@ function ShellFooter() {
   );
 }
 
+/**
+ * M1: the More sheet's light-themed footer (Settings + Sign out row) — NOT
+ * the rail's dark `ShellFooter` above (that JSX is built for the black rail
+ * and reads wrong on the sheet's warm-cream `bg-elevated` body). Reuses the
+ * SAME sign-out side effects via `useGolfSignOut`.
+ */
+function GolfMoreSheetFooter() {
+  const pathname = usePathname();
+  const { isSigningOut, handleSignOut } = useGolfSignOut();
+  const settingsActive = pathname.startsWith('/golf/dashboard/settings');
+
+  return (
+    <MoreSheetFooter
+      settingsHref="/golf/dashboard/settings"
+      settingsActive={settingsActive}
+      onSignOut={handleSignOut}
+      signingOut={isSigningOut}
+      linkComponent={ShellLink}
+    />
+  );
+}
+
 function FairwayDashboardContent({
   children,
   userData,
@@ -308,14 +348,21 @@ function FairwayDashboardContent({
   }, [serverGender]);
   const accentColor = showSwitcher ? teamAccentVar(optimisticGender ?? serverGender) : undefined;
 
-  const teamSwitcher = showSwitcher ? (
-    <TeamSwitcher
-      teams={coachTeams}
-      activeTeamId={userData.teamId!}
-      canSwitch
-      onOptimisticSwitch={setOptimisticGender}
-    />
-  ) : null;
+  // Stable element identity (perf packet [shell-render-hygiene]): a fresh JSX
+  // literal every render would defeat the React.memo on FairwayTopBar, which
+  // receives this verbatim as `actions`.
+  const teamSwitcher = useMemo(
+    () =>
+      showSwitcher ? (
+        <TeamSwitcher
+          teams={coachTeams}
+          activeTeamId={userData.teamId!}
+          canSwitch
+          onOptimisticSwitch={setOptimisticGender}
+        />
+      ) : null,
+    [showSwitcher, coachTeams, userData.teamId],
+  );
 
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
@@ -345,12 +392,35 @@ function FairwayDashboardContent({
     [role, navBadges],
   );
 
+  // M1 (more-sheet-nav, docs/MOBILE_DOCTRINE.md Rule 6/10): the More sheet's
+  // content is the FULL rail `sections` minus the 4 bottom-nav hrefs
+  // (`selectOverflow`), and the bottom bar's 5th "More" column derives its
+  // active/badge state from that same overflow (`summarizeMoreTab`) — never
+  // a second hand-maintained destination list.
+  const bottomNavHrefs = useMemo(() => bottomNavItems.map((item) => item.href), [bottomNavItems]);
+  const overflow = useMemo(() => selectOverflow(sections, bottomNavHrefs), [sections, bottomNavHrefs]);
+  const more = useMemo(() => summarizeMoreTab(overflow, pathname), [overflow, pathname]);
+  const openMoreSheet = useCallback(() => setMobileOpen(true), [setMobileOpen]);
+
   // WAVE W2: the sub-tab strip for whichever multi-tab hub owns the current
   // route (Team / Calendar / Rounds & Stats / Messages / Operations for
   // coach; Team for player). null on single-destination rail items AND on
   // the CoachHelm cluster (which renders its OWN strip per-page via
   // CoachHelmShell — see nav-registry.ts module header).
   const activeHub = useMemo(() => resolveActiveGolfHub(pathname, role), [pathname, role]);
+
+  // M1 (condensing-header): the sub-nav is now part of AppShell's ONE sticky
+  // chrome unit (its own `subNav` prop), not a first child inside
+  // `{children}` — memoized (Decision 7: every element prop entering AppShell
+  // is stable at the call site) so it only changes identity when the active
+  // hub actually changes, not on every unrelated re-render.
+  const subNav = useMemo(
+    () =>
+      activeHub ? (
+        <FairwayHubSubNav key={activeHub.id} tabs={activeHub.tabs} ariaLabel={activeHub.ariaLabel} />
+      ) : null,
+    [activeHub],
+  );
 
   const openCommandPalette = useCallback(() => {
     void triggerHaptic('light');
@@ -361,6 +431,41 @@ function FairwayDashboardContent({
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
 
+  // Stable identity across pathname-only re-renders (perf packet
+  // [shell-render-hygiene]) — was a fresh object literal every render,
+  // defeating FairwaySidebar's React.memo (it reads `user` from AppShell).
+  const shellUser = useMemo(
+    () => ({ name: userData.name, teamName: userData.teamName, avatarUrl: userData.avatarUrl }),
+    [userData.name, userData.teamName, userData.avatarUrl],
+  );
+
+  // Same packet, element props: inline JSX literals are fresh objects every
+  // render, so passing them straight into AppShell defeats the React.memo on
+  // FairwaySidebar (which receives them verbatim) — and AppShell's own
+  // sidebarProps useMemo, which lists `brand` as a dependency.
+  const brand = useMemo(() => <Brand />, []);
+  const sidebarFooter = useMemo(() => <ShellFooter />, []);
+  const moreSheetFooter = useMemo(() => <GolfMoreSheetFooter />, []);
+  // Same stability contract as the five props above — was the one element
+  // prop entering AppShell built as a fresh JSX literal every render,
+  // undermining AppShell's shallow-prop-comparison memoization for this one
+  // prop regardless of the other five being stable (CodeRabbit #797
+  // cluster-4 finding 4 / React Doctor).
+  const bottomNav = useMemo(
+    () => (
+      <FairwayBottomNav
+        items={bottomNavItems}
+        pathname={pathname}
+        linkComponent={ShellLink}
+        onMoreOpen={openMoreSheet}
+        moreActive={more.active}
+        moreBadge={more.badge}
+        moreOpen={mobileOpen}
+      />
+    ),
+    [bottomNavItems, pathname, openMoreSheet, more.active, more.badge, mobileOpen],
+  );
+
   // Live shot-entry flows own their full screen (their own sticky control header
   // + immersive scoring UI), so render them WITHOUT the shell chrome — the glass
   // top bar must not compete with the round controls. The page brings its own
@@ -368,9 +473,9 @@ function FairwayDashboardContent({
   const isImmersive =
     pathname === '/golf/dashboard/rounds/new' || pathname.startsWith('/golf/dashboard/rounds/continue');
 
-  // Immersive routes render no drawer; if the bridged drawer state is somehow
-  // open, force it closed so SidebarProvider's body-scroll-lock can't soft-lock
-  // the immersive screen.
+  // Immersive routes render no More sheet; if the bridged sheet state is
+  // somehow open, force it closed so SidebarProvider's body-scroll-lock can't
+  // soft-lock the immersive screen.
   useEffect(() => {
     if (isImmersive && mobileOpen) setMobileOpen(false);
   }, [isImmersive, mobileOpen, setMobileOpen]);
@@ -413,9 +518,9 @@ function FairwayDashboardContent({
 
       <AppShell
         sections={sections}
-        user={{ name: userData.name, teamName: userData.teamName, avatarUrl: userData.avatarUrl }}
-        brand={<Brand />}
-        sidebarFooter={<ShellFooter />}
+        user={shellUser}
+        brand={brand}
+        sidebarFooter={sidebarFooter}
         topBarActions={teamSwitcher}
         accentColor={accentColor}
         pathname={pathname}
@@ -436,23 +541,25 @@ function FairwayDashboardContent({
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}
         searchPlaceholder="Search players, rounds, pages…"
+        // M1 (condensing-header): the shared sub-tab strip now renders as
+        // part of AppShell's ONE sticky chrome unit; `pageTitle` is the
+        // condensed-bar fallback for routes that haven't adopted
+        // `<FairwayLargeTitle>` yet (already-computed breadcrumb trail).
+        subNav={subNav}
+        pageTitle={breadcrumbs.at(-1)?.label}
+        // M1: the More sheet's identity row links here; its footer is the
+        // light-themed Settings + Sign out row (moreSheetFooter, below).
+        settingsHref="/golf/dashboard/settings"
+        bottomNavHrefs={bottomNavHrefs}
+        moreSheetFooter={moreSheetFooter}
         // P413: persistent mobile bottom-tab bar for the core destinations
-        // (md:hidden; drawer keeps the long tail).
-        bottomNav={
-          <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} />
-        }
+        // (md:hidden; the 5th "More" column opens the sheet, which keeps the
+        // long tail — see docs/MOBILE_DOCTRINE.md Rule 6/10).
+        bottomNav={bottomNav}
         className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
       >
         <div id="main-content" tabIndex={-1} className="outline-none">
           <NoTeamBanner />
-          {/* WAVE W2: the shared sub-tab strip for whichever multi-tab hub owns
-              the current route — rendered ONCE here so every leaf route in the
-              hub gets it automatically (mirrors BaseballHelm's HubSubNav /
-              resolve-active-hub pattern). Absent on single-destination rail
-              items and on the CoachHelm cluster (its own per-page strip). */}
-          {activeHub && (
-            <FairwayHubSubNav key={activeHub.id} tabs={activeHub.tabs} ariaLabel={activeHub.ariaLabel} />
-          )}
           {children}
         </div>
       </AppShell>
@@ -483,7 +590,7 @@ export function FairwayDashboardShell({
         <SessionActivityProvider>
           <GolfUserProvider userData={userData}>
             <NotificationBadgeProvider>
-              <LazyMotion features={domAnimation}>
+              <LazyMotion features={loadFeatures}>
                 <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                   <LastSeenUpdater />
                   {/* B36/F012: the demo_coach_entered PostHog event must fire in the

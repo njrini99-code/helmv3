@@ -460,7 +460,12 @@ function RoundBreakdownTable({
                   </span>
                 </td>
                 <td className="whitespace-nowrap py-2.5 pr-3 font-medium text-text-primary">
-                  {data.playerName}
+                  <Link
+                    href={`/golf/dashboard/stats?player=${playerId}`}
+                    className="rounded-fw-sm underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                  >
+                    {data.playerName}
+                  </Link>
                 </td>
                 {roundColumns.map((n) => {
                   const round = data.rounds.find((r) => r.roundNumber === n);

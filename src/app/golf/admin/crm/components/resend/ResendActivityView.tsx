@@ -358,7 +358,7 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
     <div className="space-y-4">
       {/* Summary */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="glass-standard rounded-xl p-4 border-l-[4px] border-l-red-500">
+        <div className="glass-standard rounded-xl p-4">
           <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">
             Bounces
           </p>
@@ -366,7 +366,7 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
             {bounceCount}
           </p>
         </div>
-        <div className="glass-standard rounded-xl p-4 border-l-[4px] border-l-red-700">
+        <div className="glass-standard rounded-xl p-4">
           <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">
             Complaints
           </p>

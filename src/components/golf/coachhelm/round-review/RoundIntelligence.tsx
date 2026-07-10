@@ -26,6 +26,7 @@
  * ========================================================================== */
 
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
+import { InsightCallout } from '@/components/golf/coachhelm/insights/InsightCallout';
 
 interface RoundOpportunity {
   category: string;
@@ -103,10 +104,7 @@ export function RoundIntelligence({ strokesToGain = [], coachHelm, className }: 
         ) : null}
 
         {hasCoach ? (
-          <div className="rounded-fw-md border-l-2 border-accent-500 bg-accent-50 px-3 py-2.5">
-            <p className="text-caption font-medium uppercase tracking-wide text-accent-700">
-              Take to the range
-            </p>
+          <InsightCallout label="Take to the range">
             {priority ? <p className="text-body-sm text-text-primary">{priority}</p> : null}
             {focusAreas.length ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -125,7 +123,7 @@ export function RoundIntelligence({ strokesToGain = [], coachHelm, className }: 
                 CoachHelm read · {Math.round(coachHelm.confidence * 100)}% confidence
               </p>
             ) : null}
-          </div>
+          </InsightCallout>
         ) : null}
       </div>
     </InstrumentPanel>

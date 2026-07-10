@@ -1,10 +1,18 @@
-import { Header } from '@/components/layout/header';
 import { Skeleton, SkeletonStat } from '@/components/ui/skeleton';
 
+// Static title-bar skeleton, NOT the live <Header> — Header calls
+// useNotifications() unconditionally (before its own redesign-mode branch),
+// opening a realtime Supabase subscription on every route-transition mount
+// of this skeleton for a screen about to render its own header anyway.
+// Mirrors golf's tasks/loading.tsx convention.
 export default function Loading() {
   return (
     <>
-      <Header title="Analytics" subtitle="Track your recruiting activity over the last 30 days" />
+      <div className="px-4 pt-6 pb-1 sm:px-6 lg:px-8" role="status" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading Analytics…</span>
+        <Skeleton className="h-8 w-40 rounded-lg" />
+        <Skeleton className="mt-2 h-4 w-80 rounded-lg" />
+      </div>
       <div className="p-6 lg:p-8 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

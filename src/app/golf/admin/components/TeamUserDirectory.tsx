@@ -361,7 +361,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
         {/* Unassigned users */}
         {filteredUnassigned.length > 0 && (
           <div className="border-t border-warm-200/50">
-            <div className="border-l-2 border-l-amber-400 mx-2">
+            <div className="mx-2">
               <Button variant="ghost"
                 onClick={() => toggleTeam('__unassigned__')}
                 className={cn(

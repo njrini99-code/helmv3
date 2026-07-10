@@ -2,9 +2,10 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
+import { HelmMark } from '@/components/brand/HelmMark';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
@@ -80,7 +81,7 @@ function LoginContent() {
   }
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div
         className="relative overflow-hidden"
         style={{
@@ -131,14 +132,12 @@ function LoginContent() {
                 willChange: brandMountDone ? undefined : 'transform',
               }}
             >
-              <Image
-                src="/helm-golf-logo-transparent.png"
-                alt=""
-                width={64}
-                height={64}
-                className="object-contain"
+              <HelmMark
+                sport="golf"
+                size={64}
+                className="h-16 w-16"
                 priority
-                style={{ filter: 'drop-shadow(0 1px 3px rgba(60,40,20,0.22))' }}
+                imgStyle={{ filter: 'drop-shadow(0 1px 3px rgba(60,40,20,0.22))' }}
               />
             </div>
             <h1

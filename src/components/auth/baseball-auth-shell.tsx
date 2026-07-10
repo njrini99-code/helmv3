@@ -30,9 +30,10 @@
  */
 import type { ReactNode, CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
+import { HelmMark } from '@/components/brand/HelmMark';
 import { Eyebrow, HairlineRule, Reveal } from '@/components/baseball/living-annual';
 import { EntryField } from '@/components/baseball/scenes/EntryField';
 import { flFraunces } from '@/components/marketing/first-light/fonts';
@@ -127,7 +128,7 @@ export function BaseballAuthShell({
     // onboarding template trees that already provide this, so the shell
     // supplies its own, exactly like golf's (auth) pages and baseball's
     // onboarding pages already do.
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={loadFeatures}>
       <div className="baseball-auth-field relative min-h-[100dvh] w-full overflow-x-hidden">
         {/* Skip to main content link for keyboard navigation */}
         <a
@@ -169,30 +170,24 @@ export function BaseballAuthShell({
               style={{ paddingBottom: 'max(1.75rem, calc(env(safe-area-inset-bottom) + 1rem))' }}
             >
               <Reveal staggerIndex={0} className="mb-6 flex flex-col items-center text-center">
-                <div className="relative mb-3">
-                  <div
-                    aria-hidden
-                    className="absolute inset-0 rounded-full blur-2xl scale-150"
-                    style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.15)' }}
+                {/* The real helm-wheel mark, in its true kelly team-green
+                    — REVERTED (⚠ A-OVERRIDE, Amendment 3 §1, Nick 2026-07-02
+                    18:00) from a pixel-review pass that masked/recolored it
+                    to sage-deep. A real logo is content, not chrome, and is
+                    exempt from the kelly-demotion rule; Nick approved this
+                    auth masthead as-is with his logo on it. Don't recolor
+                    this mark again for palette-consistency reasons. */}
+                <div className="mb-3">
+                  <HelmMark
+                    sport="baseball"
+                    size={44}
+                    className="h-11 w-11"
+                    glow
+                    glowClassName="blur-2xl scale-150"
+                    glowOpacity={0.15}
+                    priority
+                    unoptimized
                   />
-                  {/* The real helm-wheel mark, in its true kelly team-green
-                      — REVERTED (⚠ A-OVERRIDE, Amendment 3 §1, Nick 2026-07-02
-                      18:00) from a pixel-review pass that masked/recolored it
-                      to sage-deep. A real logo is content, not chrome, and is
-                      exempt from the kelly-demotion rule; Nick approved this
-                      auth masthead as-is with his logo on it. Don't recolor
-                      this mark again for palette-consistency reasons. */}
-                  <div className="relative flex h-11 w-11 items-center justify-center">
-                    <Image
-                      src="/helm-baseball-logo.png"
-                      alt=""
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 object-contain"
-                      priority
-                      unoptimized
-                    />
-                  </div>
                 </div>
 
                 {eyebrow ? (

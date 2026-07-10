@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { NewGameClient } from './NewGameClient';
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 export default async function CreateGamePage() {
   const supabase = await createClient();
@@ -20,11 +21,15 @@ export default async function CreateGamePage() {
   }
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
+  // Cookie-aware, multi-row-safe team resolution (matches Command Center).
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!teamId) redirect('/baseball/dashboard/program');
+
   const { data: team } = await supabase
     .from('baseball_teams')
     .select('id, name')
-    .eq('organization_id', coach.organization_id)
-    .single() as { data: { id: string; name: string } | null };
+    .eq('id', teamId)
+    .maybeSingle() as { data: { id: string; name: string } | null };
 
   if (!team) redirect('/baseball/dashboard/program');
 

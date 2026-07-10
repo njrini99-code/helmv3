@@ -815,7 +815,7 @@ export function FairwayEventEditor({
                 {attendeeHydration === 'error' ? (
                   <p
                     role="status"
-                    className="mb-2 rounded-fw-md border border-warm-300 bg-fw-warning-bg px-3 py-2 font-fw-sans text-caption text-warm-800"
+                    className="mb-2 rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg px-3 py-2 font-fw-sans text-caption text-fw-warning-ink"
                   >
                     Couldn&apos;t load the current invitees. You can still add players — existing invites won&apos;t be changed.
                   </p>
@@ -873,7 +873,7 @@ export function FairwayEventEditor({
                     className={cn(
                       'mt-3 rounded-fw-md border px-3 py-2 font-fw-sans text-caption',
                       (attendeeChanges?.removeAttendeeIds.length ?? 0) > 0
-                        ? 'border-warm-300 bg-fw-warning-bg text-warm-800'
+                        ? 'border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink'
                         : 'border-accent-100 bg-accent-50 text-accent-700',
                     )}
                   >
@@ -883,14 +883,14 @@ export function FairwayEventEditor({
 
                 {/* Conflict notice */}
                 {conflicts?.hasConflict ? (
-                  <div className="mt-3 rounded-fw-md border border-warm-300 bg-fw-warning-bg p-3">
-                    <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-warm-800">
+                  <div className="mt-3 rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
+                    <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-fw-warning-ink">
                       <AlertTriangle className="h-3.5 w-3.5 text-fw-warning" />
                       Schedule conflict
                     </p>
                     <ul className="mt-1.5 flex flex-col gap-0.5">
                       {conflicts.conflicts.slice(0, 4).map((c, i) => (
-                        <li key={`${c.userId}-${i}`} className="font-fw-sans text-caption text-warm-800">
+                        <li key={`${c.userId}-${i}`} className="font-fw-sans text-caption text-fw-warning-ink">
                           {c.userName} — {c.conflictingEvent.title}
                         </li>
                       ))}

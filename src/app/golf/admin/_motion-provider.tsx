@@ -1,6 +1,7 @@
 'use client';
 
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import type { ReactNode } from 'react';
 
 /**
@@ -13,5 +14,5 @@ import type { ReactNode } from 'react';
  * the ~15KB gz feature-bundle cost.
  */
 export function AdminMotionProvider({ children }: { children: ReactNode }) {
-  return <LazyMotion features={domAnimation}>{children}</LazyMotion>;
+  return <LazyMotion features={loadFeatures}>{children}</LazyMotion>;
 }

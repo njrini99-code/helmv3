@@ -21,8 +21,8 @@ export function SessionsPanel({ sessions }: { sessions: SessionRow[] }) {
     <ul className="space-y-2">
       {sessions.map((s) => (
         <li key={s.session_id}>
-          <Inset padding="sm" className="flex items-center gap-3">
-            <div className="min-w-0 flex-1">
+          <Inset padding="sm" className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="min-w-0 flex-1 basis-full sm:basis-auto">
               <p className="truncate text-sm font-medium text-warm-900">{s.email}</p>
               <p className="font-fw-mono text-xs tabular-nums text-warm-500">
                 started <LocalTime iso={s.created_at} variant="datetime" /> · refreshed{' '}

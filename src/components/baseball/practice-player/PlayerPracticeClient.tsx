@@ -22,7 +22,8 @@
 // =============================================================================
 
 import { useState } from 'react';
-import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadFeatures } from '@/lib/motion/load-features';
 import { AlertTriangle, Package, UserCircle2, BarChart2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -240,7 +241,7 @@ function PracticeCard({
       </Button>
 
       {/* Expanded body */}
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={loadFeatures}>
         <AnimatePresence initial={false}>
           {expanded && (
             <m.div

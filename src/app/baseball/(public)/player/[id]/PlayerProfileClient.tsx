@@ -166,6 +166,9 @@ interface PlayerData {
 interface PlayerProfileClientProps {
   player: PlayerData;
   isCoachViewing: boolean;
+  /** True only when the viewer IS this player (the self-bypass path in
+   *  resolvePublicProfileAccess — see conn-baseball-player Finding 4). */
+  isSelfViewing: boolean;
   initialIsInWatchlist: boolean;
   profileViewCount: number;
   watchlistCount: number;
@@ -176,6 +179,7 @@ type TabType = 'overview' | 'videos' | 'stats' | 'teams' | 'achievements';
 export function PlayerProfileClient({
   player,
   isCoachViewing,
+  isSelfViewing,
   initialIsInWatchlist,
   profileViewCount,
   watchlistCount,
@@ -454,6 +458,30 @@ export function PlayerProfileClient({
           </PaperCard>
         </div>
       </div>
+
+      {/* Self-view invisibility disclosure (Finding 4) — the self-bypass in
+          resolvePublicProfileAccess skips every visibility check for the
+          profile's own player, so without this notice a player could believe
+          this page is what recruiters see when recruiting is actually off
+          and nobody else can reach it at all. */}
+      {isSelfViewing && !player.recruiting_activated && (
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 mt-6">
+          <EditorsLetter
+            ink="pursuit"
+            title="Only you can see this page right now"
+            body="You're viewing your own public profile. Recruiting exposure is off, so college coaches can't actually find or open this link yet."
+            action={
+              <Link
+                href="/baseball/dashboard/activate"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-pursuit px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+              >
+                Activate Recruiting
+                <IconChevronRight size={16} />
+              </Link>
+            }
+          />
+        </div>
+      )}
 
       {/* Tab Content */}
       <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8" role="tabpanel" id={`pp-panel-${activeTab}`} aria-labelledby={`pp-tab-${activeTab}`}>

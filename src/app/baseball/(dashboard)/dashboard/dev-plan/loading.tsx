@@ -1,14 +1,19 @@
-import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Static title-bar skeleton, NOT the live <Header> — Header calls
+// useNotifications() unconditionally (before its own redesign-mode branch),
+// opening a realtime Supabase subscription on every route-transition mount
+// of this skeleton for a screen about to render its own header anyway.
+// Mirrors golf's tasks/loading.tsx convention.
 export default function Loading() {
   return (
     <>
-      <Header
-        title="My Development Plan"
-        subtitle="Track your progress and complete goals set by your coach"
-      />
+      <div className="px-4 pt-6 pb-1 sm:px-6 lg:px-8" role="status" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading My Development Plan…</span>
+        <Skeleton className="h-8 w-64 rounded-lg" />
+        <Skeleton className="mt-2 h-4 w-80 rounded-lg" />
+      </div>
       <div className="p-4 md:p-8 space-y-6">
         {/* Progress overview skeleton */}
         <Card variant="glass">
