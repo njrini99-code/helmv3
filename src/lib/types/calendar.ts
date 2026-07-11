@@ -93,6 +93,8 @@ export interface EventTypeConfig {
   bgColor: string;
   /** Small leading category dot (replaces the former left-border stripe). */
   dotColor: string;
+  /** 3px soft halo for the dot — dotColor's family at ~18% alpha (v3 accent-dot ring). */
+  dotRingColor: string;
   textColor: string;
   showText: boolean; // false for classes/blocked time
 }
