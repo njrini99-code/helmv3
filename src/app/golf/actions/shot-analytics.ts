@@ -220,7 +220,10 @@ function isImprovement(direction: TrendData['direction'], higherIsBetter: boolea
 async function getPlayerShotAnalyticsImpl(
   playerId: string,
   periodDays: number = 30
-): Promise<{ success: true; data: PlayerShotAnalytics } | { success: false; error: string }> {
+): Promise<
+  | { success: true; data: PlayerShotAnalytics }
+  | { success: false; error: string; code?: string }
+> {
   try {
     // Validate input
     const validated = shotAnalyticsSchema.safeParse({ playerId, periodDays });
@@ -281,7 +284,15 @@ async function getPlayerShotAnalyticsImpl(
     const previousRounds = (previousRoundsData || []) as RoundRow[];
 
     if (rounds.length === 0) {
-      return { success: false, error: 'No rounds found in the selected period' };
+      // Expected empty state, not a failure — a player with no completed
+      // rounds in the lookback window. The stable code keeps the soft-failure
+      // observer from logging it at error severity (observed live 2026-07-11
+      // as admin_events fingerprint 5d6c2abb on /golf/dashboard/coachhelm).
+      return {
+        success: false,
+        error: 'No rounds found in the selected period',
+        code: 'no_rounds_in_period',
+      };
     }
 
     const roundIds = rounds.map(r => r.id);
@@ -864,7 +875,10 @@ const observedGetPlayerShotAnalytics = withAdminObserved(
 export async function getPlayerShotAnalytics(
   playerId: string,
   periodDays: number = 30
-): Promise<{ success: true; data: PlayerShotAnalytics } | { success: false; error: string }> {
+): Promise<
+  | { success: true; data: PlayerShotAnalytics }
+  | { success: false; error: string; code?: string }
+> {
   return observedGetPlayerShotAnalytics(playerId, periodDays);
 }
 

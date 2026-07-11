@@ -54,6 +54,10 @@ import {
   type RosterActionOutcome,
 } from './RosterMemberActions';
 import { SavedLineupsPanel, type SavedLineupSlot } from './SavedLineupsPanel';
+// POSITIONS lives in a dependency-free module: RosterMemberActions (imported
+// above) consumes it at module scope, so defining it here re-creates the
+// import cycle behind the prod roster TDZ crash (see roster-constants.ts).
+import { POSITIONS } from './roster-constants';
 import type { TeamMember, RosterSurface, SortField, SortDirection } from './RosterClient';
 
 // LineupBuilder / InviteModal own their prop types; borrow them so we never
@@ -62,7 +66,6 @@ type LineupProps = ComponentProps<typeof LineupBuilder>;
 
 const EM_DASH = '—';
 
-export const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'OF', 'LHP', 'RHP', 'UTL'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 
 const STATUS_OPTIONS = [

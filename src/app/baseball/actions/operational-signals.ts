@@ -451,20 +451,49 @@ async function loadInactiveImportRows(
 }
 
 /**
- * Derive OPS from a stats row. Prefers an explicit `ops` column; falls back to
- * `obp + slg`; returns null when neither is available (the player row is skipped
- * rather than fabricating a 0 that would distort the average).
+ * Raw counting columns selected off baseball_player_stats for OPS derivation.
+ * The table stores counting stats ONLY — it has never had ops/obp/slg columns
+ * in prod (selecting them 42703'd on every rule run; observed live 2026-07-11,
+ * "column baseball_player_stats.ops does not exist"). Rates are derived here
+ * with the same formulas as read-models/stats-center.ts finalizeBatting().
  */
-function computeOPS(r: {
-  ops: number | null | undefined;
-  obp: number | null | undefined;
-  slg: number | null | undefined;
-}): number | null {
-  if (typeof r.ops === 'number' && Number.isFinite(r.ops)) return r.ops;
-  const obp = typeof r.obp === 'number' && Number.isFinite(r.obp) ? r.obp : null;
-  const slg = typeof r.slg === 'number' && Number.isFinite(r.slg) ? r.slg : null;
-  if (obp !== null && slg !== null) return obp + slg;
-  return null;
+const HITTING_COUNTING_COLUMNS =
+  'at_bats, hits, doubles, triples, home_runs, walks, hit_by_pitch, sacrifice_flies';
+
+interface HittingCountingRow {
+  at_bats: number | null;
+  hits: number | null;
+  doubles: number | null;
+  triples: number | null;
+  home_runs: number | null;
+  walks: number | null;
+  hit_by_pitch: number | null;
+  sacrifice_flies: number | null;
+}
+
+/**
+ * Derive OPS (OBP + SLG) from raw counting stats. Returns null on a zero
+ * denominator (the player row is skipped rather than fabricating a 0 that
+ * would distort the average). OBP uses the standard AB+BB+HBP+SF denominator,
+ * matching stats-center's finalizeBatting.
+ */
+function computeOPS(r: HittingCountingRow): number | null {
+  const ab = r.at_bats ?? 0;
+  const h = r.hits ?? 0;
+  const doubles = r.doubles ?? 0;
+  const triples = r.triples ?? 0;
+  const hr = r.home_runs ?? 0;
+  const bb = r.walks ?? 0;
+  const hbp = r.hit_by_pitch ?? 0;
+  const sf = r.sacrifice_flies ?? 0;
+
+  const singles = Math.max(0, h - doubles - triples - hr);
+  const totalBases = singles + 2 * doubles + 3 * triples + 4 * hr;
+  const slg = ab > 0 ? totalBases / ab : null;
+  const obpDen = ab + bb + hbp + sf;
+  const obp = obpDen > 0 ? (h + bb + hbp) / obpDen : null;
+  if (obp === null || slg === null) return null;
+  return obp + slg;
 }
 
 /**
@@ -487,7 +516,7 @@ async function loadPlayerHittingSpans(
   //    Ordered newest-first so that slice(0, N) gives the most-recent N games.
   const { data: gameData } = await db
     .from('baseball_player_stats')
-    .select('player_id, session_date, ops, obp, slg')
+    .select(`player_id, session_date, ${HITTING_COUNTING_COLUMNS}`)
     .eq('team_id', teamId)
     .eq('stat_type', 'game')
     .gte('session_date', sinceDate)
@@ -495,13 +524,12 @@ async function loadPlayerHittingSpans(
     .order('session_date', { ascending: false })
     .limit(2000);
 
-  const gameRows = (gameData ?? []) as Array<{
-    player_id: string;
-    session_date: string;
-    ops: number | null;
-    obp: number | null;
-    slg: number | null;
-  }>;
+  const gameRows = (gameData ?? []) as Array<
+    HittingCountingRow & {
+      player_id: string;
+      session_date: string;
+    }
+  >;
 
   if (gameRows.length === 0) return [];
 
@@ -512,7 +540,7 @@ async function loadPlayerHittingSpans(
   const [{ data: seasonData }, { data: playerData }] = await Promise.all([
     db
       .from('baseball_player_stats')
-      .select('player_id, ops, obp, slg')
+      .select(`player_id, ${HITTING_COUNTING_COLUMNS}`)
       .eq('team_id', teamId)
       .eq('stat_type', 'season')
       .in('player_id', playerIds),
@@ -524,12 +552,7 @@ async function loadPlayerHittingSpans(
 
   // Build lookup maps.
   const seasonOPSByPlayer = new Map<string, number>();
-  for (const r of (seasonData ?? []) as Array<{
-    player_id: string;
-    ops: number | null;
-    obp: number | null;
-    slg: number | null;
-  }>) {
+  for (const r of (seasonData ?? []) as Array<HittingCountingRow & { player_id: string }>) {
     const ops = computeOPS(r);
     if (ops !== null) seasonOPSByPlayer.set(r.player_id, ops);
   }
