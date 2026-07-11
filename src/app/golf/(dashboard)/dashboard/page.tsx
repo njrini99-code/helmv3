@@ -26,6 +26,20 @@ export const dynamic = 'force-dynamic';
 const VALID_RANGES = new Set(['7d', '30d', '90d', 'season', 'all']);
 
 /**
+ * A session can pass the top-of-page check yet expire before the data fetch
+ * re-validates it (auth token refresh race — observed live as repeated
+ * 'Not authenticated' digests on /golf/dashboard). Send that narrow case to
+ * the login screen; anything else still surfaces to the route error boundary
+ * (P002/P426 — real outages must never be swallowed).
+ */
+function redirectToLoginOnExpiredSession(error: unknown): never {
+    if (error instanceof Error && error.message === 'Not authenticated') {
+        redirect('/golf/login?returnTo=/golf/dashboard');
+    }
+    throw error;
+}
+
+/**
  * Renders the coach dashboard inside the `.fairway-ds` scope on `bg-canvas`.
  * Fairway is the only tree (Wave W1) — the legacy CoachDashboard fork has
  * been removed.
@@ -126,7 +140,7 @@ export default async function GolfDashboardPage({
             const [payload, joinRequestsResult] = await Promise.all([
                 getCachedCoachDashboardData(coach.id, userId, teamId, dateRange),
                 getTeamJoinRequests(),
-            ]);
+            ]).catch(redirectToLoginOnExpiredSession);
             const joinRequests: JoinRequestData[] =
                 joinRequestsResult.success && joinRequestsResult.data ? joinRequestsResult.data : [];
 
@@ -201,7 +215,7 @@ export default async function GolfDashboardPage({
         const [payload, hubData] = await Promise.all([
             getCachedPlayerDashboardData(player.id, userId, teamId),
             teamId ? getPlayerHubSummaryData(teamId, player.id) : Promise.resolve(null),
-        ]);
+        ]).catch(redirectToLoginOnExpiredSession);
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
         const data: PlayerDashboardData = {

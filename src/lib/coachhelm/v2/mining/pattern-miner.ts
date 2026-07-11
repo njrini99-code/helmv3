@@ -992,14 +992,26 @@ export class PatternMiner {
     const playerIds = [...new Set(patterns.map((p) => p.playerId).filter(Boolean))];
     if (ids.length > 0 && playerIds.length > 0) {
       const idList = `(${ids.map((id) => `"${id}"`).join(',')})`;
-      const { error: supersedeError } = await fromUntyped(supabase, 'golf_patterns_v2')
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .in('player_id', playerIds)
-        .eq('is_active', true)
-        .not('id', 'in', idList)
-        // Keep coach-curated patterns visible; only retire auto-detected ones
-        // (NULL or non-preserved lifecycle_state).
-        .or('lifecycle_state.is.null,lifecycle_state.not.in.(confirmed,addressed,resolved,dismissed)');
+      // Multi-row UPDATE racing a concurrent mine's upserts/supersede over the
+      // same players can deadlock (observed live: 40P01 during the roster-sweep
+      // cron, round-submit trigger and cron batch mining the same team
+      // concurrently). Postgres aborts one victim wholesale and the supersede
+      // is idempotent (deterministic ids, converges on re-run), so a short
+      // retry absorbs it instead of surfacing a transient as an error.
+      let supersedeError: { code?: string } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+        const { error } = await fromUntyped(supabase, 'golf_patterns_v2')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .in('player_id', playerIds)
+          .eq('is_active', true)
+          .not('id', 'in', idList)
+          // Keep coach-curated patterns visible; only retire auto-detected ones
+          // (NULL or non-preserved lifecycle_state).
+          .or('lifecycle_state.is.null,lifecycle_state.not.in.(confirmed,addressed,resolved,dismissed)');
+        supersedeError = error;
+        if (!error || error.code !== '40P01') break;
+      }
       if (supersedeError) {
         await logServerError('pattern-miner.savePatterns supersede stale', {
           action: 'pattern-miner.savePatterns',

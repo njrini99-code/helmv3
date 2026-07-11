@@ -18,6 +18,21 @@ const sharedIgnoreErrors = [
   // suppressed; every other AuthApiError now reaches Sentry.
   /AuthApiError: Invalid Refresh Token/,
   /Refresh Token Not Found/,
+  // Baseball expected control-flow throws. withBaseballAction already
+  // classifies these as handled/expected (admin_events + Sentry warning with
+  // skipSentry) and then RE-RAISES so callers can branch — but the re-raise
+  // escapes the server-action boundary, where Next's own console.error +
+  // onRequestError capture it a second time as an unhandled Sentry Error
+  // (observed live: a logged-out tab's 60 s NotificationBell poll produced
+  // "BaseballUnauthorizedError: You must be signed in"). These stay fully
+  // visible in admin_events / Helm Bridge; only the duplicate Sentry Error
+  // is suppressed.
+  'BaseballUnauthorizedError',
+  'BaseballNoActiveTeamError',
+  'BaseballCapabilityError',
+  'BaseballDisabledSourceError',
+  'BaseballDemoReadOnlyError',
+  'PlayerAccessError',
 ];
 
 const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
