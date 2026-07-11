@@ -493,7 +493,9 @@ function computeOPS(r: HittingCountingRow): number | null {
   const obpDen = ab + bb + hbp + sf;
   const obp = obpDen > 0 ? (h + bb + hbp) / obpDen : null;
   if (obp === null || slg === null) return null;
-  return obp + slg;
+  // Round like stats-center's round3 so borderline cold-streak threshold
+  // comparisons agree with the OPS coaches see rendered.
+  return Number((obp + slg).toFixed(3));
 }
 
 /**
