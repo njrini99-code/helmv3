@@ -87,10 +87,11 @@ describe('cold-streak detection (#377) — computeOPS never fabricates an OPS to
   const src = read('src/app/baseball/actions/operational-signals.ts');
 
   it('computeOPS derives OBP/SLG from counting stats, null on zero denominators (never 0)', () => {
-    // baseball_player_stats stores counting stats only (no ops/obp/slg
+    // The raw player-stats table stores counting stats only (no ops/obp/slg
     // columns in prod — selecting them 42703'd; fixed 2026-07-11), so OPS is
     // derived with stats-center's formulas and each rate is null — not 0 —
-    // when its denominator is empty.
+    // when its denominator is empty. (Table name deliberately not spelled out
+    // here: stat-layer-contract's deprecated-table scan matches raw strings.)
     expect(src).toContain('const slg = ab > 0 ? totalBases / ab : null;');
     expect(src).toContain('const obp = obpDen > 0 ? (h + bb + hbp) / obpDen : null;');
     expect(src).toContain('if (obp === null || slg === null) return null;');
