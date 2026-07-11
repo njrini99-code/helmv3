@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_allowlist: {
@@ -5541,39 +5516,81 @@ export type Database = {
       }
       baseball_postgame_review_items: {
         Row: {
-          body: string
+          action_label: string | null
+          action_type: string
+          body: string | null
           category: string
+          confidence: number | null
           created_at: string
+          dedupe_key: string | null
+          detail: string | null
+          disposition: string
           id: string
+          item_kind: string | null
           item_type: string
+          owner_role: string | null
           player_id: string | null
+          player_visible: boolean
+          priority: string
           review_id: string
+          signal_source: string | null
           source_refs: Json
           team_id: string
+          timeline_event_id: string | null
+          title: string | null
+          updated_at: string | null
           visibility: string
         }
         Insert: {
-          body: string
+          action_label?: string | null
+          action_type?: string
+          body?: string | null
           category?: string
+          confidence?: number | null
           created_at?: string
+          dedupe_key?: string | null
+          detail?: string | null
+          disposition?: string
           id?: string
+          item_kind?: string | null
           item_type?: string
+          owner_role?: string | null
           player_id?: string | null
+          player_visible?: boolean
+          priority?: string
           review_id: string
+          signal_source?: string | null
           source_refs?: Json
           team_id: string
+          timeline_event_id?: string | null
+          title?: string | null
+          updated_at?: string | null
           visibility?: string
         }
         Update: {
-          body?: string
+          action_label?: string | null
+          action_type?: string
+          body?: string | null
           category?: string
+          confidence?: number | null
           created_at?: string
+          dedupe_key?: string | null
+          detail?: string | null
+          disposition?: string
           id?: string
+          item_kind?: string | null
           item_type?: string
+          owner_role?: string | null
           player_id?: string | null
+          player_visible?: boolean
+          priority?: string
           review_id?: string
+          signal_source?: string | null
           source_refs?: Json
           team_id?: string
+          timeline_event_id?: string | null
+          title?: string | null
+          updated_at?: string | null
           visibility?: string
         }
         Relationships: [
@@ -5605,43 +5622,103 @@ export type Database = {
             referencedRelation: "baseball_teams_public_profile"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "baseball_postgame_review_items_timeline_event_id_fkey"
+            columns: ["timeline_event_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_player_timeline_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       baseball_postgame_reviews: {
         Row: {
+          batting_lines_n: number
+          coach_id: string | null
+          confidence: number | null
           created_at: string
           created_by_coach_id: string | null
+          disposition: string
+          expires_at: string | null
           game_id: string
+          generated_at: string
+          generated_by_model: string | null
           id: string
+          import_warnings: Json
           notes: string | null
           overall_grade: string | null
+          pitching_lines_n: number
+          source_status: string
           status: string
+          summary: string | null
           team_id: string
+          title: string | null
           updated_at: string
+          visibility: string
         }
         Insert: {
+          batting_lines_n?: number
+          coach_id?: string | null
+          confidence?: number | null
           created_at?: string
           created_by_coach_id?: string | null
+          disposition?: string
+          expires_at?: string | null
           game_id: string
+          generated_at?: string
+          generated_by_model?: string | null
           id?: string
+          import_warnings?: Json
           notes?: string | null
           overall_grade?: string | null
+          pitching_lines_n?: number
+          source_status?: string
           status?: string
+          summary?: string | null
           team_id: string
+          title?: string | null
           updated_at?: string
+          visibility?: string
         }
         Update: {
+          batting_lines_n?: number
+          coach_id?: string | null
+          confidence?: number | null
           created_at?: string
           created_by_coach_id?: string | null
+          disposition?: string
+          expires_at?: string | null
           game_id?: string
+          generated_at?: string
+          generated_by_model?: string | null
           id?: string
+          import_warnings?: Json
           notes?: string | null
           overall_grade?: string | null
+          pitching_lines_n?: number
+          source_status?: string
           status?: string
+          summary?: string | null
           team_id?: string
+          title?: string | null
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "baseball_postgame_reviews_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_postgame_reviews_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "baseball_postgame_reviews_created_by_coach_id_fkey"
             columns: ["created_by_coach_id"]
@@ -20291,9 +20368,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       admin_event_severity: ["info", "warning", "error", "critical"],
