@@ -72,6 +72,7 @@ Join code
 - Server actions must call `supabase.auth.getUser()` before database access.
 - Join codes are team-scoped and should be treated case-insensitively where the route expects that behavior.
 - Incomplete player onboarding should redirect to player onboarding with join context preserved.
+- A session that expires mid-request on `/golf/dashboard` (passes the top-of-page check, fails the data-fetch re-validation with `Not authenticated`) redirects to `/golf/login?returnTo=/golf/dashboard` instead of hitting the error boundary. Retryable auth failures (network / GoTrue 5xx) still surface to the error boundary — only a genuinely missing/expired session redirects.
 - College/coach/player role rules must be respected before granting dashboard access.
 - Service-role logic must stay server-only and admin-bounded.
 
