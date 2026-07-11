@@ -125,6 +125,28 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     textColor: 'text-purple-800',
     showText: true,
   },
+  // Showcase - Baseball recruiting-facing (event-ink 'pursuit', solid) — shares
+  // the violet recruiting family with recruiting_visit so pursuit events read
+  // as one class across sports.
+  showcase: {
+    label: 'Showcase',
+    color: 'violet',
+    bgColor: 'bg-violet-50/60',
+    dotColor: 'bg-violet-500',
+    dotRingColor: 'ring-violet-500/[0.18]',
+    textColor: 'text-violet-800',
+    showText: true,
+  },
+  // Tryout - Baseball recruiting-facing (event-ink 'pursuit', soft)
+  tryout: {
+    label: 'Tryout',
+    color: 'violet',
+    bgColor: 'bg-violet-50/50',
+    dotColor: 'bg-violet-400',
+    dotRingColor: 'ring-violet-400/[0.18]',
+    textColor: 'text-violet-700',
+    showText: true,
+  },
   // Other - Neutral stone
   other: {
     label: 'Other',

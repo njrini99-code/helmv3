@@ -15,6 +15,8 @@ export type EventType =
   | 'blocked_time'
   | 'qualifier'  // Golf-specific
   | 'travel'     // Golf-specific
+  | 'showcase'   // Baseball-specific (recruiting-facing — event-ink 'pursuit')
+  | 'tryout'     // Baseball-specific (recruiting-facing — event-ink 'pursuit')
   | 'other';
 
 export type RSVPStatus = 'accepted' | 'declined' | 'tentative' | 'pending';
