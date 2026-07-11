@@ -163,7 +163,12 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
  * Get configuration for a specific event type
  */
 export function getEventTypeConfig(type: EventType): EventTypeConfig {
-  return eventTypeConfigs[type] || eventTypeConfigs.other;
+  // Own-key guard: callers pass raw DB strings (cast to EventType), and a
+  // plain index would resolve inherited keys like '__proto__' to a truthy
+  // prototype object with no styling fields instead of the 'other' fallback.
+  return Object.prototype.hasOwnProperty.call(eventTypeConfigs, type)
+    ? eventTypeConfigs[type]
+    : eventTypeConfigs.other;
 }
 
 /**
