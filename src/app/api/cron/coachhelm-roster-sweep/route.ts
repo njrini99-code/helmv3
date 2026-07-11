@@ -14,6 +14,11 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+// Side-effect-only: guarantees insights.ts's module-scope registration
+// (__registerTriggerPlayerInsightsAfterRound) has run at module-init time —
+// the bridge no longer lazily imports insights.ts itself (that dynamic
+// back-edge was the cold-start TDZ cycle; see trigger-insights-bridge.ts).
+import '@/app/golf/actions/insights';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';

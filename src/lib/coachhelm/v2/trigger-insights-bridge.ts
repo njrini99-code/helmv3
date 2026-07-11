@@ -33,12 +33,21 @@ import 'server-only';
  *
  * Wiring: insights.ts calls `__registerTriggerPlayerInsightsAfterRound(...)`
  * at its own module scope (a side effect, not an export) to hand this
- * bridge a reference to the withAdminObserved-wrapped impl.
- * `triggerPlayerInsightsAfterRound` below lazily triggers that registration
- * (via a dynamic import of insights.ts) the first time it's called in a
- * given process, then delegates to the registered function on every call —
- * same object, same behavior, just never exported from a 'use server'
- * module. The one legitimate CLIENT-reachable path (a coach manually
+ * bridge a reference to the withAdminObserved-wrapped impl. Each legitimate
+ * caller (post-round-trigger.ts, the roster-sweep cron route) carries a
+ * side-effect `import '@/app/golf/actions/insights'` so that registration
+ * has ALREADY run, synchronously, by the time the caller's own module
+ * finishes initializing. This used to be a lazy `await import()` inside
+ * `triggerPlayerInsightsAfterRound` below — but that made this file the
+ * dynamic back-edge of a value-level import cycle with insights.ts
+ * (insights.ts statically imports the register function above), and on a
+ * cold Fluid Compute instance two concurrent first-touches of the pair
+ * (a background after() trigger racing a dashboard server action) could
+ * observe insights.ts mid-evaluation — the intermittent cold-start
+ * "Cannot access 'a' before initialization" TDZ crash in generateAlerts.
+ * `triggerPlayerInsightsAfterRound` now only delegates to the registered
+ * function — same object, same behavior, just never exported from a
+ * 'use server' module. The one legitimate CLIENT-reachable path (a coach manually
  * refreshing a player's analysis) is unaffected — it goes through the
  * already-authed sibling action `refreshPlayerAnalysisAsCoach`, which is
  * still exported from insights.ts and calls the private impl directly
@@ -91,14 +100,10 @@ export async function triggerPlayerInsightsAfterRound(
   code?: 'engine_no_recent_rounds' | 'engine_session_expired';
 }> {
   if (!impl) {
-    // Load insights.ts so its registration side effect runs. Cheap after the
-    // first call — subsequent imports hit the module cache.
-    await import('@/app/golf/actions/insights');
-  }
-  if (!impl) {
     throw new Error(
       '[trigger-insights-bridge] triggerPlayerInsightsAfterRound not registered — ' +
-        'insights.ts failed to load or its registration call was removed',
+        "the caller is missing its side-effect import of '@/app/golf/actions/insights' " +
+        '(see the wiring note in this file header), or the registration call was removed',
     );
   }
   return impl(playerId);

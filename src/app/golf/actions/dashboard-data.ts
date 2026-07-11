@@ -247,7 +247,15 @@ async function getCoachDashboardDataImpl(
             .maybeSingle(),
     ]);
 
-    const { data: { user } } = authResult;
+    const { data: { user }, error: authError } = authResult;
+    // A genuine auth outage (network failure / GoTrue 5xx — supabase-js marks
+    // these retryable) must surface to the route error boundary, not be
+    // misread as a signed-out user. AuthSessionMissingError and other
+    // no-session results fall through to 'Not authenticated', which the
+    // dashboard page maps to the login redirect.
+    if (authError && (authError.name === 'AuthRetryableFetchError' || (authError.status ?? 0) >= 500)) {
+        throw authError;
+    }
     if (!user) throw new Error('Not authenticated');
     if (user.id !== userId) throw new Error('Unauthorized');
 
@@ -755,7 +763,12 @@ async function getPlayerDashboardDataImpl(
             : Promise.resolve({ data: null }),
     ]);
 
-    const { data: { user } } = authResult;
+    const { data: { user }, error: authError } = authResult;
+    // Same outage-vs-expiry split as the coach payload above: retryable auth
+    // failures surface; a missing session becomes the login redirect.
+    if (authError && (authError.name === 'AuthRetryableFetchError' || (authError.status ?? 0) >= 500)) {
+        throw authError;
+    }
     if (!user) throw new Error('Not authenticated');
 
     const playerTeamTimezone = (playerTimezoneResult.data as { timezone?: string } | null)?.timezone || 'America/New_York';

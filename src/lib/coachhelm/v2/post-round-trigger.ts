@@ -17,6 +17,12 @@
  * NOT a replacement for triggerPlayerInsightsAfterRound — wraps it.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+// Side-effect-only: guarantees insights.ts's module-scope registration
+// (__registerTriggerPlayerInsightsAfterRound) has run before this module's
+// own top-level finishes — at synchronous module-init time, so there is no
+// async gap for a concurrent request on the same warm instance to race
+// against (the cold-start TDZ crash the bridge header documents).
+import '@/app/golf/actions/insights';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import {
