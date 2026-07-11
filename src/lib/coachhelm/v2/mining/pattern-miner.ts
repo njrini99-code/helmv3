@@ -1000,7 +1000,12 @@ export class PatternMiner {
       // retry absorbs it instead of surfacing a transient as an error.
       let supersedeError: { code?: string } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+        if (attempt > 0) {
+          // Jitter decorrelates retries from the concurrent miner we
+          // deadlocked with — fixed delays would re-collide in lock-step.
+          const backoff = 200 * attempt + Math.floor(Math.random() * 150);
+          await new Promise((resolve) => setTimeout(resolve, backoff));
+        }
         const { error } = await fromUntyped(supabase, 'golf_patterns_v2')
           .update({ is_active: false, updated_at: new Date().toISOString() })
           .in('player_id', playerIds)
