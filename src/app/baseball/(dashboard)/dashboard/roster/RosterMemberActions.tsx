@@ -25,7 +25,7 @@ import { useEffect, useState } from 'react';
 import { Select, Input, Button as FairwayButton, IconButton, PopoverPanel, ModalShell, SearchField } from '@/components/fairway';
 import { IconMoreVertical, IconEdit, IconTrash, IconCheck, IconX } from '@/components/icons';
 import type { AssignablePlayerResult } from '@/app/baseball/actions/roster';
-import { POSITIONS } from './RosterFairway';
+import { POSITIONS } from './roster-constants';
 
 export type RosterActionOutcome = { success: boolean; error?: string };
 

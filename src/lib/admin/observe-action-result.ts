@@ -51,6 +51,9 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
  */
 const EXPECTED_EMPTY_STATE_CODES: ReadonlySet<string> = new Set([
   'engine_no_recent_rounds',
+  // getPlayerShotAnalytics: player has no completed rounds in the selected
+  // lookback window — the analytics page's normal brand-new-player state.
+  'no_rounds_in_period',
 ]);
 
 export function extractActionSoftFailure(

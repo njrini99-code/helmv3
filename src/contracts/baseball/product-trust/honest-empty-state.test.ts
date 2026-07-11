@@ -86,10 +86,15 @@ describe('getStatsCenter — honest empty state (#377)', () => {
 describe('cold-streak detection (#377) — computeOPS never fabricates an OPS to detect a "cold streak" on', () => {
   const src = read('src/app/baseball/actions/operational-signals.ts');
 
-  it('computeOPS prefers the explicit ops column, else obp+slg, else null (never 0)', () => {
-    expect(src).toContain("if (typeof r.ops === 'number' && Number.isFinite(r.ops)) return r.ops;");
-    expect(src).toContain('if (obp !== null && slg !== null) return obp + slg;');
-    expect(src).toMatch(/return null;\s*\n}/);
+  it('computeOPS derives OBP/SLG from counting stats, null on zero denominators (never 0)', () => {
+    // The raw player-stats table stores counting stats only (no ops/obp/slg
+    // columns in prod — selecting them 42703'd; fixed 2026-07-11), so OPS is
+    // derived with stats-center's formulas and each rate is null — not 0 —
+    // when its denominator is empty. (Table name deliberately not spelled out
+    // here: stat-layer-contract's deprecated-table scan matches raw strings.)
+    expect(src).toContain('const slg = ab > 0 ? totalBases / ab : null;');
+    expect(src).toContain('const obp = obpDen > 0 ? (h + bb + hbp) / obpDen : null;');
+    expect(src).toContain('if (obp === null || slg === null) return null;');
   });
 
   it('the cold-streak loader SKIPS a row when computeOPS is null, rather than treating it as 0', () => {
