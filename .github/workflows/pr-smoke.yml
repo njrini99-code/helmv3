@@ -95,6 +95,13 @@ jobs:
         continue-on-error: true
         run: npx playwright test e2e/accessibility.spec.ts --project=chromium --reporter=line
 
+      # Public mobile viewport checks (320/390/430px): no horizontal pan, no
+      # clipped header/nav controls, no bottom-nav collisions. Blocking — these
+      # are pure layout-geometry assertions with no a11y-debt exemptions.
+      # Authenticated mobile coverage runs on main via playwright.yml.
+      - name: Run public mobile viewport checks
+        run: npx playwright test --project=mobile-public --reporter=line
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
