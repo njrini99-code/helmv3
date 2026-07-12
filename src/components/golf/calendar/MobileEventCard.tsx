@@ -22,7 +22,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { MobileRSVPButtons, type RSVPResponse } from './MobileRSVPButtons';
-import { formatTime } from '@/lib/calendar/event-styles';
+import { formatTime, getEventTypeConfig } from '@/lib/calendar/event-styles';
+import type { EventType } from '@/lib/types/calendar';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { Button } from '@/components/ui/button';
 
@@ -91,17 +92,8 @@ export function MobileEventCard({
     return onRsvp(response);
   }, [onRsvp]);
 
-  // Get accent color based on event type (matches event-styles.ts)
-  const getAccentColor = () => {
-    switch (event.event_type) {
-      case 'practice': return 'bg-warm-400';
-      case 'tournament': return 'bg-primary-600';
-      case 'qualifier': return 'bg-amber-500';
-      case 'meeting': return 'bg-sky-500';
-      case 'travel': return 'bg-purple-500';
-      default: return 'bg-warm-400';
-    }
-  };
+  // Cast string type to EventType for styling (fallback to 'other' if not matched)
+  const config = getEventTypeConfig(event.event_type as EventType);
 
   return (
     <div
@@ -115,12 +107,6 @@ export function MobileEventCard({
         className
       )}
     >
-      {/* Left accent bar */}
-      <div className={cn(
-        'absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl',
-        getAccentColor()
-      )} />
-
       {/* Main card content - tappable */}
       <Button variant="ghost"
         type="button"
@@ -154,10 +140,16 @@ export function MobileEventCard({
               </div>
             )}
 
-            {/* Title */}
-            <h3 className="text-subhead font-medium text-warm-900 leading-snug truncate">
-              {event.title}
-            </h3>
+            {/* Title — leading ringed event-type dot (replaces the retired left accent stripe) */}
+            <div className="flex items-center gap-2">
+              <span
+                className={cn('h-1.5 w-1.5 rounded-full shrink-0 ring-[3px]', config.dotColor, config.dotRingColor)}
+                aria-hidden="true"
+              />
+              <h3 className="text-subhead font-medium text-warm-900 leading-snug truncate min-w-0">
+                {event.title}
+              </h3>
+            </div>
 
             {/* Time and location row */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">

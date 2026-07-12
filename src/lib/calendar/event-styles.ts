@@ -12,6 +12,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'primary',
     bgColor: 'bg-primary-50/60',
     dotColor: 'bg-primary-500',
+    dotRingColor: 'ring-primary-500/[0.18]',
     textColor: 'text-primary-800',
     showText: true,
   },
@@ -20,6 +21,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'primary',
     bgColor: 'bg-primary-50/60',
     dotColor: 'bg-primary-600',
+    dotRingColor: 'ring-primary-600/[0.18]',
     textColor: 'text-primary-800',
     showText: true,
   },
@@ -29,6 +31,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'amber',
     bgColor: 'bg-amber-50/60',
     dotColor: 'bg-amber-500',
+    dotRingColor: 'ring-amber-500/[0.18]',
     textColor: 'text-amber-800',
     showText: true,
   },
@@ -38,6 +41,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'stone',
     bgColor: 'bg-stone-100/60',
     dotColor: 'bg-stone-400',
+    dotRingColor: 'ring-stone-400/[0.18]',
     textColor: 'text-stone-700',
     showText: true,
   },
@@ -47,6 +51,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'teal',
     bgColor: 'bg-teal-50/60',
     dotColor: 'bg-teal-500',
+    dotRingColor: 'ring-teal-500/[0.18]',
     textColor: 'text-teal-800',
     showText: true,
   },
@@ -56,6 +61,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'violet',
     bgColor: 'bg-violet-50/60',
     dotColor: 'bg-violet-500',
+    dotRingColor: 'ring-violet-500/[0.18]',
     textColor: 'text-violet-800',
     showText: true,
   },
@@ -65,6 +71,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'orange',
     bgColor: 'bg-orange-50/60',
     dotColor: 'bg-orange-500',
+    dotRingColor: 'ring-orange-500/[0.18]',
     textColor: 'text-orange-800',
     showText: true,
   },
@@ -74,6 +81,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'sky',
     bgColor: 'bg-sky-50/60',
     dotColor: 'bg-sky-500',
+    dotRingColor: 'ring-sky-500/[0.18]',
     textColor: 'text-sky-800',
     showText: true,
   },
@@ -83,6 +91,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'rose',
     bgColor: 'bg-rose-50/60',
     dotColor: 'bg-rose-500',
+    dotRingColor: 'ring-rose-500/[0.18]',
     textColor: 'text-rose-800',
     showText: true,
   },
@@ -92,6 +101,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'stone',
     bgColor: 'bg-stone-100/50',
     dotColor: 'bg-stone-300',
+    dotRingColor: 'ring-stone-300/[0.18]',
     textColor: 'text-stone-500',
     showText: false,
   },
@@ -101,6 +111,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'stone',
     bgColor: 'bg-stone-100/40',
     dotColor: 'bg-stone-200',
+    dotRingColor: 'ring-stone-200/[0.18]',
     textColor: 'text-stone-400',
     showText: false,
   },
@@ -110,7 +121,30 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'purple',
     bgColor: 'bg-purple-50/60',
     dotColor: 'bg-purple-500',
+    dotRingColor: 'ring-purple-500/[0.18]',
     textColor: 'text-purple-800',
+    showText: true,
+  },
+  // Showcase - Baseball recruiting-facing (event-ink 'pursuit', solid) — shares
+  // the violet recruiting family with recruiting_visit so pursuit events read
+  // as one class across sports.
+  showcase: {
+    label: 'Showcase',
+    color: 'violet',
+    bgColor: 'bg-violet-50/60',
+    dotColor: 'bg-violet-500',
+    dotRingColor: 'ring-violet-500/[0.18]',
+    textColor: 'text-violet-800',
+    showText: true,
+  },
+  // Tryout - Baseball recruiting-facing (event-ink 'pursuit', soft)
+  tryout: {
+    label: 'Tryout',
+    color: 'violet',
+    bgColor: 'bg-violet-50/50',
+    dotColor: 'bg-violet-400',
+    dotRingColor: 'ring-violet-400/[0.18]',
+    textColor: 'text-violet-700',
     showText: true,
   },
   // Other - Neutral stone
@@ -119,6 +153,7 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
     color: 'stone',
     bgColor: 'bg-stone-100/60',
     dotColor: 'bg-stone-400',
+    dotRingColor: 'ring-stone-400/[0.18]',
     textColor: 'text-stone-600',
     showText: true,
   },
@@ -128,7 +163,12 @@ const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
  * Get configuration for a specific event type
  */
 export function getEventTypeConfig(type: EventType): EventTypeConfig {
-  return eventTypeConfigs[type] || eventTypeConfigs.other;
+  // Own-key guard: callers pass raw DB strings (cast to EventType), and a
+  // plain index would resolve inherited keys like '__proto__' to a truthy
+  // prototype object with no styling fields instead of the 'other' fallback.
+  return Object.prototype.hasOwnProperty.call(eventTypeConfigs, type)
+    ? eventTypeConfigs[type]
+    : eventTypeConfigs.other;
 }
 
 /**

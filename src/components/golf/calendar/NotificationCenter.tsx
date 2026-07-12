@@ -148,10 +148,12 @@ export function NotificationCenter() {
 
   return (
     <div className="relative">
-      {/* Bell Button */}
+      {/* Bell Button — overflow-visible overrides the Button primitive's
+          ripple-containing overflow-hidden, which was clipping the
+          -top-1/-right-1 unread badge below. */}
       <Button variant="ghost"
         onClick={handleToggle}
-        className="relative p-2.5 rounded-xl bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 shadow-sm text-warm-500 hover:text-warm-800 hover:bg-cream-50/92 hover:shadow-md active:scale-95 transition-all duration-200"
+        className="relative overflow-visible p-2.5 rounded-xl bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 shadow-sm text-warm-500 hover:text-warm-800 hover:bg-cream-50/92 hover:shadow-md active:scale-95 transition-all duration-200"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         aria-expanded={isOpen}
       >

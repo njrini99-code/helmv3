@@ -837,8 +837,12 @@ function CalendarHeader({
     });
   };
 
+  // w-full (not flex-shrink-0) on the root: this header renders as a flex
+  // child of PremiumCalendarClient's horizontal header row, inside a glass
+  // container with overflow:hidden — it must be allowed to shrink so the
+  // title truncates instead of the Today pill clipping at 390px.
   return (
-    <header className="flex items-center justify-between gap-3 px-4 md:px-6 py-4 md:py-5 flex-shrink-0 min-w-0">
+    <header className="flex items-center justify-between gap-3 px-4 md:px-6 py-4 md:py-5 w-full min-w-0">
       {/* Left: Title + Nav */}
       <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
         <IconButton variant="default"
