@@ -302,11 +302,15 @@ async function getPlayerProfileImpl(
       // state) vs. completed rounds that all lack scores (data-quality
       // problem). Only the former may carry the globally-silenced
       // `no_completed_rounds` code — see EXPECTED_EMPTY_STATE_CODES contract.
-      const { count: completedCount } = await supabase
+      const { count: completedCount, error: countError } = await supabase
         .from('golf_rounds')
         .select('id', { count: 'exact', head: true })
         .eq('player_id', playerId)
         .eq('status', 'completed');
+      // A failed count must not fall through to the globally-silenced code.
+      if (countError) {
+        return { success: false, error: 'Failed to fetch round data' };
+      }
       if ((completedCount ?? 0) > 0) {
         return { success: false, error: 'Completed rounds exist but are missing score data' };
       }
@@ -614,11 +618,15 @@ async function getPlayerTrendAnalysisImpl(
       // rounds with a NULL score_to_par, so "fewer than 3 usable rounds" may
       // mean 3+ completed rounds whose scores never populated — a data-quality
       // failure that must not carry the globally-silenced code.
-      const { count: completedCount } = await supabase
+      const { count: completedCount, error: countError } = await supabase
         .from('golf_rounds')
         .select('id', { count: 'exact', head: true })
         .eq('player_id', playerId)
         .eq('status', 'completed');
+      // A failed count must not fall through to the globally-silenced code.
+      if (countError) {
+        return { success: false, error: 'Failed to fetch round data' };
+      }
       if ((completedCount ?? 0) >= 3) {
         return { success: false, error: 'Completed rounds exist but lack score data for trend analysis' };
       }
@@ -1061,11 +1069,15 @@ async function getPlayerWhatIfImpl(
       // Mirror the trend-analysis guard: the query above drops NULL
       // score_to_par rounds, so only a true shortage of completed rounds may
       // carry the globally-silenced code.
-      const { count: completedCount } = await supabase
+      const { count: completedCount, error: countError } = await supabase
         .from('golf_rounds')
         .select('id', { count: 'exact', head: true })
         .eq('player_id', playerId)
         .eq('status', 'completed');
+      // A failed count must not fall through to the globally-silenced code.
+      if (countError) {
+        return { success: false, error: 'Failed to fetch scoring data' };
+      }
       if ((completedCount ?? 0) >= 3) {
         return { success: false, error: 'Completed rounds exist but lack score data for scenario analysis' };
       }
