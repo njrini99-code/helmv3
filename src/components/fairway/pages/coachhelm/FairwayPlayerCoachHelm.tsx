@@ -630,13 +630,17 @@ export function FairwayPlayerCoachHelm({
                 profileData == null &&
                 trendData == null ? (
                   <Surface padding="md" className="mb-6">
+                    {/* Priority: the profile code is ALL-TIME ("no rounds yet")
+                        while the shot-context code is period-scoped — for a
+                        brand-new player the all-time verdict must win, or the
+                        first thing they read is "widen the date range". */}
                     <InsufficientData
                       title={
-                        expectedEmptyStateCopy(v3EmptyCodes.shots ?? v3EmptyCodes.profile)?.title ??
+                        expectedEmptyStateCopy(v3EmptyCodes.profile ?? v3EmptyCodes.shots)?.title ??
                         'Not enough rounds yet'
                       }
                       description={
-                        expectedEmptyStateCopy(v3EmptyCodes.shots ?? v3EmptyCodes.profile)
+                        expectedEmptyStateCopy(v3EmptyCodes.profile ?? v3EmptyCodes.shots)
                           ?.description ??
                         'Log a round and your driving, greens, and putting will fill in here.'
                       }
