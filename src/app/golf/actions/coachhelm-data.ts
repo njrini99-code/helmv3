@@ -610,6 +610,18 @@ async function getPlayerTrendAnalysisImpl(
     }
 
     if (!roundsData || roundsData.length < 3) {
+      // Same ambiguity as getPlayerProfile: the main query drops completed
+      // rounds with a NULL score_to_par, so "fewer than 3 usable rounds" may
+      // mean 3+ completed rounds whose scores never populated — a data-quality
+      // failure that must not carry the globally-silenced code.
+      const { count: completedCount } = await supabase
+        .from('golf_rounds')
+        .select('id', { count: 'exact', head: true })
+        .eq('player_id', playerId)
+        .eq('status', 'completed');
+      if ((completedCount ?? 0) >= 3) {
+        return { success: false, error: 'Completed rounds exist but lack score data for trend analysis' };
+      }
       return { success: false, error: 'Need at least 3 completed rounds for trend analysis', code: 'insufficient_rounds' };
     }
 
@@ -1046,6 +1058,17 @@ async function getPlayerWhatIfImpl(
     const scores = (roundsData ?? []).map((r) => r.score_to_par ?? 0);
 
     if (scores.length < 3) {
+      // Mirror the trend-analysis guard: the query above drops NULL
+      // score_to_par rounds, so only a true shortage of completed rounds may
+      // carry the globally-silenced code.
+      const { count: completedCount } = await supabase
+        .from('golf_rounds')
+        .select('id', { count: 'exact', head: true })
+        .eq('player_id', playerId)
+        .eq('status', 'completed');
+      if ((completedCount ?? 0) >= 3) {
+        return { success: false, error: 'Completed rounds exist but lack score data for scenario analysis' };
+      }
       return { success: false, error: 'Need at least 3 completed rounds for scenario analysis', code: 'insufficient_rounds' };
     }
 
