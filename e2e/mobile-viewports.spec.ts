@@ -94,8 +94,12 @@ async function expectNoClippedControls(page: Page, route: string): Promise<void>
   expect.soft(clipped, `${route}: header/nav controls clipped at viewport edge`).toEqual([]);
 }
 
-async function expectNoBottomNavCollision(page: Page, route: string): Promise<void> {
-  const collisions = await page.evaluate(() => {
+async function expectNoBottomNavCollision(
+  page: Page,
+  route: string,
+  opts: { expectBottomNav?: boolean } = {},
+): Promise<void> {
+  const result = await page.evaluate(() => {
     const fixedEls: Element[] = [];
     for (const el of Array.from(document.body.querySelectorAll('*'))) {
       const style = getComputedStyle(el);
@@ -105,12 +109,21 @@ async function expectNoBottomNavCollision(page: Page, route: string): Promise<vo
       if (r.width === 0 || r.height === 0) continue;
       fixedEls.push(el);
     }
+    // A bottom nav is either semantically marked (nav / role=navigation) OR
+    // merely tab-bar SHAPED: bottom-pinned, near-full-width, with 2+
+    // interactive children. The shape fallback keeps this check alive if the
+    // app shell ever renders the bar as a plain fixed wrapper.
     const bottomNav = fixedEls.find((el) => {
-      const isNav = el.tagName === 'NAV' || el.getAttribute('role') === 'navigation' || el.querySelector('nav') !== null;
       const r = el.getBoundingClientRect();
-      return isNav && r.top > window.innerHeight - 140 && r.width > window.innerWidth * 0.6;
+      const bottomPinned = r.top > window.innerHeight - 140 && r.bottom >= window.innerHeight - 40;
+      const wide = r.width > window.innerWidth * 0.6;
+      if (!bottomPinned || !wide) return false;
+      const semantic =
+        el.tagName === 'NAV' || el.getAttribute('role') === 'navigation' || el.querySelector('nav') !== null;
+      const tabBarShaped = el.querySelectorAll('a, button, [role="button"], [role="tab"]').length >= 2;
+      return semantic || tabBarShaped;
     });
-    if (!bottomNav) return [];
+    if (!bottomNav) return { found: false, offenders: [] as string[] };
     const navRect = bottomNav.getBoundingClientRect();
     const offenders: string[] = [];
     for (const el of fixedEls) {
@@ -125,16 +138,28 @@ async function expectNoBottomNavCollision(page: Page, route: string): Promise<vo
         offenders.push(`"${label}" overlaps bottom nav by ${Math.round(overlapX)}×${Math.round(overlapY)}px`);
       }
     }
-    return offenders;
+    return { found: true, offenders };
   });
-  expect.soft(collisions, `${route}: fixed element collides with bottom navigation`).toEqual([]);
+  if (opts.expectBottomNav) {
+    // Authenticated dashboard surfaces carry a bottom nav at phone widths
+    // (docs/MOBILE_DOCTRINE.md). Without this assertion, a missed/renamed
+    // bottom nav would silently skip the collision check entirely.
+    expect
+      .soft(result.found, `${route}: no bottom navigation found at phone width (expected per MOBILE_DOCTRINE)`)
+      .toBe(true);
+  }
+  expect.soft(result.offenders, `${route}: fixed element collides with bottom navigation`).toEqual([]);
 }
 
-async function expectMobileFit(page: Page, route: string): Promise<void> {
+async function expectMobileFit(
+  page: Page,
+  route: string,
+  opts: { expectBottomNav?: boolean } = {},
+): Promise<void> {
   await gotoSettled(page, route);
   await expectNoHorizontalPan(page, route);
   await expectNoClippedControls(page, route);
-  await expectNoBottomNavCollision(page, route);
+  await expectNoBottomNavCollision(page, route, opts);
 }
 
 for (const viewport of VIEWPORTS) {
@@ -151,7 +176,7 @@ for (const viewport of VIEWPORTS) {
     test.use({ viewport });
     for (const route of COACH_ROUTES) {
       test(`${route} fits ${viewport.width}px (coach)`, async ({ page }) => {
-        await expectMobileFit(page, route);
+        await expectMobileFit(page, route, { expectBottomNav: true });
         expect(page.url(), `expected ${route} to render without bouncing to /login`).not.toContain('/login');
       });
     }
@@ -161,7 +186,7 @@ for (const viewport of VIEWPORTS) {
     test.use({ viewport });
     for (const route of PLAYER_ROUTES) {
       test(`${route} fits ${viewport.width}px (player)`, async ({ page }) => {
-        await expectMobileFit(page, route);
+        await expectMobileFit(page, route, { expectBottomNav: true });
         expect(page.url(), `expected ${route} to render without bouncing to /login`).not.toContain('/login');
       });
     }
