@@ -51,9 +51,15 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
  */
 const EXPECTED_EMPTY_STATE_CODES: ReadonlySet<string> = new Set([
   'engine_no_recent_rounds',
-  // getPlayerShotAnalytics: player has no completed rounds in the selected
-  // lookback window — the analytics page's normal brand-new-player state.
+  // getPlayerShotAnalytics / getPlayerShotContext: player has no completed
+  // rounds in the selected lookback window — the analytics/CoachHelm pages'
+  // normal brand-new-player state.
   'no_rounds_in_period',
+  // getPlayerProfile (coachhelm-data): player has no completed rounds at all.
+  'no_completed_rounds',
+  // getPlayerTrendAnalysis / what-if scenarios: fewer than the 3 completed
+  // rounds those analyses mathematically require.
+  'insufficient_rounds',
 ]);
 
 export function extractActionSoftFailure(

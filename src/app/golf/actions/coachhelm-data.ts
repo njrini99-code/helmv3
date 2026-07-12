@@ -101,6 +101,12 @@ interface ActionSuccess<T> {
 interface ActionError {
   success: false;
   error: string;
+  /**
+   * Stable machine code for the soft-failure observer (observe-action-result):
+   * expected empty states carry a code from EXPECTED_EMPTY_STATE_CODES so a
+   * brand-new player browsing CoachHelm doesn't register as a prod error.
+   */
+  code?: string;
 }
 
 type ActionResult<T> = ActionSuccess<T> | ActionError;
@@ -291,7 +297,7 @@ async function getPlayerProfileImpl(
     }
 
     if (!roundsData || roundsData.length === 0) {
-      return { success: false, error: 'No completed rounds found for this player' };
+      return { success: false, error: 'No completed rounds found for this player', code: 'no_completed_rounds' };
     }
 
     // Build baseline from round data
@@ -591,7 +597,7 @@ async function getPlayerTrendAnalysisImpl(
     }
 
     if (!roundsData || roundsData.length < 3) {
-      return { success: false, error: 'Need at least 3 completed rounds for trend analysis' };
+      return { success: false, error: 'Need at least 3 completed rounds for trend analysis', code: 'insufficient_rounds' };
     }
 
     // Extract score_to_par values (chronological, oldest first)
@@ -714,7 +720,7 @@ async function getPlayerShotContextImpl(
     }
 
     if (!roundsData || roundsData.length === 0) {
-      return { success: false, error: 'No completed rounds found in the specified period' };
+      return { success: false, error: 'No completed rounds found in the specified period', code: 'no_rounds_in_period' };
     }
 
     const roundIds = roundsData.map((r) => r.id);
@@ -1027,7 +1033,7 @@ async function getPlayerWhatIfImpl(
     const scores = (roundsData ?? []).map((r) => r.score_to_par ?? 0);
 
     if (scores.length < 3) {
-      return { success: false, error: 'Need at least 3 completed rounds for scenario analysis' };
+      return { success: false, error: 'Need at least 3 completed rounds for scenario analysis', code: 'insufficient_rounds' };
     }
 
     const mean = scores.reduce((s, v) => s + v, 0) / scores.length;
