@@ -101,6 +101,12 @@ interface ActionSuccess<T> {
 interface ActionError {
   success: false;
   error: string;
+  /**
+   * Stable machine code for the soft-failure observer (observe-action-result):
+   * expected empty states carry a code from EXPECTED_EMPTY_STATE_CODES so a
+   * brand-new player browsing CoachHelm doesn't register as a prod error.
+   */
+  code?: string;
 }
 
 type ActionResult<T> = ActionSuccess<T> | ActionError;
@@ -291,7 +297,24 @@ async function getPlayerProfileImpl(
     }
 
     if (!roundsData || roundsData.length === 0) {
-      return { success: false, error: 'No completed rounds found for this player' };
+      // The main query filters out completed rounds with a NULL total_score,
+      // so an empty result is ambiguous: brand-new player (expected empty
+      // state) vs. completed rounds that all lack scores (data-quality
+      // problem). Only the former may carry the globally-silenced
+      // `no_completed_rounds` code — see EXPECTED_EMPTY_STATE_CODES contract.
+      const { count: completedCount, error: countError } = await supabase
+        .from('golf_rounds')
+        .select('id', { count: 'exact', head: true })
+        .eq('player_id', playerId)
+        .eq('status', 'completed');
+      // A failed count must not fall through to the globally-silenced code.
+      if (countError) {
+        return { success: false, error: 'Failed to fetch round data' };
+      }
+      if ((completedCount ?? 0) > 0) {
+        return { success: false, error: 'Completed rounds exist but are missing score data' };
+      }
+      return { success: false, error: 'No completed rounds found for this player', code: 'no_completed_rounds' };
     }
 
     // Build baseline from round data
@@ -591,7 +614,23 @@ async function getPlayerTrendAnalysisImpl(
     }
 
     if (!roundsData || roundsData.length < 3) {
-      return { success: false, error: 'Need at least 3 completed rounds for trend analysis' };
+      // Same ambiguity as getPlayerProfile: the main query drops completed
+      // rounds with a NULL score_to_par, so "fewer than 3 usable rounds" may
+      // mean 3+ completed rounds whose scores never populated — a data-quality
+      // failure that must not carry the globally-silenced code.
+      const { count: completedCount, error: countError } = await supabase
+        .from('golf_rounds')
+        .select('id', { count: 'exact', head: true })
+        .eq('player_id', playerId)
+        .eq('status', 'completed');
+      // A failed count must not fall through to the globally-silenced code.
+      if (countError) {
+        return { success: false, error: 'Failed to fetch round data' };
+      }
+      if ((completedCount ?? 0) >= 3) {
+        return { success: false, error: 'Completed rounds exist but lack score data for trend analysis' };
+      }
+      return { success: false, error: 'Need at least 3 completed rounds for trend analysis', code: 'insufficient_rounds' };
     }
 
     // Extract score_to_par values (chronological, oldest first)
@@ -714,7 +753,7 @@ async function getPlayerShotContextImpl(
     }
 
     if (!roundsData || roundsData.length === 0) {
-      return { success: false, error: 'No completed rounds found in the specified period' };
+      return { success: false, error: 'No completed rounds found in the specified period', code: 'no_rounds_in_period' };
     }
 
     const roundIds = roundsData.map((r) => r.id);
@@ -1027,7 +1066,22 @@ async function getPlayerWhatIfImpl(
     const scores = (roundsData ?? []).map((r) => r.score_to_par ?? 0);
 
     if (scores.length < 3) {
-      return { success: false, error: 'Need at least 3 completed rounds for scenario analysis' };
+      // Mirror the trend-analysis guard: the query above drops NULL
+      // score_to_par rounds, so only a true shortage of completed rounds may
+      // carry the globally-silenced code.
+      const { count: completedCount, error: countError } = await supabase
+        .from('golf_rounds')
+        .select('id', { count: 'exact', head: true })
+        .eq('player_id', playerId)
+        .eq('status', 'completed');
+      // A failed count must not fall through to the globally-silenced code.
+      if (countError) {
+        return { success: false, error: 'Failed to fetch scoring data' };
+      }
+      if ((completedCount ?? 0) >= 3) {
+        return { success: false, error: 'Completed rounds exist but lack score data for scenario analysis' };
+      }
+      return { success: false, error: 'Need at least 3 completed rounds for scenario analysis', code: 'insufficient_rounds' };
     }
 
     const mean = scores.reduce((s, v) => s + v, 0) / scores.length;
