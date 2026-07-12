@@ -287,6 +287,31 @@ jobs:
           npm run ui:routes
           npm run routes:hygiene:p0p1
 
+  import-cycles:
+    name: Import-cycle ratchet
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Value-level import cycles typecheck and build cleanly but can crash at
+      # cold runtime (TDZ) — the #803/#804 prod-crash class. Baseline-aware:
+      # fails only on cycles not in .cycles-baseline.json.
+      - name: Check for new runtime import cycles
+        run: npm run check:cycles
+
   all:
     name: all
     if: always()
@@ -308,6 +333,7 @@ jobs:
       - next-build
       - route-hygiene
       - supabase
+      - import-cycles
     steps:
       - name: Fail if any required CI check failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

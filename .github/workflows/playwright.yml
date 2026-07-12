@@ -164,6 +164,21 @@ jobs:
             e2e/baseball-onboarding-smoke.spec.ts \
             e2e/baseball-smoke.spec.ts
 
+      # Mobile viewport regression (blocking) — functional phone-width checks
+      # at 320/390/430px encoding the #799/#806 defect classes: horizontal
+      # page pan, clipped header/nav controls, fixed-element/bottom-nav
+      # collisions. See e2e/mobile-viewports.spec.ts.
+      - name: Run mobile viewport regression (blocking)
+        if: steps.baseball-auth-ready.outputs.ready == 'true'
+        run: |
+          npx playwright test \
+            --project=mobile-public \
+            --project=mobile-coach \
+            --project=mobile-player
+      - name: Run mobile viewport regression (public routes only)
+        if: steps.baseball-auth-ready.outputs.ready != 'true'
+        run: npx playwright test --project=mobile-public
+
       - name: Run Playwright tests
         env:
           PLAYWRIGHT_BASEBALL_SEEDED: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && '1' || '' }}
