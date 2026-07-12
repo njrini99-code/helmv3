@@ -65,6 +65,7 @@ import {
 } from 'lucide-react';
 
 import { fairwayScope, isThemesEnabled } from '@/lib/redesign/flag';
+import { expectedEmptyStateCopy } from '@/lib/view-state/expected-empty-states';
 import {
   Button,
   InsightCard,
@@ -160,6 +161,13 @@ export interface FairwayPlayerCoachHelmProps {
   trendData?: Record<string, any> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   shotData?: Record<string, any> | null;
+  /**
+   * Expected empty-state codes for the V3 panels (null/absent = real failure
+   * or no failure). When a code is present, the InsufficientData surfaces
+   * render the shared registry copy for the ACTUAL reason data is absent —
+   * see src/lib/view-state/expected-empty-states.ts.
+   */
+  v3EmptyCodes?: { profile?: string | null; trend?: string | null; shots?: string | null };
   /** The single highest-impact evidence-backed insight — the hero. */
   topInsight?: EvidenceInsight | null;
   /** The rest of the evidence feed (deduped against the hero below). */
@@ -267,6 +275,7 @@ export function FairwayPlayerCoachHelm({
   profileData,
   trendData,
   shotData,
+  v3EmptyCodes = {},
   topInsight = null,
   secondaryInsights = [],
   standingByMetric = {},
@@ -622,8 +631,15 @@ export function FairwayPlayerCoachHelm({
                 trendData == null ? (
                   <Surface padding="md" className="mb-6">
                     <InsufficientData
-                      title="Not enough rounds yet"
-                      description="Log a round and your driving, greens, and putting will fill in here."
+                      title={
+                        expectedEmptyStateCopy(v3EmptyCodes.shots ?? v3EmptyCodes.profile)?.title ??
+                        'Not enough rounds yet'
+                      }
+                      description={
+                        expectedEmptyStateCopy(v3EmptyCodes.shots ?? v3EmptyCodes.profile)
+                          ?.description ??
+                        'Log a round and your driving, greens, and putting will fill in here.'
+                      }
                       unit="rounds"
                       current={shot?.roundsAnalyzed ?? 0}
                       required={OVERVIEW_MIN_ROUNDS}
@@ -643,8 +659,11 @@ export function FairwayPlayerCoachHelm({
                   ) : (
                     <Surface padding="md">
                       <InsufficientData
-                        title="Game profile warming up"
-                        description="Your composite rating builds off the rounds you log — a few more and it fills in."
+                        title={expectedEmptyStateCopy(v3EmptyCodes.profile)?.title ?? 'Game profile warming up'}
+                        description={
+                          expectedEmptyStateCopy(v3EmptyCodes.profile)?.description ??
+                          'Your composite rating builds off the rounds you log — a few more and it fills in.'
+                        }
                         unit="rounds"
                       />
                     </Surface>
@@ -658,9 +677,13 @@ export function FairwayPlayerCoachHelm({
                   ) : (
                     <Surface padding="md">
                       <InsufficientData
-                        title="Trends warming up"
-                        description="Log a couple more rounds and your performance trend lines fill in."
+                        title={expectedEmptyStateCopy(v3EmptyCodes.trend)?.title ?? 'Trends warming up'}
+                        description={
+                          expectedEmptyStateCopy(v3EmptyCodes.trend)?.description ??
+                          'Log a couple more rounds and your performance trend lines fill in.'
+                        }
                         unit="rounds"
+                        required={expectedEmptyStateCopy(v3EmptyCodes.trend)?.required}
                       />
                     </Surface>
                   )}
