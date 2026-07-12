@@ -73,6 +73,31 @@ describe('observe-action-result', () => {
     expect(isExpectedEmptyStateCode(null)).toBe(false);
   });
 
+  it('classifies the coachhelm-data empty-state codes as expected empty states', () => {
+    expect(isExpectedEmptyStateCode('no_rounds_in_period')).toBe(true);
+    expect(isExpectedEmptyStateCode('no_completed_rounds')).toBe(true);
+    expect(isExpectedEmptyStateCode('insufficient_rounds')).toBe(true);
+  });
+
+  it.each([
+    ['no_rounds_in_period', 'No completed rounds found in the specified period'],
+    ['no_completed_rounds', 'No completed rounds found for this player'],
+    ['insufficient_rounds', 'Need at least 3 completed rounds for trend analysis'],
+  ])('logs %s via logServerEvent at info severity with skipSentry', (code, error) => {
+    observeActionSoftFailure(
+      { success: false, error, code },
+      { action: 'getPlayerProfile', sport: 'golf', feature: 'intelligence_dashboard', source: 'server_action' },
+    );
+
+    expect(mocks.logServerError).not.toHaveBeenCalled();
+    expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
+    const infoCall = mocks.logServerEvent.mock.calls[0] as
+      | [string, Record<string, unknown> | undefined, 'info' | 'warning' | 'error' | 'critical']
+      | undefined;
+    expect(infoCall?.[2]).toBe('info');
+    expect(infoCall?.[1]).toMatchObject({ skipSentry: true });
+  });
+
   it('logs unexpected soft failures at error severity', () => {
     observeActionSoftFailure(
       { success: false, error: 'Could not save document' },

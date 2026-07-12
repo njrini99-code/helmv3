@@ -297,6 +297,19 @@ async function getPlayerProfileImpl(
     }
 
     if (!roundsData || roundsData.length === 0) {
+      // The main query filters out completed rounds with a NULL total_score,
+      // so an empty result is ambiguous: brand-new player (expected empty
+      // state) vs. completed rounds that all lack scores (data-quality
+      // problem). Only the former may carry the globally-silenced
+      // `no_completed_rounds` code — see EXPECTED_EMPTY_STATE_CODES contract.
+      const { count: completedCount } = await supabase
+        .from('golf_rounds')
+        .select('id', { count: 'exact', head: true })
+        .eq('player_id', playerId)
+        .eq('status', 'completed');
+      if ((completedCount ?? 0) > 0) {
+        return { success: false, error: 'Completed rounds exist but are missing score data' };
+      }
       return { success: false, error: 'No completed rounds found for this player', code: 'no_completed_rounds' };
     }
 
