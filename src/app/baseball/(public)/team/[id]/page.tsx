@@ -439,7 +439,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Team Header */}
             <PaperCard registrationTick className="p-8">
-              <div className="flex items-start gap-6">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-6">
                 {org?.logo_url ? (
                   <Image
                     src={org.logo_url}
@@ -454,7 +454,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                     <IconBuilding size={40} className="text-grade-plus" />
                   </div>
                 )}
-                <div className="flex-1">
+                <div className="w-full min-w-0 flex-1">
                   <Masthead
                     given={mastheadGiven}
                     surname={programName.surname}
