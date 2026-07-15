@@ -122,7 +122,8 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     path: 'src/app/baseball/actions/operational-signals.ts',
     group: 'server-action',
     status: 'pending migration',
-    note: 'Reads baseball_player_stats game-type and season-type rows to derive operational rule inputs.',
+    note:
+      '#379 Phase 2: loadPlayerHittingSpans\'s season/career OPS baseline now goes through the shared legacy-flat adapter (legacy-stat-adapters.ts) — box-score-era baseball_player_season_stats preferred, legacy baseball_player_aggregates as fallback — instead of a baseball_player_stats stat_type=\'season\' query no writer in this codebase has ever produced (that lookup always returned [], so the cold-streak rule could never fire; now fixed). Still grandfathered: the adapter needs the raw legacy aggregates row fed in as fallback input, and the "recent N games" rolling window + loadGameFacts\'s official-stats existence check still read baseball_player_stats game-type rows directly (no canonical per-game rolling-window primitive exists yet to replace them).',
   },
   {
     path: 'src/app/baseball/actions/practice-effectiveness.ts',
@@ -328,6 +329,13 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     status: 'pending migration',
     note:
       'Regression coverage for PR #664 (roster-scoped playerId verification + honest failed-upload status) on uploadStatsCSV in stats.ts, an already-grandfathered consumer above. Uses a table-aware Supabase recorder that inserts into baseball_player_stats and upserts baseball_player_aggregates to mirror that production write path — mirrors imports-registry.test.ts above; production reference is the server-action entry for stats.ts, not a new one.',
+  },
+  {
+    path: 'src/app/baseball/actions/__tests__/operational-signals-cold-streak.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      '#379 Phase 2 regression coverage, exercised through the real runOperationalSignalDetection action (operational-signals.ts, an already-grandfathered consumer above) — pins the player_cold_streak rule\'s season-baseline fix (box-score-era baseball_player_season_stats preferred, legacy baseball_player_aggregates as fallback) against the dead stat_type=\'season\' query it replaced. Fixture rows reference both deprecated-layer table names as fake-client seed keys, not a new production read; production reference is operational-signals.ts, not a new one.',
   },
   {
     path: 'src/app/baseball/actions/__tests__/practice-effectiveness.test.ts',

@@ -639,6 +639,21 @@ export async function reprocessUpload(
  * SECURITY: Requires can_manage_stats on the target team, enforced
  * server-side by withBaseballAction (see recalculatePlayerAggregatesAction
  * below).
+ *
+ * #379 Phase 2 status: this derivation stays a raw legacy-row calculator
+ * (baseball_player_stats -> baseball_player_aggregates) rather than moving
+ * behind src/lib/baseball/read-models/legacy-stat-adapters.ts. The adapter
+ * reconciles two ALREADY-COMPUTED sources (a box-score/season row vs. a
+ * legacy aggregate row) for READERS; it has no place to plug in a raw-row ->
+ * aggregate calculator like this one. More importantly, roster.ts,
+ * command-center.ts, and player-today.ts/player-snapshot-cards.ts/
+ * player-passport.ts (see stat-layer-manifest.ts) still read
+ * baseball_player_aggregates directly and have not yet migrated to a
+ * read-model that would degrade gracefully without it — retiring this write
+ * path now would regress those surfaces from "shows real numbers" to "shows
+ * nothing" for every team whose only stat history is legacy CSV uploads.
+ * Revisit once those read-model migrations land (see the #379 design's
+ * chunk sequencing).
  */
 const recalculatePlayerAggregatesAction = withBaseballAction(
   'recalculatePlayerAggregates',
