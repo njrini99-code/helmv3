@@ -25,6 +25,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from './_internal';
 import { fwHaptic } from '@/lib/fairway/haptics';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 
 export interface SegmentedOption<T extends string = string> {
   value: T;
@@ -78,9 +79,17 @@ export function Segmented<T extends string = string>({
   const reduceMotion = useReducedMotion();
   // Unique layoutId so multiple Segmented instances on one page don't share a pill.
   const pillId = useId();
+  // Graceful narrow-screen behavior: when the segments' intrinsic width
+  // exceeds the available track width (e.g. a 4-option switcher on a 320px
+  // phone), the track scrolls internally instead of bleeding past its parent
+  // (previously silently clipped by the app's mobile `overflow-x: clip`
+  // guard — see globals.css). `fadeStyle` is `{}` when nothing overflows, so
+  // desktop rendering, where every segment already fits, is unaffected.
+  const { ref: scrollFadeRef, fadeStyle } = useScrollFade<HTMLDivElement>('x');
 
   return (
     <ToggleGroup.Root
+      ref={scrollFadeRef}
       type="single"
       value={value}
       // Radix passes "" when the active item is toggled off; ignore that to keep
@@ -93,8 +102,10 @@ export function Segmented<T extends string = string>({
       }}
       aria-label={aria['aria-label']}
       data-slot="fw-segmented"
+      style={fadeStyle}
       className={cn(
-        'inline-flex items-center rounded-fw-sm bg-surface-sunken',
+        'inline-flex max-w-full items-center overflow-x-auto rounded-fw-sm bg-surface-sunken',
+        '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         'border border-border-subtle',
         sizeTrack[size],
         fullWidth && 'flex w-full',

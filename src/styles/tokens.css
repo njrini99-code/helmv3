@@ -231,6 +231,18 @@
    * Wave 1+ will sweep arbitrary z-[N] callsites onto these tiers.
    * Use the `z-base` / `z-raised` / `z-overlay` / `z-modal` /
    * `z-toast` / `z-toolbar` / `z-tooltip` Tailwind utilities.
+   *
+   * NOTE: a SECOND, differently-numbered z-index ladder also exists —
+   * --fw-z-* in src/styles/design-tokens.css (mirrored as the FW_Z object
+   * in src/components/fairway/overlays/_shared.ts, consumed via arbitrary
+   * `z-[var(--fw-z-*)]` values by FairwayTopBar/FairwayBottomNav/Sheet/
+   * ModalShell). Same tier NAMES ("modal", "overlay", ...), DIFFERENT
+   * numbers (e.g. "modal" is 30 here, 50 there) — a `z-modal` utility from
+   * THIS ladder does not outrank an open Sheet/ModalShell from the other
+   * one. Known footgun; unifying the two is a tracked follow-up, not done
+   * here. Until then, anything that must stack against the sticky app
+   * chrome (top bar / bottom nav / sheets / modals) should key off the
+   * --fw-z-* ladder instead of this one.
    * ============================================================ */
 
   --z-base:    0;

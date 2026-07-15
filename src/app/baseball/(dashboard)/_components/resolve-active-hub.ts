@@ -204,6 +204,11 @@ export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null
   if (role === 'coach') {
     visibleTabs = filterHubTabsByProgramType(visibleTabs, programType);
   }
-  if (visibleTabs.length === 0) return null;
+  // A hub whose visible-tab list resolves to 0 OR exactly 1 tab renders no
+  // sub-nav strip — a single, permanently-active, un-navigable tab exists
+  // purely for its own sake (e.g. the player Stats hub / coach Academics hub,
+  // both single-surface today). Falls back to the plain condensed top-bar
+  // title, same as a flat top-level route with no hub at all.
+  if (visibleTabs.length < 2) return null;
   return { id, ariaLabel, tabs: visibleTabs };
 }

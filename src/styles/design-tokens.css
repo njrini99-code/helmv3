@@ -191,7 +191,18 @@
   --fw-blur-strong: 36px;  /* command palette / modal sheet / raised instrument */
   --fw-blur-mobile: 16px;  /* low-power downshift (<=768px) */
 
-  /* ---- Z-index contract (one ladder, app-wide) ---- */
+  /* ---- Z-index contract (one ladder, app-wide) ----
+     NOTE: a SECOND, differently-numbered z-index ladder also exists —
+     --z-base/--z-raised/--z-overlay/--z-modal/--z-toast/--z-toolbar/
+     --z-tooltip in src/styles/tokens.css (exposed as Tailwind's `z-modal`,
+     `z-overlay`, etc. utility classes). The two vocabularies share tier
+     NAMES ("modal", "overlay", ...) but NOT the same numbers (e.g. "modal"
+     is 50 here, 30 there) — do not assume a `z-modal` utility class means
+     this ladder's --fw-z-modal. This is a known footgun (unification is a
+     tracked follow-up); until unified, sticky/overlay chrome that must stack
+     correctly against FairwayTopBar/FairwayBottomNav/Sheet/ModalShell should
+     key off THIS ladder (--fw-z-*, mirrored in overlays/_shared.ts's FW_Z),
+     which is what those components already use. ---- */
   --fw-z-base: 0; --fw-z-sticky: 10; --fw-z-nav: 20; --fw-z-dropdown: 30;
   --fw-z-overlay: 40; --fw-z-modal: 50; --fw-z-toast: 60; --fw-z-command: 70;
 

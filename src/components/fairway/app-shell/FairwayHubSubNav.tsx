@@ -142,6 +142,14 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
                 className={cn(
                   'group relative inline-flex select-none items-center gap-2 whitespace-nowrap rounded-fw-sm px-3.5 pb-3 pt-2.5',
                   'font-fw-sans text-label font-medium',
+                  // 44px tap-target floor (WCAG 2.2 AA 2.5.8) without growing
+                  // the visible row — an invisible hit-slop pseudo-element
+                  // expands the clickable box vertically only (this strip's
+                  // real height feeds LargeTitleContext's SUB_NAV_OFFSET_PX
+                  // math, so the VISIBLE row must stay exactly as tall as it
+                  // renders today). Mirrors CLOSE_BUTTON_CLASS's hit-slop
+                  // pattern in overlays/_shared.ts.
+                  "before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
                   fwTransition,
                   fwFocusRing,
                   isActive ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary',
