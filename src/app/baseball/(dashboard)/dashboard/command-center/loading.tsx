@@ -30,8 +30,11 @@ export default function CommandCenterLoading() {
           <Skeleton variant="text" width="55%" height={56} className="max-w-lg" />
         </div>
 
-        {/* Masthead contents strip: 4 KPI figures on ruled baselines */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Masthead contents strip: 4 KPI figures on ruled baselines. Mirrors
+            StatStrip's real GRID_BASE[2] + GRID_COLS[4] output byte-for-byte
+            (2x2 grid below `sm`, not a single stacked column) so the skeleton
+            doesn't visibly reflow when the real KPI strip paints in. */}
+        <div className="grid grid-cols-2 gap-x-5 gap-y-6 sm:gap-x-8 sm:gap-y-7 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-1">
               <Skeleton variant="text" width="55%" height={11} />
