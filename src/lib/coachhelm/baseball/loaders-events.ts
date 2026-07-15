@@ -414,6 +414,7 @@ export function loadPitchingEventMetrics(
 export function loadCatchingMetrics(
   catcherId: string,
   catching: CatchingEventRow[],
+  nowIso: string = new Date().toISOString(),
 ): Partial<Record<BaseballMetricId, LoadedMetric>> {
   const out: Partial<Record<BaseballMetricId, LoadedMetric>> = {};
   const mine = catching.filter((c) => c.catcher_id === catcherId);
@@ -422,7 +423,7 @@ export function loadCatchingMetrics(
   // Recent innings caught (workload, neutral_threshold) — rolling 7-day sum of
   // the innings_caught column where present (game_call/receive grain). Honest:
   // only loads when a non-zero innings figure exists in the window.
-  const cutoff = Date.now() - 7 * 86400_000;
+  const cutoff = Date.parse(nowIso) - 7 * 86400_000;
   const recent = mine.filter((c) => c.measured_at && Date.parse(c.measured_at) >= cutoff);
   const recentInnings = recent.reduce((s, c) => s + num(c.innings_caught), 0);
   if (recentInnings > 0) {
@@ -642,13 +643,14 @@ export interface EventLoaderInputs {
 export function mergeEventPlayerMetrics(
   base: LoadedPlayerMetrics,
   events: EventLoaderInputs,
+  nowIso: string = new Date().toISOString(),
 ): LoadedPlayerMetrics {
   return {
     ...base,
     metrics: {
       ...loadHittingEventMetrics(base.playerId, events.pitchEvents, events.battedBallEvents),
       ...loadPitchingEventMetrics(base.playerId, events.pitchEvents),
-      ...loadCatchingMetrics(base.playerId, events.catchingEvents),
+      ...loadCatchingMetrics(base.playerId, events.catchingEvents, nowIso),
       ...loadDefenseMetrics(base.playerId, events.fieldingEvents),
       ...loadBaserunningMetrics(base.playerId, events.baserunningEvents),
       // existing (box-score + V10) metrics win — never overwritten.

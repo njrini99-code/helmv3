@@ -48,7 +48,8 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       // baseball-smoke.spec.ts requires an authenticated storageState from
       // the `setup` project below — it must not also run anonymously here.
-      testIgnore: /baseball-smoke\.spec\.ts/,
+      // mobile-viewports.spec.ts runs only under the mobile-* projects.
+      testIgnore: /baseball-smoke\.spec\.ts|mobile-viewports\.spec\.ts/,
     },
 
     // BaseballHelm mandatory smoke (#372) — durable per-role auth. `setup`
@@ -82,6 +83,43 @@ export default defineConfig({
       },
     },
 
+    // Mobile viewport regression suite (e2e/mobile-viewports.spec.ts) —
+    // functional phone-width checks (no horizontal pan, no clipped controls,
+    // no bottom-nav collisions) at 320/390/430px. The spec sets the exact
+    // viewport per describe block; these projects supply auth context.
+    {
+      name: 'mobile-public',
+      testMatch: /mobile-viewports\.spec\.ts/,
+      grep: /@public/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-coach',
+      testMatch: /mobile-viewports\.spec\.ts/,
+      grep: /@coach/,
+      dependencies: ['setup'],
+      use: {
+        // Plain viewport, NOT a mobile device descriptor: isMobile emulation
+        // zooms out on overflow (innerWidth grows with content), which defeats
+        // the horizontal-pan and clipping geometry checks.
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/baseball-coach.json',
+      },
+    },
+    {
+      name: 'mobile-player',
+      testMatch: /mobile-viewports\.spec\.ts/,
+      grep: /@player/,
+      dependencies: ['setup'],
+      use: {
+        // Plain viewport, NOT a mobile device descriptor: isMobile emulation
+        // zooms out on overflow (innerWidth grows with content), which defeats
+        // the horizontal-pan and clipping geometry checks.
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/baseball-player.json',
+      },
+    },
+
     // Uncomment to test on other browsers
     // {
     //   name: 'firefox',
@@ -92,19 +130,17 @@ export default defineConfig({
     //   name: 'webkit',
     //   use: { ...devices['Desktop Safari'] },
     // },
-
-    /* Test against mobile viewports */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  /* Run your local dev server before starting the tests. Skipped when
+   * PLAYWRIGHT_BASE_URL points at an external deployment — there is nothing
+   * to boot locally in that case. */
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      },
 });

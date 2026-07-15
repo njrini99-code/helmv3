@@ -91,9 +91,52 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # Started once and shared (via PLAYWRIGHT_BASE_URL below) by both test
+      # steps that follow. Without this, each step's own `npx playwright test`
+      # would boot its own webServer on port 3000 — the accessibility step's
+      # server torn down right before the mobile step tries to bind the same
+      # port, which can fail with a startup timeout/port-in-use error if the
+      # port hasn't been released yet, independent of either step's own
+      # test result.
+      - name: Start dev server
+        run: |
+          set -euo pipefail
+          npm run dev > /tmp/dev-server.log 2>&1 &
+          echo $! > /tmp/dev-server.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 -o /dev/null; then
+              echo "Dev server ready after ${i} attempt(s)."
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/dev-server.pid)" 2>/dev/null; then
+              echo "::error::Dev server process died during startup"
+              cat /tmp/dev-server.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::Dev server did not become ready within 120s"
+          cat /tmp/dev-server.log
+          exit 1
+
       - name: Run public accessibility smoke
         continue-on-error: true
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
         run: npx playwright test e2e/accessibility.spec.ts --project=chromium --reporter=line
+
+      # Public mobile viewport checks (320/390/430px): no horizontal pan, no
+      # clipped header/nav controls, no bottom-nav collisions. Blocking — these
+      # are pure layout-geometry assertions with no a11y-debt exemptions.
+      # Authenticated mobile coverage runs on main via playwright.yml.
+      - name: Run public mobile viewport checks
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npx playwright test --project=mobile-public --reporter=line
+
+      - name: Stop dev server
+        if: always()
+        run: kill "$(cat /tmp/dev-server.pid)" 2>/dev/null || true
 
       - name: Upload Playwright report
         if: failure()

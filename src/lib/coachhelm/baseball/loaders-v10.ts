@@ -163,8 +163,9 @@ function toMetric(
 function loadReadinessMetrics(
   playerId: string,
   rows: ReadinessRow[],
+  nowIso: string = new Date().toISOString(),
 ): Partial<Record<BaseballMetricId, LoadedMetric>> {
-  const cutoff = Date.now() - 7 * 86400_000;
+  const cutoff = Date.parse(nowIso) - 7 * 86400_000;
   const mine = rows.filter(
     (r) => r.player_id === playerId && r.check_date && Date.parse(r.check_date) >= cutoff,
   );
@@ -216,9 +217,10 @@ function loadLiftMetrics(
   playerId: string,
   sessions: LiftSessionRow[],
   setResults: LiftSetResultRow[],
+  nowIso: string = new Date().toISOString(),
 ): Partial<Record<BaseballMetricId, LoadedMetric>> {
   const out: Partial<Record<BaseballMetricId, LoadedMetric>> = {};
-  const now = Date.now();
+  const now = Date.parse(nowIso);
 
   const mineSessions = sessions.filter(
     (s) =>
@@ -266,12 +268,13 @@ export function mergeV10PlayerMetrics(
   readiness: ReadinessRow[],
   liftSessions: LiftSessionRow[],
   liftSetResults: LiftSetResultRow[],
+  nowIso: string = new Date().toISOString(),
 ): LoadedPlayerMetrics {
   return {
     ...base,
     metrics: {
-      ...loadReadinessMetrics(base.playerId, readiness),
-      ...loadLiftMetrics(base.playerId, liftSessions, liftSetResults),
+      ...loadReadinessMetrics(base.playerId, readiness, nowIso),
+      ...loadLiftMetrics(base.playerId, liftSessions, liftSetResults, nowIso),
       ...base.metrics,
     },
   };
