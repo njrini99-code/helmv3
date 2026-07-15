@@ -61,9 +61,14 @@ import type { VideoCoverageInput } from '@/lib/coachhelm/baseball/generators/v10
 import {
   loadAllPlayerMetrics,
   type BoxScoreRow,
+  type EventDerivedVelocityInput,
   type ScheduleEventRow,
 } from '@/lib/coachhelm/baseball/loaders';
 import { loadEngineStatRows } from '@/lib/baseball/coachhelm/engine-stat-rows';
+import {
+  loadEngineEventRows,
+  buildEventDerivedByPlayer,
+} from '@/lib/baseball/coachhelm/engine-event-derived';
 import {
   mergeV10PlayerMetrics,
   type ReadinessRow,
@@ -313,6 +318,21 @@ export async function runBaseballEngineCore(
   const { data: statRows, error: statsErr } = await loadEngineStatRows(db, teamId, playerIds);
   if (statsErr) return emptyResult({ error: 'Could not load box-score stats.' });
 
+  // #852 residual: event-derived avg/max exit + pitch velocity, per player.
+  // A box-score-migrated player's legacy exit_velocity/pitch_velocity scalar
+  // is dropped alongside their superseded legacy GAME rows (loadEngineStatRows
+  // rule 1) and the canonical box-score tables carry no velocity columns at
+  // all -- without this, those players had NO velocity metric whatsoever. Per
+  // #379 design rule 4, the elite event layer (never a legacy scalar) is the
+  // canonical velocity source. ALL-OR-NOTHING: an event-read failure leaves
+  // eventDerivedByPlayer EMPTY, so every player degrades to their legacy
+  // scalar this run -- never a partial event/legacy blend.
+  const { data: engineEventRows, error: eventRowsErr } = await loadEngineEventRows(db, teamId);
+  const eventDerivedByPlayer: Record<string, EventDerivedVelocityInput> =
+    !eventRowsErr && engineEventRows
+      ? buildEventDerivedByPlayer(playerIds, engineEventRows.pitches, engineEventRows.battedBalls)
+      : {};
+
   const horizonIso = new Date(Date.parse(nowIso) + EVENT_LOOKAHEAD_DAYS * 86400_000).toISOString();
   const { data: eventRows } = await db
     .from('baseball_events')
@@ -544,6 +564,7 @@ export async function runBaseballEngineCore(
     playerIds,
     (statRows ?? []) as BoxScoreRow[],
     nowIso,
+    eventDerivedByPlayer,
   );
   const players = boxScorePlayers.map((p) =>
     mergeEventPlayerMetrics(
