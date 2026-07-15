@@ -89,4 +89,51 @@ describe('Select', () => {
     await user.click(trigger);
     await screen.findByRole('listbox');
   });
+
+  // Regression guard: className used to be forwarded verbatim to BOTH the
+  // wrapper and the trigger button, so a caller passing padding/background
+  // utilities meant for the button (e.g. DiscoverView's compact
+  // `min-h-0 px-3 py-1.5` "Sort:" select, or a Fairway `fwInputCls` recipe
+  // with `bg-*`/`border-*`/`px-*` in it) leaked that styling onto the
+  // wrapper too, adding invisible padding/background around the whole
+  // label + trigger + hint/error stack. Only width/flex-sizing utilities
+  // (needed for the wrapper's flex/grid participation) should reach the
+  // wrapper; visual utilities stay scoped to the button, same as before the
+  // wrapper started receiving className at all.
+  it('does not forward padding/background utilities to the wrapper, only to the trigger button', () => {
+    const { container } = render(
+      <Select
+        options={OPTIONS}
+        placeholder="Pick one"
+        className="text-sm min-h-0 px-3 py-1.5 bg-cream-50"
+      />
+    );
+    const wrapper = container.firstElementChild as HTMLElement;
+    const trigger = screen.getByRole('button', { name: /pick one/i });
+
+    // The button keeps the full visual treatment (compact height/padding,
+    // background) exactly as a consumer expressed it.
+    expect(trigger).toHaveClass('text-sm', 'min-h-0', 'px-3', 'py-1.5', 'bg-cream-50');
+
+    // None of those visual utilities should have leaked onto the wrapper —
+    // it only ever gets `w-full` (default) plus any width/flex-sizing token.
+    expect(wrapper).not.toHaveClass('px-3', 'py-1.5', 'bg-cream-50', 'text-sm', 'min-h-0');
+    expect(wrapper).toHaveClass('w-full');
+  });
+
+  it('forwards a width/flex-sizing token mixed into className to the wrapper, alongside the button', () => {
+    const { container } = render(
+      <Select options={OPTIONS} placeholder="Pick one" className="w-28 shrink-0 text-sm" />
+    );
+    const wrapper = container.firstElementChild as HTMLElement;
+    const trigger = screen.getByRole('button', { name: /pick one/i });
+
+    // Wrapper — the actual flex item in a consumer's row — gets the sizing
+    // tokens so it no longer claims a full-width flex footprint.
+    expect(wrapper).toHaveClass('w-28', 'shrink-0');
+    expect(wrapper).not.toHaveClass('text-sm');
+
+    // Button is unaffected — still gets the full original className.
+    expect(trigger).toHaveClass('w-28', 'shrink-0', 'text-sm');
+  });
 });

@@ -54,6 +54,38 @@ function dropdownRectStyle(rect: DropdownRect): React.CSSProperties {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// The caller's `className` is forwarded to the trigger button in full (as it
+// always was, pre-portal-fix) *and* — as a subset — to the outer wrapper div,
+// which is the actual flex/grid participant in a consumer's row layout. Only
+// this subset goes to the wrapper: utilities describing how much horizontal
+// space the Select occupies (width, min/max-width, flex-basis/grow/shrink).
+// Everything else (padding, background, border-radius, text size, focus
+// rings, etc.) stays scoped to the button only, exactly as before the
+// wrapper started receiving any className at all — otherwise a utility meant
+// for the button's own visual treatment (e.g. DiscoverView's compact
+// `min-h-0 px-3 py-1.5` "Sort:" select, or Fairway's `fwInputCls` recipe)
+// leaks onto the wrapper as unwanted padding/background around the whole
+// label + trigger + hint/error stack. See select.test.tsx for the regression
+// guard.
+// ─────────────────────────────────────────────────────────────────────────────
+const WIDTH_SIZING_PREFIXES = ['w-', 'min-w-', 'max-w-', 'basis-', 'flex-', 'grow-', 'shrink-'];
+const WIDTH_SIZING_EXACT = new Set(['grow', 'shrink']);
+
+function isWidthSizingClass(token: string): boolean {
+  // Strip a responsive/state variant (e.g. `sm:`, `hover:`) before matching.
+  const base = token.includes(':') ? token.slice(token.lastIndexOf(':') + 1) : token;
+  return WIDTH_SIZING_EXACT.has(base) || WIDTH_SIZING_PREFIXES.some((prefix) => base.startsWith(prefix));
+}
+
+function widthSizingClasses(className?: string): string {
+  if (!className) return '';
+  return className
+    .split(/\s+/)
+    .filter((token) => token && isWidthSizingClass(token))
+    .join(' ');
+}
+
 interface SelectProps {
   options: SelectOption[];
   value?: string;
@@ -228,7 +260,7 @@ export function Select({
   };
 
   return (
-    <div className={cn('w-full', className)} ref={containerRef}>
+    <div className={cn('w-full', widthSizingClasses(className))} ref={containerRef}>
       {label && (
         <label htmlFor={triggerId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
@@ -493,7 +525,7 @@ export function MultiSelect({
   };
 
   return (
-    <div className={cn('w-full', className)} ref={containerRef}>
+    <div className={cn('w-full', widthSizingClasses(className))} ref={containerRef}>
       {label && (
         <label htmlFor={triggerId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
