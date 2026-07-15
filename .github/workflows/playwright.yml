@@ -173,6 +173,33 @@ jobs:
             e2e/baseball-smoke.spec.ts \
             e2e/mobile-viewports.spec.ts
 
+      # #373: authenticated route crawler — discovers visible coach/player
+      # nav links from the live DOM and asserts none of them 404/500, bounce
+      # to /login, redirect wrong-sport, render an error boundary, get stuck
+      # on a loading spinner, or render near-blank. Kept as its own step
+      # (separate from the mandatory smoke above) since DOM-driven discovery
+      # and the stuck-spinner/near-blank heuristics are new, unproven surface
+      # area — isolating it here means a flake in this step can't be
+      # confused with the already-proven mandatory smoke failing. This job
+      # is advisory (not a required check), so a real failure here surfaces
+      # without blocking any merge.
+      - name: Run BaseballHelm authenticated route crawler (advisory)
+        if: steps.baseball-auth-ready.outputs.ready == 'true'
+        run: |
+          npx playwright test \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/baseball-route-crawler.spec.ts
+
+      - name: Upload route crawler report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: baseball-route-crawler-report
+          path: test-results/baseball-route-crawler-*-report.json
+          retention-days: 3
+          if-no-files-found: ignore
+
       - name: Run Playwright tests
         env:
           PLAYWRIGHT_BASEBALL_SEEDED: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && '1' || '' }}

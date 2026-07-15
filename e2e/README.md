@@ -332,6 +332,43 @@ correctly denies anonymous visitors). File a follow-up issue referencing
 #372 for full account-creation onboarding coverage if one doesn't already
 exist.
 
+## BaseballHelm authenticated route crawler (#373)
+
+`baseball-route-crawler.spec.ts` runs under the same `baseball-coach` /
+`baseball-player` Playwright projects as the mandatory smoke above — no new
+login mechanism, it reuses the persisted storageState. Unlike the mandatory
+smoke's fixed route list, it **discovers** routes at runtime by querying the
+live rendered DOM for visible `<nav> a[href]` links (main sidebar + any
+hub-subnav strip), so it catches a link that's registered but silently
+fails to render, not just a hardcoded list.
+
+It replaces `scripts/route-crawler-baseball.mjs`, which posted credentials
+to a `/api/auth/login` REST endpoint that never existed in this repo
+(BaseballHelm auth is a client-side Supabase form, not a JSON login API) —
+that script's sign-in always failed and it exited 0 ("no credentials —
+skipping") regardless of whether CI secrets were configured, and it was
+never wired into any workflow.
+
+For each discovered route, `e2e/helpers/route-health.ts` (shared with
+`baseball-smoke.spec.ts`) asserts it isn't a 4xx/5xx, doesn't bounce to
+`/login` (guard bounce), doesn't redirect into `/golf/` (wrong-sport
+redirect), doesn't render a React/Next error boundary, doesn't get stuck on
+a loading spinner, and isn't near-blank after settling. It also best-effort
+discovers any public player/team/program/packet links surfaced on an
+authenticated page and re-checks each (capped at 3) in a fresh,
+unauthenticated context — only routes that are actually linked from real
+data, never guessed IDs.
+
+Each role's results are written to
+`test-results/baseball-route-crawler-{coach,player}-report.json` and
+uploaded as the `baseball-route-crawler-report` CI artifact.
+
+**Not** wired into the #372 hard PR gate (`ci.yml`'s `baseball-auth-smoke`
+job): DOM-driven discovery and the stuck-spinner/near-blank heuristics are
+new, unproven surface area, so it runs as its own step inside
+`playwright.yml`'s advisory `e2e` job for now — promote once it's proven
+stable across several `main` runs.
+
 ## Viewing Test Reports
 
 After running tests, view the HTML report:
