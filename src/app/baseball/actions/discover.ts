@@ -1,6 +1,6 @@
 'use server';
 
-import { withAdminObserved } from '@/lib/admin/observed-action';
+import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { createClient } from '@/lib/supabase/server';
 import type { Organization, Player } from '@/lib/types';
 import { logServerError } from '@/lib/server-error-logger';
@@ -792,26 +792,49 @@ async function getStateCountsImpl(
   }
 }
 
-export const getDiscoverPlayers = withAdminObserved(
+// ============================================================================
+// GUARDED ACTIONS (#394)
+//
+// Discover is deliberately CROSS-TEAM (a coach browses OTHER orgs'/players'
+// pools to recruit from) — every staff coach type may call it, and the
+// results are already server-filtered by coach_type inside each impl above.
+// So: no requiredCapability, no teamFrom (there is no single "target team"),
+// requireActiveContext: false (a coach with no active team membership can
+// still browse Discover — identity here comes from the coach's own
+// baseball_coaches row, resolved inside each impl, not from an active-team
+// context). demoSafe: true — all 4 are read-only, safe for the shared demo
+// coach session.
+//
+// Each impl's body is UNCHANGED: manual auth+coachProfile derivation and the
+// graceful empty-shape early return on no-session/no-profile. The only
+// behavior delta is the wrapper's own unconditional throw-on-no-session (an
+// edge case an authenticated dashboard route shouldn't hit) plus gained
+// Sentry scope / demo-guard / RLS-denial capture — DiscoverClient.tsx already
+// try/catches every call site and falls back to an error state, so this
+// throw (vs. the prior silent empty grid) is a visible-but-handled edge case,
+// not a crash.
+// ============================================================================
+
+export const getDiscoverPlayers = withBaseballAction(
   'getDiscoverPlayers',
-  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
-  getDiscoverPlayersImpl,
+  { featureArea: 'baseball-discover', requireActiveContext: false, demoSafe: true },
+  (_ctx, filters: DiscoverFilters) => getDiscoverPlayersImpl(filters),
 );
 
-export const getDiscoverTeams = withAdminObserved(
+export const getDiscoverTeams = withBaseballAction(
   'getDiscoverTeams',
-  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
-  getDiscoverTeamsImpl,
+  { featureArea: 'baseball-discover', requireActiveContext: false, demoSafe: true },
+  (_ctx, filters: DiscoverFilters) => getDiscoverTeamsImpl(filters),
 );
 
-export const getWatchlistIds = withAdminObserved(
+export const getWatchlistIds = withBaseballAction(
   'getWatchlistIds',
-  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
-  getWatchlistIdsImpl,
+  { featureArea: 'baseball-discover', requireActiveContext: false, demoSafe: true },
+  (_ctx) => getWatchlistIdsImpl(),
 );
 
-export const getStateCounts = withAdminObserved(
+export const getStateCounts = withBaseballAction(
   'getStateCounts',
-  { sport: 'baseball', feature: 'baseball_discover', featureArea: 'baseball-discover' },
-  getStateCountsImpl,
+  { featureArea: 'baseball-discover', requireActiveContext: false, demoSafe: true },
+  (_ctx, mode: 'players' | 'teams') => getStateCountsImpl(mode),
 );

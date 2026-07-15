@@ -154,6 +154,20 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => {}),
   logServerException: vi.fn(async () => {}),
 }));
+// #394: discover.ts's 4 exports now run through the real withBaseballAction
+// wrapper (previously withAdminObserved, which needed neither of these). Both
+// mocks below make the Sentry scope / demo-guard steps of the wrapper inert
+// no-ops so this file continues to test ONLY the P0 privacy filtering, not
+// the guard mechanics — requireActiveContext:false on all 4 actions means
+// '@/lib/baseball/active-context' is never called, so it needs no mock here.
+vi.mock('@sentry/nextjs', () => ({
+  withScope: (fn: (scope: unknown) => unknown) =>
+    fn({ setTag: vi.fn(), setUser: vi.fn(), addBreadcrumb: vi.fn() }),
+}));
+vi.mock('@/lib/demo/baseball-config.server', () => ({
+  isCurrentSessionBaseballDemo: vi.fn(async () => false),
+  isBaseballDemoCoachEmail: vi.fn(() => false),
+}));
 
 import { getDiscoverPlayers, getStateCounts } from '@/app/baseball/actions/discover';
 
