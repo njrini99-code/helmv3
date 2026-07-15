@@ -303,6 +303,7 @@ function stddev(values: number[]): number | undefined {
 export function loadPlayerMetrics(
   playerId: string,
   rows: BoxScoreRow[],
+  nowIso: string = new Date().toISOString(),
 ): LoadedPlayerMetrics {
   const mine = rows.filter((r) => r.player_id === playerId);
   const hitRows = mine.filter(hasHitting);
@@ -449,7 +450,7 @@ export function loadPlayerMetrics(
     }
 
     // ---- Workload (rolling window = last 7 days of GAME pitching) ----
-    const cutoff = Date.now() - 7 * 86400_000;
+    const cutoff = Date.parse(nowIso) - 7 * 86400_000;
     const recent = pitchRows.filter((r) => r.session_date && Date.parse(r.session_date) >= cutoff);
     if (recent.length > 0) {
       const recentPitches = recent.reduce((s, r) => s + num(r.pitches_thrown), 0);
@@ -478,8 +479,9 @@ export function loadPlayerMetrics(
 export function loadAllPlayerMetrics(
   playerIds: string[],
   rows: BoxScoreRow[],
+  nowIso: string = new Date().toISOString(),
 ): LoadedPlayerMetrics[] {
-  return playerIds.map((pid) => loadPlayerMetrics(pid, rows));
+  return playerIds.map((pid) => loadPlayerMetrics(pid, rows, nowIso));
 }
 
 // -----------------------------------------------------------------------------
