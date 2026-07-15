@@ -253,8 +253,13 @@ function CompareContent() {
 
       {/* Add Players Section */}
       <PaperCard className="p-5">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
+        {/* Stacks on phone: search + already-selected chips fighting for the
+            same ~250-290px row at <sm squeezes the search input toward
+            unusable the moment a 3rd/4th player is added. `min-w-0` lets the
+            search column actually shrink to the flex-col row's full width
+            instead of clamping to its content's intrinsic width. */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="min-w-0 flex-1">
             <div className="mb-2 flex items-center justify-between">
               <Eyebrow ink="pursuit">Add Players to Compare</Eyebrow>
               <InkBadge

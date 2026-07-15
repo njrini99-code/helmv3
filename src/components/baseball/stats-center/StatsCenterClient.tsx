@@ -437,7 +437,7 @@ function SegmentedControl<T extends string>({
             onClick={() => onChange(opt.value)}
             haptic="none"
             className={cn(
-              'min-h-0 rounded-md px-3 py-1.5 text-sm font-medium',
+              'min-h-[32px] rounded-md px-3 py-1.5 text-sm font-medium [@media(pointer:coarse)]:min-h-[44px]',
               active
                 ? 'bg-grade-plus text-white shadow-sm hover:bg-grade-plus'
                 : 'text-text-secondary hover:bg-[color:var(--paper-canvas)]',
@@ -725,7 +725,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                   aria-label="Previous season"
                   onClick={() => changeSeason(-1)}
                   haptic="none"
-                  className="min-h-0 rounded-l-md rounded-r-none px-2.5 py-1.5 text-text-secondary"
+                  className="min-h-[32px] rounded-l-md rounded-r-none px-2.5 py-1.5 text-text-secondary [@media(pointer:coarse)]:min-h-[44px]"
                 >
                   −
                 </Button>
@@ -738,7 +738,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                   aria-label="Next season"
                   onClick={() => changeSeason(1)}
                   haptic="none"
-                  className="min-h-0 rounded-r-md rounded-l-none px-2.5 py-1.5 text-text-secondary"
+                  className="min-h-[32px] rounded-r-md rounded-l-none px-2.5 py-1.5 text-text-secondary [@media(pointer:coarse)]:min-h-[44px]"
                 >
                   +
                 </Button>
@@ -756,7 +756,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                 variant="ghost"
                 onClick={clearFilters}
                 haptic="none"
-                className="ml-auto min-h-0 gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-text-tertiary hover:text-text-secondary"
+                className="ml-auto min-h-[32px] gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-text-tertiary hover:text-text-secondary [@media(pointer:coarse)]:min-h-[44px]"
               >
                 <IconX size={14} />
                 Clear
@@ -778,7 +778,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                     onClick={() => togglePosition(pos)}
                     haptic="none"
                     className={cn(
-                      'min-h-0 rounded-full border px-3 py-1 text-sm font-medium',
+                      'min-h-[30px] rounded-full border px-3 py-1 text-sm font-medium [@media(pointer:coarse)]:min-h-[44px]',
                       active
                         ? 'border-grade-plus bg-grade-plus text-white hover:bg-grade-plus'
                         : 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary hover:border-grade-plus/50',

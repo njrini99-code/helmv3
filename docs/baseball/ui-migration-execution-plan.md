@@ -6,6 +6,19 @@
 
 # BaseballHelm — "Living Annual" UI Migration Execution Plan
 
+> **STATUS (2026-07-15, code-verified): EXECUTED.** All 29 surfaces across
+> §4's batch schedule (Batch 0 through Batch H) have landed on
+> `batch/bbh-finish-0714`. Batch H — the owner-cleanup batch this plan
+> gated on "F+G" completing — shipped tonight as PR #820
+> (`PlayerPassportCard.tsx` + dead `layout/header.tsx`/`mobile-menu-button.tsx`
+> deleted, zero real importers verified first). This document is now a
+> **historical execution record**, not an open plan: §3's per-surface specs
+> and §4's batch schedule describe work that already happened. Do not treat
+> any surface below as still queued — `docs/baseball/ui-migration-map.md`
+> carries the current one-line status header; this file is the detailed
+> build log underneath it. `nav-registry.ts`'s 3-lane restructure remains
+> explicitly deferred/owner-gated (§6 — unchanged, still frozen).
+
 **Goal:** migrate EVERY remaining baseball surface onto the Living-Annual kit
 (`src/components/baseball/living-annual/`) so the product reads as one publication.
 A surface is **done** only when it (1) composes from the kit — no bespoke card/header/empty/stat

@@ -735,13 +735,23 @@ export function ImportWizardClient({
           <span className="inline-flex items-center gap-1.5">
             <InkBadge label={shapeMeta.label} tone="team" variant="solid" />
             {/* An icon-only affordance riding beside an InkBadge, not a CTA —
-                pressableClass (not <Button>) per the kit's interaction layer. */}
+                pressableClass (not <Button>/<IconButton>) per the kit's
+                interaction layer. Touch-target growth to 44px is confined to
+                coarse pointers only (`[@media(pointer:coarse)]:`) so the
+                control keeps its compact ~19x19px footprint beside the small
+                InkBadge stamp on desktop/tablet — swapping in IconButton
+                unconditionally grew it to 36px there too, an unintended
+                visual change next to an ~18px badge. */}
             {/* eslint-disable-next-line helm/no-raw-button */}
             <button
               type="button"
               aria-label="Change data shape"
               onClick={() => { setStep('choose'); setError(null); }}
-              className={cn('rounded-full p-1', pressableClass({ ink: 'team' }))}
+              className={cn(
+                'inline-flex items-center justify-center rounded-full p-1',
+                '[@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+                pressableClass({ ink: 'team' }),
+              )}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -1644,7 +1654,7 @@ function IssueGroup({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-4 py-2.5 text-left"
+        className="flex min-h-11 w-full items-center justify-between px-4 py-2.5 text-left"
       >
         <span className="flex items-center gap-2">
           <InkBadge label={`${issues.length} ${issues.length === 1 ? meta.label : meta.plural}`} tone={meta.tone} variant={meta.variant} />
@@ -1877,12 +1887,17 @@ function DuplicateSummary({
           {overwrites.length > 0 && (
             // A plain inline text disclosure toggle, not a CTA — the <Button>
             // primitive's padding/variant would dominate this summary row.
+            // min-h-11 is coarse-pointer-gated (not unconditional) — this text
+            // toggle shares a flex line with the "N new / N overwrite / N
+            // duplicate" spans above, and an unconditional min-height inflates
+            // that whole row on desktop/tablet, where a mouse pointer needs no
+            // 44px floor.
             // eslint-disable-next-line helm/no-raw-button
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
-              className="ml-auto text-caption font-medium text-text-secondary underline-offset-2 hover:underline"
+              className="ml-auto inline-flex items-center text-caption font-medium text-text-secondary underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
             >
               {open ? 'Hide changes' : 'Show what changes'}
             </button>

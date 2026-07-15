@@ -50,9 +50,15 @@ interface Props {
 
 function StrengthGroupsSkeleton() {
   return (
-    <div className="flex h-full min-h-[600px] overflow-hidden">
-      {/* LEFT */}
-      <aside className="w-64 shrink-0 border-r border-warm-100 bg-warm-50/50 p-3 space-y-2">
+    <div className="flex flex-col gap-4 lg:h-full lg:min-h-[600px] lg:flex-row lg:overflow-hidden">
+      {/* Mobile tab switcher skeleton */}
+      <div className="flex rounded-xl border border-warm-200 bg-warm-50 p-1 lg:hidden">
+        <Skeleton className="h-7 flex-1 rounded-lg" />
+        <Skeleton className="ml-1 h-7 flex-1 rounded-lg" />
+      </div>
+      {/* LEFT — hidden below lg; mobile shows the CENTER skeleton (this
+          route's default tab) instead. */}
+      <aside className="hidden w-full bg-warm-50/50 p-3 space-y-2 lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-warm-100">
         <div className="flex items-center justify-between mb-3 px-1">
           <Skeleton className="h-3.5 w-16" />
           <Skeleton className="h-7 w-14 rounded-lg" />
@@ -68,7 +74,7 @@ function StrengthGroupsSkeleton() {
         ))}
       </aside>
       {/* CENTER */}
-      <main className="flex-1 p-6 space-y-4">
+      <main className="flex-1 p-4 space-y-4 lg:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <Skeleton className="h-6 w-40" />
@@ -173,6 +179,10 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
     initialGroups[0]?.id ?? null,
   );
+  // Mobile tab — which pane is visible below `lg` (mirrors LiftCanvas's own
+  // mobile tab-switcher). Defaults to 'detail' since a group is typically
+  // preselected already.
+  const [activePane, setActivePane] = useState<'list' | 'detail'>('detail');
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -246,6 +256,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
         };
         setGroups((prev) => [newGroup, ...prev]);
         setSelectedGroupId(result.id);
+        setActivePane('detail');
       } else {
         setCreateError(result.error ?? 'Failed to create group.');
       }
@@ -309,9 +320,48 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
   }
 
   return (
-    <div className="flex h-full min-h-[600px] overflow-hidden">
+    <div className="flex flex-col gap-4 lg:h-full lg:min-h-[600px] lg:flex-row lg:overflow-hidden">
+      {/* ── Mobile tab switcher (mirrors LiftCanvas's own mobile tab pattern
+          one level up in the same vertical) — the group list and the
+          selected group's detail stack below `lg`; picking a group jumps
+          straight to its detail pane. ── */}
+      <div
+        className="flex rounded-xl border border-warm-200 bg-warm-50 p-1 lg:hidden"
+        role="tablist"
+        aria-label="Strength groups section"
+      >
+        {(
+          [
+            { id: 'list', label: 'Groups' },
+            { id: 'detail', label: 'Members' },
+          ] as const
+        ).map(({ id, label }) => (
+          <Button
+            key={id}
+            variant="ghost"
+            type="button"
+            role="tab"
+            aria-selected={activePane === id}
+            onClick={() => setActivePane(id)}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors ${
+              activePane === id
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
+            }`}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+
       {/* LEFT — group list */}
-      <aside className="w-64 shrink-0 border-r border-warm-100 bg-warm-50/50 overflow-y-auto p-3">
+      <aside
+        className={[
+          'w-full overflow-y-auto bg-warm-50/50 p-3',
+          'lg:w-64 lg:shrink-0 lg:border-r lg:border-warm-100',
+          activePane === 'list' ? 'flex flex-col' : 'hidden lg:flex lg:flex-col',
+        ].join(' ')}
+      >
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-warm-400">Groups</h2>
           {canEdit && (
@@ -345,7 +395,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => setSelectedGroupId(group.id)}
+                      onClick={() => { setSelectedGroupId(group.id); setActivePane('detail'); }}
                       className={`w-full rounded-xl p-3 text-left transition-colors focus-visible:ring-primary-500/50 ${
                         isSelected ? 'bg-primary-50 border border-primary-100' : 'hover:bg-cream-50'
                       }`}
@@ -379,7 +429,11 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
       </aside>
 
       {/* CENTER — selected group athletes */}
-      <main className="flex-1 overflow-y-auto p-6">
+      <main
+        className={`flex-1 overflow-y-auto p-4 lg:p-6 ${
+          activePane === 'detail' ? 'block' : 'hidden lg:block'
+        }`}
+      >
         {!selectedGroup ? (
           <EmptyState
             icon={<IconUsers size={28} className="text-warm-300" />}
@@ -450,7 +504,8 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
             ) : (
               <Card variant="flat">
                 <CardContent className="p-0">
-                  <table className="w-full text-sm">
+                  <div className="overflow-x-auto">
+                  <table className="w-full min-w-[420px] text-sm">
                     <thead>
                       <tr className="border-b border-warm-50 text-xs text-warm-400">
                         <th className="py-2.5 pl-4 text-left font-medium">Athlete</th>
@@ -488,6 +543,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </CardContent>
               </Card>
             )}

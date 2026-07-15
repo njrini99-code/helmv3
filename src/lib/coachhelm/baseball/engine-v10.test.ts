@@ -20,6 +20,14 @@ import {
 } from './metrics/registry';
 import type { LoadedMetric, LoadedPlayerMetrics } from './loaders';
 import {
+  loadPlayerMetrics,
+  loadAllPlayerMetrics,
+  normalizeBoxScoreBattingRow,
+  normalizeBoxScorePitchingRow,
+  eventDerivedVelocityFromMetrics,
+  type BoxScoreRow,
+} from './loaders';
+import {
   pitcherCommandDecayComposite,
   hitterTranslationGapComposite,
   liftToFieldRiskComposite,
@@ -27,6 +35,7 @@ import {
 import { readinessGenerator } from './generators/v10';
 import { scoreBaseballCandidate, rankBaseballCandidates } from './ranking';
 import type { BaseballInsightCandidate } from './generators';
+import type { DerivedMetric } from '@/lib/baseball/read-models/elite-stat-events';
 
 // ---- helpers ----------------------------------------------------------------
 
@@ -44,7 +53,9 @@ function metric(
     target_n: 10,
     confidence,
     confidence_factors: { sample_adequacy: 1, recency: 1, variance: 0, factors_measured: false },
-    source_refs: [{ table: 'baseball_player_stats', visibility: 'staff_only', sample_n, confidence }],
+    // #379: fixture cites the canonical box-score table now that loaders.ts
+    // sources migrated callers from it — see stat-layer-manifest.ts.
+    source_refs: [{ table: 'baseball_box_score_batting', visibility: 'staff_only', sample_n, confidence }],
   };
 }
 
@@ -217,5 +228,144 @@ describe('multi-factor ranking', () => {
     ]);
     expect(ranked[0]!.candidate.generator).toBe('composite_command_decay');
     expect(ranked[0]!.rankScore).toBeGreaterThanOrEqual(ranked[1]!.rankScore);
+  });
+});
+
+// ---- 6. #379 reconciliation — loaders.ts source-table + event-derived -----
+// wiring. Every case here is additive/backward-compatible: an unmigrated
+// caller (no 4th/5th arg, no hittingSourceTable/pitchingSourceTable tag) gets
+// EXACTLY today's legacy behavior; the new inputs only change output when a
+// caller opts in.
+
+function derivedMetric(overrides: Partial<DerivedMetric>): DerivedMetric {
+  return {
+    metricKey: 'avg_exit_velocity',
+    metricGroup: 'hitting',
+    label: 'Avg Exit Velo',
+    value: 90,
+    unit: 'mph',
+    higherIsBetter: true,
+    sampleSize: 12,
+    confidence: 'high',
+    trustTier: 'official',
+    dataContext: 'official_game',
+    sourceId: null,
+    ...overrides,
+  };
+}
+
+describe('loaders #379 reconciliation — source-table + event-derived wiring', () => {
+  const legacyRows: BoxScoreRow[] = [
+    {
+      id: 'r1',
+      player_id: 'p1',
+      stat_type: 'game',
+      session_date: '2026-04-01',
+      at_bats: 4,
+      hits: 2,
+      walks: 1,
+      strikeouts: 1,
+      hit_by_pitch: 0,
+      sacrifice_flies: 0,
+      doubles: 0,
+      triples: 0,
+      home_runs: 0,
+      exit_velocity: 90,
+    },
+    {
+      id: 'r2',
+      player_id: 'p1',
+      stat_type: 'game',
+      session_date: '2026-04-08',
+      at_bats: 4,
+      hits: 1,
+      walks: 0,
+      strikeouts: 2,
+      hit_by_pitch: 0,
+      sacrifice_flies: 0,
+      doubles: 0,
+      triples: 0,
+      home_runs: 0,
+      exit_velocity: 94,
+    },
+  ];
+
+  it('an unmigrated caller (no eventDerived, no source-table tag) keeps citing the legacy table exactly as before', () => {
+    const loaded = loadPlayerMetrics('p1', legacyRows);
+    expect(loaded.metrics.avg_exit_velocity?.value).toBeCloseTo(92);
+    expect(loaded.metrics.avg_exit_velocity?.source_refs[0]?.table).toBe('baseball_player_stats');
+    expect(loaded.metrics.max_exit_velocity?.value).toBe(94);
+    expect(loaded.metrics.max_exit_velocity?.source_refs[0]?.table).toBe('baseball_player_stats');
+  });
+
+  it('an event-derived value WINS over the legacy scalar per-field, never blended, never fabricated for the untouched field', () => {
+    const loaded = loadPlayerMetrics('p1', legacyRows, undefined, {
+      avgExitVelocity: { value: 91, sampleSize: 5 },
+    });
+    expect(loaded.metrics.avg_exit_velocity?.value).toBe(91);
+    expect(loaded.metrics.avg_exit_velocity?.sample_n).toBe(5);
+    expect(loaded.metrics.avg_exit_velocity?.source_refs[0]?.table).toBe('baseball_batted_ball_events');
+    // max_exit_velocity had no event input → still the legacy fallback.
+    expect(loaded.metrics.max_exit_velocity?.value).toBe(94);
+    expect(loaded.metrics.max_exit_velocity?.source_refs[0]?.table).toBe('baseball_player_stats');
+  });
+
+  it('threads a normalized box-score row\'s real source table into the emitted source_refs (batting + pitching)', () => {
+    const battingRow = normalizeBoxScoreBattingRow(
+      { id: 'bb1', player_id: 'p2', ab: 4, h: 2, doubles: 1, triples: 0, hr: 0, bb: 1, k: 1, hbp: 0, sf: 0 },
+      '2026-04-01',
+    );
+    const hitter = loadPlayerMetrics('p2', [battingRow]);
+    expect(hitter.metrics.batting_avg?.value).toBeCloseTo(0.5);
+    expect(hitter.metrics.batting_avg?.source_refs[0]?.table).toBe('baseball_box_score_batting');
+
+    const pitchingRow = normalizeBoxScorePitchingRow(
+      { id: 'bp1', player_id: 'p3', ip: 5, bb: 2, k: 6, er: 2, pitch_count: 80, strikes: 52 },
+      '2026-04-02',
+    );
+    const pitcher = loadPlayerMetrics('p3', [pitchingRow]);
+    expect(pitcher.metrics.era?.value).toBeCloseTo(3.6);
+    expect(pitcher.metrics.era?.source_refs[0]?.table).toBe('baseball_box_score_pitching');
+  });
+
+  it('eventDerivedVelocityFromMetrics pulls avg exit/pitch velocity and leaves max fields null (no event max metric exists yet)', () => {
+    const out = eventDerivedVelocityFromMetrics([
+      derivedMetric({ metricKey: 'avg_exit_velocity', value: 92, sampleSize: 10 }),
+      derivedMetric({ metricKey: 'avg_velocity', metricGroup: 'pitching', value: 88, sampleSize: 40 }),
+      derivedMetric({ metricKey: 'chase_rate', value: 0.3, sampleSize: 20 }),
+    ]);
+    expect(out.avgExitVelocity).toEqual({ value: 92, sampleSize: 10 });
+    expect(out.avgPitchVelocity).toEqual({ value: 88, sampleSize: 40 });
+    expect(out.maxExitVelocity).toBeNull();
+    expect(out.maxPitchVelocity).toBeNull();
+  });
+
+  it('eventDerivedVelocityFromMetrics returns null fields when no matching metric key exists (honest absence, never fabricated)', () => {
+    const out = eventDerivedVelocityFromMetrics([derivedMetric({ metricKey: 'chase_rate', value: 0.3 })]);
+    expect(out.avgExitVelocity).toBeNull();
+    expect(out.avgPitchVelocity).toBeNull();
+  });
+
+  it('loadAllPlayerMetrics preserves nowIso positionally and threads per-player event overrides additively', () => {
+    const rows: BoxScoreRow[] = [
+      {
+        id: 'pr1',
+        player_id: 'p4',
+        stat_type: 'game',
+        session_date: '2026-06-01',
+        innings_pitched: 5,
+        pitches_thrown: 70,
+        walks_allowed: 1,
+        strikeouts_thrown: 6,
+        earned_runs: 1,
+      },
+    ];
+    const nowIso = '2026-06-03T00:00:00.000Z'; // within the 7-day rolling window
+    const [p4] = loadAllPlayerMetrics(['p4'], rows, nowIso, {
+      p4: { avgPitchVelocity: { value: 89, sampleSize: 3 } },
+    });
+    expect(p4!.metrics.rolling_pitch_count?.value).toBe(70);
+    expect(p4!.metrics.avg_pitch_velocity?.value).toBe(89);
+    expect(p4!.metrics.avg_pitch_velocity?.source_refs[0]?.table).toBe('baseball_pitch_events');
   });
 });

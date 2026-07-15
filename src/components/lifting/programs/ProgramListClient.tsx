@@ -240,8 +240,14 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false, b
             {programs.length} program{programs.length !== 1 ? 's' : ''} in this org
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-60">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* min-w-0 lets the input shrink below its content width instead of
+              a fixed w-60 (240px) forcing the row past a 320-375px viewport;
+              flex-1 lets it fill the remaining space beside the CTA, which
+              keeps its own natural width via shrink-0 so its label never
+              clips or wraps. flex-wrap on the row is the last-resort fallback
+              if both still can't fit. */}
+          <div className="min-w-0 flex-1 sm:w-60 sm:flex-none">
             <Input
               placeholder="Search programs…"
               value={search}
@@ -249,7 +255,7 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false, b
             />
           </div>
           {canEdit && (
-            <Button onClick={() => setShowCreate(true)} className="gap-1.5">
+            <Button onClick={() => setShowCreate(true)} className="shrink-0 gap-1.5">
               <IconPlus size={15} /> New program
             </Button>
           )}

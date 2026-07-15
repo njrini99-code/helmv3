@@ -413,7 +413,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                   variant="ghost"
                   onClick={() => setInviteOpen(false)}
                   haptic="none"
-                  className="min-h-0 rounded-fw-sm p-1 text-text-tertiary hover:text-text-secondary"
+                  className="min-h-[44px] min-w-[44px] rounded-fw-sm p-1 text-text-tertiary hover:text-text-secondary"
                   aria-label="Close invite form"
                 >
                   <IconX size={18} />
@@ -467,7 +467,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                         variant="ghost"
                         onClick={() => applyPreset(p)}
                         haptic="none"
-                        className="min-h-0 rounded-full border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-1.5 font-annual text-body-sm font-medium text-text-secondary hover:border-grade-plus/40 hover:bg-grade-plus/5 hover:text-grade-plus"
+                        className="min-h-[44px] rounded-full border border-[color:var(--hairline)] bg-[var(--paper)] px-3 py-1.5 font-annual text-body-sm font-medium text-text-secondary hover:border-grade-plus/40 hover:bg-grade-plus/5 hover:text-grade-plus"
                       >
                         {p.label}
                       </Button>

@@ -310,6 +310,7 @@ export function ExerciseWizard({ initial, onSubmit, onClose }: ExerciseWizardPro
       onClose={onClose}
       title={isEdit ? `Edit exercise${draft.name ? ` — ${draft.name}` : ''}` : 'New exercise'}
       size="xl"
+      sheetOnMobile
     >
       {/* Progress rail */}
       <ProgressRail currentStep={step} onJump={jumpTo} />

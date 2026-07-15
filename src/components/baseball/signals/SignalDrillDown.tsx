@@ -5,10 +5,11 @@
 //
 // [W6c] Signal drill-down — the full source-backed narrative a signal card only
 // previews: why_it_matters · evidence (parsed list) · recommended action label ·
-// limitation · source refs with sample_n. Built on the Fairway `<Sheet>` right
-// panel (vaul-backed: focus trap, Escape, scrim-click, drag-to-dismiss all
-// handled by the primitive) so the main signal list stays visible on desktop —
-// no bespoke Radix Dialog wiring here.
+// limitation · source refs with sample_n. Built on the Fairway `<Sheet>` —
+// docked `side="right"` panel at md+ so the main signal list stays visible on
+// desktop, `mobileSide="bottom"` below md (Doctrine rule 4: every input/detail
+// flow under `md` is a bottom sheet, never the desktop docked panel) — no
+// bespoke Radix Dialog or useMediaQuery wiring here, the primitive resolves it.
 //
 // THE WAR ROOM lane (`pursuit` ink). Limitation renders through an honest
 // InlineNotice advisory strip — never a yellow box, never missing when present.
@@ -72,6 +73,7 @@ export function SignalDrillDown({
       open={open}
       onOpenChange={onOpenChange}
       side="right"
+      mobileSide="bottom"
       title="Signal detail"
       hideTitle
     >

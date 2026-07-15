@@ -55,10 +55,17 @@
  *    baseball_players.user_id is NOT NULL + UNIQUE + FK to public.users.)
  *
  * SCHEMA GAPS / NOTES (things this seed deliberately does NOT touch):
- *   - No baseball_player_stats / aggregates: the elite stat-event model
- *     (20260624000080) is large and the read surfaces gracefully empty-state;
- *     seeding it credibly is a follow-up. Hitting/pitching panels will show
- *     empty states, not broken UI.
+ *   - No baseball_player_stats / aggregates / box-score / season stats here:
+ *     this script only seeds the roster + operational surfaces listed above.
+ *     Its companion script, scripts/seed-baseball-stats.mjs, is the stats
+ *     seeder (#379) — it seeds BOTH the legacy flat/aggregate layer AND the
+ *     canonical box-score/season layer `stats-center.ts` reads, so run it
+ *     against this same team/coach after this script if you want the
+ *     hitting/pitching panels AND the Stats Center populated. Run this
+ *     script alone and Stats Center, Command Center, Roster, etc. will
+ *     correctly empty-state — that is honest, not broken UI; it does NOT
+ *     mean Stats Center should stay empty once seed-baseball-stats.mjs has
+ *     also been run (see docs/baseball/stats-architecture.md).
  *   - No recruiting pipeline rows (baseball_recruiting_interests) — demo team is
  *     a college roster, recruiting is a separate surface.
  *   - baseball_coaches.email column is set; if your prod copy lacks it the row

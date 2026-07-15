@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
-import { IconUsers, IconTrash, IconCalendar, IconNote, IconLayoutGrid } from '@/components/icons';
+import { IconUsers, IconTrash, IconCalendar, IconNote } from '@/components/icons';
 import { deleteComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { toast } from '@/components/ui/sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { format } from 'date-fns';
+import { PaperCard, EmptyIssue } from '@/components/baseball/living-annual';
 
 // Use the actual type returned from getSavedComparisons
 interface SavedComparison {
@@ -79,27 +79,22 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
     />
   );
 
-  // Empty State
+  // Empty State — the registered EmptyIssue preset (matching
+  // PracticePlannerClient's usage) instead of a hand-rolled circle+heading,
+  // so this reads as one of the kit's composed editorial letters rather than
+  // a leftover from the pre-migration design system.
   if (!comparisons || comparisons.length === 0) {
     return (
       <>
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mb-4">
-            <IconLayoutGrid size={32} className="text-warm-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-warm-900 mb-2">
-            No saved comparisons yet
-          </h3>
-          <p className="text-warm-500 mb-6 max-w-md">
-            Compare players and save them for future reference. Your saved comparisons will appear here.
-          </p>
-          <Button
-            variant="primary"
-            onClick={() => router.push('/baseball/dashboard/compare')}
-          >
-            Compare Players
-          </Button>
-        </div>
+        <EmptyIssue
+          variant="generic"
+          ink="pursuit"
+          action={
+            <Button variant="primary" onClick={() => router.push('/baseball/dashboard/compare')}>
+              Compare Players
+            </Button>
+          }
+        />
         {deleteDialog}
       </>
     );
@@ -109,61 +104,59 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
     <>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {comparisons.map((comparison) => (
-        <Card
+        <PaperCard
           key={comparison.id}
-          className="group hover:border-primary-200 hover:shadow-lg transition-all cursor-pointer"
+          className="group cursor-pointer p-6 transition-shadow duration-200 hover:shadow-card-hover"
           onClick={() => handleViewComparison(comparison)}
         >
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-3">
-              <h3 className="text-base font-semibold text-warm-900 group-hover:text-primary-600 transition-colors line-clamp-2">
-                {comparison.name || 'Untitled Comparison'}
-              </h3>
-              <IconButton variant="default" aria-label="Delete"
-                onClick={(e) => handleDelete(comparison.id, e)}
-                disabled={deletingId === comparison.id}
-                className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors active:bg-red-100
-                           transition-colors disabled:opacity-50 flex-shrink-0"
-                title="Delete comparison"
-              >
-                <IconTrash size={16} />
-              </IconButton>
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="font-annual text-base font-semibold text-text-primary group-hover:text-grade-plus transition-colors line-clamp-2">
+              {comparison.name || 'Untitled Comparison'}
+            </h3>
+            <IconButton variant="default" aria-label="Delete"
+              onClick={(e) => handleDelete(comparison.id, e)}
+              disabled={deletingId === comparison.id}
+              className="p-1.5 rounded-lg text-text-tertiary hover:text-[color:var(--notice-error-ink)] hover:bg-[var(--notice-error-ink)]/10 active:bg-[var(--notice-error-ink)]/15
+                         transition-colors disabled:opacity-50 flex-shrink-0"
+              title="Delete comparison"
+            >
+              <IconTrash size={16} />
+            </IconButton>
+          </div>
+
+          {/* Notes */}
+          {comparison.notes && (
+            <div className="flex items-start gap-2 mb-3">
+              <IconNote size={14} className="text-text-tertiary mt-0.5 flex-shrink-0" />
+              <p className="font-annual text-body-sm text-text-secondary line-clamp-2">{comparison.notes}</p>
+            </div>
+          )}
+
+          {/* Metadata */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 font-annual text-body-sm text-text-tertiary">
+              <IconUsers size={14} />
+              <span>{comparison.player_ids.length} players</span>
             </div>
 
-            {/* Notes */}
-            {comparison.notes && (
-              <div className="flex items-start gap-2 mb-3">
-                <IconNote size={14} className="text-warm-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm leading-relaxed text-warm-600 line-clamp-2">{comparison.notes}</p>
+            {comparison.created_at && (
+              <div className="flex items-center gap-2 font-annual text-body-sm text-text-tertiary">
+                <IconCalendar size={14} />
+                <span>
+                  {format(new Date(comparison.created_at), 'MMM d, yyyy')}
+                </span>
               </div>
             )}
-
-            {/* Metadata */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-warm-500">
-                <IconUsers size={14} />
-                <span>{comparison.player_ids.length} players</span>
-              </div>
-
-              {comparison.created_at && (
-                <div className="flex items-center gap-2 text-sm text-warm-500">
-                  <IconCalendar size={14} />
-                  <span>
-                    {format(new Date(comparison.created_at), 'MMM d, yyyy')}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Footer - View button appears on hover */}
-            <div className="mt-4 pt-4 border-t border-warm-100">
-              <span className="text-sm leading-relaxed text-primary-600 group-hover:underline">
-                View Comparison →
-              </span>
-            </div>
           </div>
-        </Card>
+
+          {/* Footer */}
+          <div className="mt-4 pt-4 border-t border-[color:var(--hairline)]">
+            <span className="font-annual text-body-sm text-grade-plus group-hover:underline">
+              View Comparison →
+            </span>
+          </div>
+        </PaperCard>
       ))}
     </div>
     {deleteDialog}

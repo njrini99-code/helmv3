@@ -3,6 +3,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import { mergeSeasonStatsIntoAggregates } from './roster-aggregates-merge';
+import { fetchRosterLegacyAggregates } from './roster-legacy-aggregates-source';
 
 export type RosterMemberStatus =
   | 'pending'
@@ -126,31 +127,26 @@ export async function getRoster(teamId: string): Promise<RosterReadModel> {
 
   const members = (rosterData ?? []) as unknown as RosterTeamMember[];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: aggregatesData, error: aggregatesError } = await (supabase as any)
-    .from('baseball_player_aggregates')
-    .select('*')
-    .eq('team_id', teamId) as {
-    data: BaseballPlayerAggregates[] | null;
-    error: unknown;
-  };
+  // Raw legacy-fallback input for the shared adapter (see
+  // legacy-stat-adapters.ts): fetching the deprecated aggregates table itself
+  // now lives entirely in roster-legacy-aggregates-source.ts, so this file
+  // stays off the stat-layer-manifest allowlist (#379).
+  const { aggregates: legacyAggregates, error: aggregatesFetchError } =
+    await fetchRosterLegacyAggregates(supabase, teamId);
 
-  let aggregates: Record<string, BaseballPlayerAggregates> = {};
-  if (!aggregatesError && aggregatesData) {
-    for (const agg of aggregatesData) {
-      aggregates[agg.player_id] = agg;
-    }
-  }
+  let aggregates: Record<string, BaseballPlayerAggregates> = legacyAggregates;
+  const aggregatesError = aggregatesFetchError;
 
   // Box-score-canonical season stats (baseball_player_season_stats, written by
   // recalculate_baseball_season_stats on every box-score save) is the source
   // of truth the rest of the product treats as current — the Player Profile
-  // Stats tab and Passport both read it. The legacy baseball_player_aggregates
-  // fetched above is only ever written by the deprecated CSV/manual stat-log
+  // Stats tab and Passport both read it. The legacy aggregates row fetched
+  // above is only ever written by the deprecated CSV/manual stat-log
   // recompute path, so a team that logs games via box scores (the modern,
   // promoted path) has a real, current season_stats row with NO matching
-  // aggregates row. Merge season_stats OVER the legacy aggregates so the
-  // roster wall/leaderboard/dev-board never show em-dash/0 for a player who
+  // legacy row. Merge season_stats OVER the legacy aggregates (via the shared
+  // adapter's box-score > legacy-fallback > no-data precedence) so the roster
+  // wall/leaderboard/dev-board never show em-dash/0 for a player who
   // genuinely has recent performance data one click away on their own profile.
   const currentSeasonYear = new Date().getFullYear();
   const { data: seasonStatsData, error: seasonStatsError } = await supabase

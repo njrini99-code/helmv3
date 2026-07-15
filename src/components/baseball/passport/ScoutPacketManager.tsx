@@ -355,42 +355,48 @@ export function ScoutPacketManager({
                           : ''}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
+                    {/* gap-3 (12px), not gap-1: each icon action below keeps
+                        its compact 32px (h-8/w-8) visual but reaches the 44px
+                        tap-target floor via an invisible `before:` hit-slop
+                        (-inset-1.5, mirrors MinimumStandards.tsx). That
+                        extends 6px past each element's own edge, so the gap
+                        between neighbors has to be >= 12px or the invisible
+                        zones overlap and a tap near the middle could fire
+                        the wrong action. */}
+                    <div className="flex shrink-0 items-center gap-3">
                       {link.isLive && (
                         <>
-                          <Button
+                          {/* eslint-disable-next-line helm/no-raw-button -- compact 32px icon action; Button's ripple needs overflow-hidden, which clips the hit-slop pseudo-element below (mirrors MinimumStandards.tsx) */}
+                          <button
                             type="button"
-                            variant="ghost"
                             onClick={() => onCopy(link.url)}
                             title="Copy link"
-                            haptic="none"
-                            className="min-h-0 flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 hover:text-warm-700"
+                            className="relative flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 transition-colors hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
                           >
                             <IconCopy size={15} />
-                          </Button>
+                          </button>
                           <a
                             href={link.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Open packet"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700"
+                            className="relative flex h-8 w-8 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
                           >
                             <IconExternalLink size={15} />
                           </a>
                         </>
                       )}
                       {link.status !== 'revoked' && (
-                        <Button
+                        // eslint-disable-next-line helm/no-raw-button -- compact 32px icon action; Button's ripple needs overflow-hidden, which clips the hit-slop pseudo-element below (mirrors MinimumStandards.tsx)
+                        <button
                           type="button"
-                          variant="ghost"
                           onClick={() => onRevoke(link.id)}
                           disabled={pending}
                           title="Revoke link"
-                          haptic="none"
-                          className="min-h-0 flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 hover:bg-[var(--notice-error-ink)]/10 hover:text-[color:var(--notice-error-ink)]"
+                          className="relative flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 transition-colors hover:bg-[var(--notice-error-ink)]/10 hover:text-[color:var(--notice-error-ink)] disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
                         >
                           <IconTrash size={15} />
-                        </Button>
+                        </button>
                       )}
                     </div>
                   </m.li>

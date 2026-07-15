@@ -39,6 +39,7 @@ import {
   Clock,
   MapPin,
   Plus,
+  Minus,
   Trash2,
   CalendarPlus,
   Eye,
@@ -101,7 +102,7 @@ import {
   StatReadout,
 } from '@/components/baseball/living-annual';
 import type { InkBadgeProps } from '@/components/baseball/living-annual';
-import { TimeRailBuilder, type RailBlock } from './TimeRailBuilder';
+import { TimeRailBuilder, type RailBlock, fmtClock, RAIL_STEP, MIN_DURATION } from './TimeRailBuilder';
 import { PracticeIntelligenceBoard } from './PracticeIntelligenceBoard';
 import { ScrimmagePanel } from './ScrimmagePanel';
 import { BlockObjectiveEditor } from './BlockObjectiveEditor';
@@ -718,6 +719,99 @@ export function PracticePlannerClient() {
                           Remove
                         </Button>
                       </div>
+
+                      {/* Touch-accessible move/resize fallback. The rail's drag
+                          handle and resize strip are too small to hit precisely
+                          with a finger, and a focused div can't raise a soft
+                          keyboard to fire the Arrow-key alternative — so these
+                          +/-5min steppers are the true tap equivalent, wired to
+                          the exact same updateBlock path the rail itself uses. */}
+                      <div className="mb-3 grid grid-cols-2 gap-3 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3">
+                        <div>
+                          <span className="block text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                            Start
+                          </span>
+                          <div className="mt-1 flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              haptic="none"
+                              aria-label="Move block 5 minutes earlier"
+                              disabled={selectedBlock.startOffsetMin <= 0}
+                              onClick={() =>
+                                updateBlock(selectedBlock.key, {
+                                  startOffsetMin: Math.max(0, selectedBlock.startOffsetMin - RAIL_STEP),
+                                })
+                              }
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <StatReadout
+                              value={fmtClock(selectedBlock.startOffsetMin)}
+                              className="min-w-[3.25rem] flex-1 justify-center text-sm"
+                              ariaLabel="Start time"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              haptic="none"
+                              aria-label="Move block 5 minutes later"
+                              onClick={() =>
+                                updateBlock(selectedBlock.key, {
+                                  startOffsetMin: selectedBlock.startOffsetMin + RAIL_STEP,
+                                })
+                              }
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="block text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                            Duration
+                          </span>
+                          <div className="mt-1 flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              haptic="none"
+                              aria-label="Decrease duration by 5 minutes"
+                              disabled={selectedBlock.durationMin <= MIN_DURATION}
+                              onClick={() =>
+                                updateBlock(selectedBlock.key, {
+                                  durationMin: Math.max(MIN_DURATION, selectedBlock.durationMin - RAIL_STEP),
+                                })
+                              }
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <StatReadout
+                              value={selectedBlock.durationMin}
+                              suffix="m"
+                              className="min-w-[3.25rem] flex-1 justify-center text-sm"
+                              ariaLabel="Duration in minutes"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              haptic="none"
+                              aria-label="Increase duration by 5 minutes"
+                              onClick={() =>
+                                updateBlock(selectedBlock.key, {
+                                  durationMin: selectedBlock.durationMin + RAIL_STEP,
+                                })
+                              }
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="grid gap-3 sm:grid-cols-12">
                         <div className="sm:col-span-7">
                           <Input

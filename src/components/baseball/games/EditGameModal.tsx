@@ -73,7 +73,7 @@ export function EditGameModal({ game, open, onClose }: EditGameModalProps) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Edit Game" size="md">
+    <Modal open={open} onClose={onClose} title="Edit Game" size="md" sheetOnMobile>
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Game type */}
         <div>

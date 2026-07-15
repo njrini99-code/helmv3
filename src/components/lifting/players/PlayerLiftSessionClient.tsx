@@ -13,7 +13,13 @@
 // (logSetResult from sessions.ts for set logging; inline server actions for
 // start/complete because advanceSessionLifecycle requires requireEdit:true).
 //
-// Routes back to /lifting/dashboard/lift.
+// This component is shared by both /lifting/dashboard/lift/[sessionId]
+// (Lifting Lab) and /baseball/dashboard/lift/[sessionId] (BaseballHelm) —
+// mirrors PlayerLiftHomeClient's `basePath` contract: every internal Link is
+// built off the caller-supplied `basePath` prop instead of a hardcoded
+// '/lifting/...' literal, so navigation stays inside whichever app rendered
+// it (a BaseballHelm player must never be routed into the sibling Lifting
+// Lab product's route tree).
 // =============================================================================
 
 import { useMemo, useState, useTransition } from 'react';
@@ -43,6 +49,13 @@ interface Props {
   /** athlete-self's helm_lifting_athletes.id — passed to set logging */
   athleteId: string;
   readinessSubmittedToday: boolean;
+  /**
+   * Base dashboard route for this caller, e.g. '/lifting/dashboard' or
+   * '/baseball/dashboard'. Used to build the back-link, readiness, and
+   * post-completion links so this shared component never leaks navigation
+   * into the sibling product's route tree.
+   */
+  basePath: string;
 }
 
 interface DraftSet {
@@ -59,9 +72,11 @@ export function PlayerLiftSessionClient({
   session,
   athleteId,
   readinessSubmittedToday,
+  basePath,
 }: Props) {
   const [isPending, startTransition] = useTransition();
   const prefersReducedMotion = useReducedMotion();
+  const base = basePath.replace(/\/$/, '');
   const [status, setStatus] = useState<HelmLiftingSessionStatus>(session.status);
   const [savedSets, setSavedSets] = useState<Record<string, Set<number>>>(() => {
     const m: Record<string, Set<number>> = {};
@@ -152,7 +167,7 @@ export function PlayerLiftSessionClient({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.24 }}
       >
-        <BackLink />
+        <BackLink basePath={base} />
         <Card className="border-primary-200 bg-primary-50/50">
           <CardContent className="py-10 text-center">
             <motion.div
@@ -171,7 +186,7 @@ export function PlayerLiftSessionClient({
               Nice work — {doneSets} of {totalSets} sets logged.
             </p>
             <Link
-              href="/lifting/dashboard/lift"
+              href={`${base}/lift`}
               className="mt-5 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               Back to Lift
@@ -189,7 +204,7 @@ export function PlayerLiftSessionClient({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
     >
-      <BackLink />
+      <BackLink basePath={base} />
 
       {/* Session header + progress */}
       <div>
@@ -231,7 +246,7 @@ export function PlayerLiftSessionClient({
               Complete your daily check-in before logging sets.
             </p>
             <Link
-              href="/lifting/dashboard/readiness"
+              href={`${base}/readiness`}
               className="shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               Check in
@@ -266,11 +281,11 @@ export function PlayerLiftSessionClient({
 
       {/* Exercise sections */}
       {sections.map(([sectionName, exercises]) => (
-        <Card key={sectionName}>
-          <CardHeader>
+        <Card key={sectionName} padding="none">
+          <CardHeader className="px-4 py-3 md:px-6 md:py-4">
             <h2 className="text-lg font-semibold text-warm-900">{sectionName}</h2>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 md:p-6">
             {exercises.map((ex) => (
               <ExerciseBlock
                 key={ex.id}
@@ -291,9 +306,13 @@ export function PlayerLiftSessionClient({
         </Card>
       ))}
 
-      {/* Sticky complete action */}
+      {/* Sticky complete action — offset above FairwayBottomNav (56px +
+          safe-area below md; 0px at md+, see globals.css) so the primary
+          CTA of this whole flow is never covered by the persistent mobile
+          tab bar. z-[var(--fw-z-sticky)] keeps it below the nav's own
+          z-[var(--fw-z-nav)] tier since it now sits above, not under, it. */}
       {status !== 'assigned' && (
-        <div className="sticky bottom-0 -mx-4 border-t border-warm-100 bg-cream-50/95 px-4 py-3 backdrop-blur">
+        <div className="sticky bottom-[var(--golf-mobile-bottom-nav-offset)] z-[var(--fw-z-sticky)] -mx-4 border-t border-warm-100 bg-cream-50/95 px-4 py-3 backdrop-blur">
           <Button
             onClick={handleComplete}
             isLoading={isPending}
@@ -313,10 +332,10 @@ export function PlayerLiftSessionClient({
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function BackLink() {
+function BackLink({ basePath }: { basePath: string }) {
   return (
     <Link
-      href="/lifting/dashboard/lift"
+      href={`${basePath}/lift`}
       className="inline-flex items-center gap-1 rounded text-sm text-warm-500 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
     >
       <IconArrowLeft size={15} />
@@ -369,53 +388,63 @@ function ExerciseBlock({
           const saved = savedSetNumbers.has(setNum);
           const d = drafts[setNum] ?? { reps: '', load: '', rpe: '' };
           return (
-            <div key={setNum} className="flex items-center gap-2">
-              <span className="w-10 shrink-0 text-xs font-medium text-warm-400">
-                Set {setNum}
-              </span>
-              <Input
-                inputMode="numeric"
-                placeholder="reps"
-                aria-label={`${name} set ${setNum} reps`}
-                value={d.reps}
-                onChange={(e) =>
-                  setDrafts((p) => ({ ...p, [setNum]: { ...d, reps: e.target.value } }))
-                }
-                className="w-16 min-h-0 rounded-lg bg-cream-50 px-2 py-1.5 text-sm focus:ring-1 focus-visible:ring-1"
-              />
-              <Input
-                inputMode="decimal"
-                placeholder={prescribedLoadUnit ?? 'lb'}
-                aria-label={`${name} set ${setNum} load`}
-                value={d.load}
-                onChange={(e) =>
-                  setDrafts((p) => ({ ...p, [setNum]: { ...d, load: e.target.value } }))
-                }
-                className="w-16 min-h-0 rounded-lg bg-cream-50 px-2 py-1.5 text-sm focus:ring-1 focus-visible:ring-1"
-              />
-              <Input
-                inputMode="decimal"
-                placeholder="RPE"
-                aria-label={`${name} set ${setNum} RPE`}
-                value={d.rpe}
-                onChange={(e) =>
-                  setDrafts((p) => ({ ...p, [setNum]: { ...d, rpe: e.target.value } }))
-                }
-                className="w-16 min-h-0 rounded-lg bg-cream-50 px-2 py-1.5 text-sm focus:ring-1 focus-visible:ring-1"
-              />
-              <Button
-                size="sm"
-                variant={saved ? 'ghost' : 'primary'}
-                onClick={() => onLog(setNum, d)}
-                disabled={disabled || saved}
-                className={
-                  saved
-                    ? 'shrink-0 border border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100'
-                    : 'shrink-0'
-                }
-              >
-                {saved ? 'Saved' : 'Log'}
-              </Button>
+            <div key={setNum} className="space-y-1.5 rounded-lg bg-cream-50/60 p-2">
+              {/* Label + Log button on one row so the 3 numeric inputs below
+                  never have to share a row with them — that combination is
+                  what overflowed a 320-390px viewport (needed ~300px+ in a
+                  single unwrapped flex row). */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-warm-400">Set {setNum}</span>
+                <Button
+                  size="sm"
+                  variant={saved ? 'ghost' : 'primary'}
+                  onClick={() => onLog(setNum, d)}
+                  disabled={disabled || saved}
+                  className={
+                    saved
+                      ? 'shrink-0 border border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100'
+                      : 'shrink-0'
+                  }
+                >
+                  {saved ? 'Saved' : 'Log'}
+                </Button>
+              </div>
+              {/* 3-col grid divides available width evenly instead of fixed
+                  w-16 inputs — comfortably fits even the narrowest phones.
+                  min-h-0 override removed: these fall back to Input's own
+                  44px+ tap-target floor instead of shrinking below it. */}
+              <div className="grid grid-cols-3 gap-2">
+                <Input
+                  inputMode="numeric"
+                  placeholder="reps"
+                  aria-label={`${name} set ${setNum} reps`}
+                  value={d.reps}
+                  onChange={(e) =>
+                    setDrafts((p) => ({ ...p, [setNum]: { ...d, reps: e.target.value } }))
+                  }
+                  className="rounded-lg bg-cream-50 px-2 py-1.5 text-center text-sm focus:ring-1 focus-visible:ring-1"
+                />
+                <Input
+                  inputMode="decimal"
+                  placeholder={prescribedLoadUnit ?? 'lb'}
+                  aria-label={`${name} set ${setNum} load`}
+                  value={d.load}
+                  onChange={(e) =>
+                    setDrafts((p) => ({ ...p, [setNum]: { ...d, load: e.target.value } }))
+                  }
+                  className="rounded-lg bg-cream-50 px-2 py-1.5 text-center text-sm focus:ring-1 focus-visible:ring-1"
+                />
+                <Input
+                  inputMode="decimal"
+                  placeholder="RPE"
+                  aria-label={`${name} set ${setNum} RPE`}
+                  value={d.rpe}
+                  onChange={(e) =>
+                    setDrafts((p) => ({ ...p, [setNum]: { ...d, rpe: e.target.value } }))
+                  }
+                  className="rounded-lg bg-cream-50 px-2 py-1.5 text-center text-sm focus:ring-1 focus-visible:ring-1"
+                />
+              </div>
             </div>
           );
         })}

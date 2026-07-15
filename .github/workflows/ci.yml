@@ -312,6 +312,126 @@ jobs:
       - name: Check for new runtime import cycles
         run: npm run check:cycles
 
+  baseball-auth-smoke:
+    name: BaseballHelm authenticated smoke
+    # #372: promotes the already-built, already-mandatory baseball-smoke +
+    # onboarding-smoke specs (e2e/baseball-smoke.spec.ts,
+    # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
+    # (.github/workflows/playwright.yml's `e2e` job) into a required PR gate —
+    # the same mechanism that promoted Supabase RLS tests into `all` (#517)
+    # and the import-cycle ratchet (#808). Steps below are copied verbatim
+    # from playwright.yml's readiness-check + fail-loud pattern, not moved:
+    # the push/manual job keeps running the full mandatory suite (plus the
+    # mobile-viewport regression) unchanged.
+    #
+    # Skips (does not fail) on fork/Dependabot pull_request runs, which
+    # receive no repo secrets from GitHub by design — `all`'s aggregate step
+    # only treats 'failure'/'cancelled' as blocking, so a skipped job here
+    # never blocks an external contribution that structurally cannot supply
+    # these secrets. Same-repo, non-Dependabot pushes and PRs still hard-fail
+    # on missing secrets, same as the push-triggered version always has.
+    # Dependabot PRs are opened against this repo (not a fork), so the
+    # same-repo check alone does not exclude them — `github.actor` is
+    # checked explicitly for that reason.
+    #
+    # COST NOTE: this doubles Playwright-browser-install + a full `npm run
+    # build` on every PR from this repo, on top of the existing next-build /
+    # Smoke-checks builds — a real, ongoing CI-minutes tradeoff the repo had
+    # previously avoided by scoping full E2E to push-only. Revisit if PR
+    # wall-clock time becomes a problem.
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compute BaseballHelm auth readiness
+        id: baseball-auth-ready
+        run: |
+          missing=()
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing+=("SUPABASE_SERVICE_ROLE_KEY")
+          [ -z "$E2E_BASEBALL_COACH_EMAIL" ] && missing+=("E2E_BASEBALL_COACH_EMAIL")
+          [ -z "$E2E_BASEBALL_COACH_PASSWORD" ] && missing+=("E2E_BASEBALL_COACH_PASSWORD")
+          [ -z "$E2E_BASEBALL_PLAYER_EMAIL" ] && missing+=("E2E_BASEBALL_PLAYER_EMAIL")
+          [ -z "$E2E_BASEBALL_PLAYER_PASSWORD" ] && missing+=("E2E_BASEBALL_PLAYER_PASSWORD")
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            printf 'missing=%s\n' "${missing[*]}" >> "$GITHUB_OUTPUT"
+            echo "BaseballHelm auth secrets unavailable: ${missing[*]}"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "missing=" >> "$GITHUB_OUTPUT"
+            echo "BaseballHelm auth secrets available."
+          fi
+
+      - name: Fail missing BaseballHelm secrets
+        if: steps.baseball-auth-ready.outputs.ready != 'true'
+        env:
+          MISSING_BASEBALL_SECRETS: ${{ steps.baseball-auth-ready.outputs.missing }}
+        run: |
+          echo "::error::Missing required secret(s): ${MISSING_BASEBALL_SECRETS}"
+          echo "BaseballHelm authenticated smoke (#372) is a required PR gate on this repo and needs these secrets configured."
+          exit 1
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build (so dev server boots fast)
+        run: npm run build
+
+      - name: Seed BaseballHelm CI accounts
+        run: npm run seed:baseball:ci
+
+      - name: Run BaseballHelm mandatory smoke (blocking)
+        run: |
+          npx playwright test \
+            --project=chromium \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/baseball-onboarding-smoke.spec.ts \
+            e2e/baseball-smoke.spec.ts
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: baseball-auth-smoke-playwright-report
+          path: playwright-report/
+          retention-days: 3
+          if-no-files-found: ignore
+
   all:
     name: all
     if: always()
@@ -321,6 +441,11 @@ jobs:
     # baseball pgTAP RLS suite was greened on main by #517 (supersedes #423), so
     # RLS regressions now block merge through the required `all` check instead of
     # being advisory-only — the gap that let the anon-access hole reach main.
+    #
+    # `baseball-auth-smoke` (BaseballHelm authenticated coach/player smoke,
+    # #372) is part of the hard gate for the same reason: an authenticated
+    # smoke suite that only ran post-merge could not have caught a real
+    # regression before it landed on `main`.
     needs:
       - database-types
       - schema-invariants
@@ -334,6 +459,7 @@ jobs:
       - route-hygiene
       - supabase
       - import-cycles
+      - baseball-auth-smoke
     steps:
       - name: Fail if any required CI check failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

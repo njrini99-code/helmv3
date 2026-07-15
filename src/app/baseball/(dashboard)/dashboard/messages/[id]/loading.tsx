@@ -1,57 +1,85 @@
+import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { IconChevronLeft } from '@/components/icons';
+import { PaperCard, pressableClass } from '@/components/baseball/living-annual';
+import { cn } from '@/lib/utils';
 
+const MESSAGES_HREF = '/baseball/dashboard/messages';
+
+/**
+ * ============================================================================
+ * ConversationLoading — Suspense fallback for `/messages/[id]`.
+ * ----------------------------------------------------------------------------
+ * #481 fix: this previously rendered a hand-rolled skeleton on legacy
+ * `warm-200`/`cream-50` tokens with NO relationship to the Living-Annual
+ * paper chrome `ConversationClient` actually mounts (hairline borders,
+ * `--paper` surface, `PaperCard` bubbles) — a real chrome flash on hydrate,
+ * the exact "loading chrome drift" class of bug the issue names. It also
+ * carried the SAME bare `100dvh-4rem` height budget as the pre-fix loaded
+ * thread: no notch-inset term, no FairwayBottomNav clearance term, so this
+ * fallback was itself also clipped behind the bottom nav on phones.
+ *
+ * Shaped exactly like `ConversationClient`'s loaded thread (back link +
+ * masthead row, bubble well, composer) using the SAME height formula, so
+ * hydration never swaps in a differently-structured or differently-sized
+ * page. The back link is real (not a skeleton bar) — same reasoning as
+ * `MessagesFairway`'s `RAIL_TITLE_SKELETON`: a static element that's
+ * byte-identical in both states never needs to "swap in" on mount.
+ *
+ * #481 mustFix (round 2): this Suspense fallback mounts on the SAME route
+ * as `ConversationClient` — before it, during the initial fetch — so for
+ * coaches the same `<HubSubNav>` "Messages · Announcements" strip
+ * (BaseballFairwayShell's `subNav`) is already mounted above this fallback
+ * too. Carrying the identical `--baseball-hub-subnav-offset` term (published
+ * by hub-sub-nav.tsx, `0px` for players) means the fallback never
+ * independently re-introduces the clipped-composer bug for the ~instant
+ * this skeleton is on screen before `ConversationClient` replaces it.
+ * ========================================================================== */
 export default function ConversationLoading() {
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
-      {/* Header skeleton */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-warm-200 bg-cream-50">
-        <Skeleton className="h-9 w-9 rounded-lg" />
-        <Skeleton className="h-10 w-10 rounded-full" />
-        <div className="flex-1">
-          <Skeleton className="h-4 w-36 mb-1.5" />
-          <Skeleton className="h-3 w-24" />
-        </div>
+    <div className="flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px)-var(--baseball-hub-subnav-offset,0px))] flex-col">
+      <div className="flex shrink-0 flex-col border-b border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 sm:px-6 sm:py-5">
+        <Link
+          href={MESSAGES_HREF}
+          className={cn(
+            'mb-3 inline-flex w-fit items-center gap-1 rounded-fw-sm text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary',
+            pressableClass({ ink: 'team' }),
+          )}
+        >
+          <IconChevronLeft size={14} aria-hidden="true" />
+          Messages
+        </Link>
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="mt-2 h-6 w-40" />
       </div>
 
-      {/* Message bubbles skeleton */}
-      <div className="flex-1 overflow-hidden p-6 space-y-4">
-        {/* Incoming */}
-        <div className="flex items-end gap-2">
-          <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-          <div className="space-y-1">
-            <Skeleton className="h-10 w-56 rounded-2xl rounded-bl-md" />
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div className="mx-auto flex max-w-[720px] flex-col gap-4">
+          <div className="flex max-w-[85%] flex-col items-start gap-1.5 sm:max-w-md">
+            <div className="h-8 w-8 flex-shrink-0 rounded-full bg-surface-sunken" />
+            <PaperCard className="px-4 py-2.5">
+              <Skeleton className="h-4 w-40" />
+            </PaperCard>
           </div>
-        </div>
-        {/* Outgoing */}
-        <div className="flex justify-end">
-          <Skeleton className="h-10 w-44 rounded-2xl rounded-br-md" />
-        </div>
-        {/* Incoming */}
-        <div className="flex items-end gap-2">
-          <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-          <div className="space-y-1">
-            <Skeleton className="h-14 w-72 rounded-2xl rounded-bl-md" />
+          <div className="ml-auto flex max-w-[85%] flex-col items-end gap-1.5 sm:max-w-md">
+            <PaperCard className="px-4 py-2.5">
+              <Skeleton className="h-4 w-32" />
+            </PaperCard>
           </div>
-        </div>
-        {/* Outgoing */}
-        <div className="flex justify-end">
-          <Skeleton className="h-10 w-60 rounded-2xl rounded-br-md" />
-        </div>
-        {/* Incoming */}
-        <div className="flex items-end gap-2">
-          <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-          <div className="space-y-1">
-            <Skeleton className="h-10 w-48 rounded-2xl rounded-bl-md" />
+          <div className="flex max-w-[85%] flex-col items-start gap-1.5 sm:max-w-md">
+            <div className="h-8 w-8 flex-shrink-0 rounded-full bg-surface-sunken" />
+            <PaperCard className="px-4 py-2.5">
+              <Skeleton className="h-4 w-52" />
+            </PaperCard>
           </div>
         </div>
       </div>
 
-      {/* Input area skeleton */}
-      <div className="p-4 border-t border-warm-200 bg-cream-50">
-        <div className="flex items-center gap-3 max-w-[720px] mx-auto">
-          <Skeleton className="flex-1 h-12 rounded-xl" />
-          <Skeleton className="h-10 w-10 rounded-xl flex-shrink-0" />
-        </div>
+      <div className="shrink-0 border-t border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 sm:px-6 sm:py-5">
+        <PaperCard className="mx-auto flex max-w-[720px] items-center gap-2 p-2">
+          <Skeleton className="h-10 flex-1 rounded-fw-md" />
+          <Skeleton className="h-10 w-10 rounded-fw-md" />
+        </PaperCard>
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   IconPlus,
   IconMapPin,
@@ -31,13 +32,26 @@ interface TravelClientProps {
   itineraries: BaseballTravelItinerary[];
   teamId: string;
   isCoach: boolean;
+  onReload: () => void | Promise<void>;
 }
 
-export function TravelClient({ itineraries: initialItineraries, teamId, isCoach }: TravelClientProps) {
+export function TravelClient({ itineraries: initialItineraries, teamId, isCoach, onReload }: TravelClientProps) {
   const [itineraries, setItineraries] = useState(initialItineraries);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItinerary, setEditingItinerary] = useState<BaseballTravelItinerary | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeletingItinerary, setIsDeletingItinerary] = useState(false);
+
+  // Keep local state in sync with the parent's fetched itineraries —
+  // TravelPageClient owns the actual getTeamItineraries() call (both on
+  // initial load and via the onReload() refetch below), so this component's
+  // useState(initialItineraries) only seeds on mount; without this effect a
+  // freshly created/edited trip would never appear after onReload() resolves
+  // and the parent re-renders with a new itineraries array.
+  useEffect(() => {
+    setItineraries(initialItineraries);
+  }, [initialItineraries]);
 
   // Expense state
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -93,18 +107,33 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
     }
   }
 
-  async function handleDeleteItinerary(id: string) {
-    if (!confirm('Delete this trip and all its expenses? This cannot be undone.')) return;
-    const result = await deleteItinerary(id);
-    if (result.success) {
-      setItineraries(prev => prev.filter(i => i.id !== id));
-      if (expandedId === id) setExpandedId(null);
+  function handleDeleteItinerary(id: string) {
+    setConfirmDeleteId(id);
+  }
+
+  async function confirmDeleteItinerary() {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setIsDeletingItinerary(true);
+    try {
+      const result = await deleteItinerary(id);
+      if (result.success) {
+        setItineraries(prev => prev.filter(i => i.id !== id));
+        if (expandedId === id) setExpandedId(null);
+      }
+    } finally {
+      setIsDeletingItinerary(false);
+      setConfirmDeleteId(null);
     }
   }
 
   function handleSaved() {
-    // Refresh page data
-    window.location.reload();
+    // Refetch via the parent (the actual data owner — TravelPageClient calls
+    // getTeamItineraries()) so the created/edited trip appears, without the
+    // white-flash / lost-scroll of a full window.location.reload(). The sync
+    // effect above reflects the refetched prop into local state once it
+    // resolves.
+    void onReload();
   }
 
   function handleExpenseSaved() {
@@ -224,6 +253,17 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
           itineraryId={expenseItineraryId}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Delete trip?"
+        message={`Delete "${itineraries.find(i => i.id === confirmDeleteId)?.event_name ?? 'this trip'}" and all its expenses? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={isDeletingItinerary}
+        onConfirm={confirmDeleteItinerary}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

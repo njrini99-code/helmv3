@@ -18,6 +18,7 @@ import {
   uploadNewVersion,
 } from '@/app/baseball/actions/documents';
 import { useToast } from '@/components/ui/sonner';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DocumentsFairway } from '@/components/baseball/documents/DocumentsFairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -56,6 +57,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const [editingDoc, setEditingDoc] = useState<BaseballDocument | null>(null);
   const [historyDoc, setHistoryDoc] = useState<BaseballDocument | null>(null);
   const [movingDoc, setMovingDoc] = useState<BaseballDocument | null>(null);
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<BaseballDocument | null>(null);
+  const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   // Upload-time picker state — replaces the previously hardcoded
@@ -79,15 +82,25 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     return Array.from(set).sort();
   }, [documents]);
 
-  async function handleDelete(doc: BaseballDocument) {
-    if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
+  function handleDelete(doc: BaseballDocument) {
+    setConfirmDeleteDoc(doc);
+  }
 
-    const result = await deleteBaseballDocument(doc.id);
-    if (result.success) {
-      setDocuments(prev => prev.filter(d => d.id !== doc.id));
-      showToast('Document deleted', 'success');
-    } else {
-      showToast(result.error || 'Failed to delete', 'error');
+  async function confirmDelete() {
+    if (!confirmDeleteDoc) return;
+    const doc = confirmDeleteDoc;
+    setIsDeletingDocument(true);
+    try {
+      const result = await deleteBaseballDocument(doc.id);
+      if (result.success) {
+        setDocuments(prev => prev.filter(d => d.id !== doc.id));
+        showToast('Document deleted', 'success');
+      } else {
+        showToast(result.error || 'Failed to delete', 'error');
+      }
+    } finally {
+      setIsDeletingDocument(false);
+      setConfirmDeleteDoc(null);
     }
   }
 
@@ -320,6 +333,17 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             />
           ) : null
         }
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteDoc}
+        title="Delete document?"
+        message={`Delete "${confirmDeleteDoc?.title ?? 'this document'}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={isDeletingDocument}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteDoc(null)}
       />
     </div>
   );

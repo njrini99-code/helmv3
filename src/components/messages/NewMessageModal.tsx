@@ -154,6 +154,7 @@ export function NewMessageModal({
       title="New Message"
       description={`Select a ${currentUserRole === 'coach' ? 'player' : 'coach'} to start a conversation`}
       size="md"
+      sheetOnMobile
     >
       <div className="space-y-4">
         {/* Search Input */}
@@ -176,7 +177,8 @@ export function NewMessageModal({
           ) : results.length > 0 ? (
             <div className="divide-y divide-warm-100">
               {results.map(result => (
-                <Button variant="primary"
+                <Button
+                  variant="ghost"
                   key={result.id}
                   onClick={() => handleSelect(result)}
                   className={cn(

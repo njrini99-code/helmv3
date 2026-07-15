@@ -261,15 +261,26 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
                       {player.primary_position || 'Position TBD'} • {player.city}, {player.state}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 text-sm">
+                  {/* shrink-0: without it this block has no min-width of its
+                      own (browsers won't shrink a flex item below its
+                      content's intrinsic min-width unless it's the one with
+                      min-w-0, which is the name column, not this one) — so at
+                      320px both this block AND the name column above were
+                      fighting for the same scarce space, and the name lost,
+                      squeezed to a sliver. The velo stats are supplementary,
+                      not the primary reason to tap this row, so below `sm:`
+                      they're hidden outright (honest omission) rather than
+                      left to wrap/overflow — only the chevron (always a
+                      fixed, tiny width) stays visible at every size. */}
+                  <div className="flex shrink-0 items-center gap-4 text-sm">
                     {player.pitch_velo && (
-                      <div className="text-right">
+                      <div className="hidden text-right sm:block">
                         <p className="font-semibold text-warm-900">{player.pitch_velo}</p>
                         <p className="text-xs text-warm-400">mph</p>
                       </div>
                     )}
                     {player.exit_velo && (
-                      <div className="text-right">
+                      <div className="hidden text-right sm:block">
                         <p className="font-semibold text-warm-900">{player.exit_velo}</p>
                         <p className="text-xs text-warm-400">exit</p>
                       </div>

@@ -1,5 +1,7 @@
 {
   "skipped": [
+    "@supabase/supabase-js",
+    "dotenv/config",
     "server-only"
   ],
   "cycles": [

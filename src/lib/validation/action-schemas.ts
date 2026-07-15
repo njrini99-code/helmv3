@@ -6,6 +6,13 @@
 
 import { z } from 'zod';
 import { CommonSchemas } from './server-action-validator';
+import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
+import type { PipelineStage } from '@/lib/types';
+
+// `PIPELINE_STAGES` (src/lib/recruiting/stages.ts) is the single source of
+// truth for the 5 valid pipeline stage ids — this used to be a hand-copied
+// literal array that could (and did) drift from PIPELINE_STAGES.
+const PIPELINE_STAGE_IDS = PIPELINE_STAGES.map((s) => s.id) as [PipelineStage, ...PipelineStage[]];
 
 /**
  * Recruiting Schemas
@@ -45,7 +52,7 @@ export const WatchlistSchemas = {
 
   updateStatus: z.object({
     watchlist_id: CommonSchemas.uuid,
-    status: z.enum(['watchlist', 'high_priority', 'offer_extended', 'committed', 'uninterested']),
+    status: z.enum(PIPELINE_STAGE_IDS),
   }),
 
   updatePriority: z.object({

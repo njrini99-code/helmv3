@@ -10,7 +10,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
-import { PageLoading } from '@/components/ui/loading';
 import {
   IconArrowRight,
   IconArrowLeft,
@@ -22,11 +21,12 @@ import {
 import { processTeamInvitation } from '@/app/baseball/actions/teams';
 import { completePlayerOnboarding } from '@/app/baseball/actions/onboarding';
 import {
-  StepIndicator,
   slideVariants,
   staggerContainer,
   staggerItem,
 } from '@/components/baseball/onboarding/StepIndicator';
+import { StepProgress } from './_components/StepProgress';
+import { PlayerOnboardingSkeleton } from './PlayerOnboardingSkeleton';
 import { EntryField, type SceneStage } from '@/components/baseball/scenes/EntryField';
 import { resolveSceneVariant, type SceneVariant } from '@/lib/entry/greeting';
 import { HairlineRule, InkNotice, stampPress, inkBleed } from '@/components/baseball/living-annual';
@@ -173,7 +173,7 @@ export default function BaseballPlayerOnboarding() {
   }, [authLoading, user, player, router]);
 
   if (authLoading || !user || user.role !== 'player' || player?.onboarding_completed) {
-    return <PageLoading />;
+    return <PlayerOnboardingSkeleton />;
   }
 
   // ─── Navigation ───────────────────────────────────────────────────────────
@@ -290,6 +290,7 @@ export default function BaseballPlayerOnboarding() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   const sceneStage = STEP_SCENE_STAGE[step];
+  const stepIndex = STEPS_CONFIG.findIndex((s) => s.id === step);
 
   return (
     <div className="entry-onboarding-scope entry-onboarding-root relative min-h-dvh overflow-hidden">
@@ -323,14 +324,24 @@ export default function BaseballPlayerOnboarding() {
         </m.div>
 
         <LazyMotion features={loadFeatures}>
-          {/* Step Indicator - only after type selection */}
-          {step !== 'type' && (
+          {/* Progress — numbered eyebrow + thin draw-on rule (StepProgress),
+              not the shared StepIndicator dot-and-connector bar: at 320px
+              its widest label overflowed the un-wrapped `<nav>` row with no
+              scroll/wrap guard, and it read as the more generic of the two
+              wizards' progress affordances (mobile findings, onboarding-auth
+              group). Only after type selection, same as before. */}
+          {step !== 'type' && stepIndex >= 0 && (
             <m.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.2 })}
+              className="w-full max-w-[460px]"
             >
-              <StepIndicator currentStep={step} steps={STEPS_CONFIG} />
+              <StepProgress
+                current={stepIndex + 1}
+                total={STEPS_CONFIG.length}
+                label={STEPS_CONFIG[stepIndex]?.label ?? ''}
+              />
             </m.div>
           )}
 
@@ -460,8 +471,11 @@ export default function BaseballPlayerOnboarding() {
                         </NativeSelect>
                       </div>
 
-                      {/* Bats/Throws & Secondary Position */}
-                      <div className="grid grid-cols-3 gap-3">
+                      {/* Bats/Throws & Secondary Position — 2-up on phone (3-up
+                          crowds each NativeSelect trigger below ~130px/column,
+                          clipping option text under its chevron); 2nd Pos.
+                          wraps to its own full-width row until there's room. */}
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                         <NativeSelect
                           label="Bats"
                           value={bats}
@@ -482,16 +496,18 @@ export default function BaseballPlayerOnboarding() {
                             <option key={h} value={h}>{h}</option>
                           ))}
                         </NativeSelect>
-                        <NativeSelect
-                          label="2nd Pos."
-                          value={secondaryPosition}
-                          onChange={(e) => setSecondaryPosition(e.target.value)}
-                        >
-                          <option value="">None</option>
-                          {POSITIONS.map((pos) => (
-                            <option key={pos} value={pos}>{pos}</option>
-                          ))}
-                        </NativeSelect>
+                        <div className="col-span-2 sm:col-span-1">
+                          <NativeSelect
+                            label="2nd Pos."
+                            value={secondaryPosition}
+                            onChange={(e) => setSecondaryPosition(e.target.value)}
+                          >
+                            <option value="">None</option>
+                            {POSITIONS.map((pos) => (
+                              <option key={pos} value={pos}>{pos}</option>
+                            ))}
+                          </NativeSelect>
+                        </div>
                       </div>
 
                       {/* Hometown */}
@@ -577,7 +593,10 @@ export default function BaseballPlayerOnboarding() {
                         <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
                           Physical
                         </p>
-                        <div className="grid grid-cols-3 gap-3">
+                        {/* 2-up on phone — same NativeSelect clipping risk as
+                            Bats/Throws/2nd Pos. above; Weight wraps to its own
+                            full-width row until there's room for 3-up. */}
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                           <NativeSelect
                             label="Height (ft)"
                             value={heightFeet.toString()}
@@ -596,14 +615,16 @@ export default function BaseballPlayerOnboarding() {
                               <option key={i} value={i}>{i} in</option>
                             ))}
                           </NativeSelect>
-                          <Input
-                            label="Weight (lbs)"
-                            type="text"
-                            inputMode="numeric"
-                            value={weight}
-                            onChange={(e) => setWeight(e.target.value)}
-                            placeholder="175"
-                          />
+                          <div className="col-span-2 sm:col-span-1">
+                            <Input
+                              label="Weight (lbs)"
+                              type="text"
+                              inputMode="numeric"
+                              value={weight}
+                              onChange={(e) => setWeight(e.target.value)}
+                              placeholder="175"
+                            />
+                          </div>
                         </div>
                       </div>
 

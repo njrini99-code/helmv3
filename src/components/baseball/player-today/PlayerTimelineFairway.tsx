@@ -125,6 +125,12 @@ function AckChip({
     // A chip-sized toggle (text-microbadge / px-1.5 py-0.5) matching the
     // InkBadge/SourceTrustBadge siblings in the same row — the <Button>
     // primitive's fixed sm/md/lg sizing + haptics would not produce a chip.
+    // Invisible hit-slop (before pseudo-element) expands the tap target to
+    // 44px without enlarging the visible chip — same technique as
+    // ModalShell/Sheet's close buttons. Asymmetric: the badge row sits only
+    // `mt-2.5` (10px) below the title/time row, so the top expansion is
+    // capped at 8px (2px of clearance left) to never cross into that row
+    // above — the bottom has no such neighbor, so it keeps the full 14px.
     // eslint-disable-next-line helm/no-raw-button
     <button
       type="button"
@@ -133,7 +139,11 @@ function AckChip({
       aria-pressed={acknowledged}
       className={cn(
         pressableClass({ ink: 'team' }),
-        'inline-flex items-center gap-1 rounded-fw-sm border px-1.5 py-0.5 font-annual text-microbadge uppercase leading-none tracking-[0.12em] disabled:cursor-wait disabled:opacity-60',
+        'relative inline-flex items-center gap-1 rounded-fw-sm border px-1.5 py-0.5 font-annual text-microbadge uppercase leading-none tracking-[0.12em] disabled:cursor-wait disabled:opacity-60',
+        // -top-1.5 (6px): clears BOTH neighbor cases the verifier derived — the
+        // 10px title/time-row margin above AND the 6px flex row-gap when the
+        // badge line wraps and AckChip lands on its own second line.
+        "before:absolute before:-inset-x-1.5 before:-top-1.5 before:-bottom-3.5 before:content-['']",
         acknowledged
           ? 'border-transparent text-grade-plus'
           : 'border-[color:var(--hairline)] text-text-tertiary hover:text-grade-plus',

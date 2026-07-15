@@ -1,0 +1,417 @@
+// =============================================================================
+// src/contracts/baseball/product-trust/player-today-honest-loop.test.ts
+//
+// PRODUCT TRUTH THIS FILE PINS (#377 — Player Today daily loop):
+//   1. Readiness never fabricates a green band: with no check-in row at all,
+//      the gate is `available:false` with a prompt note (never a fabricated
+//      band); a submitted-but-non-green check-in still surfaces the REAL
+//      band/reasons/missingInputs computeReadiness produced (never silently
+//      swapped for a healthy result).
+//   2. `summary.readinessNeedsAttention` is true whenever the gate is not a
+//      confident green-today (no submission, or band !== 'green'), and false
+//      only for a genuine submitted + non-stale + green result.
+//   3. assignments/coachActions/tasks/coachNotes are honest feeds: a
+//      genuinely empty table returns `available:true, items:[], error:null`,
+//      while a FAILED sub-query also returns `available:true, items:[]` but
+//      with a non-null `error` string. The two states must be distinguishable
+//      ONLY by `error` — `available` is identical in both, which is the
+//      actual fabrication risk: a caller that checks only `available` cannot
+//      tell "genuinely nothing assigned" from "the query failed".
+//   4. recentStats (#379 — box-score sourced, not the deprecated flat
+//      per-session stat table) never fabricates trust/provenance: a
+//      box-score row carries no CSV-import provenance columns at all, so
+//      every recentStats entry gets an honest trust:null/provenance:null
+//      rather than an implied import lineage that doesn't exist.
+//   5. #845 review fix: a player with ZERO box-score rows but real history in
+//      the deprecated baseball_player_stats table must still see REAL
+//      recentStats entries (sourceLayer:'legacy-fallback'), never a silent
+//      honest-LOOKING empty list caused by the #379 migration itself — the
+//      same box-score > legacy-fallback > no-data precedence
+//      legacy-stat-adapters.ts enforces for aggregate rows. A legacy row's
+//      real stamped provenance (when it has any) surfaces too, never
+//      flattened to null just because it came through the fallback path.
+//
+// Source of truth: `getPlayerToday` in
+// src/lib/baseball/read-models/player-today.ts.
+//
+// Mocks ONLY '@/lib/supabase/server' and '@/lib/lifting/resolve-baseball-context'
+// — the real team-local-day (contract-day.ts) and computeReadiness
+// (readiness-compute.ts) logic runs UNMOCKED, exactly as the sibling
+// player-today-lift-timezone.test.ts already does for the Lift & Check-in
+// card's own action.
+// =============================================================================
+
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
+import { failSelect } from '@/test/fixtures/fake-supabase-fail-select';
+
+let fake: FakeSupabase;
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(async () => fake),
+}));
+
+// Literal ids (NOT referencing outer `const`s — vi.mock factories run before
+// this module's own top-level declarations execute) so the Helm Lifting Lab
+// context always resolves, keeping the assignments/readiness sub-queries live
+// without needing to seed baseball_teams/helm_lifting_athletes rows for it.
+vi.mock('@/lib/lifting/resolve-baseball-context', () => ({
+  resolveBaseballLiftingOrg: vi.fn(async () => ({ organizationId: 'org-1', teamId: 'team-1' })),
+  resolveMyBaseballAthleteId: vi.fn(async () => 'athlete-1'),
+}));
+
+import { getPlayerToday } from '@/lib/baseball/read-models/player-today';
+
+const TEAM_ID = 'team-1';
+const PLAYER_ID = 'player-1';
+const USER_ID = 'user-1';
+const DAY = '2026-04-01';
+
+type Row = Record<string, unknown>;
+
+function baseTables(extra: Record<string, Row[]> = {}): Record<string, Row[]> {
+  return {
+    baseball_teams: [{ id: TEAM_ID, timezone: 'UTC' }],
+    baseball_players: [{ id: PLAYER_ID, user_id: USER_ID }],
+    baseball_team_members: [{ id: 'mem-1', team_id: TEAM_ID, player_id: PLAYER_ID }],
+    baseball_events: [],
+    // #379 — recentStats now sources from the canonical box-score layer, not
+    // the deprecated flat/aggregate stat layer.
+    baseball_box_score_batting: [],
+    baseball_box_score_pitching: [],
+    baseball_games: [],
+    helm_lifting_sessions: [],
+    baseball_actions: [],
+    helm_lifting_readiness_checkins: [],
+    baseball_task_assignments: [],
+    baseball_coach_notes: [],
+    baseball_practices: [],
+    ...extra,
+  };
+}
+
+beforeEach(() => {
+  fake = createFakeSupabase({ user: { id: USER_ID }, tables: baseTables() });
+});
+
+describe('getPlayerToday — readiness gate never fabricates a green band (#377)', () => {
+  it('no check-in row at all -> available:false with a prompt note, never a fabricated band', async () => {
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.authorized).toBe(true);
+    expect(result.readiness.available).toBe(false);
+    expect(result.readiness.band).toBeNull();
+    expect(result.readiness.note).toMatch(/submit a check-in/i);
+    expect(result.summary.readinessNeedsAttention).toBe(true);
+  });
+
+  it('a submitted illness check-in surfaces the REAL red band/reasons, never a swapped-in green', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        helm_lifting_readiness_checkins: [
+          {
+            id: 'checkin-1',
+            athlete_id: 'athlete-1',
+            organization_id: 'org-1',
+            checkin_date: DAY,
+            sleep_quality: 3,
+            energy_level: 3,
+            stress_level: 3,
+            soreness_overall: 3,
+            lower_body_status: null,
+            illness_flag: true,
+            notes: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.readiness.available).toBe(true);
+    expect(result.readiness.submittedToday).toBe(true);
+    expect(result.readiness.band).toBe('red');
+    expect(result.readiness.reasons).toContain('reported illness');
+    expect(result.readiness.missingInputs).toContain('arm status');
+    expect(result.readiness.stale).toBe(false);
+    // Never a healthy-looking result: readinessNeedsAttention stays true even
+    // though a check-in WAS submitted today (submittedToday alone is not
+    // "fine" — the band still is).
+    expect(result.summary.readinessNeedsAttention).toBe(true);
+  });
+
+  it('a genuinely healthy submitted check-in DOES resolve green (the contrast case)', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        helm_lifting_readiness_checkins: [
+          {
+            id: 'checkin-2',
+            athlete_id: 'athlete-1',
+            organization_id: 'org-1',
+            checkin_date: DAY,
+            sleep_quality: 4, // -> 8h, not < 6
+            energy_level: 4, // not <= 2
+            stress_level: 2, // not >= 4
+            soreness_overall: 2, // not >= 4
+            lower_body_status: 2, // not >= 4
+            illness_flag: false,
+            notes: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.readiness.band).toBe('green');
+    expect(result.readiness.submittedToday).toBe(true);
+    expect(result.readiness.stale).toBe(false);
+    // Only now — real green, submitted today, not stale — does the gate stop
+    // asking for attention.
+    expect(result.summary.readinessNeedsAttention).toBe(false);
+  });
+});
+
+describe('getPlayerToday — sub-read failures are distinguishable from honest empty (#377)', () => {
+  it('a genuinely empty coachActions/tasks table: available:true, items:[], error:null', async () => {
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.coachActions.available).toBe(true);
+    expect(result.coachActions.items).toEqual([]);
+    expect(result.tasks.available).toBe(true);
+    expect(result.tasks.items).toEqual([]);
+    expect(result.error).toBeNull();
+  });
+
+  it('a FAILING coachActions query still reports available:true + items:[], but sets `error` — distinguishing it from genuine emptiness', async () => {
+    failSelect(fake, 'baseball_actions', 'boom');
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    // Same shape as the honest-empty case above (available:true, items:[])...
+    expect(result.coachActions.available).toBe(true);
+    expect(result.coachActions.items).toEqual([]);
+    // ...but `error` is now non-null, which is the ONLY signal that this is a
+    // failure, not "your coach hasn't assigned anything".
+    expect(result.error).toBe('Your coach assignments could not be loaded.');
+  });
+
+  it('a FAILING tasks query still reports available:true + items:[], but sets a DIFFERENT `error` string', async () => {
+    failSelect(fake, 'baseball_task_assignments', 'boom');
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.tasks.available).toBe(true);
+    expect(result.tasks.items).toEqual([]);
+    expect(result.error).toBe('Your tasks could not be loaded.');
+  });
+
+  it('a FAILING coachNotes query still reports available:true + items:[], but sets a DIFFERENT `error` string', async () => {
+    failSelect(fake, 'baseball_coach_notes', 'boom');
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.coachNotes.available).toBe(true);
+    expect(result.coachNotes.items).toEqual([]);
+    expect(result.error).toBe('Your coach notes could not be loaded.');
+  });
+});
+
+describe('getPlayerToday — recent stats never fabricate provenance for a box-score row (#379)', () => {
+  // #379: recentStats migrated off the deprecated flat per-session stat
+  // table onto the canonical box-score layer (baseball_box_score_batting/
+  // _pitching joined to baseball_games). Box-score rows are staff-entered via
+  // the box-score save flow, not imported, so they carry no CSV-import
+  // provenance columns at all — trust/provenance must always be an honest
+  // null, never a fabricated stamp implying an import lineage that doesn't
+  // exist.
+  it('a game with a captured box-score line surfaces trust:null + provenance:null (no import lineage exists to stamp)', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_box_score_batting: [
+          { id: 'bb-1', game_id: 'game-1', player_id: PLAYER_ID, team_id: TEAM_ID },
+        ],
+        baseball_games: [
+          {
+            id: 'game-1',
+            team_id: TEAM_ID,
+            game_date: DAY,
+            game_type: 'official_game',
+            opponent_name: 'Rival High',
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    const row = result.recentStats.find((s) => s.id === 'game-1');
+    expect(row).toBeTruthy();
+    expect(row?.statType).toBe('official_game');
+    expect(row?.sessionDate).toBe(DAY);
+    expect(row?.sessionName).toBe('vs Rival High');
+    expect(row?.trust).toBeNull();
+    expect(row?.provenance).toBeNull();
+  });
+
+  it('a game with only a pitching line (no batting row) still surfaces in recentStats', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_box_score_pitching: [
+          { id: 'bp-1', game_id: 'game-2', player_id: PLAYER_ID, team_id: TEAM_ID },
+        ],
+        baseball_games: [
+          {
+            id: 'game-2',
+            team_id: TEAM_ID,
+            game_date: DAY,
+            game_type: 'scrimmage',
+            opponent_name: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    const row = result.recentStats.find((s) => s.id === 'game-2');
+    expect(row).toBeTruthy();
+    expect(row?.statType).toBe('scrimmage');
+    // No opponent on file -> honest null, never a fabricated label.
+    expect(row?.sessionName).toBeNull();
+    expect(row?.trust).toBeNull();
+    expect(row?.provenance).toBeNull();
+  });
+
+  it('a FAILING box-score read returns recentStats:[] but sets `error` — distinguishable from a genuinely stat-less player', async () => {
+    failSelect(fake, 'baseball_box_score_batting', 'boom');
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    // Same shape as the honest-empty case (recentStats: [])...
+    expect(result.recentStats).toEqual([]);
+    // ...but `error` is non-null — the ONLY signal this is a failure, not
+    // "this player has no captured box-score lines yet" (mirrors the item-3
+    // sub-read contract above).
+    expect(result.error).toBe('Your recent stats could not be loaded.');
+  });
+});
+
+describe('getPlayerToday — legacy-fallback recentStats for a legacy-only player (#845)', () => {
+  // #845 review fix: the #379 migration onto the box-score layer regressed a
+  // player with real PRE-box-score history (zero box-score rows, real
+  // baseball_player_stats rows) from "shows real recent stats" to a silent,
+  // honest-LOOKING empty list — the migration itself was the bug, not a
+  // genuine absence of activity. fetchRecentBoxScoreActivity now falls back
+  // to baseball_player_stats ONLY when box-score is empty for this player.
+  it('zero box-score rows, real baseball_player_stats rows -> recentStats shows REAL data, not an honest-looking empty', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_player_stats: [
+          {
+            id: 'stat-1',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'game',
+            session_date: '2026-03-10',
+            session_name: 'vs Rival High',
+            source: 'manual',
+            source_trust_level: null,
+            source_match_tier: null,
+            source_match_confidence: null,
+            source_external_id: null,
+            import_run_id: null,
+          },
+          {
+            id: 'stat-2',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'practice',
+            session_date: '2026-03-01',
+            session_name: null,
+            source: 'manual',
+            source_trust_level: null,
+            source_match_tier: null,
+            source_match_confidence: null,
+            source_external_id: null,
+            import_run_id: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.recentStats).toHaveLength(2);
+    expect(result.recentStats.every((s) => s.sourceLayer === 'legacy-fallback')).toBe(true);
+    // Newest-first, same ordering contract as the box-score path.
+    expect(result.recentStats[0]?.id).toBe('stat-1');
+    expect(result.recentStats[0]?.sessionName).toBe('vs Rival High');
+    expect(result.error).toBeNull();
+  });
+
+  it('an imported legacy row surfaces its REAL stamped trust/provenance (never flattened to null just because it came through the fallback)', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_player_stats: [
+          {
+            id: 'stat-3',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'game',
+            session_date: '2026-02-01',
+            session_name: 'Imported batch',
+            source: 'csv_import',
+            source_trust_level: 'unreviewed',
+            source_match_tier: 'exact_roster',
+            source_match_confidence: 0.92,
+            source_external_id: 'ext-1',
+            import_run_id: 'run-1',
+          },
+        ],
+        baseball_import_runs: [{ id: 'run-1', review_state: 'pending_review' }],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    const row = result.recentStats.find((s) => s.id === 'stat-3');
+    expect(row?.sourceLayer).toBe('legacy-fallback');
+    expect(row?.trust).not.toBeNull();
+    expect(row?.provenance).not.toBeNull();
+  });
+
+  it('a box-score row present -> box-score wins outright, even with legacy rows also present (never blended)', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_box_score_batting: [
+          { id: 'bb-1', game_id: 'game-1', player_id: PLAYER_ID, team_id: TEAM_ID },
+        ],
+        baseball_games: [
+          {
+            id: 'game-1',
+            team_id: TEAM_ID,
+            game_date: DAY,
+            game_type: 'official_game',
+            opponent_name: 'Rival High',
+          },
+        ],
+        baseball_player_stats: [
+          {
+            id: 'stat-old',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'game',
+            session_date: '2020-01-01',
+            session_name: 'Ancient session',
+            source: 'manual',
+            source_trust_level: null,
+            source_match_tier: null,
+            source_match_confidence: null,
+            source_external_id: null,
+            import_run_id: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.recentStats.every((s) => s.sourceLayer === 'box-score')).toBe(true);
+    expect(result.recentStats.find((s) => s.id === 'stat-old')).toBeUndefined();
+  });
+});

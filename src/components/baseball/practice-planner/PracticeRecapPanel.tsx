@@ -439,7 +439,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                               </p>
                             </div>
                           </div>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                             <label className="block" htmlFor={`blue-score-${s.id}`}>
                               <span className="mb-1 block text-micro font-medium text-warm-600">
                                 Blue / offense

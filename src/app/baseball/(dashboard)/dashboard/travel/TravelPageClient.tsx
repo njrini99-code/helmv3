@@ -100,6 +100,21 @@ export default function TravelPageClient() {
     }
   }
 
+  // Lean refetch for post-save refresh — deliberately does not touch
+  // `loading`/re-run role detection like detectRoleAndLoad does, so
+  // TravelClient never unmounts behind <PageLoading /> after a save
+  // (that full-page swap was the same white-flash mobile-UX problem the
+  // reload-based save flow was fixed to avoid).
+  async function reloadItineraries() {
+    if (!teamId) return;
+    const result = await getTeamItineraries(teamId);
+    if (result.success) {
+      setItineraries(result.data);
+    } else {
+      setLoadError(result.error ?? 'Travel itineraries could not be loaded.');
+    }
+  }
+
   // NOTE: the page-level global <Header> was removed here — the dashboard shell
   // now owns the single top bar (search / notifications / user menu / breadcrumb),
   // and TravelClient renders its own page title + primary action. Rendering the
@@ -143,6 +158,7 @@ export default function TravelPageClient() {
       itineraries={itineraries}
       teamId={teamId}
       isCoach={isCoach}
+      onReload={reloadItineraries}
     />
   );
 }

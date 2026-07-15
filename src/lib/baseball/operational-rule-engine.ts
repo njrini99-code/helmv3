@@ -51,6 +51,7 @@ import type {
   BaseballRecommendedActionType,
   BaseballSignalSourceRef,
 } from '@/lib/types/baseball-signals';
+import type { SourceLayer } from './read-models/legacy-stat-adapters';
 
 // -----------------------------------------------------------------------------
 // Rule identity — the 8 deterministic categories from V5 System 1 that the AI
@@ -248,6 +249,17 @@ export interface FactPlayerHittingSpan {
   recentOPS: number;
   /** Season OPS (full-season aggregate). */
   seasonOPS: number;
+  /**
+   * Where `seasonOPS` was actually sourced from: 'box-score' when a real
+   * box-score-era season roll-up field backs it, 'legacy-fallback' when it
+   * is really the legacy aggregate row's LIFETIME career_ops (either because
+   * no box-score-era row exists yet, or because one exists but its own OPS
+   * field is null — e.g. a pure pitcher/DH row with g=0 this season — see
+   * loadPlayerHittingSpans's per-field fallback). The rule below uses this
+   * to label the baseline honestly ("career" vs "season") instead of always
+   * calling a legacy lifetime average a "season" figure.
+   */
+  seasonOPSSourceLayer: SourceLayer;
   /** ISO date (YYYY-MM-DD) of the most-recent game in the span (for dedupe weekOf). */
   mostRecentGameDate: string;
 }
@@ -870,7 +882,13 @@ const OPERATIONAL_RULES: readonly OperationalRule[] = [
         const monday = new Date(gameDate.getTime() - daysFromMonday * 86400000);
         const weekOf = monday.toISOString().slice(0, 10);
 
-        const evidence = `Recent ${span.recentGameCount}G OPS ${span.recentOPS.toFixed(3)} vs season ${span.seasonOPS.toFixed(3)} (−${drop.toFixed(3)})`;
+        // HONESTY: a legacy-fallback baseline is the aggregate row's LIFETIME
+        // career_ops, not a season-scoped figure — calling it "season" would
+        // overstate its freshness/scope to a coach. Label it "career" instead
+        // whenever it wasn't backed by a real box-score-era season row.
+        const baselineLabel = span.seasonOPSSourceLayer === 'legacy-fallback' ? 'career' : 'season';
+
+        const evidence = `Recent ${span.recentGameCount}G OPS ${span.recentOPS.toFixed(3)} vs ${baselineLabel} ${span.seasonOPS.toFixed(3)} (−${drop.toFixed(3)})`;
 
         out.push({
           ruleId: 'player_cold_streak',
@@ -881,8 +899,8 @@ const OPERATIONAL_RULES: readonly OperationalRule[] = [
           eventId: null,
           title: `Hitting slump worth review: ${span.playerName}`,
           whyItMatters: sampleTooSmall
-            ? `${span.playerName}'s OPS over the last ${span.recentGameCount} game${span.recentGameCount === 1 ? '' : 's'} (${span.recentOPS.toFixed(3)}) is associated with a notable drop from season average (${span.seasonOPS.toFixed(3)}). Limited data — worth monitoring as more games accumulate.`
-            : `${span.playerName}'s OPS over the last ${span.recentGameCount} games (${span.recentOPS.toFixed(3)}) is associated with a ${drop.toFixed(3)} drop from season average (${span.seasonOPS.toFixed(3)}). Worth a review to see what may be contributing.`,
+            ? `${span.playerName}'s OPS over the last ${span.recentGameCount} game${span.recentGameCount === 1 ? '' : 's'} (${span.recentOPS.toFixed(3)}) is associated with a notable drop from ${baselineLabel} average (${span.seasonOPS.toFixed(3)}). Limited data — worth monitoring as more games accumulate.`
+            : `${span.playerName}'s OPS over the last ${span.recentGameCount} games (${span.recentOPS.toFixed(3)}) is associated with a ${drop.toFixed(3)} drop from ${baselineLabel} average (${span.seasonOPS.toFixed(3)}). Worth a review to see what may be contributing.`,
           evidence,
           sourceRefs: [
             ref(

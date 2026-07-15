@@ -105,6 +105,7 @@ export function CreateAnnouncementFlow({ players, teamId, onCreated }: CreateAnn
         title="New Announcement"
         description="Share updates with your team"
         size="full"
+        sheetOnMobile
       >
         <form onSubmit={handleSubmit}>
           <div className="space-y-5">
@@ -172,8 +173,17 @@ export function CreateAnnouncementFlow({ players, teamId, onCreated }: CreateAnn
           {/* Footer */}
           {/* Sticky footer bar — solid Paper, no glass: this is an in-modal bar,
               not a full-screen scrim, so backdrop-blur doesn't qualify for the
-              scrim exemption. */}
-          <div className="flex items-center justify-between pt-4 mt-5 border-t border-warm-200 sticky bottom-0 bg-cream-50 -mx-6 px-6 pb-1 -mb-6">
+              scrim exemption. The negative bottom margin exists to cancel the
+              Modal body's own bottom padding (modal.tsx) so this bar's opaque
+              background reaches the sheet's true bottom edge instead of
+              floating above a strip of visible padding. That body padding is
+              `pb-[max(1.5rem,env(safe-area-inset-bottom))]` on mobile (this
+              modal is `sheetOnMobile`) — a fixed `-mb-6` (-1.5rem) only
+              cancels the `1.5rem` floor, under-cancelling on notched phones
+              where the safe-area inset wins the max() and leaves a gap below
+              this bar. `md:-mb-6` still matches exactly at `md:pb-6`, where
+              the safe-area no longer applies. */}
+          <div className="flex items-center justify-between pt-4 mt-5 border-t border-warm-200 sticky bottom-0 bg-cream-50 -mx-6 px-6 pb-1 [margin-bottom:calc(max(1.5rem,env(safe-area-inset-bottom))*-1)] md:-mb-6">
             <div className="flex items-center gap-2 text-xs text-warm-400">
               {recipientPlayerIds === null ? (
                 <span>Sending to all {players.length} players</span>

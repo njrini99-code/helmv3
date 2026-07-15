@@ -39,6 +39,7 @@
 import { useMemo, useState, useTransition } from 'react';
 
 import { PaperCard } from '@/components/baseball/living-annual';
+import { Segmented } from '@/components/fairway';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/sonner';
@@ -175,6 +176,7 @@ function FieldRow({
     }
     return false;
   };
+  const isClamped = base === 'staff_only';
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-1 py-2.5">
@@ -185,44 +187,27 @@ function FieldRow({
           {(effective === 'public' || effective === 'scout') && !exposureEnabled
             ? ' · only applies once exposure is on'
             : ''}
+          {/* Hover-only `title` tooltips don't work on touch — the clamp reason
+              (also) reads inline here so it survives on mobile, not just desktop. */}
+          {isClamped ? ' · staff-private, cannot be exposed' : ''}
         </p>
       </div>
-      <div
-        role="radiogroup"
+      {/* Shared Segmented primitive (src/components/fairway/controls/segmented.tsx):
+          44px touch target under `[@media(pointer:coarse)]` at `size="sm"`,
+          built-in narrow-screen overflow handling, and its surface/border
+          tokens are re-pointed to the Living Annual --paper/--hairline cream
+          by the ambient `.living-annual` scope — no bespoke chip styling. */}
+      <Segmented<PassportFieldVisibility>
         aria-label={`${label} visibility`}
-        className="inline-flex overflow-hidden rounded-lg border border-warm-200 bg-cream-50"
-      >
-        {FIELD_OPTIONS.map((opt) => {
-          const active = effective === opt.value;
-          const isDisabled = disabled || optionDisabled(opt.value);
-          return (
-            // eslint-disable-next-line helm/no-raw-button -- segmented radio control, not the ripple/haptic Button primitive
-            <button
-              key={opt.value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              disabled={isDisabled}
-              title={
-                optionDisabled(opt.value)
-                  ? 'This field is staff-private and cannot be exposed.'
-                  : undefined
-              }
-              onClick={() => !isDisabled && !active && onChange(fieldKey, opt.value)}
-              className={[
-                'px-2.5 py-1.5 text-eyebrow font-medium transition-colors',
-                active
-                  ? 'bg-primary-500 text-white'
-                  : isDisabled
-                    ? 'cursor-not-allowed text-warm-300'
-                    : 'text-warm-500 hover:bg-warm-100',
-              ].join(' ')}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
+        size="sm"
+        value={effective}
+        onValueChange={(next) => onChange(fieldKey, next)}
+        options={FIELD_OPTIONS.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          disabled: disabled || optionDisabled(opt.value),
+        }))}
+      />
     </div>
   );
 }
@@ -364,7 +349,7 @@ export function PassportVisibilityControls({
       </div>
 
       {!canEdit && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-warm-200 bg-warm-50 px-3.5 py-2.5">
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-3.5 py-2.5">
           <IconLock size={15} className="mt-0.5 shrink-0 text-warm-400" />
           <p className="text-sm text-warm-500">
             You can view these settings but only the player or team staff can change them.
@@ -390,7 +375,7 @@ export function PassportVisibilityControls({
                   'flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition-all',
                   active
                     ? 'border-primary-300 bg-primary-50/70 shadow-card-hover'
-                    : 'border-warm-200 bg-cream-50 hover:border-primary-200',
+                    : 'border-[color:var(--hairline)] bg-[var(--paper-canvas)] hover:border-primary-200',
                   !canEdit ? 'cursor-not-allowed opacity-70' : '',
                 ].join(' ')}
               >
@@ -417,7 +402,7 @@ export function PassportVisibilityControls({
         </div>
 
         {publicLinkActive && (
-          <div className="mt-3 rounded-xl border border-warm-200 bg-cream-50 px-3.5 py-2.5">
+          <div className="mt-3 rounded-xl border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-3.5 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <IconEye size={14} className="shrink-0 text-warm-400" />
@@ -485,7 +470,7 @@ export function PassportVisibilityControls({
               <p className="mb-1 text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
                 {GROUP_LABEL[group] ?? group}
               </p>
-              <div className="divide-y divide-warm-100 rounded-xl border border-warm-200 bg-cream-50 px-2">
+              <div className="divide-y divide-[color:var(--hairline)] rounded-xl border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-2">
                 {defs.map((def) => (
                   <FieldRow
                     key={def.key}
@@ -510,7 +495,7 @@ export function PassportVisibilityControls({
 
       {/* 4. PRIMARY ACTION */}
       {canEdit && (
-        <div className="mt-7 flex items-center justify-end gap-3 border-t border-warm-100 pt-5">
+        <div className="mt-7 flex items-center justify-end gap-3 border-t border-[color:var(--hairline)] pt-5">
           {dirty && (
             <Button variant="ghost" size="md" onClick={onReset} disabled={pending}>
               Reset
