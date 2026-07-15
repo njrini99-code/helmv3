@@ -1423,14 +1423,24 @@ export default function PipelinePage() {
         )}
       </div>
 
-      {/* Commit ceremony — fires once, on a successful drag into `committed`. */}
+      {/* Commit ceremony — fires once, on a successful drag into `committed`.
+          Bottom-center (mirrors the app's own toast placement,
+          components/ui/sonner.tsx's `position={isMobile ? 'bottom-center' :
+          'bottom-right'}`), not a hardcoded `top-20`: a fixed top offset has
+          no way to know whether the current hub mounts HubSubNav (whose real
+          height varies by tab count/route) on top of the topbar, so a static
+          number either collides with that strip or leaves an ugly gap
+          depending on the route. Anchoring to the bottom instead sidesteps
+          that entirely, and `--golf-mobile-bottom-nav-offset` (globals.css;
+          zeroes out at the `md` breakpoint where FairwayBottomNav
+          unmounts) keeps it clear of the mobile tab bar. */}
       <AnimatePresence>
         {celebrateCommit ? (
           <m.div
             key="commit-seal"
             role="status"
             aria-live="polite"
-            className="pointer-events-none fixed inset-x-0 top-20 z-50 flex flex-col items-center gap-2"
+            className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--golf-mobile-bottom-nav-offset,0px))] z-[var(--fw-z-toast)] flex flex-col items-center gap-2"
             initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

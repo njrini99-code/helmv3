@@ -778,7 +778,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                     onClick={() => togglePosition(pos)}
                     haptic="none"
                     className={cn(
-                      'min-h-[32px] rounded-full border px-3 py-1 text-sm font-medium [@media(pointer:coarse)]:min-h-[44px]',
+                      'min-h-[30px] rounded-full border px-3 py-1 text-sm font-medium [@media(pointer:coarse)]:min-h-[44px]',
                       active
                         ? 'border-grade-plus bg-grade-plus text-white hover:bg-grade-plus'
                         : 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary hover:border-grade-plus/50',
