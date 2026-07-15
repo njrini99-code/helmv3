@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import type { RecruitingMetricWeights } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -75,8 +75,6 @@ export function RecruitingWeightDistributor({
   onChange,
   autoBalance = true,
 }: RecruitingWeightDistributorProps) {
-  const [hoveredMetric, setHoveredMetric] = useState<MetricKey | null>(null);
-
   const total = METRICS.reduce((sum, m) => sum + values[m.key], 0);
   const isValid = total >= 95 && total <= 105; // Allow small rounding differences
 
@@ -144,13 +142,7 @@ export function RecruitingWeightDistributor({
       {/* Sliders */}
       <div className="space-y-5">
         {METRICS.map((metric) => (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- mouse-hover-only tooltip, no interactive behavior
-          <div
-            key={metric.key}
-            className="group"
-            onMouseEnter={() => setHoveredMetric(metric.key)}
-            onMouseLeave={() => setHoveredMetric(null)}
-          >
+          <div key={metric.key}>
             <div className="flex items-center justify-between text-sm mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{metric.icon}</span>
@@ -206,12 +198,12 @@ export function RecruitingWeightDistributor({
               />
             </div>
 
-            {/* Description tooltip */}
-            {hoveredMetric === metric.key && (
-              <p className="text-xs text-warm-500 mt-1.5 animate-in fade-in duration-200">
-                {metric.description}
-              </p>
-            )}
+            {/* Description: always rendered (was gated behind onMouseEnter,
+                so it was permanently unreachable on touch devices -- there's
+                already vertical room for it beneath the slider). */}
+            <p className="text-xs text-warm-500 mt-1.5">
+              {metric.description}
+            </p>
           </div>
         ))}
       </div>

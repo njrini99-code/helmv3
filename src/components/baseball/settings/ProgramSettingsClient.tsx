@@ -1012,7 +1012,8 @@ export function ProgramSettingsClient({ data }: Props) {
                   value={isValidBrandHex(identity.primary_color) ? identity.primary_color : '#16a34a'}
                   onChange={(e) => patchIdentity('primary_color', e.target.value)}
                   className={cn(
-                    'h-10 w-14 shrink-0 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
+                    // h-11: 44px tap-target floor (was h-10/40px).
+                    'h-11 w-14 shrink-0 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
                     !canEdit && 'cursor-not-allowed opacity-70',
                   )}
                 />
@@ -1036,7 +1037,8 @@ export function ProgramSettingsClient({ data }: Props) {
                   value={isValidBrandHex(identity.secondary_color) ? identity.secondary_color : '#1c1917'}
                   onChange={(e) => patchIdentity('secondary_color', e.target.value)}
                   className={cn(
-                    'h-10 w-14 shrink-0 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
+                    // h-11: 44px tap-target floor (was h-10/40px).
+                    'h-11 w-14 shrink-0 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
                     !canEdit && 'cursor-not-allowed opacity-70',
                   )}
                 />
@@ -1076,7 +1078,8 @@ export function ProgramSettingsClient({ data }: Props) {
                 value={settings.brand_accent ?? '#16A34A'}
                 onChange={(e) => patch('brand_accent', e.target.value)}
                 className={cn(
-                  'h-10 w-14 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
+                  // h-11: 44px tap-target floor (was h-10/40px).
+                  'h-11 w-14 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1',
                   !canEdit && 'cursor-not-allowed opacity-70',
                 )}
               />
@@ -1159,9 +1162,16 @@ export function ProgramSettingsClient({ data }: Props) {
           </div>
         </SectionCard>
 
-        {/* Sticky save affordance on mobile */}
+        {/* Sticky save affordance on mobile. The bare `bottom-4` this used to
+            carry stuck the button ~16px above the viewport edge — squarely
+            inside the opaque, unconditionally-rendered FairwayBottomNav's
+            56px+safe-area footprint, so "Save Changes" sat behind the tab bar
+            and was untappable. `--golf-mobile-bottom-nav-offset` (globals.css)
+            already bakes in that exact height and zeroes out at md (768px),
+            where there's no bottom nav to clear — same idiom the Messages
+            sticky footer uses. */}
         {canEdit && hasUnsaved && (
-          <div className="sticky bottom-4 flex justify-end">
+          <div className="sticky bottom-[calc(1rem+var(--golf-mobile-bottom-nav-offset,0px))] z-[var(--fw-z-sticky)] flex justify-end">
             <Button onClick={handleSave} isLoading={isPending}>
               Save Changes
             </Button>
