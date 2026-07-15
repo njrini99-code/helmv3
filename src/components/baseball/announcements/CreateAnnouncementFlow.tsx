@@ -105,6 +105,7 @@ export function CreateAnnouncementFlow({ players, teamId, onCreated }: CreateAnn
         title="New Announcement"
         description="Share updates with your team"
         size="full"
+        sheetOnMobile
       >
         <form onSubmit={handleSubmit}>
           <div className="space-y-5">

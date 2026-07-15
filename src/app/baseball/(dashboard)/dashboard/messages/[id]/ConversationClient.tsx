@@ -172,7 +172,10 @@ export default function ConversationClient() {
         </div>
       </div>
 
-      <form onSubmit={handleSend} className="shrink-0 border-t border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 sm:px-6 sm:py-5">
+      <form
+        onSubmit={handleSend}
+        className="shrink-0 border-t border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] lg:pb-4"
+      >
         <PaperCard className="mx-auto flex max-w-[720px] items-center gap-2 p-2">
           <Input
             type="text"
