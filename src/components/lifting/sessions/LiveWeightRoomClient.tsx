@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { IconDumbbell, IconCheck, IconAlertCircle, IconUsers, IconRefresh } from '@/components/icons';
 import {
   advanceSessionLifecycle,
@@ -72,9 +73,14 @@ interface Props {
 // necessarily overflowed the visible viewport by the header's own height.
 // Mirrors the `--golf-mobile-header-offset` / `--golf-mobile-bottom-nav-offset`
 // idiom already established for exactly this shell-awareness gap (#481,
-// ConversationClient.tsx / MessagesFairway.tsx).
+// ConversationClient.tsx / MessagesFairway.tsx). Also subtracts
+// `--baseball-hub-subnav-offset` (default 0px everywhere except under a
+// mounted `HubSubNav`) — the same third term ConversationClient.tsx already
+// carries — because this component also renders at
+// /baseball/dashboard/performance/live under the 'development' HubSubNav
+// strip, which would otherwise under-fit by the strip's real measured height.
 const SHELL_AWARE_HEIGHT =
-  'h-[calc(100dvh-var(--golf-mobile-header-offset)-var(--golf-mobile-bottom-nav-offset))]';
+  'h-[calc(100dvh-var(--golf-mobile-header-offset)-var(--golf-mobile-bottom-nav-offset)-var(--baseball-hub-subnav-offset,0px))]';
 
 function LiveWeightRoomSkeleton() {
   return (
@@ -145,6 +151,14 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
   const [groupFilter, setGroupFilter] = useState<string | null>(null);
   const router = useRouter();
   const supabaseRef = useRef(createClient());
+  // Below `md`: the athlete detail renders as a Fairway Sheet (bottom sheet,
+  // vaul-backed, modal scrim). At `md`+: the PRE-EXISTING docked, non-modal
+  // `<aside>` — restored, not just phone-ified — because Sheet is always a
+  // vaul modal (scrim + focus trap), which would otherwise block a coach on
+  // desktop/tablet from clicking a different athlete card without first
+  // closing the current detail panel. Same breakpoint Sheet itself already
+  // reads internally for `mobileSide`.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   // Sync local state when the server component re-renders with fresh data
   // (triggered by router.refresh() from the realtime subscription below).
@@ -299,6 +313,110 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
   function getFullName(a: HelmLiftingLiveAthleteRow) {
     return [a.first_name, a.last_name].filter(Boolean).join(' ') || 'Unnamed';
   }
+
+  // Shared detail-panel body — single source of truth for both the desktop
+  // docked <aside> and the mobile Sheet.Body so the two surfaces can never
+  // drift apart. `null` when nothing is selected (both render sites branch
+  // on `selectedAthlete` themselves for their own header/chrome).
+  const athleteDetailBody = selectedAthlete ? (
+    <>
+      {/* Readiness band */}
+      {selectedAthlete.readiness_band && (
+        <div className={`rounded-xl border px-3 py-2 text-sm font-medium ${BAND_META[selectedAthlete.readiness_band].cls}`}>
+          Readiness: {BAND_META[selectedAthlete.readiness_band].label}
+        </div>
+      )}
+
+      {/* Exercises */}
+      <div>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-400 mb-2">Today's exercises</h3>
+        {selectedAthlete.exercises.length === 0 ? (
+          <p className="text-sm text-warm-400 italic">No exercises loaded.</p>
+        ) : (
+          <div className="space-y-2">
+            {selectedAthlete.exercises.map((ex) => (
+              <div key={ex.id} className="rounded-xl bg-cream-50 border border-warm-100 p-3">
+                <p className="text-sm font-medium text-warm-800">{ex.exercise_name_snapshot}</p>
+                <p className="text-xs text-warm-400 mt-0.5">
+                  {[
+                    ex.prescribed_sets != null ? `${ex.prescribed_sets} sets` : null,
+                    ex.prescribed_reps != null ? `${ex.prescribed_reps} reps` : null,
+                    ex.prescribed_load != null ? `@ ${ex.prescribed_load}${ex.prescribed_load_unit ? ` ${ex.prescribed_load_unit}` : ''}` : null,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Set logger */}
+      {canEdit && selectedAthlete.exercises.length > 0 && selectedAthlete.session_status !== 'completed' && (
+        <div className="rounded-xl border border-primary-100 bg-primary-50/30 p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-700">Log set #{setNum}</h3>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label htmlFor="log-reps" className="block text-eyebrow text-warm-500 mb-1">Reps</label>
+              <Input
+                id="log-reps"
+                type="number"
+                min={0}
+                value={actualReps}
+                onChange={(e) => setActualReps(e.target.value)}
+                placeholder="—"
+                className="text-center"
+              />
+            </div>
+            <div>
+              <label htmlFor="log-load" className="block text-eyebrow text-warm-500 mb-1">Load</label>
+              <Input
+                id="log-load"
+                type="number"
+                min={0}
+                value={actualLoad}
+                onChange={(e) => setActualLoad(e.target.value)}
+                placeholder="—"
+                className="text-center"
+              />
+            </div>
+            <div>
+              <label htmlFor="log-rpe" className="block text-eyebrow text-warm-500 mb-1">RPE</label>
+              <Input
+                id="log-rpe"
+                type="number"
+                min={0}
+                max={10}
+                step={0.5}
+                value={rpe}
+                onChange={(e) => setRpe(e.target.value)}
+                placeholder="—"
+                className="text-center"
+              />
+            </div>
+          </div>
+          <Button
+            className="w-full gap-1.5"
+            disabled={isPending}
+            onClick={() => handleLogSet(selectedAthlete)}
+          >
+            <IconCheck size={14} /> Log set
+          </Button>
+        </div>
+      )}
+
+      {/* Complete session */}
+      {canEdit && selectedAthlete.session_status !== 'completed' && (
+        <Button
+          variant="ghost"
+          className="w-full text-primary-600"
+          disabled={isPending}
+          onClick={() => handleComplete(selectedAthlete)}
+        >
+          <IconCheck size={14} className="mr-1" /> Mark session complete
+        </Button>
+      )}
+    </>
+  ) : null;
 
   return (
     <div className={`flex ${SHELL_AWARE_HEIGHT} flex-col bg-[#FFFEFA]`}>
@@ -467,120 +585,56 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
           )}
         </main>
 
-        {/* Athlete detail — Fairway Sheet (docked right on desktop, bottom
-            sheet below md, matching MoreNavSheet's pattern) instead of a
-            permanent w-80 flex sibling. Below md a fixed 320px aside next to
-            the athlete grid alone met or exceeded the viewport width; a
-            Sheet portals out of the flex layout entirely so it never
-            competes with the grid for width, and mobileSide="bottom" gives
-            it the doctrine-standard phone treatment. */}
-        {selectedAthlete && (
+        {/* Athlete detail — split by breakpoint instead of one Sheet for
+            every viewport:
+              - md+: the PRE-EXISTING docked, non-modal `<aside>` (restored).
+                Fairway's `Sheet` is always a vaul `modal` Drawer.Root (scrim +
+                focus trap) regardless of `side`/`mobileSide` — using it on
+                desktop/tablet too would block a coach from clicking a
+                different athlete card without first closing this one, which
+                the old docked aside never did.
+              - below md: a Fairway `Sheet` (`side="bottom"`), matching
+                Doctrine's phone bottom-sheet treatment. Kept mounted
+                unconditionally (visibility driven by `open`, body content
+                gated on `selectedAthlete` inside) so vaul can play its
+                close/exit transition instead of the panel vanishing the
+                instant `selectedAthleteId` clears — mirrors
+                FairwayEventDetailDrawer.tsx's established pattern. */}
+        {isDesktop ? (
+          selectedAthlete && (
+            <aside
+              className="w-80 shrink-0 border-l border-warm-100 bg-warm-50/50 overflow-y-auto p-4 space-y-4"
+              aria-label="Athlete detail"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-warm-900">{getFullName(selectedAthlete)}</h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setSelectedAthleteId(null)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setSelectedAthleteId(null); }}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                  aria-label="Close drawer"
+                >
+                  <span aria-hidden className="text-lg leading-none">×</span>
+                </Button>
+              </div>
+              {athleteDetailBody}
+            </aside>
+          )
+        ) : (
           <Sheet
-            open
+            open={selectedAthleteId !== null}
             onOpenChange={(open) => {
               if (!open) setSelectedAthleteId(null);
             }}
-            side="right"
-            mobileSide="bottom"
-            title={getFullName(selectedAthlete)}
+            side="bottom"
+            title={selectedAthlete ? getFullName(selectedAthlete) : 'Athlete detail'}
           >
-            <Sheet.Body className="space-y-4">
-              {/* Readiness band */}
-              {selectedAthlete.readiness_band && (
-                <div className={`rounded-xl border px-3 py-2 text-sm font-medium ${BAND_META[selectedAthlete.readiness_band].cls}`}>
-                  Readiness: {BAND_META[selectedAthlete.readiness_band].label}
-                </div>
-              )}
-
-              {/* Exercises */}
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-400 mb-2">Today's exercises</h3>
-                {selectedAthlete.exercises.length === 0 ? (
-                  <p className="text-sm text-warm-400 italic">No exercises loaded.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedAthlete.exercises.map((ex) => (
-                      <div key={ex.id} className="rounded-xl bg-cream-50 border border-warm-100 p-3">
-                        <p className="text-sm font-medium text-warm-800">{ex.exercise_name_snapshot}</p>
-                        <p className="text-xs text-warm-400 mt-0.5">
-                          {[
-                            ex.prescribed_sets != null ? `${ex.prescribed_sets} sets` : null,
-                            ex.prescribed_reps != null ? `${ex.prescribed_reps} reps` : null,
-                            ex.prescribed_load != null ? `@ ${ex.prescribed_load}${ex.prescribed_load_unit ? ` ${ex.prescribed_load_unit}` : ''}` : null,
-                          ].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Set logger */}
-              {canEdit && selectedAthlete.exercises.length > 0 && selectedAthlete.session_status !== 'completed' && (
-                <div className="rounded-xl border border-primary-100 bg-primary-50/30 p-4 space-y-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-700">Log set #{setNum}</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label htmlFor="log-reps" className="block text-eyebrow text-warm-500 mb-1">Reps</label>
-                      <Input
-                        id="log-reps"
-                        type="number"
-                        min={0}
-                        value={actualReps}
-                        onChange={(e) => setActualReps(e.target.value)}
-                        placeholder="—"
-                        className="text-center"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="log-load" className="block text-eyebrow text-warm-500 mb-1">Load</label>
-                      <Input
-                        id="log-load"
-                        type="number"
-                        min={0}
-                        value={actualLoad}
-                        onChange={(e) => setActualLoad(e.target.value)}
-                        placeholder="—"
-                        className="text-center"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="log-rpe" className="block text-eyebrow text-warm-500 mb-1">RPE</label>
-                      <Input
-                        id="log-rpe"
-                        type="number"
-                        min={0}
-                        max={10}
-                        step={0.5}
-                        value={rpe}
-                        onChange={(e) => setRpe(e.target.value)}
-                        placeholder="—"
-                        className="text-center"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full gap-1.5"
-                    disabled={isPending}
-                    onClick={() => handleLogSet(selectedAthlete)}
-                  >
-                    <IconCheck size={14} /> Log set
-                  </Button>
-                </div>
-              )}
-
-              {/* Complete session */}
-              {canEdit && selectedAthlete.session_status !== 'completed' && (
-                <Button
-                  variant="ghost"
-                  className="w-full text-primary-600"
-                  disabled={isPending}
-                  onClick={() => handleComplete(selectedAthlete)}
-                >
-                  <IconCheck size={14} className="mr-1" /> Mark session complete
-                </Button>
-              )}
-            </Sheet.Body>
+            {selectedAthlete ? (
+              <Sheet.Body className="space-y-4">{athleteDetailBody}</Sheet.Body>
+            ) : null}
           </Sheet>
         )}
       </div>

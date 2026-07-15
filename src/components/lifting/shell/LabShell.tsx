@@ -113,7 +113,26 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
   );
 
   return (
-    <div className="min-h-dvh flex" style={{ backgroundColor: '#FFFEFA' }}>
+    <div
+      className="min-h-dvh flex"
+      style={
+        {
+          backgroundColor: '#FFFEFA',
+          // The Lifting Lab shell never renders a FairwayBottomNav (its
+          // mobile chrome is the hamburger drawer above, not a bottom tab
+          // bar) — but `--golf-mobile-bottom-nav-offset` defaults to a
+          // non-zero value (56px + safe-area) app-wide for routes that DO
+          // mount that nav. Scoping it to 0px for this shell's entire
+          // subtree means any leaf component reserving clearance for that
+          // bar (e.g. PlayerLiftSessionClient's sticky "Complete lift" bar)
+          // doesn't leave a phantom gap here, without every such component
+          // having to special-case '/lifting/dashboard' itself. BaseballHelm
+          // callers render inside BaseballFairwayShell instead, which DOES
+          // mount FairwayBottomNav and is untouched by this override.
+          '--golf-mobile-bottom-nav-offset': '0px',
+        } as React.CSSProperties
+      }
+    >
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-56 xl:w-60 flex-shrink-0 glass-standard border-r border-white/20 shadow-[2px_0_12px_rgba(0,0,0,0.04)]">
         <SidebarContent />
