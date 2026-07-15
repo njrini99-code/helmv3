@@ -99,7 +99,13 @@ export default function ConversationClient() {
   // broken/stale link.
   if (!conversation && !conversationsLoading) {
     return (
-      <div className={fairwayScope('flex h-[calc(100dvh-4rem)] flex-col px-4 py-6 sm:px-6')}>
+      // #481: same height budget as the loaded thread below — see that
+      // comment for why both terms are required.
+      <div
+        className={fairwayScope(
+          'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px))] flex-col px-4 py-6 sm:px-6',
+        )}
+      >
         <ThreadBackLink />
         <div className="flex flex-1 items-center justify-center">
           <EmptyIssue variant="messages" className="max-w-md" />
@@ -109,11 +115,20 @@ export default function ConversationClient() {
   }
 
   return (
-    // Same `100dvh - 64px` budget the sibling list page (`MessagesFairway`'s
-    // `SHELL` constant) already reconciled for the AppShell top bar — the bar
-    // is a fixed `h-16` (64px) on every breakpoint, so the value carries over
-    // unchanged from the legacy `<Header>` it replaces.
-    <div className={fairwayScope('flex h-[calc(100dvh-4rem)] flex-col')}>
+    // #481 fix: byte-identical height budget to the sibling list page's
+    // `MessagesFairway.SHELL` constant — the AppShell top bar (`4rem` fixed
+    // on every breakpoint) + the notch inset + `--golf-mobile-bottom-nav-
+    // offset` (FairwayBottomNav's own clearance, zeroing at `md`+ where the
+    // bar doesn't render). Previously this was a bare `100dvh-4rem` with
+    // NEITHER term — on notched phones this pane was short by the missing
+    // safe-area-inset-top AND rendered its composer under the fixed bottom
+    // nav, the same root cause as the list page's pre-fix bug (see
+    // MessagesFairway.tsx's SHELL comment for the full box-model walkthrough).
+    <div
+      className={fairwayScope(
+        'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px))] flex-col',
+      )}
+    >
       <div className="flex shrink-0 flex-col border-b border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 sm:px-6 sm:py-5">
         <ThreadBackLink />
         <SectionMasthead eyebrow={otherSubtitle || undefined} title={otherName} ink="team" />
