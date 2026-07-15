@@ -1323,9 +1323,57 @@ function NextEventHero({ events }: { events: PlayerTodayEvent[] }) {
 }
 
 // -----------------------------------------------------------------------------
-// Primary CTA row (spec lines 72-76): Check In · Acknowledge · View Today Plan
-// Anchors to the correct surface sections via scroll behavior.
+// Primary CTA row (#484): ONE filled primary CTA chosen by priority —
+// pending ack > due check-in > view plan/schedule — with any remaining
+// applicable action demoted to an inline text link (never hidden, never a
+// second peer pill). Anchors to the correct surface sections via scroll
+// behavior; "View Today Plan/Schedule" is real navigation via next/link.
 // -----------------------------------------------------------------------------
+
+type CtaIcon = typeof IconCheck;
+
+interface CtaAction {
+  key: 'acknowledge' | 'checkin' | 'view';
+  label: string;
+  href: string;
+  icon: CtaIcon;
+  /** Real navigation (next/link) rather than an in-page scroll anchor. */
+  isNav?: boolean;
+}
+
+function CtaLink({ action, primary }: { action: CtaAction; primary?: boolean }) {
+  const Icon = action.icon;
+  const className = primary
+    ? pressableClass({
+        ink: 'team',
+        className:
+          'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
+      })
+    : pressableClass({
+        ink: 'team',
+        tint: false,
+        className:
+          'inline-flex items-center gap-1.5 font-annual text-body-sm font-medium text-text-secondary underline-offset-4 hover:text-text-primary hover:underline',
+      });
+  const content = (
+    <>
+      <Icon size={15} aria-hidden />
+      {action.label}
+    </>
+  );
+  if (action.isNav) {
+    return (
+      <Link href={action.href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <a href={action.href} className={className}>
+      {content}
+    </a>
+  );
+}
 
 function PrimaryCtaRow({
   hasPendingAck,
@@ -1336,49 +1384,37 @@ function PrimaryCtaRow({
   hasLiftToday: boolean;
   practiceId: string | null;
 }) {
+  // Priority order per #484's acceptance criteria: pending ack > due check-in
+  // > view plan/schedule. "View" always applies (fallback), so the array is
+  // never empty and index 0 is always well-formed.
+  const actions: CtaAction[] = [];
+  if (hasPendingAck) {
+    actions.push({ key: 'acknowledge', label: 'Acknowledge', href: '#today-schedule', icon: IconCheckCircle2 });
+  }
+  if (hasLiftToday) {
+    actions.push({ key: 'checkin', label: 'Check In', href: '#player-lift-today', icon: IconCheck });
+  }
+  actions.push({
+    key: 'view',
+    label: practiceId ? 'View Today Plan' : 'View Schedule',
+    href: practiceId ? '/baseball/player/practice' : '/baseball/dashboard/calendar',
+    icon: IconCalendar,
+    isNav: true,
+  });
+
+  const primary = actions[0]!;
+  const secondary = actions.slice(1);
+
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {hasLiftToday && (
-        <a
-          href="#player-lift-today"
-          className={pressableClass({
-            ink: 'team',
-            className:
-              'inline-flex items-center gap-1.5 rounded-card bg-grade-plus px-4 py-2 font-annual text-body-sm font-semibold text-white',
-          })}
-        >
-          <IconCheck size={15} aria-hidden />
-          Check In
-        </a>
+    <div className="flex flex-col items-start gap-3">
+      <CtaLink action={primary} primary />
+      {secondary.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          {secondary.map((action) => (
+            <CtaLink key={action.key} action={action} />
+          ))}
+        </div>
       )}
-      {hasPendingAck && (
-        <a
-          href="#today-schedule"
-          className={pressableClass({
-            ink: 'team',
-            className:
-              'inline-flex items-center gap-1.5 rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-4 py-2 font-annual text-body-sm font-semibold text-sodium',
-          })}
-        >
-          <IconCheckCircle2 size={15} aria-hidden />
-          Acknowledge
-        </a>
-      )}
-      <Link
-        href={
-          practiceId
-            ? '/baseball/player/practice'
-            : '/baseball/dashboard/calendar'
-        }
-        className={pressableClass({
-          ink: 'team',
-          className:
-            'inline-flex items-center gap-1.5 rounded-card border border-[color:var(--hairline)] bg-[var(--paper-canvas)] px-4 py-2 font-annual text-body-sm font-semibold text-text-primary',
-        })}
-      >
-        <IconCalendar size={15} aria-hidden />
-        {practiceId ? 'View Today Plan' : 'View Schedule'}
-      </Link>
     </div>
   );
 }
@@ -1454,9 +1490,10 @@ export function PlayerTodayClient({
           </SectionMasthead>
         </Reveal>
 
-        {/* Primary CTA row (spec lines 72-76): Check In · Acknowledge · View Today Plan.
-            Rendered above the fold so the player's three core actions are
-            immediately reachable without scrolling. */}
+        {/* Primary CTA row (#484): ONE filled primary CTA chosen by priority
+            (pending ack > due check-in > view plan), any remaining action
+            demoted to an inline text link. Rendered above the fold so the
+            player's top action is immediately reachable without scrolling. */}
         <div className="mt-5">
           <PrimaryCtaRow
             hasPendingAck={hasPendingAck}
@@ -1471,11 +1508,24 @@ export function PlayerTodayClient({
           <EditorsLetter className="mt-6" ink="team" title="Some of today's data is catching up." body={model.error} />
         )}
 
+        {/* Next required event hero — first-viewport spec item (lines 67-68),
+            and the real schedule content #484 wants reachable without
+            scrolling. Ordered directly after the CTA row/error notice (ahead
+            of the one-time recruiting nudge below) so a genuine "what's next"
+            signal isn't pushed below a promotional card. Only renders when
+            there are events; hidden when the schedule is empty. */}
+        {model.schedule.length > 0 && (
+          <div className="mt-6">
+            <NextEventHero events={model.schedule} />
+          </div>
+        )}
+
         {/* Activate Recruiting nudge — one-time opt-in gate before college
             coaches can see this player's identity. The nav entry has no
             permanent rail slot by design (see hub-definitions.ts), so this is
             the persistent surface that keeps an eligible, not-yet-activated
-            player from never discovering the feature exists. */}
+            player from never discovering the feature exists. Placed after
+            the real schedule content above (#484) rather than before it. */}
         {recruitingActivation && !recruitingActivation.activated && (
           <EditorsLetter
             className="mt-6"
@@ -1498,15 +1548,6 @@ export function PlayerTodayClient({
               </Link>
             }
           />
-        )}
-
-        {/* Next required event hero — first-viewport spec item (lines 67-68).
-            Promoted above the summary strip so it's immediately visible. Only
-            renders when there are events; hidden when the schedule is empty. */}
-        {model.schedule.length > 0 && (
-          <div className="mt-6">
-            <NextEventHero events={model.schedule} />
-          </div>
         )}
 
         {/* Summary + readiness gate. The gate sits with the summary because it
