@@ -418,7 +418,7 @@ export function StatsUploadClient({
   // ============================================================================
 
   return (
-    <div className="min-h-dvh bg-cream-100">
+    <div className="bg-cream-100">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -908,7 +908,7 @@ export function StatsUploadClient({
                                 </p>
                                 <div className="space-y-2">
                                   {suggestions.map((sug) => (
-                                    <Button variant="primary"
+                                    <Button variant="ghost"
                                       key={sug.player.id}
                                       onClick={() =>
                                         handleManualAssignment(
@@ -1044,7 +1044,7 @@ export function StatsUploadClient({
                   <p className="block text-sm font-medium text-warm-700 mb-2">
                     Session Type
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {(['practice', 'game', 'other'] as const).map((type) => (
                       <Button variant="primary"
                         key={type}
