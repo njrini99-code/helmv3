@@ -154,15 +154,24 @@ jobs:
         if: steps.baseball-auth-ready.outputs.ready == 'true'
         run: npm run seed:baseball:ci
 
-      - name: Run BaseballHelm mandatory smoke (blocking)
+      # One invocation = one dev-server lifecycle. The mobile viewport
+      # regression projects (blocking; e2e/mobile-viewports.spec.ts — the
+      # #799/#806 phone-width defect classes at 320/390/430px) ride the same
+      # Playwright process as the mandatory smoke instead of booting a second
+      # webServer that could hit port-3000 contention.
+      - name: Run BaseballHelm mandatory smoke + mobile viewport regression (blocking)
         if: steps.baseball-auth-ready.outputs.ready == 'true'
         run: |
           npx playwright test \
             --project=chromium \
             --project=baseball-coach \
             --project=baseball-player \
+            --project=mobile-public \
+            --project=mobile-coach \
+            --project=mobile-player \
             e2e/baseball-onboarding-smoke.spec.ts \
-            e2e/baseball-smoke.spec.ts
+            e2e/baseball-smoke.spec.ts \
+            e2e/mobile-viewports.spec.ts
 
       - name: Run Playwright tests
         env:
