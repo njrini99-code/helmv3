@@ -173,7 +173,11 @@ export async function sweepActionOutcomes(
   // eventRows null, so every action's `eventDerivedForPlayer` below resolves
   // to no event data (legacy scalar fallback for every player this pass) --
   // never a partial event/legacy blend (mirrors loadEngineStatRows's own rule).
-  const { data: eventRows }: { data: EngineEventRows | null } = await loadEngineEventRows(supabase, teamId);
+  const { data: eventRows }: { data: EngineEventRows | null } = await loadEngineEventRows(
+    supabase,
+    teamId,
+    playerIds,
+  );
 
   const nowIso = new Date().toISOString();
   let measured = 0;

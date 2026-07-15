@@ -192,7 +192,9 @@ type Row = Record<string, unknown>;
 /**
  * Same minimal chainable fake shape as engine-stat-rows.test.ts's, plus a REAL
  * (not no-op) `.is()` so the #813 supersede-filter test below is an honest
- * assertion rather than a smoke test.
+ * assertion rather than a smoke test, and a REAL `.in()` so the player-id
+ * scoping test below actually exercises the DB-side filter, not just the
+ * pure aggregation layer.
  */
 function makeClient(tables: Record<string, Row[]>, errorTables: Set<string> = new Set()) {
   return {
@@ -204,6 +206,10 @@ function makeClient(tables: Record<string, Row[]>, errorTables: Set<string> = ne
         eq: () => builder,
         is: (col: string, val: unknown) => {
           rows = rows.filter((r) => r[col] === val);
+          return builder;
+        },
+        in: (col: string, vals: unknown[]) => {
+          rows = rows.filter((r) => vals.includes(r[col]));
           return builder;
         },
         order: () => builder,
@@ -264,5 +270,61 @@ describe('loadEngineEventRows', () => {
     expect(data).toEqual({ pitches: [], battedBalls: [] });
     expect(error).toBeNull();
     expect(queried).toBe(false);
+  });
+});
+
+// -----------------------------------------------------------------------------
+// loadEngineEventRows — player-id scoping (unbounded-read fix).
+//
+// buildActionOutcomeSeed (action-baseline.ts) resolves ONE player's velocity
+// scalar on every coach "convert to action" click; it must never fire a
+// team-wide, unbounded scan of the whole pitch/batted-ball history to do so.
+// These pin that the optional `playerIds` param actually bounds the DB read
+// (not just the pure aggregation downstream), mirroring loadEngineStatRows's
+// own `.in('player_id', playerIds)` scoping.
+// -----------------------------------------------------------------------------
+describe('loadEngineEventRows — player-id scoping (unbounded-read fix)', () => {
+  it('scopes the pitch read to pitcher_id IN playerIds and the batted-ball read to batter_id IN playerIds — other players never enter the pool', async () => {
+    const client = makeClient({
+      baseball_pitch_events: [
+        { id: 'pt-p1', team_id: TEAM, pitcher_id: 'p1', velocity: 90, superseded_by_run_id: null },
+        { id: 'pt-p2', team_id: TEAM, pitcher_id: 'p2', velocity: 70, superseded_by_run_id: null },
+      ],
+      baseball_batted_ball_events: [
+        { id: 'bb-p1', team_id: TEAM, batter_id: 'p1', exit_velocity: 100, superseded_by_run_id: null },
+        { id: 'bb-p2', team_id: TEAM, batter_id: 'p2', exit_velocity: 60, superseded_by_run_id: null },
+      ],
+    });
+
+    const { data, error } = await loadEngineEventRows(client, TEAM, ['p1']);
+    expect(error).toBeNull();
+    expect(data!.pitches.map((p) => p.id)).toEqual(['pt-p1']);
+    expect(data!.battedBalls.map((b) => b.id)).toEqual(['bb-p1']);
+  });
+
+  it('returns an empty pool WITHOUT querying when playerIds is an explicit empty array', async () => {
+    let queried = false;
+    const client = {
+      from() {
+        queried = true;
+        throw new Error('should not query');
+      },
+    };
+    const { data, error } = await loadEngineEventRows(client, TEAM, []);
+    expect(data).toEqual({ pitches: [], battedBalls: [] });
+    expect(error).toBeNull();
+    expect(queried).toBe(false);
+  });
+
+  it('omitting playerIds keeps the team-wide read (explicit opt-in only — no behavior change for a caller that truly needs every player)', async () => {
+    const client = makeClient({
+      baseball_pitch_events: [
+        { id: 'pt-p1', team_id: TEAM, pitcher_id: 'p1', velocity: 90, superseded_by_run_id: null },
+        { id: 'pt-p2', team_id: TEAM, pitcher_id: 'p2', velocity: 70, superseded_by_run_id: null },
+      ],
+      baseball_batted_ball_events: [],
+    });
+    const { data } = await loadEngineEventRows(client, TEAM);
+    expect(data!.pitches.map((p) => p.id).sort()).toEqual(['pt-p1', 'pt-p2']);
   });
 });

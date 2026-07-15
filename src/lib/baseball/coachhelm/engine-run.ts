@@ -327,7 +327,7 @@ export async function runBaseballEngineCore(
   // canonical velocity source. ALL-OR-NOTHING: an event-read failure leaves
   // eventDerivedByPlayer EMPTY, so every player degrades to their legacy
   // scalar this run -- never a partial event/legacy blend.
-  const { data: engineEventRows, error: eventRowsErr } = await loadEngineEventRows(db, teamId);
+  const { data: engineEventRows, error: eventRowsErr } = await loadEngineEventRows(db, teamId, playerIds);
   const eventDerivedByPlayer: Record<string, EventDerivedVelocityInput> =
     !eventRowsErr && engineEventRows
       ? buildEventDerivedByPlayer(playerIds, engineEventRows.pitches, engineEventRows.battedBalls)

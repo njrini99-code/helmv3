@@ -15,14 +15,17 @@ const TEAM = 'team-1';
  * Minimal in-memory Supabase-shaped stub with REAL filtering (eq/in/is mutate
  * the row set), matching action-baseline.test.ts's established style.
  */
-function makeClient(tables: {
-  baseball_player_stats?: Array<Record<string, unknown>>;
-  baseball_games?: Array<Record<string, unknown>>;
-  baseball_box_score_batting?: Array<Record<string, unknown>>;
-  baseball_box_score_pitching?: Array<Record<string, unknown>>;
-  baseball_pitch_events?: Array<Record<string, unknown>>;
-  baseball_batted_ball_events?: Array<Record<string, unknown>>;
-}): BaselineClient {
+function makeClient(
+  tables: {
+    baseball_player_stats?: Array<Record<string, unknown>>;
+    baseball_games?: Array<Record<string, unknown>>;
+    baseball_box_score_batting?: Array<Record<string, unknown>>;
+    baseball_box_score_pitching?: Array<Record<string, unknown>>;
+    baseball_pitch_events?: Array<Record<string, unknown>>;
+    baseball_batted_ball_events?: Array<Record<string, unknown>>;
+  },
+  inCalls?: Array<{ table: string; col: string; vals: unknown[] }>,
+): BaselineClient {
   return {
     from(table: string) {
       let rows: Array<Record<string, unknown>> =
@@ -36,6 +39,7 @@ function makeClient(tables: {
           return api;
         },
         in(col: string, vals: unknown[]) {
+          inCalls?.push({ table, col, vals });
           rows = rows.filter((r) => vals.includes(r[col]));
           return api;
         },
@@ -98,5 +102,31 @@ describe('buildActionOutcomeSeed — #852 event-derived velocity wiring', () => 
     expect(seed.outcome_metric).toBe('avg_exit_velocity');
     expect(seed.outcome_baseline_value).toBe(90);
     expect(seed.outcome_verdict).toBeNull();
+  });
+
+  it('scopes the event read to ONLY the subject player — never a team-wide unbounded scan on a single "convert to action" click', async () => {
+    const inCalls: Array<{ table: string; col: string; vals: unknown[] }> = [];
+    const client = makeClient(
+      {
+        baseball_player_stats: [
+          {
+            id: 's3', team_id: TEAM, player_id: 'p3', stat_type: 'game', session_date: '2026-04-01',
+            at_bats: 4, hits: 1, walks: 0, strikeouts: 1, exit_velocity: 75,
+          },
+        ],
+        baseball_batted_ball_events: [
+          { id: 'bb-p3', team_id: TEAM, batter_id: 'p3', exit_velocity: 100, measured_at: '2026-04-01T00:00:00.000Z', superseded_by_run_id: null },
+          // A teammate's batted ball -- must never enter p3's baseline read.
+          { id: 'bb-other', team_id: TEAM, batter_id: 'p-other', exit_velocity: 50, measured_at: '2026-04-01T00:00:00.000Z', superseded_by_run_id: null },
+        ],
+      },
+      inCalls,
+    );
+
+    const seed = await buildActionOutcomeSeed(client, TEAM, 'p3', 'avg_exit_velocity');
+    expect(seed.outcome_baseline_value).toBe(100); // NOT (100+50)/2 -- p-other never enters the pool.
+
+    const bbeScope = inCalls.find((c) => c.table === 'baseball_batted_ball_events' && c.col === 'batter_id');
+    expect(bbeScope?.vals).toEqual(['p3']);
   });
 });

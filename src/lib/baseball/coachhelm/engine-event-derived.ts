@@ -25,11 +25,16 @@ import 'server-only';
 //      PostgREST 1000-row cap (fetchAllRowsResult) with the #813 superseded-row
 //      filter (`superseded_by_run_id IS NULL` -- only the CURRENT value powers
 //      the engine, matching engine-run.ts's existing deepened-catalog read and
-//      elite-stat-events.ts's own getEliteStatEvents). No date window here --
-//      callers apply their OWN honesty window (e.g. outcome-sweep's
-//      after-window) by filtering the returned rows before aggregating, the
-//      same way loadEngineStatRows returns the full box-score history and lets
-//      each caller decide how much of it to use.
+//      elite-stat-events.ts's own getEliteStatEvents). Also bounded by an
+//      OPTIONAL `playerIds` scope (`.in('pitcher_id'|'batter_id', playerIds)`)
+//      -- a single "convert to action" click only ever needs ONE player's
+//      rows, so action-baseline.ts passes `[playerId]` rather than forcing a
+//      team-wide scan; engine-run/outcome-sweep pass their own
+//      roster/todo-derived id lists. No date window here -- callers apply
+//      their OWN honesty window (e.g. outcome-sweep's after-window) by
+//      filtering the returned rows before aggregating, the same way
+//      loadEngineStatRows returns the full box-score history (for its own
+//      player scope) and lets each caller decide how much of it to use.
 //   2. buildEventDerivedByPlayer / eventDerivedVelocityForPlayer (pure) --
 //      groups rows by player and calls buildHitterMetrics / buildPitcherMetrics
 //      + eventDerivedVelocityFromMetrics to produce the per-player velocity
@@ -88,10 +93,17 @@ export interface EngineEventRows {
  * (`superseded_by_run_id IS NULL`) -- a corrected import must never let a
  * stale, superseded pitch/batted-ball row into the engine's velocity average.
  *
- * No player-id filter: mirrors engine-run.ts's existing deepened-event-catalog
- * read of these same two tables (team-scoped, ungated by player), which keeps
- * this a single shared shape every caller (engine-run / outcome-sweep /
- * action-baseline) can reuse without an `.or()` multi-column player filter.
+ * `playerIds`, when passed, bounds the read to exactly the players the caller
+ * needs -- mirrors loadEngineStatRows's own `.in('player_id', playerIds)`
+ * scoping (this read's box-score sibling). `eventDerivedVelocityForPlayer` /
+ * `buildEventDerivedByPlayer` only ever read a pitch row via its
+ * `pitcher_id` and a batted-ball row via its `batter_id`, so that is exactly
+ * what each table is filtered on -- a single coach "convert to action" click
+ * (ONE player) must never fire a team-wide, unbounded scan of the entire
+ * pitch/batted-ball history just to resolve that one player's velocity
+ * scalar. Omit `playerIds` (or pass `undefined`) for a genuinely team-wide
+ * read (engine-run / outcome-sweep already compute their own roster/todo
+ * player-id list and now pass it through here too).
  *
  * ALL-OR-NOTHING: a failure on EITHER table returns `data: null` so a caller
  * degrades every player to their legacy scalar this run, never a partial
@@ -100,28 +112,35 @@ export interface EngineEventRows {
 export async function loadEngineEventRows(
   db: EngineEventRowsClient,
   teamId: string,
+  playerIds?: string[],
 ): Promise<{ data: EngineEventRows | null; error: { message: string; code?: string | null } | null }> {
   if (!teamId) return { data: { pitches: [], battedBalls: [] }, error: null };
+  // An explicitly empty scope list means "no players to resolve" -- honestly
+  // return nothing rather than querying (mirrors loadEngineStatRows's own
+  // `playerIds.length === 0` short-circuit).
+  if (playerIds && playerIds.length === 0) {
+    return { data: { pitches: [], battedBalls: [] }, error: null };
+  }
 
   const [pitchRes, bbRes] = await Promise.all([
-    fetchAllRowsResult<BaseballPitchEvent>((from, to) =>
-      db
+    fetchAllRowsResult<BaseballPitchEvent>((from, to) => {
+      let q = db
         .from('baseball_pitch_events')
         .select('*')
         .eq('team_id', teamId)
-        .is('superseded_by_run_id', null)
-        .order('id', { ascending: true })
-        .range(from, to),
-    ),
-    fetchAllRowsResult<BaseballBattedBallEvent>((from, to) =>
-      db
+        .is('superseded_by_run_id', null);
+      if (playerIds) q = q.in('pitcher_id', playerIds);
+      return q.order('id', { ascending: true }).range(from, to);
+    }),
+    fetchAllRowsResult<BaseballBattedBallEvent>((from, to) => {
+      let q = db
         .from('baseball_batted_ball_events')
         .select('*')
         .eq('team_id', teamId)
-        .is('superseded_by_run_id', null)
-        .order('id', { ascending: true })
-        .range(from, to),
-    ),
+        .is('superseded_by_run_id', null);
+      if (playerIds) q = q.in('batter_id', playerIds);
+      return q.order('id', { ascending: true }).range(from, to);
+    }),
   ]);
 
   if (pitchRes.error || bbRes.error) {

@@ -223,7 +223,11 @@ export async function buildActionOutcomeSeed(
   // read's own no-date-filter semantics). ALL-OR-NOTHING: an event-read
   // failure (eventRows null) falls back to the legacy scalar for every
   // velocity field, never a partial blend (mirrors loadEngineStatRows).
-  const { data: eventRows } = await loadEngineEventRows(supabase, teamId);
+  // Scoped to THIS ONE player -- a single "convert to action" click must
+  // never fire a team-wide, unbounded scan of the whole pitch/batted-ball
+  // history just to resolve one player's velocity scalar (mirrors the
+  // box-score read's own `[playerId]` scope immediately above).
+  const { data: eventRows } = await loadEngineEventRows(supabase, teamId, [playerId]);
   const eventDerived = eventRows
     ? eventDerivedVelocityForPlayer(playerId, eventRows.pitches, eventRows.battedBalls)
     : null;

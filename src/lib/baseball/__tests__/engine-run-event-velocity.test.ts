@@ -133,11 +133,14 @@ describe('runBaseballEngineCore — #852 event-derived velocity wiring', () => {
     // hand-rolling a whole second fake client. `baseball_batted_ball_events`
     // is ALSO read by the pre-existing "deepened event catalog" fetch further
     // down runBaseballEngineCore (a `.gte('measured_at', ...)`-shaped query,
-    // no `.is()`), so the stub must satisfy BOTH call shapes.
+    // no `.is()`), so the stub must satisfy BOTH call shapes. `.in()` is the
+    // player-id scope loadEngineEventRows now applies (velocity-read
+    // unbounded-scan fix) -- must be stubbed too.
     const realFrom = fake.from.bind(fake);
     const erroringBuilder: Record<string, unknown> = {
       select: () => erroringBuilder,
       eq: () => erroringBuilder,
+      in: () => erroringBuilder,
       is: () => erroringBuilder,
       gte: () => erroringBuilder,
       order: () => erroringBuilder,
