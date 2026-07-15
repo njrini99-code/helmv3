@@ -185,6 +185,7 @@ jobs:
       # without blocking any merge.
       - name: Run BaseballHelm authenticated route crawler (advisory)
         if: steps.baseball-auth-ready.outputs.ready == 'true'
+        continue-on-error: true
         run: |
           npx playwright test \
             --project=baseball-coach \
