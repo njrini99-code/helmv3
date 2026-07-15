@@ -54,9 +54,51 @@ function pluralizeEventLabel(label: string, count: number): string {
   return label.endsWith('s') ? label : `${label}s`;
 }
 
-// Preserve the legacy full-height flex shell so PremiumCalendarClient's h-full
-// resolves; only the gradient background is swapped for the Fairway canvas.
-const SHELL = 'flex h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] flex-col md:h-screen';
+// ── Shell height (#485) ──────────────────────────────────────────────────────
+//
+// PremiumCalendarClient's own internal grid/scroll region (its `data-scroll-
+// container` div) needs a DETERMINATE ancestor height for its `h-full`/`flex-1`
+// cascade to resolve — an in-flow, unbounded-height wrapper collapses it to 0
+// (confirmed: its outer wrapper is `flex ... h-full` and its content pane is
+// `flex-1 overflow-y-auto`, both percentage/flex-basis values that need a real
+// number above them). So this shell still hands it a real height — but the
+// height is now derived from the shell's ACTUAL chrome, not a flat guessed
+// `5.5rem`/`100vh` (the #485 defect): that guess predates the current
+// AppShell (sticky glass top bar + a coach-only Team-hub sub-nav strip) and
+// never matched either.
+//
+// Terms subtracted from `100dvh` (dvh, not vh, so iOS Safari's dynamic
+// toolbar can't leave a dead-space/double-scroll sliver — the exact symptom
+// #485 reports):
+//   1. `var(--golf-mobile-header-offset)` — the shared AppShell's own glass
+//      top bar (h-16 + safe-area-inset-top), exposed as a CSS custom property
+//      on the content column every baseball page (including this one)
+//      renders inside (AppShell.tsx). Reading the var instead of a literal
+//      keeps this file from drifting if the top bar's height ever changes.
+//   2. `45px` — hub-sub-nav.tsx's Team-hub tab row (`min-h-[44px]` + a 1px
+//      `border-b`), ONLY when the viewer is a coach: Calendar lives inside
+//      the coach TEAM hub (nav-registry.ts `hub: 'team'`, hub-definitions.ts
+//      `TEAM_ORDER`), so `BaseballFairwayShell` mounts `HubSubNav` above
+//      `<main>` for a coach on this exact route — but Calendar is a flat,
+//      hub-less tab for players (hub-definitions.ts's `PLAYER_TEAM_TABS` has
+//      no `calendar` entry; `resolve-active-hub.ts`'s player branch never
+//      matches this pathname), so no sub-nav strip renders for a player and
+//      nothing should be subtracted for one.
+//   3. AppShell's own bottom clearance below `<main>`'s content — mirrored
+//      from AppShell.tsx's `bottomNav && 'pb-[calc(2rem+56px+env(safe-area-
+//      inset-bottom,0px))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]'`
+//      (always applied: every baseball dashboard route passes a `bottomNav`)
+//      rather than reinvented, so the two numbers can't silently diverge
+//      again. `56px` (the mobile bottom-tab bar's own height) drops out at
+//      `md:` since that bar is `md:hidden`.
+//
+// Two full literal strings (not string-built from the parts above) so
+// Tailwind's static class scanner can actually find and generate both — a
+// template-built arbitrary-value class is invisible to it.
+const SHELL_PLAYER =
+  'flex h-[calc(100dvh-var(--golf-mobile-header-offset)-(2rem+56px+env(safe-area-inset-bottom,0px)))] flex-col md:h-[calc(100dvh-var(--golf-mobile-header-offset)-(2rem+env(safe-area-inset-bottom,0px)))]';
+const SHELL_COACH =
+  'flex h-[calc(100dvh-var(--golf-mobile-header-offset)-45px-(2rem+56px+env(safe-area-inset-bottom,0px)))] flex-col md:h-[calc(100dvh-var(--golf-mobile-header-offset)-45px-(2rem+env(safe-area-inset-bottom,0px)))]';
 
 export interface CalendarFairwayProps {
   /** College coach with no team → recruiting-focused empty state. */
@@ -85,9 +127,16 @@ export function CalendarFairway({
   upcomingEvents,
   eventTypeCounts,
 }: CalendarFairwayProps) {
+  // Both empty-state branches below render for the SAME route the main
+  // branch does (`resolveActiveHub` keys off pathname + role only, never off
+  // whether a team/events resolved), so the sub-nav — and thus the height
+  // this shell needs — is present under the identical isCoach condition in
+  // all three branches.
+  const shell = isCoach ? SHELL_COACH : SHELL_PLAYER;
+
   if (recruitingEmpty) {
     return (
-      <div className={fairwayScope(SHELL, 'bg-canvas')}>
+      <div className={fairwayScope(shell, 'bg-canvas')}>
         <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
           <SectionMasthead eyebrow="THE WAR ROOM · CALENDAR" title="Calendar" ink="pursuit" />
         </div>
@@ -115,7 +164,7 @@ export function CalendarFairway({
 
   if (noTeamEmpty) {
     return (
-      <div className={fairwayScope(SHELL, 'bg-canvas')}>
+      <div className={fairwayScope(shell, 'bg-canvas')}>
         <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
           <SectionMasthead eyebrow="THE PRESSBOX · SCHEDULE" title="Calendar" ink="team" />
         </div>
@@ -132,7 +181,7 @@ export function CalendarFairway({
   }
 
   return (
-    <div className={fairwayScope(SHELL, 'bg-canvas')}>
+    <div className={fairwayScope(shell, 'bg-canvas')}>
       <div className="flex-shrink-0 px-4 pt-4 md:px-6 md:pt-6">
         <SectionMasthead eyebrow="THE PRESSBOX · SCHEDULE" title="Calendar" ink="team" />
       </div>
