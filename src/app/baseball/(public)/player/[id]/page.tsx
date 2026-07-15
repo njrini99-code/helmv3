@@ -117,12 +117,11 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
     .maybeSingle();
 
   // Fetch recruiting interests separately
-  const { data: recruitingInterests } = await supabase
+  const { data: recruitingInterests, error: recruitingInterestsError } = await supabase
     .from('baseball_recruiting_interests')
     .select(`
       id,
       interest_level,
-      school_name,
       organization:organizations (
         id,
         name,
@@ -131,6 +130,10 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
       )
     `)
     .eq('player_id', id);
+
+  if (recruitingInterestsError) {
+    console.error('[player/[id]] Failed to fetch baseball_recruiting_interests:', recruitingInterestsError);
+  }
 
   if (error || !player) {
     notFound();
