@@ -26,6 +26,7 @@ import {
   IconUser,
   IconChevronRight,
   IconPlay,
+  IconMoreVertical,
 } from '@/components/icons';
 import Image from 'next/image';
 import { formatHeight, cn } from '@/lib/utils';
@@ -176,6 +177,14 @@ interface PlayerProfileClientProps {
 
 type TabType = 'overview' | 'videos' | 'stats' | 'teams' | 'achievements';
 
+// The hero's absolute-positioned back/action controls sit at the very top of
+// the viewport with nothing above them — on notch/Dynamic Island devices a
+// bare `top-4` clips under the status bar. `max()` keeps the same 1rem gap
+// on ordinary phones while growing to clear the inset on notched ones (#482).
+const HERO_SAFE_TOP_STYLE = {
+  top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))',
+};
+
 export function PlayerProfileClient({
   player,
   isCoachViewing,
@@ -188,6 +197,7 @@ export function PlayerProfileClient({
   const [isInWatchlist, setIsInWatchlist] = useState(initialIsInWatchlist);
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [heroActionsMenuOpen, setHeroActionsMenuOpen] = useState(false);
 
   const settings = player.player_settings || {};
   const showVideos = settings.show_videos !== false;
@@ -225,6 +235,24 @@ export function PlayerProfileClient({
     });
   };
 
+  // History-aware back navigation (#482) — a shared recruiting link can be
+  // opened cold (no history) from anywhere, so a hardcoded Discover target
+  // was wrong for self-viewing players and anonymous/public visitors alike.
+  // Same defensive pattern as BackChevron in src/components/ui/page-header.tsx.
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    if (isCoachViewing) {
+      router.push('/baseball/dashboard/discover');
+    } else if (isSelfViewing) {
+      router.push('/baseball/player/today');
+    } else {
+      router.push('/');
+    }
+  };
+
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: IconUser },
     { id: 'videos' as const, label: 'Videos', icon: IconVideo, count: player.videos?.length || 0 },
@@ -243,7 +271,7 @@ export function PlayerProfileClient({
             The dark-scrim photo-hero overlay pattern (bg-black/50 controls +
             bottom-anchored gradient) is preserved verbatim from the prior fix —
             it's the one place on this page that intentionally isn't cream/paper. */}
-        <div className="h-52 md:h-64 relative overflow-hidden">
+        <div className="h-28 sm:h-36 md:h-64 relative overflow-hidden">
           {player.banner_url ? (
             <>
               {/* Custom cover photo */}
@@ -278,20 +306,25 @@ export function PlayerProfileClient({
             </>
           )}
 
-          {/* Back button */}
-          <div className="absolute top-4 left-4 z-10">
-            <Link
-              href="/baseball/dashboard/discover"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors"
+          {/* Back button — history-aware, safe-area-clamped (#482) */}
+          <div className="absolute left-4 z-10" style={HERO_SAFE_TOP_STYLE}>
+            {/* eslint-disable-next-line helm/no-raw-button -- history-aware back control needs onClick, not a navigable <Link> (#482) */}
+            <button
+              type="button"
+              onClick={handleBack}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <IconArrowLeft size={18} />
-              <span className="text-sm font-medium">Back to Discover</span>
-            </Link>
+              <span className="text-sm font-medium">Back</span>
+            </button>
           </div>
 
-          {/* Actions on header */}
+          {/* Actions on header — one primary CTA (Watchlist) always visible;
+              Message stays a full CTA at md+ and collapses into an overflow
+              menu on phones so the hero never shows two competing coach
+              actions at once (#482). */}
           {isCoachViewing && (
-            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+            <div className="absolute right-4 z-10 flex items-center gap-2" style={HERO_SAFE_TOP_STYLE}>
               <Button
                 variant={isInWatchlist ? 'secondary' : 'primary'}
                 onClick={handleToggleWatchlist}
@@ -314,17 +347,67 @@ export function PlayerProfileClient({
               </Button>
               <Button
                 variant="secondary"
-                className="bg-black/50 text-white hover:bg-black/70 transition-colors"
+                className="hidden md:inline-flex bg-black/50 text-white hover:bg-black/70 transition-colors"
               >
                 <IconMail size={16} className="mr-2" />
                 Message
               </Button>
+
+              {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- onBlur only auto-dismisses when focus leaves the subtree; the actual interactive controls are the native <button>s below, each with their own role/keyboard support */}
+              <div
+                className="relative md:hidden"
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                    setHeroActionsMenuOpen(false);
+                  }
+                }}
+              >
+                {/* eslint-disable-next-line helm/no-raw-button -- compact icon-only overflow trigger over the dark hero, not a full <Button> pill (#482) */}
+                <button
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={heroActionsMenuOpen}
+                  aria-label="More profile actions"
+                  onClick={() => setHeroActionsMenuOpen((open) => !open)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setHeroActionsMenuOpen(false);
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/50 text-white transition-colors hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                >
+                  <IconMoreVertical size={18} />
+                </button>
+
+                {heroActionsMenuOpen && (
+                  <div
+                    role="menu"
+                    tabIndex={-1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setHeroActionsMenuOpen(false);
+                    }}
+                    className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] py-1 shadow-xl"
+                  >
+                    {/* eslint-disable-next-line helm/no-raw-button -- menu item row, not a <Button> pill (#482) */}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => setHeroActionsMenuOpen(false)}
+                      className={pressableClass({
+                        ink: 'pursuit',
+                        className: 'flex w-full items-center gap-2 px-4 py-2.5 text-left font-annual text-body-sm text-text-primary',
+                      })}
+                    >
+                      <IconMail size={16} className="text-text-tertiary" />
+                      Message
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
 
         {/* Passport card overlapping banner */}
-        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 -mt-28 md:-mt-32 relative z-10">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 -mt-10 md:-mt-32 relative z-10">
           <PaperCard registrationTick className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar */}
@@ -334,11 +417,11 @@ export function PlayerProfileClient({
                     name={fullName}
                     src={player.avatar_url}
                     size="2xl"
-                    className="ring-4 ring-[color:var(--paper)] shadow-xl w-32 h-32 md:w-40 md:h-40"
+                    className="ring-4 ring-[color:var(--paper)] shadow-xl w-20 h-20 md:w-40 md:h-40"
                   />
                   {player.recruiting_activated && (
-                    <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-pursuit rounded-full border-4 border-[color:var(--paper)] flex items-center justify-center shadow-lg">
-                      <IconCheck size={16} className="text-white" />
+                    <div className="absolute -bottom-1 -right-1 h-6 w-6 md:h-8 md:w-8 bg-pursuit rounded-full border-4 border-[color:var(--paper)] flex items-center justify-center shadow-lg">
+                      <IconCheck size={14} className="text-white" />
                     </div>
                   )}
                 </div>
