@@ -289,6 +289,11 @@ export function practiceEffectivenessGenerator(
 
   const refs: BaseballInsightSourceRef[] = [
     { table: 'baseball_practices', column: 'focus', visibility: 'team', sample_n: input.afterSampleN, label: `Focus: ${label}`, confidence },
+    // #379: this cite deliberately stays on the legacy flat table — the
+    // before/after measurement is assembled by actions/practice-effectiveness.ts,
+    // which still reads baseball_player_stats practice rows (the canonical
+    // layers have no practice-session shape yet; see stat-layer-manifest.ts).
+    // It migrates together with that action, not before.
     { table: 'baseball_player_stats', column: 'before/after focus metric', visibility: 'staff_only', sample_n: input.afterSampleN, label: 'Before/after measurement', confidence },
   ];
 
@@ -359,12 +364,24 @@ function tooEarlyCard(input: PracticeEffectivenessInput): BaseballInsightCandida
 //    infer them).
 // =============================================================================
 
-export function importQualityGenerator(runs: ImportRunSummary[]): BaseballInsightCandidate[] {
+/**
+ * @param nowIso ISO instant the 14-day recency window is computed from.
+ *   Defaults to `new Date().toISOString()` (the real wall clock) so every
+ *   non-engine caller keeps its existing real-time behavior unchanged.
+ *   `runBaseballEngineCore` threads its own deterministic `nowIso` through
+ *   `BaseballV10EngineInputs.now` for this exact param (#811 residual — this
+ *   generator was the one rolling window #811 explicitly left as raw
+ *   `Date.now()`, since `BaseballV10EngineInputs` had no `now` field yet).
+ */
+export function importQualityGenerator(
+  runs: ImportRunSummary[],
+  nowIso: string = new Date().toISOString(),
+): BaseballInsightCandidate[] {
   const out: BaseballInsightCandidate[] = [];
   const threshold = getBaseballMetricThreshold('import_warning_rate');
   // Only look at recently-touched runs (last 14 days) so we don't re-flag old
   // history; the action passes a bounded set, but we guard here too.
-  const cutoff = Date.now() - 14 * 86400_000;
+  const cutoff = Date.parse(nowIso) - 14 * 86400_000;
   for (const run of runs) {
     if (run.created_at && Date.parse(run.created_at) < cutoff) continue;
     const total = Math.max(1, run.row_count);

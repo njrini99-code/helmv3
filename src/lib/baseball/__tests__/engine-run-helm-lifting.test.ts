@@ -135,3 +135,21 @@ describe('runBaseballEngineCore — lift data reads helm_lifting_* (unified), no
     expect(player!.metrics.lift_rpe_avg?.value).toBe(8);
   });
 });
+
+// #811 residual: BaseballV10EngineInputs.now (consumed by importQualityGenerator's
+// 14-day recency window) must carry the SAME deterministic nowIso the run was
+// invoked with — not the real wall clock — so a fixed-clock engine run stays
+// fixed-clock end-to-end, matching the threading #811 already pinned for
+// loadAllPlayerMetrics/mergeV10PlayerMetrics/mergeEventPlayerMetrics above.
+describe('runBaseballEngineCore — threads its nowIso into BaseballV10EngineInputs.now (#811 residual)', () => {
+  it('passes the run nowIso through to engineInputs.now, not the real wall clock', async () => {
+    capturedInputs = null;
+    const tables = baseTables();
+    const fake = createFakeSupabase({ user: { id: 'user-1' }, tables });
+
+    const result = await runEngine(fake);
+    expect(result.success).toBe(true);
+    expect(capturedInputs).not.toBeNull();
+    expect(capturedInputs!.now).toBe(NOW);
+  });
+});
