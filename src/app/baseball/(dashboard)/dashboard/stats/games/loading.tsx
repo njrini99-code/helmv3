@@ -8,7 +8,7 @@ export default function GamesLoading() {
   return (
     <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1.5">
           <Skeleton className="h-7 w-48" />
           <Skeleton className="h-4 w-28" />
