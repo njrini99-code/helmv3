@@ -328,8 +328,11 @@ jobs:
     # receive no repo secrets from GitHub by design — `all`'s aggregate step
     # only treats 'failure'/'cancelled' as blocking, so a skipped job here
     # never blocks an external contribution that structurally cannot supply
-    # these secrets. Same-repo pushes and PRs still hard-fail on missing
-    # secrets, same as the push-triggered version always has.
+    # these secrets. Same-repo, non-Dependabot pushes and PRs still hard-fail
+    # on missing secrets, same as the push-triggered version always has.
+    # Dependabot PRs are opened against this repo (not a fork), so the
+    # same-repo check alone does not exclude them — `github.actor` is
+    # checked explicitly for that reason.
     #
     # COST NOTE: this doubles Playwright-browser-install + a full `npm run
     # build` on every PR from this repo, on top of the existing next-build /
@@ -338,7 +341,7 @@ jobs:
     # wall-clock time becomes a problem.
     if: >-
       github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

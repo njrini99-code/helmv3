@@ -59,10 +59,11 @@ its fail-loud auth setup already existed and ran on every `main` push via
 regression could land on `main` before this ever ran. `ci.yml` now runs the
 same specs (steps copied, not moved) as a required PR gate. It skips rather
 than fails on fork/Dependabot PRs (no repo secrets available to them);
-same-repo pushes and PRs must have the required secrets configured or the
-job fails loudly. Note the added cost: a second full `npm run build` +
-Playwright-chromium install on every same-repo PR, on top of the existing
-`Next build` / `Smoke checks` builds.
+same-repo, non-Dependabot pushes and PRs must have the required secrets
+configured or the job fails loudly. Note the added cost: a second full
+`npm run build` + Playwright-chromium install on every same-repo,
+non-Dependabot PR, on top of the existing `Next build` / `Smoke checks`
+builds.
 
 `Greptile Review` is intentionally advisory, not a required check: Greptile's
 `.greptile/config.json` skips `dependabot`-titled PRs, so it never posts a

@@ -46,10 +46,10 @@ Don't treat a check as "stuck" before its normal window has passed:
   75-minute budget; `picker-screenshots` and `baseball-smoke` 20 minutes each;
   main-push `Smoke checks` 15 minutes.
 - **`CI / all`'s `baseball-auth-smoke` job (#372)** — 30-minute budget; on
-  every same-repo PR/push it installs Playwright chromium, runs a full
-  `npm run build`, seeds BaseballHelm CI accounts, then runs the mandatory
-  coach/player smoke. This is separate from — and in addition to — the
-  broader `Smoke checks` build. On fork/Dependabot PR runs it **skips**
+  every same-repo, non-Dependabot PR/push it installs Playwright chromium,
+  runs a full `npm run build`, seeds BaseballHelm CI accounts, then runs the
+  mandatory coach/player smoke. This is separate from — and in addition to —
+  the broader `Smoke checks` build. On fork/Dependabot PR runs it **skips**
   (no repo secrets available) rather than running or failing; a skip here
   is expected, not stuck.
 - **Web server / auth waits** (why Playwright can be slow to even start) —
