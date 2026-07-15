@@ -507,7 +507,14 @@ async function main() {
     is_free: false,
     price_cents: 15000,
     registration_deadline: dateDaysFromNow(18),
-    status: 'active',
+    // Must match the value the real app write path uses (createCamp/updateCamp
+    // in src/app/baseball/actions/camps.ts always write status:'published'),
+    // because the baseball_camps_select RLS policy only exposes non-owner
+    // (player) reads when status = 'published' — see
+    // supabase/migrations/20260527000000_prod_public_baseline.sql. A seeded
+    // 'active' row is invisible to the player-flow camps browse query and
+    // silently fails the "Camps - Player Flow" e2e specs.
+    status: 'published',
   }]);
 
   const campRegistrationId = detId('camp-registration:bench1');
