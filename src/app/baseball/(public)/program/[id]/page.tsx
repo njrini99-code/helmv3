@@ -249,7 +249,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                       <IconBuilding size={48} className="text-white" />
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
+                  <div className="w-full min-w-0 flex-1">
                     <h1 className="text-3xl font-bold text-warm-900 mb-2">
                       {organization.name}
                     </h1>

@@ -454,7 +454,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                     <IconBuilding size={40} className="text-grade-plus" />
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
+                <div className="w-full min-w-0 flex-1">
                   <Masthead
                     given={mastheadGiven}
                     surname={programName.surname}
