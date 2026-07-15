@@ -185,6 +185,23 @@ const HERO_SAFE_TOP_STYLE = {
   top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))',
 };
 
+// Mobile hero height (h-32) and passport-card overlap (-mt-2) below are a
+// matched pair, re-derived (PR #818 review) to clear the coach action row
+// even in the worst case, not just the ordinary case:
+//   - src/app/layout.tsx sets viewportFit:'cover', so
+//     env(safe-area-inset-top) is a LIVE value, not 0 — up to ~59px on
+//     current Dynamic-Island iPhones (14/15/16 Pro) in portrait.
+//   - HERO_SAFE_TOP_STYLE's top at that inset = max(16px, 59+8) = 67px.
+//   - The Watchlist <Button> is `min-h-[44px]`, so its bottom edge lands at
+//     67 + 44 = 111px from the hero's top in the worst case.
+//   - The passport card's top edge is safe-area-INDEPENDENT: hero height
+//     minus overlap. It must stay >= ~111px with margin, so on mobile that's
+//     128px (h-32) - 8px (-mt-2) = 120px — 9px of real clearance below the
+//     action row even on a Dynamic Island phone.
+// Do not shrink either number without re-checking this arithmetic — a
+// smaller hero and/or bigger overlap reintroduces the tap-target-clipping
+// bug this comment documents.
+
 export function PlayerProfileClient({
   player,
   isCoachViewing,
@@ -271,7 +288,7 @@ export function PlayerProfileClient({
             The dark-scrim photo-hero overlay pattern (bg-black/50 controls +
             bottom-anchored gradient) is preserved verbatim from the prior fix —
             it's the one place on this page that intentionally isn't cream/paper. */}
-        <div className="h-28 sm:h-36 md:h-64 relative overflow-hidden">
+        <div className="h-32 sm:h-36 md:h-64 relative overflow-hidden">
           {player.banner_url ? (
             <>
               {/* Custom cover photo */}
@@ -407,7 +424,7 @@ export function PlayerProfileClient({
         </div>
 
         {/* Passport card overlapping banner */}
-        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 -mt-10 md:-mt-32 relative z-10">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 -mt-2 sm:-mt-10 md:-mt-32 relative z-10">
           <PaperCard registrationTick className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar */}
