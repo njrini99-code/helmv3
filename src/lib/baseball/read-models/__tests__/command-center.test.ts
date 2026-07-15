@@ -131,6 +131,13 @@ describe('getCommandCenter — team-local week window (includeWeekEvents)', () =
       baseball_coach_insights: [] as Array<Record<string, unknown>>,
       baseball_team_members: [] as Array<Record<string, unknown>>,
       baseball_player_aggregates: [] as Array<Record<string, unknown>>,
+      // getCommandCenter now also calls getStatsCenter() internally (#379) for
+      // the canonical box-score/season game-context — stats-center.ts reads
+      // these tables too, empty by default for this timezone-focused suite.
+      baseball_player_season_stats: [] as Array<Record<string, unknown>>,
+      baseball_games: [] as Array<Record<string, unknown>>,
+      baseball_box_score_batting: [] as Array<Record<string, unknown>>,
+      baseball_box_score_pitching: [] as Array<Record<string, unknown>>,
       baseball_events: [
         // Saturday 23:59:59.999 PDT — the instant BEFORE team-local week
         // start. Must be excluded.
@@ -226,5 +233,137 @@ describe('resolveReadModelLoadState — command center contract', () => {
         hasData: false,
       }),
     ).toBe('error');
+  });
+});
+
+// =============================================================================
+// #379 Phase 1 — game-context now resolves via legacy-stat-adapters.ts's
+// shared precedence rule (box-score > legacy-fallback > no-data) instead of
+// joining baseball_player_aggregates ad hoc. These pin the three tiers
+// directly against getCommandCenter() (the box-score-precedence tier is also
+// covered end-to-end, via the real seed script, by
+// src/contracts/baseball/stats/command-center-stats-center-drift.test.ts).
+// =============================================================================
+describe('getCommandCenter — game-context via the #379 shared legacy adapter', () => {
+  const TEAM_ID = 'team-adapter-1';
+  // getCommandCenter has no season-year override — it always uses the current
+  // calendar year, so the box-score fixture's game_date must track it too
+  // (mirrors how a fixed constant would drift at a year boundary otherwise).
+  const SEASON_YEAR = new Date().getFullYear();
+
+  function authTables(overrides: Record<string, unknown[]> = {}) {
+    return {
+      baseball_coaches: [{ id: 'coach-1', user_id: 'user-1' }],
+      baseball_team_coach_staff: [{ id: 'staff-1', team_id: TEAM_ID, coach_id: 'coach-1' }],
+      baseball_coach_insights: [] as Array<Record<string, unknown>>,
+      baseball_events: [] as Array<Record<string, unknown>>,
+      baseball_team_members: [
+        {
+          team_id: TEAM_ID,
+          player_id: 'p1',
+          jersey_number: 7,
+          position: null,
+          status: 'active',
+          joined_at: null,
+          baseball_players: {
+            id: 'p1',
+            first_name: 'Sam',
+            last_name: 'Rivera',
+            avatar_url: null,
+            primary_position: 'SS',
+            secondary_position: null,
+            grad_year: null,
+            bats: null,
+            throws: null,
+            height_feet: null,
+            height_inches: null,
+            weight_lbs: null,
+            gpa: null,
+            city: null,
+            state: null,
+          },
+        },
+      ],
+      baseball_games: [] as Array<Record<string, unknown>>,
+      baseball_player_season_stats: [] as Array<Record<string, unknown>>,
+      baseball_box_score_batting: [] as Array<Record<string, unknown>>,
+      baseball_box_score_pitching: [] as Array<Record<string, unknown>>,
+      baseball_player_aggregates: [] as Array<Record<string, unknown>>,
+      ...overrides,
+    };
+  }
+
+  it('legacy-fallback: a player with no box-score-era data still shows their real legacy average (no regression)', async () => {
+    fake = createFakeSupabase({
+      user: { id: 'user-1' },
+      tables: authTables({
+        baseball_player_aggregates: [
+          {
+            player_id: 'p1',
+            team_id: TEAM_ID,
+            total_sessions: 12,
+            career_avg: 0.318,
+            recent_trend: 'improving',
+            last_session_at: '2026-05-01',
+          },
+        ],
+      }),
+    });
+
+    const result = await getCommandCenter(TEAM_ID);
+    const pulse = result.rosterPulse.find((r) => r.playerId === 'p1');
+    expect(pulse).toBeTruthy();
+    expect(pulse!.noData).toBe(false);
+    expect(pulse!.careerAvg).toBeCloseTo(0.318, 3);
+    expect(pulse!.recentTrend).toBe('improving');
+    expect(pulse!.totalSessions).toBe(12);
+  });
+
+  it('no-data: a player with neither legacy nor box-score rows is honestly no-data, never a fabricated average', async () => {
+    fake = createFakeSupabase({ user: { id: 'user-1' }, tables: authTables() });
+
+    const result = await getCommandCenter(TEAM_ID);
+    const pulse = result.rosterPulse.find((r) => r.playerId === 'p1');
+    expect(pulse).toBeTruthy();
+    expect(pulse!.noData).toBe(true);
+    expect(pulse!.careerAvg).toBeNull();
+    expect(pulse!.totalSessions).toBe(0);
+  });
+
+  it('box-score precedence: a player with box-score-era data shows the CANONICAL average, not the stale legacy blend — closing the #379 divergence', async () => {
+    fake = createFakeSupabase({
+      user: { id: 'user-1' },
+      tables: authTables({
+        baseball_games: [
+          { id: 'g1', team_id: TEAM_ID, game_type: 'game', game_date: `${SEASON_YEAR}-06-01` },
+        ],
+        baseball_box_score_batting: [
+          { id: 'bb1', game_id: 'g1', team_id: TEAM_ID, player_id: 'p1', ab: 4, h: 2 },
+        ],
+        // Legacy row deliberately carries a DIFFERENT (stale/blended) average
+        // than the box-score-derived .500 below — proves box-score wins.
+        baseball_player_aggregates: [
+          {
+            player_id: 'p1',
+            team_id: TEAM_ID,
+            total_sessions: 20,
+            career_avg: 0.25,
+            recent_trend: 'stable',
+            last_session_at: '2026-04-01',
+          },
+        ],
+      }),
+    });
+
+    const result = await getCommandCenter(TEAM_ID);
+    const pulse = result.rosterPulse.find((r) => r.playerId === 'p1');
+    expect(pulse).toBeTruthy();
+    expect(pulse!.noData).toBe(false);
+    // 2-for-4 = .500 — the box-score-derived figure, not the legacy .250 blend.
+    expect(pulse!.careerAvg).toBeCloseTo(0.5, 3);
+    expect(pulse!.careerAvg).not.toBeCloseTo(0.25, 3);
+    // recentTrend has no canonical replacement yet — the permanent legacy
+    // carve-out still surfaces it even for a box-score-sourced player.
+    expect(pulse!.recentTrend).toBe('stable');
   });
 });
