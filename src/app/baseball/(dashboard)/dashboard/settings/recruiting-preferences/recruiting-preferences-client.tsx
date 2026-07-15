@@ -4,7 +4,7 @@ import { useState, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { RecruitingMetricWeights, RecruitingMinimumStandards } from '@/lib/types';
-import { STATES, GRAD_YEARS } from '@/lib/types';
+import { GRAD_YEARS } from '@/lib/types';
 import {
   RecruitingWeightDistributor,
   PositionPriorityRanker,
@@ -14,6 +14,19 @@ import { saveRecruitingPhilosophy } from '@/app/baseball/actions/recruiting-phil
 import { IconCheck, IconSave, IconMapPin, IconGraduationCap } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PaperCard } from '@/components/baseball/living-annual';
+
+// Mobile compose fix (settings-os finding, minor): the 50 STATES used to
+// render as one flat flex-wrap wall of pills -- a desktop tag-cloud dumped
+// onto a phone screen. Grouping by the standard US Census 4-region split
+// turns it into curated, scannable clusters instead. Exhaustive over
+// `STATES` (Census South additionally covers DC/PR in the full definition,
+// neither of which appear in this 50-state list).
+const STATE_REGIONS: { label: string; states: readonly string[] }[] = [
+  { label: 'Northeast', states: ['CT', 'ME', 'MA', 'NH', 'NJ', 'NY', 'PA', 'RI', 'VT'] },
+  { label: 'Midwest', states: ['IL', 'IN', 'IA', 'KS', 'MI', 'MN', 'MO', 'NE', 'ND', 'OH', 'SD', 'WI'] },
+  { label: 'South', states: ['AL', 'AR', 'DE', 'FL', 'GA', 'KY', 'LA', 'MD', 'MS', 'NC', 'OK', 'SC', 'TN', 'TX', 'VA', 'WV'] },
+  { label: 'West', states: ['AK', 'AZ', 'CA', 'CO', 'HI', 'ID', 'MT', 'NV', 'NM', 'OR', 'UT', 'WA', 'WY'] },
+];
 
 interface RecruitingPreferencesClientProps {
   coachId: string;
@@ -179,20 +192,32 @@ export function RecruitingPreferencesClient({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {STATES.map((state) => (
-              <Button variant="primary"
-                key={state}
-                onClick={() => toggleState(state)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  preferredStates.includes(state)
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:bg-warm-300'
-                )}
-              >
-                {state}
-              </Button>
+          {/* Regioned instead of one flat 50-pill wall -- see STATE_REGIONS
+              comment above. Each region is its own labeled cluster so this
+              reads as composed content on a phone, not a dumped tag-cloud. */}
+          <div className="space-y-3">
+            {STATE_REGIONS.map((region) => (
+              <div key={region.label}>
+                <p className="text-xs font-semibold uppercase tracking-wider text-warm-400 mb-1.5">
+                  {region.label}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {region.states.map((state) => (
+                    <Button variant="primary"
+                      key={state}
+                      onClick={() => toggleState(state)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                        preferredStates.includes(state)
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:bg-warm-300'
+                      )}
+                    >
+                      {state}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 
@@ -257,8 +282,14 @@ export function RecruitingPreferencesClient({
         </div>
       </PaperCard>
 
-      {/* Save button - sticky on mobile */}
-      <div className="sticky bottom-4 z-10">
+      {/* Save button - sticky on mobile. `bottom-4` alone stuck this ~16px
+          above the viewport edge -- inside the opaque, unconditionally-
+          rendered FairwayBottomNav's 56px+safe-area footprint, so the save
+          bar sat behind the tab bar and was untappable. Adding
+          `--golf-mobile-bottom-nav-offset` (globals.css; zeroes out at md,
+          where there's no bottom nav to clear) mirrors the Messages sticky
+          footer's fix for the same bug. */}
+      <div className="sticky bottom-[calc(1rem+var(--golf-mobile-bottom-nav-offset,0px))] z-[var(--fw-z-sticky)]">
         <PaperCard className="border-warm-200 p-4 shadow-lg">
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm text-warm-600">

@@ -7,6 +7,7 @@ import { AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InkNotice } from '@/components/baseball/living-annual';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface MinimumStandardsProps {
   values: RecruitingMinimumStandards;
@@ -173,18 +174,41 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
               )}
             >
               <div className="flex items-start gap-3">
-                {/* Toggle */}
-                <Button variant="primary"
-                  onClick={() => toggleStandard(config.key, config)}
+                {/* Toggle -- a plain native <button>, not the shared Button
+                    primitive. This used to be `<Button variant="primary">`
+                    with no `size`, so it fell back to the default md size,
+                    whose `min-h-[44px]` doesn't share a twMerge conflict
+                    group with the `h-6`/`w-6` visual override -- both stayed
+                    applied, forcing a 44px-tall/24px-wide sliver with the
+                    checkmark clipped. Fixing that AND meeting the 44px
+                    tap-target floor via an invisible `before:` hit-slop
+                    (mirrors Sheet.tsx/ModalShell.tsx) both require
+                    `overflow-visible` on the interactive element -- but
+                    Button's ripple effect is DOM-appended as a child of the
+                    button and depends on `overflow-hidden` to stay clipped
+                    to its box, so reusing Button here would let a 96px
+                    ripple bloom around what should read as a small 24x24
+                    checkbox. A plain button carries none of that baggage. */}
+                {/* eslint-disable-next-line helm/no-raw-button -- compact 24x24 checkbox toggle; Button's fixed sizing + ripple-needs-overflow-hidden can't produce this shape (see comment above) */}
+                <button
+                  type="button"
+                  aria-pressed={isEnabled}
+                  aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${config.label} minimum standard`}
+                  onClick={() => {
+                    void triggerHaptic('light');
+                    toggleStandard(config.key, config);
+                  }}
                   className={cn(
-                    'w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
+                    'relative mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border-2 transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2',
+                    "before:absolute before:-inset-3 before:content-['']",
                     isEnabled
                       ? 'bg-primary-500 border-primary-500 text-white'
                       : 'border-warm-300 hover:border-warm-400'
                   )}
                 >
                   {isEnabled && <Check className="w-4 h-4" />}
-                </Button>
+                </button>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
