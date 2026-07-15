@@ -25,11 +25,17 @@ import {
 // ---------------------------------------------------------------------------
 // A tiny in-memory Supabase-shaped stub. Each .from(table) returns a chainable
 // query that resolves to the rows seeded for that table. Only the methods the
-// helper uses are implemented (select/eq/order/limit/maybeSingle).
+// helper uses are implemented (select/eq/in/order/range/limit/maybeSingle).
+// The canned sets stay far under the 1000-row page size, so the shared stat
+// read's pagination loop (loadEngineStatRows -> fetchAllRowsResult) terminates
+// after one page.
 // ---------------------------------------------------------------------------
 function makeClient(tables: {
   baseball_coach_insights?: Array<{ id: string; team_id: string; metadata: unknown }>;
   baseball_player_stats?: Array<Record<string, unknown>>;
+  baseball_games?: Array<Record<string, unknown>>;
+  baseball_box_score_batting?: Array<Record<string, unknown>>;
+  baseball_box_score_pitching?: Array<Record<string, unknown>>;
 }): BaselineClient {
   return {
     from(table: string) {
@@ -43,10 +49,17 @@ function makeClient(tables: {
           rows = rows.filter((r) => r[col] === val);
           return api;
         },
+        in(col: string, vals: unknown[]) {
+          rows = rows.filter((r) => vals.includes(r[col]));
+          return api;
+        },
         order() {
           return api;
         },
         limit() {
+          return Promise.resolve({ data: rows, error: null });
+        },
+        range() {
           return Promise.resolve({ data: rows, error: null });
         },
         maybeSingle() {
@@ -176,5 +189,52 @@ describe('buildActionOutcomeSeed — the unified ledger seed', () => {
     expect(seed.outcome_metric).toBe('era');
     expect(seed.outcome_baseline_value).toBeNull();
     expect(seed.outcome_verdict).toBe('insufficient_sample');
+  });
+
+  it('computes the baseline from CANONICAL box-score rows, dropping the same player\'s legacy GAME rows (#379 precedence)', async () => {
+    // Legacy game rows scream strikeouts (k_rate 1.0); canonical box-score rows
+    // for the same player show k_rate 3/27 = 1/9. Under the #379 rule the
+    // canonical layer owns the game context outright — the seed must equal the
+    // canonical-only figure, not a blend (blend would be 15/39 ≈ 0.385). Each
+    // legacy row shares its calendar day with one canonical game below (#379
+    // is (player, date)-scoped, not player-only), so all three are dropped.
+    const legacyGameRows = Array.from({ length: 3 }).map((_, i) => ({
+      id: `lg${i}`,
+      team_id: 'team-1',
+      player_id: 'p1',
+      stat_type: 'game',
+      session_date: `2026-04-0${i + 1}`,
+      at_bats: 4,
+      hits: 0,
+      strikeouts: 4,
+      walks: 0,
+    }));
+    const client = makeClient({
+      baseball_player_stats: legacyGameRows,
+      baseball_games: Array.from({ length: 3 }).map((_, i) => ({
+        id: `g${i}`,
+        team_id: 'team-1',
+        game_date: `2026-04-0${i + 1}`,
+      })),
+      baseball_box_score_batting: Array.from({ length: 3 }).map((_, i) => ({
+        id: `bb${i}`,
+        team_id: 'team-1',
+        game_id: `g${i}`,
+        player_id: 'p1',
+        ab: 8,
+        h: 3,
+        doubles: 0,
+        triples: 0,
+        hr: 0,
+        bb: 1,
+        k: 1,
+        hbp: 0,
+        sf: 0,
+      })),
+    });
+    const seed = await buildActionOutcomeSeed(client, 'team-1', 'p1', 'k_rate');
+    expect(seed.outcome_metric).toBe('k_rate');
+    expect(seed.outcome_baseline_value).toBeCloseTo(3 / 27, 5);
+    expect(seed.outcome_verdict).toBeNull();
   });
 });

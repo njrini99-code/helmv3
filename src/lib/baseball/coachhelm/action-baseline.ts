@@ -52,14 +52,12 @@ import 'server-only';
 //   * No schema change: outcome columns come from migration 20260624000210.
 // =============================================================================
 
-import {
-  loadPlayerMetrics,
-  type BoxScoreRow,
-} from '@/lib/coachhelm/baseball/loaders';
+import { loadPlayerMetrics } from '@/lib/coachhelm/baseball/loaders';
 import {
   isBaseballMetricId,
   type BaseballMetricId,
 } from '@/lib/coachhelm/baseball/metrics/registry';
+import { loadEngineStatRows } from '@/lib/baseball/coachhelm/engine-stat-rows';
 import { parseSignalSourceRefs } from '@/lib/types/baseball-signals';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';
 
@@ -70,12 +68,6 @@ export type BaselineClient = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from: (table: string) => any;
 };
-
-// The same stat projection the sweep + insight path read, kept in lockstep so a
-// baseline captured at conversion is computed identically to the observed value
-// the sweep later measures (apples-to-apples did-it-move).
-const STAT_SELECT =
-  'id, player_id, stat_type, session_date, at_bats, hits, doubles, triples, home_runs, walks, strikeouts, innings_pitched, earned_runs, walks_allowed, strikeouts_thrown, exit_velocity, pitch_velocity';
 
 // -----------------------------------------------------------------------------
 // Generator / signal_type -> the primary per-player metric it diagnoses.
@@ -212,27 +204,16 @@ export async function buildActionOutcomeSeed(
 ): Promise<ActionOutcomeSeed> {
   if (!playerId || !targetMetric) return UNMEASURABLE_SEED;
 
-  // SINGLE-PLAYER read — bounded by design, NOT paginated. A baseline is the one
-  // subject player's CURRENT value at conversion time; even a multi-season career
-  // is far under the PostgREST 1000-row cap (one row per game/session), so the
-  // most-recent page is the full relevant history. We order newest-first and cap
-  // at the true server max (1000) — the prior `.limit(2000)` was misleading since
-  // PostgREST silently caps every response at 1000 regardless. If per-player rows
-  // ever realistically approach 1000, switch this to fetchAllRowsResult like the
-  // multi-player sweep read.
-  const { data: statRows } = await supabase
-    .from('baseball_player_stats')
-    .select(STAT_SELECT)
-    .eq('team_id', teamId)
-    .eq('player_id', playerId)
-    .order('session_date', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(1000);
+  // #379 Phase 4b: the baseline is computed over the SAME reconciled stat-row
+  // pool the sweep + engine run read (canonical box-score rows preferred,
+  // legacy fallback, practice carve-out — see loadEngineStatRows), so a
+  // baseline captured at conversion is computed identically to the observed
+  // value the sweep later measures (apples-to-apples did-it-move). The shared
+  // read paginates past the PostgREST 1000-row cap, replacing this path's old
+  // single-page `.limit(1000)` read.
+  const { data: statRows } = await loadEngineStatRows(supabase, teamId, [playerId]);
 
-  const loaded = loadPlayerMetrics(
-    playerId,
-    (statRows ?? []) as unknown as BoxScoreRow[],
-  );
+  const loaded = loadPlayerMetrics(playerId, statRows ?? []);
   const baselineValue = loaded.metrics[targetMetric]?.value ?? null;
 
   return {

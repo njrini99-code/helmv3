@@ -71,7 +71,8 @@ function candidate(overrides: Partial<BaseballInsightCandidate> = {}): BaseballI
         confidence_reason: 'Adequate sample, low variance',
       },
       source_refs: [
-        { table: 'baseball_player_stats', column: 'two_strike_chase_pct', sample_n: 40, visibility: 'staff_only' },
+        // #379: fixture mirrors production — loaders cite the canonical table.
+        { table: 'baseball_box_score_batting', column: 'two_strike_chase_pct', sample_n: 40, visibility: 'staff_only' },
       ],
     },
     ...overrides,
