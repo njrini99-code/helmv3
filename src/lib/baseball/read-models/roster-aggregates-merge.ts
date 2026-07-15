@@ -16,9 +16,23 @@
 // data one click away on their own profile. Merging season stats OVER the
 // legacy aggregates row closes that gap without touching the box-score write
 // path itself.
+//
+// THIN WRAPPER (#379): this module no longer implements the merge itself —
+// it is a shape-adapter around the shared, generalized precedence rule in
+// legacy-stat-adapters.ts (box-score > legacy-fallback > no-data, practice
+// carve-out, null-safe event-derived fields). This file's job is only to
+// translate to/from the exact `Record<string, BaseballPlayerAggregates>`
+// shape its two existing callers (roster.ts, RosterClient.tsx) already
+// depend on, so their behavior — and this file's own exported signature —
+// stays stable while the merge logic itself has exactly one implementation.
 // =============================================================================
 
 import type { BaseballPlayerAggregates } from '@/lib/types';
+import {
+  adaptLegacyStatsMap,
+  type AdaptedPlayerStats,
+  type BoxScoreGameContextRow,
+} from './legacy-stat-adapters';
 
 export interface SeasonStatsAggregateRow {
   player_id: string;
@@ -31,49 +45,76 @@ export interface SeasonStatsAggregateRow {
   last_updated: string | null;
 }
 
+/** Project one adapted result back onto the legacy aggregates row shape. */
+function toLegacyAggregateShape(
+  adapted: AdaptedPlayerStats,
+  existingLegacy: BaseballPlayerAggregates | undefined,
+  teamId: string,
+): BaseballPlayerAggregates {
+  return {
+    player_id: adapted.playerId,
+    team_id: teamId,
+    total_sessions: adapted.totalSessions,
+    practice_sessions: adapted.practice.sessions,
+    game_sessions: adapted.game.sessions,
+    career_avg: adapted.game.avg,
+    career_obp: adapted.game.obp,
+    career_slg: adapted.game.slg,
+    career_ops: adapted.game.ops,
+    practice_avg: adapted.practice.avg,
+    game_avg: adapted.game.avg,
+    pressure_gap: adapted.legacyExtras.pressureGap,
+    recent_trend: adapted.legacyExtras.recentTrend,
+    trend_magnitude: adapted.legacyExtras.trendMagnitude,
+    trend_velocity: adapted.legacyExtras.trendVelocity,
+    last_5_avg: adapted.legacyExtras.last5Avg,
+    last_10_avg: adapted.legacyExtras.last10Avg,
+    season_avg: adapted.game.avg,
+    // No event-grain input is supplied by this wrapper (neither existing
+    // caller fetches elite-event data), so this always resolves to the
+    // legacy scalar unchanged — identical to this file's pre-#379 behavior.
+    avg_pitch_velocity: adapted.event.avgPitchVelocity ?? existingLegacy?.avg_pitch_velocity ?? null,
+    max_pitch_velocity: adapted.event.maxPitchVelocity ?? existingLegacy?.max_pitch_velocity ?? null,
+    development_stage: adapted.legacyExtras.developmentStage,
+    last_calculated_at: adapted.lastCalculatedAt,
+    updated_at: adapted.updatedAt,
+  };
+}
+
 /**
  * Merge current-season box-score stats over a legacy aggregates map. Returns a
  * NEW map (never mutates `aggregates`) keyed by player_id.
+ *
+ * Delegates to the shared adaptLegacyStatsMap precedence rule; only players
+ * present in `seasonStatsRows` are written into the returned map (a player
+ * with only a legacy row and no season-stats row is left byte-for-byte as-is,
+ * same as before this became a thin wrapper).
  */
 export function mergeSeasonStatsIntoAggregates(
   aggregates: Record<string, BaseballPlayerAggregates>,
   seasonStatsRows: SeasonStatsAggregateRow[],
   teamId: string,
 ): Record<string, BaseballPlayerAggregates> {
+  const boxScoreRows: BoxScoreGameContextRow[] = seasonStatsRows.map((row) => ({
+    player_id: row.player_id,
+    avg: row.avg,
+    obp: row.obp,
+    slg: row.slg,
+    ops: row.ops,
+    sessions: row.g,
+    last_updated: row.last_updated,
+  }));
+
+  const adapted = adaptLegacyStatsMap({
+    legacyAggregates: aggregates,
+    boxScoreRows,
+  });
+
   const merged: Record<string, BaseballPlayerAggregates> = { ...aggregates };
-
   for (const row of seasonStatsRows) {
-    const existing = merged[row.player_id];
-    const lastCalculated =
-      row.last_updated ?? existing?.last_calculated_at ?? new Date().toISOString();
-
-    merged[row.player_id] = {
-      player_id: row.player_id,
-      team_id: teamId,
-      // Box-score game count is the honest, box-score-aware "sessions" figure
-      // — never let a stale (or absent) legacy total hide real games played.
-      total_sessions: Math.max(existing?.total_sessions ?? 0, row.g ?? 0),
-      practice_sessions: existing?.practice_sessions ?? 0,
-      game_sessions: Math.max(existing?.game_sessions ?? 0, row.g ?? 0),
-      career_avg: row.avg ?? existing?.career_avg ?? null,
-      career_obp: row.obp ?? existing?.career_obp ?? null,
-      career_slg: row.slg ?? existing?.career_slg ?? null,
-      career_ops: row.ops ?? existing?.career_ops ?? null,
-      practice_avg: existing?.practice_avg ?? null,
-      game_avg: row.avg ?? existing?.game_avg ?? null,
-      pressure_gap: existing?.pressure_gap ?? null,
-      recent_trend: existing?.recent_trend ?? null,
-      trend_magnitude: existing?.trend_magnitude ?? null,
-      trend_velocity: existing?.trend_velocity ?? null,
-      last_5_avg: existing?.last_5_avg ?? null,
-      last_10_avg: existing?.last_10_avg ?? null,
-      season_avg: row.avg ?? existing?.season_avg ?? null,
-      avg_pitch_velocity: existing?.avg_pitch_velocity ?? null,
-      max_pitch_velocity: existing?.max_pitch_velocity ?? null,
-      development_stage: existing?.development_stage ?? null,
-      last_calculated_at: lastCalculated,
-      updated_at: lastCalculated,
-    };
+    const a = adapted[row.player_id];
+    if (!a) continue;
+    merged[row.player_id] = toLegacyAggregateShape(a, aggregates[row.player_id], teamId);
   }
 
   return merged;
