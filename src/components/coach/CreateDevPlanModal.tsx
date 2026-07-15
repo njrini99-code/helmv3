@@ -177,8 +177,13 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
 
 
   return (
-    <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="relative glass-prominent rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-clip flex flex-col">
+    // Bottom-anchored on phone (`items-end`) and keyboard-safe (`dvh`, not
+    // static `vh`) — a vertically-centered `vh`-sized card doesn't reflow when
+    // the on-screen keyboard opens for the title/description/goal fields, and
+    // can end up with the "Create Plan" CTA pinned past the visible viewport.
+    // Centered dialog is unchanged at `sm:` and above.
+    <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-end justify-center z-50 p-0 sm:items-center sm:p-4">
+      <div className="relative glass-prominent shadow-xl max-w-2xl w-full max-h-[calc(100dvh-2rem)] overflow-clip flex flex-col rounded-t-2xl sm:rounded-2xl">
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -212,7 +217,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                 No players in roster. Add players to your team first.
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-warm-200 rounded-lg p-2">
+              <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border border-warm-200 rounded-lg p-2 sm:grid-cols-2">
                 {players.map(player => (
                   <Button variant="primary"
                     key={player.id}
@@ -362,8 +367,11 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
           </div>
         </form>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-200 flex items-center justify-end gap-3">
+        {/* Footer — kept outside the scrollable <form> (a separate flex-column
+            sibling, not `sticky`) so it's always visible without scrolling;
+            the safe-area padding matters now that the card sits flush to the
+            phone's bottom edge instead of floating with a p-4 gutter. */}
+        <div className="px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-warm-200 flex items-center justify-end gap-3">
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

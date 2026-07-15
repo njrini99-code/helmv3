@@ -487,12 +487,16 @@ export function PlayerComparison({
           </div>
         )}
 
-        {/* Footer with action buttons */}
-        <div className="p-4 bg-cream-50 border-t border-border-light flex items-center justify-between">
+        {/* Footer with action buttons — stacks on phone (flex-col) since the
+            two non-shrinking (whitespace-nowrap) buttons plus the "Comparing
+            N players" label don't fit one row under ~390px, and Card's own
+            overflow-clip would otherwise silently hide whichever action loses
+            the fight for space rather than showing a scrollbar. */}
+        <div className="flex flex-col gap-3 p-4 bg-cream-50 border-t border-border-light sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm leading-relaxed text-warm-600">
             Comparing {players.length} player{players.length > 1 ? 's' : ''}
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
               size="sm"

@@ -13,6 +13,13 @@
 //   * KEYBOARD — focus a block and use Arrow keys (the accessible ALTERNATIVE
 //                the spec requires): Up/Down move ±5 min, Shift+Up/Down resize
 //                ±5 min. Announced via aria-live.
+//   * TAP (touch fallback) — a coach on a phone can't drag a ~14-18px handle
+//                precisely, and a focused div doesn't raise a soft keyboard to
+//                fire ArrowUp/Down. So tapping a block still selects it (as
+//                below), and PracticePlannerClient's Block-details card renders
+//                Start/Duration +/- steppers wired to the SAME onChange path —
+//                the true tap-based equivalent to drag, not just a fallback in
+//                name. See RAIL_STEP/MIN_DURATION/fmtClock exports below.
 //
 // Live validation (V7 "overlap/owner/conflict warnings, publish validation")
 // runs through the SAME validatePracticeForPublish used server-side, so what the
@@ -58,11 +65,15 @@ interface TimeRailBuilderProps {
   onValidation?: (result: PracticeValidationResult) => void;
 }
 
-const RAIL_STEP = 5; // minutes per snap
+// Exported so the touch-accessible Start/Duration steppers in the Block
+// details editor (PracticePlannerClient) share the exact same step size,
+// floor, and clock formatting as the drag/keyboard rail — one source of
+// truth instead of a second copy that can drift.
+export const RAIL_STEP = 5; // minutes per snap
 const PX_PER_MIN = 3.2; // rail scale
-const MIN_DURATION = 5;
+export const MIN_DURATION = 5;
 
-function fmtClock(mins: number): string {
+export function fmtClock(mins: number): string {
   const h = Math.floor(mins / 60);
   const mm = String(mins % 60).padStart(2, '0');
   return `${h}:${mm}`;
