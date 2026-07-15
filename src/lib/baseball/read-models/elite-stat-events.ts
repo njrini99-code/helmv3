@@ -744,11 +744,23 @@ export function buildHitterMetrics(
     ),
     scalarMetric(
       { metricKey: 'avg_exit_velocity', metricGroup: 'hitting', label: 'Avg Exit Velo', unit: 'mph', higherIsBetter: true, threshold: SCALAR_THRESHOLD, fallbackContext },
-      avgOf(battedBalls.map((b) => b.exit_velocity)), bbCount, bbProv,
+      // sampleSize is the count of rows that ACTUALLY carried a velocity
+      // reading (exit_velocity is nullable — a hand-charted at-bat with no
+      // radar gun logs the batted ball with no exit_velocity), never bbCount
+      // (every batted ball, radar-read or not). A player with 10 batted balls
+      // but only 4 exit-velo readings must report sampleSize 4, not 10 —
+      // gateSample() honesty depends on it.
+      avgOf(battedBalls.map((b) => b.exit_velocity)),
+      battedBalls.filter((b) => b.exit_velocity != null).length,
+      bbProv,
     ),
     scalarMetric(
       { metricKey: 'avg_launch_angle', metricGroup: 'hitting', label: 'Avg Launch Angle', unit: 'deg', higherIsBetter: true, threshold: SCALAR_THRESHOLD, fallbackContext },
-      avgOf(battedBalls.map((b) => b.launch_angle)), bbCount, bbProv,
+      // Same non-null-reading rule as avg_exit_velocity above — launch_angle
+      // is independently nullable per row.
+      avgOf(battedBalls.map((b) => b.launch_angle)),
+      battedBalls.filter((b) => b.launch_angle != null).length,
+      bbProv,
     ),
   ];
 

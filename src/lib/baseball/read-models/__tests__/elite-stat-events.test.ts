@@ -204,6 +204,46 @@ describe('buildHitterMetrics — batted-ball quality', () => {
   });
 });
 
+describe('buildHitterMetrics — avg_exit_velocity / avg_launch_angle sampleSize honesty', () => {
+  it('a player with 10 batted balls but only 4 exit-velo readings reports sampleSize 4, NOT 10 (a hand-charted at-bat with no radar gun must never inflate the gate)', () => {
+    const battedBalls = [
+      ...Array.from({ length: 4 }, () => bbe({ exit_velocity: 95 })),
+      // 6 hand-charted batted balls with no radar reading at all.
+      ...Array.from({ length: 6 }, () => bbe({ exit_velocity: null })),
+    ];
+    const model = buildHitterMetrics('p1', [], battedBalls, 'official_game');
+    const m = metric(model, 'avg_exit_velocity')!;
+    expect(m.value).toBe(95);
+    expect(m.sampleSize).toBe(4);
+  });
+
+  it('avg_launch_angle independently counts only rows with a non-null launch_angle', () => {
+    const battedBalls = [
+      bbe({ exit_velocity: 90, launch_angle: 12 }),
+      bbe({ exit_velocity: 92, launch_angle: 18 }),
+      // Exit velocity logged, launch angle not -- the two fields gate independently.
+      bbe({ exit_velocity: 88, launch_angle: null }),
+    ];
+    const model = buildHitterMetrics('p1', [], battedBalls, 'official_game');
+    expect(metric(model, 'avg_exit_velocity')!.sampleSize).toBe(3);
+    expect(metric(model, 'avg_launch_angle')!.sampleSize).toBe(2);
+    expect(metric(model, 'avg_launch_angle')!.value).toBeCloseTo(15);
+  });
+
+  it('a hard-hit-rate/barrel-rate/gb-rate denominator still uses the FULL batted-ball count (bbCount), unaffected by this sampleSize fix', () => {
+    const battedBalls = [
+      bbe({ is_hard_hit: true, exit_velocity: 95 }),
+      bbe({ is_hard_hit: false, exit_velocity: null }),
+      bbe({ is_hard_hit: false, exit_velocity: null }),
+    ];
+    const model = buildHitterMetrics('p1', [], battedBalls, 'official_game');
+    // hard_hit_rate's denominator is every batted ball, radar-read or not.
+    expect(metric(model, 'hard_hit_rate')!.sampleSize).toBe(3);
+    // but avg_exit_velocity only counts the ones with an actual reading.
+    expect(metric(model, 'avg_exit_velocity')!.sampleSize).toBe(1);
+  });
+});
+
 describe('honest confidence + provenance', () => {
   it('never returns high on a thin sample', () => {
     const thin = buildHitterMetrics('p1', Array.from({ length: 5 }, () => pitch({ is_in_zone: false, is_swing: true })), [], 'official_game');
