@@ -234,7 +234,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
             {/* Program Header */}
             <Card className="overflow-hidden">
               <div className="bg-gradient-to-br from-primary-50 to-white p-8 border-b border-warm-200">
-                <div className="flex items-start gap-6">
+                <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-6">
                   {organization.logo_url ? (
                     <Image
                       src={organization.logo_url}
@@ -249,7 +249,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                       <IconBuilding size={48} className="text-white" />
                     </div>
                   )}
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <h1 className="text-3xl font-bold text-warm-900 mb-2">
                       {organization.name}
                     </h1>

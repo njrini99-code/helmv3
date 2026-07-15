@@ -339,28 +339,35 @@ export function PlayerProfileClient({
           {/* Actions on header — one primary CTA (Watchlist) always visible;
               Message stays a full CTA at md+ and collapses into an overflow
               menu on phones so the hero never shows two competing coach
-              actions at once (#482). */}
+              actions at once (#482). Below md, Watchlist itself also drops to
+              an icon-only 44px control (aria-labelled) — at 320px the back
+              button (left-4) and a full "Add to Watchlist" label pill
+              (right-4) still overlapped by ~28px even after Message moved to
+              the overflow menu, since the label pill alone runs ~184px wide
+              against a ~280px right-side budget. Icon-only shrinks it to
+              ~56px, clearing the back button at every target width. */}
           {isCoachViewing && (
             <div className="absolute right-4 z-10 flex items-center gap-2" style={HERO_SAFE_TOP_STYLE}>
               <Button
                 variant={isInWatchlist ? 'secondary' : 'primary'}
                 onClick={handleToggleWatchlist}
                 disabled={isPending}
+                aria-label={isInWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
                 className={cn(
-                  "shadow-lg",
+                  "shadow-lg px-3 md:px-5",
                   isInWatchlist
                     ? "bg-[var(--paper)] text-pursuit hover:bg-pursuit/10 active:bg-pursuit/15"
                     : "bg-black/50 text-white hover:bg-black/70"
                 )}
               >
                 {isPending ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full md:mr-2" />
                 ) : isInWatchlist ? (
-                  <IconStarFilled size={16} className="mr-2 text-pursuit" />
+                  <IconStarFilled size={16} className="md:mr-2 text-pursuit" />
                 ) : (
-                  <IconStar size={16} className="mr-2" />
+                  <IconStar size={16} className="md:mr-2" />
                 )}
-                {isInWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                <span className="hidden md:inline">{isInWatchlist ? 'In Watchlist' : 'Add to Watchlist'}</span>
               </Button>
               <Button
                 variant="secondary"
@@ -718,7 +725,7 @@ function OverviewTab({
             <IconActivity size={18} className="text-pursuit" />
             <Eyebrow ink="pursuit">Physical &amp; Metrics</Eyebrow>
           </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-4">
             {measurables.map((m, i) => (
               <Reveal key={m.label} staggerIndex={Math.min(i, 8)}>
                 <RuledStatLine
@@ -828,41 +835,67 @@ function OverviewTab({
               <Eyebrow ink="pursuit">Schools of Interest</Eyebrow>
             </div>
             <div className="space-y-2">
-              {recruitingInterests.map((interest, idx) => (
-                <div
-                  key={interest.id}
-                  className={cn(
-                    'flex items-center gap-3 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3',
-                    pressableClass({ ink: 'pursuit' })
-                  )}
-                >
-                  <div className="w-7 h-7 rounded-full bg-pursuit flex items-center justify-center flex-shrink-0">
-                    <span className="font-annual text-eyebrow font-bold text-white">{idx + 1}</span>
-                  </div>
-                  {interest.organization?.logo_url ? (
-                    <Image
-                      src={interest.organization.logo_url}
-                      alt={interest.organization.name}
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 rounded-lg object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg border border-[color:var(--hairline)] bg-[var(--paper)] flex items-center justify-center">
-                      <IconSchool size={16} className="text-text-tertiary" />
+              {recruitingInterests.map((interest, idx) => {
+                const org = interest.organization;
+                const rowContent = (
+                  <>
+                    <div className="w-7 h-7 rounded-full bg-pursuit flex items-center justify-center flex-shrink-0">
+                      <span className="font-annual text-eyebrow font-bold text-white">{idx + 1}</span>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-annual text-body-sm font-medium text-text-primary truncate">
-                      {interest.organization?.name}
-                    </p>
-                    {interest.organization?.division && (
-                      <p className="text-eyebrow text-text-tertiary">{interest.organization.division}</p>
+                    {org?.logo_url ? (
+                      <Image
+                        src={org.logo_url}
+                        alt={org.name}
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-lg object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg border border-[color:var(--hairline)] bg-[var(--paper)] flex items-center justify-center">
+                        <IconSchool size={16} className="text-text-tertiary" />
+                      </div>
                     )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-annual text-body-sm font-medium text-text-primary truncate">
+                        {org?.name}
+                      </p>
+                      {org?.division && (
+                        <p className="text-eyebrow text-text-tertiary">{org.division}</p>
+                      )}
+                    </div>
+                  </>
+                );
+
+                // Rows visually signal tappability (pressableClass); make that
+                // true by linking out to the school's program profile, same
+                // as the identity-chip links elsewhere on this page. A row
+                // with no organization record has nowhere to go, so it stays
+                // a plain non-interactive div.
+                if (org) {
+                  return (
+                    <Link
+                      key={interest.id}
+                      href={`/baseball/program/${org.id}`}
+                      className={cn(
+                        'flex items-center gap-3 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3',
+                        pressableClass({ ink: 'pursuit' })
+                      )}
+                    >
+                      {rowContent}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <div
+                    key={interest.id}
+                    className="flex items-center gap-3 rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper-canvas)] p-3"
+                  >
+                    {rowContent}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </PaperCard>
         )}

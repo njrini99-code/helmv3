@@ -63,7 +63,7 @@ export function ScoutPacketCsvButton({ token, model }: Props) {
       variant="secondary"
       onClick={onDownload}
       haptic="none"
-      className="min-h-0 gap-1.5 rounded-lg border-warm-200 bg-cream-50 px-3 py-1.5 text-sm font-medium text-warm-700 hover:border-primary-200 hover:text-primary-700"
+      className="gap-1.5 rounded-lg border-warm-200 bg-cream-50 px-3 py-1.5 text-sm font-medium text-warm-700 hover:border-primary-200 hover:text-primary-700"
     >
       <IconDownload size={14} />
       CSV summary

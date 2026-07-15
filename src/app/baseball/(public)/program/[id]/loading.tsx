@@ -25,9 +25,9 @@ export default function Loading() {
             {/* Program Header */}
             <Card className="overflow-hidden">
               <div className="bg-gradient-to-br from-primary-50 to-white p-8 border-b border-warm-200">
-                <div className="flex items-start gap-6">
+                <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-6">
                   <Skeleton className="w-24 h-24 rounded-lg" />
-                  <div className="flex-1 space-y-3">
+                  <div className="w-full flex-1 space-y-3">
                     <Skeleton className="h-8 w-64" />
                     <div className="flex gap-2">
                       <Skeleton className="h-6 w-16" />
