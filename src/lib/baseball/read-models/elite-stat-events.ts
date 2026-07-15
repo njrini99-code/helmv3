@@ -50,6 +50,7 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import {
   gateSample,
@@ -1071,22 +1072,42 @@ export async function getEliteStatEvents(
     return q;
   };
 
+  // PostgREST hard-caps every response at max_rows = 1000. These are stat-EVENT
+  // grain tables (pitch-by-pitch / batted-ball / swing / PA) — a single team's
+  // season easily exceeds 1000 rows per table, and with no prior `.order()` the
+  // truncated slice was an ARBITRARY subset, not even a stable "most recent
+  // 1000". fetchAllRowsResult walks every page with a stable `.order('id')` so
+  // the derived metrics (CSW%, chase/whiff, velo-decay, pitch mix, hard-hit,
+  // command heatmap) are computed from the COMPLETE window, mirroring the same
+  // idiom already applied to these tables in coachhelm/engine-run.ts.
   const [pitchRes, bbRes, swingRes, paRes] = await Promise.all([
-    options.playerId
-      ? buildQuery('baseball_pitch_events')
-          .or(`batter_id.eq.${options.playerId},pitcher_id.eq.${options.playerId}`)
-      : buildQuery('baseball_pitch_events'),
-    options.playerId
-      ? buildQuery('baseball_batted_ball_events')
-          .or(`batter_id.eq.${options.playerId},pitcher_id.eq.${options.playerId}`)
-      : buildQuery('baseball_batted_ball_events'),
-    options.playerId
-      ? buildQuery('baseball_swing_events').eq('player_id', options.playerId)
-      : buildQuery('baseball_swing_events'),
-    options.playerId
-      ? buildQuery('baseball_plate_appearances')
-          .or(`batter_id.eq.${options.playerId},pitcher_id.eq.${options.playerId}`)
-      : buildQuery('baseball_plate_appearances'),
+    fetchAllRowsResult<BaseballPitchEvent>((from, to) => {
+      const q = options.playerId
+        ? buildQuery('baseball_pitch_events')
+            .or(`batter_id.eq.${options.playerId},pitcher_id.eq.${options.playerId}`)
+        : buildQuery('baseball_pitch_events');
+      return q.order('id', { ascending: true }).range(from, to);
+    }),
+    fetchAllRowsResult<BaseballBattedBallEvent>((from, to) => {
+      const q = options.playerId
+        ? buildQuery('baseball_batted_ball_events')
+            .or(`batter_id.eq.${options.playerId},pitcher_id.eq.${options.playerId}`)
+        : buildQuery('baseball_batted_ball_events');
+      return q.order('id', { ascending: true }).range(from, to);
+    }),
+    fetchAllRowsResult<BaseballSwingEvent>((from, to) => {
+      const q = options.playerId
+        ? buildQuery('baseball_swing_events').eq('player_id', options.playerId)
+        : buildQuery('baseball_swing_events');
+      return q.order('id', { ascending: true }).range(from, to);
+    }),
+    fetchAllRowsResult<BaseballPlateAppearance>((from, to) => {
+      const q = options.playerId
+        ? buildQuery('baseball_plate_appearances')
+            .or(`batter_id.eq.${options.playerId},pitcher_id.eq.${options.playerId}`)
+        : buildQuery('baseball_plate_appearances');
+      return q.order('id', { ascending: true }).range(from, to);
+    }),
   ]);
 
   let error: string | null = null;
