@@ -244,7 +244,10 @@ export function CommandCenterFairway({
               />
             ) : null}
             <Button asChild variant="secondary" size="sm" leftIcon={<IconChartBar size={16} />}>
-              <Link href="/baseball/dashboard/stats/upload">Upload stats</Link>
+              {/* Wizard consolidation: links straight to Import Center (the
+                  canonical wizard) rather than through the /stats/upload
+                  redirect shim. */}
+              <Link href="/baseball/dashboard/import">Upload stats</Link>
             </Button>
           </>
         }

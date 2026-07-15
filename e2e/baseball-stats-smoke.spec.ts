@@ -188,16 +188,23 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     await expect(page.getByText('FINAL')).toBeVisible();
   });
 
-  test('Upload route renders the CSV upload surface (college-coach guard passed)', async ({ page }) => {
+  // Wizard consolidation: the legacy /stats/upload wizard is now a redirect
+  // shim INTO Import Center (the canonical wizard) — see
+  // src/app/baseball/(dashboard)/dashboard/stats/upload/page.tsx. This test
+  // used to assert the retired StatsUploadClient surface directly; it now
+  // asserts the redirect lands the coach on Import Center's "Quick box score"
+  // entry point instead, so the college-coach guard + destination stay
+  // covered without pinning a UI that no longer exists.
+  test('Upload route redirects into Import Center (college-coach guard passed)', async ({ page }) => {
     const ok = await tryLogin(page, TEST_USERS.coach);
     test.skip(!ok, 'coach login fixture unavailable in this environment');
 
     await page.goto('/baseball/dashboard/stats/upload');
     await waitForPageLoad(page);
 
-    await expect(page.getByRole('heading', { name: 'Upload Stats' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'Upload CSV File' })).toBeVisible();
-    await expect(page.getByText('Choose File')).toBeVisible();
+    await expect(page).toHaveURL(/\/baseball\/dashboard\/import$/);
+    await expect(page.getByRole('heading', { name: 'Import Center' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Quick box score')).toBeVisible();
   });
 });
 

@@ -161,6 +161,13 @@ const LEGACY_REDIRECT_PAGES: ReadonlyArray<{
     expectedTargets: ['/baseball/dashboard/stats-center'],
   },
   {
+    // Wizard consolidation — the legacy stats-upload wizard is now a pure
+    // redirect into Import Center (the canonical import wizard). See
+    // src/app/baseball/(dashboard)/dashboard/stats/upload/page.tsx.
+    relPath: ['baseball', '(dashboard)', 'dashboard', 'stats', 'upload', 'page.tsx'],
+    expectedTargets: ['/baseball/dashboard/import'],
+  },
+  {
     // Dynamic: branches coach -> command-center, player -> player/today, plus
     // the unauthenticated -> login guard.
     relPath: ['baseball', '(dashboard)', 'dashboard', 'team', 'page.tsx'],

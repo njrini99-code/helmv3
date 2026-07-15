@@ -277,6 +277,15 @@ export function ImportWizardClient({
   const [dataShape, setDataShape] = useState<ImportDataShape>('game_box_score');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * QUICK BOX SCORE — the legacy /dashboard/stats/upload wizard's headline
+   * capability was "drag a CSV in and go" with zero setup. Ported here as a
+   * dropzone-drag-over affordance on the SAME upload step every path uses, so
+   * the fast path still runs through the canonical, audited commit pipeline
+   * (dedup, provenance, rollback) instead of a parallel shortcut that could
+   * drift from it.
+   */
+  const [isDragging, setIsDragging] = useState(false);
 
   const [sourceId, setSourceId] = useState<string>('generic_csv');
   const [fileName, setFileName] = useState<string>('');
@@ -345,6 +354,22 @@ export function ImportWizardClient({
     reader.onerror = () => setError('Could not read that file. Try a plain CSV.');
     reader.readAsText(file);
   }, []);
+
+  // ---- quick box score: drag-and-drop onto the dropzone ----------------------
+  const onDragOver = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+  const onDragLeave = useCallback(() => setIsDragging(false), []);
+  const onDrop = useCallback(
+    (e: React.DragEvent<HTMLLabelElement>) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files[0];
+      if (file) onFile(file);
+    },
+    [onFile]
+  );
 
   // ---- run preview (detect + map + match) ------------------------------------
   const runPreview = useCallback(async () => {
@@ -806,6 +831,40 @@ export function ImportWizardClient({
                 table and dedup model.
               </p>
             </div>
+
+            {/* QUICK BOX SCORE — the fast, zero-config entry point that ports the
+                legacy stats/upload wizard's headline capability (drag a CSV in and
+                go) onto the SAME canonical pipeline as every other path here
+                (atomic RPC write, provenance, dedup, rollback — nothing skipped). */}
+            {/* eslint-disable-next-line helm/no-raw-button */}
+            <button
+              type="button"
+              onClick={() => {
+                setDataShape('game_box_score');
+                setStatType('game');
+                setStep('upload');
+              }}
+              className={cn(
+                'flex w-full items-center justify-between gap-3 rounded-card border px-5 py-4 text-left',
+                pressableClass({ ink: 'team', lift: true }),
+                'border-grade-plus/40 bg-grade-plus/[0.05]',
+              )}
+            >
+              <span>
+                <span className="font-annual text-body-lg font-semibold text-text-primary">
+                  Quick box score
+                </span>
+                <span className="mt-0.5 block text-body-sm text-text-secondary">
+                  One game, right now — drag a CSV in and go. Same audited pipeline, fewer
+                  questions.
+                </span>
+              </span>
+              <InkBadge label="Fastest" tone="team" variant="solid" className="shrink-0" />
+            </button>
+
+            <p className="text-caption text-text-tertiary">
+              Or pick the exact data shape:
+            </p>
             <div className="grid gap-3 sm:grid-cols-3">
               {(Object.values(DATA_SHAPE_META) as DataShapeMeta[]).map((meta) => (
                 // A bespoke Living Annual paper tile, not a CTA — pressableClass
@@ -965,7 +1024,17 @@ export function ImportWizardClient({
               />
             </div>
 
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed border-[color:var(--hairline)] bg-[var(--paper)] px-6 py-10 text-center transition-colors hover:border-grade-plus/50 hover:bg-grade-plus/[0.04]">
+            <label
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed px-6 py-10 text-center transition-colors',
+                isDragging
+                  ? 'border-grade-plus bg-grade-plus/[0.08]'
+                  : 'border-[color:var(--hairline)] bg-[var(--paper)] hover:border-grade-plus/50 hover:bg-grade-plus/[0.04]',
+              )}
+            >
               {/* Hidden native file input — the <Input> primitive does not
                   support type=file; this is a visually-hidden field driving
                   the styled dropzone label. */}
@@ -980,10 +1049,10 @@ export function ImportWizardClient({
                 }}
               />
               <span className="text-body-sm font-medium text-text-primary">
-                {fileName ? fileName : 'Choose a CSV or Excel file'}
+                {fileName ? fileName : isDragging ? 'Drop it in' : 'Choose a CSV or Excel file'}
               </span>
               <span className="mt-1 text-caption text-text-tertiary">
-                CSV or .xlsx — a header row + one row per player.
+                {fileName ? 'Drag a different file in, or click to browse.' : 'Drag and drop, or click to browse — a header row + one row per player.'}
               </span>
             </label>
 
@@ -1041,6 +1110,45 @@ export function ImportWizardClient({
                 </span>
               ))}
             </div>
+
+            {/* DATA PREVIEW — ports the legacy stats/upload wizard's "see your
+                actual rows before mapping" capability so a coach can confirm the
+                file parsed correctly (right columns, no garbled values) before
+                committing to a column mapping. */}
+            {preview.rows.length > 0 && (
+              <div className="overflow-hidden rounded-card border border-[color:var(--hairline)]">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-caption">
+                    <thead className="text-left text-text-tertiary">
+                      <tr>
+                        {preview.headers.slice(0, 6).map((h) => (
+                          <th key={h} className="px-3 py-2 font-mono font-normal">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.rows.slice(0, 3).map((row, i) => (
+                        <tr key={i} className="border-t border-[color:var(--hairline)]">
+                          {preview.headers.slice(0, 6).map((h) => (
+                            <td key={h} className="px-3 py-2 text-text-secondary">
+                              {row[h] || '—'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {preview.rows.length > 3 && (
+                  <p className="border-t border-[color:var(--hairline)] px-3 py-1.5 text-caption text-text-tertiary">
+                    +{preview.rows.length - 3} more row{preview.rows.length - 3 === 1 ? '' : 's'}
+                  </p>
+                )}
+              </div>
+            )}
+
             <StepNav
               onBack={() => setStep('upload')}
               onNext={() => setStep('map')}
