@@ -16,10 +16,12 @@
 // and the model never fabricates a measurable it does not have.
 //
 // This read model READS existing tables only (baseball_players for identity +
-// measurables, baseball_player_stats for recent activity counts,
-// baseball_player_timeline_events via the development story). It stores no new
-// per-field data of its own beyond the passport SETTINGS row
-// (baseball_player_passport_settings) that controls exposure.
+// measurables, baseball_box_score_batting/_pitching joined to baseball_games
+// for recent activity counts (#379 — the canonical layer-2 source; see
+// docs/baseball/stats-architecture.md), baseball_player_timeline_events via
+// the development story). It stores no new per-field data of its own beyond
+// the passport SETTINGS row (baseball_player_passport_settings) that
+// controls exposure.
 //
 // VIEWER-AWARE: resolves the asking viewer (staff vs the subject player vs other)
 // server-side and filters fields by both the V2 data-visibility rules AND the
@@ -40,11 +42,6 @@ import {
   type CaptureMode,
 } from '@/lib/baseball/source-record';
 import { buildSourceTrust } from '@/components/baseball/source-trust/build-source-trust';
-import {
-  buildStampedSourceTrust,
-  buildImportProvenance,
-  type StampedStatProvenance,
-} from '@/components/baseball/source-trust/stamped-trust';
 import { getPlayerTimeline } from '@/lib/baseball/read-models/timeline';
 import { getVideoLibrary } from '@/lib/baseball/read-models/video-classes';
 import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
@@ -430,6 +427,71 @@ const MEASURABLE_DEFS: MeasurableDef[] = [
 ];
 
 // -----------------------------------------------------------------------------
+// Recent activity (#379 — canonical box-score source; see
+// docs/baseball/stats-architecture.md for the three-layer stat model this
+// read model no longer reads the deprecated flat/aggregate layer of)
+// -----------------------------------------------------------------------------
+
+/** One game this player has a captured box-score line for. */
+interface RecentBoxScoreGame {
+  id: string;
+  game_date: string;
+  opponent_name: string | null;
+}
+
+/**
+ * This player's most recent games with a captured box-score line (batting OR
+ * pitching), newest first, capped at `limit`. Reads
+ * baseball_box_score_batting/_pitching (game ids only) then baseball_games
+ * for the display fields — the canonical layer-2 tables, per #379's
+ * migration of this read model's "recent activity" card off the deprecated
+ * flat/aggregate stat layer. Degrades to an honest empty list + error string
+ * on a sub-read failure.
+ */
+async function fetchRecentBoxScoreActivity(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+  teamId: string,
+  limit: number,
+): Promise<{ data: RecentBoxScoreGame[]; error: string | null }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const [battingRes, pitchingRes] = await Promise.all([
+    db
+      .from('baseball_box_score_batting')
+      .select('game_id')
+      .eq('player_id', playerId)
+      .eq('team_id', teamId),
+    db
+      .from('baseball_box_score_pitching')
+      .select('game_id')
+      .eq('player_id', playerId)
+      .eq('team_id', teamId),
+  ]);
+  if (battingRes.error || pitchingRes.error) {
+    return { data: [], error: 'Recent activity could not be loaded.' };
+  }
+
+  const gameIds = [
+    ...new Set([
+      ...((battingRes.data ?? []) as Array<{ game_id: string }>).map((r) => r.game_id),
+      ...((pitchingRes.data ?? []) as Array<{ game_id: string }>).map((r) => r.game_id),
+    ]),
+  ];
+  if (gameIds.length === 0) return { data: [], error: null };
+
+  const { data: games, error: gamesErr } = await db
+    .from('baseball_games')
+    .select('id, game_date, opponent_name')
+    .in('id', gameIds)
+    .order('game_date', { ascending: false })
+    .limit(limit);
+  if (gamesErr) return { data: [], error: 'Recent activity could not be loaded.' };
+
+  return { data: (games ?? []) as RecentBoxScoreGame[], error: null };
+}
+
+// -----------------------------------------------------------------------------
 // getPassportSettingsForEditor
 // -----------------------------------------------------------------------------
 
@@ -593,19 +655,11 @@ export async function getPlayerPassport(
       .eq('player_id', targetPlayerId)
       .eq('team_id', teamId)
       .maybeSingle(),
-    // GAP 3 — pull the import-stamped provenance columns + run link so the most-
-    // recent session's "from" line carries the same SourceTrust chip + drawer.
-    // Stamped columns aren't in generated database.ts -> untyped client.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('baseball_player_stats')
-      .select(
-        'session_date, session_name, source, source_trust_level, source_match_tier, source_match_confidence, source_external_id, import_run_id',
-      )
-      .eq('player_id', targetPlayerId)
-      .eq('team_id', teamId)
-      .order('session_date', { ascending: false })
-      .limit(50),
+    // #379 — recent activity is sourced from the canonical box-score layer
+    // (baseball_box_score_batting/_pitching joined to baseball_games), not the
+    // deprecated flat/aggregate stat layer this read model used before its
+    // #379 migration.
+    fetchRecentBoxScoreActivity(supabase, targetPlayerId, teamId, 50),
   ]);
 
   if (playerRes.error || !playerRes.data) {
@@ -714,48 +768,23 @@ export async function getPlayerPassport(
   }
 
   // ---- Recent activity (counts only) ----
-  const statRows = (statsRes.error ? [] : statsRes.data ?? []) as unknown as Array<
-    StampedStatProvenance & { session_date: string; session_name: string | null }
-  >;
-  const lastSession = statRows[0] ?? null;
-
-  // GAP 3 — build the stamped trust + provenance for the most-recent session.
-  let lastSessionTrust: SourceTrust | null = null;
-  let lastSessionProvenance: SourceProvenance | null = null;
-  if (lastSession && (lastSession.import_run_id || lastSession.source_trust_level)) {
-    let reviewState: string | null = null;
-    if (lastSession.import_run_id) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: run } = await (supabase as any)
-        .from('baseball_import_runs')
-        .select('review_state')
-        .eq('id', lastSession.import_run_id)
-        .maybeSingle();
-      reviewState = (run as { review_state: string | null } | null)?.review_state ?? null;
-    }
-    const stamped: StampedStatProvenance = {
-      source: lastSession.source,
-      source_trust_level: lastSession.source_trust_level,
-      source_match_tier: lastSession.source_match_tier,
-      source_match_confidence: lastSession.source_match_confidence,
-      source_external_id: lastSession.source_external_id,
-      import_run_id: lastSession.import_run_id,
-      review_state: reviewState,
-      importedAt: lastSession.session_date,
-    };
-    const label = lastSession.session_name?.trim() || 'Imported stats';
-    lastSessionTrust = buildStampedSourceTrust(stamped, label);
-    lastSessionProvenance = buildImportProvenance(stamped, { label });
-  }
+  // #379 — sourced from the canonical box-score/season layer (games this
+  // player has a captured batting or pitching line for), not the deprecated
+  // flat/aggregate stat layer. Box-score rows carry no CSV-import provenance
+  // columns (staff-entered via the box-score save flow, not imported), so
+  // lastSessionTrust/lastSessionProvenance are honestly null rather than a
+  // fabricated import stamp.
+  const recentGames = statsRes.error ? [] : statsRes.data;
+  const lastGame = recentGames[0] ?? null;
 
   const recentActivity = {
-    capturedSessions: statRows.length,
-    lastSessionDate: lastSession?.session_date ?? null,
-    lastSessionSource: lastSession
-      ? buildSourceRef({ source: lastSession.source })
+    capturedSessions: recentGames.length,
+    lastSessionDate: lastGame?.game_date ?? null,
+    lastSessionSource: lastGame
+      ? buildSourceRef({ source: 'manual', sourceId: lastGame.id, label: 'Box score' })
       : null,
-    lastSessionTrust,
-    lastSessionProvenance,
+    lastSessionTrust: null,
+    lastSessionProvenance: null,
   };
 
   // ---------------------------------------------------------------------------
@@ -826,14 +855,15 @@ export async function getPlayerPassport(
       section: 'stats',
       label: 'Captured stats',
       // In full mode we know the real game-log count; in compact we fall back to
-      // the captured-session count. Either way this is a real signal, not a guess.
-      complete: mode === 'full' ? performanceGameCount > 0 : statRows.length > 0,
+      // the captured-session count (#379 — box-score-sourced). Either way this
+      // is a real signal, not a guess.
+      complete: mode === 'full' ? performanceGameCount > 0 : recentGames.length > 0,
       note:
         mode === 'full'
           ? performanceGameCount > 0
             ? `${performanceGameCount} game log${performanceGameCount === 1 ? '' : 's'} on file.`
             : 'No box-score game logs yet.'
-          : statRows.length > 0
+          : recentGames.length > 0
             ? 'Complete.'
             : 'No captured stat sessions yet.',
     },

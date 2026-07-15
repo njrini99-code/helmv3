@@ -160,10 +160,10 @@ describe('adaptLegacyPlayerStats — practice carve-out', () => {
 });
 
 describe('adaptLegacyPlayerStats — event-derived fields (null-safe)', () => {
-  it('defaults every event-derived field to null when no event input is given', () => {
+  it('defaults exit-velocity fields to null when no event input is given (no legacy equivalent exists)', () => {
     const result = adaptLegacyPlayerStats({
       playerId: 'p1',
-      legacy: legacyRow({ avg_pitch_velocity: 88 }),
+      legacy: legacyRow(), // avg_pitch_velocity / max_pitch_velocity both null here
       boxScore: boxScoreRow(),
     });
 
@@ -185,6 +185,46 @@ describe('adaptLegacyPlayerStats — event-derived fields (null-safe)', () => {
 
     expect(result.event.avgExitVelocity).toBe(91.4);
     expect(result.event.maxExitVelocity).toBeNull();
+    expect(result.event.avgPitchVelocity).toBeNull();
+    expect(result.event.maxPitchVelocity).toBeNull();
+  });
+
+  it('falls back to the legacy avg/max pitch-velocity scalars when no event input is given — a legitimate, previously-captured fallback (#379 residual)', () => {
+    const result = adaptLegacyPlayerStats({
+      playerId: 'p1',
+      legacy: legacyRow({ avg_pitch_velocity: 88, max_pitch_velocity: 95 }),
+      boxScore: boxScoreRow(),
+    });
+
+    expect(result.event.avgPitchVelocity).toBe(88);
+    expect(result.event.maxPitchVelocity).toBe(95);
+    // Exit velocity has NO legacy column at all — stays null-safe even
+    // though this same legacy row carries real pitch-velocity data.
+    expect(result.event.avgExitVelocity).toBeNull();
+    expect(result.event.maxExitVelocity).toBeNull();
+  });
+
+  it('prefers an explicit event-grain pitch-velocity reading over the legacy fallback when both are present', () => {
+    const result = adaptLegacyPlayerStats({
+      playerId: 'p1',
+      legacy: legacyRow({ avg_pitch_velocity: 88, max_pitch_velocity: 95 }),
+      boxScore: boxScoreRow(),
+      event: { avgPitchVelocity: 92.3 },
+    });
+
+    expect(result.event.avgPitchVelocity).toBe(92.3);
+    // maxPitchVelocity wasn't supplied in the event input -> falls back to
+    // the legacy scalar independently, per-field (not all-or-nothing).
+    expect(result.event.maxPitchVelocity).toBe(95);
+  });
+
+  it('reports null pitch-velocity (never fabricated) when neither an event reading nor a legacy row exists', () => {
+    const result = adaptLegacyPlayerStats({
+      playerId: 'p1',
+      legacy: null,
+      boxScore: boxScoreRow(),
+    });
+
     expect(result.event.avgPitchVelocity).toBeNull();
     expect(result.event.maxPitchVelocity).toBeNull();
   });

@@ -119,12 +119,6 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
       'Reads baseball_player_stats and upserts baseball_player_aggregates (career/practice/game averages, trend). The other half of the legacy write path alongside imports.ts.',
   },
   {
-    path: 'src/app/baseball/actions/insights.ts',
-    group: 'server-action',
-    status: 'pending migration',
-    note: 'Reads baseball_player_stats + baseball_player_aggregates as model input for legacy insight generation.',
-  },
-  {
     path: 'src/app/baseball/actions/operational-signals.ts',
     group: 'server-action',
     status: 'pending migration',
@@ -160,23 +154,11 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
       'The sole remaining direct reader of baseball_player_aggregates for the roster surfaces (#379). Fetches the raw legacy row map for a team so legacy-stat-adapters.ts (via roster-aggregates-merge.ts) can resolve its box-score > legacy-fallback > no-data precedence; roster.ts (server) and RosterClient.tsx (browser) both call it instead of querying the deprecated table inline.',
   },
   {
-    path: 'src/lib/baseball/read-models/player-today.ts',
-    group: 'read-model',
-    status: 'pending migration',
-    note: 'Reads baseball_player_stats for "today" snapshot context.',
-  },
-  {
     path: 'src/lib/baseball/read-models/player-snapshot-cards.ts',
     group: 'read-model',
     status: 'pending migration',
     note:
-      'Reads both baseball_player_aggregates and baseball_player_stats; comment flags exit-velocity fields as "typed but un-migrated".',
-  },
-  {
-    path: 'src/lib/baseball/read-models/player-passport.ts',
-    group: 'read-model',
-    status: 'pending migration',
-    note: 'Reads baseball_player_stats for recent-activity counts on the passport card.',
+      '#379 (partial): exit-velocity fields migrated off the deprecated flat stat table onto baseball_batted_ball_events via elite-stat-events.ts\'s own buildHitterMetrics aggregator — closes the former "typed but un-migrated" comment. Still reads baseball_player_aggregates for (a) the Hitting/Pitching season-average legacy-fallback tier and (b) the game/scrimmage/practice "Performance" card, which has no canonical replacement yet: stats-center.ts exposes official-vs-all splits, not a standalone scrimmage split, and neither canonical layer has a practice-session shape (see docs/baseball/stats-migration-plan.md\'s open practice-shape question). Full migration blocked on that decision, not on adapter availability.',
   },
   {
     path: 'src/lib/baseball/read-models/command-center.ts',
@@ -332,6 +314,13 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     status: 'pending migration',
     note:
       'Regression coverage for PR #664 (roster-scoped playerId verification + honest failed-upload status) on uploadStatsCSV in stats.ts, an already-grandfathered consumer above. Uses a table-aware Supabase recorder that inserts into baseball_player_stats and upserts baseball_player_aggregates to mirror that production write path — mirrors imports-registry.test.ts above; production reference is the server-action entry for stats.ts, not a new one.',
+  },
+  {
+    path: 'src/app/baseball/actions/__tests__/practice-effectiveness.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      'Action-level coverage (#825) for practice-effectiveness.ts, an already-grandfathered consumer above. Its fake-supabase fixture seeds an (empty) baseball_player_stats table to mirror that action\'s practice-type read path; migrates in lockstep with the production file. Added to the manifest post-merge — the #825 PR landed without an entry, tripping the contract test\'s scan.',
   },
   {
     path: 'src/contracts/baseball/product-trust.contract.test.ts',

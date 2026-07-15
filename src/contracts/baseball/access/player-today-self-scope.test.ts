@@ -47,7 +47,10 @@ function tablesWith(extra: Record<string, Row[]> = {}): Record<string, Row[]> {
       { id: TEAM_B, timezone: 'UTC' },
     ],
     baseball_events: [],
-    baseball_player_stats: [],
+    // #379 — recentStats reads the canonical box-score tables now.
+    baseball_box_score_batting: [],
+    baseball_box_score_pitching: [],
+    baseball_games: [],
     baseball_actions: [],
     baseball_task_assignments: [],
     baseball_coach_notes: [],
