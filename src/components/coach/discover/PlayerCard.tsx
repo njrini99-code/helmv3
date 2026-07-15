@@ -373,8 +373,17 @@ const PlayerCardComponent = function PlayerCard({
           </div>
         )}
 
-        {/* Hover Actions */}
-        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Hover Actions — same `[@media(pointer:coarse)]:opacity-100` +
+            `group-focus-within` touch/keyboard fallback the app's own
+            <HoverReveal> primitive applies, so "Save to watchlist"/"Message"
+            are never invisible-but-tappable on a phone. (Card uses one
+            shared unnamed `group` across several children — e.g. the title's
+            `group-hover:text-primary-600` a few lines up — so wrapping just
+            this slot in a separate `<HoverReveal group/reveal>` would
+            decouple its reveal trigger from a full-card hover; adding the
+            same fallback classes directly keeps that shared-group behavior
+            intact.) */}
+        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity">
           <ActionButton
             icon={isOnWatchlist ? IconHeartFilled : IconHeart}
             onClick={onWatchlist}

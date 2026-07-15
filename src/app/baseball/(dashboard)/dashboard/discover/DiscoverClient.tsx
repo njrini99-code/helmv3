@@ -17,12 +17,14 @@ import { FilterPanel } from '@/components/coach/discover/FilterPanel';
 import { DiscoverView } from '@/components/coach/discover/DiscoverView';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { TeamPeekPanel } from '@/components/panels/TeamPeekPanel';
-import { Button, IconButton } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
-import { IconFilter, IconX } from '@/components/icons';
+import { Sheet } from '@/components/fairway/overlays';
+import { IconFilter } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { SectionMasthead, EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { Player, Organization } from '@/lib/types';
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
@@ -70,6 +72,16 @@ function DiscoverContent() {
 
   // Mobile filter drawer state
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  // `lg:hidden` on the Sheet only hid Drawer.Content — the vaul Drawer.Overlay
+  // it mounts alongside ignores className and is wired to `open` alone, so a
+  // sheet left open while crossing lg+ left a full-screen invisible backdrop
+  // eating clicks. Force-close reactively instead (mirrors the isDesktop
+  // pattern in the sibling DiscoverView.tsx in this same PR) so the sheet and
+  // its overlay are torn down together when the viewport crosses the breakpoint.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  useEffect(() => {
+    if (isDesktop) setMobileFiltersOpen(false);
+  }, [isDesktop]);
 
   // State
   const [players, setPlayers] = useState<DiscoverPlayer[]>([]);
@@ -456,56 +468,38 @@ function DiscoverContent() {
           </div>
         </div>
 
-        {/* Mobile filter drawer with slide-in animation */}
-        {mobileFiltersOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+        {/* Mobile filter sheet — the app's own vaul-based bottom Sheet
+            (focus-trap, Escape, scrim-click, and focus-restore all handled
+            by the primitive) instead of a hand-rolled left-edge drawer,
+            which is this codebase's own retired/banned mobile pattern. */}
+        <Sheet
+          open={mobileFiltersOpen}
+          onOpenChange={setMobileFiltersOpen}
+          side="bottom"
+          peek={false}
+          title="Filters"
+          description={
+            activeFilterCount > 0 ? `${activeFilterCount} active` : undefined
+          }
+        >
+          <Sheet.Body>
+            <FilterPanel currentFilters={filters} mode={filters.mode} sticky={false} />
+          </Sheet.Body>
+          <Sheet.Footer>
             <Button
-              type="button"
-              variant="ghost"
-              aria-label="Close filters"
-              haptic="none"
-              className="min-h-0 absolute inset-0 block w-full h-full rounded-none bg-warm-900/50 backdrop-blur-sm animate-fade-in cursor-default hover:bg-warm-900/50"
               onClick={() => setMobileFiltersOpen(false)}
+              className="w-full min-h-[44px]"
             >
-              {''}
+              Show Results
+              {filters.mode === 'players' && playerCount > 0 && (
+                <span className="ml-1">({playerCount.toLocaleString()})</span>
+              )}
+              {filters.mode === 'teams' && teamCount > 0 && (
+                <span className="ml-1">({teamCount.toLocaleString()})</span>
+              )}
             </Button>
-            <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-[var(--paper)] shadow-xl overflow-y-auto animate-slide-in-left">
-              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-[color:var(--hairline)] bg-[var(--paper-canvas)]">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-text-primary">Filters</h2>
-                  {activeFilterCount > 0 && (
-                    <InkBadge label={`${activeFilterCount} active`} tone="pursuit" variant="solid" />
-                  )}
-                </div>
-                <IconButton variant="default"
-                  onClick={() => setMobileFiltersOpen(false)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-pursuit/10 active:bg-pursuit/15 transition-colors"
-                  aria-label="Close filters"
-                >
-                  <IconX size={20} className="text-text-tertiary" />
-                </IconButton>
-              </div>
-              <div className="p-6">
-                <FilterPanel currentFilters={filters} mode={filters.mode} />
-              </div>
-              {/* Apply button at the bottom of filter sheet */}
-              <div className="sticky bottom-0 p-4 bg-[var(--paper-canvas)] border-t border-[color:var(--hairline)]">
-                <Button
-                  onClick={() => setMobileFiltersOpen(false)}
-                  className="w-full min-h-[44px]"
-                >
-                  Show Results
-                  {filters.mode === 'players' && playerCount > 0 && (
-                    <span className="ml-1">({playerCount.toLocaleString()})</span>
-                  )}
-                  {filters.mode === 'teams' && teamCount > 0 && (
-                    <span className="ml-1">({teamCount.toLocaleString()})</span>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+          </Sheet.Footer>
+        </Sheet>
       </div>
 
       {/* Player Peek Panel */}

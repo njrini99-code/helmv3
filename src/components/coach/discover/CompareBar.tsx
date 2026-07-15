@@ -64,8 +64,15 @@ export function CompareBar({
   return (
     <div
       className={cn(
-        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
+        'fixed left-1/2 -translate-x-1/2 z-50',
+        // Clear the persistent mobile bottom-nav (~56px + safe-area) instead
+        // of a flat `bottom-6`, which sat inside its band and got covered by
+        // this bar's own z-50.
+        'bottom-[calc(56px+env(safe-area-inset-bottom,0px)+1rem)] md:bottom-6',
         'flex items-center gap-4 px-5 py-3 rounded-2xl',
+        // Constrain to the viewport and scroll internally instead of
+        // silently rendering the Compare/Clear buttons off-screen.
+        'max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         'bg-warm-900/95 backdrop-blur-lg border border-warm-700/50',
         'shadow-2xl shadow-black/20',
         'animate-slide-up',
@@ -73,7 +80,7 @@ export function CompareBar({
       )}
     >
       {/* Selected player avatars */}
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {selectedPlayers.map((player, index) => (
           <div
             key={player.id}
@@ -116,18 +123,18 @@ export function CompareBar({
         ))}
       </div>
 
-      <div className="w-px h-8 bg-warm-700" />
+      <div className="w-px h-8 bg-warm-700 shrink-0" />
 
       {/* Info */}
-      <div className="text-sm">
+      <div className="text-sm shrink-0 whitespace-nowrap">
         <span className="text-white font-medium">{selectedPlayers.length}</span>
         <span className="text-warm-400"> of {maxPlayers} selected</span>
       </div>
 
-      <div className="w-px h-8 bg-warm-700" />
+      <div className="w-px h-8 bg-warm-700 shrink-0" />
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           onClick={handleCompare}
           disabled={selectedPlayers.length < 2}
