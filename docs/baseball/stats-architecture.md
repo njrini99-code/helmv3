@@ -1,11 +1,57 @@
 # BaseballHelm Stats Layer Architecture
 
 > Governance note for GitHub issue #381 ("consolidate legacy flat stats,
-> box-score stats, and elite stat-event imports"). Last updated: 2026-06-30.
+> box-score stats, and elite stat-event imports"). Last updated: 2026-07-14.
 >
 > Machine-readable backing: `src/lib/baseball/stat-layer-manifest.ts`
 > Enforced by: `src/lib/baseball/__tests__/stat-layer-contract.test.ts`
 > Migration plan: `docs/baseball/stats-migration-plan.md`
+
+## Status note — #379 Phase 0 (2026-07-14): seed/demo reconciliation + tests
+
+This doc and the migration plan named the architecture and the backlog but
+had not yet (a) fixed the seed-vs-Stats-Center mismatch issue #379 reports,
+(b) implemented the shared legacy adapter, or (c) added the drift/smoke
+tests the issue's acceptance criteria ask for. Phase 0 of the #379 design
+defers (b) — the shared adapter is a later chunk — but **directly fixes the
+reported symptom and adds (c)**:
+
+- **`scripts/seed-baseball-stats.mjs`** now writes BOTH stats layers for
+  every `stat_type: 'game'` session it seeds: it still upserts the legacy
+  flat/aggregate rows (so the ~30 grandfathered consumers keep showing real
+  numbers during the migration window), and it additionally upserts a
+  synthetic completed `baseball_games` row + matching
+  `baseball_box_score_batting` / `_pitching` line(s), then calls the same
+  `recalculate_baseball_season_stats` RPC `actions/games.ts`'s box-score save
+  flow calls — not a bespoke insert into `baseball_player_season_stats`.
+  Practice sessions have no box-score equivalent yet (see the practice-shape
+  open question below) and stay legacy-only. Every write is an upsert;
+  nothing is ever deleted and reinserted.
+- **`scripts/seed-baseball-demo.ts`**'s doc comment previously claimed Stats
+  Center *should* stay empty after seeding — that claim was the root cause
+  #379 flagged (a coach running both demo seed scripts still saw a
+  contradictory product). The comment now points at
+  `seed-baseball-stats.mjs` as its stats-seeding companion and says so
+  explicitly.
+- **New tests** (`src/contracts/baseball/stats/`):
+  `seeded-stats-non-empty.smoke.test.ts` runs the seed script's actual
+  reconciled write logic (`seedTeamStats`, exported for this purpose) against
+  a fake Supabase client and asserts `getStatsCenter()` returns non-`noData`
+  rows for the players the seed claims to have stats for — the exact #379
+  symptom as a red/green gate. `command-center-stats-center-drift.test.ts`
+  asserts Command Center's (legacy-layer) game-context average and Stats
+  Center's (box-score-layer) average do not disagree for the same
+  player/team/season, for a fixture built the way the reconciled seed now
+  produces data.
+- **Not done in this pass** (later #379 phases, per the design's
+  sequencing): the shared `legacy-stat-adapters.ts` module, migrating any of
+  the grandfathered read-models off direct `baseball_player_aggregates` /
+  `baseball_player_stats` reads, and the canonical practice-session shape
+  (layer 2 has no practice concept at all today — see
+  `docs/baseball/stats-migration-plan.md:80`). Command Center still reads
+  the legacy aggregate table directly; the drift test above pins the CURRENT
+  cross-surface contract so a later adapter migration can be checked against
+  it rather than only against stats-center.ts's own reconcile flag.
 
 ## Why this doc exists
 
