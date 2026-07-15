@@ -12,6 +12,16 @@ interface ModalProps {
   description?: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  /**
+   * OPT-IN: below `md` (768px), render as a bottom sheet — anchored to the
+   * viewport bottom, square bottom corners, a drag-affordance bar, safe-area
+   * bottom padding, and a keyboard-safe `dvh`-based max height. At `md` and
+   * above the centered dialog is unchanged. Pure CSS (`md:` breakpoints) —
+   * no client-side media-query read, so there is no hydration flash.
+   * Absent (the default) renders byte-identical to before this prop existed.
+   * @default false
+   */
+  sheetOnMobile?: boolean;
 }
 
 const sizeClasses = {
@@ -43,7 +53,8 @@ export function Modal({
   title,
   description,
   children,
-  size = 'md'
+  size = 'md',
+  sheetOnMobile = false,
 }: ModalProps) {
   const isModalOpen = open ?? isOpen ?? false;
   const modalRef = useRef<HTMLDivElement>(null);
@@ -131,7 +142,14 @@ export function Modal({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className={cn(
+        'fixed inset-0 z-50 flex',
+        sheetOnMobile
+          ? 'items-end justify-center p-0 md:items-center md:justify-center md:p-4'
+          : 'items-center justify-center p-4',
+      )}
+    >
       {/* Backdrop with blur */}
       <div
         className={cn(
@@ -150,15 +168,36 @@ export function Modal({
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={description ? 'modal-description' : undefined}
         className={cn(
-          'relative z-10 w-full bg-cream-50/95 backdrop-blur-xl border border-warm-200/55 rounded-[24px] shadow-2xl',
-          'transition-all duration-200 ease-out',
-          'max-h-[calc(100vh-2rem)] flex flex-col',
-          isAnimating
-            ? 'opacity-100 translate-y-0 scale-100'
-            : 'opacity-0 translate-y-4 scale-[0.97]',
+          'relative z-10 w-full bg-cream-50/95 backdrop-blur-xl border border-warm-200/55 shadow-2xl',
+          'transition-all duration-200 ease-out flex flex-col',
+          sheetOnMobile
+            ? [
+                // Keyboard-safe: `dvh` tracks the *visual* viewport (iOS
+                // Safari URL bar / on-screen keyboard), unlike static `vh`.
+                'max-h-[calc(100dvh-2rem)]',
+                'rounded-t-[24px] rounded-b-none md:rounded-[24px]',
+                isAnimating
+                  ? 'opacity-100 translate-y-0 scale-100'
+                  : 'opacity-0 translate-y-full scale-100 md:translate-y-4 md:scale-[0.97]',
+              ]
+            : [
+                'max-h-[calc(100vh-2rem)]',
+                'rounded-[24px]',
+                isAnimating
+                  ? 'opacity-100 translate-y-0 scale-100'
+                  : 'opacity-0 translate-y-4 scale-[0.97]',
+              ],
           sizeClasses[size],
         )}
       >
+        {/* Drag-affordance bar — mobile bottom-sheet only, decorative. */}
+        {sheetOnMobile && (
+          <div
+            aria-hidden="true"
+            className="mx-auto mt-2.5 mb-0.5 h-1.5 w-10 shrink-0 rounded-full bg-warm-300 md:hidden"
+          />
+        )}
+
         {/* Header */}
         {(title || description) && (
           <div className="px-6 pt-6 pb-4 flex-shrink-0">
@@ -188,7 +227,13 @@ export function Modal({
         </button>
 
         {/* Body — scrollable when content is tall */}
-        <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0" data-scroll-container>
+        <div
+          className={cn(
+            'px-6 overflow-y-auto flex-1 min-h-0',
+            sheetOnMobile ? 'pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pb-6' : 'pb-6',
+          )}
+          data-scroll-container
+        >
           {children}
         </div>
       </div>

@@ -223,7 +223,10 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
   // published offset without any extra effect.
   const subNavRef = useSubNavOffsetPublisher();
 
-  if (tabs.length === 0) return null;
+  // Defense-in-depth: resolveActiveHub already suppresses a hub whose
+  // visible-tab list is < 2 (a single tab has nowhere to navigate to), but
+  // guard here too for any other caller that might pass a 1-tab list.
+  if (tabs.length < 2) return null;
 
   return (
     <LazyMotion features={loadMaxFeatures} strict>

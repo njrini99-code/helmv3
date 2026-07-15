@@ -169,15 +169,18 @@ describe('resolveActiveHub — capability-filtered tabs (#370)', () => {
     }
   });
 
-  it('activates academics for college coaches with the academics capability', () => {
+  it('academics renders no sub-nav strip for college coaches (single-tab hub — a lonely un-navigable strip is suppressed)', () => {
     const hub = resolveActiveHub({
       pathname: '/baseball/dashboard/academics',
       role: 'coach',
       programType: 'college',
       capabilities: { can_view_academics: true },
     });
-    expect(hub?.id).toBe('academics');
-    expect(hub?.tabs.map((t) => t.id)).toEqual(['academics']);
+    // resolveActiveHub returns null for a hub whose visible tabs resolve to
+    // exactly one (nothing to navigate to) — the route still renders, just
+    // with no HubSubNav strip above it. The underlying tab data is unchanged.
+    expect(hub).toBeNull();
+    expect(COACH_ACADEMICS_TABS.map((t) => t.id)).toEqual(['academics']);
   });
 
   it('resolves Recruiting>Scouting folds (Watchlist/Compare/Saved Comparisons/Scout Packets/Camps) into the Recruiting hub, Scouting subtab', () => {
