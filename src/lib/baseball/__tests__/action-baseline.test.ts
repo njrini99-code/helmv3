@@ -195,7 +195,9 @@ describe('buildActionOutcomeSeed — the unified ledger seed', () => {
     // Legacy game rows scream strikeouts (k_rate 1.0); canonical box-score rows
     // for the same player show k_rate 3/27 = 1/9. Under the #379 rule the
     // canonical layer owns the game context outright — the seed must equal the
-    // canonical-only figure, not a blend (blend would be 15/39 ≈ 0.385).
+    // canonical-only figure, not a blend (blend would be 15/39 ≈ 0.385). Each
+    // legacy row shares its calendar day with one canonical game below (#379
+    // is (player, date)-scoped, not player-only), so all three are dropped.
     const legacyGameRows = Array.from({ length: 3 }).map((_, i) => ({
       id: `lg${i}`,
       team_id: 'team-1',
@@ -209,11 +211,15 @@ describe('buildActionOutcomeSeed — the unified ledger seed', () => {
     }));
     const client = makeClient({
       baseball_player_stats: legacyGameRows,
-      baseball_games: [{ id: 'g1', team_id: 'team-1', game_date: '2026-05-20' }],
+      baseball_games: Array.from({ length: 3 }).map((_, i) => ({
+        id: `g${i}`,
+        team_id: 'team-1',
+        game_date: `2026-04-0${i + 1}`,
+      })),
       baseball_box_score_batting: Array.from({ length: 3 }).map((_, i) => ({
         id: `bb${i}`,
         team_id: 'team-1',
-        game_id: 'g1',
+        game_id: `g${i}`,
         player_id: 'p1',
         ab: 8,
         h: 3,

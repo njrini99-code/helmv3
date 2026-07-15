@@ -138,13 +138,15 @@ describe('sweepActionOutcomes — improved action resolves its source insight', 
         status: 'open',
       },
     ];
-    // Legacy game rows in the after-window scream strikeouts (k_rate 1.0). If
-    // they were retained/blended alongside the canonical rows, the observed
-    // value would be (2+40)/(24+40) ≈ 0.656 -> 'regressed'. Canonical-only is
-    // 2/24 ≈ 0.083 -> 'improved'. The verdict proves which pool was measured.
+    // Legacy game rows share the SAME calendar day as the canonical games
+    // below (#379 is a (player, date)-scoped precedence, not player-only), so
+    // they're superseded rather than blended. If they were retained/blended
+    // alongside the canonical rows, the observed value would be
+    // (2+40)/(24+40) ≈ 0.656 -> 'regressed'. Canonical-only is 2/24 ≈ 0.083
+    // -> 'improved'. The verdict proves which pool was measured.
     const stats = [
-      { id: 'lg1', player_id: 'p3', stat_type: 'game', session_date: '2026-03-02', at_bats: 20, walks: 0, strikeouts: 20, hits: 0 },
-      { id: 'lg2', player_id: 'p3', stat_type: 'game', session_date: '2026-03-06', at_bats: 20, walks: 0, strikeouts: 20, hits: 0 },
+      { id: 'lg1', player_id: 'p3', stat_type: 'game', session_date: '2026-03-01', at_bats: 20, walks: 0, strikeouts: 20, hits: 0 },
+      { id: 'lg2', player_id: 'p3', stat_type: 'game', session_date: '2026-03-05', at_bats: 20, walks: 0, strikeouts: 20, hits: 0 },
     ];
     const games = [
       { id: 'g1', game_date: '2026-03-01' },

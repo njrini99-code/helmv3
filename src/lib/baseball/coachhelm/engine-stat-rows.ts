@@ -12,14 +12,25 @@ import 'server-only';
 // the engine's loaders need per-session rows (dispersion, rolling windows,
 // after-window filtering), not the adapter's pre-reconciled season aggregates:
 //
-//   1. GAME context — a player with ANY canonical box-score row
-//      (`baseball_box_score_batting` / `_pitching`) gets their game-context
-//      rows EXCLUSIVELY from the canonical layer, normalized via loaders.ts's
+//   1. GAME context — scoped by (PLAYER, DATE), not player alone. A player's
+//      canonical box-score rows (`baseball_box_score_batting` / `_pitching`)
+//      always win for their own game-context, normalized via loaders.ts's
 //      `normalizeBoxScoreBattingRow` / `normalizeBoxScorePitchingRow` so every
 //      source_ref the loaders emit cites the REAL table. That player's legacy
-//      `stat_type='game'` rows are dropped from the pool — never blended, so
-//      the same game can never be counted twice (the #827 demo seed
-//      intentionally writes BOTH layers for the same games).
+//      `stat_type='game'` rows are dropped ONLY where their `session_date`
+//      matches a date the player has canonical coverage for — never blended
+//      on that date, so the same game can never be counted twice (the #827
+//      demo seed intentionally writes BOTH layers for the same games).
+//      Legacy game rows on dates with NO canonical coverage (e.g. a team's
+//      first 10 games logged the old way before box-score import started on
+//      game 11) stay in the pool — a mid-season transition must not silently
+//      erase a player's early-season games. Caveat: `baseball_player_stats`
+//      has no `game_id` column, only `session_date` — there is no FK to
+//      correlate a legacy row to the specific canonical game it might
+//      duplicate, so this is a same-day heuristic, not a guaranteed
+//      game-identity match (a double-header would collide). The design
+//      rule's stated concern is preventing double-counting the SAME game,
+//      not excluding DIFFERENT ones, so this trade-off is accepted.
 //   2. PRACTICE carve-out — legacy non-game rows (practice/other) always pass
 //      through unchanged: the canonical layers have no practice-session
 //      concept yet (same permanent carve-out as the shared adapter).
@@ -195,14 +206,26 @@ export async function loadEngineStatRows(
   ];
   if (normalized.length === 0) return { data: legacyRows, error: null };
 
-  // Precedence rule 1: canonical game rows own the game context for any player
-  // who has them; that player's legacy game rows leave the pool. Rules 2 + 3:
-  // everything else (practice/other rows; whole rosters with no canonical
-  // history) passes through untouched.
-  const boxScorePlayerIds = new Set(normalized.map((r) => r.player_id));
-  const retainedLegacy = legacyRows.filter(
-    (r) => !boxScorePlayerIds.has(r.player_id) || !isLegacyGameRow(r),
-  );
+  // Precedence rule 1, scoped by (player_id, date) — NOT by player alone.
+  // `baseball_player_stats` has no game_id, so we correlate on the resolved
+  // canonical game date instead, truncated to YYYY-MM-DD on both sides (a
+  // `date` column round-trips bare already, but callers/mocks shouldn't have
+  // to guarantee that). A legacy game row drops only when THIS player has a
+  // canonical row on THAT calendar day; legacy games on dates the canonical
+  // layer never covered stay in the pool (rule 3's fallback, at row grain).
+  const toDateOnly = (d: string | null | undefined): string | null => (d ? d.slice(0, 10) : null);
+  const canonicalPlayerDates = new Set<string>();
+  for (const r of normalized) {
+    const d = toDateOnly(r.session_date);
+    if (d) canonicalPlayerDates.add(`${r.player_id}|${d}`);
+  }
+  // Rules 2 + 3: practice/other rows, and any legacy game row whose date has
+  // no canonical coverage for that player, always pass through untouched.
+  const retainedLegacy = legacyRows.filter((r) => {
+    if (!isLegacyGameRow(r)) return true;
+    const d = toDateOnly(r.session_date);
+    return !d || !canonicalPlayerDates.has(`${r.player_id}|${d}`);
+  });
 
   return { data: [...normalized, ...retainedLegacy], error: null };
 }
