@@ -80,6 +80,17 @@ interface StatsCenterClientProps {
    * renders its truthful "no captured events" frames.
    */
   statVisualsData?: StatVisualsData;
+  /**
+   * Whether the viewer holds can_manage_imports (computed server-side by the
+   * page). Decides where the two import entry points route: import-capable
+   * staff go straight to the full Import Center (whose middleware gate is
+   * can_manage_imports), everyone else through the capability-aware
+   * /stats/upload shim (middleware gate: can_manage_stats). Sending
+   * import-capable-but-not-stats staff (e.g. the director_ops preset) through
+   * the shim would bounce them off its can_manage_stats middleware gate
+   * before the shim's own capability branch ever ran.
+   */
+  canManageImports?: boolean;
 }
 
 /** Which game-set the wall currently shows. */
@@ -455,7 +466,12 @@ function SegmentedControl<T extends string>({
 // Main client
 // -----------------------------------------------------------------------------
 
-export function StatsCenterClient({ model: initialModel, initialFilters, statVisualsData }: StatsCenterClientProps) {
+export function StatsCenterClient({
+  model: initialModel,
+  initialFilters,
+  statVisualsData,
+  canManageImports = false,
+}: StatsCenterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reducedMotion = useReducedMotion() ?? false;
@@ -632,6 +648,12 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
     .filter(Boolean)
     .join(' · ');
 
+  // Both import entry points (header action + empty-state CTA) share one
+  // capability-resolved destination — see the canManageImports prop doc.
+  const importEntryHref = canManageImports
+    ? '/baseball/dashboard/import'
+    : '/baseball/dashboard/stats/upload';
+
   const mastheadActions = (
     <div className="flex flex-wrap items-center gap-2">
       <SegmentedControl options={GAME_SET_OPTIONS} value={gameSet} onChange={setGameSet} ariaLabel="Game set" />
@@ -643,18 +665,20 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
           Wizard consolidation: the standalone "Upload" button that used to
           sit beside this one (routing to the retired /stats/upload wizard)
           is gone — that wizard is now the SAME entry point ("Quick box
-          score"), reached through /stats/upload rather than a second button.
-          Routes through /stats/upload (not straight to /dashboard/import)
-          because that route branches on capability: can_manage_imports staff
-          land in the full Import Center, can_manage_stats-only staff
-          (assistant/pitching/hitting/catching/defensive/strength coach) get
-          the quick-box-score wizard inline instead of being locked out by
-          Import Center's can_manage_imports gate. */}
+          score"). The destination branches on the viewer's capability
+          (importEntryHref): can_manage_imports staff go STRAIGHT to the full
+          Import Center — routing them through the /stats/upload shim would
+          bounce anyone without can_manage_stats (e.g. director_ops) off that
+          route's own middleware gate — while everyone else goes through the
+          shim, which renders the quick-box-score wizard inline for
+          can_manage_stats-only staff (assistant/pitching/hitting/catching/
+          defensive/strength coach) instead of locking them out on Import
+          Center's can_manage_imports gate. */}
       <Button
         variant="ghost"
         size="md"
         leftIcon={<IconFolder size={16} />}
-        onClick={() => router.push('/baseball/dashboard/stats/upload')}
+        onClick={() => router.push(importEntryHref)}
       >
         Import Center
       </Button>
@@ -837,7 +861,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
             <EmptyIssue
               variant="stats"
               action={
-                <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard/stats/upload')}>
+                <Button variant="secondary" size="md" onClick={() => router.push(importEntryHref)}>
                   Import a box score
                 </Button>
               }
