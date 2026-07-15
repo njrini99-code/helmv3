@@ -178,7 +178,8 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     path: 'src/lib/baseball/read-models/command-center.ts',
     group: 'read-model',
     status: 'pending migration',
-    note: 'Joins baseball_player_aggregates directly onto the command-center member rows.',
+    note:
+      '#379 Phase 1: game-context avg/sessions (rosterPulse[].careerAvg/totalSessions) now resolve via legacy-stat-adapters.ts\'s adaptLegacyStatsMap, sourcing box-score/season data from getStatsCenter() (canonical) with the raw legacy row only as fallback + for the still-unreplaced recentTrend field — closing the Command-Center-vs-Stats-Center careerAvg divergence command-center-stats-center-drift.test.ts pinned. Still reads baseball_player_aggregates directly (select expanded to feed the adapter\'s full LegacyAggregateRow shape) because the adapter\'s legacy-fallback tier and recentTrend passthrough require a raw fetch of the deprecated row from SOMEWHERE, and this file is that place for Command Center — same as roster.ts\'s still-pending equivalent. Not deleted from this list: doing so would require either dropping the legacy-fallback tier (a user-facing regression the design forbids) or a new shared raw-fetch module outside this chunk\'s scope; see the #379 command-center-adapter PR body.',
   },
 
   // --- CoachHelm engine -------------------------------------------------------
@@ -263,7 +264,8 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     path: 'src/lib/baseball/read-models/__tests__/command-center.test.ts',
     group: 'test',
     status: 'pending migration',
-    note: 'Fake-supabase fixture mirrors command-center.ts (itself grandfathered above) including its baseball_player_aggregates join; migrates when the read-model does.',
+    note:
+      'Fake-supabase fixture mirrors command-center.ts (itself grandfathered above), including its baseball_player_aggregates fetch that feeds the #379 shared adapter\'s legacy-fallback tier; migrates when the read-model stops needing a raw legacy fetch.',
   },
   {
     path: 'src/lib/baseball/__tests__/roster-read-model.test.ts',
@@ -367,6 +369,6 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     group: 'test',
     status: 'pending migration',
     note:
-      "#379 Phase 0 drift test. Runs the real seedTeamStats() reconciliation path (not a hand-built fixture) with a realistic game+practice session mix, then exercises getCommandCenter() (itself grandfathered above) against getStatsCenter()'s box-score-derived numbers for the same player/team/season — pinning that the game-context numbers agree while explicitly asserting the still-open gap between Command Center's blended average and Stats Center's game-only one. Migrates when command-center.ts moves behind the shared legacy adapter (a later #379 chunk).",
+      "#379 drift test. Runs the real seedTeamStats() reconciliation path (not a hand-built fixture) with a realistic game+practice session mix, then exercises getCommandCenter() (itself grandfathered above) against getStatsCenter()'s box-score-derived numbers for the same player/team/season. UPDATED for #379 Phase 1 (command-center.ts now sources game-context via the shared adapter): pins that Command Center's displayed careerAvg and Stats Center's battingAll.avg now RECONCILE for a player with box-score-era data (previously pinned as a known-open gap). Migrates when command-center.ts stops needing a raw legacy-table fetch.",
   },
 ] as const;
