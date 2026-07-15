@@ -409,12 +409,18 @@ export function ImportWizardClient({
     try {
       // Pass the targeted grain so the preview can detect EXISTING rows and return
       // the per-row create/update/skip verdict BEFORE commit (duplicate_resolution_v2.md).
+      // ROUND-4 FIX (#863) — also pass `dataShape`: the server's capability gate
+      // relaxes to can_manage_imports OR can_manage_stats ONLY for a
+      // 'game_box_score' preview (quickEntryOnly's one reachable shape); a
+      // stats-only coach previewing without this field would still be blocked
+      // here even though commit would have authorized them.
       const result = await previewImport({
         teamId,
         sourceId,
         csvContent,
         statType,
         sessionDate,
+        dataShape,
       });
       if (result.totalRows === 0) {
         setError('No data rows found in that file.');
@@ -429,7 +435,7 @@ export function ImportWizardClient({
     } finally {
       setBusy(false);
     }
-  }, [csvContent, sourceId, teamId, statType, sessionDate]);
+  }, [csvContent, sourceId, teamId, statType, sessionDate, dataShape]);
 
   // ---- per-row manual match override -----------------------------------------
   const setRowPlayer = useCallback(
@@ -1111,10 +1117,18 @@ export function ImportWizardClient({
               </p>
             </details>
 
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" onClick={() => setStep('choose')}>
-                Back
-              </Button>
+            {/* ROUND-4 FIX (#863) — quickEntryOnly staff have no "choose" step to
+                return to (same reasoning as the pencil affordance above): the
+                'choose' step renders the FULL shape picker Import Center
+                reserves for can_manage_imports staff, so a Back button that
+                routes there must not exist for a can_manage_stats-only viewer
+                even though this Upload step itself is reachable for them. */}
+            <div className={cn('flex items-center', quickEntryOnly ? 'justify-end' : 'justify-between')}>
+              {!quickEntryOnly && (
+                <Button variant="ghost" onClick={() => setStep('choose')}>
+                  Back
+                </Button>
+              )}
               <Button onClick={runPreview} busy={busy} disabled={!csvContent.trim()}>
                 Analyze file
               </Button>
