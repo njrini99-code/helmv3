@@ -17,9 +17,11 @@
 //      ONLY by `error` — `available` is identical in both, which is the
 //      actual fabrication risk: a caller that checks only `available` cannot
 //      tell "genuinely nothing assigned" from "the query failed".
-//   4. A hand-entered recent-stat row (no import_run_id, no
-//      source_trust_level) never gets a fabricated trust/provenance object;
-//      a stamped row does.
+//   4. recentStats (#379 — box-score sourced, not the deprecated flat
+//      per-session stat table) never fabricates trust/provenance: a
+//      box-score row carries no CSV-import provenance columns at all, so
+//      every recentStats entry gets an honest trust:null/provenance:null
+//      rather than an implied import lineage that doesn't exist.
 //
 // Source of truth: `getPlayerToday` in
 // src/lib/baseball/read-models/player-today.ts.
@@ -65,7 +67,11 @@ function baseTables(extra: Record<string, Row[]> = {}): Record<string, Row[]> {
     baseball_players: [{ id: PLAYER_ID, user_id: USER_ID }],
     baseball_team_members: [{ id: 'mem-1', team_id: TEAM_ID, player_id: PLAYER_ID }],
     baseball_events: [],
-    baseball_player_stats: [],
+    // #379 — recentStats now sources from the canonical box-score layer, not
+    // the deprecated flat/aggregate stat layer.
+    baseball_box_score_batting: [],
+    baseball_box_score_pitching: [],
+    baseball_games: [],
     helm_lifting_sessions: [],
     baseball_actions: [],
     helm_lifting_readiness_checkins: [],
@@ -198,64 +204,81 @@ describe('getPlayerToday — sub-read failures are distinguishable from honest e
   });
 });
 
-describe('getPlayerToday — recent stats never fabricate provenance for a hand-entered row (#377)', () => {
-  it('a hand-entered row (no import_run_id, no source_trust_level) gets trust:null + provenance:null', async () => {
+describe('getPlayerToday — recent stats never fabricate provenance for a box-score row (#379)', () => {
+  // #379: recentStats migrated off the deprecated flat per-session stat
+  // table onto the canonical box-score layer (baseball_box_score_batting/
+  // _pitching joined to baseball_games). Box-score rows are staff-entered via
+  // the box-score save flow, not imported, so they carry no CSV-import
+  // provenance columns at all — trust/provenance must always be an honest
+  // null, never a fabricated stamp implying an import lineage that doesn't
+  // exist.
+  it('a game with a captured box-score line surfaces trust:null + provenance:null (no import lineage exists to stamp)', async () => {
     fake = createFakeSupabase({
       user: { id: USER_ID },
       tables: baseTables({
-        baseball_player_stats: [
+        baseball_box_score_batting: [
+          { id: 'bb-1', game_id: 'game-1', player_id: PLAYER_ID, team_id: TEAM_ID },
+        ],
+        baseball_games: [
           {
-            id: 'stat-hand',
-            player_id: PLAYER_ID,
+            id: 'game-1',
             team_id: TEAM_ID,
-            stat_type: 'batting',
-            session_date: DAY,
-            session_name: 'Hand-entered line',
-            source: 'manual',
-            source_trust_level: null,
-            source_match_tier: null,
-            source_match_confidence: null,
-            source_external_id: null,
-            import_run_id: null,
+            game_date: DAY,
+            game_type: 'official_game',
+            opponent_name: 'Rival High',
           },
         ],
       }),
     });
 
     const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
-    const row = result.recentStats.find((s) => s.id === 'stat-hand');
+    const row = result.recentStats.find((s) => s.id === 'game-1');
     expect(row).toBeTruthy();
+    expect(row?.statType).toBe('official_game');
+    expect(row?.sessionDate).toBe(DAY);
+    expect(row?.sessionName).toBe('vs Rival High');
     expect(row?.trust).toBeNull();
     expect(row?.provenance).toBeNull();
   });
 
-  it('a stamped row (source_trust_level set) DOES get a real trust + provenance object', async () => {
+  it('a game with only a pitching line (no batting row) still surfaces in recentStats', async () => {
     fake = createFakeSupabase({
       user: { id: USER_ID },
       tables: baseTables({
-        baseball_player_stats: [
+        baseball_box_score_pitching: [
+          { id: 'bp-1', game_id: 'game-2', player_id: PLAYER_ID, team_id: TEAM_ID },
+        ],
+        baseball_games: [
           {
-            id: 'stat-stamped',
-            player_id: PLAYER_ID,
+            id: 'game-2',
             team_id: TEAM_ID,
-            stat_type: 'batting',
-            session_date: DAY,
-            session_name: 'Imported line',
-            source: 'csv_import',
-            source_trust_level: 'staff_entered',
-            source_match_tier: null,
-            source_match_confidence: null,
-            source_external_id: null,
-            import_run_id: null,
+            game_date: DAY,
+            game_type: 'scrimmage',
+            opponent_name: null,
           },
         ],
       }),
     });
 
     const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
-    const row = result.recentStats.find((s) => s.id === 'stat-stamped');
+    const row = result.recentStats.find((s) => s.id === 'game-2');
     expect(row).toBeTruthy();
-    expect(row?.trust).not.toBeNull();
-    expect(row?.provenance).not.toBeNull();
+    expect(row?.statType).toBe('scrimmage');
+    // No opponent on file -> honest null, never a fabricated label.
+    expect(row?.sessionName).toBeNull();
+    expect(row?.trust).toBeNull();
+    expect(row?.provenance).toBeNull();
+  });
+
+  it('a FAILING box-score read returns recentStats:[] but sets `error` — distinguishable from a genuinely stat-less player', async () => {
+    failSelect(fake, 'baseball_box_score_batting', 'boom');
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    // Same shape as the honest-empty case (recentStats: [])...
+    expect(result.recentStats).toEqual([]);
+    // ...but `error` is non-null — the ONLY signal this is a failure, not
+    // "this player has no captured box-score lines yet" (mirrors the item-3
+    // sub-read contract above).
+    expect(result.error).toBe('Your recent stats could not be loaded.');
   });
 });

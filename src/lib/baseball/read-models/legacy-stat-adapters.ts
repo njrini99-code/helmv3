@@ -20,8 +20,15 @@
 // §3.3 — game/practice contexts are never merged without a labeled filter).
 //
 // Event-derived fields (exit velocity, pitch velocity) are null-safe: they
-// are populated ONLY from an explicit event-grain input (the elite-event
-// read model), never fabricated from a legacy scalar.
+// are populated from an explicit event-grain input (the elite-event read
+// model) when one is supplied. Exit velocity has NO legacy column at all —
+// it stays null unless an event input supplies it, never fabricated. Pitch
+// velocity DOES have a legitimate legacy scalar (avg_pitch_velocity /
+// max_pitch_velocity on the legacy aggregate row, predating the event-grain
+// model) — an explicit event-grain value still wins outright when supplied,
+// but the legacy scalar is a real, non-fabricated fallback when no
+// event-grain reading exists, so a team that hasn't captured pitch-velocity
+// events yet doesn't regress from "shows a real number" to "shows nothing".
 //
 // Every returned shape carries a `sourceLayer` tag so callers (and a future
 // UI source chip) can label a legacy-fallback number honestly instead of
@@ -92,6 +99,12 @@ export interface BoxScoreGameContextRow {
  * Every field is null-safe: omit a field (or pass no `event` input at all)
  * when no matching event-grain row exists rather than fabricating a number
  * from an unrelated legacy scalar.
+ *
+ * Exception: `avgPitchVelocity`/`maxPitchVelocity` DO have a legitimate
+ * legacy fallback (see {@link adaptLegacyPlayerStats}) — the legacy
+ * aggregate row's own `avg_pitch_velocity`/`max_pitch_velocity` columns are a
+ * real, previously-captured measurement, not a fabrication. Exit velocity has
+ * no such legacy column and stays event-only.
  */
 export interface EventDerivedFields {
   avgExitVelocity: number | null;
@@ -189,8 +202,12 @@ export interface AdaptLegacyPlayerStatsInput {
  * Practice-context and legacy-only trend/development fields always pass
  * through the legacy row unchanged, regardless of box-score presence — the
  * canonical layers have no practice-session concept yet (permanent carve-out,
- * see module doc). Event-derived fields are populated ONLY from the `event`
- * input; they are never backfilled from a legacy scalar.
+ * see module doc). Event-derived fields are populated from the `event` input
+ * when supplied; `avgPitchVelocity`/`maxPitchVelocity` additionally fall back
+ * to the legacy row's own `avg_pitch_velocity`/`max_pitch_velocity` columns
+ * when no event-grain reading is supplied (a legitimate, previously-captured
+ * measurement — not a fabrication). Exit velocity has no legacy column at
+ * all and is never backfilled from anything but the `event` input.
  */
 export function adaptLegacyPlayerStats(
   input: AdaptLegacyPlayerStatsInput,
@@ -232,10 +249,16 @@ export function adaptLegacyPlayerStats(
       sessions: legacy?.practice_sessions ?? 0,
     },
     event: {
+      // Exit velocity: event-only, null-safe — no legacy column exists at all.
       avgExitVelocity: event?.avgExitVelocity ?? EMPTY_EVENT_DERIVED_FIELDS.avgExitVelocity,
       maxExitVelocity: event?.maxExitVelocity ?? EMPTY_EVENT_DERIVED_FIELDS.maxExitVelocity,
-      avgPitchVelocity: event?.avgPitchVelocity ?? EMPTY_EVENT_DERIVED_FIELDS.avgPitchVelocity,
-      maxPitchVelocity: event?.maxPitchVelocity ?? EMPTY_EVENT_DERIVED_FIELDS.maxPitchVelocity,
+      // Pitch velocity: an explicit event-grain reading wins outright when
+      // supplied; otherwise falls back to the legacy aggregate row's own
+      // avg_pitch_velocity/max_pitch_velocity columns — a real,
+      // previously-captured measurement, not a fabrication (#379 residual —
+      // this adapter previously never read these two legacy columns at all).
+      avgPitchVelocity: event?.avgPitchVelocity ?? legacy?.avg_pitch_velocity ?? EMPTY_EVENT_DERIVED_FIELDS.avgPitchVelocity,
+      maxPitchVelocity: event?.maxPitchVelocity ?? legacy?.max_pitch_velocity ?? EMPTY_EVENT_DERIVED_FIELDS.maxPitchVelocity,
     },
     legacyExtras: {
       pressureGap: legacy?.pressure_gap ?? null,

@@ -57,6 +57,13 @@ import {
 } from '@/lib/lifting/resolve-baseball-context';
 import { extractArmStatusFromNotes, sleepQualityToHours } from '@/lib/lifting/adapters/baseball-view-adapter';
 import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-data';
+// #379 — exit velocity is derived via the same pure aggregator elite-stat-
+// events.ts's canonical read model uses (avg_exit_velocity metric + the
+// evLaPoints visual payload), fed with this player's own batted-ball events
+// queried directly here (this file already resolves its own staff gate above
+// and reads several other event-grain tables the same way).
+import { buildHitterMetrics } from '@/lib/baseball/read-models/elite-stat-events';
+import type { BaseballBattedBallEvent } from '@/lib/types/baseball-stat-events';
 
 // The V6 event/elite tables + V11 lifting/readiness tables ship via migrations
 // and are NOT in the generated database.ts (no db:types regen without a live
@@ -664,19 +671,37 @@ export async function getPlayerSnapshotCards(
       .select('title, goals, status, coach_id, updated_at, coach:baseball_coaches(full_name)')
       .eq('player_id', playerId).eq('team_id', teamId)
       .order('updated_at', { ascending: false }).limit(5),
-    // Exit velocity lives on captured stat sessions (real column), NOT on
-    // baseball_player_aggregates (those EV fields are typed but un-migrated).
-    supabase.from('baseball_player_stats')
-      .select('exit_velocity')
-      .eq('player_id', playerId).eq('team_id', teamId)
-      .not('exit_velocity', 'is', null).limit(200),
+    // #379 — exit velocity is derived from the elite batted-ball event grain
+    // (the canonical layer-3 source), not the deprecated flat per-session stat
+    // table (previously "typed but un-migrated" per this file's own comment).
+    // Scoped to the official/scrimmage contexts — the same default set
+    // elite-stat-events.ts's canonical entry point uses — and to CURRENT rows
+    // only (a corrected import supersedes the prior row via GAP 5's
+    // superseded_by_run_id, mirrored from elite-stat-events.ts's own filter).
+    // Ordered newest-first BEFORE the cap so the 500-row sample is the most
+    // recent events, never an arbitrary PostgREST slice (#813) — mirrors the
+    // fielding/catching event queries above.
+    fromUntyped(db, 'baseball_batted_ball_events')
+      .select('*')
+      .eq('team_id', teamId).eq('batter_id', playerId)
+      .in('data_context', ['official_game', 'scrimmage'])
+      .is('superseded_by_run_id', null)
+      .order('created_at', { ascending: false })
+      .limit(500),
   ]);
 
-  // Exit-velocity aggregation from captured sessions (honest: null when none).
-  const evRows = (evRes?.error ? [] : evRes?.data ?? []) as Array<{ exit_velocity: number | null }>;
-  const evValues = evRows.map((r) => r.exit_velocity).filter((v): v is number => v != null && Number.isFinite(v));
-  const avgExitVelocity = evValues.length
-    ? Math.round((evValues.reduce((a, b) => a + b, 0) / evValues.length) * 10) / 10 : null;
+  // Exit-velocity aggregation from real batted-ball events (honest: null when
+  // none captured yet). Reuses elite-stat-events.ts's own pure aggregator so
+  // the numbers match the Stats Lab exactly rather than a second derivation.
+  const battedBalls = (evRes?.error ? [] : evRes?.data ?? []) as BaseballBattedBallEvent[];
+  const hitterMetrics = buildHitterMetrics(playerId, [], battedBalls, 'official_game');
+  const rawAvgExitVelocity =
+    hitterMetrics.metrics.find((m) => m.metricKey === 'avg_exit_velocity')?.value ?? null;
+  const avgExitVelocity =
+    rawAvgExitVelocity != null ? Math.round(rawAvgExitVelocity * 10) / 10 : null;
+  const evValues = hitterMetrics.visuals.evLaPoints
+    .map((p) => p.exitVelocity)
+    .filter((v): v is number => v != null && Number.isFinite(v));
   const maxExitVelocity = evValues.length ? Math.round(Math.max(...evValues) * 10) / 10 : null;
 
   // ---------------------------------------------------------------------------
