@@ -50,8 +50,12 @@ export default defineConfig({
       // authenticated storageState from the `setup` project below — they
       // must not also run anonymously here.
       // mobile-viewports.spec.ts runs only under the mobile-* projects.
+      // visual-audit.spec.ts is gated behind VISUAL_AUDIT=1 (test.skip
+      // otherwise) and only ever invoked by visual-audit.yml against
+      // baseball-coach/baseball-player — excluded here too so it never
+      // shows up (even as a no-op skip) in the ordinary e2e lane.
       testIgnore:
-        /baseball-(smoke|route-crawler)\.spec\.ts|mobile-viewports\.spec\.ts/,
+        /baseball-(smoke|route-crawler)\.spec\.ts|mobile-viewports\.spec\.ts|visual-audit\.spec\.ts/,
     },
 
     // BaseballHelm mandatory smoke (#372) — durable per-role auth. `setup`
@@ -66,7 +70,11 @@ export default defineConfig({
     },
     {
       name: 'baseball-coach',
-      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts/,
+      // visual-audit.spec.ts (#visual-audit) rides these same projects —
+      // it is a separate, gated (VISUAL_AUDIT=1) screenshot crawl, not a
+      // new auth mechanism, so it belongs on the existing role-scoped
+      // projects rather than growing a third set.
+      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts|visual-audit\.spec\.ts/,
       grep: /@coach/,
       dependencies: ['setup'],
       use: {
@@ -76,7 +84,7 @@ export default defineConfig({
     },
     {
       name: 'baseball-player',
-      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts/,
+      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts|visual-audit\.spec\.ts/,
       grep: /@player/,
       dependencies: ['setup'],
       use: {
