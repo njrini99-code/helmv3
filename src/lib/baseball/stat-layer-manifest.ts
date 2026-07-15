@@ -145,24 +145,19 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
   },
 
   // --- Read models (NOT yet behind the canonical entry points) -------------
+  //
+  // roster.ts, RosterClient.tsx, roster-aggregates-merge.ts (+ its test) all
+  // migrated together (#379): the raw legacy-aggregates fetch now lives
+  // solely in roster-legacy-aggregates-source.ts (added below), and the merge
+  // decision itself was already delegated to legacy-stat-adapters.ts's
+  // precedence rule. None of the four files above reference a deprecated
+  // stat table anymore.
   {
-    path: 'src/lib/baseball/read-models/roster.ts',
-    group: 'read-model',
-    status: 'pending migration',
-    note: 'Joins baseball_player_aggregates onto the roster row shape directly instead of via stats-center.ts.',
-  },
-  {
-    path: 'src/lib/baseball/read-models/roster-aggregates-merge.ts',
+    path: 'src/lib/baseball/read-models/roster-legacy-aggregates-source.ts',
     group: 'read-model',
     status: 'pending migration',
     note:
-      'Bridging shim for roster.ts above (feature-flow sweep 2026-07-10): merges current-season baseball_player_season_stats OVER the legacy baseball_player_aggregates row so box-score-tracked players stop reading as "Needs Data". Retires together with roster.ts\'s direct aggregate join when that moves behind stats-center.ts.',
-  },
-  {
-    path: 'src/lib/baseball/read-models/__tests__/roster-aggregates-merge.test.ts',
-    group: 'test',
-    status: 'pending migration',
-    note: 'Unit tests for the roster-aggregates-merge bridging shim; retires with it.',
+      'The sole remaining direct reader of baseball_player_aggregates for the roster surfaces (#379). Fetches the raw legacy row map for a team so legacy-stat-adapters.ts (via roster-aggregates-merge.ts) can resolve its box-score > legacy-fallback > no-data precedence; roster.ts (server) and RosterClient.tsx (browser) both call it instead of querying the deprecated table inline.',
   },
   {
     path: 'src/lib/baseball/read-models/player-today.ts',
@@ -242,12 +237,10 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
   },
 
   // --- Pages / components -----------------------------------------------------
-  {
-    path: 'src/app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx',
-    group: 'page-or-component',
-    status: 'pending migration',
-    note: 'Roster client queries baseball_player_aggregates directly for the roster grid.',
-  },
+  // (empty — RosterClient.tsx migrated in #379; it now calls
+  // roster-legacy-aggregates-source.ts above instead of querying
+  // baseball_player_aggregates inline. Next entrant is the players/[id]
+  // profile page, a later #379 chunk.)
 
   // --- Type definitions (doc-comment references only, no queries) -----------
   {
@@ -275,6 +268,20 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     group: 'test',
     status: 'pending migration',
     note: 'Fake-supabase fixture mirrors command-center.ts (itself grandfathered above) including its baseball_player_aggregates join; migrates when the read-model does.',
+  },
+  {
+    path: 'src/lib/baseball/__tests__/roster-read-model.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      "#379 roster.ts migration. Exercises getRoster() against a fake baseball_player_aggregates table fixture to pin the shared adapter's box-score > legacy-fallback > no-data precedence end to end; references the deprecated table name only as fixture data — roster.ts itself no longer queries it (that now lives solely in roster-legacy-aggregates-source.ts, added above).",
+  },
+  {
+    path: 'src/lib/baseball/read-models/__tests__/roster-legacy-aggregates-source.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      "#379 roster.ts migration. Unit tests for fetchRosterLegacyAggregates() — the one production file still allowed to query baseball_player_aggregates for the roster surfaces — so this fixture use is expected and permanent (mirrors the production entry above), not a stale/migrating consumer.",
   },
   {
     path: 'src/lib/baseball/__tests__/action-baseline.test.ts',

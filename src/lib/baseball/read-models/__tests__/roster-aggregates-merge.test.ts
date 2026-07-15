@@ -1,10 +1,10 @@
 // =============================================================================
 // Unit tests for mergeSeasonStatsIntoAggregates — the PURE merge logic behind
 // the roster-stat-staleness fix (#roster-stat-staleness). Box-score-canonical
-// season stats (baseball_player_season_stats) must win over the legacy
-// baseball_player_aggregates row (CSV/manual stat-log path) for any player who
-// has real, current season data, while never regressing a player who ONLY has
-// the legacy row and no season_stats row at all.
+// season stats (the season-stats table) must win over the legacy aggregates
+// row (CSV/manual stat-log path) for any player who has real, current season
+// data, while never regressing a player who ONLY has the legacy row and no
+// season_stats row at all.
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
