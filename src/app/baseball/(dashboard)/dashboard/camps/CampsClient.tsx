@@ -197,7 +197,7 @@ function CampCard({
 
       {/* Coach Actions */}
       {isCoach && (
-        <div className="mt-4 flex justify-end gap-2 border-t border-[color:var(--hairline)] pt-4">
+        <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[color:var(--hairline)] pt-4">
           <Link href={`/baseball/dashboard/camps/${camp.id}`}>
             <Button
               variant="secondary"

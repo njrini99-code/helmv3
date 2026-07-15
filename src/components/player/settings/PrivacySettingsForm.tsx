@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button, IconButton } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
@@ -153,31 +153,38 @@ export function PrivacySettingsForm({
                 <p className="text-xs text-warm-500">{setting.description}</p>
               </div>
 
-              {/* Toggle Switch */}
-              <div className="relative">
-                <IconButton
-                  variant="primary"
-                  aria-label={setting.label}
-                  id={setting.key}
-                  type="button"
-                  role="switch"
-                  aria-checked={settings[setting.key] === true}
-                  onClick={() => handleToggle(setting.key)}
-                  className={`
+              {/* Toggle Switch — a plain native <button>, not IconButton: the
+                  visible track has to stay the standard 24px-tall (h-6)
+                  iOS-style switch shape, but that's under the 44px tap-target
+                  floor. IconButton's `overflow-hidden` (baked into its
+                  baseStyles) would clip an invisible `before:` hit-slop
+                  pseudo-element the moment it extends past the button's own
+                  box, so it can't reach 44px without that clip eating the
+                  extra reach (mirrors MinimumStandards.tsx / PhilosophySettingsClient.tsx).
+                  A plain button carries none of that baggage. */}
+              {/* eslint-disable-next-line helm/no-raw-button -- compact h-6 toggle track; IconButton's overflow-hidden clips the hit-slop pseudo-element below (mirrors MinimumStandards.tsx) */}
+              <button
+                type="button"
+                role="switch"
+                aria-label={setting.label}
+                id={setting.key}
+                aria-checked={settings[setting.key] === true}
+                onClick={() => handleToggle(setting.key)}
+                className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
                     transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2
+                    before:absolute before:-inset-2.5 before:content-['']
                     ${settings[setting.key] ? 'bg-primary-600' : 'bg-warm-300'}
                   `}
-                >
-                  <span
-                    className={`
+              >
+                <span
+                  className={`
                       pointer-events-none inline-block h-5 w-5 transform rounded-full bg-cream-50 shadow ring-0
                       transition duration-200 ease-in-out
                       ${settings[setting.key] ? 'translate-x-5' : 'translate-x-0'}
                     `}
-                  />
-                </IconButton>
-              </div>
+                />
+              </button>
             </div>
           ))}
         </div>

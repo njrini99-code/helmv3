@@ -407,27 +407,37 @@ export function PhilosophySettingsClient({
                       <p className="font-medium text-warm-900">{priority.label}</p>
                       <p className="text-xs leading-relaxed text-warm-500">{priority.description}</p>
                     </div>
-                    <div className="flex shrink-0 gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
+                    {/* gap-3 (12px), not gap-1: each chevron below keeps its
+                        compact 32px (h-8/w-8) visual but reaches the 44px
+                        tap-target floor via an invisible `before:` hit-slop
+                        (mirrors MinimumStandards.tsx) rather than a real
+                        resize — up/down need to stay row-height-matched with
+                        the h-8 rank badge to their left. That hit-slop
+                        extends 6px past each button's own edge (-inset-1.5),
+                        so the gap between the two buttons has to be >= 12px
+                        or the invisible zones overlap and a tap near the
+                        middle could fire the wrong direction. */}
+                    <div className="flex shrink-0 gap-3">
+                      {/* eslint-disable-next-line helm/no-raw-button -- compact h-8 reorder chevron; Button's ripple needs overflow-hidden, which clips the hit-slop pseudo-element below (mirrors MinimumStandards.tsx) */}
+                      <button
+                        type="button"
                         onClick={() => handlePriorityChange(priority.key, 'up')}
                         disabled={index === 0}
                         aria-label={`Move ${priority.label} up`}
-                        className="h-8 w-8 rounded-lg p-0 text-warm-400 hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-400 transition-colors hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
                       >
                         <IconChevronUp size={16} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
+                      </button>
+                      {/* eslint-disable-next-line helm/no-raw-button -- compact h-8 reorder chevron; Button's ripple needs overflow-hidden, which clips the hit-slop pseudo-element below (mirrors MinimumStandards.tsx) */}
+                      <button
+                        type="button"
                         onClick={() => handlePriorityChange(priority.key, 'down')}
                         disabled={index === sortedPriorities.length - 1}
                         aria-label={`Move ${priority.label} down`}
-                        className="h-8 w-8 rounded-lg p-0 text-warm-400 hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-400 transition-colors hover:bg-cream-50 hover:text-warm-700 active:bg-cream-100/75 disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 before:absolute before:-inset-1.5 before:content-['']"
                       >
                         <IconChevronDown size={16} />
-                      </Button>
+                      </button>
                     </div>
                   </li>
                 ))}
