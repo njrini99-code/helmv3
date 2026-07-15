@@ -84,6 +84,7 @@ describe('assembleCommandCenterClientProps', () => {
             careerAvg: 0.31,
             lastSessionAt: '2026-06-29',
             noData: false,
+            sourceLayer: 'box-score',
           },
         ],
         weekEvents: [
@@ -365,5 +366,48 @@ describe('getCommandCenter — game-context via the #379 shared legacy adapter',
     // recentTrend has no canonical replacement yet — the permanent legacy
     // carve-out still surfaces it even for a box-score-sourced player.
     expect(pulse!.recentTrend).toBe('stable');
+  });
+
+  it('pitching-only box-score data this season must NOT mask a real legacy career_avg fallback', async () => {
+    fake = createFakeSupabase({
+      user: { id: 'user-1' },
+      tables: authTables({
+        baseball_games: [
+          { id: 'g1', team_id: TEAM_ID, game_type: 'game', game_date: `${SEASON_YEAR}-06-01` },
+        ],
+        // p1 has real box-score-era data this season, but ONLY on the
+        // pitching side — zero batting box-score rows. statsCenterModel's
+        // `noData` is therefore false (pitchingAll.g > 0), yet
+        // `battingAll.g === 0` / `battingAll.avg === null`. Command Center
+        // must not feed this in as an authoritative (null-avg) "box-score"
+        // row for career_avg purposes — it must fall through to the real
+        // legacy career_avg below instead.
+        baseball_box_score_pitching: [
+          { id: 'bp1', game_id: 'g1', team_id: TEAM_ID, player_id: 'p1', ip: 6 },
+        ],
+        baseball_player_aggregates: [
+          {
+            player_id: 'p1',
+            team_id: TEAM_ID,
+            total_sessions: 15,
+            career_avg: 0.284,
+            recent_trend: 'stable',
+            last_session_at: '2026-05-15',
+          },
+        ],
+      }),
+    });
+
+    const result = await getCommandCenter(TEAM_ID);
+    const pulse = result.rosterPulse.find((r) => r.playerId === 'p1');
+    expect(pulse).toBeTruthy();
+    // noData must stay false — the player DOES have real activity this
+    // season (pitching), so this is not an honest "no data" state either.
+    expect(pulse!.noData).toBe(false);
+    // The legacy career_avg must still display, not be silently masked to
+    // null by the pitching-only (batting-empty) box-score row.
+    expect(pulse!.careerAvg).toBeCloseTo(0.284, 3);
+    expect(pulse!.careerAvg).not.toBeNull();
+    expect(pulse!.sourceLayer).toBe('legacy-fallback');
   });
 });

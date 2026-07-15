@@ -49,6 +49,7 @@ import {
   adaptLegacyStatsMap,
   type BoxScoreGameContextRow,
   type LegacyAggregateRow,
+  type SourceLayer,
 } from '@/lib/baseball/read-models/legacy-stat-adapters';
 
 // -----------------------------------------------------------------------------
@@ -103,6 +104,12 @@ export interface RosterPulseItem {
   lastSessionAt: string | null;
   /** True when the player has zero captured sessions (honest empty, not 0.000). */
   noData: boolean;
+  /**
+   * Provenance for `careerAvg`/`totalSessions` per the #379 shared adapter's
+   * precedence (box-score > legacy-fallback > no-data) — see
+   * legacy-stat-adapters.ts.
+   */
+  sourceLayer: SourceLayer;
 }
 
 export interface CommandCenterEvent {
@@ -402,10 +409,26 @@ export async function getCommandCenter(
   // null/0 by construction and must never be fed in as if it were a real
   // box-score row (that would flip a legitimate legacy-fallback player to a
   // fabricated all-null "box-score" result instead of their real numbers).
+  //
+  // Also skip rows with zero captured BATTING box-score games this season
+  // (`battingAll.g === 0`) even when `noData` is false — a player can have
+  // real box-score data for a non-batting side (pitching-only, or
+  // catching/fielding/baserunning-only) this season, which makes
+  // `statsCenterModel`'s `noData` false, but leaves `battingAll.avg` null
+  // (zero denominator) and `battingAll.g` at 0. Feeding that row in as-is
+  // would give this player a `boxScoreByPlayer` entry with `avg: null`,
+  // flipping adaptLegacyPlayerStats's precedence to sourceLayer 'box-score'
+  // and silently nulling out a real legacy `career_avg` fallback instead of
+  // falling through to it. The check keys off the games-count
+  // (`battingAll.g`), NOT the derived rate (`battingAll.avg === null`):
+  // a real batting box-score row can legitimately have AB=0 but g>0 (e.g. a
+  // walk-only game), and that row must still win per the adapter's
+  // precedence — only a true zero BATTING GAMES count means "nothing to
+  // hand the adapter for this player this season".
   const boxScoreRows: BoxScoreGameContextRow[] = [];
   if (statsCenterModel.authorized) {
     for (const row of statsCenterModel.rows) {
-      if (row.noData) continue;
+      if (row.noData || row.battingAll.g === 0) continue;
       boxScoreRows.push({
         player_id: row.playerId,
         avg: row.battingAll.avg,
@@ -537,6 +560,7 @@ export async function getCommandCenter(
         careerAvg: adapted?.game.avg ?? null,
         lastSessionAt: lastSessionAtByPlayerId.get(player.id) ?? null,
         noData: totalSessions === 0,
+        sourceLayer: adapted?.sourceLayer ?? 'no-data',
       });
       rosterPlayers.push({
         ...player,
