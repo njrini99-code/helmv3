@@ -244,10 +244,14 @@ export function CommandCenterFairway({
               />
             ) : null}
             <Button asChild variant="secondary" size="sm" leftIcon={<IconChartBar size={16} />}>
-              {/* Wizard consolidation: links straight to Import Center (the
-                  canonical wizard) rather than through the /stats/upload
-                  redirect shim. */}
-              <Link href="/baseball/dashboard/import">Upload stats</Link>
+              {/* Wizard consolidation: /stats/upload now branches on
+                  capability — can_manage_imports staff land in the full
+                  Import Center, can_manage_stats-only staff (assistant/
+                  pitching/hitting/catching/defensive/strength coach) get the
+                  same wizard's quick-box-score entry point inline. Linking
+                  straight to Import Center here would lock the latter group
+                  out entirely (it gates on can_manage_imports). */}
+              <Link href="/baseball/dashboard/stats/upload">Upload stats</Link>
             </Button>
           </>
         }

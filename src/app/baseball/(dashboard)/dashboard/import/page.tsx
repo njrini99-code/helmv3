@@ -16,16 +16,19 @@ import { createClient } from '@/lib/supabase/server';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import { getImportRuns } from '@/app/baseball/actions/imports';
+import { getRecentUploads } from '@/app/baseball/actions/stats';
 import { listImportSources } from '@/app/baseball/actions/program-settings';
 import { ImportCenterShell } from '@/components/baseball/import-center/ImportCenterShell';
 import { CONCRETE_EVENT_ADAPTERS } from '@/lib/baseball/adapters';
 import { getSourceRegistryEntry } from '@/lib/baseball/stat-import-adapters';
 import { BASEBALL_IMPORT_SOURCES } from '@/lib/baseball/import-matching';
+import { getRosterForImportMatching } from '@/lib/baseball/import-roster';
 import { isImportSourceEnabled } from '@/lib/baseball/import-source-enabled';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { BaseballImportRunRow } from '@/lib/types/baseball-imports';
 import type { BaseballImportSourceConfig } from '@/lib/types/baseball-settings';
 import type { BaseballSourceKey } from '@/lib/types/baseball-stat-events';
+import type { BaseballStatUpload } from '@/lib/types';
 import type { RegisteredSourceOption } from '@/components/baseball/import-center/ImportCenterShell';
 
 /**
@@ -92,33 +95,7 @@ export default async function ImportCenterPage() {
   // (player_matching_v2.md): jersey_number (per-team, on the membership) plus
   // grad_year + primary_position (on the player), so the matcher can break
   // same-name ties and the manual-match dropdown can show jersey/class/position.
-  const { data: members } = await supabase
-    .from('baseball_team_members')
-    .select(
-      `player_id,
-       jersey_number,
-       baseball_players!inner ( id, first_name, last_name, grad_year, primary_position )`
-    )
-    .eq('team_id', teamId);
-
-  const players = (members ?? []).map((m) => {
-    const p = m.baseball_players as unknown as {
-      id: string;
-      first_name: string | null;
-      last_name: string | null;
-      grad_year: number | null;
-      primary_position: string | null;
-    };
-    const member = m as unknown as { jersey_number: number | null };
-    return {
-      id: p.id,
-      first_name: p.first_name,
-      last_name: p.last_name,
-      jersey_number: member.jersey_number,
-      grad_year: p.grad_year,
-      primary_position: p.primary_position,
-    };
-  });
+  const players = await getRosterForImportMatching(supabase, teamId);
 
   // Recent runs (capability-checked again inside the action).
   let recentRuns: BaseballImportRunRow[] = [];
@@ -126,6 +103,21 @@ export default async function ImportCenterPage() {
     recentRuns = await getImportRuns({ teamId, limit: 20 });
   } catch {
     recentRuns = [];
+  }
+
+  // UPLOAD-HISTORY RESTORE — the pre-consolidation flat-upload path
+  // (baseball_stat_uploads) is no longer written to by any in-app UI, but
+  // historical rows from before this wizard consolidation still exist and
+  // were left with NO viewing surface once UploadHistory.tsx was retired.
+  // getRecentUploads is a read-only, demoSafe action gated only on team
+  // access (no can_manage_imports requirement), so it's safe to surface here
+  // for every viewer who reaches this page.
+  let legacyUploads: BaseballStatUpload[] = [];
+  try {
+    const legacy = await getRecentUploads(teamId, 20);
+    legacyUploads = legacy.data ?? [];
+  } catch {
+    legacyUploads = [];
   }
 
   // Registered sources from the team's import-source registry. These MERGE OVER
@@ -147,6 +139,7 @@ export default async function ImportCenterPage() {
         teamName={team?.name ?? 'Your Team'}
         players={players}
         recentRuns={recentRuns}
+        legacyUploads={legacyUploads}
         eventSources={EVENT_SOURCES}
         registeredSources={registeredSources}
       />

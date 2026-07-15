@@ -161,11 +161,21 @@ const LEGACY_REDIRECT_PAGES: ReadonlyArray<{
     expectedTargets: ['/baseball/dashboard/stats-center'],
   },
   {
-    // Wizard consolidation — the legacy stats-upload wizard is now a pure
-    // redirect into Import Center (the canonical import wizard). See
+    // Wizard consolidation — the legacy stats-upload wizard now branches on
+    // capability instead of redirecting unconditionally: can_manage_imports
+    // staff are forwarded to Import Center (the canonical import wizard);
+    // can_manage_stats-only staff (assistant/pitching/hitting/catching/
+    // defensive/strength coach) render the SAME wizard inline here instead of
+    // being locked out by Import Center's can_manage_imports gate; everyone
+    // else (unauthenticated / no active team / neither capability) falls
+    // back to login or Command Center. See
     // src/app/baseball/(dashboard)/dashboard/stats/upload/page.tsx.
     relPath: ['baseball', '(dashboard)', 'dashboard', 'stats', 'upload', 'page.tsx'],
-    expectedTargets: ['/baseball/dashboard/import'],
+    expectedTargets: [
+      '/baseball/dashboard/import',
+      '/baseball/dashboard/command-center',
+      '/baseball/login',
+    ],
   },
   {
     // Dynamic: branches coach -> command-center, player -> player/today, plus

@@ -642,14 +642,19 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
           moment it's most useful).
           Wizard consolidation: the standalone "Upload" button that used to
           sit beside this one (routing to the retired /stats/upload wizard)
-          is gone — that wizard is now a redirect INTO Import Center's "Quick
-          box score" mode, so keeping a second button pointed at the same
-          destination would just be a confusing duplicate. */}
+          is gone — that wizard is now the SAME entry point ("Quick box
+          score"), reached through /stats/upload rather than a second button.
+          Routes through /stats/upload (not straight to /dashboard/import)
+          because that route branches on capability: can_manage_imports staff
+          land in the full Import Center, can_manage_stats-only staff
+          (assistant/pitching/hitting/catching/defensive/strength coach) get
+          the quick-box-score wizard inline instead of being locked out by
+          Import Center's can_manage_imports gate. */}
       <Button
         variant="ghost"
         size="md"
         leftIcon={<IconFolder size={16} />}
-        onClick={() => router.push('/baseball/dashboard/import')}
+        onClick={() => router.push('/baseball/dashboard/stats/upload')}
       >
         Import Center
       </Button>
@@ -832,7 +837,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
             <EmptyIssue
               variant="stats"
               action={
-                <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard/import')}>
+                <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard/stats/upload')}>
                   Import a box score
                 </Button>
               }

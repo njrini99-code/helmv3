@@ -81,6 +81,7 @@ import type {
   BaseballImportRowDuplicate,
   BaseballImportDuplicateVerdict,
 } from '@/lib/types/baseball-imports';
+import type { BaseballStatUpload } from '@/lib/types';
 import { isBinaryFileName } from '@/lib/baseball/adapters/import-file-body';
 import { xlsxToCsv } from '@/lib/baseball/adapters/xlsx-reader';
 
@@ -178,6 +179,14 @@ interface Props {
   players: RosterPlayer[];
   recentRuns: BaseballImportRunRow[];
   /**
+   * Historical rows from the pre-consolidation flat-upload path
+   * (baseball_stat_uploads) — the table the retired UploadHistory component
+   * used to read. No longer written to by any in-app UI, but still the only
+   * record of every upload made before this wizard consolidation. Rendered
+   * read-only, below "Recent imports". Defaults to an empty list.
+   */
+  legacyUploads?: BaseballStatUpload[];
+  /**
    * Box-score source options = hardcoded adapter defaults MERGED with the team's
    * registered import-source policy. Falls back to the adapter defaults when the
    * team has registered nothing (so the picker is never empty).
@@ -195,6 +204,20 @@ interface Props {
    * The shell intercepts this to switch to the "Event level" wizard tab.
    */
   onRequestEventLevel?: () => void;
+  /**
+   * CAPABILITY LOCKOUT FIX — when true, skip the "choose" data-shape step
+   * entirely and land the coach straight on the "Quick box score" upload step
+   * (game_box_score preselected), with no way back to the full shape picker.
+   * Used ONLY for staff who hold can_manage_stats but not can_manage_imports
+   * (assistant/pitching/hitting/catching/defensive/strength coach — every
+   * default staff role preset that manages stats without also managing
+   * imports): they reach this SAME audited wizard/commit pipeline through the
+   * quick-box-score entry point at /dashboard/stats/upload, while the full
+   * Import Center (event-level mode, source registry, other data shapes,
+   * rollback) stays reserved for can_manage_imports staff. Defaults to false
+   * so every existing call site (the full Import Center) is unaffected.
+   */
+  quickEntryOnly?: boolean;
 }
 
 const TRUST_LABEL: Record<string, string> = {
@@ -250,9 +273,11 @@ export function ImportWizardClient({
   teamName,
   players,
   recentRuns,
+  legacyUploads = [],
   registeredSources,
   showHeader = true,
   onRequestEventLevel,
+  quickEntryOnly = false,
 }: Props) {
   const { addToast } = useToast();
 
@@ -273,7 +298,9 @@ export function ImportWizardClient({
     [registeredSources]
   );
 
-  const [step, setStep] = useState<WizardStep>('choose');
+  // quickEntryOnly staff have no "choose" step to land on — they arrive
+  // pre-committed to the box-score shape via the quick-box-score entry point.
+  const [step, setStep] = useState<WizardStep>(quickEntryOnly ? 'upload' : 'choose');
   const [dataShape, setDataShape] = useState<ImportDataShape>('game_box_score');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -722,7 +749,7 @@ export function ImportWizardClient({
   );
 
   const resetWizard = useCallback(() => {
-    setStep('choose');
+    setStep(quickEntryOnly ? 'upload' : 'choose');
     setDataShape('game_box_score');
     setPreview(null);
     setMatches([]);
@@ -731,7 +758,7 @@ export function ImportWizardClient({
     setFileName('');
     setError(null);
     setWarningsAcknowledged(false);
-  }, []);
+  }, [quickEntryOnly]);
 
   // ---- render ----------------------------------------------------------------
   // 'choose' and 'committing' are not in the visible stepper.
@@ -766,30 +793,37 @@ export function ImportWizardClient({
                 control keeps its compact ~19x19px footprint beside the small
                 InkBadge stamp on desktop/tablet — swapping in IconButton
                 unconditionally grew it to 36px there too, an unintended
-                visual change next to an ~18px badge. */}
-            {/* eslint-disable-next-line helm/no-raw-button */}
-            <button
-              type="button"
-              aria-label="Change data shape"
-              onClick={() => { setStep('choose'); setError(null); }}
-              className={cn(
-                'inline-flex items-center justify-center rounded-full p-1',
-                '[@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
-                pressableClass({ ink: 'team' }),
-              )}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                width={11}
-                height={11}
-                fill="currentColor"
-                aria-hidden
-                className="text-text-tertiary"
+                visual change next to an ~18px badge.
+                quickEntryOnly staff have no "choose" step to return to (they
+                arrive pre-committed via the quick-box-score entry point), so
+                the affordance is hidden rather than pointing at a step that
+                would expose the full shape picker Import Center reserves for
+                can_manage_imports staff. */}
+            {!quickEntryOnly && (
+              // eslint-disable-next-line helm/no-raw-button
+              <button
+                type="button"
+                aria-label="Change data shape"
+                onClick={() => { setStep('choose'); setError(null); }}
+                className={cn(
+                  'inline-flex items-center justify-center rounded-full p-1',
+                  '[@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+                  pressableClass({ ink: 'team' }),
+                )}
               >
-                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  width={11}
+                  height={11}
+                  fill="currentColor"
+                  aria-hidden
+                  className="text-text-tertiary"
+                >
+                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                </svg>
+              </button>
+            )}
           </span>
           <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
             {VISIBLE_STEP_ORDER.map((s) => {
@@ -1648,6 +1682,61 @@ export function ImportWizardClient({
           )}
         </div>
       </section>
+
+      {/* LEGACY UPLOAD HISTORY --------------------------------------------
+          baseball_stat_uploads — the pre-consolidation flat-upload path's
+          record. Nothing writes to this table anymore (uploadStatsCSV lost
+          its only caller when the standalone stats-upload wizard was
+          retired), but rows from before this consolidation still exist and
+          had NO viewing surface once UploadHistory.tsx was retired with it.
+          Read-only: rollback/review are Import Center concepts that don't
+          apply to this table's rows. */}
+      <section className="pt-4">
+        <Eyebrow ink="team">Legacy uploads</Eyebrow>
+        <HairlineRule ink="team" className="mt-1.5 w-12" />
+        <div className="mt-4">
+          {legacyUploads.length === 0 ? (
+            <EditorsLetter
+              ink="team"
+              title="No legacy uploads"
+              body="Uploads made before Import Center's consolidation will appear here."
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-card border border-[color:var(--hairline)]">
+              <table className="w-full min-w-[560px] text-body-sm">
+                <thead className="text-left text-text-tertiary">
+                  <tr>
+                    <th className="sticky left-0 z-10 min-w-[160px] bg-[var(--paper)] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">
+                      File
+                    </th>
+                    <th className="min-w-[100px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Rows</th>
+                    <th className="min-w-[110px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Status</th>
+                    <th className="min-w-[140px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Uploaded</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {legacyUploads.map((u) => (
+                    <tr key={u.id} className="border-t border-[color:var(--hairline)]">
+                      <td className="sticky left-0 z-10 min-w-[160px] bg-[var(--paper)] px-4 py-2 text-text-primary">
+                        {u.filename}
+                      </td>
+                      <td className="px-4 py-2 text-text-secondary">
+                        {u.matched_rows}/{u.total_rows}
+                      </td>
+                      <td className="px-4 py-2">
+                        <LegacyUploadStatus status={u.status} />
+                      </td>
+                      <td className="px-4 py-2 text-text-secondary">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -2072,5 +2161,21 @@ const RUN_STATUS_META: Record<string, { tone: 'team' | 'sodium' | 'neutral'; var
 
 function RunStatus({ status }: { status: string }) {
   const meta = RUN_STATUS_META[status] ?? { tone: 'neutral' as const, variant: 'soft' as const };
+  return <InkBadge label={status.replace('_', ' ')} tone={meta.tone} variant={meta.variant} />;
+}
+
+// baseball_stat_uploads.status is a distinct enum from baseball_import_runs'
+// (BaseballUploadStatus: pending | processing | completed | failed |
+// needs_review) — its own meta map rather than overloading RUN_STATUS_META.
+const LEGACY_UPLOAD_STATUS_META: Record<string, { tone: 'team' | 'sodium' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  completed: { tone: 'team', variant: 'soft' },
+  failed: { tone: 'sodium', variant: 'solid' },
+  needs_review: { tone: 'sodium', variant: 'soft' },
+  pending: { tone: 'neutral', variant: 'soft' },
+  processing: { tone: 'neutral', variant: 'soft' },
+};
+
+function LegacyUploadStatus({ status }: { status: string }) {
+  const meta = LEGACY_UPLOAD_STATUS_META[status] ?? { tone: 'neutral' as const, variant: 'soft' as const };
   return <InkBadge label={status.replace('_', ' ')} tone={meta.tone} variant={meta.variant} />;
 }
