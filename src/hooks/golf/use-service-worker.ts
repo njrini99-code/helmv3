@@ -115,12 +115,10 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
    */
   const register = useCallback(async () => {
     if (!state.isSupported) {
-      console.log('[SW Hook] Service workers not supported');
       return;
     }
 
     if (state.isRegistered) {
-      console.log('[SW Hook] Already registered');
       return;
     }
 
@@ -138,8 +136,6 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
       registrationRef.current = registration;
 
       if (!mountedRef.current) return;
-
-      console.log('[SW Hook] Service worker registered:', registration.scope);
 
       // Check for sync support
       const syncSupported = typeof registration === 'object' && 'sync' in registration;
@@ -239,8 +235,6 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
         registration: null,
         hasUpdate: false,
       }));
-
-      console.log('[SW Hook] Service worker unregistered');
     } catch (error) {
       console.error('[SW Hook] Unregistration failed:', error);
     }
@@ -262,8 +256,6 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
       if (!mountedRef.current) return;
 
       setState(prev => ({ ...prev, status: 'registered' }));
-
-      console.log('[SW Hook] Update check complete');
     } catch (error) {
       console.error('[SW Hook] Update check failed:', error);
 
@@ -312,14 +304,12 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
    */
   const registerBackgroundSync = useCallback(async (tag: string): Promise<boolean> => {
     if (!registrationRef.current || !state.syncSupported) {
-      console.log('[SW Hook] Background sync not supported');
       return false;
     }
 
     try {
       // @ts-expect-error - sync API is not in TypeScript types
       await registrationRef.current.sync.register(tag);
-      console.log('[SW Hook] Background sync registered:', tag);
       return true;
     } catch (error) {
       console.error('[SW Hook] Background sync registration failed:', error);
@@ -332,7 +322,6 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
    */
   const postMessage = useCallback((message: unknown) => {
     if (!navigator.serviceWorker.controller) {
-      console.log('[SW Hook] No active service worker to message');
       return;
     }
 
@@ -351,8 +340,6 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
     if (!state.isSupported) return;
 
     const handleMessage = (event: MessageEvent) => {
-      console.log('[SW Hook] Message from service worker:', event.data);
-
       if (event.data?.type === 'SYNC_REQUESTED') {
         // Dispatch custom event that the app can listen for
         window.dispatchEvent(new CustomEvent('sw-sync-requested', {
