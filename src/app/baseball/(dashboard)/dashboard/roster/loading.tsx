@@ -68,33 +68,60 @@ export default function RosterLoading() {
         </div>
 
         {/* Ruled row plates — the record-book roster wall */}
-        <div className="mt-6 overflow-x-auto">
-          <div className="min-w-[680px]">
-            {/* Column-label header, aligned to the row stat columns */}
-            <div className="flex items-end px-1 pb-2">
-              <Skeleton className="h-3 w-12" />
-              <div className="ml-auto flex gap-x-6">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-3 w-20 shrink-0" />
-                ))}
-              </div>
-            </div>
-
-            {/* Rows, each resting on its own hairline rule */}
-            <div className="flex flex-col">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i}>
+        <div className="mt-6">
+          {/* Below md (Rule 8): full-width stacked rows — name plate + two
+              stat pills + a row-menu affordance, no horizontal scroll —
+              mirrors RosterWall's real mobile branch (RosterFairway.tsx
+              `flex flex-col md:hidden`), never the desktop 5-column table
+              shape that used to render here on a phone. */}
+          <div className="flex flex-col md:hidden">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 px-1 py-3">
-                    <Skeleton className="h-[17px] min-w-0 flex-1 max-w-[220px]" />
-                    <div className="flex gap-x-6">
-                      {Array.from({ length: 5 }).map((_, j) => (
-                        <Skeleton key={j} className="h-6 w-20 shrink-0" />
-                      ))}
+                    <Skeleton className="h-4 w-6 shrink-0" />
+                    <Skeleton className="h-[17px] min-w-0 flex-1 max-w-[160px]" />
+                    <div className="ml-auto flex shrink-0 gap-2">
+                      <Skeleton className="h-6 w-10" />
+                      <Skeleton className="h-6 w-10" />
                     </div>
                   </div>
                   <Skeleton className="h-[1.5px] w-full" />
                 </div>
-              ))}
+                <Skeleton className="h-11 w-11 shrink-0 rounded-fw-sm" />
+              </div>
+            ))}
+          </div>
+
+          {/* md+: the full five-column record book, unchanged. */}
+          <div className="hidden overflow-x-auto md:block">
+            <div className="min-w-[680px]">
+              {/* Column-label header, aligned to the row stat columns */}
+              <div className="flex items-end px-1 pb-2">
+                <Skeleton className="h-3 w-12" />
+                <div className="ml-auto flex gap-x-6">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-3 w-20 shrink-0" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Rows, each resting on its own hairline rule */}
+              <div className="flex flex-col">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i}>
+                    <div className="flex items-center gap-3 px-1 py-3">
+                      <Skeleton className="h-[17px] min-w-0 flex-1 max-w-[220px]" />
+                      <div className="flex gap-x-6">
+                        {Array.from({ length: 5 }).map((_, j) => (
+                          <Skeleton key={j} className="h-6 w-20 shrink-0" />
+                        ))}
+                      </div>
+                    </div>
+                    <Skeleton className="h-[1.5px] w-full" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
