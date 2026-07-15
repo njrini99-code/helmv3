@@ -19,12 +19,36 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+// #394: dismissInsight/markInsightAddressed/submitInsightFeedback now run
+// through the real withBaseballAction wrapper (previously withAdminObserved,
+// which needed none of these). requireActiveContext:false on all 3 actions
+// means '@/lib/baseball/active-context' is never called, so it needs no mock
+// here — these mocks only make the wrapper's Sentry scope / demo-guard /
+// error-logging steps inert no-ops so this file keeps testing ONLY the #472
+// coach-id-vs-user-id ownership contract.
+vi.mock('@sentry/nextjs', () => ({
+  withScope: (fn: (scope: unknown) => unknown) =>
+    fn({ setTag: vi.fn(), setUser: vi.fn(), addBreadcrumb: vi.fn() }),
+}));
+vi.mock('@/lib/demo/baseball-config.server', () => ({
+  isCurrentSessionBaseballDemo: vi.fn(async () => false),
+  isBaseballDemoCoachEmail: vi.fn(() => false),
+}));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: vi.fn(async () => {}),
+  logServerException: vi.fn(async () => {}),
+  logServerEvent: vi.fn(async () => {}),
+}));
+
 import {
   dismissInsight,
   markInsightAddressed,
   submitInsightFeedback,
-  resolveCallerCoachId,
 } from '@/app/baseball/actions/insights';
+// Relocated (#394) out of the 'use server' actions/insights.ts to a plain
+// module — it was never a real server action, just an internal resolver
+// exported for this test to reach directly.
+import { resolveCallerCoachId } from '@/lib/baseball/insights/resolve-coach-id';
 
 const OWNER_USER_ID = 'user-owner';
 const OWNER_COACH_ID = 'coach-owner';

@@ -1115,7 +1115,11 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     label: 'Baseball Insights',
     app: 'baseballhelm',
     actions: {
-      'src/app/baseball/actions/insights.ts': ['dismissInsight', 'generateTeamInsights', 'getTeamInsights', 'markInsightAddressed', 'resolveCallerCoachId', 'submitInsightFeedback'],
+      // generateTeamInsights/getTeamInsights deleted (#394 — dead code, zero
+      // callers, superseded by engine-run.ts). resolveCallerCoachId relocated
+      // to src/lib/baseball/insights/resolve-coach-id.ts (a plain helper, no
+      // longer an exported server action of this file).
+      'src/app/baseball/actions/insights.ts': ['dismissInsight', 'markInsightAddressed', 'submitInsightFeedback'],
     },
     primaryTable: 'baseball_insights',
     heartbeatTable: 'baseball_insights',
