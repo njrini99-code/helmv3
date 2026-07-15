@@ -71,7 +71,9 @@ const PLAYER_ELIGIBLE: BaseballMetricId[] = [
 ];
 
 function ref(visibility: BaseballInsightSourceRef['visibility']): BaseballInsightSourceRef {
-  return { table: 'baseball_player_stats', visibility, sample_n: 30 };
+  // #379: fixture cites the canonical box-score table now that loaders.ts
+  // sources migrated callers from it — see stat-layer-manifest.ts.
+  return { table: 'baseball_box_score_batting', visibility, sample_n: 30 };
 }
 
 function loadedMetric(metric: BaseballMetricId, value: number, vis: BaseballInsightSourceRef['visibility']): LoadedMetric {

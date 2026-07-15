@@ -22,6 +22,36 @@
  *
  * Pure module: no DB access here (the action fetches rows and passes them in),
  * so this is unit-testable and reusable.
+ *
+ * --- #379 reconciliation (stat-layer-architecture) ---------------------------
+ * This loader's row shape historically mirrored `baseball_player_stats` (the
+ * DEPRECATED flat/aggregate layer) 1:1 — see
+ * `src/lib/baseball/stat-layer-manifest.ts`. It now honestly threads
+ * provenance for two migrations already landed elsewhere in the codebase,
+ * WITHOUT changing any math for callers that haven't migrated yet:
+ *
+ *   1. `BoxScoreRow.hittingSourceTable` / `.pitchingSourceTable` — an OPTIONAL
+ *      per-row tag a caller sets when it normalizes rows from the canonical
+ *      box-score tables (`baseball_box_score_batting` / `_pitching`, see
+ *      `normalizeBoxScoreBattingRow` / `normalizeBoxScorePitchingRow` below)
+ *      instead of the legacy flat table. Every `source_refs` table-name string
+ *      this loader emits reflects the REAL table the row came from; callers
+ *      that don't set the tag keep citing `baseball_player_stats` exactly as
+ *      before (the honest default for the still-grandfathered callers).
+ *   2. An optional `eventDerived` input (per player) carrying exit/pitch
+ *      velocity scalars already aggregated from `elite-stat-events.ts`'s
+ *      event-grain read model. Per design rule #4 (event-derived fields are
+ *      sourced from the event layer when a matching row exists, never
+ *      fabricated from a legacy scalar), when a field is present here it WINS
+ *      over the legacy `exit_velocity`/`pitch_velocity` box-score columns; when
+ *      absent (or the caller passes nothing at all — the current, unmigrated
+ *      callers) the loader falls back to the original legacy-scalar
+ *      computation unchanged.
+ *
+ * Neither change alters a single existing call site's output: both inputs are
+ * additive and optional, so this is the "depends on the shared adapter and
+ * elite-stat-events.ts already being stable" groundwork for Phase 4b, not a
+ * behavior change for Phase 4a's own callers.
  */
 
 import type {
@@ -33,6 +63,7 @@ import type {
   BaseballInsightSourceRef,
   BaseballSourceVisibility,
 } from '@/lib/types/baseball-coachhelm';
+import type { DerivedMetric } from '@/lib/baseball/read-models/elite-stat-events';
 import {
   getBaseballMetricFidelity,
   getBaseballMetricUnit,
@@ -40,12 +71,24 @@ import {
   type BaseballMetricUnit,
 } from './metrics/registry';
 
+/** The legacy flat-table name every source ref cites unless tagged otherwise. */
+const LEGACY_STAT_TABLE = 'baseball_player_stats';
+/** Canonical event-grain tables the event-derived velocity fields cite. */
+const EXIT_VELOCITY_EVENT_TABLE = 'baseball_batted_ball_events';
+const PITCH_VELOCITY_EVENT_TABLE = 'baseball_pitch_events';
+
 // -----------------------------------------------------------------------------
 // Input row shapes (a subset of baseball_player_stats we actually read). Kept
 // local + structural so the loaders don't couple to the full generated row.
 // -----------------------------------------------------------------------------
 
-/** One box-score / session row from baseball_player_stats. */
+/**
+ * One box-score / session row. Historically 1:1 with `baseball_player_stats`
+ * (the legacy flat table); a caller may ALSO build one of these from a
+ * canonical `baseball_box_score_batting` / `_pitching` row (see the
+ * `normalizeBoxScore*Row` helpers below) — the shape is source-agnostic so the
+ * math in `loadPlayerMetrics` never has to know which table a row came from.
+ */
 export interface BoxScoreRow {
   id: string;
   player_id: string;
@@ -63,6 +106,13 @@ export interface BoxScoreRow {
   strikeouts?: number | null;
   hit_by_pitch?: number | null;
   sacrifice_flies?: number | null;
+  /**
+   * The real table this row's HITTING columns came from. Optional — omit for
+   * a legacy `baseball_player_stats` row (the default every existing caller
+   * gets); set to `'baseball_box_score_batting'` via
+   * {@link normalizeBoxScoreBattingRow} once a caller has migrated its fetch.
+   */
+  hittingSourceTable?: string;
 
   // pitching
   innings_pitched?: number | null;
@@ -71,10 +121,129 @@ export interface BoxScoreRow {
   strikeouts_thrown?: number | null;
   pitches_thrown?: number | null;
   strikes_thrown?: number | null;
+  /** Same idea as {@link hittingSourceTable}, for this row's PITCHING columns. */
+  pitchingSourceTable?: string;
 
-  // sensors (optional)
+  // sensors (optional) — legacy-only scalars; superseded by `eventDerived`
+  // (see loadPlayerMetrics) whenever the elite event-grain layer has a value.
   exit_velocity?: number | null;
   pitch_velocity?: number | null;
+}
+
+/**
+ * Normalize one `baseball_box_score_batting` row into the loader's row shape.
+ * `gameDate` should be the joined `baseball_games.game_date` (box-score rows
+ * don't carry a date themselves) — pass null if unknown; the loader treats a
+ * null `session_date` as "excluded from date-scoped aggregates" exactly as it
+ * already does for a legacy row missing `session_date`.
+ */
+export function normalizeBoxScoreBattingRow(
+  row: {
+    id: string;
+    player_id: string;
+    ab: number;
+    h: number;
+    doubles: number;
+    triples: number;
+    hr: number;
+    bb: number;
+    k: number;
+    hbp: number | null;
+    sf: number;
+  },
+  gameDate: string | null,
+): BoxScoreRow {
+  return {
+    id: row.id,
+    player_id: row.player_id,
+    stat_type: 'game',
+    session_date: gameDate,
+    at_bats: row.ab,
+    hits: row.h,
+    doubles: row.doubles,
+    triples: row.triples,
+    home_runs: row.hr,
+    walks: row.bb,
+    strikeouts: row.k,
+    hit_by_pitch: row.hbp,
+    sacrifice_flies: row.sf,
+    hittingSourceTable: 'baseball_box_score_batting',
+  };
+}
+
+/** Normalize one `baseball_box_score_pitching` row into the loader's row shape. */
+export function normalizeBoxScorePitchingRow(
+  row: {
+    id: string;
+    player_id: string;
+    ip: number;
+    bb: number;
+    k: number;
+    er: number;
+    pitch_count: number | null;
+    strikes: number | null;
+  },
+  gameDate: string | null,
+): BoxScoreRow {
+  return {
+    id: row.id,
+    player_id: row.player_id,
+    stat_type: 'game',
+    session_date: gameDate,
+    innings_pitched: row.ip,
+    earned_runs: row.er,
+    walks_allowed: row.bb,
+    strikeouts_thrown: row.k,
+    pitches_thrown: row.pitch_count,
+    strikes_thrown: row.strikes,
+    pitchingSourceTable: 'baseball_box_score_pitching',
+  };
+}
+
+/** One event-derived scalar (value + the sample it was built from). */
+export interface EventDerivedMetricValue {
+  value: number;
+  sampleSize: number;
+}
+
+/**
+ * Per-player event-derived velocity inputs, sourced from
+ * `elite-stat-events.ts`'s aggregated `DerivedMetric[]` output (see
+ * {@link eventDerivedVelocityFromMetrics}). Every field is independently
+ * null-safe: a field left `null`/absent means no matching event-grain data
+ * exists for that player, and `loadPlayerMetrics` falls back to the legacy
+ * box-score scalar for THAT field only — never a fabricated value.
+ */
+export interface EventDerivedVelocityInput {
+  avgExitVelocity?: EventDerivedMetricValue | null;
+  maxExitVelocity?: EventDerivedMetricValue | null;
+  avgPitchVelocity?: EventDerivedMetricValue | null;
+  maxPitchVelocity?: EventDerivedMetricValue | null;
+}
+
+/**
+ * Pull the velocity scalars `loadPlayerMetrics` wants out of
+ * `elite-stat-events.ts`'s per-player `DerivedMetric[]` bundle. Today the
+ * event layer only publishes AVERAGE exit/pitch velocity (`avg_exit_velocity`
+ * on the hitter bundle, `avg_velocity` on the pitcher bundle) — there is no
+ * `max_*` event metric yet, so those fields resolve to `null` here and
+ * `loadPlayerMetrics` keeps using the legacy box-score scalar for the max
+ * fields until the event layer grows one (honest, not a regression: there is
+ * currently no canonical max-velocity source at all).
+ */
+export function eventDerivedVelocityFromMetrics(
+  metrics: DerivedMetric[],
+): EventDerivedVelocityInput {
+  const find = (metricKey: string): EventDerivedMetricValue | null => {
+    const m = metrics.find((x) => x.metricKey === metricKey && x.value != null && x.sampleSize > 0);
+    return m && m.value != null ? { value: m.value, sampleSize: m.sampleSize } : null;
+  };
+  return {
+    avgExitVelocity: find('avg_exit_velocity'),
+    maxExitVelocity: null,
+    avgPitchVelocity: find('avg_velocity'),
+    maxPitchVelocity: null,
+  };
 }
 
 // -----------------------------------------------------------------------------
@@ -277,6 +446,19 @@ function ref(
   return { table, column, visibility, sample_n, label };
 }
 
+/**
+ * Honest source-table for a set of hitting/pitching rows: the first row's
+ * explicit tag (see {@link BoxScoreRow.hittingSourceTable}) if a caller has
+ * migrated its fetch onto the canonical box-score tables, else the legacy
+ * flat table every unmigrated caller still reads today.
+ */
+function hittingSourceTableFor(rows: BoxScoreRow[]): string {
+  return rows.find((r) => r.hittingSourceTable)?.hittingSourceTable ?? LEGACY_STAT_TABLE;
+}
+function pitchingSourceTableFor(rows: BoxScoreRow[]): string {
+  return rows.find((r) => r.pitchingSourceTable)?.pitchingSourceTable ?? LEGACY_STAT_TABLE;
+}
+
 /** stddev of a numeric series (population), or undefined for <2 points. */
 function stddev(values: number[]): number | undefined {
   const xs = values.filter((v) => Number.isFinite(v));
@@ -299,11 +481,18 @@ function stddev(values: number[]): number | undefined {
  * scores: a player must not read team-level diagnostic insights unless a coach
  * explicitly marks the resulting insight player_visible. The action enforces the
  * strictest-source rule.
+ *
+ * `eventDerived` (optional, appended AFTER `nowIso` so existing callers are
+ * unaffected) lets a caller hand in exit/pitch velocity scalars already
+ * aggregated from `elite-stat-events.ts`; see {@link EventDerivedVelocityInput}
+ * and {@link eventDerivedVelocityFromMetrics}. Omit it (the default) to get
+ * EXACTLY today's legacy-scalar behavior.
  */
 export function loadPlayerMetrics(
   playerId: string,
   rows: BoxScoreRow[],
   nowIso: string = new Date().toISOString(),
+  eventDerived?: EventDerivedVelocityInput | null,
 ): LoadedPlayerMetrics {
   const mine = rows.filter((r) => r.player_id === playerId);
   const hitRows = mine.filter(hasHitting);
@@ -348,24 +537,28 @@ export function loadPlayerMetrics(
     const pa = ab + bb + hbp + sf;
     const n = hitRows.length;
     const dates = hitRows.map((r) => r.session_date).filter((d): d is string => !!d);
+    // The real table these hitting rows came from — legacy for every
+    // unmigrated caller today, `baseball_box_score_batting` once a caller
+    // normalizes onto the canonical layer (see normalizeBoxScoreBattingRow).
+    const hitTable = hittingSourceTableFor(hitRows);
 
     if (pa > 0) {
-      add('k_rate', k / pa, n, [ref('baseball_player_stats', 'strikeouts', 'staff_only', n, 'K rate over sessions')]);
-      add('bb_rate', bb / pa, n, [ref('baseball_player_stats', 'walks', 'staff_only', n, 'BB rate over sessions')]);
+      add('k_rate', k / pa, n, [ref(hitTable, 'strikeouts', 'staff_only', n, 'K rate over sessions')]);
+      add('bb_rate', bb / pa, n, [ref(hitTable, 'walks', 'staff_only', n, 'BB rate over sessions')]);
     }
     if (bb > 0) {
-      add('hitter_k_bb_ratio', k / bb, n, [ref('baseball_player_stats', 'strikeouts,walks', 'staff_only', n, 'Hitter K/BB')]);
+      add('hitter_k_bb_ratio', k / bb, n, [ref(hitTable, 'strikeouts,walks', 'staff_only', n, 'Hitter K/BB')]);
     } else if (k > 0) {
       // No walks at all → undefined ratio; surface as a thin, honest signal.
-      add('hitter_k_bb_ratio', null, n, [ref('baseball_player_stats', 'strikeouts,walks', 'staff_only', n, 'Hitter K/BB (no walks)')]);
+      add('hitter_k_bb_ratio', null, n, [ref(hitTable, 'strikeouts,walks', 'staff_only', n, 'Hitter K/BB (no walks)')]);
     }
     if (ab > 0) {
-      add('batting_avg', h / ab, n, [ref('baseball_player_stats', 'hits,at_bats', 'staff_only', n, 'Batting average')]);
+      add('batting_avg', h / ab, n, [ref(hitTable, 'hits,at_bats', 'staff_only', n, 'Batting average')]);
       const tb = h + doubles + 2 * triples + 3 * hr;
-      add('slugging_pct', tb / ab, n, [ref('baseball_player_stats', 'hits,doubles,triples,home_runs', 'staff_only', n, 'Slugging (proxy)')]);
+      add('slugging_pct', tb / ab, n, [ref(hitTable, 'hits,doubles,triples,home_runs', 'staff_only', n, 'Slugging (proxy)')]);
     }
     if (pa > 0) {
-      add('on_base_pct', (h + bb + hbp) / pa, n, [ref('baseball_player_stats', 'hits,walks,hit_by_pitch', 'staff_only', n, 'On-base (proxy)')]);
+      add('on_base_pct', (h + bb + hbp) / pa, n, [ref(hitTable, 'hits,walks,hit_by_pitch', 'staff_only', n, 'On-base (proxy)')]);
     }
 
     // Two-strike chase PROXY: per-game K-rate variance is the only box-score
@@ -383,13 +576,18 @@ export function loadPlayerMetrics(
         'two_strike_chase_pct',
         k / pa,
         n,
-        [ref('baseball_player_stats', 'strikeouts (per-game variance)', 'staff_only', n, 'Two-strike chase proxy')],
+        [ref(hitTable, 'strikeouts (per-game variance)', 'staff_only', n, 'Two-strike chase proxy')],
         sd != null ? { stddev: sd, stddev_scale: 12, round_dates: dates } : undefined,
       );
     }
   }
 
   // ---- Game vs practice (avg delta) ----
+  // Practice-context is a PERMANENT legacy carve-out (canonical layers have no
+  // practice-session concept yet — see docs/baseball/stats-architecture.md /
+  // legacy-stat-adapters.ts's module doc) — this metric always blends a
+  // (possibly-canonical) game side with an always-legacy practice side, so the
+  // ref honestly cites the legacy table regardless of the game rows' source.
   if (gameHitRows.length >= 1 && practiceHitRows.length >= 1) {
     const avg = (rs: BoxScoreRow[]) => {
       const ab = rs.reduce((s, r) => s + num(r.at_bats), 0);
@@ -401,20 +599,38 @@ export function loadPlayerMetrics(
     if (g != null && p != null) {
       const n = Math.min(gameHitRows.length, practiceHitRows.length);
       add('game_practice_avg_delta', g - p, n, [
-        ref('baseball_player_stats', 'hits,at_bats (game vs practice)', 'staff_only', n, 'Game − practice avg'),
+        ref(LEGACY_STAT_TABLE, 'hits,at_bats (game vs practice)', 'staff_only', n, 'Game − practice avg'),
       ]);
     }
   }
 
   // ---- Contact quality (sensor optional) ----
+  // Event-derived FIRST (per design rule #4: event-grain data, when it
+  // exists, wins over a legacy scalar — never blended, never fabricated);
+  // fall back to the legacy `exit_velocity` box-score column per field
+  // independently when no matching event-grain aggregate was handed in.
   const evRows = hitRows.filter((r) => r.exit_velocity != null);
-  if (evRows.length > 0) {
+  const eventAvgEv = eventDerived?.avgExitVelocity ?? null;
+  if (eventAvgEv) {
+    add('avg_exit_velocity', eventAvgEv.value, eventAvgEv.sampleSize, [
+      ref(EXIT_VELOCITY_EVENT_TABLE, 'exit_velocity', 'staff_only', eventAvgEv.sampleSize, 'Avg exit velocity (event-derived)'),
+    ]);
+  } else if (evRows.length > 0) {
     const evs = evRows.map((r) => num(r.exit_velocity));
     const n = evRows.length;
     const dates = evRows.map((r) => r.session_date).filter((d): d is string => !!d);
     const sd = stddev(evs);
-    add('avg_exit_velocity', evs.reduce((a, b) => a + b, 0) / n, n, [ref('baseball_player_stats', 'exit_velocity', 'staff_only', n, 'Avg exit velocity')], sd != null ? { stddev: sd, stddev_scale: 8, round_dates: dates } : undefined);
-    add('max_exit_velocity', Math.max(...evs), n, [ref('baseball_player_stats', 'exit_velocity', 'staff_only', n, 'Max exit velocity')]);
+    add('avg_exit_velocity', evs.reduce((a, b) => a + b, 0) / n, n, [ref(hittingSourceTableFor(evRows), 'exit_velocity', 'staff_only', n, 'Avg exit velocity')], sd != null ? { stddev: sd, stddev_scale: 8, round_dates: dates } : undefined);
+  }
+  const eventMaxEv = eventDerived?.maxExitVelocity ?? null;
+  if (eventMaxEv) {
+    add('max_exit_velocity', eventMaxEv.value, eventMaxEv.sampleSize, [
+      ref(EXIT_VELOCITY_EVENT_TABLE, 'exit_velocity', 'staff_only', eventMaxEv.sampleSize, 'Max exit velocity (event-derived)'),
+    ]);
+  } else if (evRows.length > 0) {
+    const evs = evRows.map((r) => num(r.exit_velocity));
+    const n = evRows.length;
+    add('max_exit_velocity', Math.max(...evs), n, [ref(hittingSourceTableFor(evRows), 'exit_velocity', 'staff_only', n, 'Max exit velocity')]);
   }
 
   // ---- Pitching command + stuff ----
@@ -427,26 +643,40 @@ export function loadPlayerMetrics(
     const strikes = pitchRows.reduce((s, r) => s + num(r.strikes_thrown), 0);
     const n = pitchRows.length;
     const dates = pitchRows.map((r) => r.session_date).filter((d): d is string => !!d);
+    const pitchTable = pitchingSourceTableFor(pitchRows);
 
     if (bbA > 0) {
-      add('pitcher_k_bb_ratio', kT / bbA, n, [ref('baseball_player_stats', 'strikeouts_thrown,walks_allowed', 'staff_only', n, 'Pitcher K/BB')]);
+      add('pitcher_k_bb_ratio', kT / bbA, n, [ref(pitchTable, 'strikeouts_thrown,walks_allowed', 'staff_only', n, 'Pitcher K/BB')]);
     } else if (kT > 0) {
-      add('pitcher_k_bb_ratio', null, n, [ref('baseball_player_stats', 'strikeouts_thrown,walks_allowed', 'staff_only', n, 'Pitcher K/BB (no walks)')]);
+      add('pitcher_k_bb_ratio', null, n, [ref(pitchTable, 'strikeouts_thrown,walks_allowed', 'staff_only', n, 'Pitcher K/BB (no walks)')]);
     }
     if (ip > 0) {
-      add('walks_per_inning', bbA / ip, n, [ref('baseball_player_stats', 'walks_allowed,innings_pitched', 'staff_only', n, 'Walks/inning')]);
-      add('era', (er * 9) / ip, n, [ref('baseball_player_stats', 'earned_runs,innings_pitched', 'staff_only', n, 'ERA')]);
+      add('walks_per_inning', bbA / ip, n, [ref(pitchTable, 'walks_allowed,innings_pitched', 'staff_only', n, 'Walks/inning')]);
+      add('era', (er * 9) / ip, n, [ref(pitchTable, 'earned_runs,innings_pitched', 'staff_only', n, 'ERA')]);
     }
     if (pitches > 0) {
-      add('strike_pct', strikes / pitches, n, [ref('baseball_player_stats', 'strikes_thrown,pitches_thrown', 'staff_only', n, 'Strike %')]);
+      add('strike_pct', strikes / pitches, n, [ref(pitchTable, 'strikes_thrown,pitches_thrown', 'staff_only', n, 'Strike %')]);
     }
 
     const pvRows = pitchRows.filter((r) => r.pitch_velocity != null);
-    if (pvRows.length > 0) {
+    const eventAvgPv = eventDerived?.avgPitchVelocity ?? null;
+    if (eventAvgPv) {
+      add('avg_pitch_velocity', eventAvgPv.value, eventAvgPv.sampleSize, [
+        ref(PITCH_VELOCITY_EVENT_TABLE, 'pitch_velocity', 'staff_only', eventAvgPv.sampleSize, 'Avg pitch velocity (event-derived)'),
+      ]);
+    } else if (pvRows.length > 0) {
       const pvs = pvRows.map((r) => num(r.pitch_velocity));
       const sd = stddev(pvs);
-      add('avg_pitch_velocity', pvs.reduce((a, b) => a + b, 0) / pvs.length, pvRows.length, [ref('baseball_player_stats', 'pitch_velocity', 'staff_only', pvRows.length, 'Avg pitch velocity')], sd != null ? { stddev: sd, stddev_scale: 3, round_dates: dates } : undefined);
-      add('max_pitch_velocity', Math.max(...pvs), pvRows.length, [ref('baseball_player_stats', 'pitch_velocity', 'staff_only', pvRows.length, 'Max pitch velocity')]);
+      add('avg_pitch_velocity', pvs.reduce((a, b) => a + b, 0) / pvs.length, pvRows.length, [ref(pitchingSourceTableFor(pvRows), 'pitch_velocity', 'staff_only', pvRows.length, 'Avg pitch velocity')], sd != null ? { stddev: sd, stddev_scale: 3, round_dates: dates } : undefined);
+    }
+    const eventMaxPv = eventDerived?.maxPitchVelocity ?? null;
+    if (eventMaxPv) {
+      add('max_pitch_velocity', eventMaxPv.value, eventMaxPv.sampleSize, [
+        ref(PITCH_VELOCITY_EVENT_TABLE, 'pitch_velocity', 'staff_only', eventMaxPv.sampleSize, 'Max pitch velocity (event-derived)'),
+      ]);
+    } else if (pvRows.length > 0) {
+      const pvs = pvRows.map((r) => num(r.pitch_velocity));
+      add('max_pitch_velocity', Math.max(...pvs), pvRows.length, [ref(pitchingSourceTableFor(pvRows), 'pitch_velocity', 'staff_only', pvRows.length, 'Max pitch velocity')]);
     }
 
     // ---- Workload (rolling window = last 7 days of GAME pitching) ----
@@ -459,10 +689,10 @@ export function loadPlayerMetrics(
       // non-zero count exists (otherwise the workload generator falls back to
       // innings, which is always present for a pitcher).
       if (recentPitches > 0) {
-        add('rolling_pitch_count', recentPitches, recent.length, [ref('baseball_player_stats', 'pitches_thrown (7d)', 'staff_only', recent.length, 'Rolling 7-day pitches')]);
+        add('rolling_pitch_count', recentPitches, recent.length, [ref(pitchTable, 'pitches_thrown (7d)', 'staff_only', recent.length, 'Rolling 7-day pitches')]);
       }
       if (recentInnings > 0) {
-        add('rolling_innings', recentInnings, recent.length, [ref('baseball_player_stats', 'innings_pitched (7d)', 'staff_only', recent.length, 'Rolling 7-day innings')]);
+        add('rolling_innings', recentInnings, recent.length, [ref(pitchTable, 'innings_pitched (7d)', 'staff_only', recent.length, 'Rolling 7-day innings')]);
       }
     }
   }
@@ -475,13 +705,20 @@ export function loadPlayerMetrics(
   };
 }
 
-/** Load metrics for many players at once from a shared row pool. */
+/**
+ * Load metrics for many players at once from a shared row pool.
+ *
+ * `eventDerivedByPlayer` (optional, appended AFTER `nowIso`) mirrors
+ * `loadPlayerMetrics`'s `eventDerived` param, keyed by player id. Omit it to
+ * get exactly today's legacy-scalar behavior for every player.
+ */
 export function loadAllPlayerMetrics(
   playerIds: string[],
   rows: BoxScoreRow[],
   nowIso: string = new Date().toISOString(),
+  eventDerivedByPlayer?: Record<string, EventDerivedVelocityInput | undefined>,
 ): LoadedPlayerMetrics[] {
-  return playerIds.map((pid) => loadPlayerMetrics(pid, rows, nowIso));
+  return playerIds.map((pid) => loadPlayerMetrics(pid, rows, nowIso, eventDerivedByPlayer?.[pid]));
 }
 
 // -----------------------------------------------------------------------------

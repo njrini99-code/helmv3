@@ -14,11 +14,19 @@
  * pitch velocity is NOT an improvement; a drop in two-strike chase rate IS.
  *
  * Unlike golf (where a `golf_metrics` DB table is the runtime source of truth),
- * baseball has no metrics table — these literals ARE the source of truth. They
- * are derived from box-score / stat-event columns on `baseball_player_stats`
- * and `baseball_player_aggregates`, NOT from pitch-level tracking data we do not
- * have. Box-score derivation is honest but coarse (see loaders.ts confidence
- * recalibration), so several metrics are explicitly labelled `proxy`.
+ * baseball has no metrics table — these literals ARE the source of truth.
+ *
+ * #379 reconciliation note: these ids are derived from box-score/season and
+ * event-grain columns (the CANONICAL read layers documented in
+ * `docs/baseball/stats-architecture.md`) whenever a caller has migrated its
+ * fetch onto them; `loaders.ts` transparently falls back to the legacy
+ * flat/aggregate layer's box-score-style columns for callers that haven't
+ * migrated yet (see `src/lib/baseball/stat-layer-manifest.ts` for the current
+ * migration backlog — `loaders.ts` itself stays grandfathered there until
+ * every caller feeds it canonical rows). Either way the derivation is honest
+ * but coarse (no true pitch-level tracking backs most of these ids yet — see
+ * loaders.ts's confidence recalibration), so several metrics are explicitly
+ * labelled `proxy`.
  */
 
 export const BASEBALL_METRIC_IDS = [
