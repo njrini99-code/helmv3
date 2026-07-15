@@ -53,6 +53,15 @@ function makeClient(tables: {
           rows = rows.filter((r) => vals.includes(r[col]));
           return api;
         },
+        // #852 residual: buildActionOutcomeSeed now also reads
+        // baseball_pitch_events/baseball_batted_ball_events (event-derived
+        // velocity) via the #813 superseded-row filter. Mirrors .eq()'s exact
+        // equality semantics so a fixture row can opt into (or out of) the
+        // supersede filter by setting `superseded_by_run_id` explicitly.
+        is(col: string, val: unknown) {
+          rows = rows.filter((r) => r[col] === val);
+          return api;
+        },
         order() {
           return api;
         },

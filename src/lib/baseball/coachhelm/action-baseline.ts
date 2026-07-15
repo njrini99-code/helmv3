@@ -58,6 +58,10 @@ import {
   type BaseballMetricId,
 } from '@/lib/coachhelm/baseball/metrics/registry';
 import { loadEngineStatRows } from '@/lib/baseball/coachhelm/engine-stat-rows';
+import {
+  loadEngineEventRows,
+  eventDerivedVelocityForPlayer,
+} from '@/lib/baseball/coachhelm/engine-event-derived';
 import { parseSignalSourceRefs } from '@/lib/types/baseball-signals';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';
 
@@ -213,7 +217,22 @@ export async function buildActionOutcomeSeed(
   // single-page `.limit(1000)` read.
   const { data: statRows } = await loadEngineStatRows(supabase, teamId, [playerId]);
 
-  const loaded = loadPlayerMetrics(playerId, statRows ?? []);
+  // #852 residual: event-derived velocity over the SAME full-history pool the
+  // box-score baseline above reads (no after-window here -- a baseline is
+  // "the player's current value at conversion time", matching the box-score
+  // read's own no-date-filter semantics). ALL-OR-NOTHING: an event-read
+  // failure (eventRows null) falls back to the legacy scalar for every
+  // velocity field, never a partial blend (mirrors loadEngineStatRows).
+  // Scoped to THIS ONE player -- a single "convert to action" click must
+  // never fire a team-wide, unbounded scan of the whole pitch/batted-ball
+  // history just to resolve one player's velocity scalar (mirrors the
+  // box-score read's own `[playerId]` scope immediately above).
+  const { data: eventRows } = await loadEngineEventRows(supabase, teamId, [playerId]);
+  const eventDerived = eventRows
+    ? eventDerivedVelocityForPlayer(playerId, eventRows.pitches, eventRows.battedBalls)
+    : null;
+
+  const loaded = loadPlayerMetrics(playerId, statRows ?? [], undefined, eventDerived);
   const baselineValue = loaded.metrics[targetMetric]?.value ?? null;
 
   return {
