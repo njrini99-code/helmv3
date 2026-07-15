@@ -545,10 +545,16 @@ export async function runBaseballEngineCore(
     baserunningEvents: (baserunningRows ?? []) as BaserunningEventRow[],
   };
 
-  // 2. RUN — pure V10 engine over the loaded data.
+  // 2. RUN — pure V10 engine over the loaded data. nowIso threads through every
+  // rolling-window loader below (readiness/lift/workload/catching) so a
+  // deterministic engine run stays deterministic — none of them fall back to
+  // the real wall clock. Root cause of the engine-run-helm-lifting regression:
+  // a fixed-clock test seeded data just outside a Date.now()-based window,
+  // which silently aged out as real time passed with zero code changes.
   const boxScorePlayers = loadAllPlayerMetrics(
     playerIds,
     (statRows ?? []) as unknown as BoxScoreRow[],
+    nowIso,
   );
   const players = boxScorePlayers.map((p) =>
     mergeEventPlayerMetrics(
@@ -557,8 +563,10 @@ export async function runBaseballEngineCore(
         (readinessRows ?? []) as ReadinessRow[],
         (liftSessionRows ?? []) as LiftSessionRow[],
         (liftSetResultRows ?? []) as LiftSetResultRow[],
+        nowIso,
       ),
       eventInputs,
+      nowIso,
     ),
   );
   const events = (eventRows ?? []) as ScheduleEventRow[];
