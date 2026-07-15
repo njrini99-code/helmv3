@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format, isToday, isYesterday, differenceInMinutes, differenceInHours, differenceInDays, isSameYear } from "date-fns";
+import { PIPELINE_STAGES } from "@/lib/recruiting/stages";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -83,15 +84,13 @@ export function getFullName(firstName: string | null | undefined, lastName: stri
   return [firstName, lastName].filter(Boolean).join(' ') || 'Unknown';
 }
 
+// Single source of truth for pipeline stage labels is `PIPELINE_STAGES`
+// (src/lib/recruiting/stages.ts). This used to hardcode its own label map
+// that had drifted from PIPELINE_STAGES (e.g. `watchlist` → "Prospects" here
+// vs. "Watchlist" there) — see the decision memo for the "Watchlist" vs
+// "Prospects" collision this resolved.
 export function getPipelineStageLabel(stage: string): string {
-  const labels: Record<string, string> = {
-    watchlist: 'Prospects',
-    high_priority: 'High Priority',
-    offer_extended: 'Offer Extended',
-    committed: 'Committed',
-    uninterested: 'Not Interested',
-  };
-  return labels[stage] || stage;
+  return PIPELINE_STAGES.find((s) => s.id === stage)?.label ?? stage;
 }
 
 
