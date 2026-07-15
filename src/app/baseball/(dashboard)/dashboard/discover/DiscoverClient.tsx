@@ -24,6 +24,7 @@ import { IconFilter } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { SectionMasthead, EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { Player, Organization } from '@/lib/types';
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
@@ -71,6 +72,16 @@ function DiscoverContent() {
 
   // Mobile filter drawer state
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  // `lg:hidden` on the Sheet only hid Drawer.Content — the vaul Drawer.Overlay
+  // it mounts alongside ignores className and is wired to `open` alone, so a
+  // sheet left open while crossing lg+ left a full-screen invisible backdrop
+  // eating clicks. Force-close reactively instead (mirrors the isDesktop
+  // pattern in the sibling DiscoverView.tsx in this same PR) so the sheet and
+  // its overlay are torn down together when the viewport crosses the breakpoint.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  useEffect(() => {
+    if (isDesktop) setMobileFiltersOpen(false);
+  }, [isDesktop]);
 
   // State
   const [players, setPlayers] = useState<DiscoverPlayer[]>([]);
@@ -470,7 +481,6 @@ function DiscoverContent() {
           description={
             activeFilterCount > 0 ? `${activeFilterCount} active` : undefined
           }
-          className="lg:hidden"
         >
           <Sheet.Body>
             <FilterPanel currentFilters={filters} mode={filters.mode} sticky={false} />

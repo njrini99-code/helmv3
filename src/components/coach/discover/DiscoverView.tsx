@@ -677,10 +677,21 @@ export function DiscoverView({
 
       {/* Pagination */}
       {totalPages > 1 && viewMode !== 'map' && (
-        <div className="flex items-center justify-center gap-2 pt-6">
+        <div
+          className={cn(
+            'flex items-center justify-center gap-2 pt-6 mx-auto',
+            // Same clamp+scroll mechanics as CompareBar's mobile fix in this
+            // PR: without it, five 44px pills plus Previous/Next flex-shrink
+            // below the tap-target floor at narrow widths, and any overflow
+            // is inaccessible under the app's global mobile `overflow-x:clip`
+            // guard (html/body can't be relied on to reveal it via page scroll).
+            'max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+          )}
+        >
           <Button
             variant="secondary"
             size="sm"
+            className="shrink-0"
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
           >
@@ -688,7 +699,7 @@ export function DiscoverView({
             Previous
           </Button>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pageNum;
               if (totalPages <= 5) {
@@ -722,6 +733,7 @@ export function DiscoverView({
           <Button
             variant="secondary"
             size="sm"
+            className="shrink-0"
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
           >
