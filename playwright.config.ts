@@ -46,10 +46,12 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      // baseball-smoke.spec.ts requires an authenticated storageState from
-      // the `setup` project below — it must not also run anonymously here.
+      // baseball-smoke.spec.ts and baseball-route-crawler.spec.ts require an
+      // authenticated storageState from the `setup` project below — they
+      // must not also run anonymously here.
       // mobile-viewports.spec.ts runs only under the mobile-* projects.
-      testIgnore: /baseball-smoke\.spec\.ts|mobile-viewports\.spec\.ts/,
+      testIgnore:
+        /baseball-(smoke|route-crawler)\.spec\.ts|mobile-viewports\.spec\.ts/,
     },
 
     // BaseballHelm mandatory smoke (#372) — durable per-role auth. `setup`
@@ -64,7 +66,7 @@ export default defineConfig({
     },
     {
       name: 'baseball-coach',
-      testMatch: /baseball-smoke\.spec\.ts/,
+      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts/,
       grep: /@coach/,
       dependencies: ['setup'],
       use: {
@@ -74,7 +76,7 @@ export default defineConfig({
     },
     {
       name: 'baseball-player',
-      testMatch: /baseball-smoke\.spec\.ts/,
+      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts/,
       grep: /@player/,
       dependencies: ['setup'],
       use: {

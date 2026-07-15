@@ -25,6 +25,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { waitForPageLoad } from './helpers/common';
+import { ERROR_BOUNDARY_TEXT_RE } from './helpers/route-health';
 
 interface RenderOptions {
   /** Asserted via getByRole('heading', { name }) — use when the route has a
@@ -49,9 +50,7 @@ async function expectAuthenticatedSurface(
   expect(page.url(), `expected ${route} to render without bouncing to /login`).not.toContain(
     '/login',
   );
-  await expect(page.locator('body')).not.toContainText(
-    /Application error|Internal Server Error/i,
-  );
+  await expect(page.locator('body')).not.toContainText(ERROR_BOUNDARY_TEXT_RE);
 
   if (opts.titlePattern) {
     await expect(page).toHaveTitle(opts.titlePattern);

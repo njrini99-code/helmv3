@@ -20,6 +20,9 @@ so a job split/rename does not silently break protection.
   - `Next build`
   - `Route Hygiene P0/P1`
   - `Supabase lint + RLS tests`
+  - `BaseballHelm authenticated smoke` (coach + player, #372) — skips (does
+    not fail) on fork/Dependabot PRs, which receive no repo secrets from
+    GitHub by design
 - `Review Gate / all` — hard aggregate for ast-grep, semgrep, gitleaks,
   actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, and
   hadolint.
@@ -47,6 +50,20 @@ Advisory checks:
 `Supabase lint + RLS tests` was promoted from advisory into the hard
 `CI / all` aggregate once the baseball pgTAP RLS suite went green on `main`
 (#517, supersedes #423). RLS regressions now block merge.
+
+`BaseballHelm authenticated smoke` (the `baseball-auth-smoke` job in
+`ci.yml`) was promoted the same way (#372): the coach/player smoke suite
+(`e2e/baseball-smoke.spec.ts` + `e2e/baseball-onboarding-smoke.spec.ts`) and
+its fail-loud auth setup already existed and ran on every `main` push via
+`playwright.yml`'s `e2e` job, but only post-merge — a real authenticated
+regression could land on `main` before this ever ran. `ci.yml` now runs the
+same specs (steps copied, not moved) as a required PR gate. It skips rather
+than fails on fork/Dependabot PRs (no repo secrets available to them);
+same-repo, non-Dependabot pushes and PRs must have the required secrets
+configured or the job fails loudly. Note the added cost: a second full
+`npm run build` + Playwright-chromium install on every same-repo,
+non-Dependabot PR, on top of the existing `Next build` / `Smoke checks`
+builds.
 
 `Greptile Review` is intentionally advisory, not a required check: Greptile's
 `.greptile/config.json` skips `dependabot`-titled PRs, so it never posts a
