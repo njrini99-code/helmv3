@@ -23,7 +23,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
-import { IconArrowUpDown, IconCopy, IconX } from '@/components/icons';
+import { IconArrowUpDown, IconChevronUp, IconChevronDown, IconCopy, IconX } from '@/components/icons';
 import { PaperCard, InkBadge } from '@/components/baseball/living-annual';
 import { PrescriptionChip } from './PrescriptionChip';
 import { hoverLift } from '@/lib/baseball/motion';
@@ -186,6 +186,16 @@ export interface SessionBlockProps {
   onUpdateBlock: (updated: LiftSessionDraftBlock) => void;
   /** Called when the user duplicates an exercise row; parent re-scores conflict. */
   onDuplicateExercise: (blockId: string, draftId: string) => void;
+  /**
+   * Block reorder (up/down within the session). Rendered inline in this
+   * header, `lg:hidden` — below `lg` the canvas has only 16px (px-4) of
+   * gutter, not enough room for LiftCanvas's own desktop `-left-8`
+   * absolutely-positioned controls (those stay `lg:flex` only).
+   */
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }
 
 export function SessionBlock({
@@ -196,6 +206,10 @@ export function SessionBlock({
   onSelectExercise,
   onUpdateBlock,
   onDuplicateExercise,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
 }: SessionBlockProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `block-${block.id}`,
@@ -243,6 +257,30 @@ export function SessionBlock({
             {block.exercises.length}
           </span>
         )}
+        {/* Mobile-only inline reorder — desktop keeps LiftCanvas's own
+            absolutely-positioned `-left-8` controls (lg:flex only). */}
+        <div className="flex items-center gap-0.5 lg:hidden">
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={onMoveUp}
+            disabled={!canMoveUp}
+            className="rounded p-1 text-warm-300 hover:text-warm-600 disabled:pointer-events-none disabled:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+            aria-label={`Move ${block.title} block up`}
+          >
+            <IconChevronUp size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={onMoveDown}
+            disabled={!canMoveDown}
+            className="rounded p-1 text-warm-300 hover:text-warm-600 disabled:pointer-events-none disabled:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+            aria-label={`Move ${block.title} block down`}
+          >
+            <IconChevronDown size={14} />
+          </Button>
+        </div>
       </div>
 
       {/* ── Exercise drop zone ────────────────────────────────────────── */}

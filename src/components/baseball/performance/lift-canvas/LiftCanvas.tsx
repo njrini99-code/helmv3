@@ -790,8 +790,12 @@ export function LiftCanvas({
 
           {blocks.map((block, idx) => (
             <div key={block.id} className="relative">
-              {/* Block reorder controls */}
-              <div className="absolute -left-8 top-1/2 flex -translate-y-1/2 flex-col gap-0.5">
+              {/* Block reorder controls — desktop only (lg:flex). Below lg
+                  the canvas only affords 16px (px-4) of gutter, not enough
+                  room for a `-left-8` (-32px) absolutely-positioned control;
+                  SessionBlock renders its own inline lg:hidden equivalent in
+                  the block header instead. */}
+              <div className="absolute -left-8 top-1/2 hidden -translate-y-1/2 flex-col gap-0.5 lg:flex">
                 <Button
                   variant="ghost"
                   type="button"
@@ -822,6 +826,10 @@ export function LiftCanvas({
                 onSelectExercise={setSelectedDraftId}
                 onUpdateBlock={updateBlock}
                 onDuplicateExercise={handleDuplicateExercise}
+                onMoveUp={() => moveBlockUp(block.id)}
+                onMoveDown={() => moveBlockDown(block.id)}
+                canMoveUp={idx !== 0}
+                canMoveDown={idx !== blocks.length - 1}
               />
             </div>
           ))}

@@ -188,6 +188,7 @@ export default async function PlayerLiftSessionPage({
         session={session}
         athleteId={athleteId}
         readinessSubmittedToday={readinessSubmittedToday}
+        basePath="/baseball/dashboard"
       />
     </div>
   );

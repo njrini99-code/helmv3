@@ -216,6 +216,7 @@ export default async function PlayerLiftSessionPage({ params }: PageProps) {
       session={session}
       athleteId={athleteId}
       readinessSubmittedToday={readinessSubmittedToday}
+      basePath="/lifting/dashboard"
     />
   );
 }
