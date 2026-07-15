@@ -59,4 +59,18 @@ describe('Baseball product-trust surface contracts', () => {
     expect(src).not.toContain('baseball_player_aggregates');
     expect(src).not.toContain('baseball_team_members');
   });
+
+  // #379 Phase 3 — same pattern as the command-center assertion above, pinned
+  // for the player profile page: it must keep calling the canonical
+  // read-model / box-score action entry points for stat data (never an ad hoc
+  // query against the deprecated flat/aggregate layer), so a future edit
+  // can't silently regress this page back onto baseball_player_stats /
+  // baseball_player_aggregates.
+  it('player profile page uses the canonical stat read-models, never the deprecated layer directly', () => {
+    const src = read('src/app/baseball/(dashboard)/dashboard/players/[id]/page.tsx');
+    expect(src).toContain('getPlayerSnapshotCards');
+    expect(src).toContain('getPlayerSeasonStats');
+    expect(src).not.toContain('baseball_player_aggregates');
+    expect(src).not.toContain('baseball_player_stats');
+  });
 });
