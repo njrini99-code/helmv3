@@ -30,6 +30,19 @@
 -- p_player_id against the scope array / the caller's own resolved player id,
 -- so no baseball_players seeding is required to exercise this contract).
 --
+-- Case D additionally seeds a SECOND staff-coach row on the SAME team (a
+-- distinct coach_id/user_id) with its own, WIDER scope_player_ids allowlist,
+-- and — still impersonating the FIRST coach — asserts that coach's results
+-- are entirely unaffected by the second row. This proves actual cross-staff
+-- isolation: the row lookup in can_view_baseball_player() is
+-- `WHERE tcs.team_id = p_team_id AND tcs.coach_id = v_coach_id LIMIT 1`
+-- (migration 20260630180000, lines 45-50), and with only one staff row per
+-- team a regression that drops/weakens the `coach_id = v_coach_id` predicate
+-- (e.g. an accidental ORDER BY + LIMIT 1 refactor) would be invisible to this
+-- suite. With two staff rows now present, such a regression would let the
+-- first coach's view resolve to the second (wider-scoped) coach's row and
+-- surface playerC — which Case D asserts stays hidden.
+--
 -- scope_player_ids is a plain `uuid[]` column (20260625000040_baseball_staff_
 -- display_scope_columns.sql / 20260624000082_baseball_staff_display_and_
 -- invite_columns.sql) with no FK and no CHECK constraint, and
@@ -40,7 +53,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(13);
+SELECT plan(15);
 
 -- ============================================================================
 -- Invariants — SECURITY DEFINER + pinned search_path preserved, anon still
@@ -227,6 +240,75 @@ SELECT is(
   ),
   false,
   'multi-player scope [A,B]: playerC (still not in allowlist) is hidden'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+-- ============================================================================
+-- Case D — cross-staff isolation: a SECOND staff-coach row on the SAME team
+-- (distinct coach_id/user_id), given a WIDER scope_player_ids allowlist
+-- ([playerA, playerB, playerC] — a superset of the first coach's current
+-- [playerA, playerB], and one that additionally covers playerC, which the
+-- first coach cannot see). Still impersonating the FIRST coach, the results
+-- below must be identical to Case C's: unaffected by the second row's
+-- existence or its wider scope. See the top-of-file note for the exact
+-- regression class this closes.
+-- ============================================================================
+DO $$
+DECLARE
+  v_user_id2  uuid := '00000000-0000-0000-0000-0000000c0b01';
+  v_coach_id2 uuid := '00000000-0000-0000-0000-0000000c0b02';
+  v_team_id   uuid := '00000000-0000-0000-0000-0000000c0a03';
+BEGIN
+  INSERT INTO auth.users (id, email, role)
+    VALUES (v_user_id2, 'secondscopedcoach@helm.test', 'authenticated')
+    ON CONFLICT DO NOTHING;
+
+  INSERT INTO public.users (id, email, role)
+    VALUES (v_user_id2, 'secondscopedcoach@helm.test', 'coach')
+    ON CONFLICT DO NOTHING;
+
+  INSERT INTO public.baseball_coaches (id, user_id, coach_type)
+    VALUES (v_coach_id2, v_user_id2, 'college')
+    ON CONFLICT DO NOTHING;
+
+  -- Second staff row, same team, non-head/non-primary/active, wider scope.
+  INSERT INTO public.baseball_team_coach_staff
+    (team_id, coach_id, role, is_primary, is_head_coach, status, scope_player_ids)
+  VALUES
+    (v_team_id, v_coach_id2, 'assistant', false, false, 'active', ARRAY[
+      '00000000-0000-0000-0000-0000000c0aa1'::uuid,
+      '00000000-0000-0000-0000-0000000c0ab1'::uuid,
+      '00000000-0000-0000-0000-0000000c0ac1'::uuid
+    ])
+  ON CONFLICT (team_id, coach_id) DO UPDATE
+    SET is_primary = false,
+        is_head_coach = false,
+        status = 'active',
+        scope_player_ids = EXCLUDED.scope_player_ids;
+END $$;
+
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-0000000c0a01", "role": "authenticated"}';
+
+SELECT is(
+  public.can_view_baseball_player(
+    '00000000-0000-0000-0000-0000000c0a03'::uuid,
+    '00000000-0000-0000-0000-0000000c0ac1'::uuid
+  ),
+  false,
+  'cross-staff isolation: first coach (scope [A,B]) still cannot view playerC, even though a second staff row on the same team now has playerC in ITS (wider) scope_player_ids'
+);
+
+SELECT is(
+  public.can_view_baseball_player(
+    '00000000-0000-0000-0000-0000000c0a03'::uuid,
+    '00000000-0000-0000-0000-0000000c0aa1'::uuid
+  ),
+  true,
+  'cross-staff isolation: first coach still sees playerA per its OWN scope, unaffected by the second staff row existing'
 );
 
 RESET role;
