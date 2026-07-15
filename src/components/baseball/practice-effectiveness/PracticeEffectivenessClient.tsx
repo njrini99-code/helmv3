@@ -276,7 +276,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
                     aria-selected={filter === f}
                     onClick={() => setFilter(f)}
                     className={cn(
-                      'min-h-0 rounded-fw-sm px-2.5 py-1 text-microbadge font-semibold uppercase tracking-[0.12em]',
+                      'rounded-fw-sm px-2.5 py-1 text-microbadge font-semibold uppercase tracking-[0.12em]',
                       filter === f
                         ? 'bg-grade-plus text-white hover:bg-grade-plus'
                         : 'text-text-tertiary hover:bg-grade-plus/[0.06] hover:text-text-secondary',

@@ -200,7 +200,7 @@ export function ScrimmageLineupBuilder({
                 onClick={() => setActiveSide(s)}
                 haptic="none"
                 className={cn(
-                  'min-h-0 rounded-md px-3 py-1 text-xs font-medium',
+                  'rounded-md px-3 py-1 text-xs font-medium',
                   activeSide === s ? 'bg-primary-500 text-white hover:bg-primary-500' : 'text-warm-600 hover:bg-cream-100',
                 )}
               >
@@ -392,7 +392,7 @@ export function ScrimmageLineupBuilder({
                       onClick={() => setSelectedPlayerId(selected ? null : p.id)}
                       haptic="none"
                       className={cn(
-                        'min-h-0 w-full justify-start gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-normal',
+                        'w-full justify-start gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-normal',
                         selected
                           ? 'border-primary-400 bg-primary-50 hover:bg-primary-50'
                           : placed
