@@ -391,7 +391,7 @@ function PerformanceBlock({ performance }: { performance: PassportPerformance })
                 Batting · {b.g} G
               </Eyebrow>
               <SlashLine avg={b.avg ?? '—'} obp={b.obp ?? '—'} slg={b.slg ?? '—'} ink="team" />
-              <div className="mt-4 grid grid-cols-3 gap-x-6 gap-y-4 sm:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
                 <RuledStatLine label="OPS" value={b.ops === null ? '—' : formatRate(b.ops, 3)} size="row" ink="team" />
                 <RuledStatLine label="H" value={b.h} size="row" ink="team" />
                 <RuledStatLine label="HR" value={b.hr} size="row" ink="team" />
