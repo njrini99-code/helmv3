@@ -108,6 +108,11 @@ jobs:
               echo "Dev server ready after ${i} attempt(s)."
               exit 0
             fi
+            if ! kill -0 "$(cat /tmp/dev-server.pid)" 2>/dev/null; then
+              echo "::error::Dev server process died during startup"
+              cat /tmp/dev-server.log
+              exit 1
+            fi
             sleep 2
           done
           echo "::error::Dev server did not become ready within 120s"
