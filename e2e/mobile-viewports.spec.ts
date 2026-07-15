@@ -52,22 +52,56 @@ async function gotoSettled(page: Page, route: string): Promise<void> {
   await page.waitForTimeout(250);
 }
 
-async function expectNoHorizontalPan(page: Page, route: string): Promise<void> {
-  const { scrollWidth, innerWidth } = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    innerWidth: window.innerWidth,
-  }));
-  expect
-    .soft(scrollWidth, `${route}: page pans horizontally (scrollWidth ${scrollWidth} > viewport ${innerWidth})`)
-    .toBeLessThanOrEqual(innerWidth + 1);
-}
+type MobileFitState = {
+  scrollWidth: number;
+  innerWidth: number;
+  clipped: string[];
+  bottomNavFound: boolean;
+  collisions: string[];
+};
 
-async function expectNoClippedControls(page: Page, route: string): Promise<void> {
-  const clipped = await page.evaluate(() => {
-    const offenders: string[] = [];
-    const containers = Array.from(
+// Single evaluate pass shared by all three checks below. The bottom-nav
+// element is detected ONCE here and reused both as an extra container to
+// scan for clipped controls and as the collision-check target, so a plain
+// fixed wrapper (no <nav>/role="navigation") is treated identically by both
+// checks instead of only being recognized by one of them.
+async function collectMobileFitState(page: Page): Promise<MobileFitState> {
+  return page.evaluate(() => {
+    const fixedEls: Element[] = [];
+    for (const el of Array.from(document.body.querySelectorAll('*'))) {
+      const style = getComputedStyle(el);
+      if (style.position !== 'fixed') continue;
+      if (style.pointerEvents === 'none') continue; // toast portals, inset-0 wrappers
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      fixedEls.push(el);
+    }
+    // A bottom nav is either semantically marked (nav / role=navigation) OR
+    // merely tab-bar SHAPED: bottom-pinned, near-full-width, with 2+
+    // interactive children. The shape fallback keeps this check alive if the
+    // app shell ever renders the bar as a plain fixed wrapper.
+    const bottomNav =
+      fixedEls.find((el) => {
+        const r = el.getBoundingClientRect();
+        const bottomPinned = r.top > window.innerHeight - 140 && r.bottom >= window.innerHeight - 40;
+        const wide = r.width > window.innerWidth * 0.6;
+        if (!bottomPinned || !wide) return false;
+        const semantic =
+          el.tagName === 'NAV' || el.getAttribute('role') === 'navigation' || el.querySelector('nav') !== null;
+        const tabBarShaped = el.querySelectorAll('a, button, [role="button"], [role="tab"]').length >= 2;
+        return semantic || tabBarShaped;
+      }) ?? null;
+
+    // --- clipped header/nav/toolbar controls -----------------------------
+    const containers = new Set<Element>(
       document.querySelectorAll('header, nav, [role="navigation"], [role="toolbar"]'),
     );
+    // A plain fixed bottom-nav wrapper (recognized only via the shape
+    // heuristic above, not <nav>/role) is otherwise invisible to this scan —
+    // include it so a clipped control inside it is still caught.
+    if (bottomNav) containers.add(bottomNav);
+
+    const clipped: string[] = [];
     const seen = new Set<Element>();
     for (const container of containers) {
       for (const el of Array.from(container.querySelectorAll('a, button, [role="button"]'))) {
@@ -85,70 +119,66 @@ async function expectNoClippedControls(page: Page, route: string): Promise<void>
           const label = (el.textContent || el.getAttribute('aria-label') || el.tagName)
             .trim()
             .slice(0, 40);
-          offenders.push(`"${label}" [left ${Math.round(r.left)}, right ${Math.round(r.right)}] vs viewport ${window.innerWidth}`);
+          clipped.push(`"${label}" [left ${Math.round(r.left)}, right ${Math.round(r.right)}] vs viewport ${window.innerWidth}`);
         }
       }
     }
-    return offenders;
-  });
-  expect.soft(clipped, `${route}: header/nav controls clipped at viewport edge`).toEqual([]);
-}
 
-async function expectNoBottomNavCollision(
-  page: Page,
-  route: string,
-  opts: { expectBottomNav?: boolean } = {},
-): Promise<void> {
-  const result = await page.evaluate(() => {
-    const fixedEls: Element[] = [];
-    for (const el of Array.from(document.body.querySelectorAll('*'))) {
-      const style = getComputedStyle(el);
-      if (style.position !== 'fixed') continue;
-      if (style.pointerEvents === 'none') continue; // toast portals, inset-0 wrappers
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) continue;
-      fixedEls.push(el);
-    }
-    // A bottom nav is either semantically marked (nav / role=navigation) OR
-    // merely tab-bar SHAPED: bottom-pinned, near-full-width, with 2+
-    // interactive children. The shape fallback keeps this check alive if the
-    // app shell ever renders the bar as a plain fixed wrapper.
-    const bottomNav = fixedEls.find((el) => {
-      const r = el.getBoundingClientRect();
-      const bottomPinned = r.top > window.innerHeight - 140 && r.bottom >= window.innerHeight - 40;
-      const wide = r.width > window.innerWidth * 0.6;
-      if (!bottomPinned || !wide) return false;
-      const semantic =
-        el.tagName === 'NAV' || el.getAttribute('role') === 'navigation' || el.querySelector('nav') !== null;
-      const tabBarShaped = el.querySelectorAll('a, button, [role="button"], [role="tab"]').length >= 2;
-      return semantic || tabBarShaped;
-    });
-    if (!bottomNav) return { found: false, offenders: [] as string[] };
-    const navRect = bottomNav.getBoundingClientRect();
-    const offenders: string[] = [];
-    for (const el of fixedEls) {
-      if (el === bottomNav || bottomNav.contains(el) || el.contains(bottomNav)) continue;
-      const r = el.getBoundingClientRect();
-      const overlapX = Math.min(r.right, navRect.right) - Math.max(r.left, navRect.left);
-      const overlapY = Math.min(r.bottom, navRect.bottom) - Math.max(r.top, navRect.top);
-      if (overlapX > 8 && overlapY > 8) {
-        const label = (el.getAttribute('aria-label') || el.textContent || el.className.toString())
-          .trim()
-          .slice(0, 40);
-        offenders.push(`"${label}" overlaps bottom nav by ${Math.round(overlapX)}×${Math.round(overlapY)}px`);
+    // --- bottom-nav collision ---------------------------------------------
+    const collisions: string[] = [];
+    if (bottomNav) {
+      const navRect = bottomNav.getBoundingClientRect();
+      for (const el of fixedEls) {
+        if (el === bottomNav || bottomNav.contains(el) || el.contains(bottomNav)) continue;
+        const r = el.getBoundingClientRect();
+        const overlapX = Math.min(r.right, navRect.right) - Math.max(r.left, navRect.left);
+        const overlapY = Math.min(r.bottom, navRect.bottom) - Math.max(r.top, navRect.top);
+        if (overlapX > 8 && overlapY > 8) {
+          const label = (el.getAttribute('aria-label') || el.textContent || el.className.toString())
+            .trim()
+            .slice(0, 40);
+          collisions.push(`"${label}" overlaps bottom nav by ${Math.round(overlapX)}×${Math.round(overlapY)}px`);
+        }
       }
     }
-    return { found: true, offenders };
+
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      clipped,
+      bottomNavFound: bottomNav !== null,
+      collisions,
+    };
   });
+}
+
+function assertNoHorizontalPan(state: MobileFitState, route: string): void {
+  expect
+    .soft(
+      state.scrollWidth,
+      `${route}: page pans horizontally (scrollWidth ${state.scrollWidth} > viewport ${state.innerWidth})`,
+    )
+    .toBeLessThanOrEqual(state.innerWidth + 1);
+}
+
+function assertNoClippedControls(state: MobileFitState, route: string): void {
+  expect.soft(state.clipped, `${route}: header/nav controls clipped at viewport edge`).toEqual([]);
+}
+
+function assertNoBottomNavCollision(
+  state: MobileFitState,
+  route: string,
+  opts: { expectBottomNav?: boolean } = {},
+): void {
   if (opts.expectBottomNav) {
     // Authenticated dashboard surfaces carry a bottom nav at phone widths
     // (docs/MOBILE_DOCTRINE.md). Without this assertion, a missed/renamed
     // bottom nav would silently skip the collision check entirely.
     expect
-      .soft(result.found, `${route}: no bottom navigation found at phone width (expected per MOBILE_DOCTRINE)`)
+      .soft(state.bottomNavFound, `${route}: no bottom navigation found at phone width (expected per MOBILE_DOCTRINE)`)
       .toBe(true);
   }
-  expect.soft(result.offenders, `${route}: fixed element collides with bottom navigation`).toEqual([]);
+  expect.soft(state.collisions, `${route}: fixed element collides with bottom navigation`).toEqual([]);
 }
 
 async function expectMobileFit(
@@ -157,9 +187,10 @@ async function expectMobileFit(
   opts: { expectBottomNav?: boolean } = {},
 ): Promise<void> {
   await gotoSettled(page, route);
-  await expectNoHorizontalPan(page, route);
-  await expectNoClippedControls(page, route);
-  await expectNoBottomNavCollision(page, route, opts);
+  const state = await collectMobileFitState(page);
+  assertNoHorizontalPan(state, route);
+  assertNoClippedControls(state, route);
+  assertNoBottomNavCollision(state, route, opts);
 }
 
 for (const viewport of VIEWPORTS) {
@@ -177,7 +208,11 @@ for (const viewport of VIEWPORTS) {
     for (const route of COACH_ROUTES) {
       test(`${route} fits ${viewport.width}px (coach)`, async ({ page }) => {
         await expectMobileFit(page, route, { expectBottomNav: true });
-        expect(page.url(), `expected ${route} to render without bouncing to /login`).not.toContain('/login');
+        // Assert the FINAL pathname, not just "didn't bounce to /login" — a
+        // server route guard (src/lib/baseball/server-route-guards.ts) can
+        // redirect an authed-but-unauthorized coach to a different dashboard
+        // route entirely, which the old /login-only check would miss.
+        expect(new URL(page.url()).pathname, `expected ${route} to render`).toBe(route);
       });
     }
   });
@@ -187,7 +222,9 @@ for (const viewport of VIEWPORTS) {
     for (const route of PLAYER_ROUTES) {
       test(`${route} fits ${viewport.width}px (player)`, async ({ page }) => {
         await expectMobileFit(page, route, { expectBottomNav: true });
-        expect(page.url(), `expected ${route} to render without bouncing to /login`).not.toContain('/login');
+        // Same rationale as the coach block above: assert the FINAL
+        // pathname rather than only rejecting /login.
+        expect(new URL(page.url()).pathname, `expected ${route} to render`).toBe(route);
       });
     }
   });
