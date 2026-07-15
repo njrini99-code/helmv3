@@ -33,7 +33,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { Button } from '@/components/fairway';
+import { Button, IconButton } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -735,26 +735,25 @@ export function ImportWizardClient({
           <span className="inline-flex items-center gap-1.5">
             <InkBadge label={shapeMeta.label} tone="team" variant="solid" />
             {/* An icon-only affordance riding beside an InkBadge, not a CTA —
-                pressableClass (not <Button>) per the kit's interaction layer. */}
-            {/* eslint-disable-next-line helm/no-raw-button */}
-            <button
-              type="button"
+                routed through the shared fairway IconButton so it clears the
+                44px touch floor on coarse pointers (was a hand-rolled 19x19px
+                pressableClass wrapper). */}
+            <IconButton
               aria-label="Change data shape"
+              variant="ghost"
+              size="sm"
               onClick={() => { setStep('choose'); setError(null); }}
-              className={cn('rounded-full p-1', pressableClass({ ink: 'team' }))}
+              className="text-text-tertiary"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 16 16"
-                width={11}
-                height={11}
                 fill="currentColor"
                 aria-hidden
-                className="text-text-tertiary"
               >
                 <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
               </svg>
-            </button>
+            </IconButton>
           </span>
           <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
             {VISIBLE_STEP_ORDER.map((s) => {
@@ -1644,7 +1643,7 @@ function IssueGroup({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-4 py-2.5 text-left"
+        className="flex min-h-11 w-full items-center justify-between px-4 py-2.5 text-left"
       >
         <span className="flex items-center gap-2">
           <InkBadge label={`${issues.length} ${issues.length === 1 ? meta.label : meta.plural}`} tone={meta.tone} variant={meta.variant} />
@@ -1882,7 +1881,7 @@ function DuplicateSummary({
               type="button"
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
-              className="ml-auto text-caption font-medium text-text-secondary underline-offset-2 hover:underline"
+              className="ml-auto inline-flex min-h-11 items-center text-caption font-medium text-text-secondary underline-offset-2 hover:underline"
             >
               {open ? 'Hide changes' : 'Show what changes'}
             </button>
