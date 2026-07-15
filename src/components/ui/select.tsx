@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useId, forwardRef } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconCheck } from '@/components/icons';
 
@@ -9,6 +10,48 @@ export interface SelectOption {
   label: string;
   disabled?: boolean;
   icon?: React.ReactNode;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared portal-positioning helpers for Select + MultiSelect below. Both
+// dropdowns render via createPortal(document.body) instead of in normal flow
+// so they escape any overflow-hidden/transformed ancestor (the settings-page
+// clipping bug) — `position: fixed` + a rect computed from the trigger's
+// getBoundingClientRect() replaces the old "absolute inside a relative
+// wrapper" trick, with a viewport-aware flip so the dropdown opens upward
+// when there isn't room below.
+// ─────────────────────────────────────────────────────────────────────────────
+interface DropdownRect {
+  left: number;
+  width: number;
+  placement: 'bottom' | 'top';
+  top?: number;
+  bottom?: number;
+}
+
+const DROPDOWN_GAP = 4;
+// max-h-60 (240px) list + search row/padding headroom for the flip decision.
+const DROPDOWN_EST_HEIGHT = 260;
+
+function computeDropdownRect(trigger: HTMLElement): DropdownRect {
+  const rect = trigger.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const spaceBelow = viewportHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  const placement: 'bottom' | 'top' =
+    spaceBelow < DROPDOWN_EST_HEIGHT && spaceAbove > spaceBelow ? 'top' : 'bottom';
+  return placement === 'bottom'
+    ? { left: rect.left, width: rect.width, placement, top: rect.bottom + DROPDOWN_GAP }
+    : { left: rect.left, width: rect.width, placement, bottom: viewportHeight - rect.top + DROPDOWN_GAP };
+}
+
+function dropdownRectStyle(rect: DropdownRect): React.CSSProperties {
+  return {
+    left: rect.left,
+    width: rect.width,
+    top: rect.placement === 'bottom' ? rect.top : undefined,
+    bottom: rect.placement === 'top' ? rect.bottom : undefined,
+  };
 }
 
 interface SelectProps {
@@ -42,10 +85,14 @@ export function Select({
   const [isAnimating, setIsAnimating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [dropdownRect, setDropdownRect] = useState<DropdownRect | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const triggerId = useId();
+  const listboxId = `${triggerId}-listbox`;
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -55,33 +102,57 @@ export function Select({
       )
     : options;
 
+  const updateDropdownRect = useCallback(() => {
+    if (triggerRef.current) setDropdownRect(computeDropdownRect(triggerRef.current));
+  }, []);
+
   // Handle open/close with animation
   const openDropdown = useCallback(() => {
+    updateDropdownRect();
     setIsOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setIsAnimating(true));
     });
-  }, []);
+  }, [updateDropdownRect]);
 
   const closeDropdown = useCallback(() => {
     setIsAnimating(false);
     const timer = setTimeout(() => {
       setIsOpen(false);
       setSearchQuery('');
+      setDropdownRect(null);
     }, 150);
     return () => clearTimeout(timer);
   }, []);
 
-  // Close on outside click
+  // Close on outside click — must also check the portaled dropdown, which
+  // lives outside containerRef in the DOM once mounted at document.body.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideTrigger = containerRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideTrigger && !insideDropdown) {
         closeDropdown();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [closeDropdown]);
+
+  // Keep the portaled dropdown anchored to the trigger while open — fixed
+  // positioning doesn't track the trigger automatically the way the old
+  // absolute-in-normal-flow dropdown did. Capture-phase scroll so it also
+  // catches scrolling inside an ancestor card, not just the window.
+  useEffect(() => {
+    if (!isOpen) return;
+    window.addEventListener('scroll', updateDropdownRect, true);
+    window.addEventListener('resize', updateDropdownRect);
+    return () => {
+      window.removeEventListener('scroll', updateDropdownRect, true);
+      window.removeEventListener('resize', updateDropdownRect);
+    };
+  }, [isOpen, updateDropdownRect]);
 
   // Reset highlighted index when filtered options change
   useEffect(() => {
@@ -157,7 +228,7 @@ export function Select({
   };
 
   return (
-    <div className="w-full" ref={containerRef}>
+    <div className={cn('w-full', className)} ref={containerRef}>
       {label && (
         <label htmlFor={triggerId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
@@ -165,6 +236,7 @@ export function Select({
       )}
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           id={triggerId}
           onClick={() => !disabled && (isOpen ? closeDropdown() : openDropdown())}
@@ -172,8 +244,9 @@ export function Select({
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
+          aria-controls={listboxId}
           className={cn(
-            'w-full min-h-[48px] px-4 rounded-xl border bg-cream-50/92 text-base lg:text-sm text-left',
+            'w-full min-h-[48px] [@media(pointer:coarse)]:min-h-[44px] px-4 rounded-xl border bg-cream-50/92 text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
@@ -216,16 +289,24 @@ export function Select({
           </div>
         </button>
 
-        {/* Dropdown */}
-        {isOpen && (
+        {/* Dropdown — portaled to document.body so it always escapes any
+            overflow-hidden/transformed ancestor (e.g. a settings-page card)
+            instead of being clipped in place. */}
+        {isOpen && dropdownRect && createPortal(
           <div
+            ref={dropdownRef}
+            id={listboxId}
             className={cn(
-              'absolute z-50 w-full mt-1 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
-              'transition-[opacity,transform] duration-150 ease-out origin-top',
+              'fixed z-50 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
+              'transition-[opacity,transform] duration-150 ease-out',
+              dropdownRect.placement === 'top' ? 'origin-bottom' : 'origin-top',
               isAnimating
                 ? 'opacity-100 scale-y-100 translate-y-0'
-                : 'opacity-0 scale-y-95 -translate-y-1'
+                : dropdownRect.placement === 'top'
+                  ? 'opacity-0 scale-y-95 translate-y-1'
+                  : 'opacity-0 scale-y-95 -translate-y-1'
             )}
+            style={dropdownRectStyle(dropdownRect)}
           >
             {searchable && (
               <div className="p-2 border-b border-warm-100">
@@ -286,7 +367,8 @@ export function Select({
                 ))
               )}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
       {hint && !error && (
@@ -332,34 +414,62 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [dropdownRect, setDropdownRect] = useState<DropdownRect | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerId = useId();
+  const listboxId = `${triggerId}-listbox`;
 
   const selectedOptions = options.filter((opt) => value.includes(opt.value));
 
+  const updateDropdownRect = useCallback(() => {
+    if (triggerRef.current) setDropdownRect(computeDropdownRect(triggerRef.current));
+  }, []);
+
   const openDropdown = useCallback(() => {
+    updateDropdownRect();
     setIsOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setIsAnimating(true));
     });
-  }, []);
+  }, [updateDropdownRect]);
 
   const closeDropdown = useCallback(() => {
     setIsAnimating(false);
-    const timer = setTimeout(() => setIsOpen(false), 150);
+    const timer = setTimeout(() => {
+      setIsOpen(false);
+      setDropdownRect(null);
+    }, 150);
     return () => clearTimeout(timer);
   }, []);
 
-  // Close on outside click
+  // Close on outside click — must also check the portaled dropdown, which
+  // lives outside containerRef in the DOM once mounted at document.body.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideTrigger = containerRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideTrigger && !insideDropdown) {
         closeDropdown();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [closeDropdown]);
+
+  // Keep the portaled dropdown anchored to the trigger while open (see the
+  // matching effect + comment in Select above).
+  useEffect(() => {
+    if (!isOpen) return;
+    window.addEventListener('scroll', updateDropdownRect, true);
+    window.addEventListener('resize', updateDropdownRect);
+    return () => {
+      window.removeEventListener('scroll', updateDropdownRect, true);
+      window.removeEventListener('resize', updateDropdownRect);
+    };
+  }, [isOpen, updateDropdownRect]);
 
   const handleToggle = (optionValue: string) => {
     if (value.includes(optionValue)) {
@@ -383,7 +493,7 @@ export function MultiSelect({
   };
 
   return (
-    <div className="w-full" ref={containerRef}>
+    <div className={cn('w-full', className)} ref={containerRef}>
       {label && (
         <label htmlFor={triggerId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
@@ -391,14 +501,16 @@ export function MultiSelect({
       )}
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           id={triggerId}
           onClick={() => !disabled && (isOpen ? closeDropdown() : openDropdown())}
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
+          aria-controls={listboxId}
           className={cn(
-            'w-full min-h-[48px] px-4 rounded-xl border bg-cream-50/92 text-base lg:text-sm text-left',
+            'w-full min-h-[48px] [@media(pointer:coarse)]:min-h-[44px] px-4 rounded-xl border bg-cream-50/92 text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
@@ -440,16 +552,23 @@ export function MultiSelect({
           </div>
         </button>
 
-        {/* Dropdown */}
-        {isOpen && (
+        {/* Dropdown — portaled to document.body (see the matching comment
+            in Select above). */}
+        {isOpen && dropdownRect && createPortal(
           <div
+            ref={dropdownRef}
+            id={listboxId}
             className={cn(
-              'absolute z-50 w-full mt-1 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
-              'transition-[opacity,transform] duration-150 ease-out origin-top',
+              'fixed z-50 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
+              'transition-[opacity,transform] duration-150 ease-out',
+              dropdownRect.placement === 'top' ? 'origin-bottom' : 'origin-top',
               isAnimating
                 ? 'opacity-100 scale-y-100 translate-y-0'
-                : 'opacity-0 scale-y-95 -translate-y-1'
+                : dropdownRect.placement === 'top'
+                  ? 'opacity-0 scale-y-95 translate-y-1'
+                  : 'opacity-0 scale-y-95 -translate-y-1'
             )}
+            style={dropdownRectStyle(dropdownRect)}
           >
             <div className="max-h-60 overflow-y-auto py-1" role="listbox" aria-multiselectable="true">
               {options.map((option) => {
@@ -505,7 +624,8 @@ export function MultiSelect({
                 </button>
               </div>
             )}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
       {hint && !error && (

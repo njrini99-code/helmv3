@@ -6,9 +6,10 @@ import { MessagesFairway } from '@/components/baseball/messages/MessagesFairway'
 // travel `loading.tsx` files, none of which mount a Header either.
 //
 // FIX (mobile audit, messages-hub group): this route-level fallback used to
-// render the generic `<SkeletonMessages />` — a hardcoded, non-responsive
-// `w-80` + `flex-1` two-column desktop shape with its own `bg-white`/
-// `rounded-2xl` chrome that shares nothing with the real Fairway surface.
+// render the old generic messages skeleton (since removed) — a hardcoded,
+// non-responsive `w-80` + `flex-1` two-column desktop shape with its own
+// `bg-white`/`rounded-2xl` chrome that shares nothing with the real Fairway
+// surface.
 // On a 320-430px phone the fixed 320px list column alone overflowed this
 // route's own `p-6` wrapper, guaranteeing horizontal pan, and the mismatched
 // chrome produced a visible shape/color flash the instant `MessagesClient`
