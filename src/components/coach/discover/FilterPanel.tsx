@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { SearchAutocomplete } from '@/components/ui/search-autocomplete';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,9 +44,18 @@ interface FilterPanelProps {
     mode?: 'players' | 'teams';
   };
   mode?: 'players' | 'teams';
+  /**
+   * Whether the panel pins itself `sticky top-6` in its scroll ancestor.
+   * Desktop's `aside` wants that (the panel should track the results column
+   * as it scrolls); the mobile filter sheet already has its own fixed
+   * header/footer chrome around a single scroll container, so a second
+   * sticky card competing for the same top edge visually collided with it.
+   * @default true
+   */
+  sticky?: boolean;
 }
 
-export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelProps) {
+export function FilterPanel({ currentFilters, mode = 'players', sticky = true }: FilterPanelProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const uid = useId();
@@ -147,7 +157,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
   };
 
   return (
-    <div className="glass-subtle rounded-2xl p-6 sticky top-6 overflow-clip relative">
+    <div className={cn('glass-subtle rounded-2xl p-6 overflow-clip relative', sticky && 'sticky top-6')}>
       {/* Shine effect */}
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

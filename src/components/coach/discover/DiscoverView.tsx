@@ -23,6 +23,7 @@ import {
 } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDiscoverPreferences } from '@/hooks/use-local-storage';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   addToWatchlist,
   removeFromWatchlist,
@@ -133,7 +134,26 @@ export function DiscoverView({
   );
 
   // Persisted preferences
-  const { viewMode, sortBy, setViewMode, setSortBy } = useDiscoverPreferences();
+  const { viewMode: persistedViewMode, sortBy, setViewMode: setPersistedViewMode, setSortBy } = useDiscoverPreferences();
+
+  // The map is a desktop-appropriate visualization: a full US choropleth
+  // shrunk to a 320-390px column renders small states (RI/CT/DE/MA/NH...)
+  // at a few CSS px — under any usable tap target, with no touch-friendly
+  // fallback inside Map view itself. A first-time (or below-`md`) coach
+  // should land on List, not a map they can't tap; a coach who explicitly
+  // picks Map from the ViewToggle this session still gets it — Map is
+  // never removed, just not the untouched phone default.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [sessionViewMode, setSessionViewMode] = useState<ViewMode | null>(null);
+  const viewMode: ViewMode =
+    sessionViewMode ?? (!isDesktop && persistedViewMode === 'map' ? 'list' : persistedViewMode);
+  const setViewMode = useCallback(
+    (mode: ViewMode) => {
+      setSessionViewMode(mode);
+      setPersistedViewMode(mode);
+    },
+    [setPersistedViewMode]
+  );
 
   // Local state
   const [watchlistIds, setWatchlistIds] = useState<string[]>(
@@ -509,7 +529,7 @@ export function DiscoverView({
               exit={{ opacity: 0, y: -8 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.4, 0, 0.2, 1] })}
             >
-            <div className="relative glass-standard rounded-2xl overflow-clip p-8">
+            <div className="relative glass-standard rounded-2xl overflow-clip p-4 sm:p-8">
               {/* Decorative top highlight */}
               <div
                 className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -684,9 +704,10 @@ export function DiscoverView({
               return (
                 <Button variant="primary"
                   key={pageNum}
+                  size="icon-sm"
                   onClick={() => goToPage(pageNum)}
                   className={cn(
-                    'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
+                    'rounded-lg text-sm font-medium transition-colors',
                     pageNum === currentPage
                       ? 'bg-primary-600 text-white'
                       : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'

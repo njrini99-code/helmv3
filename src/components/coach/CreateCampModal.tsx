@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useId } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, IconButton } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { createCamp, updateCamp, type CampInput } from '@/app/baseball/actions/camps';
@@ -109,141 +109,128 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
     router.refresh();
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="relative glass-prominent rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-clip flex flex-col">
-        {/* Shine effect */}
-        <div
-          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-        />
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-warm-900">
-            {isEditing ? 'Edit Camp' : 'Create Camp'}
-          </h2>
-          <IconButton variant="default"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
-            aria-label={isEditing ? 'Close edit camp modal' : 'Close create camp modal'}
-          >
-            <IconX size={20} />
-          </IconButton>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isEditing ? 'Edit Camp' : 'Create Camp'}
+      size="lg"
+      sheetOnMobile
+    >
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor={`${uid}-name`} className="block text-sm font-medium text-warm-700 mb-1">
+            Camp Name *
+          </label>
+          <Input
+            id={`${uid}-name`}
+            type="text"
+            required
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Summer Prospect Camp"
+          />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div>
+          <label htmlFor={`${uid}-desc`} className="block text-sm font-medium text-warm-700 mb-1">
+            Description
+          </label>
+          <Textarea
+            id={`${uid}-desc`}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={3}
+            placeholder="Tell players what to expect..."
+          />
+        </div>
+
+        <div>
+          <label htmlFor={`${uid}-location`} className="block text-sm font-medium text-warm-700 mb-1">
+            Location
+          </label>
+          <Input
+            id={`${uid}-location`}
+            type="text"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            placeholder="University Stadium, City, State"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor={`${uid}-name`} className="block text-sm font-medium text-warm-700 mb-1">
-              Camp Name *
+            <label htmlFor={`${uid}-start`} className="block text-sm font-medium text-warm-700 mb-1">
+              Start Date *
             </label>
             <Input
-              id={`${uid}-name`}
-              type="text"
+              id={`${uid}-start`}
+              type="date"
               required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Summer Prospect Camp"
+              value={formData.start_date}
+              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             />
           </div>
-
           <div>
-            <label htmlFor={`${uid}-desc`} className="block text-sm font-medium text-warm-700 mb-1">
-              Description
-            </label>
-            <Textarea
-              id={`${uid}-desc`}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              placeholder="Tell players what to expect..."
-            />
-          </div>
-
-          <div>
-            <label htmlFor={`${uid}-location`} className="block text-sm font-medium text-warm-700 mb-1">
-              Location
+            <label htmlFor={`${uid}-end`} className="block text-sm font-medium text-warm-700 mb-1">
+              End Date
             </label>
             <Input
-              id={`${uid}-location`}
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="University Stadium, City, State"
+              id={`${uid}-end`}
+              type="date"
+              value={formData.end_date}
+              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
             />
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor={`${uid}-start`} className="block text-sm font-medium text-warm-700 mb-1">
-                Start Date *
-              </label>
-              <Input
-                id={`${uid}-start`}
-                type="date"
-                required
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              />
-            </div>
-            <div>
-              <label htmlFor={`${uid}-end`} className="block text-sm font-medium text-warm-700 mb-1">
-                End Date
-              </label>
-              <Input
-                id={`${uid}-end`}
-                type="date"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-              />
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor={`${uid}-capacity`} className="block text-sm font-medium text-warm-700 mb-1">
+              Capacity
+            </label>
+            <Input
+              id={`${uid}-capacity`}
+              type="number"
+              min="1"
+              value={formData.capacity}
+              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+              placeholder="50"
+            />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor={`${uid}-capacity`} className="block text-sm font-medium text-warm-700 mb-1">
-                Capacity
-              </label>
-              <Input
-                id={`${uid}-capacity`}
-                type="number"
-                min="1"
-                value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                placeholder="50"
-              />
-            </div>
-            <div>
-              <label htmlFor={`${uid}-price`} className="block text-sm font-medium text-warm-700 mb-1">
-                Price ($)
-              </label>
-              <Input
-                id={`${uid}-price`}
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                placeholder="150.00"
-              />
-            </div>
+          <div>
+            <label htmlFor={`${uid}-price`} className="block text-sm font-medium text-warm-700 mb-1">
+              Price ($)
+            </label>
+            <Input
+              id={`${uid}-price`}
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              placeholder="150.00"
+            />
           </div>
-        </form>
+        </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-200 flex items-center justify-end gap-3">
-          <Button variant="ghost" onClick={onClose} disabled={loading}>
+        {/* Footer actions — inline with the form so Enter submits and the
+            sheet's own scroll container carries them, matching the
+            EditGameModal pattern already used elsewhere on Modal. */}
+        <div className="flex gap-3 pt-2">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={loading} className="flex-1">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || !formData.name || !formData.start_date}>
+          <Button
+            type="submit"
+            disabled={loading || !formData.name || !formData.start_date}
+            className="flex-1"
+          >
             {loading ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Camp')}
           </Button>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

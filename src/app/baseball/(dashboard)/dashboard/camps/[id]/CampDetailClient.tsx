@@ -149,7 +149,7 @@ function RosterFilterControl({
             haptic="none"
             onClick={() => onChange(f.value)}
             className={cn(
-              'min-h-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium',
+              'min-h-[44px] whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium',
               active
                 ? 'bg-pursuit text-white shadow-sm hover:bg-pursuit'
                 : 'text-text-secondary hover:bg-[color:var(--paper-canvas)]',
@@ -414,36 +414,44 @@ export default function CampDetailClient() {
               const badge = STATUS_BADGE[reg.status] ?? { tone: 'neutral' as const, variant: 'soft' as const };
               return (
                 <Reveal key={reg.id} staggerIndex={Math.min(i, 10)}>
-                  <div className="flex items-center gap-4 px-5 py-4">
-                    <Avatar
-                      name={getFullName(reg.player?.first_name, reg.player?.last_name)}
-                      src={reg.player?.avatar_url}
-                      size="md"
-                    />
+                  {/* Stacks identity above the badge/action row below `sm` —
+                      at 320-390px the trailing cluster (badge + Check In +
+                      no-show) plus the avatar left no room for the name
+                      column on one non-wrapping line, and the primary
+                      "Check In" action was the piece most at risk of being
+                      squeezed off. */}
+                  <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="flex min-w-0 flex-1 items-center gap-4">
+                      <Avatar
+                        name={getFullName(reg.player?.first_name, reg.player?.last_name)}
+                        src={reg.player?.avatar_url}
+                        size="md"
+                      />
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate font-annual text-body-sm font-medium text-text-primary">
-                          {getFullName(reg.player?.first_name, reg.player?.last_name)}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-annual text-body-sm font-medium text-text-primary">
+                            {getFullName(reg.player?.first_name, reg.player?.last_name)}
+                          </p>
+                          {reg.player?.primary_position && (
+                            <PositionChip label={reg.player.primary_position} size="sm" />
+                          )}
+                        </div>
+                        <p className="truncate font-annual text-body-sm text-text-tertiary">
+                          {reg.player?.high_school_name && `${reg.player.high_school_name} • `}
+                          {reg.player?.grad_year && `Class of ${reg.player.grad_year}`}
+                          {reg.player?.city && reg.player?.state && ` • ${reg.player.city}, ${reg.player.state}`}
                         </p>
-                        {reg.player?.primary_position && (
-                          <PositionChip label={reg.player.primary_position} size="sm" />
+                        {reg.attended_at && (
+                          <p className="mt-1 flex items-center gap-1 font-annual text-eyebrow uppercase tracking-[0.1em] text-pursuit">
+                            <IconCheck size={12} />
+                            Checked in {formatRelativeTime(reg.attended_at)}
+                          </p>
                         )}
                       </div>
-                      <p className="truncate font-annual text-body-sm text-text-tertiary">
-                        {reg.player?.high_school_name && `${reg.player.high_school_name} • `}
-                        {reg.player?.grad_year && `Class of ${reg.player.grad_year}`}
-                        {reg.player?.city && reg.player?.state && ` • ${reg.player.city}, ${reg.player.state}`}
-                      </p>
-                      {reg.attended_at && (
-                        <p className="mt-1 flex items-center gap-1 font-annual text-eyebrow uppercase tracking-[0.1em] text-pursuit">
-                          <IconCheck size={12} />
-                          Checked in {formatRelativeTime(reg.attended_at)}
-                        </p>
-                      )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2 sm:flex-shrink-0 sm:justify-end">
                       <InkBadge label={(STATUS_LABEL[reg.status] ?? reg.status).toUpperCase()} tone={badge.tone} variant={badge.variant} />
 
                       {isCoach && (reg.status === 'registered' || reg.status === 'confirmed') && (
