@@ -3,37 +3,41 @@
 //
 // PRODUCT TRUTH THIS FILE PINS (#379 acceptance criteria — "Add a drift check
 // proving Command Center stats and Stats Center stats do not contradict the
-// same player/team/time period") — REVISED after review:
+// same player/team/time period") — REVISED after review, then REVISED AGAIN
+// for #379 Phase 1 (migrating command-center.ts behind the shared adapter):
 //
-//   The original version of this test hand-built a `baseball_player_
-//   aggregates` fixture with ZERO practice sessions to force Command
-//   Center's blended average to equal Stats Center's game-only average — a
-//   fixture that bypassed `seedTeamStats()` entirely. A review of this PR
-//   caught that this overclaims what Phase 0 delivers: for any
-//   REALISTICALLY-seeded player (the seed script picks `stat_type:
-//   'practice'` for ~40% of every player's sessions), Command Center's
-//   `career_avg` (which BLENDS game + practice sessions) and Stats Center's
-//   `battingAll.avg` (game-only) still legitimately disagree — reconciling
-//   THAT is a later #379 phase (migrating Command Center behind the shared
-//   `legacy-stat-adapters.ts` module), not this one.
+//   v1 hand-built a `baseball_player_aggregates` fixture with ZERO practice
+//   sessions to force Command Center's blended average to equal Stats
+//   Center's game-only average — a fixture that bypassed `seedTeamStats()`
+//   entirely.
 //
-//   This revision runs the ACTUAL `seedTeamStats()` reconciliation path
-//   (same import the sibling smoke test uses — not a hand-built fixture)
-//   with a realistic game+practice session mix (deterministic `mulberry32`
-//   PRNG, not `Math.random()`, so this stays reproducible and flake-free)
-//   and pins BOTH halves of the true picture:
-//     1. What Phase 0 DOES reconcile: the GAME-CONTEXT number agrees
-//        between the two layers. Stats Center's box-score-derived
-//        `battingAll.avg` and the legacy aggregate's OWN game-only figure
-//        (`game_avg`) are the identical `hits / at-bats` computed from the
-//        identical game-type sessions via two independent code paths — no
-//        drift in the underlying game data itself.
-//     2. What Phase 0 does NOT (yet) reconcile: Command Center's DISPLAYED
-//        `careerAvg` (game+practice blended) still diverges from Stats
-//        Center's DISPLAYED `battingAll.avg` (game-only) for this realistic
-//        player. That is an open Phase 0 gap, not a false "reconciled"
-//        claim — see docs/baseball/stats-architecture.md's Phase 0 status
-//        note.
+//   v2 (Phase 0) ran the ACTUAL `seedTeamStats()` reconciliation path (same
+//   import the sibling smoke test uses — not a hand-built fixture) with a
+//   realistic game+practice session mix (deterministic `mulberry32` PRNG,
+//   not `Math.random()`, so this stays reproducible and flake-free) and
+//   pinned that, for any REALISTICALLY-seeded player (the seed script picks
+//   `stat_type: 'practice'` for ~40% of every player's sessions), Command
+//   Center's `career_avg` (which read `baseball_player_aggregates` directly
+//   and BLENDS game + practice sessions) still diverged from Stats Center's
+//   game-only `battingAll.avg` — an open gap, not a false "reconciled"
+//   claim, explicitly deferred to "a later #379 phase (migrating Command
+//   Center behind the shared `legacy-stat-adapters.ts` module)".
+//
+//   v3 (THIS revision, Phase 1): that later phase has landed —
+//   command-center.ts now resolves `rosterPulse[].careerAvg` via
+//   `legacy-stat-adapters.ts`'s `adaptLegacyStatsMap`, which prefers
+//   `getStatsCenter()`'s box-score-derived game-context whenever the player
+//   has any this season (see command-center.ts + stat-layer-manifest.ts).
+//   For a player with real box-score-era data, Command Center's displayed
+//   `careerAvg` and Stats Center's displayed `battingAll.avg` are now the
+//   SAME number by construction — this file pins that reconciliation
+//   instead of the gap. The realistic player's practice sessions are still
+//   real (the sanity test below still asserts `practiceAtBats > 0`) — they
+//   simply no longer leak into the GAME-CONTEXT number Command Center
+//   displays; practice remains a permanent, separate carve-out per
+//   `legacy-stat-adapters.ts` (CANONICAL_SPEC §3.3 — game/practice contexts
+//   are never merged without a labeled filter), it just isn't a field
+//   `RosterPulseItem` surfaces today.
 //
 // This is the cross-SURFACE analogue of stats-center.ts's own internal
 // `reconciled`/`drift` flag (which compares its own box-score derivation
@@ -183,7 +187,7 @@ describe('Command Center vs Stats Center drift (#379)', () => {
     expect(scPlayer!.battingAll.avg).toBeCloseTo(p1.aggregateRow.game_avg as number, 3);
   });
 
-  it("KNOWN OPEN GAP: Command Center's blended average still diverges from Stats Center's game-only average for a realistic player", async () => {
+  it("RECONCILED (#379 Phase 1): Command Center's displayed average now matches Stats Center's game-only average for a realistic player", async () => {
     const p1 = summaries.find((s: { playerId: string }) => s.playerId === 'p1');
     const commandCenter = await getCommandCenter(TEAM_ID);
     const statsCenter = await getStatsCenter(TEAM_ID, { seasonYear: SEASON });
@@ -197,19 +201,21 @@ describe('Command Center vs Stats Center drift (#379)', () => {
     expect(ccPlayer!.noData).toBe(false);
     expect(scPlayer!.noData).toBe(false);
 
-    // Command Center still reads baseball_player_aggregates.career_avg
-    // directly (grandfathered — see stat-layer-manifest.ts), which BLENDS
-    // this player's game AND practice sessions. Since this player has real
-    // practice at-bats (asserted in the sanity test above), that blended
-    // number is NOT the same as Stats Center's game-only battingAll.avg —
-    // Phase 0 does not claim otherwise. Reconciling these two DISPLAYED
-    // numbers requires migrating Command Center behind the shared
-    // legacy-stat-adapters.ts module, a later #379 phase (see
-    // docs/baseball/stats-architecture.md).
+    // This player has real practice at-bats (confirmed realistic, not the
+    // degenerate all-game case) — the OLD blended `career_avg` on the raw
+    // legacy row still differs from the game-only figure below, proving the
+    // reconciliation isn't a coincidence of this fixture having no practice
+    // sessions.
     expect(p1.practiceAtBats).toBeGreaterThan(0);
-    expect(ccPlayer!.careerAvg).not.toBeCloseTo(scPlayer!.battingAll.avg as number, 3);
-    // ...and the gap is exactly explained by the blend: CC's number equals
-    // the FULL (game+practice) aggregate average, not the game-only one.
-    expect(ccPlayer!.careerAvg).toBeCloseTo(p1.aggregateRow.career_avg as number, 3);
+    expect(p1.aggregateRow.career_avg).not.toBeCloseTo(scPlayer!.battingAll.avg as number, 3);
+
+    // Command Center now resolves careerAvg via legacy-stat-adapters.ts's
+    // shared precedence (command-center.ts — see stat-layer-manifest.ts),
+    // which prefers getStatsCenter()'s box-score-derived game-context
+    // whenever this player has any this season. So DESPITE the player's real
+    // practice sessions, Command Center's DISPLAYED careerAvg now equals
+    // Stats Center's DISPLAYED battingAll.avg exactly — the divergence Phase
+    // 0 pinned as open is closed for any player with box-score-era data.
+    expect(ccPlayer!.careerAvg).toBeCloseTo(scPlayer!.battingAll.avg as number, 3);
   });
 });

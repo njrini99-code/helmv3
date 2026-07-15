@@ -201,10 +201,19 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
+      # NOTE: previously `|| echo "Playwright suite has failures..."`, which
+      # masked the exit code for every spec in this job — a real failure
+      # here looked identical to a clean pass in the GitHub Actions UI
+      # (flagged as blocking trust in the e2e gate on #812 review). This job
+      # ("Playwright (chromium)") is advisory, not a required check (see
+      # docs/CI_RUNBOOK.md / .github/branch-protection.md), so unmasking it
+      # cannot newly block a merge — it only makes this job's own status
+      # honestly reflect whether the suite passed. The report/results-json
+      # upload steps below still run regardless (`if: always()`).
       - name: Run Playwright tests
         env:
           PLAYWRIGHT_BASEBALL_SEEDED: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && '1' || '' }}
-        run: timeout 45m npx playwright test --project=chromium || echo "Playwright suite has failures or timed out — see report artifact"
+        run: timeout 45m npx playwright test --project=chromium
 
       - name: Upload Playwright report
         if: always()

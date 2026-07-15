@@ -42,7 +42,7 @@ import {
   isBaseballMetricId,
   type BaseballMetricId,
 } from '@/lib/coachhelm/baseball/metrics/registry';
-import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { loadEngineStatRows } from '@/lib/baseball/coachhelm/engine-stat-rows';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';
 
 // A minimally-typed client so the sweep runs against either the RLS server
@@ -62,11 +62,6 @@ const MIN_AFTER_SAMPLE = 2;
 // we call it 'no_change' rather than improved/regressed — a dead-band so noise
 // near zero never flips the verdict.
 const MOVEMENT_DEADBAND = 0.005;
-
-// Stat columns the engine loaders need (kept in lockstep with the loaders' read
-// shape so postgame, the manual sweep, and the cron all measure identically).
-const STAT_SELECT =
-  'id, player_id, stat_type, session_date, at_bats, hits, doubles, triples, home_runs, walks, strikeouts, innings_pitched, earned_runs, walks_allowed, strikeouts_thrown, exit_velocity, pitch_velocity';
 
 export interface OutcomeSweepStats {
   /** Open metric-targeted actions considered (across all statuses swept). */
@@ -148,24 +143,15 @@ export async function sweepActionOutcomes(
   if (todo.length === 0) return { evaluated: actions.length, measured: 0 };
 
   const playerIds = Array.from(new Set(todo.map((a) => a.player_id!).filter(Boolean)));
-  // A busy multi-player pool (every open action's subject, season-wide) easily
-  // exceeds the PostgREST 1000-row cap. The old `.limit(4000)` was silently
-  // capped to 1000 (PostgREST max_rows), so older sessions for the back of the
-  // pool fell out of the after-window and their actions read 'too_early' forever.
-  // Paginate the full set with a stable newest-first order (session_date desc,
-  // id asc tiebreak) so page boundaries are deterministic — identical to the
-  // engine-run box-score read, keeping baseline/observed apples-to-apples.
-  const { data: statRows } = await fetchAllRowsResult<BoxScoreRow>((from, to) =>
-    supabase
-      .from('baseball_player_stats')
-      .select(STAT_SELECT)
-      .eq('team_id', teamId)
-      .in('player_id', playerIds)
-      .order('session_date', { ascending: false })
-      .order('id', { ascending: true })
-      .range(from, to),
-  );
-  const pool = (statRows ?? []) as BoxScoreRow[];
+  // #379 Phase 4b: the pool comes from the shared engine stat-row read —
+  // canonical box-score rows (normalized onto the loader shape, source-table
+  // tagged) reconciled over the legacy flat rows per the precedence rule, with
+  // the same pagination + stable ordering the direct read used (the old
+  // `.limit(4000)` was silently capped at PostgREST's 1000 max_rows). Identical
+  // to the engine-run + baseline reads, keeping baseline/observed
+  // apples-to-apples.
+  const { data: statRows } = await loadEngineStatRows(supabase, teamId, playerIds);
+  const pool: BoxScoreRow[] = statRows ?? [];
 
   // Index the pool by player once so the per-action after-window filter is cheap.
   const byPlayer = new Map<string, BoxScoreRow[]>();

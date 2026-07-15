@@ -63,6 +63,7 @@ import {
   type BoxScoreRow,
   type ScheduleEventRow,
 } from '@/lib/coachhelm/baseball/loaders';
+import { loadEngineStatRows } from '@/lib/baseball/coachhelm/engine-stat-rows';
 import {
   mergeV10PlayerMetrics,
   type ReadinessRow,
@@ -303,25 +304,13 @@ export async function runBaseballEngineCore(
     return emptyResult({ success: true, signalsExpired: expired });
   }
 
-  // Box scores: a full-roster season can exceed the PostgREST 1000-row cap, so the
-  // old `.limit(2000)` silently truncated to the most-recent 1000 (PostgREST caps
-  // every response at max_rows = 1000) — better than the unordered event reads, but
-  // still a partial season. We paginate the full set, keeping newest-first ordering
-  // with a stable tiebreak on `id` so page boundaries are deterministic when many
-  // rows share a session_date.
-  const { data: statRows, error: statsErr } = await fetchAllRowsResult<BoxScoreRow>(
-    (from, to) =>
-      db
-        .from('baseball_player_stats')
-        .select(
-          'id, player_id, stat_type, session_date, at_bats, hits, doubles, triples, home_runs, walks, strikeouts, innings_pitched, earned_runs, walks_allowed, strikeouts_thrown, exit_velocity, pitch_velocity',
-        )
-        .eq('team_id', teamId)
-        .in('player_id', playerIds)
-        .order('session_date', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, to),
-  );
+  // Box scores (#379 Phase 4b): the shared engine stat-row read — canonical
+  // baseball_box_score_batting/_pitching rows (normalized onto the loader
+  // shape, source-table tagged) reconciled over the legacy flat rows per the
+  // precedence rule, with the same pagination past the PostgREST 1000-row cap
+  // and stable ordering the direct read used. Identical to the sweep +
+  // baseline reads, keeping baseline/observed apples-to-apples.
+  const { data: statRows, error: statsErr } = await loadEngineStatRows(db, teamId, playerIds);
   if (statsErr) return emptyResult({ error: 'Could not load box-score stats.' });
 
   const horizonIso = new Date(Date.parse(nowIso) + EVENT_LOOKAHEAD_DAYS * 86400_000).toISOString();
@@ -553,7 +542,7 @@ export async function runBaseballEngineCore(
   // which silently aged out as real time passed with zero code changes.
   const boxScorePlayers = loadAllPlayerMetrics(
     playerIds,
-    (statRows ?? []) as unknown as BoxScoreRow[],
+    (statRows ?? []) as BoxScoreRow[],
     nowIso,
   );
   const players = boxScorePlayers.map((p) =>
@@ -684,6 +673,12 @@ export async function runBaseballEngineCore(
   const engineInputs: BaseballV10EngineInputs = {
     players,
     events,
+    // #811 residual: importQualityGenerator's 14-day recency window now reads
+    // this instead of the real wall clock, so a deterministic engine run
+    // (fixed nowIso, seeded import runs) never silently drifts as real time
+    // carries the window past a test's fixture dates — the same class of bug
+    // #811 already fixed for the box-score/lift/readiness/catching loaders.
+    now: nowIso,
     importRuns: (importRunRows ?? []) as ImportRunSummary[],
     videoCoverage,
     defaultRankingContext,

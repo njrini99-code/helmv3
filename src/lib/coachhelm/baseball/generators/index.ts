@@ -122,7 +122,12 @@ export function driver(m: LoadedMetric): DiagnosisDriver {
     value: m.value ?? 0,
     unit: mapUnit(getBaseballMetricUnit(m.metric)),
     sample_n: m.sample_n,
-    source: m.source_refs[0]?.label ?? m.source_refs[0]?.table ?? 'baseball_player_stats',
+    // Last-resort fallback only — the loaders attach at least one source ref to
+    // every metric they emit, and (#379) those refs cite the REAL table a row
+    // came from (canonical box-score or legacy flat). A hardcoded table name
+    // here could misattribute the layer, so the defensive default is a neutral
+    // human-readable label instead.
+    source: m.source_refs[0]?.label ?? m.source_refs[0]?.table ?? 'box score',
   };
 }
 

@@ -593,69 +593,6 @@ export function SkeletonPipelineKanban({ className }: { className?: string }) {
   );
 }
 
-// Messages page skeleton
-export function SkeletonMessages({ className }: { className?: string }) {
-  return (
-    <div className={cn('flex h-[calc(100dvh-200px)] bg-white rounded-2xl border border-warm-200 overflow-hidden', className)}>
-      {/* Conversation list */}
-      <div className="w-80 border-r border-warm-200 flex flex-col">
-        <div className="p-4 border-b border-warm-200">
-          <Skeleton variant="rectangular" height={40} className="rounded-lg" />
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="p-4 border-b border-warm-100 animate-pulse" style={{ animationDelay: `${i * 50}ms` }}>
-              <div className="flex items-start gap-3">
-                <Skeleton variant="circular" width={44} height={44} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <Skeleton variant="text" width="60%" />
-                    <Skeleton variant="text" width={40} height={10} />
-                  </div>
-                  <Skeleton variant="text" width="80%" height={12} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-warm-200 flex items-center gap-3">
-          <Skeleton variant="circular" width={40} height={40} />
-          <div>
-            <Skeleton variant="text" width={120} className="mb-1" />
-            <Skeleton variant="text" width={80} height={12} />
-          </div>
-        </div>
-        {/* Messages */}
-        <div className="flex-1 p-4 space-y-4">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className={cn('flex', i % 2 === 0 ? 'justify-end' : 'justify-start')}>
-              <div className={cn('max-w-[70%]', i % 2 === 0 ? 'items-end' : 'items-start')}>
-                <Skeleton
-                  variant="rectangular"
-                  width={200 + (i * 30)}
-                  height={60}
-                  className={cn('rounded-2xl', i % 2 === 0 ? 'bg-primary-100' : 'bg-warm-100')}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Input */}
-        <div className="p-4 border-t border-warm-200">
-          <div className="flex items-center gap-3">
-            <Skeleton variant="rectangular" className="flex-1 h-12 rounded-xl" />
-            <Skeleton variant="rectangular" width={48} height={48} className="rounded-xl" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Videos page skeleton
 export function SkeletonVideos({ className }: { className?: string }) {
   return (

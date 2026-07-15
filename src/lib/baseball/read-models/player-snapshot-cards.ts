@@ -57,6 +57,13 @@ import {
 } from '@/lib/lifting/resolve-baseball-context';
 import { extractArmStatusFromNotes, sleepQualityToHours } from '@/lib/lifting/adapters/baseball-view-adapter';
 import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-data';
+// #379 — exit velocity is derived via the same pure aggregator elite-stat-
+// events.ts's canonical read model uses (avg_exit_velocity metric + the
+// evLaPoints visual payload), fed with this player's own batted-ball events
+// queried directly here (this file already resolves its own staff gate above
+// and reads several other event-grain tables the same way).
+import { buildHitterMetrics } from '@/lib/baseball/read-models/elite-stat-events';
+import type { BaseballBattedBallEvent } from '@/lib/types/baseball-stat-events';
 
 // The V6 event/elite tables + V11 lifting/readiness tables ship via migrations
 // and are NOT in the generated database.ts (no db:types regen without a live
@@ -423,6 +430,42 @@ function bandLabel(band: SnapshotReadinessChip['band']): string | null {
 }
 
 // -----------------------------------------------------------------------------
+// Exit velocity: box-score > legacy-fallback > no-data (#845 review fix)
+// -----------------------------------------------------------------------------
+
+/**
+ * Resolve avgExitVelocity/maxExitVelocity per the same box-score >
+ * legacy-fallback > no-data precedence legacy-stat-adapters.ts enforces
+ * elsewhere in #379: the event-grain (batted-ball) numbers win outright
+ * whenever this player has ANY batted-ball events captured; the deprecated
+ * baseball_player_stats.exit_velocity column is consulted ONLY when there are
+ * none — so a legacy-only player (real EV numbers captured before the
+ * event-grain model existed) doesn't regress from "shows a real number" to an
+ * honest-LOOKING null. The two sources are never blended for the same player.
+ * Pure function — no I/O — so it's directly unit-testable (see
+ * player-snapshot-cards.test.ts) even though the DB-bound
+ * getPlayerSnapshotCards itself is exercised via RLS/integration, not here.
+ */
+export function resolveExitVelocityFields(
+  eventAvgExitVelocity: number | null,
+  eventMaxExitVelocity: number | null,
+  hasBattedBallEvents: boolean,
+  legacyExitVelocityValues: number[],
+): { avgExitVelocity: number | null; maxExitVelocity: number | null } {
+  if (hasBattedBallEvents) {
+    return { avgExitVelocity: eventAvgExitVelocity, maxExitVelocity: eventMaxExitVelocity };
+  }
+  const values = legacyExitVelocityValues.filter((v) => v != null && Number.isFinite(v));
+  if (values.length === 0) {
+    return { avgExitVelocity: null, maxExitVelocity: null };
+  }
+  return {
+    avgExitVelocity: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10,
+    maxExitVelocity: Math.round(Math.max(...values) * 10) / 10,
+  };
+}
+
+// -----------------------------------------------------------------------------
 // Staff resolution (same link the timeline uses)
 // -----------------------------------------------------------------------------
 
@@ -593,6 +636,7 @@ export async function getPlayerSnapshotCards(
     tasksRes,
     devPlanRes,
     evRes,
+    evLegacyRes,
   ] = await Promise.all([
     supabase.from('baseball_players')
       .select('primary_position, secondary_position')
@@ -664,20 +708,65 @@ export async function getPlayerSnapshotCards(
       .select('title, goals, status, coach_id, updated_at, coach:baseball_coaches(full_name)')
       .eq('player_id', playerId).eq('team_id', teamId)
       .order('updated_at', { ascending: false }).limit(5),
-    // Exit velocity lives on captured stat sessions (real column), NOT on
-    // baseball_player_aggregates (those EV fields are typed but un-migrated).
+    // #379 — exit velocity is derived from the elite batted-ball event grain
+    // (the canonical layer-3 source), not the deprecated flat per-session stat
+    // table (previously "typed but un-migrated" per this file's own comment).
+    // Scoped to the official/scrimmage contexts — the same default set
+    // elite-stat-events.ts's canonical entry point uses — and to CURRENT rows
+    // only (a corrected import supersedes the prior row via GAP 5's
+    // superseded_by_run_id, mirrored from elite-stat-events.ts's own filter).
+    // Ordered newest-first BEFORE the cap so the 500-row sample is the most
+    // recent events, never an arbitrary PostgREST slice (#813) — mirrors the
+    // fielding/catching event queries above.
+    fromUntyped(db, 'baseball_batted_ball_events')
+      .select('*')
+      .eq('team_id', teamId).eq('batter_id', playerId)
+      .in('data_context', ['official_game', 'scrimmage'])
+      .is('superseded_by_run_id', null)
+      .order('created_at', { ascending: false })
+      .limit(500),
+    // Legacy fallback (#845 review fix) — ONLY consulted below when this
+    // player has zero baseball_batted_ball_events rows. Exit velocity lives
+    // on captured stat sessions in the deprecated flat table (real column,
+    // predates the event-grain model), NOT on baseball_player_aggregates
+    // (those EV fields are typed but un-migrated). Mirrors the box-score >
+    // legacy-fallback > no-data precedence legacy-stat-adapters.ts enforces,
+    // and this file's own pre-#379 query.
     supabase.from('baseball_player_stats')
       .select('exit_velocity')
       .eq('player_id', playerId).eq('team_id', teamId)
       .not('exit_velocity', 'is', null).limit(200),
   ]);
 
-  // Exit-velocity aggregation from captured sessions (honest: null when none).
-  const evRows = (evRes?.error ? [] : evRes?.data ?? []) as Array<{ exit_velocity: number | null }>;
-  const evValues = evRows.map((r) => r.exit_velocity).filter((v): v is number => v != null && Number.isFinite(v));
-  const avgExitVelocity = evValues.length
-    ? Math.round((evValues.reduce((a, b) => a + b, 0) / evValues.length) * 10) / 10 : null;
-  const maxExitVelocity = evValues.length ? Math.round(Math.max(...evValues) * 10) / 10 : null;
+  // Exit-velocity aggregation from real batted-ball events (honest: null when
+  // none captured yet). Reuses elite-stat-events.ts's own pure aggregator so
+  // the numbers match the Stats Lab exactly rather than a second derivation.
+  const battedBalls = (evRes?.error ? [] : evRes?.data ?? []) as BaseballBattedBallEvent[];
+  const hitterMetrics = buildHitterMetrics(playerId, [], battedBalls, 'official_game');
+  const rawAvgExitVelocity =
+    hitterMetrics.metrics.find((m) => m.metricKey === 'avg_exit_velocity')?.value ?? null;
+  const eventAvgExitVelocity =
+    rawAvgExitVelocity != null ? Math.round(rawAvgExitVelocity * 10) / 10 : null;
+  const evValues = hitterMetrics.visuals.evLaPoints
+    .map((p) => p.exitVelocity)
+    .filter((v): v is number => v != null && Number.isFinite(v));
+  const eventMaxExitVelocity = evValues.length ? Math.round(Math.max(...evValues) * 10) / 10 : null;
+
+  // Legacy fallback (#845 review fix) — see resolveExitVelocityFields's doc
+  // comment for the precedence rule.
+  const legacyEvRows = (evLegacyRes?.error ? [] : evLegacyRes?.data ?? []) as Array<{
+    exit_velocity: number | null;
+  }>;
+  const legacyExitVelocityValues = legacyEvRows
+    .map((r) => r.exit_velocity)
+    .filter((v): v is number => v != null && Number.isFinite(v));
+
+  const { avgExitVelocity, maxExitVelocity } = resolveExitVelocityFields(
+    eventAvgExitVelocity,
+    eventMaxExitVelocity,
+    battedBalls.length > 0,
+    legacyExitVelocityValues,
+  );
 
   // ---------------------------------------------------------------------------
   // Season stats -> Hitting + Pitching

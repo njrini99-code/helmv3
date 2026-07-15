@@ -44,6 +44,13 @@ import {
   resolveTeamTimezone,
   todayIsoInTz,
 } from '@/lib/baseball/daily-contract/contract-day';
+import { getStatsCenter } from '@/lib/baseball/read-models/stats-center';
+import {
+  adaptLegacyStatsMap,
+  type BoxScoreGameContextRow,
+  type LegacyAggregateRow,
+  type SourceLayer,
+} from '@/lib/baseball/read-models/legacy-stat-adapters';
 
 // -----------------------------------------------------------------------------
 // Public shapes
@@ -97,6 +104,12 @@ export interface RosterPulseItem {
   lastSessionAt: string | null;
   /** True when the player has zero captured sessions (honest empty, not 0.000). */
   noData: boolean;
+  /**
+   * Provenance for `careerAvg`/`totalSessions` per the #379 shared adapter's
+   * precedence (box-score > legacy-fallback > no-data) — see
+   * legacy-stat-adapters.ts.
+   */
+  sourceLayer: SourceLayer;
 }
 
 export interface CommandCenterEvent {
@@ -281,6 +294,19 @@ export async function getCommandCenter(
       grad_year, bats, throws, height_feet, height_inches, weight_lbs, gpa, city, state
     )`;
 
+  // Game-context avg/sessions now prefer the CANONICAL box-score/season layer
+  // (#379 — see legacy-stat-adapters.ts): calling getStatsCenter() reuses the
+  // exact same battingAll derivation Stats Center itself displays, so a
+  // player with real box-score-era data shows the IDENTICAL number on both
+  // surfaces by construction, rather than two independently-derived figures
+  // that can legitimately disagree (the drift command-center-stats-center-
+  // drift.test.ts pinned before this migration). This runs concurrently with
+  // the queries below; getStatsCenter() never throws (honest envelope) and
+  // re-checking staff here is a harmless no-op since this caller already
+  // gated on isTeamStaff above.
+  const currentSeasonYear = new Date().getFullYear();
+  const statsCenterPromise = getStatsCenter(teamId, { seasonYear: currentSeasonYear });
+
   const [insightsRes, membersRes, aggregatesRes, eventsRes] = await Promise.all([
     supabase
       .from('baseball_coach_insights')
@@ -298,7 +324,7 @@ export async function getCommandCenter(
     supabase
       .from('baseball_player_aggregates')
       .select(
-        'player_id, team_id, total_sessions, total_at_bats, total_hits, career_avg, practice_avg, game_avg, pressure_gap, recent_trend, trend_data, last_5_avg, last_10_avg, last_session_at',
+        'player_id, team_id, total_sessions, total_at_bats, total_hits, career_avg, career_obp, career_slg, career_ops, practice_avg, game_avg, pressure_gap, recent_trend, trend_data, last_5_avg, last_10_avg, last_session_at, updated_at',
       )
       .eq('team_id', teamId),
     supabase
@@ -310,19 +336,115 @@ export async function getCommandCenter(
       .order('start_time', { ascending: true }),
   ]);
 
+  const statsCenterModel = await statsCenterPromise;
+
   // Aggregates are a nice-to-have enrichment of the roster pulse (session
   // counts / trends), not a blocker: if this query fails we still render the
   // real roster with honest `noData: true` rows rather than failing the whole
   // pulse the way the broken nested embed used to.
   const aggregatesByPlayerId = new Map<string, BaseballPlayerAggregates & { last_session_at?: string | null }>();
+  // Same raw rows, reshaped into legacy-stat-adapters.ts's input contract
+  // (#379). Kept as a SEPARATE map (rather than mutating aggregatesByPlayerId
+  // above, which stays byte-for-byte the legacy shape for rosterPlayers[].
+  // aggregates below) because LegacyAggregateRow declares a few fields
+  // (practice_sessions, game_sessions, trend_magnitude, trend_velocity,
+  // season_avg, avg_pitch_velocity, max_pitch_velocity, development_stage)
+  // that are not real columns on baseball_player_aggregates today (see
+  // database.ts) — those are explicit `null`, never fabricated, and unused by
+  // RosterPulseItem regardless.
+  const legacyAggregatesByPlayerId: Record<string, LegacyAggregateRow> = {};
+  const lastSessionAtByPlayerId = new Map<string, string | null>();
   if (!aggregatesRes.error) {
     for (const agg of aggregatesRes.data ?? []) {
       aggregatesByPlayerId.set(
         agg.player_id,
         agg as unknown as BaseballPlayerAggregates & { last_session_at?: string | null },
       );
+      const raw = agg as unknown as {
+        player_id: string;
+        total_sessions: number | null;
+        career_avg: number | null;
+        career_obp: number | null;
+        career_slg: number | null;
+        career_ops: number | null;
+        practice_avg: number | null;
+        game_avg: number | null;
+        pressure_gap: number | null;
+        recent_trend: string | null;
+        last_5_avg: number | null;
+        last_10_avg: number | null;
+        last_session_at: string | null;
+        updated_at: string | null;
+      };
+      legacyAggregatesByPlayerId[raw.player_id] = {
+        player_id: raw.player_id,
+        total_sessions: raw.total_sessions,
+        practice_sessions: null,
+        game_sessions: null,
+        career_avg: raw.career_avg,
+        career_obp: raw.career_obp,
+        career_slg: raw.career_slg,
+        career_ops: raw.career_ops,
+        practice_avg: raw.practice_avg,
+        game_avg: raw.game_avg,
+        pressure_gap: raw.pressure_gap,
+        recent_trend: (raw.recent_trend as BaseballTrend | null) ?? null,
+        trend_magnitude: null,
+        trend_velocity: null,
+        last_5_avg: raw.last_5_avg,
+        last_10_avg: raw.last_10_avg,
+        season_avg: null,
+        avg_pitch_velocity: null,
+        max_pitch_velocity: null,
+        development_stage: null,
+        last_calculated_at: raw.updated_at ?? null,
+        updated_at: raw.updated_at ?? null,
+      };
+      lastSessionAtByPlayerId.set(raw.player_id, raw.last_session_at ?? null);
     }
   }
+
+  // Box-score/season game-context rows from the canonical read model, keyed
+  // for the adapter. Skip `noData` rows outright — a noData row's avg/g are
+  // null/0 by construction and must never be fed in as if it were a real
+  // box-score row (that would flip a legitimate legacy-fallback player to a
+  // fabricated all-null "box-score" result instead of their real numbers).
+  //
+  // Also skip rows with zero captured BATTING box-score games this season
+  // (`battingAll.g === 0`) even when `noData` is false — a player can have
+  // real box-score data for a non-batting side (pitching-only, or
+  // catching/fielding/baserunning-only) this season, which makes
+  // `statsCenterModel`'s `noData` false, but leaves `battingAll.avg` null
+  // (zero denominator) and `battingAll.g` at 0. Feeding that row in as-is
+  // would give this player a `boxScoreByPlayer` entry with `avg: null`,
+  // flipping adaptLegacyPlayerStats's precedence to sourceLayer 'box-score'
+  // and silently nulling out a real legacy `career_avg` fallback instead of
+  // falling through to it. The check keys off the games-count
+  // (`battingAll.g`), NOT the derived rate (`battingAll.avg === null`):
+  // a real batting box-score row can legitimately have AB=0 but g>0 (e.g. a
+  // walk-only game), and that row must still win per the adapter's
+  // precedence — only a true zero BATTING GAMES count means "nothing to
+  // hand the adapter for this player this season".
+  const boxScoreRows: BoxScoreGameContextRow[] = [];
+  if (statsCenterModel.authorized) {
+    for (const row of statsCenterModel.rows) {
+      if (row.noData || row.battingAll.g === 0) continue;
+      boxScoreRows.push({
+        player_id: row.playerId,
+        avg: row.battingAll.avg,
+        obp: row.battingAll.obp,
+        slg: row.battingAll.slg,
+        ops: row.battingAll.ops,
+        sessions: row.battingAll.g,
+        last_updated: null,
+      });
+    }
+  }
+
+  const adaptedByPlayerId = adaptLegacyStatsMap({
+    legacyAggregates: legacyAggregatesByPlayerId,
+    boxScoreRows,
+  });
 
   const weekEventsRes =
     includeWeekEvents && weekStartIso && weekEndIso
@@ -413,7 +535,20 @@ export async function getCommandCenter(
       } | null;
       if (!player) continue;
       const agg = aggregatesByPlayerId.get(player.id);
-      const totalSessions = agg?.total_sessions ?? 0;
+      // Game-context (careerAvg/totalSessions) now resolves via the shared
+      // #379 adapter's precedence: box-score/season data (from
+      // getStatsCenter() above) wins whenever this player has any this
+      // season, so a box-score-tracked player shows the SAME number here as
+      // on Stats Center instead of the legacy blended (game+practice)
+      // average — closing the divergence
+      // command-center-stats-center-drift.test.ts pins. A player with no
+      // box-score-era rows falls back to their real legacy aggregate
+      // (never regresses to "no data"); a player with neither is honestly
+      // `no-data`. recentTrend has no canonical replacement yet (layer 2 has
+      // no trend concept) and always passes through the legacy row per the
+      // adapter's permanent carve-out.
+      const adapted = adaptedByPlayerId[player.id];
+      const totalSessions = adapted?.totalSessions ?? 0;
       rosterPulse.push({
         playerId: player.id,
         firstName: player.first_name,
@@ -421,10 +556,11 @@ export async function getCommandCenter(
         jerseyNumber: m.jersey_number ?? null,
         primaryPosition: player.primary_position,
         totalSessions,
-        recentTrend: (agg?.recent_trend as BaseballTrend | null) ?? null,
-        careerAvg: agg?.career_avg ?? null,
-        lastSessionAt: agg?.last_session_at ?? null,
+        recentTrend: adapted?.legacyExtras.recentTrend ?? null,
+        careerAvg: adapted?.game.avg ?? null,
+        lastSessionAt: lastSessionAtByPlayerId.get(player.id) ?? null,
         noData: totalSessions === 0,
+        sourceLayer: adapted?.sourceLayer ?? 'no-data',
       });
       rosterPlayers.push({
         ...player,

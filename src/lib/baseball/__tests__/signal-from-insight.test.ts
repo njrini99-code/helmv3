@@ -52,16 +52,18 @@ function candidate(
             value: 41,
             unit: 'percent',
             sample_n: sampleN,
-            source: 'baseball_player_stats.strikeouts',
+            source: 'baseball_box_score_batting.k',
           },
         ],
         recommended_action: 'Two-strike approach reps',
         confidence_reason: 'Moderate sample, single-metric.',
       },
       source_refs: [
+        // #379: fixtures mirror production provenance — loaders now cite the
+        // canonical box-score table for game-context refs.
         {
-          table: 'baseball_player_stats',
-          column: 'strikeouts',
+          table: 'baseball_box_score_batting',
+          column: 'k',
           sample_n: sampleN,
           confidence: 0.72,
           label: 'Last 12 games (box score)',
@@ -142,7 +144,7 @@ describe('signalFromInsight — provenance + traceability', () => {
     // citation to the insight is first, then the underlying table ref.
     expect(refs[0]?.source_table).toBe('baseball_coach_insights');
     expect(refs[0]?.source_id).toBe('insight-123');
-    expect(refs.some((r) => r.source_table === 'baseball_player_stats')).toBe(true);
+    expect(refs.some((r) => r.source_table === 'baseball_box_score_batting')).toBe(true);
     // never empty — every real signal is source-backed.
     expect(refs.length).toBeGreaterThan(0);
   });
