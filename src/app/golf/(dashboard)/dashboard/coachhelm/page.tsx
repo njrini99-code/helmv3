@@ -137,10 +137,14 @@ export default async function PlayerCoachHelmPage() {
     return <ErrorState error={err instanceof Error ? err.message : 'Failed to load dashboard data'} />;
   }
 
-  // Fetch additional V3 data (optional — new components)
+  // Fetch additional V3 data (optional — new components). Expected empty-state
+  // codes (see src/lib/view-state/expected-empty-states.ts) are preserved so
+  // the client empty surfaces can render the registry's copy for the ACTUAL
+  // reason data is absent, instead of a generic "warming up" line.
   let profileData = null;
   let trendData = null;
   let shotData = null;
+  const v3EmptyCodes: { profile?: string | null; trend?: string | null; shots?: string | null } = {};
   try {
     const { getPlayerProfile, getPlayerTrendAnalysis, getPlayerShotContext } = await import('@/app/golf/actions/coachhelm-data');
     const [profileResult, trendResult, shotResult] = await Promise.all([
@@ -151,6 +155,9 @@ export default async function PlayerCoachHelmPage() {
     profileData = profileResult.success ? profileResult.data : null;
     trendData = trendResult.success ? trendResult.data : null;
     shotData = shotResult.success ? shotResult.data : null;
+    v3EmptyCodes.profile = profileResult.success ? null : profileResult.code ?? null;
+    v3EmptyCodes.trend = trendResult.success ? null : trendResult.code ?? null;
+    v3EmptyCodes.shots = shotResult.success ? null : shotResult.code ?? null;
   } catch { /* V3 actions not yet available — degrade gracefully */ }
 
   // Handle CoachHelm disabled or other errors
@@ -190,6 +197,7 @@ export default async function PlayerCoachHelmPage() {
         profileData={profileData}
         trendData={trendData}
         shotData={shotData}
+        v3EmptyCodes={v3EmptyCodes}
         topInsight={topInsight}
         secondaryInsights={secondaryInsights}
         standingByMetric={standingByMetric}

@@ -2,6 +2,7 @@ import 'server-only';
 
 import { isExpectedAuthNoise } from '@/lib/admin/data/triage';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
+import { EXPECTED_EMPTY_STATE_CODES } from '@/lib/view-state/expected-empty-states';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 export type ActionSoftFailureContext = NonNullable<Parameters<typeof logServerError>[1]> & {
@@ -39,33 +40,17 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   'engine_session_expired',
 ]);
 
-/**
- * Genuinely empty, nothing-failed outcomes — there is simply no data yet
- * (e.g. a player with no completed rounds in the lookback window). Distinct
- * from EXPECTED_SOFT_FAILURE_CODES: those are still benign soft *failures*;
- * these were never a failure to begin with. Classified one tier quieter
- * ('info', skipSentry) so they land in job telemetry without counting
- * toward the Errors tab / Sentry — see admin/data/incident-feed.ts (default
- * view excludes only 'info') and admin/data/overview.ts (KPI counts key off
- * severity IN ('error','critical')).
- *
- * CONTRACT: classification is by code GLOBALLY, not per action — a code in
- * this set silences Sentry for every envelope that carries it. Only attach
- * one of these codes to a genuinely-empty outcome; a real failure must never
- * reuse them.
+/*
+ * Genuinely empty, nothing-failed outcomes ('info', skipSentry — one tier
+ * quieter than EXPECTED_SOFT_FAILURE_CODES: those are still benign soft
+ * *failures*; these were never a failure to begin with) are classified via
+ * EXPECTED_EMPTY_STATE_CODES imported from
+ * src/lib/view-state/expected-empty-states.ts — ONE registry shared with the
+ * UI empty-state surfaces, so user-facing copy and telemetry classification
+ * key off the same codes and cannot drift apart. The global-classification
+ * CONTRACT lives there too. Severity plumbing: incident-feed's default view
+ * excludes only 'info'; overview KPIs count severity IN ('error','critical').
  */
-const EXPECTED_EMPTY_STATE_CODES: ReadonlySet<string> = new Set([
-  'engine_no_recent_rounds',
-  // getPlayerShotAnalytics / getPlayerShotContext: player has no completed
-  // rounds in the selected lookback window — the analytics/CoachHelm pages'
-  // normal brand-new-player state.
-  'no_rounds_in_period',
-  // getPlayerProfile (coachhelm-data): player has no completed rounds at all.
-  'no_completed_rounds',
-  // getPlayerTrendAnalysis / what-if scenarios: fewer than the 3 completed
-  // rounds those analyses mathematically require.
-  'insufficient_rounds',
-]);
 
 export function extractActionSoftFailure(
   result: unknown,
