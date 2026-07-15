@@ -107,6 +107,19 @@
      clearing it. Height = FairwayBottomNav's `min-h-[56px]` tab column plus
      the safe-area padding the bar applies to itself. */
   --golf-mobile-bottom-nav-offset: calc(56px + env(safe-area-inset-bottom, 0px));
+
+  /* BaseballHelm-only (#481 mustFix): the coach `HubSubNav` strip
+     (hub-sub-nav.tsx) publishes its OWN rendered height here via a
+     ResizeObserver, so any leaf pane computing a fixed dvh-based height
+     (Messages' MessagesFairway / ConversationClient / loading.tsx) can
+     subtract exactly the real chrome mounted above it on the CURRENT route
+     — HubSubNav only renders for coach hubs that have sub-tabs (e.g. the
+     Messages hub's "Messages · Announcements" strip), never for players.
+     Default `0px` here covers the pre-hydration paint and every route where
+     no sub-nav mounts at all; the mounted strip's effect overwrites this,
+     and its unmount (cleanup / route change) resets it back to `0px` so a
+     subsequent sub-nav-less route never inherits a stale value. */
+  --baseball-hub-subnav-offset: 0px;
 }
 
 /* Zeroes at `md` (768px) — the SAME breakpoint FairwayBottomNav uses for

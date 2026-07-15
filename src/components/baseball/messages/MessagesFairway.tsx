@@ -55,8 +55,27 @@ import { InstrumentPanel, Skeleton } from '@/components/fairway';
 // `pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4`) is headroom
 // *inside* a pane that's already cleared the physical bottom edge by this
 // box's own height budget — not a second reservation of the same strip.
+//
+// FIX (#481 mustFix, round 2): the formula above still assumed this box's
+// TOP edge sits right below the AppShell top bar — true for every OTHER
+// baseball hub, but not for coaches on Messages specifically. Coaches'
+// "messages" hub (COACH_MESSAGES_TABS, hub-definitions.ts) resolves for
+// `/baseball/dashboard/messages` (resolveActiveHub matches it exactly), so
+// BaseballFairwayShell mounts a real, always-mobile-visible `<HubSubNav>`
+// ("Messages · Announcements") directly above `{children}` — i.e. above
+// THIS component — pushing this box's actual top edge down by the strip's
+// height without shrinking its CSS height, so its bottom edge (and the
+// composer inside it) landed back inside FairwayBottomNav's fixed region by
+// that same amount. Players are unaffected (playerHubs() has no 'messages'
+// hub, so no strip renders there). Subtracting
+// `--baseball-hub-subnav-offset` — the strip's own measured height,
+// published by hub-sub-nav.tsx's `useSubNavOffsetPublisher` (0px when no
+// strip is mounted, e.g. for players) — closes this the same way the
+// bottom-nav term above does: this box's height budget now accounts for
+// EVERY piece of chrome actually rendered above it on this route, not just
+// the ones that are always present.
 const SHELL =
-  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px))] overflow-hidden bg-canvas';
+  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px)-var(--baseball-hub-subnav-offset,0px))] overflow-hidden bg-canvas';
 
 /** The rail's masthead — kept byte-identical to `MessagesClient.tsx`'s
  *  `RAIL_TITLE` so the loading -> loaded swap never changes the title. */

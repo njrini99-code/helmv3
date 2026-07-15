@@ -100,10 +100,10 @@ export default function ConversationClient() {
   if (!conversation && !conversationsLoading) {
     return (
       // #481: same height budget as the loaded thread below — see that
-      // comment for why both terms are required.
+      // comment for why all three terms are required.
       <div
         className={fairwayScope(
-          'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px))] flex-col px-4 py-6 sm:px-6',
+          'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px)-var(--baseball-hub-subnav-offset,0px))] flex-col px-4 py-6 sm:px-6',
         )}
       >
         <ThreadBackLink />
@@ -124,9 +124,18 @@ export default function ConversationClient() {
     // safe-area-inset-top AND rendered its composer under the fixed bottom
     // nav, the same root cause as the list page's pre-fix bug (see
     // MessagesFairway.tsx's SHELL comment for the full box-model walkthrough).
+    //
+    // #481 mustFix (round 2): this route ALSO matches the coach "messages"
+    // hub (`resolveActiveHub` prefix-matches
+    // `/baseball/dashboard/messages/` against COACH_MESSAGES_TABS' href), so
+    // BaseballFairwayShell mounts the same `<HubSubNav>` strip above this
+    // pane for coaches that it mounts above the list page — subtracting
+    // `--baseball-hub-subnav-offset` (the strip's own measured height,
+    // published by hub-sub-nav.tsx; `0px` for players, who have no
+    // 'messages' hub) closes the identical clipped-composer bug here.
     <div
       className={fairwayScope(
-        'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px))] flex-col',
+        'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px)-var(--baseball-hub-subnav-offset,0px))] flex-col',
       )}
     >
       <div className="flex shrink-0 flex-col border-b border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 sm:px-6 sm:py-5">

@@ -25,10 +25,19 @@ const MESSAGES_HREF = '/baseball/dashboard/messages';
  * page. The back link is real (not a skeleton bar) — same reasoning as
  * `MessagesFairway`'s `RAIL_TITLE_SKELETON`: a static element that's
  * byte-identical in both states never needs to "swap in" on mount.
+ *
+ * #481 mustFix (round 2): this Suspense fallback mounts on the SAME route
+ * as `ConversationClient` — before it, during the initial fetch — so for
+ * coaches the same `<HubSubNav>` "Messages · Announcements" strip
+ * (BaseballFairwayShell's `subNav`) is already mounted above this fallback
+ * too. Carrying the identical `--baseball-hub-subnav-offset` term (published
+ * by hub-sub-nav.tsx, `0px` for players) means the fallback never
+ * independently re-introduces the clipped-composer bug for the ~instant
+ * this skeleton is on screen before `ConversationClient` replaces it.
  * ========================================================================== */
 export default function ConversationLoading() {
   return (
-    <div className="flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px))] flex-col">
+    <div className="flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px)-var(--baseball-hub-subnav-offset,0px))] flex-col">
       <div className="flex shrink-0 flex-col border-b border-[color:var(--hairline)] bg-[var(--paper)] px-4 py-4 sm:px-6 sm:py-5">
         <Link
           href={MESSAGES_HREF}
