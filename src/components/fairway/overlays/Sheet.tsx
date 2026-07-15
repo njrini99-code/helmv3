@@ -27,6 +27,7 @@ import * as React from 'react';
 import { Drawer } from 'vaul';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { FW_Z, CLOSE_BUTTON_CLASS } from './_shared';
 
 export type SheetSide = 'bottom' | 'top' | 'left' | 'right';
@@ -58,6 +59,15 @@ export interface SheetProps {
   trigger?: React.ReactNode;
   /** Edge the sheet slides in from. Default `bottom`. */
   side?: SheetSide;
+  /**
+   * OPT-IN responsive override: below `md` (768px) the sheet renders as
+   * `mobileSide` instead of `side` — e.g. `side="right"` (a desktop docked
+   * panel) with `mobileSide="bottom"` gets Doctrine rule 4's "every
+   * input/create flow under `md` is a bottom sheet" for free, without every
+   * consumer hand-rolling its own `useMediaQuery` + ternary. Ignored (so
+   * `side` alone drives every render — byte-identical) when absent.
+   */
+  mobileSide?: SheetSide;
   /**
    * Accessible title. REQUIRED — vaul/Radix needs a Dialog.Title in the tree.
    * A string renders as the styled header title; pass `hideTitle` to keep it
@@ -98,6 +108,7 @@ function SheetRoot({
   defaultOpen,
   trigger,
   side = 'bottom',
+  mobileSide,
   title,
   hideTitle = false,
   description,
@@ -111,8 +122,16 @@ function SheetRoot({
   'data-slot': dataSlot = 'sheet',
 }: SheetProps) {
   const titleIsString = typeof title === 'string';
+
+  // Below `md`, `mobileSide` (when given) overrides `side` — e.g. a desktop
+  // docked `side="right"` panel becomes a bottom sheet on phone for free.
+  // `mobileSide` absent ⇒ `resolvedSide === side` always, regardless of
+  // viewport, so default behavior never reads `isDesktop` at all.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const resolvedSide: SheetSide = mobileSide !== undefined && !isDesktop ? mobileSide : side;
+
   const handleVisible =
-    showHandle ?? (side === 'bottom' || side === 'top');
+    showHandle ?? (resolvedSide === 'bottom' || resolvedSide === 'top');
 
   // iOS-native detents: bottom sheets open to a half-height peek the user can
   // drag up. Explicit `snapPoints` always win; `peek={false}` opts out back to
@@ -120,14 +139,14 @@ function SheetRoot({
   // need no extra wiring — purely additive.
   const resolvedSnapPoints =
     snapPoints ??
-    (side === 'bottom' && peek !== false ? [0.5, 1] : undefined);
+    (resolvedSide === 'bottom' && peek !== false ? [0.5, 1] : undefined);
 
   return (
     <Drawer.Root
       open={open}
       onOpenChange={onOpenChange}
       defaultOpen={defaultOpen}
-      direction={side}
+      direction={resolvedSide}
       snapPoints={resolvedSnapPoints}
       dismissible={dismissible}
       modal
@@ -150,12 +169,12 @@ function SheetRoot({
           className={cn(
             'fairway-ds fixed flex flex-col outline-none',
             'bg-elevated text-text-primary shadow-fw-modal',
-            SIDE_CLASS[side],
+            SIDE_CLASS[resolvedSide],
             className,
           )}
           style={{ zIndex: FW_Z.modal }}
         >
-          {handleVisible && side === 'bottom' ? (
+          {handleVisible && resolvedSide === 'bottom' ? (
             <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-border-strong" />
           ) : null}
 

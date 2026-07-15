@@ -195,7 +195,9 @@ const PopoverPanelItem = React.forwardRef<
     data-slot="popover-panel-item"
     className={cn(
       'flex w-full items-center gap-2.5 rounded-fw-sm px-2.5 py-2',
-      'min-h-[36px] text-left font-fw-sans text-body text-text-primary',
+      // 44px tap-target floor (WCAG 2.2 AA 2.5.8) — was min-h-[36px], 8px
+      // short. Every PopoverPanel menu app-wide inherits the fix.
+      'min-h-11 text-left font-fw-sans text-body text-text-primary',
       'transition-colors duration-fast',
       'hover:bg-surface-sunken active:translate-y-[0.5px]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 focus-visible:ring-offset-elevated',
