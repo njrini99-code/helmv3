@@ -33,7 +33,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { Button, IconButton } from '@/components/fairway';
+import { Button } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -735,25 +735,36 @@ export function ImportWizardClient({
           <span className="inline-flex items-center gap-1.5">
             <InkBadge label={shapeMeta.label} tone="team" variant="solid" />
             {/* An icon-only affordance riding beside an InkBadge, not a CTA —
-                routed through the shared fairway IconButton so it clears the
-                44px touch floor on coarse pointers (was a hand-rolled 19x19px
-                pressableClass wrapper). */}
-            <IconButton
+                pressableClass (not <Button>/<IconButton>) per the kit's
+                interaction layer. Touch-target growth to 44px is confined to
+                coarse pointers only (`[@media(pointer:coarse)]:`) so the
+                control keeps its compact ~19x19px footprint beside the small
+                InkBadge stamp on desktop/tablet — swapping in IconButton
+                unconditionally grew it to 36px there too, an unintended
+                visual change next to an ~18px badge. */}
+            {/* eslint-disable-next-line helm/no-raw-button */}
+            <button
+              type="button"
               aria-label="Change data shape"
-              variant="ghost"
-              size="sm"
               onClick={() => { setStep('choose'); setError(null); }}
-              className="text-text-tertiary"
+              className={cn(
+                'inline-flex items-center justify-center rounded-full p-1',
+                '[@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+                pressableClass({ ink: 'team' }),
+              )}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 16 16"
+                width={11}
+                height={11}
                 fill="currentColor"
                 aria-hidden
+                className="text-text-tertiary"
               >
                 <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
               </svg>
-            </IconButton>
+            </button>
           </span>
           <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
             {VISIBLE_STEP_ORDER.map((s) => {
@@ -1876,12 +1887,17 @@ function DuplicateSummary({
           {overwrites.length > 0 && (
             // A plain inline text disclosure toggle, not a CTA — the <Button>
             // primitive's padding/variant would dominate this summary row.
+            // min-h-11 is coarse-pointer-gated (not unconditional) — this text
+            // toggle shares a flex line with the "N new / N overwrite / N
+            // duplicate" spans above, and an unconditional min-height inflates
+            // that whole row on desktop/tablet, where a mouse pointer needs no
+            // 44px floor.
             // eslint-disable-next-line helm/no-raw-button
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
-              className="ml-auto inline-flex min-h-11 items-center text-caption font-medium text-text-secondary underline-offset-2 hover:underline"
+              className="ml-auto inline-flex items-center text-caption font-medium text-text-secondary underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
             >
               {open ? 'Hide changes' : 'Show what changes'}
             </button>
