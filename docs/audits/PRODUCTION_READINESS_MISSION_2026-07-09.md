@@ -282,3 +282,82 @@ ink-conversion follow-up wave below — it has not been gated or committed.
   and `PositionPlayerPill` (see Phase D status above); `PlayerNotesSection.tsx`
   and `PlayerPerformanceTab.tsx` are explicitly flagged in-code as the next
   deferred targets.
+
+---
+
+## Addendum — 2026-07-15 repo-truth status sync
+
+> Docs-truth pass, no code changes. Everything below was independently
+> verified against `origin/batch/bbh-finish-0714` @ `0056bc0e` and the live
+> GitHub API on 2026-07-15 (not carried over from any prior status claim);
+> it supplements the mission record above without altering it. This mission
+> doc's own Phase D/E sections above describe a *different*, since-superseded
+> integration lane (`integration/mission-verify`); the batch below is the
+> current one.
+
+### Phase E items that have actually shipped since this doc was last touched
+- **#792–#807** — BaseballHelm coherence (one shell/nav/Lift Lab), DB security
+  hardening, statsync verification, the W0–W9 production-readiness mission
+  itself, the agent-legibility + doc-truth + dead-code sweep, the M0+M1
+  mobile overhaul, three post-deploy error sweeps, and the app-tab/feature-flow
+  sweeps — all **MERGED to `main`** (confirmed via `gh pr list --state merged
+  --base main`, not assumed).
+- **Discover-privacy P0** — the CONFIRMED P0 in this doc's own Ground Truth
+  section (`getDiscoverPlayers`/`getStateCounts` never checking
+  `baseball_player_settings.profile_visibility`) — is **fixed in code**.
+  `src/app/baseball/actions/discover.ts` now excludes
+  `profile_visibility='private'` players at 4 call sites (search the file for
+  the `P0 PRIVACY` comment tag), with a dedicated regression test:
+  `src/app/baseball/actions/__tests__/discover-privacy.test.ts`.
+- **Baseball Living-Annual UI migration — player/today and the other 28
+  tracked surfaces are done.** `docs/baseball/ui-migration-map.md` and
+  `ui-migration-execution-plan.md` both got a code-verified status header
+  today: zero `isRedesignEnabled()` conditional forks remain anywhere under
+  `src/app/baseball/**`/`src/components/baseball/**` (grep finds only
+  doc-comment mentions), `useRedesign()` has no baseball call sites, and
+  Batch H owner-cleanup (PR #820) deleted `PlayerPassportCard.tsx` + the dead
+  `layout/header.tsx` + `mobile-menu-button.tsx` after confirming zero real
+  importers. `player/today` specifically — the highest-traffic player screen
+  this doc's Ground Truth section called out as one of 4 coexisting design
+  languages — is on the kit; PR #814 also collapsed it to one primary mobile
+  CTA (closes issue #484 in code; the GitHub issue itself is still open,
+  pending Nick's close).
+
+### Tonight's batch (`batch/bbh-finish-0714`) — merge state as of 2026-07-15
+- **#809, #811** — merged to `main` (2026-07-15T02:09Z / 02:42Z).
+- **#808** (import-cycle ratchet + mobile viewport regression suite) —
+  merged to `main` (2026-07-15T06:56Z). *Correction to the standing overnight
+  status: this is no longer "green-pending" — it merged.*
+- **#810** (devibe wave 1 — delete dead root dirs/screenshots/one-off
+  scripts) — still **OPEN** against `main`. 402 changed files, every CI
+  check green; CodeRabbit auto-skipped because the diff exceeds its 150-file
+  review cap (a real cap, not a billing block); `reviewDecision:
+  REVIEW_REQUIRED` — awaiting Nick's manual review, not a gate failure.
+- **#812–#841** (30 PRs) — all merged onto `batch/bbh-finish-0714` between
+  2026-07-15T03:43Z and 06:28Z: the #379 stat-reconciliation seed/adapter
+  work (#812, #813, #827, #828), six dedicated test-coverage PRs (#822–#826),
+  the Journey-vs-Pipeline vocabulary dedup (#821), and the full mobile
+  UI/UX wave (#829–#841 — 13 PRs across messages, roster/team-ops,
+  recruiting, Lift Lab, import-center/stats-upload, onboarding-auth, and
+  settings/coach-command).
+- **#851** (CoachHelm engine loaders/registry — #379 Phase 4a) also merged
+  onto the batch branch tonight (08:26Z), on top of the 30.
+- **#842–#850** — 9 PRs still **OPEN** against `batch/bbh-finish-0714`
+  (in-flight: #379 Phases 2/3 across roster/Command-Center/player-today,
+  the authenticated E2E route crawler for #373, promoting the smoke suite
+  to a required gate for #372, a mobile minors-sweep, and a Select-dropdown
+  tap-target fix). Not part of tonight's "30 merged"; not yet reflected in
+  the readiness matrix.
+- **CI reality check** — the batch branch's own latest merge commit
+  (`0056bc0e`, PR #851) shows **3 failing checks** on GitHub right now:
+  `Business contracts` (the pre-existing `stat-layer-contract.test.ts` #379
+  offenders, disclosed in #851's own PR body — reproduced locally on this
+  worktree: 2 new-unlisted-offender files + 1 stale manifest entry),
+  `Unit tests` (a `ResizeObserver`-mock `TypeError` thrown from
+  `src/lib/fairway/use-scroll-fade.ts` in the CI environment — a mock/env
+  issue, not new product code), and `Import-cycle ratchet` (madge flags
+  `@supabase/supabase-js`/`dotenv/config` as "never seen before" — an
+  external-package false positive, not a real new cycle). None look like
+  regressions introduced by tonight's own diffs, but the honest statement is:
+  **30 individually-gated PRs merged does not mean the branch HEAD is green
+  end-to-end right now.**

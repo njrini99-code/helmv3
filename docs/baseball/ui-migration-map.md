@@ -5,6 +5,25 @@
 
 # BaseballHelm — UI Kit Architecture & Surface Coverage Map
 
+> **STATUS (2026-07-15, code-verified): EXECUTED — all 29 tracked surfaces
+> are on the kit. Remaining: none.** Batch H (owner cleanup) landed tonight
+> as PR #820: `PlayerPassportCard.tsx` deleted (zero real importers
+> confirmed by grep), plus the already-dead `layout/header.tsx` and
+> `mobile-menu-button.tsx`. Verified against `origin/batch/bbh-finish-0714`
+> @ `0056bc0e`: `grep -rn "isRedesignEnabled()" src/app/baseball
+> src/components/baseball` (excluding comments) and `grep -rln
+> "useRedesign(" src/app/baseball src/components/baseball` both return
+> **zero** hits — no surface below still forks on the flag. The coverage
+> matrix below is now a historical/reference record of what was migrated,
+> not an open backlog — do not pick a row off it expecting live work.
+> What's still open is downstream of this migration, not part of it: the
+> 3-lane `nav-registry.ts` restructure (deferred/owner-gated, see §Docs to
+> keep current below — unchanged, still frozen) and the tree-wide red/amber
+> → ink conversion remainder (tracked in
+> `docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md`'s follow-up
+> waves — `PlayerNotesSection.tsx`/`PlayerPerformanceTab.tsx` still carry
+> raw `warm-*`/`amber-*` swatches as of tonight).
+
 **Goal:** *every* baseball surface (coach + player, hero + utilitarian) composes from ONE
 kit so the product reads as a single publication. No surface keeps a bespoke card, header,
 empty state, or stat display once the kit covers it. Consistency is the deliverable.
