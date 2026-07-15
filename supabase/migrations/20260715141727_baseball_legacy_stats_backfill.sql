@@ -48,27 +48,49 @@
 -- CHECK only allows 'game'/'scrimmage'; legacy 'practice' sessions still have
 -- no box-score equivalent — same open gap #827's header notes).
 --
--- COPY-ONLY: this migration only ever INSERTs into `baseball_games`,
--- `baseball_box_score_batting`, `baseball_box_score_pitching`. It never
--- UPDATEs or DELETEs a single row of `baseball_player_stats` (or anything
--- else) — the legacy table is read-only input here.
+-- COPY-ONLY: this migration only ever INSERTs — into `baseball_games`,
+-- `baseball_box_score_batting`, `baseball_box_score_pitching`, and (Step 4,
+-- below) `baseball_player_season_stats` guarded by `ON CONFLICT DO NOTHING`
+-- so an EXISTING season row is never touched. It never UPDATEs or DELETEs a
+-- single row of `baseball_player_stats` (or anything else) — the legacy
+-- table is read-only input here.
 --
--- OUT OF SCOPE (deliberate, not an oversight): this migration does NOT call
--- `recalculate_baseball_season_stats()` / touch `baseball_player_season_stats`
--- at all. That table can ALREADY hold a team's season baseline from the
--- unrelated "season_totals" bulk-import path
--- (`src/app/baseball/actions/imports.ts`'s `upsertSeasonTotalsImport`) even
--- for a team with zero box-score rows — and `recalculate_baseball_season_stats`
--- does an `ON CONFLICT ... DO UPDATE` that would silently overwrite (not
--- merge with) that baseline the moment it's called. Since the task scope here
--- is explicitly "copy legacy rows into box-score + synthesize games" (three
--- named tables), clobbering a fourth, unrelated table's pre-existing data as
--- a side effect would violate this migration's own copy-only/additive-only
--- contract. Stats Center's game-log views (batting/pitching splits) read
--- straight off the box-score rows this migration writes and will show real
--- numbers immediately; only the season-row RECONCILE cross-check may flag
--- drift until someone deliberately runs a recalc pass per team — see the
--- runbook's "Optional follow-up" section for that as a separate, opt-in step.
+-- SEASON-STATS SAFETY (post-review fix — read this before assuming
+-- `baseball_player_season_stats` is inert until someone deliberately recalcs)
+-- ---------------------------------------------------------------------------
+-- `recalculate_baseball_season_stats()` is NOT an opt-in, manual, per-team
+-- step in practice: the ALREADY-SHIPPED, unrelated RPC
+-- `save_baseball_full_box_score` (`20260630000000_baseball_save_full_box_score_rpc.sql`)
+-- — called by every normal in-app box-score save — unconditionally calls it
+-- for every player in whatever game a coach just saved, for the CURRENT
+-- calendar year, and it does a full `ON CONFLICT ... DO UPDATE` OVERWRITE
+-- (not a merge) of that player's `baseball_player_season_stats` row. This
+-- migration inserts `baseball_games` rows carrying the legacy rows' REAL
+-- historical `game_date` — for a team whose whole history "predates #827"
+-- (applied earlier the same day as this migration), those dates can very
+-- plausibly fall in the current season year. So the instant any overlapping
+-- player has ONE new ordinary game entered via the Games UI in that same
+-- year, the live recalc sweeps up these backfilled box-score rows and
+-- overwrites `baseball_player_season_stats` for that (player, team, year) —
+-- with or without anyone touching this migration again.
+--
+-- Given that, Step 4 below SEEDS `baseball_player_season_stats` now, for
+-- exactly the (player_id, team_id, season_year) triples this migration's own
+-- box-score rows touch, using the IDENTICAL aggregation + rate formulas
+-- `recalculate_baseball_season_stats()` uses (see
+-- `20260624001000_baseball_official_stat_breadth.sql:145-265`) — so that the
+-- inevitable future recalc lands on the SAME numbers we just seeded (a
+-- substantive no-op, not a silent surprise). It is guarded by
+-- `ON CONFLICT (player_id, team_id, season_year) DO NOTHING`: a
+-- season_totals-imported baseline that already exists for one of these
+-- triples is NEVER overwritten by this migration — that preserves the
+-- copy-only/additive-only contract. That pre-existing baseline remains
+-- exposed to the SAME already-shipped recalc-on-save behavior once this
+-- migration's box-score rows exist (not a new risk this migration invents,
+-- but one it makes far more likely to actually fire) — see the runbook's
+-- "Season-stats interaction" section for the pre-flight snapshot query that
+-- identifies exactly which triples are at risk, and the sign-off/rollback
+-- guidance for them.
 --
 -- ELIGIBILITY ("zero box-score data")
 -- ---------------------------------------------------------------------------
@@ -115,7 +137,12 @@
 -- a rollback can RECOMPUTE (not merely record) exactly which rows are this
 -- migration's. Every INSERT below is `ON CONFLICT (...) DO NOTHING` keyed on
 -- that deterministic id (or the table's own natural unique key), so re-running
--- this file is always a no-op the second time.
+-- this file is always a no-op the second time. Step 4's season-stats seed has
+-- no id of its own to derive — it's keyed on the table's existing
+-- `(player_id, team_id, season_year)` unique constraint with `DO NOTHING`,
+-- which is equally idempotent: a second run recomputes the identical
+-- aggregate and finds the conflict already satisfied (either from its own
+-- first run or a pre-existing row it never touched either time).
 --
 -- No new database function is created. The id derivation is inlined as plain
 -- SQL (bytea `get_byte`/`set_byte` + `pgcrypto.digest`) inside CTEs, computed
@@ -123,12 +150,16 @@
 -- there is nothing new here to REVOKE from anon or pin a search_path on. This
 -- migration calls no functions at all beyond core Postgres builtins and
 -- pgcrypto's `digest()` (already installed — see 20260527000000's
--- `CREATE EXTENSION IF NOT EXISTS pgcrypto`). It deliberately does NOT call
--- `public.recalculate_baseball_season_stats` — see OUT OF SCOPE above.
+-- `CREATE EXTENSION IF NOT EXISTS pgcrypto`). It still deliberately does NOT
+-- call `public.recalculate_baseball_season_stats` itself — Step 4 mirrors
+-- its aggregation logic inline (read-only against the rows this migration
+-- just wrote) rather than invoking the live RPC, so this migration never
+-- depends on — or risks a future edit to — that shared function's behavior.
+-- See SEASON-STATS SAFETY above.
 --
 -- Wrapped in an explicit BEGIN/COMMIT (precedented in this repo — see
 -- 20260528041553_fix_coachhelm_settings_preferences_and_insight_types.sql) so
--- the two TEMP TABLE snapshots and all three INSERTs commit atomically as one
+-- the two TEMP TABLE snapshots and all four INSERTs commit atomically as one
 -- unit regardless of how the migration runner batches statements.
 -- =============================================================================
 
@@ -437,6 +468,162 @@ SELECT
 FROM rated
 ON CONFLICT (game_id, player_id) DO NOTHING;
 
+-- ----------------------------------------------------------------------------
+-- Step 4 — season-stat seed for exactly the (player_id, team_id, season_year)
+-- triples this migration's own box-score rows touch. See "SEASON-STATS
+-- SAFETY" in the header for why this exists. Aggregation + rate formulas
+-- below are a byte-for-byte mirror of
+-- `public.recalculate_baseball_season_stats()`
+-- (20260624001000_baseball_official_stat_breadth.sql:145-265) — same SUMs,
+-- same `g_p`/`w`/`l`/`sv` derivation from `result`, same era/whip/k9/bb9
+-- division by raw `ip` (not outs-converted — matching that function's own
+-- math exactly, not Step 3's per-game outs-based conversion above). Reading
+-- the mirror inline (rather than calling the live RPC) means this migration
+-- never depends on, or risks a future edit to, that shared function.
+--
+-- `ON CONFLICT (player_id, team_id, season_year) DO NOTHING`: a row that
+-- already exists for one of these triples (e.g. a season_totals-imported
+-- baseline) is NEVER touched here — copy-only/additive-only preserved. Any
+-- such pre-existing row is surfaced by the runbook's pre-flight snapshot
+-- query for Nick's review, not silently left for the live recalc-on-save
+-- path to overwrite unannounced.
+-- ----------------------------------------------------------------------------
+WITH bb379_touched AS (
+  SELECT DISTINCT bsb.player_id, bsb.team_id, EXTRACT(YEAR FROM bg.game_date)::integer AS season_year
+  FROM public.baseball_box_score_batting bsb
+  JOIN _bb_legacy_backfill_379_games tg ON tg.game_id = bsb.game_id
+  JOIN public.baseball_games bg ON bg.id = bsb.game_id
+  UNION
+  SELECT DISTINCT bsp.player_id, bsp.team_id, EXTRACT(YEAR FROM bg.game_date)::integer AS season_year
+  FROM public.baseball_box_score_pitching bsp
+  JOIN _bb_legacy_backfill_379_games tg ON tg.game_id = bsp.game_id
+  JOIN public.baseball_games bg ON bg.id = bsp.game_id
+),
+bb379_bat_agg AS (
+  -- Mirrors recalc's batting SELECT (breadth migration lines 146-176) exactly.
+  SELECT
+    t.player_id, t.team_id, t.season_year,
+    COUNT(DISTINCT bsb.game_id)::integer AS g,
+    COALESCE(SUM(bsb.ab), 0)::integer AS ab,
+    COALESCE(SUM(bsb.r), 0)::integer AS r,
+    COALESCE(SUM(bsb.h), 0)::integer AS h,
+    COALESCE(SUM(bsb.doubles), 0)::integer AS doubles,
+    COALESCE(SUM(bsb.triples), 0)::integer AS triples,
+    COALESCE(SUM(bsb.hr), 0)::integer AS hr,
+    COALESCE(SUM(bsb.rbi), 0)::integer AS rbi,
+    COALESCE(SUM(bsb.bb), 0)::integer AS bb,
+    COALESCE(SUM(bsb.k), 0)::integer AS k,
+    COALESCE(SUM(bsb.sb), 0)::integer AS sb,
+    COALESCE(SUM(bsb.cs), 0)::integer AS cs,
+    COALESCE(SUM(bsb.hbp), 0)::integer AS hbp,
+    COALESCE(SUM(bsb.sac), 0)::integer AS sac,
+    COALESCE(SUM(bsb.sf), 0)::integer AS sf,
+    COALESCE(SUM(bsb.ibb), 0)::integer AS ibb,
+    COALESCE(SUM(bsb.gidp), 0)::integer AS gidp,
+    COALESCE(SUM(bsb.roe), 0)::integer AS roe,
+    COALESCE(SUM(bsb.two_out_rbi), 0)::integer AS two_out_rbi,
+    COALESCE(SUM(bsb.lob), 0)::integer AS lob
+  FROM bb379_touched t
+  JOIN public.baseball_box_score_batting bsb
+    ON bsb.player_id = t.player_id AND bsb.team_id = t.team_id
+  JOIN public.baseball_games bg
+    ON bg.id = bsb.game_id AND bg.status = 'completed'
+    AND EXTRACT(YEAR FROM bg.game_date)::integer = t.season_year
+  GROUP BY t.player_id, t.team_id, t.season_year
+),
+bb379_bat_rated AS (
+  -- Rate formulas mirror recalc's batting rates (breadth migration lines 178-187) exactly.
+  SELECT
+    a.*,
+    CASE WHEN a.ab > 0 THEN ROUND(a.h::numeric / a.ab, 3) END AS avg,
+    CASE WHEN (a.ab + a.bb + a.hbp + a.sf) > 0
+      THEN ROUND((a.h + a.bb + a.hbp)::numeric / (a.ab + a.bb + a.hbp + a.sf), 3)
+    END AS obp,
+    CASE WHEN a.ab > 0
+      THEN ROUND(((a.h - a.doubles - a.triples - a.hr) + 2 * a.doubles + 3 * a.triples + 4 * a.hr)::numeric / a.ab, 3)
+    END AS slg
+  FROM bb379_bat_agg a
+),
+bb379_bat_final AS (
+  -- ops mirrors recalc's `IF v_obp IS NOT NULL AND v_slg IS NOT NULL` (breadth
+  -- migration lines 188-190) exactly.
+  SELECT
+    r.*,
+    CASE WHEN r.obp IS NOT NULL AND r.slg IS NOT NULL THEN ROUND(r.obp + r.slg, 3) END AS ops
+  FROM bb379_bat_rated r
+),
+bb379_pit_agg AS (
+  -- Mirrors recalc's pitching SELECT (breadth migration lines 193-220) exactly,
+  -- including deriving w/l/sv/holds/blown_saves from `result` (always NULL on
+  -- our backfilled rows — no legacy source — so these are always 0 here).
+  SELECT
+    t.player_id, t.team_id, t.season_year,
+    COUNT(DISTINCT bsp.game_id)::integer AS g_p,
+    COUNT(CASE WHEN bsp.result = 'W' THEN 1 END)::integer AS w,
+    COUNT(CASE WHEN bsp.result = 'L' THEN 1 END)::integer AS l,
+    COUNT(CASE WHEN bsp.result = 'S' THEN 1 END)::integer AS sv,
+    COALESCE(SUM(bsp.ip), 0) AS ip,
+    COALESCE(SUM(bsp.h), 0)::integer AS h_allowed,
+    COALESCE(SUM(bsp.r), 0)::integer AS r_allowed,
+    COALESCE(SUM(bsp.er), 0)::integer AS er,
+    COALESCE(SUM(bsp.bb), 0)::integer AS bb_allowed,
+    COALESCE(SUM(bsp.k), 0)::integer AS k_thrown,
+    COALESCE(SUM(bsp.hr), 0)::integer AS hr_allowed,
+    COALESCE(SUM(bsp.gf), 0)::integer AS gf,
+    (COUNT(CASE WHEN bsp.result = 'H' THEN 1 END)::integer + COALESCE(SUM(bsp.holds), 0)::integer) AS holds,
+    (COUNT(CASE WHEN bsp.result = 'BS' THEN 1 END)::integer + COALESCE(SUM(bsp.blown_saves), 0)::integer) AS blown_saves,
+    COALESCE(SUM(bsp.bf), 0)::integer AS bf,
+    COALESCE(SUM(bsp.hbp), 0)::integer AS p_hbp,
+    COALESCE(SUM(bsp.wp), 0)::integer AS wp
+  FROM bb379_touched t
+  JOIN public.baseball_box_score_pitching bsp
+    ON bsp.player_id = t.player_id AND bsp.team_id = t.team_id
+  JOIN public.baseball_games bg
+    ON bg.id = bsp.game_id AND bg.status = 'completed'
+    AND EXTRACT(YEAR FROM bg.game_date)::integer = t.season_year
+  GROUP BY t.player_id, t.team_id, t.season_year
+),
+bb379_pit_final AS (
+  -- era/whip/k9/bb9 mirror recalc's pitching rates (breadth migration lines
+  -- 222-227) exactly — division by raw `ip`, not outs-converted.
+  SELECT
+    p.*,
+    CASE WHEN p.ip > 0 THEN ROUND(9.0 * p.er / p.ip, 2) END AS era,
+    CASE WHEN p.ip > 0 THEN ROUND((p.bb_allowed + p.h_allowed)::numeric / p.ip, 3) END AS whip,
+    CASE WHEN p.ip > 0 THEN ROUND(9.0 * p.k_thrown / p.ip, 2) END AS k9,
+    CASE WHEN p.ip > 0 THEN ROUND(9.0 * p.bb_allowed / p.ip, 2) END AS bb9
+  FROM bb379_pit_agg p
+)
+INSERT INTO public.baseball_player_season_stats (
+  player_id, team_id, season_year,
+  g, ab, r, h, doubles, triples, hr, rbi, bb, k, sb, cs, hbp, sac, sf,
+  ibb, gidp, roe, two_out_rbi, lob,
+  avg, obp, slg, ops,
+  g_p, gs, w, l, sv, ip, h_allowed, r_allowed, er, bb_allowed, k_thrown, hr_allowed,
+  gf, holds, blown_saves, bf, p_hbp, wp,
+  era, whip, k9, bb9,
+  last_updated
+)
+SELECT
+  t.player_id, t.team_id, t.season_year,
+  COALESCE(bat.g, 0), COALESCE(bat.ab, 0), COALESCE(bat.r, 0), COALESCE(bat.h, 0),
+  COALESCE(bat.doubles, 0), COALESCE(bat.triples, 0), COALESCE(bat.hr, 0), COALESCE(bat.rbi, 0),
+  COALESCE(bat.bb, 0), COALESCE(bat.k, 0), COALESCE(bat.sb, 0), COALESCE(bat.cs, 0),
+  COALESCE(bat.hbp, 0), COALESCE(bat.sac, 0), COALESCE(bat.sf, 0),
+  COALESCE(bat.ibb, 0), COALESCE(bat.gidp, 0), COALESCE(bat.roe, 0), COALESCE(bat.two_out_rbi, 0), COALESCE(bat.lob, 0),
+  bat.avg, bat.obp, bat.slg, bat.ops,
+  COALESCE(pit.g_p, 0), 0, COALESCE(pit.w, 0), COALESCE(pit.l, 0), COALESCE(pit.sv, 0),
+  COALESCE(pit.ip, 0), COALESCE(pit.h_allowed, 0), COALESCE(pit.r_allowed, 0), COALESCE(pit.er, 0),
+  COALESCE(pit.bb_allowed, 0), COALESCE(pit.k_thrown, 0), COALESCE(pit.hr_allowed, 0),
+  COALESCE(pit.gf, 0), COALESCE(pit.holds, 0), COALESCE(pit.blown_saves, 0), COALESCE(pit.bf, 0),
+  COALESCE(pit.p_hbp, 0), COALESCE(pit.wp, 0),
+  pit.era, pit.whip, pit.k9, pit.bb9,
+  now()
+FROM bb379_touched t
+LEFT JOIN bb379_bat_final bat ON bat.player_id = t.player_id AND bat.team_id = t.team_id AND bat.season_year = t.season_year
+LEFT JOIN bb379_pit_final pit ON pit.player_id = t.player_id AND pit.team_id = t.team_id AND pit.season_year = t.season_year
+ON CONFLICT (player_id, team_id, season_year) DO NOTHING;
+
 COMMIT;
 
 -- =============================================================================
@@ -494,4 +681,36 @@ COMMIT;
 -- team+date+player legacy rows existed — see KNOWN LIMITATIONS above.
 -- backfilled_pitching_rows will be <= legacy_game_rows: only rows with
 -- innings_pitched > 0 get a pitching line.)
+
+-- ---- BEFORE: season-stats pre-flight — rows AT RISK of a future silent
+-- recalc-on-save overwrite because they already exist for a triple this
+-- migration is about to touch (see SEASON-STATS SAFETY above and the
+-- runbook's "Season-stats interaction" section). Run this BEFORE applying —
+-- any row returned here is one Step 4's `DO NOTHING` will deliberately leave
+-- alone. Non-empty result = review/back these up with Nick before proceeding.
+-- SELECT bpss.*
+-- FROM public.baseball_player_season_stats bpss
+-- WHERE (bpss.player_id, bpss.team_id, bpss.season_year) IN (
+--   SELECT DISTINCT ps.player_id, ps.team_id, EXTRACT(YEAR FROM ps.session_date)::integer
+--   FROM public.baseball_player_stats ps
+--   WHERE ps.stat_type = 'game'
+--     AND NOT EXISTS (SELECT 1 FROM public.baseball_box_score_batting bsb WHERE bsb.team_id = ps.team_id)
+--     AND NOT EXISTS (SELECT 1 FROM public.baseball_box_score_pitching bsp WHERE bsp.team_id = ps.team_id)
+-- );
+
+-- ---- AFTER: season-stats rows for a backfilled team (swap in a real team id) ----
+-- SELECT DISTINCT bpss.*
+-- FROM public.baseball_player_season_stats bpss
+-- WHERE bpss.team_id = '00000000-0000-0000-0000-000000000000'
+--   AND EXISTS (
+--     SELECT 1 FROM public.baseball_games g
+--     WHERE g.team_id = bpss.team_id
+--       AND EXTRACT(YEAR FROM g.game_date)::integer = bpss.season_year
+--       AND g.notes LIKE 'Backfilled by #379 one-time legacy stats backfill%'
+--   )
+-- ORDER BY bpss.player_id, bpss.season_year;
+-- (Compare against the BEFORE pre-flight query above: any row here that was
+-- NOT in the BEFORE result was seeded by Step 4 and is safe to remove on
+-- rollback; any row that WAS in the BEFORE result is the pre-existing
+-- baseline Step 4 deliberately left untouched.)
 -- =============================================================================

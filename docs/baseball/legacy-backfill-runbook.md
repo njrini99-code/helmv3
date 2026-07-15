@@ -57,21 +57,81 @@ maintained live by the adapter precedence in `applyGameBoxScoreImport`
 (`imports.ts`) and `save_baseball_full_box_score` (`games.ts`), and this
 migration never races with or duplicates that path.
 
-### Deliberately out of scope: `baseball_player_season_stats`
+### Season-stats interaction: seeded where safe, explicitly flagged where not
 
-The migration does **not** call `recalculate_baseball_season_stats()` or
-touch `baseball_player_season_stats`. That table can already hold a team's
-season baseline from the unrelated "season_totals" bulk-import path
-(`imports.ts`'s `upsertSeasonTotalsImport`) even for a team with zero
-box-score rows, and the recalc function does an `ON CONFLICT ... DO UPDATE`
-that would silently overwrite (not merge with) that baseline the moment it's
-called. Since this migration's contract is copy-only/additive-only against
-three named tables, clobbering a fourth table's independently-sourced data as
-a side effect would violate that contract. Stats Center's game-log views
-(the batting/pitching splits, which read straight off box-score rows) will
-show real numbers immediately after this migration runs; only the
-season-row **reconcile** cross-check may flag drift until someone
-deliberately runs a recalc pass per team. See "Optional follow-up" below.
+**Recalc is not an opt-in, manual, per-team step — it already runs
+automatically on every ordinary box-score save.** The already-shipped,
+unrelated RPC `save_baseball_full_box_score`
+(`supabase/migrations/20260630000000_baseball_save_full_box_score_rpc.sql`) —
+called by every normal in-app "save box score" action — unconditionally
+calls `recalculate_baseball_season_stats(player_id, team_id, EXTRACT(YEAR
+FROM now()))` for every player in whatever game a coach just saved. That
+function fully aggregates all of that player's completed-game box-score rows
+for the current calendar year and does an `ON CONFLICT ... DO UPDATE` — a
+full **overwrite**, not a merge — of `baseball_player_season_stats`.
+
+This migration inserts `baseball_games` rows carrying the legacy rows' real
+historical `game_date`. For a team whose entire history "predates #827"
+(applied the same day as this migration), those dates can plausibly fall
+within the current season year. So the first time any coach enters one
+ordinary new game this season for a player who overlaps with a backfilled
+team, that live recalc sweeps up these backfilled box-score rows and
+overwrites `baseball_player_season_stats` for that (player, team, year) —
+with no code change, no extra step, and no opt-in required. If that team
+already had a `season_totals`-imported baseline in
+`baseball_player_season_stats` for that player/year, it gets silently
+replaced at that moment.
+
+**What the migration does about it (Step 4):** it seeds
+`baseball_player_season_stats` now, for exactly the `(player_id, team_id,
+season_year)` triples its own box-score inserts touch, using the identical
+aggregation and rate formulas `recalculate_baseball_season_stats()` uses
+(same SUMs, same `w`/`l`/`sv`/`holds`/`blown_saves` derivation from `result`,
+same era/whip/k9/bb9 division by raw `ip`). It never invokes the live RPC —
+the formulas are mirrored inline, read-only against the rows this migration
+just wrote, so the migration never depends on (or risks a future edit to)
+that shared function. It is guarded by `ON CONFLICT (player_id, team_id,
+season_year) DO NOTHING`, so:
+
+- **No pre-existing season row for that triple** (the common case, since the
+  team had zero box-score data): the seed populates it now with numbers that
+  exactly match what the inevitable future recalc would produce anyway — so
+  that eventual overwrite becomes a substantive no-op, not a surprise.
+- **A pre-existing season row already there** (a `season_totals`-imported
+  baseline): Step 4 does **not** touch it — copy-only/additive-only is
+  preserved. But that row remains exposed to the same already-shipped
+  recalc-on-save behavior described above once this migration's box-score
+  rows exist. This is not a new risk this migration invents — any team
+  mixing legacy and `season_totals` data already had it — but backfilling box
+  scores makes it far more likely to actually fire. **Run the pre-flight
+  query below before applying** to see exactly which triples this affects,
+  and decide with Nick (skip those teams for now, accept the eventual
+  overwrite, or snapshot those specific rows externally) before proceeding.
+
+Stats Center's game-log views (the batting/pitching splits, which read
+straight off box-score rows) show real numbers immediately after this
+migration runs regardless. See "Season-stats rollback" below for how the
+Step 4 seed interacts with rollback.
+
+#### Pre-flight query — season rows at risk (run BEFORE applying)
+
+```sql
+SELECT bpss.*
+FROM public.baseball_player_season_stats bpss
+WHERE (bpss.player_id, bpss.team_id, bpss.season_year) IN (
+  SELECT DISTINCT ps.player_id, ps.team_id, EXTRACT(YEAR FROM ps.session_date)::integer
+  FROM public.baseball_player_stats ps
+  WHERE ps.stat_type = 'game'
+    AND NOT EXISTS (SELECT 1 FROM public.baseball_box_score_batting bsb WHERE bsb.team_id = ps.team_id)
+    AND NOT EXISTS (SELECT 1 FROM public.baseball_box_score_pitching bsp WHERE bsp.team_id = ps.team_id)
+);
+```
+
+Any row this returns is one Step 4 will deliberately leave alone (`DO
+NOTHING`) — and one that stays exposed to the live recalc-on-save behavior
+above. **Non-empty result: stop and review with Nick before applying**,
+per-team if needed (e.g. hold off on just the affected team's legacy rows
+until its `season_totals` baseline is reconciled or intentionally retired).
 
 ## Eligibility, precisely
 
@@ -141,11 +201,15 @@ This file stays **written, not applied** until Nick says go. When he does:
    bottom of the migration file) via `mcp__supabase__execute_sql` and eyeball
    the team list / row counts — confirm it's the expected set of dormant
    legacy-only teams, not something surprising.
-2. Apply the migration file verbatim via `mcp__supabase__apply_migration`
+2. Run the **season-stats pre-flight query** above. If it returns any rows,
+   stop and get Nick's explicit call on those specific teams/players before
+   proceeding (see "Season-stats interaction" above) — do not treat an
+   empty migration diff as proof this step is unnecessary.
+3. Apply the migration file verbatim via `mcp__supabase__apply_migration`
    (file content unchanged from what's committed — this is a WRITE-ONLY repo
    file until that point).
-3. Run the **post-check queries** below to confirm row-count parity per team.
-4. Spot-check one backfilled team's Stats Center page in the app to confirm
+4. Run the **post-check queries** below to confirm row-count parity per team.
+5. Spot-check one backfilled team's Stats Center page in the app to confirm
    real numbers now render (previously empty).
 
 No code changes accompany this migration — nothing needs deploying alongside
@@ -292,13 +356,43 @@ form above is preferred for an auditable, step-by-step rollback where each
 `baseball_player_stats` (the legacy source) is never touched by the forward
 migration, so there is nothing to restore there on rollback.
 
-## Optional follow-up (not part of this migration, opt-in, per-team)
+### Season-stats rollback
 
-If Nick confirms a given backfilled team has **no** conflicting
-`season_totals`-imported baseline in `baseball_player_season_stats`, the
-season-stat reconcile can be brought in sync by calling the existing,
-already-gated RPC once per (player, team, season year) touched by the
-backfill:
+Step 4's seed is guarded by `ON CONFLICT DO NOTHING`, so — unlike the
+deterministic-id games/box-score rollback above — there is no id to
+recompute-and-match for `baseball_player_season_stats` rows: a row this
+migration seeded and a row that pre-existed both look like ordinary rows
+once written, keyed only on `(player_id, team_id, season_year)`.
+
+This is exactly why the **pre-flight query** ("Season-stats interaction"
+above) must be run and its output saved (a screenshot, a CSV export, a copy
+of the JSON result) **before** applying the migration:
+
+1. **Before applying**, run the pre-flight query and save its output — that
+   is your "already existed" list for every triple this migration is about
+   to touch.
+2. **If you need to roll back**, run the same pre-flight-shaped query again
+   (against the same touched-triple set the games rollback above
+   recomputes) and diff against the saved "before" list:
+   - Any `(player_id, team_id, season_year)` present **now** but **absent**
+     from the saved "before" list was seeded by Step 4 — safe to `DELETE FROM
+     baseball_player_season_stats WHERE (player_id, team_id, season_year) =
+     (...)` for those rows specifically.
+   - Any triple present in **both** is the pre-existing baseline Step 4 never
+     touched — leave it alone.
+3. If the "before" snapshot was never taken (e.g. this section is read after
+   the fact), do **not** guess — treat every season-stats row for a
+   backfilled team as unknown provenance and reconcile it manually against
+   `season_totals` import records or Nick's own knowledge of that team,
+   rather than deleting rows that might be real, independent data.
+
+## Season-stats reconcile (only relevant for pre-existing baselines Step 4 left alone)
+
+For the rarer case flagged by the pre-flight query — a team where
+`baseball_player_season_stats` already had a `season_totals`-imported row for
+a touched player/year — Nick can force that row in sync with the
+now-complete box-score data (this **is** the one action that overwrites
+existing data, since it calls the live, already-shipped RPC directly):
 
 ```sql
 SELECT public.recalculate_baseball_season_stats(
@@ -306,10 +400,11 @@ SELECT public.recalculate_baseball_season_stats(
 );
 ```
 
-This is intentionally a separate, manual, per-team decision — not bundled
-into the migration — because it's the one action that overwrites existing
-data in `baseball_player_season_stats`, and that table's provenance for a
-"zero box-score" team isn't guaranteed to be empty.
+Do this deliberately and per-team, only after confirming with Nick that the
+box-score-derived total should win over whatever `season_totals` baseline is
+there — remembering that, per "Season-stats interaction" above, an ordinary
+game save for that player this season year will trigger the exact same
+overwrite anyway, whether or not anyone runs this by hand.
 
 ## Verified
 
@@ -335,3 +430,47 @@ untouched; the colliding date was correctly skipped; a second run of the
 same file inserted zero additional rows anywhere; a rollback recompute+delete
 (run inside a `ROLLBACK`ed transaction as a dry run) matched exactly the rows
 the migration had created, and nothing else.
+
+### Step 4 (season-stats seed) — re-verified after the post-review fix
+
+Re-exercised against a fresh disposable local Postgres 16 instance (schema
+reconstructed directly from the real column/constraint lists in
+`20260527000000_prod_public_baseline.sql` and
+`20260624001000_baseball_official_stat_breadth.sql`, plus the real,
+unmodified `recalculate_baseball_season_stats()` and
+`save_baseball_full_box_score()` function bodies from this repo — never
+against any shared Supabase project) with fixtures covering exactly the
+scenario the review flagged:
+
+- a two-way player on an eligible team with **no** pre-existing
+  `baseball_player_season_stats` row for the touched season year,
+- a second player on the **same** eligible team **with** a pre-existing
+  `season_totals`-imported baseline row for that year,
+- a team that already has box-score data (must be fully excluded from
+  Step 4 too, not just Steps 1-3).
+
+Confirmed:
+- Step 4 seeded the first player's season row with `g`/`ab`/`h`/`hr`/`avg`/
+  `obp`/`slg`/`ops` and `ip`/`era`/`whip`/`k9`/`bb9` matching hand-calculated
+  values exactly, aggregated across both backfilled games.
+- Step 4 left the second player's pre-existing baseline **completely
+  unchanged** (`DO NOTHING` fired; row was excluded from the `INSERT ...
+  RETURNING` count).
+- The already-box-score team got zero season-stats rows from Step 4.
+- Re-running the whole migration file a second time was still a no-op
+  everywhere, including Step 4.
+- The pre-flight query above, run against the fixtures **before** applying,
+  correctly returned exactly the second player's at-risk row and nothing
+  else.
+- **Reproduced the exact risk this section documents:** after applying,
+  calling the real, unmodified `save_baseball_full_box_score()` RPC for a
+  brand-new ordinary game dated in the same season year, with both players
+  in its box score, behaved exactly as written above — the first player's
+  seeded row extended cleanly (2 games → 3, numbers correct) with no
+  surprise, while the second player's pre-existing `season_totals` baseline
+  was silently overwritten by that already-shipped RPC, exactly as warned.
+  This was not a hypothetical for this test — it happened on the very next
+  ordinary save.
+- The rollback story (games/box-score delete + the season-stats diff-based
+  delete described in "Season-stats rollback" above) correctly removed only
+  the seeded row and left the pre-existing baseline intact.
