@@ -13,7 +13,7 @@
 | 🅟 | "route-only" — action layer exists, no feature-specific test |
 | ❌ | Scaffold/redirect stub only |
 
-Per the readiness matrix (2026-06-30): **0 features fully `ready`; 18 `partial`, 2 route-only, 1 hidden, 1 needs-decision.** Treat everything as production-capable but not production-blessed.
+Per the readiness matrix (2026-07-15 sync): **14 of 22 features `ready`; 7 `partial`, 0 route-only, 1 hidden, 0 needs-decision.** The 2026-06-30 numbers this line used to cite are stale — see `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` for the current, file-cited per-row grade. Treat everything as production-capable; most of it is now also production-blessed by that matrix's own bar.
 
 ---
 
@@ -68,7 +68,7 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 | `/baseball/dashboard/videos` (+`/[id]`, `/[id]/edit`) | Video evidence library | coach/staff | `actions/videos.ts`, `video-classes.ts` |
 | `/baseball/dashboard/performance` (+`/builder`,`/groups`,`/live`,`/programs`,`/programs/[id]`,`/players/[id]`) | Helm Lifting Lab entry (strength coach) | staff `can_manage_lifting`/`can_view_readiness` | `actions/lifting-v11.ts`, `lift-builder.ts`; `read-models/performance-command.ts` |
 | `/baseball/dashboard/practice` (+`/practice-effectiveness`) | Practice planner + scrimmage; effectiveness review | coach/staff `can_manage_practice` | `actions/practice.ts`, `practice-effectiveness.ts` |
-| `/baseball/dashboard/decision-room` | Staff Decision Room (signal→agenda→decision ledger) — **needs-decision: tables in unapplied migration** | coach/staff | `actions/decision-room.ts`; `read-models/decision-room/*` |
+| `/baseball/dashboard/decision-room` | Staff Decision Room (signal→agenda→decision ledger) — tables `baseball_meeting_items`/`baseball_decision_log` confirmed **applied to prod** (2026-07-09); the "unapplied migration" tag is stale, remaining gap is stale type-cast comments + missing read-model test coverage | coach/staff | `actions/decision-room.ts`; `read-models/decision-room/*` |
 | `/baseball/dashboard/postgame` | Postgame action review (9 evidence areas, not narrative) | coach/staff | `actions/postgame.ts`; `read-models/postgame.ts` |
 | `/baseball/dashboard/analytics` | Reports / transfer-to-baseball / export | coach/staff | `analytics/AnalyticsClient.tsx` |
 | `/baseball/dashboard/dev-plans` (+`/[id]`) | Coach dev-plan list/detail | coach/staff | `actions/dev-plans.ts` |
@@ -76,7 +76,7 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 | `/baseball/dashboard/events` | Events management (bypasses server actions — P1-9) | coach/staff | `events/EventsClient.tsx` |
 | `/baseball/dashboard/announcements` | Announcements | shared | `actions/announcements.ts` |
 | `/baseball/dashboard/tasks` | Tasks | shared | `actions/tasks.ts` |
-| `/baseball/dashboard/documents` | Document library (⚠️ #393 public URLs + caller-supplied scope) | shared | `actions/documents.ts` |
+| `/baseball/dashboard/documents` | Document library — #393 (public URLs + caller-supplied scope) is closed and verified: every write is capability-gated (`requireBaseballCapability(teamId, 'can_manage_documents')`, resolved from the existing row not caller input) and URLs are `createSignedUrl` (1hr TTL), not public; now has 24 direct capability/signed-URL regression assertions (`documents-write-capability.test.ts`) | shared | `actions/documents.ts` |
 | `/baseball/dashboard/travel` | Travel itineraries + expenses | coach/staff | `actions/travel.ts` |
 | `/baseball/dashboard/academics` | Academic eligibility (JUCO hub) | coach/staff (JUCO) | `actions/academics.ts`; `AcademicsClient.tsx` |
 | `/baseball/dashboard/camps` (+`/[id]`) | Camps + registrations | coach/staff | `actions/camps.ts` |
@@ -87,14 +87,14 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 ### Recruiting (coach — college/JUCO/showcase only; `requireRecruitingCoachRoute`)
 | Route | Purpose | Access | Key file(s) |
 |-------|---------|--------|-------------|
-| `/baseball/dashboard/pipeline` | 5-stage recruiting Kanban (drag between stages) — **renders 7 columns, DB enum has 5** | recruiting coach | `pipeline/PipelineClient.tsx`; `hooks/use-watchlist.ts`; `actions/watchlist.ts` |
+| `/baseball/dashboard/pipeline` | 5-stage recruiting Kanban (drag between stages) — stage vocabulary now matches the DB enum; the old "renders 7 columns, DB enum has 5" claim is stale (`stages.ts` dropped `contacted`/`campus_visit`; board renders 4 active-stage columns + `uninterested` handled separately) | recruiting coach | `pipeline/PipelineClient.tsx`; `hooks/use-watchlist.ts`; `actions/watchlist.ts` |
 | `/baseball/dashboard/discover` | Prospect search/filter | recruiting coach | `discover/DiscoverClient.tsx`; `actions/discover.ts` |
 | `/baseball/dashboard/watchlist` | Watchlist table (add/remove/notes/priority/stage) | recruiting coach | `watchlist/WatchlistPageClient.tsx` → `WatchlistClient.tsx`; `actions/watchlist.ts` |
 | `/baseball/dashboard/compare` (+`/comparisons`) | Compare ≤4 players; saved comparisons | recruiting coach | `compare/CompareClient.tsx`, `compare/actions.ts` |
 | `/baseball/dashboard/college-interest` | Coach view of who viewed/interested in their roster players (engagement telemetry) — coach-scoped; imports player gate hook by drift | coach/staff | `college-interest/CollegeInterestClient.tsx` |
 | `/baseball/dashboard/colleges` | (player) browse colleges + toggle interest | player | `colleges/page.tsx`; `hooks/use-colleges.ts`; `actions/interests.ts` |
 | `/baseball/dashboard/scout-packets` | Scout packet roster/link management | staff `can_export_reports` | `actions/scout-packet.ts` |
-| `/baseball/dashboard/journey` | Player recruiting journey | player | `journey/page.tsx` (UNVERIFIED source table) |
+| `/baseball/dashboard/journey` | Player recruiting journey | player | `journey/page.tsx` → `hooks/use-journey.ts` (source table now verified: `baseball_players`/`baseball_recruiting_interests`/`baseball_player_engagement_events`, all real; reads are direct-client, not a server action — a Journey-vs-Pipeline vocabulary unification memo is open pending owner sign-off, see `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md`) |
 | `/baseball/dashboard/activate` | Player recruiting opt-in (blocks college players) | player (non-college) | `activate/page.tsx` |
 
 ### Player dashboard (mobile-first)
@@ -130,10 +130,10 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 - Entry `/baseball/dashboard/pipeline` → `PipelineClient.tsx` (gated `requireRecruitingCoachRoute`).
 - Data: client hook `useWatchlist()` reads `baseball_watchlists` **directly from the browser** (`.eq('coach_id', coach.id)`).
 - **Two write paths for `pipeline_stage`** (drift): (a) Kanban drag → client-side `UPDATE baseball_watchlists SET pipeline_stage` (**bypasses `assertCoachCanRecruitPlayer`, RLS-only**); (b) table dropdown → `updateWatchlistStatus()` (capability-gated, ownership-verified, fires `notifyPipelineStageChange()`).
-- **Stage vocabulary — CRITICAL**: live DB enum `baseball_pipeline_stage` = 5 (`watchlist, high_priority, offer_extended, committed, uninterested`). But `src/lib/recruiting/stages.ts` declares **7** (adds `contacted`, `campus_visit` cast `as PipelineStage`) — not valid enum values; a write is rejected by Postgres. `PipelineClient.tsx` renders a 7-column grid. No stage-transition validation. `getNextStage()` has zero callers.
+- **Stage vocabulary — FIXED**: live DB enum `baseball_pipeline_stage` = 5 (`watchlist, high_priority, offer_extended, committed, uninterested`), and `src/lib/recruiting/stages.ts` now declares exactly those 5 (the invalid `contacted`/`campus_visit` entries were removed). Label sources were also collapsed tonight (2026-07-15, PR #821): `getPipelineStageLabel()` (`src/lib/utils.ts`) and `WatchlistSchemas.updateStatus`'s zod enum both now derive from `PIPELINE_STAGES` instead of separately hand-copied maps — a real drift was found and fixed (`watchlist` was labeled "Prospects" in one copy and "Watchlist" in another; "Watchlist" won). One known duplicate remains: `src/components/ui/status-dot.tsx`'s `PipelineStatusDot` still carries a 5th, un-migrated copy of the label map (frozen file, likely-dead component, flagged for follow-up — not fixed by this pass). `getNextStage()` still has zero callers.
 
 ### 2. Prospect Search / Discover ⚠️
-- `getDiscoverPlayers/Teams/…` (`actions/discover.ts`); `coachId`/`coachType` from client are **ignored** (re-derived server-side). Filters: state, gradYear, position, velo/exit ranges, hasVideo, search, teamType, page. Does **not** call `assertCoachCanRecruitPlayer` — re-implements the rules inline; **does not filter `profile_visibility`** (a private player can appear in search though a later watchlist-add is blocked).
+- `getDiscoverPlayers/Teams/…` (`actions/discover.ts`); `coachId`/`coachType` from client are **ignored** (re-derived server-side). Filters: state, gradYear, position, velo/exit ranges, hasVideo, search, teamType, page. Does **not** call `assertCoachCanRecruitPlayer` — re-implements the rules inline. **`profile_visibility` P0 is FIXED**: `getDiscoverPlayers`/`getStateCounts` now exclude `profile_visibility='private'` players at 4 call sites (search the file for the `P0 PRIVACY` comment tag), regression-tested by `discover-privacy.test.ts`. As of tonight (2026-07-15, PR #819) every export in this file also runs through `withBaseballAction` (previously only the guard-free `withAdminObserved`).
 
 ### 3. Watchlist / Compare ⚠️
 - `actions/watchlist.ts` (`withBaseballAction` `can_manage_stats`): `addToWatchlist` (**calls `assertCoachCanRecruitPlayer`**, INSERT `baseball_watchlists {pipeline_stage:'watchlist',priority:0}` + engagement event + email), `removeFromWatchlist`, `updateWatchlistStatus/Priority`, `addWatchlistNote`, `toggleWatchlistPlayer`, `checkWatchlistStatus`. Compare fetches client-side (max 4); persistence → `baseball_player_comparisons`.
@@ -164,11 +164,11 @@ Authoritative: `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` + `stat-layer
 - Staff-gated `can_manage_lifting`/`can_view_readiness`; players self-only. `lifting-v11.ts` (30 exports: groups/programs/publish/session lifecycle), `lift-builder.ts` (stage-and-swap). Model migrated legacy `baseball_lift_*` → unified `helm_lifting_*` ("W2 REWIRE"); baseball reads via adapter. `baseball_lift_*` kept read-only legacy (dual-schema — see database G1).
 
 ### 10. CoachHelm AI / Signals ⚠️
-- Engine `src/lib/coachhelm/baseball/`; harness `engine-run.ts` (`runBaseballEngineCore` — master AI switch OFF short-circuits before any DB read). Promotion: only `medium/high/urgent` promote to a `baseball_signals` triage row; `low` never. `sample_n < 6` → `disposition:'sample_too_small'`. Tables: `baseball_coach_insights`, `baseball_signals`, `baseball_actions`, `baseball_ai_audit`. **Decision Room** writes `baseball_meeting_items`/`baseball_decision_log` — **neither table exists in migrations** (hand-rolled `LooseClient`).
+- Engine `src/lib/coachhelm/baseball/`; harness `engine-run.ts` (`runBaseballEngineCore` — master AI switch OFF short-circuits before any DB read). Promotion: only `medium/high/urgent` promote to a `baseball_signals` triage row; `low` never. `sample_n < 6` → `disposition:'sample_too_small'`. Tables: `baseball_coach_insights`, `baseball_signals`, `baseball_actions`, `baseball_ai_audit`. **Decision Room** writes `baseball_meeting_items`/`baseball_decision_log` — both tables exist (migrations `20260624000230`/`20260624000310`) and are **confirmed applied to prod** (2026-07-09, via `list_migrations`); the `LooseClient` cast + code comments claiming "unapplied migration" are now stale and need a `db:types` regen cleanup, but the tables and their staff-only RLS are real and live.
 
 ### 11–18 (concise)
 - **Messaging** ✅ — `actions/messages.ts` is a 7-line shim → shared `src/app/actions/messages.ts` (`sport` param dispatches tables `baseball_conversations`/`_messages`/`_notifications`).
-- **Calendar/Events** ⚠️ — `createBaseballEvent` → INSERT `baseball_events` (+ conditional `baseball_event_attendance`, + conditional `baseball_games`); Events page bypasses server actions (P1-9); player calendar team-resolution bug (#368/#369).
+- **Calendar/Events** ⚠️ — `createBaseballEvent` → INSERT `baseball_events` (+ conditional `baseball_event_attendance`, + conditional `baseball_games`); Events page bypasses server actions (P1-9). The player calendar team-resolution bug (#368) and un-normalized mutation guards (#369) are both **closed and verified** (2026-07-09) — stale reference removed.
 - **Announcements** ✅ — uses `content` + `created_by_id` (the canonical-spec P0-3 "golf column" bug is FIXED). Tables `baseball_announcements`/`_recipients`/`_acknowledgements`.
 - **Tasks/Travel/Academics/Documents** — `baseball_tasks`+`_task_assignments`; `baseball_travel_itineraries`/`_expenses`; `baseball_player_classes`/`_academic_eligibility`; `baseball_documents`/`_document_versions` (⚠️#393).
 - **Dev Plans** ✅ — player `getActiveDevPlan` uses `.in('status',['sent','in_progress'])` (canonical-spec P0-4 "`.eq('status','active')`" bug is FIXED). Table `baseball_developmental_plans`.
@@ -181,10 +181,10 @@ Authoritative: `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` + `stat-layer
 
 Core gate: **`assertCoachCanRecruitPlayer(supabase, coachId, coachType, playerId)`** (`src/lib/baseball/recruitability.ts`). Reasons: `player_not_found | recruiting_off | college_player | coach_type_mismatch | on_own_roster | not_on_discoverable_team | profile_private`. Allowed only if ALL: coachType not HS/showcase; player exists; `player_type != 'college'`; `recruiting_activated === true`; JUCO-coach not recruiting a JUCO player; `profile_visibility != 'private'`; player not on the coach's own roster; player on a discoverable team (org type ∈ {high_school, showcase, juco}).
 
-**Three parallel, partially-divergent implementations** of "can this coach see/act on this player": `recruitability.ts` (write-time), `discover.ts` inline (query-time, omits `profile_visibility`), `public-profile-access.ts` (adds `public_profiles_enabled`). Real drift risk.
+**Three parallel implementations** of "can this coach see/act on this player": `recruitability.ts` (write-time), `discover.ts` inline (query-time — no longer omits `profile_visibility`; the P0 gap is fixed, see Feature 2 above), `public-profile-access.ts` (adds `public_profiles_enabled`). Still three separate implementations to keep in sync — real drift risk remains even though the worst instance of it is fixed.
 
 **Player-record access**: `player-record-access.ts` / `player-access-policy.ts`; `updateMyPlayerProfile` writes only against server-resolved `ctx.activePlayerId` (client-supplied id ignored); `EDITABLE_PROFILE_FIELDS` whitelist drops `team_id`/`recruiting_activated`/`id`. Read models enforce viewer role as defense-in-depth on top of RLS.
 
-**Capabilities**: `capabilities.ts` + `capability-groups.ts` — `baseball_team_coach_staff` boolean matrix (`can_manage_lifting`, `can_view_readiness`, `can_manage_practice`, `can_manage_stats`, `can_manage_imports`, `can_view_private_notes`, `can_view_academics`, `can_manage_roster`, `can_invite_staff`, `can_export_reports`, `can_message_players`, `can_manage_settings`). Staff active-status must be paired with membership checks (open findings #405/#406: inactive/suspended staff can still resolve context).
+**Capabilities**: `capabilities.ts` + `capability-groups.ts` — `baseball_team_coach_staff` boolean matrix (`can_manage_lifting`, `can_view_readiness`, `can_manage_practice`, `can_manage_stats`, `can_manage_imports`, `can_view_private_notes`, `can_view_academics`, `can_manage_roster`, `can_invite_staff`, `can_export_reports`, `can_message_players`, `can_manage_settings`). Staff active-status + `scope_player_ids` isolation findings (#405/#406) are both **closed and fixed at the RLS layer** (`is_baseball_team_staff()`/`can_view_baseball_player()` both hardened, applied to prod); #406's own acceptance-criteria pgTAP isolation test landed 2026-07-15 (`supabase/tests/rls/baseball_scope_player_ids_isolation.sql`).
 
 **Spec drift to know**: `useTeamRouteProtection` (named in the canonical spec P0-7) does NOT exist — only `usePlayerRecruitingGate` does.
