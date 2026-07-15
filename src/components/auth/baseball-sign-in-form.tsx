@@ -122,7 +122,15 @@ export function BaseballSignInForm() {
           </label>
           <Link
             href="/baseball/forgot-password"
-            className="rounded text-xs font-medium text-grade-plus transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
+            // 44px tap target (mobile findings, onboarding-auth group) via
+            // real padding, NOT a hit-slop pseudo-element or the
+            // AuthFooterLinks negative-margin trick — this row sits directly
+            // above the password Input with only a `space-y-1.5` (6px) gap,
+            // and an invisible `::before` sized to reach 44px would overlap
+            // the top of that Input and steal its taps. Growing the row's
+            // own height by ~24px (centered via the parent's `items-center`)
+            // is the only enlargement that doesn't risk that.
+            className="inline-flex min-h-[44px] items-center rounded py-2.5 text-xs font-medium text-grade-plus transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
           >
             Forgot password?
           </Link>
