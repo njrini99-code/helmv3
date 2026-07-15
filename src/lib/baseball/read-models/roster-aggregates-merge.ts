@@ -45,7 +45,29 @@ export interface SeasonStatsAggregateRow {
   last_updated: string | null;
 }
 
-/** Project one adapted result back onto the legacy aggregates row shape. */
+/**
+ * Project one adapted result back onto the legacy aggregates row shape.
+ *
+ * PER-FIELD LEGACY FALLBACK (restored pre-#379 behavior): the shared
+ * adapter's "box-score wins outright" rule is correct for the general design
+ * (a canonical row should never be silently diluted by a stale legacy
+ * number), but this wrapper's two callers (roster.ts, RosterClient.tsx) rely
+ * on a narrower, older guarantee: a player who HAS a box-score/season-stats
+ * row this season but whose row carries a null rate field for a specific
+ * stat (the common case being a pure pitcher/DH who appears in a completed
+ * game's pitching box score and gets a `baseball_player_season_stats` row
+ * with g=0 and avg/obp/slg/ops all null, per
+ * recalculate_baseball_season_stats) must still show their real, existing
+ * career_avg/obp/slg/ops/game_avg/season_avg from the legacy aggregates row
+ * rather than regressing to an em-dash. This mirrors the avg/max_pitch_velocity
+ * handling below and matches this file's pre-#379 per-field
+ * `row.avg ?? existing?.career_avg ?? null` behavior exactly: whenever the
+ * box-score-derived value is present (including a legitimate 0), it wins
+ * outright and the legacy value is never consulted; the legacy value is only
+ * read when the box-score-derived field is null/undefined (absent or
+ * zero-sample), so box-score truth is never overridden by a stale legacy
+ * number once it genuinely exists.
+ */
 function toLegacyAggregateShape(
   adapted: AdaptedPlayerStats,
   existingLegacy: BaseballPlayerAggregates | undefined,
@@ -57,19 +79,19 @@ function toLegacyAggregateShape(
     total_sessions: adapted.totalSessions,
     practice_sessions: adapted.practice.sessions,
     game_sessions: adapted.game.sessions,
-    career_avg: adapted.game.avg,
-    career_obp: adapted.game.obp,
-    career_slg: adapted.game.slg,
-    career_ops: adapted.game.ops,
+    career_avg: adapted.game.avg ?? existingLegacy?.career_avg ?? null,
+    career_obp: adapted.game.obp ?? existingLegacy?.career_obp ?? null,
+    career_slg: adapted.game.slg ?? existingLegacy?.career_slg ?? null,
+    career_ops: adapted.game.ops ?? existingLegacy?.career_ops ?? null,
     practice_avg: adapted.practice.avg,
-    game_avg: adapted.game.avg,
+    game_avg: adapted.game.avg ?? existingLegacy?.game_avg ?? null,
     pressure_gap: adapted.legacyExtras.pressureGap,
     recent_trend: adapted.legacyExtras.recentTrend,
     trend_magnitude: adapted.legacyExtras.trendMagnitude,
     trend_velocity: adapted.legacyExtras.trendVelocity,
     last_5_avg: adapted.legacyExtras.last5Avg,
     last_10_avg: adapted.legacyExtras.last10Avg,
-    season_avg: adapted.game.avg,
+    season_avg: adapted.game.avg ?? existingLegacy?.season_avg ?? null,
     // No event-grain input is supplied by this wrapper (neither existing
     // caller fetches elite-event data), so this always resolves to the
     // legacy scalar unchanged — identical to this file's pre-#379 behavior.
