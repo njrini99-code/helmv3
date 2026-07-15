@@ -53,12 +53,14 @@ const TRUTHY = new Set(['1', 'true', 'on', 'yes']);
  * to gate has been deleted, and every `src/app/golf` / `src/components/golf`
  * call site has been removed. Hardcoded to `true`.
  *
- * NOT dead: `src/components/layout/header.tsx` (a shared BASEBALL component,
- * still rendered by ~15 `src/app/baseball/**` routes) calls this directly to
- * suppress its own legacy chrome under the baseball Fairway shell — baseball
- * never had its own Wave-W1-equivalent cleanup for this call site. Do not
- * delete this function (or {@link useRedesign}) without first migrating that
- * caller off the flag (out of scope for the golf-only Wave W1 mission).
+ * NOT dead: dozens of live `src/components/fairway/**` call sites (and
+ * `src/app/baseball/(dashboard)/layout.tsx`) still call this directly to
+ * gate Fairway-only behavior. (`src/components/layout/header.tsx` was a
+ * former BASEBALL caller of this flag; it had zero real importers left and
+ * was deleted as dead code during the 2026-07 cleanup pass — it is no longer
+ * a reason to keep this function around, but the many Fairway call sites
+ * still are.) Do not delete this function (or {@link useRedesign}) without
+ * first migrating every remaining caller off the flag.
  */
 export function isRedesignEnabled(): boolean {
   return true;
