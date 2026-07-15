@@ -3,18 +3,37 @@
 //
 // PRODUCT TRUTH THIS FILE PINS (#379 acceptance criteria — "Add a drift check
 // proving Command Center stats and Stats Center stats do not contradict the
-// same player/team/time period"):
-//   Command Center (`getCommandCenter`) still reads the legacy flat/aggregate
-//   layer directly (`baseball_player_aggregates` — grandfathered per
-//   `src/lib/baseball/stat-layer-manifest.ts`, migrated in a later #379
-//   phase behind `legacy-stat-adapters.ts`). Stats Center (`getStatsCenter`)
-//   reads ONLY the canonical box-score/season layer. For a player whose
-//   game-context activity is IDENTICAL across both layers (the state the
-//   reconciled seed script — scripts/seed-baseball-stats.mjs, #379 — now
-//   produces), the two surfaces must report the SAME game batting average
-//   for the same player/team/season, not two different numbers. Tolerance is
-//   0 (exact match to 3 decimals) since both sides compute the identical
-//   `hits / at-bats` formula from the identical underlying counts.
+// same player/team/time period") — REVISED after review:
+//
+//   The original version of this test hand-built a `baseball_player_
+//   aggregates` fixture with ZERO practice sessions to force Command
+//   Center's blended average to equal Stats Center's game-only average — a
+//   fixture that bypassed `seedTeamStats()` entirely. A review of this PR
+//   caught that this overclaims what Phase 0 delivers: for any
+//   REALISTICALLY-seeded player (the seed script picks `stat_type:
+//   'practice'` for ~40% of every player's sessions), Command Center's
+//   `career_avg` (which BLENDS game + practice sessions) and Stats Center's
+//   `battingAll.avg` (game-only) still legitimately disagree — reconciling
+//   THAT is a later #379 phase (migrating Command Center behind the shared
+//   `legacy-stat-adapters.ts` module), not this one.
+//
+//   This revision runs the ACTUAL `seedTeamStats()` reconciliation path
+//   (same import the sibling smoke test uses — not a hand-built fixture)
+//   with a realistic game+practice session mix (deterministic `mulberry32`
+//   PRNG, not `Math.random()`, so this stays reproducible and flake-free)
+//   and pins BOTH halves of the true picture:
+//     1. What Phase 0 DOES reconcile: the GAME-CONTEXT number agrees
+//        between the two layers. Stats Center's box-score-derived
+//        `battingAll.avg` and the legacy aggregate's OWN game-only figure
+//        (`game_avg`) are the identical `hits / at-bats` computed from the
+//        identical game-type sessions via two independent code paths — no
+//        drift in the underlying game data itself.
+//     2. What Phase 0 does NOT (yet) reconcile: Command Center's DISPLAYED
+//        `careerAvg` (game+practice blended) still diverges from Stats
+//        Center's DISPLAYED `battingAll.avg` (game-only) for this realistic
+//        player. That is an open Phase 0 gap, not a false "reconciled"
+//        claim — see docs/baseball/stats-architecture.md's Phase 0 status
+//        note.
 //
 // This is the cross-SURFACE analogue of stats-center.ts's own internal
 // `reconciled`/`drift` flag (which compares its own box-score derivation
@@ -33,9 +52,39 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { getStatsCenter } from '@/lib/baseball/read-models/stats-center';
 import { getCommandCenter } from '@/lib/baseball/read-models/command-center';
+import { seedTeamStats } from '../../../../scripts/seed-baseball-stats.mjs';
 
 const TEAM_ID = 'team-1';
 const SEASON = 2026;
+// Fixed mid-year timestamp — decoupled from the real "today" so this test
+// can never flake near a calendar-year boundary regardless of when CI runs
+// it (mirrors the sibling smoke test's rationale).
+const FIXED_NOW = Date.UTC(SEASON, 5, 15);
+
+// Deterministic PRNG (mulberry32) — the same implementation already used by
+// scripts/seed-baseball-box-scores.mjs for reproducible seed data. Unlike a
+// constant-value stub (which would deterministically pick the SAME
+// stat_type for every session — fine for a minimal smoke check, but not a
+// realistic player), this produces a genuinely varied, realistic game +
+// practice session mix while staying 100% reproducible across CI runs.
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return function random() {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Chosen empirically (verified by this file's own sanity test below): this
+// seed's session mix gives the player below BOTH game and practice at-bats,
+// not the degenerate all-game case a constant-value RNG would produce. If a
+// future change to the seed script's draw order ever made this seed
+// degenerate, the sanity test fails loudly instead of this file silently
+// going vacuous again.
+const REALISTIC_SEED = 20260379;
 
 function seedAuthorizedTeam() {
   return {
@@ -75,53 +124,69 @@ function seedAuthorizedTeam() {
   };
 }
 
-beforeEach(() => {
-  fake = createFakeSupabase({ user: { id: 'user-1' } });
-});
+const members = [
+  {
+    team_id: TEAM_ID,
+    player_id: 'p1',
+    jersey_number: 24,
+    baseball_players: { id: 'p1', first_name: 'Mike', last_name: 'Trout', primary_position: 'CF' },
+  },
+];
 
 describe('Command Center vs Stats Center drift (#379)', () => {
-  it('a reconciled player (box score + legacy aggregate built from the same game-only activity) reports the SAME game average on both surfaces', async () => {
-    // 20 AB, 7 H, all from ONE official game, no scrimmages and no practice
-    // sessions — so the legacy aggregate's career_avg (which would normally
-    // blend game + practice) equals the pure game-context number, making it
-    // a fair like-for-like comparison against Stats Center's box-score-only
-    // battingAll.avg.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- seedTeamStats is imported from a plain .mjs script (no ambient types); its return shape is asserted on directly below.
+  let summaries: any;
+
+  beforeEach(async () => {
     fake = createFakeSupabase({
       user: { id: 'user-1' },
-      tables: {
-        ...seedAuthorizedTeam(),
-        baseball_games: [
-          { id: 'g-1', team_id: TEAM_ID, game_type: 'game', game_date: `${SEASON}-04-01`, status: 'completed' },
-        ],
-        baseball_box_score_batting: [
-          { id: 'bb-1', team_id: TEAM_ID, game_id: 'g-1', player_id: 'p1', ab: 20, h: 7 },
-        ],
-        baseball_box_score_pitching: [],
-        baseball_player_season_stats: [],
-        baseball_player_aggregates: [
-          {
-            player_id: 'p1',
-            team_id: TEAM_ID,
-            total_sessions: 5,
-            total_at_bats: 20,
-            total_hits: 7,
-            career_avg: 0.35,
-            practice_avg: 0,
-            game_avg: 0.35,
-            pressure_gap: 0.35,
-            recent_trend: 'stable',
-            trend_data: [],
-            last_5_avg: 0.35,
-            last_10_avg: 0.35,
-            last_session_at: `${SEASON}-04-01`,
-          },
-        ],
+      tables: seedAuthorizedTeam(),
+      rpc: {
+        recalculate_baseball_season_stats: async () => ({ data: null, error: null }),
       },
     });
 
+    // Exercise the REAL reconciled seed logic — not a hand-built fixture —
+    // with a realistic (deterministic, reproducible) game+practice mix.
+    summaries = await seedTeamStats(fake, {
+      teamId: TEAM_ID,
+      coachId: 'coach-1',
+      members,
+      dryRun: false,
+      randomFn: mulberry32(REALISTIC_SEED),
+      now: FIXED_NOW,
+      log: false,
+    });
+  });
+
+  it('sanity: this seed is realistic — the player has BOTH game and practice at-bats, not the degenerate all-game case', () => {
+    const p1 = summaries.find((s: { playerId: string }) => s.playerId === 'p1');
+    expect(p1).toBeTruthy();
+    expect(p1.practiceAtBats).toBeGreaterThan(0);
+    expect(p1.gameBoxScoreCount).toBeGreaterThan(0);
+  });
+
+  it('reconciled: the GAME-CONTEXT number agrees between the two layers (no drift in the underlying game data)', async () => {
+    const p1 = summaries.find((s: { playerId: string }) => s.playerId === 'p1');
+    const statsCenter = await getStatsCenter(TEAM_ID, { seasonYear: SEASON });
+    expect(statsCenter.authorized).toBe(true);
+
+    const scPlayer = statsCenter.rows.find((r) => r.playerId === 'p1');
+    expect(scPlayer).toBeTruthy();
+    expect(scPlayer!.noData).toBe(false);
+
+    // Stats Center's box-score-derived game average and the legacy
+    // aggregate's OWN game-only average (game_avg — computed independently,
+    // straight from the same underlying session data) must be the identical
+    // number: this is the actual #379 reconciliation this seed script
+    // delivers.
+    expect(scPlayer!.battingAll.avg).toBeCloseTo(p1.aggregateRow.game_avg as number, 3);
+  });
+
+  it("KNOWN OPEN GAP: Command Center's blended average still diverges from Stats Center's game-only average for a realistic player", async () => {
+    const p1 = summaries.find((s: { playerId: string }) => s.playerId === 'p1');
     const commandCenter = await getCommandCenter(TEAM_ID);
     const statsCenter = await getStatsCenter(TEAM_ID, { seasonYear: SEASON });
-
     expect(commandCenter.authorized).toBe(true);
     expect(statsCenter.authorized).toBe(true);
 
@@ -132,22 +197,19 @@ describe('Command Center vs Stats Center drift (#379)', () => {
     expect(ccPlayer!.noData).toBe(false);
     expect(scPlayer!.noData).toBe(false);
 
-    // 7 / 20 = .350 on both surfaces — the drift check itself.
-    expect(scPlayer!.battingAll.avg).toBeCloseTo(7 / 20, 3);
-    expect(ccPlayer!.careerAvg).toBeCloseTo(scPlayer!.battingAll.avg as number, 3);
-  });
-
-  it('DEMONSTRATES the drift this check catches: a stale legacy aggregate disagreeing with the canonical box score', () => {
-    // Same box-score truth as above (.350), but the legacy aggregate row was
-    // never reconciled (e.g. seeded by the pre-#379 seed script, or a coach
-    // manually re-entered a box score without re-running recalculatePlayer
-    // Aggregates) and still reports .200. A tolerance-0 comparison MUST flag
-    // this as drift rather than silently trusting either source — this test
-    // documents what "not the same" looks like so the passing case above
-    // isn't accidentally vacuous.
-    const boxScoreAvg = 7 / 20;
-    const staleLegacyAvg = 0.2;
-    const tolerance = 0;
-    expect(Math.abs(boxScoreAvg - staleLegacyAvg) > tolerance).toBe(true);
+    // Command Center still reads baseball_player_aggregates.career_avg
+    // directly (grandfathered — see stat-layer-manifest.ts), which BLENDS
+    // this player's game AND practice sessions. Since this player has real
+    // practice at-bats (asserted in the sanity test above), that blended
+    // number is NOT the same as Stats Center's game-only battingAll.avg —
+    // Phase 0 does not claim otherwise. Reconciling these two DISPLAYED
+    // numbers requires migrating Command Center behind the shared
+    // legacy-stat-adapters.ts module, a later #379 phase (see
+    // docs/baseball/stats-architecture.md).
+    expect(p1.practiceAtBats).toBeGreaterThan(0);
+    expect(ccPlayer!.careerAvg).not.toBeCloseTo(scPlayer!.battingAll.avg as number, 3);
+    // ...and the gap is exactly explained by the blend: CC's number equals
+    // the FULL (game+practice) aggregate average, not the game-only one.
+    expect(ccPlayer!.careerAvg).toBeCloseTo(p1.aggregateRow.career_avg as number, 3);
   });
 });

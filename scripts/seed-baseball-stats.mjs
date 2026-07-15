@@ -22,9 +22,18 @@
  *      `docs/baseball/stats-migration-plan.md`.
  *   2. Canonical box-score/season (`baseball_box_score_batting` /
  *      `_pitching` → `recalculate_baseball_season_stats()` →
- *      `baseball_player_season_stats`) — NEW. For every `stat_type: 'game'`
- *      session this script seeds, it additionally upserts a synthetic
- *      completed `baseball_games` row + matching box-score line(s), then
+ *      `baseball_player_season_stats`) — NEW. Every rostered player's
+ *      `stat_type: 'game'` sessions attach to ONE SHARED team game calendar
+ *      (`buildTeamGameSchedule`) instead of each minting a private game — a
+ *      review of this chunk caught an earlier revision generating a private
+ *      `baseball_games` row PER PLAYER PER SESSION (150-350 fake single-
+ *      player "games" for a normal roster). Now this seeder upserts ONE
+ *      completed `baseball_games` row per distinct team-level game date,
+ *      with every attending player's batting (always) and pitching (when
+ *      the session recorded innings pitched) box-score line referencing
+ *      that SAME shared `game_id` — mirroring the existing correct pattern
+ *      in `scripts/seed-rini-baseball-demo.ts` (build N team games once,
+ *      then loop players and attach lines to the same `game.id`). It then
  *      calls the SAME `recalculate_baseball_season_stats` RPC
  *      `src/app/baseball/actions/games.ts`'s box-score save flow calls
  *      (`completeGameAndRecalculate` / `save_baseball_full_box_score`) —
@@ -38,12 +47,27 @@
  *   script (legacy layer only) looked fully populated on Command
  *   Center/Roster/Passport and completely empty on Stats Center.
  *
+ * KNOWN OPEN GAP (not fixed by this pass — see docs/baseball/stats-
+ * architecture.md's Phase 0 status note): Command Center's roster-pulse
+ * average (`baseball_player_aggregates.career_avg`) BLENDS game + practice
+ * sessions, while Stats Center's average is derived ONLY from box-score
+ * (game-type) rows. For any player with practice sessions (the seed picks
+ * practice for ~40% of every player's sessions), these two DISPLAYED
+ * numbers will still legitimately disagree — reconciling that is a later
+ * #379 phase (migrating Command Center behind the shared
+ * `legacy-stat-adapters.ts` module), not this one. What this pass DOES
+ * guarantee is that the GAME-CONTEXT numbers agree between the two layers
+ * (no drift in the underlying game data itself) — see
+ * `src/contracts/baseball/stats/command-center-stats-center-drift.test.ts`.
+ *
  * UPSERT-ONLY: every write here is a `.upsert(row, { onConflict: ... })`
- * keyed on a deterministic id (flat sessions, box-score games) or the
- * table's natural key (`game_id, player_id` for box-score lines, matching
- * the unique constraint `recalculate_baseball_season_stats`'s caller —
- * `save_baseball_full_box_score` — relies on). Nothing is ever deleted or
- * reinserted; re-running this script only ever adds/updates rows.
+ * keyed on a deterministic id (flat sessions, box-score games — scoped to
+ * TEAM + DATE, never player, so every attending player's lines resolve to
+ * the same shared game) or the table's natural key (`game_id, player_id` for
+ * box-score lines, matching the unique constraint
+ * `recalculate_baseball_season_stats`'s caller — `save_baseball_full_box_score`
+ * — relies on). Nothing is ever deleted or reinserted; re-running this
+ * script only ever adds/updates rows.
  *
  * SECURITY NOTE (#380): an earlier revision of this file (commit ef1dc926,
  * superseded by #417) had a production Supabase URL, a long-lived
@@ -130,6 +154,51 @@ export function createRng(randomFn = Math.random) {
 
 const fmt = (n) => parseFloat(n.toFixed(3));
 
+/**
+ * Fisher-Yates shuffle driven by an injectable `next()` draw (from
+ * `createRng`) — used below to give each player a private, deterministic-
+ * under-a-fixed-rng ordering onto the TEAM's shared game schedule, so
+ * different players attend different (overlapping) subsets of the same real
+ * games instead of everyone marching through the schedule in the same order.
+ * Does not mutate `arr`.
+ */
+function shuffled(arr, next) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+  return copy;
+}
+
+/**
+ * Builds the TEAM's shared game calendar (#379 fix) — one list of
+ * `{ gameDate, opponentName }` slots every rostered player's `stat_type:
+ * 'game'` sessions attach to (see `buildPlayerSessions`'s `gameSchedule`
+ * param). This is what makes multiple players' box-score lines for "the game
+ * on `gameDate`" reference the SAME `baseball_games` row (built once by
+ * `buildBoxScoreRowsForSessions`, keyed on team+date) instead of each player
+ * minting a private one — mirroring the existing correct pattern in
+ * `scripts/seed-rini-baseball-demo.ts` (build N team games once, then loop
+ * players and attach lines to the same `game.id`).
+ *
+ * Pure — no I/O. `rng`/`now` injectable for the same determinism reasons as
+ * `buildPlayerSessions`.
+ */
+export function buildTeamGameSchedule({ rng = createRng(), now = Date.now(), numGames } = {}) {
+  const { rand, pick } = rng;
+  const n = numGames ?? rand(20, 28);
+  const schedule = [];
+  for (let i = 0; i < n; i++) {
+    const daysAgo = (n - i) * rand(3, 6);
+    const gameDate = new Date(now - daysAgo * 86400000).toISOString().split('T')[0];
+    schedule.push({ gameDate, opponentName: pick(OPPONENTS) });
+  }
+  return schedule;
+}
+
 async function upsertRow(client, table, row, dryRun, label, onConflict = 'id') {
   if (dryRun) {
     console.log(`  [DRY RUN] would upsert ${table}: ${label}`);
@@ -142,17 +211,42 @@ async function upsertRow(client, table, row, dryRun, label, onConflict = 'id') {
  * Builds one player's legacy-shape session rows (layer 1). Pure — no I/O.
  * `rng` and `now` are injectable so tests get deterministic, reproducible
  * output instead of depending on `Math.random()` / `Date.now()`.
+ *
+ * `gameSchedule` (from `buildTeamGameSchedule`) is the TEAM's shared game
+ * calendar (#379 fix): every `stat_type: 'game'` session below lands on one
+ * of these shared dates — via a private shuffled ordering so different
+ * players attend an overlapping-but-not-identical subset of the same real
+ * games — instead of computing its own independent date the way `practice`
+ * sessions still do. This is what lets `buildBoxScoreRowsForSessions` group
+ * different players' game sessions on the same date onto ONE shared
+ * `baseball_games` row instead of minting one row per player per session.
+ * Falls back to the old independently-dated behavior when no schedule (or
+ * an empty one) is supplied.
  */
-export function buildPlayerSessions({ teamId, playerId, coachId, position, rng = createRng(), now = Date.now() }) {
+export function buildPlayerSessions({
+  teamId, playerId, coachId, position, rng = createRng(), now = Date.now(), gameSchedule = [],
+}) {
   const { rand, pick, next } = rng;
   const isPitcher = position === 'P';
   const sessions = [];
   const numSessions = rand(14, 22);
+  const schedule = gameSchedule.length > 0 ? shuffled(gameSchedule, next) : null;
+  let gameSlot = 0;
 
   for (let s2 = 0; s2 < numSessions; s2++) {
-    const daysAgo = (numSessions - s2) * rand(3, 6);
-    const sessionDate = new Date(now - daysAgo * 86400000).toISOString().split('T')[0];
     const statType = pick(['game', 'game', 'game', 'practice', 'practice']);
+
+    let sessionDate;
+    let scheduledOpponent = null;
+    if (statType === 'game' && schedule) {
+      const slot = schedule[gameSlot % schedule.length];
+      sessionDate = slot.gameDate;
+      scheduledOpponent = slot.opponentName;
+      gameSlot += 1;
+    } else {
+      const daysAgo = (numSessions - s2) * rand(3, 6);
+      sessionDate = new Date(now - daysAgo * 86400000).toISOString().split('T')[0];
+    }
 
     const ab = isPitcher ? rand(0, 1) : rand(2, 5);
     const h = Math.min(ab, rand(0, Math.ceil(ab * 0.38)));
@@ -178,7 +272,7 @@ export function buildPlayerSessions({ teamId, playerId, coachId, position, rng =
       coach_id: coachId,
       session_date: sessionDate,
       session_name: statType === 'game'
-        ? `${GAME_OPPONENT_PREFIX}${pick(OPPONENTS)}`
+        ? `${GAME_OPPONENT_PREFIX}${scheduledOpponent ?? pick(OPPONENTS)}`
         : pick(['Batting Practice', 'Intra-squad', 'Live BP', 'Scrimmage']),
       stat_type: statType,
       at_bats: ab,
@@ -266,50 +360,68 @@ export function buildAggregateRow(teamId, playerId, sessions) {
     trend_data: trendData,
     pressure_gap: fmt(gameAvg - practiceAvg),
     // Not persisted on baseball_player_aggregates but useful for callers'
-    // console summaries.
+    // console summaries / test assertions (stripped before the upsert below).
     _totalHR: totalHR,
     _totalRBI: totalRBI,
+    _totalPracticeAtBats: pracAB,
   };
 }
 
 /**
- * Derives the canonical box-score-era rows (#379) for this player's
- * `stat_type: 'game'` sessions ONLY — one synthetic completed
- * `baseball_games` row + a matching batting line (always) and pitching line
- * (when the session recorded innings pitched) per game-type session.
- * Practice sessions have no box-score equivalent (see the #379 design's
- * Open Questions on a canonical practice shape) and are intentionally not
+ * Derives the canonical box-score-era rows (#379) for a TEAM's
+ * `stat_type: 'game'` sessions — one SHARED completed `baseball_games` row
+ * per distinct game date (never one private row per player per session — a
+ * review of this chunk caught exactly that bug), with every attending
+ * player's batting line (always) and pitching line (when the session
+ * recorded innings pitched) for that date referencing the SAME `game_id`.
+ * Mirrors the existing correct pattern in `scripts/seed-rini-baseball-demo.ts`
+ * (build N team games once, then loop players and attach lines to the same
+ * `game.id`).
+ *
+ * `allSessions` MUST be the flat list of every rostered player's sessions
+ * (each session already carries its own `player_id`) — not one player's
+ * subset — so that sessions from different players landing on the same
+ * `session_date` (via the shared team game schedule every player's
+ * `buildPlayerSessions()` call draws from, see `buildTeamGameSchedule`)
+ * collapse onto one shared game row instead of minting a duplicate.
+ *
+ * Practice sessions have no box-score equivalent (see the #379 design's Open
+ * Questions on a canonical practice shape) and are intentionally not
  * represented here — the legacy aggregate's `practice_avg` remains the only
  * home for that context until a canonical practice shape lands.
  *
  * Pure — no I/O — so both `seedTeamStats` and the drift/smoke tests share
  * one derivation instead of the tests re-implementing it.
  */
-export function buildBoxScoreRowsForSessions(teamId, sessions) {
-  const games = [];
+export function buildBoxScoreRowsForSessions(teamId, allSessions) {
+  const gamesByDate = new Map();
   const batting = [];
   const pitching = [];
 
-  for (const session of sessions) {
+  for (const session of allSessions) {
     if (session.stat_type !== 'game') continue;
 
-    const gameId = detId(`box-game:${teamId}:${session.player_id}:${session.id}`);
-    const opponentName = session.session_name?.startsWith(GAME_OPPONENT_PREFIX)
-      ? session.session_name.slice(GAME_OPPONENT_PREFIX.length)
-      : null;
-
-    games.push({
-      id: gameId,
-      team_id: teamId,
-      game_date: session.session_date,
-      game_type: 'game',
-      opponent_name: opponentName,
-      status: 'completed',
-    });
+    let game = gamesByDate.get(session.session_date);
+    if (!game) {
+      const opponentName = session.session_name?.startsWith(GAME_OPPONENT_PREFIX)
+        ? session.session_name.slice(GAME_OPPONENT_PREFIX.length)
+        : null;
+      // Scoped to TEAM + DATE only (never player_id) — this is the shared
+      // game id every attending player's box-score lines below reference.
+      game = {
+        id: detId(`box-game:${teamId}:${session.session_date}`),
+        team_id: teamId,
+        game_date: session.session_date,
+        game_type: 'game',
+        opponent_name: opponentName,
+        status: 'completed',
+      };
+      gamesByDate.set(session.session_date, game);
+    }
 
     batting.push({
-      id: detId(`box-bat:${gameId}:${session.player_id}`),
-      game_id: gameId,
+      id: detId(`box-bat:${game.id}:${session.player_id}`),
+      game_id: game.id,
       player_id: session.player_id,
       team_id: teamId,
       ab: session.at_bats,
@@ -326,8 +438,8 @@ export function buildBoxScoreRowsForSessions(teamId, sessions) {
 
     if (session.innings_pitched != null) {
       pitching.push({
-        id: detId(`box-pit:${gameId}:${session.player_id}`),
-        game_id: gameId,
+        id: detId(`box-pit:${game.id}:${session.player_id}`),
+        game_id: game.id,
         player_id: session.player_id,
         team_id: teamId,
         ip: session.innings_pitched,
@@ -341,18 +453,25 @@ export function buildBoxScoreRowsForSessions(teamId, sessions) {
     }
   }
 
-  return { games, batting, pitching };
+  return { games: [...gamesByDate.values()], batting, pitching };
 }
 
 /**
- * Reconciled per-team stats seeding (#379). For every rostered player:
- *   1. Upserts the legacy flat sessions + derived aggregate row (layer 1) —
- *      unchanged behavior, kept for grandfathered consumers.
- *   2. Upserts the matching box-score game/batting/pitching rows (layer 2)
- *      for that player's `stat_type: 'game'` sessions, then calls
- *      `recalculate_baseball_season_stats` for every season year touched —
- *      the SAME RPC `src/app/baseball/actions/games.ts`'s box-score save
- *      flow calls, not a bespoke insert into `baseball_player_season_stats`.
+ * Reconciled per-team stats seeding (#379). For the whole roster:
+ *   1. Builds ONE shared team game schedule (`buildTeamGameSchedule`), then
+ *      for every rostered player upserts the legacy flat sessions + derived
+ *      aggregate row (layer 1) — unchanged behavior, kept for grandfathered
+ *      consumers. Each player's `stat_type: 'game'` sessions attach to that
+ *      shared schedule (see `buildPlayerSessions`).
+ *   2. Derives the box-score game/batting/pitching rows (layer 2) for ALL
+ *      players' `stat_type: 'game'` sessions TOGETHER (not per player) —
+ *      `buildBoxScoreRowsForSessions` groups by game date so multiple
+ *      players' lines for "the game on <date>" reference ONE shared
+ *      `baseball_games` row instead of each player minting a private one —
+ *      then calls `recalculate_baseball_season_stats` per player per season
+ *      year touched — the SAME RPC `src/app/baseball/actions/games.ts`'s
+ *      box-score save flow calls, not a bespoke insert into
+ *      `baseball_player_season_stats`.
  *
  * Every write is an upsert (never a delete-then-reinsert). Returns a summary
  * per player for the caller (CLI printer or a test) to inspect.
@@ -367,13 +486,17 @@ export async function seedTeamStats(client, {
   log = true,
 }) {
   const rng = createRng(randomFn);
-  const summaries = [];
+  const gameSchedule = buildTeamGameSchedule({ rng, now });
+  const perPlayer = new Map();
 
   for (const member of members) {
     const playerId = member.player_id;
     const pos = member.baseball_players?.primary_position || 'OF';
 
-    const sessions = buildPlayerSessions({ teamId, playerId, coachId, position: pos, rng, now });
+    const sessions = buildPlayerSessions({
+      teamId, playerId, coachId, position: pos, rng, now, gameSchedule,
+    });
+    perPlayer.set(playerId, { position: pos, sessions });
 
     // ---- Layer 1: legacy flat sessions (unchanged) ----
     for (const session of sessions) {
@@ -389,7 +512,9 @@ export async function seedTeamStats(client, {
     }
 
     const aggregateRow = buildAggregateRow(teamId, playerId, sessions);
-    const { _totalHR: totalHR, _totalRBI: totalRBI, ...persistedAggregateRow } = aggregateRow;
+    const { _totalHR: totalHR, _totalRBI: totalRBI, _totalPracticeAtBats: totalPracticeAtBats, ...persistedAggregateRow } = aggregateRow;
+    perPlayer.get(playerId).aggregateRow = persistedAggregateRow;
+    perPlayer.get(playerId).totalPracticeAtBats = totalPracticeAtBats;
 
     if (dryRun) {
       if (log) console.log(`  [DRY RUN] ${pos.padEnd(2)} | ${sessions.length} sessions for ${playerId}`);
@@ -405,51 +530,85 @@ export async function seedTeamStats(client, {
         );
       }
     }
+  }
 
-    // ---- Layer 2 reconciliation (#379): box-score + season recalc ----
-    const { games, batting, pitching } = buildBoxScoreRowsForSessions(teamId, sessions);
+  // ---- Layer 2 reconciliation (#379): SHARED box-score games + season recalc ----
+  // Built from every player's sessions TOGETHER so a game on a given date is
+  // ONE row every attending player's lines reference (see
+  // buildBoxScoreRowsForSessions) — never one private row per player.
+  const allSessions = [...perPlayer.values()].flatMap((p) => p.sessions);
+  const { games, batting, pitching } = buildBoxScoreRowsForSessions(teamId, allSessions);
 
-    if (dryRun) {
-      if (log) {
-        console.log(
-          `  [DRY RUN] would upsert ${games.length} box-score game(s), ${batting.length} batting line(s), ${pitching.length} pitching line(s) for ${playerId}`,
-        );
-      }
-    } else {
-      for (const game of games) {
-        const { error } = await client.from('baseball_games').upsert(game, { onConflict: 'id' });
-        if (error && log) console.error('    ⚠ box-score game upsert error:', error.message);
-      }
-      for (const row of batting) {
-        const { error } = await client
-          .from('baseball_box_score_batting')
-          .upsert(row, { onConflict: 'game_id,player_id' });
-        if (error && log) console.error('    ⚠ box-score batting upsert error:', error.message);
-      }
-      for (const row of pitching) {
-        const { error } = await client
-          .from('baseball_box_score_pitching')
-          .upsert(row, { onConflict: 'game_id,player_id' });
-        if (error && log) console.error('    ⚠ box-score pitching upsert error:', error.message);
-      }
+  if (dryRun) {
+    if (log) {
+      console.log(
+        `\n  [DRY RUN] would upsert ${games.length} shared box-score game(s) across the team, ${batting.length} batting line(s), ${pitching.length} pitching line(s)`,
+      );
+    }
+  } else {
+    for (const game of games) {
+      const { error } = await client.from('baseball_games').upsert(game, { onConflict: 'id' });
+      if (error && log) console.error('    ⚠ box-score game upsert error:', error.message);
+    }
+    for (const row of batting) {
+      const { error } = await client
+        .from('baseball_box_score_batting')
+        .upsert(row, { onConflict: 'game_id,player_id' });
+      if (error && log) console.error('    ⚠ box-score batting upsert error:', error.message);
+    }
+    for (const row of pitching) {
+      const { error } = await client
+        .from('baseball_box_score_pitching')
+        .upsert(row, { onConflict: 'game_id,player_id' });
+      if (error && log) console.error('    ⚠ box-score pitching upsert error:', error.message);
+    }
 
-      const seasonYears = new Set(games.map((g) => g.game_date.slice(0, 4)));
-      for (const yearStr of seasonYears) {
+    // Season recalc is per player per season year — derive each player's
+    // touched years from the shared games their own lines reference.
+    const gameById = new Map(games.map((g) => [g.id, g]));
+    const yearsByPlayer = new Map();
+    for (const row of [...batting, ...pitching]) {
+      const game = gameById.get(row.game_id);
+      if (!game) continue;
+      const years = yearsByPlayer.get(row.player_id) ?? new Set();
+      years.add(game.game_date.slice(0, 4));
+      yearsByPlayer.set(row.player_id, years);
+    }
+    for (const [playerId, years] of yearsByPlayer) {
+      for (const yearStr of years) {
         const { error } = await client.rpc('recalculate_baseball_season_stats', {
           p_player_id: playerId,
           p_team_id: teamId,
           p_season_year: parseInt(yearStr, 10),
         });
-        if (error && log) console.error(`    ⚠ season recalc error (${yearStr}):`, error.message);
+        if (error && log) console.error(`    ⚠ season recalc error (player ${playerId}, ${yearStr}):`, error.message);
       }
     }
+  }
 
+  // Distinct shared games each player actually appears in (via their own
+  // batting lines, which are always written for every game-type session
+  // regardless of position — see buildBoxScoreRowsForSessions).
+  const gamesByPlayer = new Map();
+  for (const row of batting) {
+    const set = gamesByPlayer.get(row.player_id) ?? new Set();
+    set.add(row.game_id);
+    gamesByPlayer.set(row.player_id, set);
+  }
+
+  const summaries = [];
+  for (const [playerId, { position, sessions, aggregateRow, totalPracticeAtBats }] of perPlayer) {
     summaries.push({
       playerId,
-      position: pos,
+      position,
       sessionCount: sessions.length,
-      gameBoxScoreCount: games.length,
-      aggregateRow: persistedAggregateRow,
+      gameBoxScoreCount: gamesByPlayer.get(playerId)?.size ?? 0,
+      // Non-zero whenever this player's seeded sessions included practice
+      // at-bats — surfaced (not persisted) so tests/CLI can confirm a run
+      // actually exercised the mixed game+practice case, not the degenerate
+      // all-game one. See the #379 Command-Center-vs-Stats-Center drift test.
+      practiceAtBats: totalPracticeAtBats,
+      aggregateRow,
     });
   }
 

@@ -369,6 +369,6 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     group: 'test',
     status: 'pending migration',
     note:
-      "#379 Phase 0 drift test. Builds a fake baseball_player_aggregates row to exercise getCommandCenter() (itself grandfathered above) against getStatsCenter()'s box-score-derived numbers for the same player/team/season. Migrates when command-center.ts moves behind the shared legacy adapter (a later #379 chunk).",
+      "#379 Phase 0 drift test. Runs the real seedTeamStats() reconciliation path (not a hand-built fixture) with a realistic game+practice session mix, then exercises getCommandCenter() (itself grandfathered above) against getStatsCenter()'s box-score-derived numbers for the same player/team/season — pinning that the game-context numbers agree while explicitly asserting the still-open gap between Command Center's blended average and Stats Center's game-only one. Migrates when command-center.ts moves behind the shared legacy adapter (a later #379 chunk).",
   },
 ] as const;
