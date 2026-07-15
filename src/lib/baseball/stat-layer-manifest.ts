@@ -195,13 +195,8 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     path: 'src/lib/coachhelm/baseball/loaders.ts',
     group: 'coachhelm-engine',
     status: 'pending migration',
-    note: 'Loads baseball_player_stats rows as the input series for the V10 metrics registry below.',
-  },
-  {
-    path: 'src/lib/coachhelm/baseball/metrics/registry.ts',
-    group: 'coachhelm-engine',
-    status: 'pending migration',
-    note: 'Derives K-rate, BB-rate, AVG, SLG, OBP, ERA, exit/pitch velocity metrics from baseball_player_stats / baseball_player_aggregates columns.',
+    note:
+      '#379 Phase 4a: still the input-series loader for the V10 metrics registry, and still cites baseball_player_stats as the DEFAULT/fallback source table for any caller that has not migrated its fetch — engine-run.ts, outcome-sweep.ts, action-baseline.ts, practice-effectiveness.ts (a Phase 4b/2 concern). It now ALSO accepts, additively: (1) a per-row hittingSourceTable/pitchingSourceTable tag a migrated caller sets after normalizing baseball_box_score_batting/_pitching rows (normalizeBoxScoreBattingRow/normalizeBoxScorePitchingRow), which the loader cites verbatim in its source_refs instead of the legacy table; (2) an optional eventDerived input (eventDerivedVelocityFromMetrics) that sources avg exit/pitch velocity from elite-stat-events.ts, winning over the legacy exit_velocity/pitch_velocity scalar per field when present. Retires from this list once every caller has migrated and the legacy-table fallback path is dead code.',
   },
   {
     path: 'src/lib/coachhelm/baseball/generators/v10.ts',
@@ -315,13 +310,8 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     path: 'src/lib/coachhelm/baseball/engine-v10.test.ts',
     group: 'test',
     status: 'pending migration',
-    note: 'Fixture source_refs table mirrors generators/v10.ts.',
-  },
-  {
-    path: 'src/lib/coachhelm/baseball/metrics/registry.role-visibility.test.ts',
-    group: 'test',
-    status: 'pending migration',
-    note: 'Fixture table name mirrors registry.ts visibility-ref shape.',
+    note:
+      '#379 Phase 4a: pins loaders.ts\'s legacy-fallback behavior (an unmigrated caller keeps citing baseball_player_stats verbatim in source_refs when no eventDerived/source-table input is supplied) alongside the NEW event-derived-override and box-score-normalization tests — so this legitimately still references the deprecated table by design, not staleness. Retires once loaders.ts drops the legacy-table fallback entirely (tracked on loaders.ts\'s own manifest entry above).',
   },
   {
     path: 'src/app/baseball/actions/__tests__/imports-registry.test.ts',
