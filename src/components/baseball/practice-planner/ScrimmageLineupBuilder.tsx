@@ -274,7 +274,10 @@ export function ScrimmageLineupBuilder({
                           : `${coords.label}: empty${selectedPlayerId ? '. Tap to place selected player.' : ''}`
                       }
                       className={cn(
-                        'min-h-0 flex min-w-[52px] flex-col items-center rounded-lg border px-1.5 py-1 text-center shadow-sm',
+                        // No min-h-0 override here: the only tap-to-place path
+                        // on a touchscreen (native HTML5 drag doesn't fire on
+                        // touch) needs Button's own min-h-[44px] floor.
+                        'flex min-w-[52px] flex-col items-center rounded-lg border px-1.5 py-1 text-center shadow-sm',
                         // Living Annual ink: true conflict reads --notice-error-ink, never raw red.
                         conflict
                           ? 'border-[color:var(--notice-error-ink)] bg-[var(--notice-error-ink)]/10'
@@ -336,18 +339,24 @@ export function ScrimmageLineupBuilder({
                     <ul className="space-y-1">
                       {held.map((s) => (
                         <li key={s.playerId} className="flex items-center justify-between gap-1">
-                          <span className="truncate text-micro text-warm-800">
+                          <span className="min-w-0 flex-1 truncate text-micro text-warm-800">
                             {rosterById.get(s.playerId)?.name ?? 'Player'}
                           </span>
+                          {/* Real 44x44 floor (not an invisible hit-slop): rows
+                              in this list sit only `space-y-1` (4px) apart, so
+                              an oversized pseudo-element hit area would overlap
+                              the neighboring row's remove button and steal taps
+                              meant for it. Growing the box itself keeps rows
+                              cleanly separated. */}
                           <Button
                             type="button"
                             variant="ghost"
                             onClick={() => removeSlot(s.playerId)}
                             haptic="none"
                             aria-label="Remove"
-                            className="min-h-0 p-0 text-warm-400 hover:bg-transparent hover:text-[color:var(--notice-error-ink)]"
+                            className="min-h-[44px] min-w-[44px] shrink-0 p-2 text-warm-400 hover:bg-transparent hover:text-[color:var(--notice-error-ink)]"
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-3 w-3" aria-hidden />
                           </Button>
                         </li>
                       ))}
