@@ -23,6 +23,7 @@ import type { RosterBoardMember } from '@/components/baseball/roster';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { RosterReadModel } from '@/lib/baseball/read-models/roster';
 import { mergeSeasonStatsIntoAggregates } from '@/lib/baseball/read-models/roster-aggregates-merge';
+import { fetchRosterLegacyAggregates } from '@/lib/baseball/read-models/roster-legacy-aggregates-source';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { RosterFairway } from './RosterFairway';
 import type { LineupSlot } from '@/components/coach/lineup/LineupBuilder';
@@ -245,19 +246,16 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
 
     setRoster(rosterData || []);
 
-    // Fetch aggregates for all players on this team
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: aggregatesData, error: aggError } = await (supabase as any)
-      .from('baseball_player_aggregates')
-      .select('*')
-      .eq('team_id', resolvedTeamId) as { data: BaseballPlayerAggregates[] | null; error: unknown };
+    // Fetch legacy-fallback aggregates for all players on this team. The
+    // deprecated table read itself lives in roster-legacy-aggregates-source.ts
+    // (the one shared spot the manifest allowlist tracks for both this client
+    // refetch and getRoster's server read model) — this file only consumes
+    // the already-fetched map and hands it to the shared adapter below (#379).
+    const { aggregates: fetchedAggregates, error: aggError } =
+      await fetchRosterLegacyAggregates(supabase, resolvedTeamId);
 
-    let aggMap: Record<string, BaseballPlayerAggregates> = {};
-    if (!aggError && aggregatesData) {
-      aggregatesData.forEach((agg) => {
-        aggMap[agg.player_id] = agg;
-      });
-    } else if (aggError) {
+    let aggMap: Record<string, BaseballPlayerAggregates> = fetchedAggregates;
+    if (aggError) {
       setAggregatesWarning(true);
     }
 

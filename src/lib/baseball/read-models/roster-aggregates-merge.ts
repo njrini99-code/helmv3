@@ -6,7 +6,7 @@
 // 'server-only', no Supabase client) so both call sites stay in lockstep
 // instead of hand-duplicating the same merge logic and drifting.
 //
-// WHY THIS EXISTS: baseball_player_aggregates is written ONLY by the legacy
+// WHY THIS EXISTS: the legacy aggregates table is written ONLY by the legacy
 // CSV/manual stat-log recompute path. The box-score pipeline the rest of the
 // product treats as canonical (Player Profile Stats tab, Passport) writes
 // baseball_player_season_stats instead and never touches aggregates — so a
