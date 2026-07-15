@@ -89,9 +89,15 @@ interface Props {
 
 function ProgramEditorSkeleton() {
   return (
-    <div className="flex h-full min-h-[700px]">
-      {/* Left rail skeleton */}
-      <aside className="w-72 shrink-0 border-r border-warm-100 bg-warm-50/50 p-4 space-y-4">
+    <div className="flex flex-col gap-4 lg:h-full lg:min-h-[700px] lg:flex-row">
+      {/* Mobile tab switcher skeleton */}
+      <div className="flex rounded-xl border border-warm-200 bg-warm-50 p-1 lg:hidden">
+        <Skeleton className="h-7 flex-1 rounded-lg" />
+        <Skeleton className="ml-1 h-7 flex-1 rounded-lg" />
+      </div>
+      {/* Left rail skeleton — hidden below lg; the mobile viewport shows the
+          right pane skeleton (the day editor is this route's default tab). */}
+      <aside className="hidden w-full bg-warm-50/50 p-4 space-y-4 lg:flex lg:w-72 lg:shrink-0 lg:flex-col lg:border-r lg:border-warm-100">
         <div className="flex items-center justify-between">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-8 w-14 rounded-lg" />
@@ -116,7 +122,7 @@ function ProgramEditorSkeleton() {
         </div>
       </aside>
       {/* Right pane skeleton */}
-      <main className="flex-1 p-6 space-y-4">
+      <main className="flex-1 p-4 space-y-4 lg:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
@@ -222,6 +228,12 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
   const [selectedDayId, setSelectedDayId] = useState<string | null>(
     weeks[0]?.days[0]?.id ?? null,
   );
+
+  // Mobile tab — which pane is visible below `lg` (mirrors LiftCanvas's own
+  // three-pane mobile tab-switcher, one level up in the same vertical).
+  // Defaults to 'day' since that's the primary content (editing exercises),
+  // same as LiftCanvas defaulting its own tab to 'session'.
+  const [activePane, setActivePane] = useState<'tree' | 'day'>('day');
 
   // ---- Publish modal ----
   const [showPublish, setShowPublish] = useState(false);
@@ -393,7 +405,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
       if (result.success) {
         setAddDayWeekId(null);
         setDayName(''); setDayType('full_body'); setDayMinutes('');
-        if (result.id) setSelectedDayId(result.id);
+        if (result.id) { setSelectedDayId(result.id); setActivePane('day'); }
         refresh();
       } else {
         setAddDayError(result.error ?? 'Failed to add day.');
@@ -449,7 +461,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
     startTransition(async () => {
       const result = await duplicateLiftDay({ dayId });
       if (result.success) {
-        if (result.id) setSelectedDayId(result.id);
+        if (result.id) { setSelectedDayId(result.id); setActivePane('day'); }
         refresh();
       } else {
         setActionError(result.error ?? 'Failed to duplicate day.');
@@ -659,9 +671,48 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
   // =========================================================================
 
   return (
-    <div className="flex h-full min-h-[700px]">
+    <div className="flex flex-col gap-4 lg:h-full lg:min-h-[700px] lg:flex-row">
+      {/* ── Mobile tab switcher (mirrors LiftCanvas's own two/three-pane
+          pattern one level up in the same vertical) — the week/day tree
+          and the day editor stack below `lg`; each tap on a day auto-jumps
+          to the editor pane. ── */}
+      <div
+        className="flex rounded-xl border border-warm-200 bg-warm-50 p-1 lg:hidden"
+        role="tablist"
+        aria-label="Program editor section"
+      >
+        {(
+          [
+            { id: 'tree', label: 'Weeks & days' },
+            { id: 'day', label: 'Day editor' },
+          ] as const
+        ).map(({ id, label }) => (
+          <Button
+            key={id}
+            variant="ghost"
+            type="button"
+            role="tab"
+            aria-selected={activePane === id}
+            onClick={() => setActivePane(id)}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors ${
+              activePane === id
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
+            }`}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+
       {/* ---- Left rail — macrocycle tree ---- */}
-      <aside className="w-72 shrink-0 border-r border-warm-100 bg-warm-50/50 p-4 overflow-y-auto">
+      <aside
+        className={[
+          'w-full overflow-y-auto bg-warm-50/50 p-4',
+          'lg:w-72 lg:shrink-0 lg:border-r lg:border-warm-100',
+          activePane === 'tree' ? 'flex flex-col' : 'hidden lg:flex lg:flex-col',
+        ].join(' ')}
+      >
         {/* Nav + edit meta */}
         <div className="mb-4 flex items-center justify-between">
           <Link href={basePath} className="text-xs text-warm-400 hover:text-warm-700 transition-colors">
@@ -744,7 +795,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                       <Button
                         type="button"
                         variant="ghost"
-                        onClick={() => setSelectedDayId(day.id)}
+                        onClick={() => { setSelectedDayId(day.id); setActivePane('day'); }}
                         className={`flex-1 px-4 py-1.5 text-left text-xs transition-colors whitespace-normal ${
                           selectedDayId === day.id
                             ? 'bg-primary-50 text-primary-700 font-medium'
@@ -837,7 +888,11 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
       </aside>
 
       {/* ---- Right pane — day editor ---- */}
-      <main className="flex-1 overflow-y-auto p-6">
+      <main
+        className={`flex-1 overflow-y-auto p-4 lg:p-6 ${
+          activePane === 'day' ? 'block' : 'hidden lg:block'
+        }`}
+      >
         <AnimatePresence mode="wait">
         {!selectedDay ? (
           <motion.div
@@ -980,7 +1035,8 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                       {section.prescriptions.length === 0 ? (
                         <div className="px-5 py-3 text-sm text-warm-400 italic">No exercises — add one below.</div>
                       ) : (
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+                        <table className="w-full min-w-[480px] text-sm">
                           <thead>
                             <tr className="border-b border-warm-50 text-xs text-warm-400">
                               <th className="py-2 pl-5 text-left font-medium">Exercise</th>
@@ -1059,6 +1115,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       )}
 
                       {/* Add exercise button */}

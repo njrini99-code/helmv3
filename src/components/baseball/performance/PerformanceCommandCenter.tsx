@@ -482,14 +482,17 @@ export function PerformanceCommandCenter({
                 }
               />
             ) : (
-              <div className="overflow-x-auto">
-                <div className="min-w-[560px]">
-                  {filteredBoard.map((b, i) => (
-                    <Reveal key={b.session.id} staggerIndex={Math.min(i, 10)}>
-                      <WeightRoomRow row={b} readinessWithheld={readinessWithheld} />
-                    </Reveal>
-                  ))}
-                </div>
+              // WeightRoomRow already stacks cleanly at mobile widths
+              // (flex-col ... sm:flex-row) — the old overflow-x-auto +
+              // min-w-[560px] wrapper forced unnecessary horizontal
+              // scrolling on every phone for a problem the row's own
+              // responsive layout had already solved.
+              <div>
+                {filteredBoard.map((b, i) => (
+                  <Reveal key={b.session.id} staggerIndex={Math.min(i, 10)}>
+                    <WeightRoomRow row={b} readinessWithheld={readinessWithheld} />
+                  </Reveal>
+                ))}
               </div>
             )}
           </PaperCard>

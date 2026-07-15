@@ -479,7 +479,13 @@ export function LiftBuilderClient({
       </section>
 
       {/* ── Save Bar ──────────────────────────────────────────────────────── */}
-      <PaperCard className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-4 p-4">
+      {/* Offset above FairwayBottomNav (56px + safe-area below md; 0px at
+          md+) so the Save button/session-title/date inputs — the primary
+          CTA for this whole builder — are never covered by the persistent
+          mobile tab bar. z-[var(--fw-z-sticky)] (below the nav's own
+          z-[var(--fw-z-nav)]) since the bar now sits above the nav, not
+          under it. */}
+      <PaperCard className="sticky bottom-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] z-[var(--fw-z-sticky)] flex flex-wrap items-center gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-wrap gap-3">
           <Input
             className="min-w-[200px] flex-1"
