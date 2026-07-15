@@ -33,6 +33,9 @@ function makeClient(opts: {
   stats: Array<Record<string, unknown>>;
   signals: Array<Record<string, unknown>>;
   updates: UpdateCall[];
+  /** Canonical layer (#379) — omitted -> empty, i.e. the legacy-fallback path. */
+  games?: Array<Record<string, unknown>>;
+  boxBatting?: Array<Record<string, unknown>>;
 }) {
   function from(table: string) {
     const state: { isUpdate: boolean; payload: Record<string, unknown> | null } = {
@@ -46,7 +49,11 @@ function makeClient(opts: {
           ? opts.stats
           : table === 'baseball_signals'
             ? opts.signals
-            : [];
+            : table === 'baseball_games'
+              ? (opts.games ?? [])
+              : table === 'baseball_box_score_batting'
+                ? (opts.boxBatting ?? [])
+                : [];
     const builder: Record<string, unknown> = {
       select: () => builder,
       eq: () => builder,
@@ -116,6 +123,49 @@ describe('sweepActionOutcomes — improved action resolves its source insight', 
     // ORTHOGONALITY: the coach-owned status column is NEVER written here.
     expect(insightUpdate?.payload).not.toHaveProperty('coach_status');
     expect(insightUpdate?.payload).not.toHaveProperty('status');
+  });
+
+  it('measures the after-window from CANONICAL box-score rows, never blended with the same player\'s legacy game rows (#379)', async () => {
+    const actions = [
+      {
+        id: 'act-3',
+        player_id: 'p3',
+        created_at: '2026-01-01T00:00:00.000Z',
+        outcome_metric: 'k_rate',
+        outcome_baseline_value: 0.4,
+        outcome_observed_value: null,
+        signal_id: 'sig-3',
+        status: 'open',
+      },
+    ];
+    // Legacy game rows in the after-window scream strikeouts (k_rate 1.0). If
+    // they were retained/blended alongside the canonical rows, the observed
+    // value would be (2+40)/(24+40) ≈ 0.656 -> 'regressed'. Canonical-only is
+    // 2/24 ≈ 0.083 -> 'improved'. The verdict proves which pool was measured.
+    const stats = [
+      { id: 'lg1', player_id: 'p3', stat_type: 'game', session_date: '2026-03-02', at_bats: 20, walks: 0, strikeouts: 20, hits: 0 },
+      { id: 'lg2', player_id: 'p3', stat_type: 'game', session_date: '2026-03-06', at_bats: 20, walks: 0, strikeouts: 20, hits: 0 },
+    ];
+    const games = [
+      { id: 'g1', game_date: '2026-03-01' },
+      { id: 'g2', game_date: '2026-03-05' },
+    ];
+    const boxBatting = [
+      { id: 'bb1', game_id: 'g1', player_id: 'p3', ab: 10, h: 4, doubles: 0, triples: 0, hr: 0, bb: 2, k: 1, hbp: 0, sf: 0 },
+      { id: 'bb2', game_id: 'g2', player_id: 'p3', ab: 10, h: 3, doubles: 0, triples: 0, hr: 0, bb: 2, k: 1, hbp: 0, sf: 0 },
+    ];
+    const signals = [{ id: 'sig-3', dedupe_key: 'two_strike_chase:p3' }];
+    const updates: UpdateCall[] = [];
+    const client = makeClient({ actions, stats, signals, updates, games, boxBatting });
+
+    const res = await sweepActionOutcomes(client, TEAM);
+    expect(res.measured).toBe(1);
+
+    const actionUpdate = updates.find((u) => u.table === 'baseball_actions');
+    expect(actionUpdate?.payload.outcome_verdict).toBe('improved');
+    expect(actionUpdate?.payload.outcome_observed_value).toBeCloseTo(2 / 24, 5);
+    // After-window sample counts the two canonical box-score sessions.
+    expect(actionUpdate?.payload.outcome_sample_n).toBe(2);
   });
 
   it('resolves nothing when the verdict is not improved', async () => {

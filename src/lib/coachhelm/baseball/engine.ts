@@ -54,6 +54,18 @@ import {
 
 /** Everything the full V10 run needs (a superset of the base inputs). */
 export interface BaseballV10EngineInputs extends BaseballEngineInputs {
+  /**
+   * ISO instant the run considers "now" for every rolling-window calculation
+   * downstream (#811 residual). Defaults to `new Date().toISOString()` inside
+   * importQualityGenerator itself when omitted, so a non-engine caller that
+   * never sets this field keeps its existing real-time behavior unchanged —
+   * only runBaseballEngineCore's deterministic path threads its own nowIso
+   * through here. Mirrors the nowIso already threaded through
+   * loadAllPlayerMetrics/mergeV10PlayerMetrics/mergeEventPlayerMetrics for the
+   * same reason: a fixed-clock test must never silently drift as real time
+   * carries a Date.now()-based window past the seeded fixture dates.
+   */
+  now?: string;
   /** Practice-effectiveness inputs the action assembled (one per evaluated block). */
   practiceEffectiveness?: PracticeEffectivenessInput[];
   /** Recent import-run summaries to evaluate for data-quality flags. */
@@ -110,7 +122,7 @@ export function generateAllBaseballCandidates(
     candidates.push(...practiceEffectivenessGenerator(pe));
   }
   if (inputs.importRuns && inputs.importRuns.length > 0) {
-    candidates.push(...importQualityGenerator(inputs.importRuns));
+    candidates.push(...importQualityGenerator(inputs.importRuns, inputs.now));
   }
   if (inputs.videoCoverage) {
     candidates.push(...videoEvidenceGenerator(inputs.videoCoverage));

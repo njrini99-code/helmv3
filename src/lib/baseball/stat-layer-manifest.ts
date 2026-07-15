@@ -196,49 +196,35 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     group: 'coachhelm-engine',
     status: 'pending migration',
     note:
-      '#379 Phase 4a: still the input-series loader for the V10 metrics registry, and still cites baseball_player_stats as the DEFAULT/fallback source table for any caller that has not migrated its fetch — engine-run.ts, outcome-sweep.ts, action-baseline.ts, practice-effectiveness.ts (a Phase 4b/2 concern). It now ALSO accepts, additively: (1) a per-row hittingSourceTable/pitchingSourceTable tag a migrated caller sets after normalizing baseball_box_score_batting/_pitching rows (normalizeBoxScoreBattingRow/normalizeBoxScorePitchingRow), which the loader cites verbatim in its source_refs instead of the legacy table; (2) an optional eventDerived input (eventDerivedVelocityFromMetrics) that sources avg exit/pitch velocity from elite-stat-events.ts, winning over the legacy exit_velocity/pitch_velocity scalar per field when present. Retires from this list once every caller has migrated and the legacy-table fallback path is dead code.',
+      '#379 Phase 4a: still the input-series loader for the V10 metrics registry, and still cites baseball_player_stats as the DEFAULT/fallback source table for any caller that has not migrated its fetch — after Phase 4b (engine-stat-rows.ts) that is practice-effectiveness.ts plus the legacy-fallback/practice-carve-out rows the engine callers still receive. It now ALSO accepts, additively: (1) a per-row hittingSourceTable/pitchingSourceTable tag a migrated caller sets after normalizing baseball_box_score_batting/_pitching rows (normalizeBoxScoreBattingRow/normalizeBoxScorePitchingRow), which the loader cites verbatim in its source_refs instead of the legacy table; (2) an optional eventDerived input (eventDerivedVelocityFromMetrics) that sources avg exit/pitch velocity from elite-stat-events.ts, winning over the legacy exit_velocity/pitch_velocity scalar per field when present. Retires from this list once every caller has migrated and the legacy-table fallback path is dead code.',
   },
   {
     path: 'src/lib/coachhelm/baseball/generators/v10.ts',
     group: 'coachhelm-engine',
     status: 'pending migration',
-    note: 'Cites baseball_player_stats as a source_ref table on generated insight rows.',
+    note:
+      '#379 Phase 4b: the ONLY remaining cite is practiceEffectivenessGenerator\'s before/after-measurement source ref — honest today because actions/practice-effectiveness.ts still assembles those inputs from baseball_player_stats practice rows (the canonical layers have no practice-session shape; see that action\'s entry above). Migrates together with that action, not before. importQualityGenerator\'s Date.now() window was separately fixed to a caller-supplied nowIso (#811 residual, no table coupling).',
   },
   {
-    path: 'src/lib/coachhelm/baseball/generators/index.ts',
+    path: 'src/lib/baseball/coachhelm/engine-stat-rows.ts',
     group: 'coachhelm-engine',
     status: 'pending migration',
-    note: 'Falls back to baseball_player_stats as the default source-ref table label.',
+    note:
+      '#379 Phase 4b: the ONE consolidated stat-row read for the CoachHelm engine (engine-run.ts, outcome-sweep.ts, action-baseline.ts — all migrated off their direct reads onto this). Prefers canonical baseball_box_score_batting/_pitching rows (normalized + source-table tagged via loaders.ts) and reads baseball_player_stats ONLY as (a) the practice carve-out and (b) the legacy-fallback tier for players with zero canonical rows — the design\'s "one place allowed to do it". Retires when Phase 5 retires the legacy writer and the fallback tier has nothing left to serve.',
   },
   {
     path: 'src/lib/coachhelm/baseball/effectiveness/engine.ts',
     group: 'coachhelm-engine',
     status: 'pending migration',
-    note: 'Cites baseball_player_stats as the source table for effectiveness-tracking source refs.',
-  },
-  {
-    path: 'src/lib/baseball/coachhelm/outcome-sweep.ts',
-    group: 'coachhelm-engine',
-    status: 'pending migration',
-    note: 'Reads baseball_player_stats to sweep for outcome evidence after an action.',
-  },
-  {
-    path: 'src/lib/baseball/coachhelm/engine-run.ts',
-    group: 'coachhelm-engine',
-    status: 'pending migration',
-    note: 'Reads baseball_player_stats as part of an engine run pass.',
-  },
-  {
-    path: 'src/lib/baseball/coachhelm/action-baseline.ts',
-    group: 'coachhelm-engine',
-    status: 'pending migration',
-    note: 'Reads baseball_player_stats to compute the pre-action baseline metric.',
+    note:
+      '#379 Phase 4b reviewed, deliberately NOT migrated: its before/after source ref cites baseball_player_stats because actions/practice-effectiveness.ts (its only feeder) still computes MeasurementPoints from that table\'s practice/game rows. Re-pointing the cite before the feeder migrates would be dishonest provenance. Blocked on the same practice-session-shape open question as practice-effectiveness.ts.',
   },
   {
     path: 'src/lib/baseball/operational-rule-engine.ts',
     group: 'coachhelm-engine',
     status: 'pending migration',
-    note: 'Declares baseball_player_stats as a sourceType for the deterministic operational-signal rules.',
+    note:
+      '#379 Phase 4b reviewed, deliberately NOT migrated: player_cold_streak\'s sourceTypes/source-ref label describes the facts operational-signals.ts loads, and that action\'s recent-game rolling window remains a real baseball_player_stats read (its season baseline moves canonical separately, in the Phase 2 chunk). The label follows the data — it updates when the feeder\'s remaining legacy read does.',
   },
 
   // --- Pages / components -----------------------------------------------------
@@ -280,31 +266,29 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     path: 'src/lib/baseball/__tests__/action-baseline.test.ts',
     group: 'test',
     status: 'pending migration',
-    note: 'Exercises action-baseline.ts against a fake baseball_player_stats table; mirrors production until that file migrates.',
+    note:
+      '#379 Phase 4b: pins BOTH tiers of the shared engine stat-row read behind buildActionOutcomeSeed — the legacy-fallback baseline (fake baseball_player_stats rows, no canonical tables seeded) and the canonical-preferred baseline (box-score rows win, legacy game rows dropped). The legacy fixtures are the fallback pin, not staleness; retires with engine-stat-rows.ts.',
   },
   {
     path: 'src/lib/baseball/__tests__/engine-run-coach-triage.test.ts',
     group: 'test',
     status: 'pending migration',
-    note: 'Exercises runBaseballEngineCore (#473 coach-triage skip) against a fake baseball_player_stats table; mirrors engine-run.ts until that file migrates.',
+    note:
+      '#379 Phase 4b: exercises runBaseballEngineCore (#473 coach-triage skip) against a fake baseball_player_stats table — now the legacy-FALLBACK tier of the shared engine stat-row read (no canonical tables seeded), plus candidate fixtures citing legacy-era provenance. Retires with engine-stat-rows.ts.',
   },
   {
-    path: 'src/lib/baseball/__tests__/ai-policy-enforcement.test.ts',
+    path: 'src/lib/baseball/__tests__/engine-stat-rows.test.ts',
     group: 'test',
     status: 'pending migration',
-    note: 'Fixture source_ref table name mirrors production usage.',
+    note:
+      '#379 Phase 4b: unit tests for engine-stat-rows.ts above — pins the precedence rule (canonical rows replace legacy game rows, practice carve-out, legacy fallback, all-or-nothing canonical degrade), so it necessarily seeds fake baseball_player_stats rows. Retires with engine-stat-rows.ts.',
   },
   {
     path: 'src/lib/baseball/__tests__/outcome-sweep-insight-resolve.test.ts',
     group: 'test',
     status: 'pending migration',
-    note: 'Fake table-name switch mirrors outcome-sweep.ts reading baseball_player_stats.',
-  },
-  {
-    path: 'src/lib/baseball/__tests__/signal-from-insight.test.ts',
-    group: 'test',
-    status: 'pending migration',
-    note: 'Fixture source_table / source value mirrors production signal provenance.',
+    note:
+      '#379 Phase 4b: fake table-name switch pins BOTH tiers of the sweep\'s shared stat-row read — legacy-fallback after-windows (existing tests) and the canonical-preferred, never-blended after-window (new test). Retires with engine-stat-rows.ts.',
   },
   {
     path: 'src/lib/coachhelm/baseball/engine-v10.test.ts',
