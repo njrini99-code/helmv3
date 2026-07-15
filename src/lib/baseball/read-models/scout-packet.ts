@@ -45,6 +45,7 @@ import {
   type CaptureMode,
 } from '@/lib/baseball/source-record';
 import { buildSourceTrust } from '@/components/baseball/source-trust/build-source-trust';
+import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 import type { SourceTrust } from '@/components/baseball/source-trust/source-trust-types';
 import type {
   PassportVisibilityState,
@@ -147,6 +148,31 @@ function r3(n: number): number {
 }
 function r2(n: number): number {
   return parseFloat(n.toFixed(2));
+}
+
+/**
+ * Compute a season pitching line from officially-counted rows. IP is summed
+ * via outs through the shared thirds-aware helper (#434 — 6.1 + 6.2 -> 13.0,
+ * not the naive 12.3), and ERA/WHIP divide by TRUE innings (outs / 3), not
+ * the raw notation sum, so partial innings never skew the rates.
+ */
+export function summarizePitchingSeason(
+  games: number,
+  ipRows: Array<number | null | undefined>,
+  totals: { h: number; er: number; k: number; bb: number },
+): ScoutPacketSeasonLine['pitching'] {
+  if (games <= 0) return null;
+  const ip = sumInningsPitched(ipRows);
+  const trueInnings = ipToInnings(ip);
+  return {
+    g: games,
+    ip: r2(ip),
+    er: totals.er,
+    k: totals.k,
+    bb: totals.bb,
+    era: trueInnings > 0 ? r2((totals.er * 9) / trueInnings) : null,
+    whip: trueInnings > 0 ? r2((totals.bb + totals.h) / trueInnings) : null,
+  };
 }
 
 /** A scout-grade SourceTrust for a self-reported profile measurable. */
@@ -505,15 +531,18 @@ async function assembleSeasonLine(
     sf += b.sf ?? 0;
   }
   let pG = 0,
-    ip = 0,
     pH = 0,
     er = 0,
     kPit = 0,
     bbPit = 0;
+  // .1/.2 in pr.ip are outs (thirds of an inning), not a base-10 fraction —
+  // accumulate per-row values and sum via outs (through summarizePitchingSeason
+  // below) so partials add up correctly (6.1 + 6.2 -> 13.0, not 12.3). (#434)
+  const ipRows: Array<number | null | undefined> = [];
   for (const pr of pitching) {
     if (!officialGameIds.has(String(pr.game_id))) continue;
     pG += 1;
-    ip += Number(pr.ip ?? 0);
+    ipRows.push(pr.ip);
     pH += pr.h ?? 0;
     er += pr.er ?? 0;
     kPit += pr.k ?? 0;
@@ -533,18 +562,7 @@ async function assembleSeasonLine(
         })()
       : null;
 
-  const pitchingLine =
-    pG > 0
-      ? {
-          g: pG,
-          ip: r2(ip),
-          er,
-          k: kPit,
-          bb: bbPit,
-          era: ip > 0 ? r2((er * 9) / ip) : null,
-          whip: ip > 0 ? r2((bbPit + pH) / ip) : null,
-        }
-      : null;
+  const pitchingLine = summarizePitchingSeason(pG, ipRows, { h: pH, er, k: kPit, bb: bbPit });
 
   return {
     seasonYear,

@@ -47,6 +47,7 @@ import {
 } from '@/components/baseball/source-trust/stamped-trust';
 import { getPlayerTimeline } from '@/lib/baseball/read-models/timeline';
 import { getVideoLibrary } from '@/lib/baseball/read-models/video-classes';
+import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 import type {
   SourceTrust,
   SourceProvenance,
@@ -950,6 +951,31 @@ function r2(n: number): number {
 }
 
 /**
+ * Compute a season pitching line from officially-counted rows. IP is summed
+ * via outs through the shared thirds-aware helper (#434 — 6.1 + 6.2 -> 13.0,
+ * not the naive 12.3), and ERA/WHIP divide by TRUE innings (outs / 3), not
+ * the raw notation sum, so partial innings never skew the rates.
+ */
+export function summarizePitchingSeason(
+  games: number,
+  ipRows: Array<number | null | undefined>,
+  totals: { h: number; er: number; k: number; bb: number },
+): PassportSeasonSummary['pitching'] {
+  if (games <= 0) return null;
+  const ip = sumInningsPitched(ipRows);
+  const trueInnings = ipToInnings(ip);
+  return {
+    g: games,
+    ip: r2(ip),
+    er: totals.er,
+    k: totals.k,
+    bb: totals.bb,
+    era: trueInnings > 0 ? r2((totals.er * 9) / trueInnings) : null,
+    whip: trueInnings > 0 ? r2((totals.bb + totals.h) / trueInnings) : null,
+  };
+}
+
+/**
  * Assemble the three deep sections. Each sub-read is independently guarded so a
  * single failure degrades that one section to null/empty + an error string,
  * never the whole passport. Reads are RLS- and visibility-gated at their source.
@@ -1177,7 +1203,10 @@ async function assemblePerformance(
     sf += b.sf ?? 0;
   }
   let pG = 0;
-  let ip = 0;
+  // .1/.2 in p.ip are outs (thirds of an inning), not a base-10 fraction —
+  // accumulate per-row values and sum via outs (through summarizePitchingSeason
+  // below) so partials add up correctly (6.1 + 6.2 -> 13.0, not 12.3). (#434)
+  const ipRows: Array<number | null | undefined> = [];
   let pH = 0;
   let er = 0;
   let kPit = 0;
@@ -1185,7 +1214,7 @@ async function assemblePerformance(
   for (const p of pitching) {
     if (!officialGameIds.has(p.game_id)) continue;
     pG += 1;
-    ip += Number(p.ip ?? 0);
+    ipRows.push(p.ip);
     pH += p.h ?? 0;
     er += p.er ?? 0;
     kPit += p.k ?? 0;
@@ -1208,18 +1237,12 @@ async function assemblePerformance(
         })()
       : null;
 
-  const pitchingSummary =
-    pG > 0
-      ? {
-          g: pG,
-          ip: r2(ip),
-          er,
-          k: kPit,
-          bb: bbPit,
-          era: ip > 0 ? r2((er * 9) / ip) : null,
-          whip: ip > 0 ? r2((bbPit + pH) / ip) : null,
-        }
-      : null;
+  const pitchingSummary = summarizePitchingSeason(pG, ipRows, {
+    h: pH,
+    er,
+    k: kPit,
+    bb: bbPit,
+  });
 
   const noData = batting.length === 0 && pitching.length === 0;
 
