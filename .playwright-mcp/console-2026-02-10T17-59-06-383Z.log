@@ -1,9 +1,0 @@
-[     893ms] [ERROR] Failed to load resource: the server responded with a status of 503 () @ https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;700&display=swap:0
-[    1395ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
-[    1396ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/dashboard:0
-[    1552ms] TypeError: t.rpc(...).catch is not a function
-    at https://helmsportslabs.com/_next/static/chunks/app/golf/(dashboard)/layout-cc4f6b390b52716f.js?dpl=dpl_4hP8fFEvxRbCrAxCarXcCcbBLbkW:1:7617
-[    2342ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
-       please check the style of container, or the props width(100%) and height(100%),
-       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
-       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-2da629360e274de9.js?dpl=dpl_4hP8fFEvxRbCrAxCarXcCcbBLbkW:4
