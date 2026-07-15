@@ -104,7 +104,10 @@ async function collectMobileFitState(page: Page): Promise<MobileFitState> {
     const clipped: string[] = [];
     const seen = new Set<Element>();
     for (const container of containers) {
-      for (const el of Array.from(container.querySelectorAll('a, button, [role="button"]'))) {
+      // [role="tab"] included: the bottom-nav shape heuristic above counts
+      // tabs as controls, so the clipping scan must see them too — a
+      // partially clipped tab strip is exactly the regression this catches.
+      for (const el of Array.from(container.querySelectorAll('a, button, [role="button"], [role="tab"]'))) {
         if (seen.has(el)) continue;
         seen.add(el);
         const r = el.getBoundingClientRect();
@@ -199,6 +202,10 @@ for (const viewport of VIEWPORTS) {
     for (const route of PUBLIC_ROUTES) {
       test(`${route} fits ${viewport.width}px`, async ({ page }) => {
         await expectMobileFit(page, route);
+        // Same final-pathname assertion the coach/player blocks make — a
+        // public route that bounced to login/an error page must not pass by
+        // measuring the wrong page.
+        expect(new URL(page.url()).pathname, `expected ${route} to render`).toBe(route);
       });
     }
   });
