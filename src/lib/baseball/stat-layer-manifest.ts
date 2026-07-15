@@ -154,11 +154,25 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
       'The sole remaining direct reader of baseball_player_aggregates for the roster surfaces (#379). Fetches the raw legacy row map for a team so legacy-stat-adapters.ts (via roster-aggregates-merge.ts) can resolve its box-score > legacy-fallback > no-data precedence; roster.ts (server) and RosterClient.tsx (browser) both call it instead of querying the deprecated table inline.',
   },
   {
+    path: 'src/lib/baseball/read-models/player-today.ts',
+    group: 'read-model',
+    status: 'pending migration',
+    note:
+      "#845 review fix (post-#379): the initial #379 migration of this file's \"recent stats\" card onto baseball_box_score_batting/_pitching + baseball_games regressed a legacy-only player (real history captured before the box-score pipeline existed, zero box-score-era games since) from \"shows real recent stats\" to a silent, honest-LOOKING empty list. fetchRecentBoxScoreActivity now falls back to baseball_player_stats ONLY when this player has zero box-score rows (mirroring legacy-stat-adapters.ts's box-score > legacy-fallback > no-data precedence), tagging every entry's sourceLayer so the UI can label an old number honestly. See player-today-honest-loop.test.ts's legacy-fallback describe block.",
+  },
+  {
+    path: 'src/lib/baseball/read-models/player-passport.ts',
+    group: 'read-model',
+    status: 'pending migration',
+    note:
+      "#845 review fix (post-#379): the initial #379 migration of the passport's recentActivity/completeness \"Captured stats\" signal onto baseball_box_score_batting/_pitching + baseball_games had the same legacy-only regression as player-today.ts (above). fetchRecentActivity now falls back to baseball_player_stats ONLY when this player has zero box-score rows, restoring the pre-#379 stamped-provenance last-session trust/provenance and tagging recentActivity.sourceLayer so the passport never shows an honest-LOOKING empty count for a legacy-only player.",
+  },
+  {
     path: 'src/lib/baseball/read-models/player-snapshot-cards.ts',
     group: 'read-model',
     status: 'pending migration',
     note:
-      '#379 (partial): exit-velocity fields migrated off the deprecated flat stat table onto baseball_batted_ball_events via elite-stat-events.ts\'s own buildHitterMetrics aggregator — closes the former "typed but un-migrated" comment. Still reads baseball_player_aggregates for (a) the Hitting/Pitching season-average legacy-fallback tier and (b) the game/scrimmage/practice "Performance" card, which has no canonical replacement yet: stats-center.ts exposes official-vs-all splits, not a standalone scrimmage split, and neither canonical layer has a practice-session shape (see docs/baseball/stats-migration-plan.md\'s open practice-shape question). Full migration blocked on that decision, not on adapter availability.',
+      '#379/#845 (partial): exit-velocity fields primarily derive from baseball_batted_ball_events via elite-stat-events.ts\'s own buildHitterMetrics aggregator — closes the former "typed but un-migrated" comment — but fall back to the deprecated baseball_player_stats.exit_velocity column ONLY when this player has zero batted-ball-event rows (#845 review fix: a #379 migration regressed a legacy-only player from "shows a real EV number" to an honest-LOOKING null), mirroring legacy-stat-adapters.ts\'s box-score > legacy-fallback > no-data precedence. Still reads baseball_player_aggregates for (a) the Hitting/Pitching season-average legacy-fallback tier and (b) the game/scrimmage/practice "Performance" card, which has no canonical replacement yet: stats-center.ts exposes official-vs-all splits, not a standalone scrimmage split, and neither canonical layer has a practice-session shape (see docs/baseball/stats-migration-plan.md\'s open practice-shape question). Full migration blocked on that decision, not on adapter availability.',
   },
   {
     path: 'src/lib/baseball/read-models/command-center.ts',
@@ -245,6 +259,20 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
   },
 
   // --- Tests / contract fixtures ----------------------------------------------
+  {
+    path: 'src/contracts/baseball/product-trust/player-today-honest-loop.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      "#845 review fix. This file's #379 fixture migration onto box-score tables previously removed every reference to the deprecated table; a new describe block now seeds an (empty-by-default, populated per-test) baseball_player_stats + baseball_import_runs fixture to pin fetchRecentBoxScoreActivity's legacy-fallback path in player-today.ts (an already-grandfathered consumer above) — a legacy-only player must see real recentStats, never a silent honest-looking empty. Migrates in lockstep with the production file's own entry.",
+  },
+  {
+    path: 'src/lib/baseball/read-models/__tests__/player-passport-recent-activity.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      "#845 review fix. NEW test file (no prior fixture coverage existed for getPlayerPassport's DB path — player-passport-innings.test.ts only covers the pure summarizePitchingSeason helper). Pins fetchRecentActivity's legacy-fallback path in player-passport.ts (an already-grandfathered consumer above) against a fake baseball_player_stats + baseball_import_runs fixture — a legacy-only player must see real recentActivity data, never a silent honest-looking empty. Migrates in lockstep with the production file's own entry.",
+  },
   {
     path: 'src/lib/baseball/read-models/__tests__/command-center.test.ts',
     group: 'test',

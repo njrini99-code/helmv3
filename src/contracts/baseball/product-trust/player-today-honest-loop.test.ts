@@ -22,6 +22,14 @@
 //      box-score row carries no CSV-import provenance columns at all, so
 //      every recentStats entry gets an honest trust:null/provenance:null
 //      rather than an implied import lineage that doesn't exist.
+//   5. #845 review fix: a player with ZERO box-score rows but real history in
+//      the deprecated baseball_player_stats table must still see REAL
+//      recentStats entries (sourceLayer:'legacy-fallback'), never a silent
+//      honest-LOOKING empty list caused by the #379 migration itself — the
+//      same box-score > legacy-fallback > no-data precedence
+//      legacy-stat-adapters.ts enforces for aggregate rows. A legacy row's
+//      real stamped provenance (when it has any) surfaces too, never
+//      flattened to null just because it came through the fallback path.
 //
 // Source of truth: `getPlayerToday` in
 // src/lib/baseball/read-models/player-today.ts.
@@ -280,5 +288,130 @@ describe('getPlayerToday — recent stats never fabricate provenance for a box-s
     // "this player has no captured box-score lines yet" (mirrors the item-3
     // sub-read contract above).
     expect(result.error).toBe('Your recent stats could not be loaded.');
+  });
+});
+
+describe('getPlayerToday — legacy-fallback recentStats for a legacy-only player (#845)', () => {
+  // #845 review fix: the #379 migration onto the box-score layer regressed a
+  // player with real PRE-box-score history (zero box-score rows, real
+  // baseball_player_stats rows) from "shows real recent stats" to a silent,
+  // honest-LOOKING empty list — the migration itself was the bug, not a
+  // genuine absence of activity. fetchRecentBoxScoreActivity now falls back
+  // to baseball_player_stats ONLY when box-score is empty for this player.
+  it('zero box-score rows, real baseball_player_stats rows -> recentStats shows REAL data, not an honest-looking empty', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_player_stats: [
+          {
+            id: 'stat-1',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'game',
+            session_date: '2026-03-10',
+            session_name: 'vs Rival High',
+            source: 'manual',
+            source_trust_level: null,
+            source_match_tier: null,
+            source_match_confidence: null,
+            source_external_id: null,
+            import_run_id: null,
+          },
+          {
+            id: 'stat-2',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'practice',
+            session_date: '2026-03-01',
+            session_name: null,
+            source: 'manual',
+            source_trust_level: null,
+            source_match_tier: null,
+            source_match_confidence: null,
+            source_external_id: null,
+            import_run_id: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.recentStats).toHaveLength(2);
+    expect(result.recentStats.every((s) => s.sourceLayer === 'legacy-fallback')).toBe(true);
+    // Newest-first, same ordering contract as the box-score path.
+    expect(result.recentStats[0]?.id).toBe('stat-1');
+    expect(result.recentStats[0]?.sessionName).toBe('vs Rival High');
+    expect(result.error).toBeNull();
+  });
+
+  it('an imported legacy row surfaces its REAL stamped trust/provenance (never flattened to null just because it came through the fallback)', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_player_stats: [
+          {
+            id: 'stat-3',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'game',
+            session_date: '2026-02-01',
+            session_name: 'Imported batch',
+            source: 'csv_import',
+            source_trust_level: 'unreviewed',
+            source_match_tier: 'exact_roster',
+            source_match_confidence: 0.92,
+            source_external_id: 'ext-1',
+            import_run_id: 'run-1',
+          },
+        ],
+        baseball_import_runs: [{ id: 'run-1', review_state: 'pending_review' }],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    const row = result.recentStats.find((s) => s.id === 'stat-3');
+    expect(row?.sourceLayer).toBe('legacy-fallback');
+    expect(row?.trust).not.toBeNull();
+    expect(row?.provenance).not.toBeNull();
+  });
+
+  it('a box-score row present -> box-score wins outright, even with legacy rows also present (never blended)', async () => {
+    fake = createFakeSupabase({
+      user: { id: USER_ID },
+      tables: baseTables({
+        baseball_box_score_batting: [
+          { id: 'bb-1', game_id: 'game-1', player_id: PLAYER_ID, team_id: TEAM_ID },
+        ],
+        baseball_games: [
+          {
+            id: 'game-1',
+            team_id: TEAM_ID,
+            game_date: DAY,
+            game_type: 'official_game',
+            opponent_name: 'Rival High',
+          },
+        ],
+        baseball_player_stats: [
+          {
+            id: 'stat-old',
+            player_id: PLAYER_ID,
+            team_id: TEAM_ID,
+            stat_type: 'game',
+            session_date: '2020-01-01',
+            session_name: 'Ancient session',
+            source: 'manual',
+            source_trust_level: null,
+            source_match_tier: null,
+            source_match_confidence: null,
+            source_external_id: null,
+            import_run_id: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await getPlayerToday(TEAM_ID, { forDate: DAY });
+    expect(result.recentStats.every((s) => s.sourceLayer === 'box-score')).toBe(true);
+    expect(result.recentStats.find((s) => s.id === 'stat-old')).toBeUndefined();
   });
 });

@@ -70,6 +70,12 @@ import type {
   SourceProvenance,
 } from '@/components/baseball/source-trust/source-trust-types';
 import {
+  buildStampedSourceTrust,
+  buildImportProvenance,
+  type StampedStatProvenance,
+} from '@/components/baseball/source-trust/stamped-trust';
+import type { SourceLayer } from '@/lib/baseball/read-models/legacy-stat-adapters';
+import {
   computeReadiness,
   readinessBandLabel,
   readinessBandTone,
@@ -173,12 +179,21 @@ export interface PlayerTodayStat {
    * Always null for box-score-sourced rows (#379): box-score entries are
    * staff-entered via the box-score save flow, not imported, so there is no
    * stamped import provenance to describe — an honest null, never a
-   * fabricated stamp. Kept as a real (not removed) field so the shape stays
-   * ready for a future source that does carry stamped provenance.
+   * fabricated stamp. Populated from the legacy row's own stamped columns when
+   * `sourceLayer` is 'legacy-fallback' (see {@link fetchRecentBoxScoreActivity}).
    */
   trust: SourceTrust | null;
   /** Rich provenance for the drawer (opens the Import Dossier run). Same honesty note as `trust`. */
   provenance: SourceProvenance | null;
+  /**
+   * Which layer this session came from — 'box-score' (canonical) or
+   * 'legacy-fallback' (the deprecated flat baseball_player_stats table, read
+   * ONLY when this player has zero box-score-era games; see #379 and
+   * legacy-stat-adapters.ts for the shared box-score > legacy-fallback >
+   * no-data precedence this mirrors). Lets the UI label an old number
+   * honestly instead of presenting it as equally fresh as a box-score row.
+   */
+  sourceLayer: SourceLayer;
 }
 
 /**
@@ -439,16 +454,27 @@ interface RecentBoxScoreGame {
  * pitching), newest first. Reads baseball_box_score_batting/_pitching (game
  * ids only) then baseball_games for the display fields — the canonical
  * layer-2 tables, per #379's migration of this read model off the deprecated
- * flat/aggregate stat layer. Degrades to an honest empty list + error string
- * on a sub-read failure, matching this read model's existing fault-tolerance
- * convention.
+ * flat/aggregate stat layer.
+ *
+ * Legacy fallback (post-#845 review fix): when this player has ZERO box-score
+ * rows, this used to silently return an honest-LOOKING empty list even for a
+ * player with real history captured before the box-score pipeline existed —
+ * indistinguishable from a player who genuinely has no activity. We now fall
+ * back to the deprecated `baseball_player_stats` table in that case (same
+ * table + columns this read model queried pre-#379), mirroring the
+ * box-score > legacy-fallback > no-data precedence legacy-stat-adapters.ts
+ * enforces for aggregate rows. Every returned entry carries `sourceLayer` so
+ * the caller/UI can label a legacy number honestly instead of presenting it
+ * as equally fresh as a box-score row. Degrades to an honest empty list +
+ * error string on a sub-read failure, matching this read model's existing
+ * fault-tolerance convention.
  */
 async function fetchRecentBoxScoreActivity(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
   teamId: string,
   limit: number,
-): Promise<{ data: RecentBoxScoreGame[]; error: string | null }> {
+): Promise<{ data: PlayerTodayStat[]; error: string | null }> {
   const [battingRes, pitchingRes] = await Promise.all([
     supabase
       .from('baseball_box_score_batting')
@@ -471,17 +497,98 @@ async function fetchRecentBoxScoreActivity(
       ...(pitchingRes.data ?? []).map((r) => r.game_id),
     ]),
   ];
-  if (gameIds.length === 0) return { data: [], error: null };
 
-  const { data: games, error: gamesErr } = await supabase
-    .from('baseball_games')
-    .select('id, game_date, game_type, opponent_name')
-    .in('id', gameIds)
-    .order('game_date', { ascending: false })
+  if (gameIds.length > 0) {
+    const { data: games, error: gamesErr } = await supabase
+      .from('baseball_games')
+      .select('id, game_date, game_type, opponent_name')
+      .in('id', gameIds)
+      .order('game_date', { ascending: false })
+      .limit(limit);
+    if (gamesErr) return { data: [], error: 'Your recent stats could not be loaded.' };
+
+    const data: PlayerTodayStat[] = ((games ?? []) as RecentBoxScoreGame[]).map((g) => ({
+      id: g.id,
+      statType: g.game_type,
+      sessionDate: g.game_date,
+      sessionName: g.opponent_name ? `vs ${g.opponent_name}` : null,
+      sourceRef: buildSourceRef({ source: 'manual', sourceId: g.id, label: 'Box score' }),
+      trust: null,
+      provenance: null,
+      sourceLayer: 'box-score',
+    }));
+    return { data, error: null };
+  }
+
+  // Legacy fallback — no box-score rows at all for this player. Stamped
+  // provenance columns aren't in generated database.ts -> untyped client, same
+  // as the pre-#379 read of this table.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const legacyDb = supabase as any;
+  const { data: legacyRows, error: legacyErr } = await legacyDb
+    .from('baseball_player_stats')
+    .select(
+      'id, stat_type, session_date, session_name, source, source_trust_level, source_match_tier, source_match_confidence, source_external_id, import_run_id',
+    )
+    .eq('player_id', playerId)
+    .eq('team_id', teamId)
+    .order('session_date', { ascending: false })
     .limit(limit);
-  if (gamesErr) return { data: [], error: 'Your recent stats could not be loaded.' };
+  if (legacyErr) return { data: [], error: 'Your recent stats could not be loaded.' };
 
-  return { data: (games ?? []) as RecentBoxScoreGame[], error: null };
+  const legacyStatRows = (legacyRows ?? []) as unknown as Array<
+    StampedStatProvenance & {
+      id: string;
+      stat_type: string;
+      session_date: string;
+      session_name: string | null;
+    }
+  >;
+  if (legacyStatRows.length === 0) return { data: [], error: null };
+
+  // Batched lookup of import-run review state for the imported rows, so the
+  // legacy entries' trust carries the same real "reviewed vs unreviewed"
+  // signal the pre-#379 read model surfaced.
+  const runIds = [...new Set(legacyStatRows.map((s) => s.import_run_id).filter(Boolean))] as string[];
+  const reviewByRun = new Map<string, string | null>();
+  if (runIds.length > 0) {
+    const { data: runs } = await legacyDb
+      .from('baseball_import_runs')
+      .select('id, review_state')
+      .in('id', runIds);
+    for (const r of (runs ?? []) as Array<{ id: string; review_state: string | null }>) {
+      reviewByRun.set(r.id, r.review_state);
+    }
+  }
+
+  const data: PlayerTodayStat[] = legacyStatRows.map((s) => {
+    const stamped: StampedStatProvenance = {
+      source: s.source,
+      source_trust_level: s.source_trust_level,
+      source_match_tier: s.source_match_tier,
+      source_match_confidence: s.source_match_confidence,
+      source_external_id: s.source_external_id,
+      import_run_id: s.import_run_id,
+      review_state: s.import_run_id ? reviewByRun.get(s.import_run_id) ?? null : null,
+      importedAt: s.session_date,
+    };
+    // Only imported/device/official rows carry stamped provenance; a hand-entered
+    // line has no import_run_id and reads as a plain source label.
+    const hasStamp = !!s.import_run_id || !!s.source_trust_level;
+    const label = s.session_name?.trim() || 'Imported stats';
+    return {
+      id: s.id,
+      statType: s.stat_type,
+      sessionDate: s.session_date,
+      sessionName: s.session_name,
+      sourceRef: buildSourceRef({ source: s.source }),
+      trust: hasStamp ? buildStampedSourceTrust(stamped, label) : null,
+      provenance: hasStamp ? buildImportProvenance(stamped, { label }) : null,
+      sourceLayer: 'legacy-fallback',
+    };
+  });
+
+  return { data, error: null };
 }
 
 // -----------------------------------------------------------------------------
@@ -818,26 +925,17 @@ export async function getPlayerToday(
   });
 
   // ---- Recent stats (active captures) ----
-  // #379 — sourced from box-score/season-era games (canonical layer 2), not
-  // the deprecated flat/aggregate stat layer. Box-score rows carry no
-  // CSV-import provenance columns (staff-entered via the box-score save flow,
-  // not imported), so trust/provenance are honestly null rather than a
-  // fabricated import stamp.
-  const recentStats: PlayerTodayStat[] = [];
+  // #379 — sourced from box-score/season-era games (canonical layer 2) when
+  // any exist for this player, falling back to the deprecated flat/aggregate
+  // stat layer ONLY when this player has zero box-score rows (see
+  // fetchRecentBoxScoreActivity's doc comment) — the same box-score >
+  // legacy-fallback > no-data precedence legacy-stat-adapters.ts enforces.
+  // Box-score rows carry no CSV-import provenance columns (staff-entered via
+  // the box-score save flow, not imported), so trust/provenance are honestly
+  // null for those; legacy-fallback rows carry their real stamped provenance.
+  const recentStats: PlayerTodayStat[] = statsRes.error ? [] : statsRes.data;
   if (statsRes.error) {
     error = error ?? statsRes.error;
-  } else {
-    for (const g of statsRes.data) {
-      recentStats.push({
-        id: g.id,
-        statType: g.game_type,
-        sessionDate: g.game_date,
-        sessionName: g.opponent_name ? `vs ${g.opponent_name}` : null,
-        sourceRef: buildSourceRef({ source: 'manual', sourceId: g.id, label: 'Box score' }),
-        trust: null,
-        provenance: null,
-      });
-    }
   }
 
   const eventsPendingAck = schedule.filter((e) => e.ackStatus === 'pending').length;
