@@ -65,6 +65,7 @@ import {
 import {
   adaptLegacyStatsMap,
   type BoxScoreGameContextRow,
+  type SourceLayer,
 } from '@/lib/baseball/read-models/legacy-stat-adapters';
 import type {
   BaseballSignalInsert,
@@ -507,10 +508,12 @@ function computeOPS(r: HittingCountingRow): number | null {
  * Load per-player hitting spans for the cold-streak rule. Queries recent
  * game-type rows from baseball_player_stats for the rolling "recent" window,
  * reconciles a season/career OPS baseline through the shared legacy-flat
- * adapter (see step 2 below), then groups by player and computes: recentOPS
- * (average of last N games) and seasonOPS (the reconciled baseline). Returns
- * [] when the table is empty or unavailable (the rule produces no signals in
- * that case — degrades safely).
+ * adapter with a PER-FIELD legacy fallback on top (see step 2 below), then
+ * groups by player and computes: recentOPS (average of last N games) and
+ * seasonOPS (the reconciled baseline), tagged with seasonOPSSourceLayer so
+ * the rule can label a legacy fallback honestly as a career average rather
+ * than an unqualified season figure. Returns [] when the table is empty or
+ * unavailable (the rule produces no signals in that case — degrades safely).
  *
  * NOT exported: this is a plain internal helper of a 'use server' module —
  * every export of a 'use server' file becomes a real, client-invokable
@@ -618,8 +621,30 @@ async function loadPlayerHittingSpans(
 
   // Build lookup maps.
   const seasonOPSByPlayer = new Map<string, number>();
+  const seasonOPSSourceLayerByPlayer = new Map<string, SourceLayer>();
   for (const [playerId, adapted] of Object.entries(adaptedByPlayer)) {
-    if (adapted.game.ops !== null) seasonOPSByPlayer.set(playerId, adapted.game.ops);
+    // #379 FIX: a box-score/season-stats row can exist for a player (so the
+    // shared adapter's whole-row sourceLayer already reads 'box-score') while
+    // its OWN ops field is null — the common shape for a pure pitcher/DH who
+    // appears in a completed game's PITCHING box score but never bats
+    // (recalculate_baseball_season_stats sets avg/obp/slg/ops to NULL
+    // whenever plate appearances = 0 for that row). A present-but-null OPS
+    // must not mask a real legacy career_ops; fall back to it PER-FIELD here,
+    // matching roster-aggregates-merge.ts's toLegacyAggregateShape precedent
+    // for the identical gap.
+    const ops = adapted.game.ops ?? legacyAggregates[playerId]?.career_ops ?? null;
+    if (ops === null) continue;
+    seasonOPSByPlayer.set(playerId, ops);
+    // Track WHERE this specific OPS number came from — never just the
+    // whole-row adapted.sourceLayer, which would misreport 'box-score' for
+    // the per-field-fallback case above. This lets the cold-streak rule
+    // label a legacy LIFETIME career average honestly instead of presenting
+    // it as an unqualified "season" figure (see FactPlayerHittingSpan's
+    // seasonOPSSourceLayer doc and the player_cold_streak rule).
+    seasonOPSSourceLayerByPlayer.set(
+      playerId,
+      adapted.game.ops !== null ? adapted.sourceLayer : 'legacy-fallback',
+    );
   }
 
   const nameByPlayer = new Map<string, string>();
@@ -661,6 +686,7 @@ async function loadPlayerHittingSpans(
       recentGameCount: recent.length,
       recentOPS,
       seasonOPS,
+      seasonOPSSourceLayer: seasonOPSSourceLayerByPlayer.get(playerId) ?? 'no-data',
       mostRecentGameDate,
     });
   }

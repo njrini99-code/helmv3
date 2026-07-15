@@ -24,6 +24,13 @@
 // (each loader in this module already degrades gracefully to [] on an empty
 // source — see the module header comment), isolating this test to the
 // cold-streak rule's own inputs.
+//
+// A 4th case (below, mirroring roster-aggregates-merge.test.ts's identical
+// pure-pitcher/DH fixture) pins the PER-FIELD legacy fallback: a box-score-era
+// season row can exist for a player with g=0 and every rate field null (a
+// pure pitcher/DH who appears in a completed game's pitching box score but
+// never bats), which must fall back to the legacy career_ops rather than
+// silently masking it and producing 0 signals.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -162,5 +169,54 @@ describe('runOperationalSignalDetection — #379 cold-streak season-baseline fix
 
     expect(result.success).toBe(true);
     expect(result.stats?.byRule.player_cold_streak).toBe(0);
+  });
+
+  it('falls back to the legacy career OPS when a box-score-era season row exists for the player but its own rate fields are null (pure-pitcher/DH shape, g=0 this season)', async () => {
+    // recalculate_baseball_season_stats sets avg/obp/slg/ops to NULL whenever
+    // plate appearances = 0 for that row. A pure pitcher/DH who appears in a
+    // completed game's PITCHING box score (but never bats) gets exactly this
+    // shape: a real baseball_player_season_stats row with g=0 and every rate
+    // field null. Before the fix, this present-but-null box-score row masked
+    // a real legacy career_ops and the rule silently produced 0 signals
+    // instead of using the legacy value as the baseline.
+    TABLES.baseball_player_season_stats = [
+      { player_id: 'p1', avg: null, obp: null, slg: null, ops: null, g: 0, last_updated: '2026-07-01T00:00:00.000Z' },
+    ];
+    TABLES.baseball_player_aggregates = [
+      {
+        player_id: 'p1',
+        team_id: 'team-1',
+        total_sessions: 30,
+        practice_sessions: 0,
+        game_sessions: 30,
+        career_avg: 0.31,
+        career_obp: 0.38,
+        career_slg: 0.46,
+        career_ops: 0.7,
+        practice_avg: null,
+        game_avg: 0.31,
+        pressure_gap: null,
+        recent_trend: 'stable',
+        trend_magnitude: null,
+        trend_velocity: null,
+        last_5_avg: null,
+        last_10_avg: null,
+        season_avg: null,
+        avg_pitch_velocity: null,
+        max_pitch_velocity: null,
+        development_stage: null,
+        last_calculated_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+
+    const result = await runOperationalSignalDetection();
+
+    expect(result.success).toBe(true);
+    // Same recent slump (recentOPS .50) vs the legacy career_ops of .7 baseline
+    // (a .20 drop, above the .15 threshold) — the rule must still fire using
+    // the legacy career_ops, not silently produce 0 signals because the
+    // box-score row's own OPS field was null.
+    expect(result.stats?.byRule.player_cold_streak).toBe(1);
   });
 });
