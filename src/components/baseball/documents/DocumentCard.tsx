@@ -331,7 +331,14 @@ export function DocumentCard({
             <span>{formatFileSize(document.file_size)}</span>
             <span>{timeAgo(document.created_at)}</span>
           </div>
-          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-all">
+          {/* gap-3 (12px), not gap-1: Preview is a real 44x44 IconButton box
+              with no overflow beyond it, but Download's own visible box is
+              only ~26px (p-1.5 + 14px icon), so its before:-inset-2.5 hit-slop
+              expands 10px past its own left edge to reach the 44px floor.
+              The gap between the two elements has to be >= that 10px or the
+              invisible expansion bleeds onto Preview's box and steals taps
+              meant for it — gap-1 (4px) didn't clear it, gap-3 (12px) does. */}
+          <div className="flex items-center gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-all">
             <IconButton
               variant="ghost"
               aria-label="Preview document"

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,10 +32,10 @@ interface TravelClientProps {
   itineraries: BaseballTravelItinerary[];
   teamId: string;
   isCoach: boolean;
+  onReload: () => void | Promise<void>;
 }
 
-export function TravelClient({ itineraries: initialItineraries, teamId, isCoach }: TravelClientProps) {
-  const router = useRouter();
+export function TravelClient({ itineraries: initialItineraries, teamId, isCoach, onReload }: TravelClientProps) {
   const [itineraries, setItineraries] = useState(initialItineraries);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItinerary, setEditingItinerary] = useState<BaseballTravelItinerary | null>(null);
@@ -44,10 +43,12 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeletingItinerary, setIsDeletingItinerary] = useState(false);
 
-  // Keep local state in sync with the server-fetched prop after
-  // router.refresh() re-runs the parent Server Component (handleSaved below)
-  // — useState(initialItineraries) only seeds on mount, so without this the
-  // freshly created/edited trip would never appear post-refresh.
+  // Keep local state in sync with the parent's fetched itineraries —
+  // TravelPageClient owns the actual getTeamItineraries() call (both on
+  // initial load and via the onReload() refetch below), so this component's
+  // useState(initialItineraries) only seeds on mount; without this effect a
+  // freshly created/edited trip would never appear after onReload() resolves
+  // and the parent re-renders with a new itineraries array.
   useEffect(() => {
     setItineraries(initialItineraries);
   }, [initialItineraries]);
@@ -127,9 +128,12 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
   }
 
   function handleSaved() {
-    // Refresh the server component's data so the created/edited trip appears
-    // (no full-page reload / white-flash — see the sync effect above).
-    router.refresh();
+    // Refetch via the parent (the actual data owner — TravelPageClient calls
+    // getTeamItineraries()) so the created/edited trip appears, without the
+    // white-flash / lost-scroll of a full window.location.reload(). The sync
+    // effect above reflects the refetched prop into local state once it
+    // resolves.
+    void onReload();
   }
 
   function handleExpenseSaved() {
