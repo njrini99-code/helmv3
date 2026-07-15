@@ -49,6 +49,58 @@ import type { BaseballProgramType } from '@/lib/types/baseball-settings';
  */
 const HUB_CONTENT_MAX_WIDTH = 'max-w-[1400px]';
 
+/**
+ * #481 mustFix: the global CSS var this strip publishes its own rendered
+ * height to (declared with a `0px` default in globals.css `:root`) — see
+ * `useSubNavOffsetPublisher` below for why this must be MEASURED rather than
+ * a hardcoded constant, and MessagesFairway.tsx / ConversationClient.tsx /
+ * messages/[id]/loading.tsx for the consuming side.
+ */
+const SUBNAV_OFFSET_VAR = '--baseball-hub-subnav-offset';
+
+/**
+ * Publishes this mounted strip's real rendered height to `SUBNAV_OFFSET_VAR`
+ * on the document root, so ANY leaf pane elsewhere in the tree (not just a
+ * DOM descendant — a plain CSS custom property, inherited by ancestry) can
+ * subtract exactly the chrome this strip actually occupies above it, on
+ * whichever route currently mounts it. A hardcoded `44px`/`45px` constant
+ * would silently drift from reality the moment tab count, OS text-size
+ * scaling, or font metrics changed the strip's real height — measuring via
+ * `ResizeObserver` (the `useScrollFade` idiom this codebase already uses,
+ * see use-scroll-fade.ts) keeps it correct instead.
+ *
+ * A callback ref (not a `useRef` + effect pair keyed off a dependency) so it
+ * survives node swaps/route changes correctly: React invokes it with `null`
+ * on every detach (unmount, or this hub's `key` changing in
+ * BaseballFairwayShell's `subNav` memo when the active hub switches),
+ * immediately zeroing the var so a route that mounts no sub-nav at all next
+ * never inherits a stale value left over from this one.
+ */
+function useSubNavOffsetPublisher() {
+  const cleanupRef = React.useRef<(() => void) | null>(null);
+  return React.useCallback((node: HTMLElement | null) => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+    if (!node) {
+      document.documentElement.style.setProperty(SUBNAV_OFFSET_VAR, '0px');
+      return;
+    }
+    const publish = () => {
+      document.documentElement.style.setProperty(SUBNAV_OFFSET_VAR, `${node.offsetHeight}px`);
+    };
+    publish();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(publish) : null;
+    ro?.observe(node);
+    // Re-measure once layout has settled (mirrors useScrollFade's raf tick —
+    // the strip's own mount frame can land before font/tab layout finalizes).
+    const raf = requestAnimationFrame(publish);
+    cleanupRef.current = () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+    };
+  }, []);
+}
+
 // -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
@@ -163,11 +215,20 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
     [activeIndex, tabs.length],
   );
 
+  // #481 mustFix: publish this strip's real rendered height so a leaf pane
+  // elsewhere (Messages) can subtract it from a fixed dvh-based box height.
+  // Called unconditionally (hooks must run every render) — the `tabs.length
+  // === 0` branch below removes the `<nav>` from the tree, so React invokes
+  // this same ref callback with `null` on that render, correctly zeroing the
+  // published offset without any extra effect.
+  const subNavRef = useSubNavOffsetPublisher();
+
   if (tabs.length === 0) return null;
 
   return (
     <LazyMotion features={loadMaxFeatures} strict>
       <nav
+        ref={subNavRef}
         aria-label={ariaLabel}
         data-slot="hub-sub-nav"
         className={cn(

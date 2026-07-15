@@ -3,8 +3,7 @@
 /**
  * ============================================================================
  * MessagesFairway — Fairway (warm-premium) frame for the baseball Messages
- * page. Phase B leaf migration, Wave 2 · messages. Flag-gated behind
- * `isRedesignEnabled()` — see the page fork.
+ * page. Phase B leaf migration, Wave 2 · messages.
  * ----------------------------------------------------------------------------
  * PRESENTATION ONLY — and pure LAYOUT. It owns nothing but the page-level
  * chrome: the canvas background, the responsive two-pane split, and a
@@ -28,26 +27,55 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { InstrumentPanel, Skeleton } from '@/components/fairway';
 
 // `4rem` (64px) is the AppShell top bar's fixed height on every breakpoint
-// (matches ConversationClient.tsx's sibling `100dvh-4rem` budget). The
+// (matches ConversationClient.tsx's sibling budget below). The
 // safe-area-inset-top term additionally reserves the notch inset so the
 // two-pane split never renders under it.
 //
-// safe-area-inset-BOTTOM is deliberately NOT subtracted here — it's owned
-// solely by the composer's own bottom padding instead (see
-// MessagesClient.tsx's thread-pane <form>:
-// `pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4`). On-screen math
-// for why owning it twice was a bug: with this shell height, `100dvh -
-// shellHeight = 4rem + insetTop + insetBottom`, i.e. the shell's OWN
-// bottom edge already sits exactly `insetBottom` above the physical
-// screen edge before the composer does anything. If the shell also
-// subtracted insetBottom (as it used to), the composer's identical
-// `env(safe-area-inset-bottom)` padding then reserved that same strip a
-// second time — eating an extra `insetBottom` worth of height out of the
-// already-safe shell and shrinking the message-scroll area for no reason
-// on notched phones. Removing the term here so only the composer reserves
-// it means the inset is accounted for exactly once.
+// `--golf-mobile-bottom-nav-offset` (globals.css `:root`; the SAME shared
+// var golf already rides for FairwayBottomNav clearance — see
+// KeyboardShortcutHint.tsx / InsightBulkActions.tsx / the golf round-review
+// page) resolves to `56px + env(safe-area-inset-bottom)` below `md` and to
+// `0px` at `md`+, matching AppShell's own `bottomNav &&` padding branch
+// (AppShell.tsx's content wrapper) term-for-term.
+//
+// FIX (#481): this box previously subtracted ONLY the top bar, so on phones
+// it claimed the full `100dvh - 4rem` remaining viewport — but AppShell's
+// content wrapper ALSO adds `pb-[calc(2rem+56px+safe-area-inset-bottom)]`
+// BELOW this box whenever `bottomNav` is present (true on every baseball
+// dashboard route, see BaseballFairwayShell.tsx), pushing total document
+// height past 100dvh. Since that ancestor is `min-h-dvh` (not `h-dvh`), it
+// was free to grow — so at the default (unscrolled) position the fixed,
+// opaque FairwayBottomNav rendered directly on top of this box's own last
+// ~56–90px, clipping the composer behind it. Subtracting the same bottom-nav
+// clearance here means this box's own bottom edge already sits above the
+// bar, so the composer (this pane's last flex child) is never hidden.
+//
+// This does NOT double-reserve safe-area-inset-bottom: the composer's own
+// extra bottom padding (MessagesClient.tsx's thread-pane <form>:
+// `pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4`) is headroom
+// *inside* a pane that's already cleared the physical bottom edge by this
+// box's own height budget — not a second reservation of the same strip.
+//
+// FIX (#481 mustFix, round 2): the formula above still assumed this box's
+// TOP edge sits right below the AppShell top bar — true for every OTHER
+// baseball hub, but not for coaches on Messages specifically. Coaches'
+// "messages" hub (COACH_MESSAGES_TABS, hub-definitions.ts) resolves for
+// `/baseball/dashboard/messages` (resolveActiveHub matches it exactly), so
+// BaseballFairwayShell mounts a real, always-mobile-visible `<HubSubNav>`
+// ("Messages · Announcements") directly above `{children}` — i.e. above
+// THIS component — pushing this box's actual top edge down by the strip's
+// height without shrinking its CSS height, so its bottom edge (and the
+// composer inside it) landed back inside FairwayBottomNav's fixed region by
+// that same amount. Players are unaffected (playerHubs() has no 'messages'
+// hub, so no strip renders there). Subtracting
+// `--baseball-hub-subnav-offset` — the strip's own measured height,
+// published by hub-sub-nav.tsx's `useSubNavOffsetPublisher` (0px when no
+// strip is mounted, e.g. for players) — closes this the same way the
+// bottom-nav term above does: this box's height budget now accounts for
+// EVERY piece of chrome actually rendered above it on this route, not just
+// the ones that are always present.
 const SHELL =
-  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] overflow-hidden bg-canvas';
+  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px)-var(--baseball-hub-subnav-offset,0px))] overflow-hidden bg-canvas';
 
 /** The rail's masthead — kept byte-identical to `MessagesClient.tsx`'s
  *  `RAIL_TITLE` so the loading -> loaded swap never changes the title. */
