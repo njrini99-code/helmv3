@@ -62,10 +62,15 @@ import {
   type RuleSignal,
   type RuleEngineConfig,
 } from '@/lib/baseball/operational-rule-engine';
+import {
+  adaptLegacyStatsMap,
+  type BoxScoreGameContextRow,
+} from '@/lib/baseball/read-models/legacy-stat-adapters';
 import type {
   BaseballSignalInsert,
   BaseballJson,
 } from '@/lib/types/baseball-signals';
+import type { BaseballPlayerAggregates } from '@/lib/types';
 
 // -----------------------------------------------------------------------------
 // Loose client — baseball_signals + several source tables are not in the
@@ -500,10 +505,21 @@ function computeOPS(r: HittingCountingRow): number | null {
 
 /**
  * Load per-player hitting spans for the cold-streak rule. Queries recent
- * game-type rows and season-type aggregate rows from baseball_player_stats,
- * then groups by player and computes: recentOPS (average of last N games) and
- * seasonOPS (the season aggregate). Returns [] when the table is empty or
- * unavailable (the rule produces no signals in that case — degrades safely).
+ * game-type rows from baseball_player_stats for the rolling "recent" window,
+ * reconciles a season/career OPS baseline through the shared legacy-flat
+ * adapter (see step 2 below), then groups by player and computes: recentOPS
+ * (average of last N games) and seasonOPS (the reconciled baseline). Returns
+ * [] when the table is empty or unavailable (the rule produces no signals in
+ * that case — degrades safely).
+ *
+ * NOT exported: this is a plain internal helper of a 'use server' module —
+ * every export of a 'use server' file becomes a real, client-invokable
+ * server action, and the observability-coverage contract
+ * (coverage-contract.observability.test.ts) enforces that any such export is
+ * wrapped (see runOperationalSignalDetection below). Regression coverage for
+ * the season-baseline fix documented above exercises this function through
+ * that wrapped action instead — see
+ * operational-signals-cold-streak.test.ts.
  */
 async function loadPlayerHittingSpans(
   db: LooseClient,
@@ -538,25 +554,72 @@ async function loadPlayerHittingSpans(
   // Collect distinct player ids that appear in recent games.
   const playerIds = [...new Set(gameRows.map((r) => r.player_id))];
 
-  // 2. Season aggregate + player names — two batched reads in parallel.
-  const [{ data: seasonData }, { data: playerData }] = await Promise.all([
-    db
-      .from('baseball_player_stats')
-      .select(`player_id, ${HITTING_COUNTING_COLUMNS}`)
-      .eq('team_id', teamId)
-      .eq('stat_type', 'season')
-      .in('player_id', playerIds),
-    db
-      .from('baseball_players')
-      .select('id, first_name, last_name')
-      .in('id', playerIds),
-  ]);
+  // 2. Season/career OPS baseline + player names — three batched reads in
+  //    parallel.
+  //
+  //    #379 FIX: this used to read baseball_player_stats WHERE stat_type =
+  //    'season' — a value NO writer in this codebase has ever produced
+  //    (imports.ts / stats.ts's uploadStatsCSV only ever write 'practice' |
+  //    'game' | 'other'), so that lookup always returned [] and the
+  //    cold-streak rule could never fire in production regardless of how much
+  //    real stat history a team had. Fixed by sourcing the baseline through
+  //    the shared legacy-flat adapter (legacy-stat-adapters.ts, #828) with the
+  //    SAME precedence roster.ts already uses for the same class of gap
+  //    (roster-aggregates-merge.ts): prefer the canonical, box-score-era
+  //    season roll-up (baseball_player_season_stats, written by games.ts's
+  //    recalculate_baseball_season_stats()) and fall back to the legacy
+  //    baseball_player_aggregates row's career OPS only when no box-score-era
+  //    row exists yet for that player.
+  const currentSeasonYear = new Date(nowIso).getFullYear();
+  const [{ data: seasonStatsData }, { data: legacyAggregatesData }, { data: playerData }] =
+    await Promise.all([
+      db
+        .from('baseball_player_season_stats')
+        .select('player_id, avg, obp, slg, ops, g, last_updated')
+        .eq('team_id', teamId)
+        .eq('season_year', currentSeasonYear),
+      db
+        .from('baseball_player_aggregates')
+        .select('*')
+        .eq('team_id', teamId)
+        .in('player_id', playerIds),
+      db
+        .from('baseball_players')
+        .select('id, first_name, last_name')
+        .in('id', playerIds),
+    ]);
+
+  const boxScoreRows: BoxScoreGameContextRow[] = (
+    (seasonStatsData ?? []) as Array<{
+      player_id: string;
+      avg: number | null;
+      obp: number | null;
+      slg: number | null;
+      ops: number | null;
+      g: number | null;
+      last_updated: string | null;
+    }>
+  ).map((r) => ({
+    player_id: r.player_id,
+    avg: r.avg,
+    obp: r.obp,
+    slg: r.slg,
+    ops: r.ops,
+    sessions: r.g,
+    last_updated: r.last_updated,
+  }));
+
+  const legacyAggregates: Record<string, BaseballPlayerAggregates> = {};
+  for (const row of (legacyAggregatesData ?? []) as BaseballPlayerAggregates[]) {
+    legacyAggregates[row.player_id] = row;
+  }
+
+  const adaptedByPlayer = adaptLegacyStatsMap({ legacyAggregates, boxScoreRows });
 
   // Build lookup maps.
   const seasonOPSByPlayer = new Map<string, number>();
-  for (const r of (seasonData ?? []) as Array<HittingCountingRow & { player_id: string }>) {
-    const ops = computeOPS(r);
-    if (ops !== null) seasonOPSByPlayer.set(r.player_id, ops);
+  for (const [playerId, adapted] of Object.entries(adaptedByPlayer)) {
+    if (adapted.game.ops !== null) seasonOPSByPlayer.set(playerId, adapted.game.ops);
   }
 
   const nameByPlayer = new Map<string, string>();
