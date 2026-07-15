@@ -140,7 +140,10 @@ function AckChip({
       className={cn(
         pressableClass({ ink: 'team' }),
         'relative inline-flex items-center gap-1 rounded-fw-sm border px-1.5 py-0.5 font-annual text-microbadge uppercase leading-none tracking-[0.12em] disabled:cursor-wait disabled:opacity-60',
-        "before:absolute before:-inset-x-1.5 before:-top-2 before:-bottom-3.5 before:content-['']",
+        // -top-1.5 (6px): clears BOTH neighbor cases the verifier derived — the
+        // 10px title/time-row margin above AND the 6px flex row-gap when the
+        // badge line wraps and AckChip lands on its own second line.
+        "before:absolute before:-inset-x-1.5 before:-top-1.5 before:-bottom-3.5 before:content-['']",
         acknowledged
           ? 'border-transparent text-grade-plus'
           : 'border-[color:var(--hairline)] text-text-tertiary hover:text-grade-plus',
