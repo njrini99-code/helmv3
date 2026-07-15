@@ -345,6 +345,13 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     note: 'Exercises imports.ts commitImport() against a fake baseball_player_stats table.',
   },
   {
+    path: 'src/app/baseball/actions/__tests__/imports-capability-shape-gate.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      '#863 round-4 regression coverage for the previewImport/commitImport shape-conditional capability gate (can_manage_imports OR can_manage_stats for game_box_score only) — mirrors imports-registry.test.ts above; exercises the SAME commitImport() legacy write against a fake baseball_player_stats table to prove an authorized stats-only-staff commit actually writes, not just that the gate doesn\'t throw. Production reference is the legacy-import-writer entry, not a new one.',
+  },
+  {
     path: 'src/app/baseball/actions/__tests__/upload-stats-csv.test.ts',
     group: 'test',
     status: 'pending migration',

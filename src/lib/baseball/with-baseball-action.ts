@@ -14,7 +14,13 @@
 //   3. CAPABILITY  — when opts.requiredCapability is set, enforce it
 //                    SERVER-SIDE via requireBaseballCapability() against the
 //                    resolved team. Head/primary coach implicitly hold all caps;
-//                    non-staff / suspended hold none.
+//                    non-staff / suspended hold none. requiredCapability may
+//                    also be a readonly array (ANY-of / OR) or a resolver
+//                    function of the action's own args (evaluated once, before
+//                    AUTH) that RETURNS a single capability or an ANY-of array
+//                    — e.g. relaxing the gate only for one client-declared
+//                    shape/kind while every other shape keeps the original,
+//                    single, stricter capability.
 //   4. OBSERVABILITY — run the action inside a Sentry scope tagged
 //                    { sport:'baseball', feature:<featureArea>, action:<name> }
 //                    with user + breadcrumbs, and on throw route the error
@@ -68,6 +74,7 @@ import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import type { ActiveBaseballContext } from '@/lib/baseball/active-context-shared';
 import {
   requireBaseballCapability,
+  hasBaseballCapability,
   BaseballCapabilityError,
   type BaseballCapability,
 } from '@/lib/baseball/capabilities';
@@ -157,8 +164,30 @@ export interface WithBaseballActionOptions<TArgs extends unknown[] = unknown[]> 
    * When set, the wrapper enforces this capability SERVER-SIDE (via
    * requireBaseballCapability) against the resolved team before the body runs.
    * Head/primary coach implicitly satisfy every capability.
+   *
+   * Three forms:
+   *   - a single BaseballCapability            : the existing, most common form.
+   *   - a readonly array of BaseballCapability  : ANY-of (OR) — the staff member
+   *                                               need only hold ONE of the listed
+   *                                               capabilities. On a miss, the
+   *                                               thrown BaseballCapabilityError
+   *                                               names the LAST array element
+   *                                               (put the action's "primary" /
+   *                                               historical capability last so
+   *                                               a fully-unauthorized caller sees
+   *                                               the same error identity as a
+   *                                               single-capability gate would).
+   *   - (...args) => single | array             : resolve the requirement from the
+   *                                               action's OWN arguments (e.g. gate
+   *                                               on a client-supplied shape/kind
+   *                                               field) — evaluated once per call,
+   *                                               before AUTH, from the SAME `args`
+   *                                               the action body receives.
    */
-  requiredCapability?: BaseballCapability;
+  requiredCapability?:
+    | BaseballCapability
+    | readonly BaseballCapability[]
+    | ((...args: TArgs) => BaseballCapability | readonly BaseballCapability[]);
   /**
    * When set, the wrapper enforces a PLAYER/GUARDIAN-access toggle SERVER-SIDE
    * (via requirePlayerAccess) against the resolved team before the body runs.
@@ -262,6 +291,24 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
   } = opts;
 
   return async (...args: TArgs): Promise<TResult> => {
+    // Resolve the (possibly args-conditional) capability requirement ONCE, up
+    // front, from the SAME args the action body receives below — so the
+    // observability tags/metadata and the actual enforcement in step 3 can
+    // never disagree about what was required. A plain single-capability opt
+    // (the ~60 existing call sites) resolves to a one-element list here, so
+    // every branch below behaves byte-identically to the pre-existing
+    // single-capability path.
+    const resolvedCapability =
+      typeof requiredCapability === 'function'
+        ? requiredCapability(...args)
+        : requiredCapability;
+    const resolvedCapabilityList: readonly BaseballCapability[] | null = resolvedCapability
+      ? Array.isArray(resolvedCapability)
+        ? resolvedCapability
+        : [resolvedCapability as BaseballCapability]
+      : null;
+    const resolvedCapabilityTag = resolvedCapabilityList?.join('|') ?? null;
+
     return Sentry.withScope(async (scope) => {
       // Stable scope identity for every trace emitted from this action.
       scope.setTag('sport', 'baseball');
@@ -275,7 +322,7 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         data: {
           feature,
           featureArea,
-          requiredCapability: requiredCapability ?? null,
+          requiredCapability: resolvedCapabilityTag,
           requiredPlayerAccess: requiredPlayerAccess ?? null,
         },
       });
@@ -305,7 +352,7 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           ...(observedRole ? { baseball_role: observedRole } : {}),
           ...(observedTeamId ? { baseball_team: observedTeamId } : {}),
           ...(observedTargetTeamId ? { baseball_target_team: observedTargetTeamId } : {}),
-          ...(requiredCapability ? { baseball_capability: requiredCapability } : {}),
+          ...(resolvedCapabilityTag ? { baseball_capability: resolvedCapabilityTag } : {}),
           ...(requiredPlayerAccess ? { baseball_player_access: requiredPlayerAccess } : {}),
         },
         metadata: {
@@ -314,7 +361,7 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           activeRole: observedRole,
           activeCoachId: observedCoachId,
           activePlayerId: observedPlayerId,
-          requiredCapability: requiredCapability ?? null,
+          requiredCapability: resolvedCapabilityTag,
           requiredPlayerAccess: requiredPlayerAccess ?? null,
           requireActiveContext,
           demoSafe,
@@ -395,18 +442,47 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
 
         // -------------------------------------------------------------------
         // 3. CAPABILITY — enforce server-side when required.
+        //
+        //    A single-element resolvedCapabilityList (the ~60 existing static
+        //    single-capability call sites, plus any function-form resolver
+        //    that returns a single capability) enforces via
+        //    requireBaseballCapability EXACTLY as before this list-normalized
+        //    form existed.
+        //
+        //    A multi-element list is ANY-of (OR): the staff member need only
+        //    hold ONE of the listed capabilities. Every candidate but the
+        //    last is probed with the non-throwing hasBaseballCapability; the
+        //    LAST candidate is enforced via requireBaseballCapability so a
+        //    genuine miss still throws the real BaseballCapabilityError (not
+        //    a bespoke error type) — reported against that last capability.
         // -------------------------------------------------------------------
-        if (requiredCapability) {
+        if (resolvedCapabilityList) {
           if (!targetTeamId) {
             throw new BaseballNoActiveTeamError(
               'Could not resolve a team for capability enforcement.',
             );
           }
-          scope.setTag('baseball_capability', requiredCapability);
-          await requireBaseballCapability(targetTeamId, requiredCapability);
+          scope.setTag('baseball_capability', resolvedCapabilityTag!);
+          if (resolvedCapabilityList.length === 1) {
+            await requireBaseballCapability(targetTeamId, resolvedCapabilityList[0]!);
+          } else {
+            let granted = false;
+            for (const cap of resolvedCapabilityList.slice(0, -1)) {
+              if (await hasBaseballCapability(targetTeamId, cap)) {
+                granted = true;
+                break;
+              }
+            }
+            if (!granted) {
+              await requireBaseballCapability(
+                targetTeamId,
+                resolvedCapabilityList[resolvedCapabilityList.length - 1]!,
+              );
+            }
+          }
           scope.addBreadcrumb({
             category: 'baseball.action',
-            message: `capability ${requiredCapability} granted`,
+            message: `capability ${resolvedCapabilityTag} granted`,
             level: 'info',
             data: { teamId: targetTeamId },
           });

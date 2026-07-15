@@ -81,6 +81,7 @@ import type {
   BaseballImportRowDuplicate,
   BaseballImportDuplicateVerdict,
 } from '@/lib/types/baseball-imports';
+import type { BaseballStatUpload } from '@/lib/types';
 import { isBinaryFileName } from '@/lib/baseball/adapters/import-file-body';
 import { xlsxToCsv } from '@/lib/baseball/adapters/xlsx-reader';
 
@@ -178,6 +179,14 @@ interface Props {
   players: RosterPlayer[];
   recentRuns: BaseballImportRunRow[];
   /**
+   * Historical rows from the pre-consolidation flat-upload path
+   * (baseball_stat_uploads) — the table the retired UploadHistory component
+   * used to read. No longer written to by any in-app UI, but still the only
+   * record of every upload made before this wizard consolidation. Rendered
+   * read-only, below "Recent imports". Defaults to an empty list.
+   */
+  legacyUploads?: BaseballStatUpload[];
+  /**
    * Box-score source options = hardcoded adapter defaults MERGED with the team's
    * registered import-source policy. Falls back to the adapter defaults when the
    * team has registered nothing (so the picker is never empty).
@@ -195,6 +204,20 @@ interface Props {
    * The shell intercepts this to switch to the "Event level" wizard tab.
    */
   onRequestEventLevel?: () => void;
+  /**
+   * CAPABILITY LOCKOUT FIX — when true, skip the "choose" data-shape step
+   * entirely and land the coach straight on the "Quick box score" upload step
+   * (game_box_score preselected), with no way back to the full shape picker.
+   * Used ONLY for staff who hold can_manage_stats but not can_manage_imports
+   * (assistant/pitching/hitting/catching/defensive/strength coach — every
+   * default staff role preset that manages stats without also managing
+   * imports): they reach this SAME audited wizard/commit pipeline through the
+   * quick-box-score entry point at /dashboard/stats/upload, while the full
+   * Import Center (event-level mode, source registry, other data shapes,
+   * rollback) stays reserved for can_manage_imports staff. Defaults to false
+   * so every existing call site (the full Import Center) is unaffected.
+   */
+  quickEntryOnly?: boolean;
 }
 
 const TRUST_LABEL: Record<string, string> = {
@@ -250,9 +273,11 @@ export function ImportWizardClient({
   teamName,
   players,
   recentRuns,
+  legacyUploads = [],
   registeredSources,
   showHeader = true,
   onRequestEventLevel,
+  quickEntryOnly = false,
 }: Props) {
   const { addToast } = useToast();
 
@@ -273,10 +298,21 @@ export function ImportWizardClient({
     [registeredSources]
   );
 
-  const [step, setStep] = useState<WizardStep>('choose');
+  // quickEntryOnly staff have no "choose" step to land on — they arrive
+  // pre-committed to the box-score shape via the quick-box-score entry point.
+  const [step, setStep] = useState<WizardStep>(quickEntryOnly ? 'upload' : 'choose');
   const [dataShape, setDataShape] = useState<ImportDataShape>('game_box_score');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * QUICK BOX SCORE — the legacy /dashboard/stats/upload wizard's headline
+   * capability was "drag a CSV in and go" with zero setup. Ported here as a
+   * dropzone-drag-over affordance on the SAME upload step every path uses, so
+   * the fast path still runs through the canonical, audited commit pipeline
+   * (dedup, provenance, rollback) instead of a parallel shortcut that could
+   * drift from it.
+   */
+  const [isDragging, setIsDragging] = useState(false);
 
   const [sourceId, setSourceId] = useState<string>('generic_csv');
   const [fileName, setFileName] = useState<string>('');
@@ -346,6 +382,22 @@ export function ImportWizardClient({
     reader.readAsText(file);
   }, []);
 
+  // ---- quick box score: drag-and-drop onto the dropzone ----------------------
+  const onDragOver = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+  const onDragLeave = useCallback(() => setIsDragging(false), []);
+  const onDrop = useCallback(
+    (e: React.DragEvent<HTMLLabelElement>) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files[0];
+      if (file) onFile(file);
+    },
+    [onFile]
+  );
+
   // ---- run preview (detect + map + match) ------------------------------------
   const runPreview = useCallback(async () => {
     if (!csvContent.trim()) {
@@ -357,12 +409,18 @@ export function ImportWizardClient({
     try {
       // Pass the targeted grain so the preview can detect EXISTING rows and return
       // the per-row create/update/skip verdict BEFORE commit (duplicate_resolution_v2.md).
+      // ROUND-4 FIX (#863) — also pass `dataShape`: the server's capability gate
+      // relaxes to can_manage_imports OR can_manage_stats ONLY for a
+      // 'game_box_score' preview (quickEntryOnly's one reachable shape); a
+      // stats-only coach previewing without this field would still be blocked
+      // here even though commit would have authorized them.
       const result = await previewImport({
         teamId,
         sourceId,
         csvContent,
         statType,
         sessionDate,
+        dataShape,
       });
       if (result.totalRows === 0) {
         setError('No data rows found in that file.');
@@ -377,7 +435,7 @@ export function ImportWizardClient({
     } finally {
       setBusy(false);
     }
-  }, [csvContent, sourceId, teamId, statType, sessionDate]);
+  }, [csvContent, sourceId, teamId, statType, sessionDate, dataShape]);
 
   // ---- per-row manual match override -----------------------------------------
   const setRowPlayer = useCallback(
@@ -697,7 +755,7 @@ export function ImportWizardClient({
   );
 
   const resetWizard = useCallback(() => {
-    setStep('choose');
+    setStep(quickEntryOnly ? 'upload' : 'choose');
     setDataShape('game_box_score');
     setPreview(null);
     setMatches([]);
@@ -706,7 +764,7 @@ export function ImportWizardClient({
     setFileName('');
     setError(null);
     setWarningsAcknowledged(false);
-  }, []);
+  }, [quickEntryOnly]);
 
   // ---- render ----------------------------------------------------------------
   // 'choose' and 'committing' are not in the visible stepper.
@@ -741,30 +799,37 @@ export function ImportWizardClient({
                 control keeps its compact ~19x19px footprint beside the small
                 InkBadge stamp on desktop/tablet — swapping in IconButton
                 unconditionally grew it to 36px there too, an unintended
-                visual change next to an ~18px badge. */}
-            {/* eslint-disable-next-line helm/no-raw-button */}
-            <button
-              type="button"
-              aria-label="Change data shape"
-              onClick={() => { setStep('choose'); setError(null); }}
-              className={cn(
-                'inline-flex items-center justify-center rounded-full p-1',
-                '[@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
-                pressableClass({ ink: 'team' }),
-              )}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                width={11}
-                height={11}
-                fill="currentColor"
-                aria-hidden
-                className="text-text-tertiary"
+                visual change next to an ~18px badge.
+                quickEntryOnly staff have no "choose" step to return to (they
+                arrive pre-committed via the quick-box-score entry point), so
+                the affordance is hidden rather than pointing at a step that
+                would expose the full shape picker Import Center reserves for
+                can_manage_imports staff. */}
+            {!quickEntryOnly && (
+              // eslint-disable-next-line helm/no-raw-button
+              <button
+                type="button"
+                aria-label="Change data shape"
+                onClick={() => { setStep('choose'); setError(null); }}
+                className={cn(
+                  'inline-flex items-center justify-center rounded-full p-1',
+                  '[@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+                  pressableClass({ ink: 'team' }),
+                )}
               >
-                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  width={11}
+                  height={11}
+                  fill="currentColor"
+                  aria-hidden
+                  className="text-text-tertiary"
+                >
+                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                </svg>
+              </button>
+            )}
           </span>
           <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
             {VISIBLE_STEP_ORDER.map((s) => {
@@ -806,6 +871,40 @@ export function ImportWizardClient({
                 table and dedup model.
               </p>
             </div>
+
+            {/* QUICK BOX SCORE — the fast, zero-config entry point that ports the
+                legacy stats/upload wizard's headline capability (drag a CSV in and
+                go) onto the SAME canonical pipeline as every other path here
+                (atomic RPC write, provenance, dedup, rollback — nothing skipped). */}
+            {/* eslint-disable-next-line helm/no-raw-button */}
+            <button
+              type="button"
+              onClick={() => {
+                setDataShape('game_box_score');
+                setStatType('game');
+                setStep('upload');
+              }}
+              className={cn(
+                'flex w-full items-center justify-between gap-3 rounded-card border px-5 py-4 text-left',
+                pressableClass({ ink: 'team', lift: true }),
+                'border-grade-plus/40 bg-grade-plus/[0.05]',
+              )}
+            >
+              <span>
+                <span className="font-annual text-body-lg font-semibold text-text-primary">
+                  Quick box score
+                </span>
+                <span className="mt-0.5 block text-body-sm text-text-secondary">
+                  One game, right now — drag a CSV in and go. Same audited pipeline, fewer
+                  questions.
+                </span>
+              </span>
+              <InkBadge label="Fastest" tone="team" variant="solid" className="shrink-0" />
+            </button>
+
+            <p className="text-caption text-text-tertiary">
+              Or pick the exact data shape:
+            </p>
             <div className="grid gap-3 sm:grid-cols-3">
               {(Object.values(DATA_SHAPE_META) as DataShapeMeta[]).map((meta) => (
                 // A bespoke Living Annual paper tile, not a CTA — pressableClass
@@ -965,7 +1064,17 @@ export function ImportWizardClient({
               />
             </div>
 
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed border-[color:var(--hairline)] bg-[var(--paper)] px-6 py-10 text-center transition-colors hover:border-grade-plus/50 hover:bg-grade-plus/[0.04]">
+            <label
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed px-6 py-10 text-center transition-colors',
+                isDragging
+                  ? 'border-grade-plus bg-grade-plus/[0.08]'
+                  : 'border-[color:var(--hairline)] bg-[var(--paper)] hover:border-grade-plus/50 hover:bg-grade-plus/[0.04]',
+              )}
+            >
               {/* Hidden native file input — the <Input> primitive does not
                   support type=file; this is a visually-hidden field driving
                   the styled dropzone label. */}
@@ -980,10 +1089,10 @@ export function ImportWizardClient({
                 }}
               />
               <span className="text-body-sm font-medium text-text-primary">
-                {fileName ? fileName : 'Choose a CSV or Excel file'}
+                {fileName ? fileName : isDragging ? 'Drop it in' : 'Choose a CSV or Excel file'}
               </span>
               <span className="mt-1 text-caption text-text-tertiary">
-                CSV or .xlsx — a header row + one row per player.
+                {fileName ? 'Drag a different file in, or click to browse.' : 'Drag and drop, or click to browse — a header row + one row per player.'}
               </span>
             </label>
 
@@ -1008,10 +1117,18 @@ export function ImportWizardClient({
               </p>
             </details>
 
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" onClick={() => setStep('choose')}>
-                Back
-              </Button>
+            {/* ROUND-4 FIX (#863) — quickEntryOnly staff have no "choose" step to
+                return to (same reasoning as the pencil affordance above): the
+                'choose' step renders the FULL shape picker Import Center
+                reserves for can_manage_imports staff, so a Back button that
+                routes there must not exist for a can_manage_stats-only viewer
+                even though this Upload step itself is reachable for them. */}
+            <div className={cn('flex items-center', quickEntryOnly ? 'justify-end' : 'justify-between')}>
+              {!quickEntryOnly && (
+                <Button variant="ghost" onClick={() => setStep('choose')}>
+                  Back
+                </Button>
+              )}
               <Button onClick={runPreview} busy={busy} disabled={!csvContent.trim()}>
                 Analyze file
               </Button>
@@ -1041,6 +1158,45 @@ export function ImportWizardClient({
                 </span>
               ))}
             </div>
+
+            {/* DATA PREVIEW — ports the legacy stats/upload wizard's "see your
+                actual rows before mapping" capability so a coach can confirm the
+                file parsed correctly (right columns, no garbled values) before
+                committing to a column mapping. */}
+            {preview.rows.length > 0 && (
+              <div className="overflow-hidden rounded-card border border-[color:var(--hairline)]">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-caption">
+                    <thead className="text-left text-text-tertiary">
+                      <tr>
+                        {preview.headers.slice(0, 6).map((h) => (
+                          <th key={h} className="px-3 py-2 font-mono font-normal">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.rows.slice(0, 3).map((row, i) => (
+                        <tr key={i} className="border-t border-[color:var(--hairline)]">
+                          {preview.headers.slice(0, 6).map((h) => (
+                            <td key={h} className="px-3 py-2 text-text-secondary">
+                              {row[h] || '—'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {preview.rows.length > 3 && (
+                  <p className="border-t border-[color:var(--hairline)] px-3 py-1.5 text-caption text-text-tertiary">
+                    +{preview.rows.length - 3} more row{preview.rows.length - 3 === 1 ? '' : 's'}
+                  </p>
+                )}
+              </div>
+            )}
+
             <StepNav
               onBack={() => setStep('upload')}
               onNext={() => setStep('map')}
@@ -1540,6 +1696,61 @@ export function ImportWizardClient({
           )}
         </div>
       </section>
+
+      {/* LEGACY UPLOAD HISTORY --------------------------------------------
+          baseball_stat_uploads — the pre-consolidation flat-upload path's
+          record. Nothing writes to this table anymore (uploadStatsCSV lost
+          its only caller when the standalone stats-upload wizard was
+          retired), but rows from before this consolidation still exist and
+          had NO viewing surface once UploadHistory.tsx was retired with it.
+          Read-only: rollback/review are Import Center concepts that don't
+          apply to this table's rows. */}
+      <section className="pt-4">
+        <Eyebrow ink="team">Legacy uploads</Eyebrow>
+        <HairlineRule ink="team" className="mt-1.5 w-12" />
+        <div className="mt-4">
+          {legacyUploads.length === 0 ? (
+            <EditorsLetter
+              ink="team"
+              title="No legacy uploads"
+              body="Uploads made before Import Center's consolidation will appear here."
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-card border border-[color:var(--hairline)]">
+              <table className="w-full min-w-[560px] text-body-sm">
+                <thead className="text-left text-text-tertiary">
+                  <tr>
+                    <th className="sticky left-0 z-10 min-w-[160px] bg-[var(--paper)] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">
+                      File
+                    </th>
+                    <th className="min-w-[100px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Rows</th>
+                    <th className="min-w-[110px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Status</th>
+                    <th className="min-w-[140px] px-4 py-2 text-eyebrow font-semibold uppercase tracking-[0.14em]">Uploaded</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {legacyUploads.map((u) => (
+                    <tr key={u.id} className="border-t border-[color:var(--hairline)]">
+                      <td className="sticky left-0 z-10 min-w-[160px] bg-[var(--paper)] px-4 py-2 text-text-primary">
+                        {u.filename}
+                      </td>
+                      <td className="px-4 py-2 text-text-secondary">
+                        {u.matched_rows}/{u.total_rows}
+                      </td>
+                      <td className="px-4 py-2">
+                        <LegacyUploadStatus status={u.status} />
+                      </td>
+                      <td className="px-4 py-2 text-text-secondary">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -1964,5 +2175,21 @@ const RUN_STATUS_META: Record<string, { tone: 'team' | 'sodium' | 'neutral'; var
 
 function RunStatus({ status }: { status: string }) {
   const meta = RUN_STATUS_META[status] ?? { tone: 'neutral' as const, variant: 'soft' as const };
+  return <InkBadge label={status.replace('_', ' ')} tone={meta.tone} variant={meta.variant} />;
+}
+
+// baseball_stat_uploads.status is a distinct enum from baseball_import_runs'
+// (BaseballUploadStatus: pending | processing | completed | failed |
+// needs_review) — its own meta map rather than overloading RUN_STATUS_META.
+const LEGACY_UPLOAD_STATUS_META: Record<string, { tone: 'team' | 'sodium' | 'neutral'; variant: 'soft' | 'solid' }> = {
+  completed: { tone: 'team', variant: 'soft' },
+  failed: { tone: 'sodium', variant: 'solid' },
+  needs_review: { tone: 'sodium', variant: 'soft' },
+  pending: { tone: 'neutral', variant: 'soft' },
+  processing: { tone: 'neutral', variant: 'soft' },
+};
+
+function LegacyUploadStatus({ status }: { status: string }) {
+  const meta = LEGACY_UPLOAD_STATUS_META[status] ?? { tone: 'neutral' as const, variant: 'soft' as const };
   return <InkBadge label={status.replace('_', ' ')} tone={meta.tone} variant={meta.variant} />;
 }

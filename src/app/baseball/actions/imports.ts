@@ -629,32 +629,56 @@ function findClassColumn(headers: string[]): string | null {
 // previewImport — parse + match, NO writes
 // -----------------------------------------------------------------------------
 
+/**
+ * previewImport's args. `dataShape` mirrors CommitImportArgs.dataShape (the
+ * wizard's Step 1 "What are you uploading?" choice) so the capability gate
+ * below can relax identically at preview time and at commit time — a
+ * stats-only coach whose ONLY unlocked path is 'game_box_score' must not get
+ * blocked at the FIRST wizard step the two-shape capability model allows them
+ * to reach. Optional so a legacy/other caller that omits it (see
+ * EventImportWizard.tsx, which never sets it) keeps the pre-existing
+ * can_manage_imports-only gate — the restrictive default.
+ */
+interface PreviewImportArgs {
+  teamId: string;
+  sourceId: string;
+  csvContent: string;
+  // The targeted grain — supplied so the preview can detect EXISTING rows and
+  // show the per-row create/update/skip verdict BEFORE commit. Optional so a
+  // caller that only wants the parse/match preview still works (verdicts empty).
+  statType?: 'practice' | 'game' | 'other';
+  sessionDate?: string;
+  dataShape?: 'season_totals' | 'game_box_score' | 'event_log';
+}
+
+/**
+ * ROUND-4 FIX (#863) — the SAME shape-conditional capability gate commitImport
+ * uses (see its own comment above the `requiredCapability` option): a
+ * 'game_box_score' request may be authorized by can_manage_imports OR
+ * can_manage_stats; every other shape (including omitted/undefined, which
+ * covers every existing non-wizard caller) keeps the original can_manage_imports-
+ * only gate. `dataShape` here is the exact field the wizard sends and the coach
+ * chose in the UI — there is no other, more "server-trusted" source for it at
+ * preview time (no write has happened yet to derive it from); resolving the
+ * SAME field the commit-time gate resolves is what keeps the two gates from
+ * ever disagreeing about what a given request is allowed to do.
+ */
+function importCapabilityForShape(
+  a: Pick<PreviewImportArgs, 'dataShape'>,
+): 'can_manage_imports' | readonly ['can_manage_stats', 'can_manage_imports'] {
+  return a.dataShape === 'game_box_score'
+    ? (['can_manage_stats', 'can_manage_imports'] as const)
+    : 'can_manage_imports';
+}
+
 export const previewImport = withBaseballAction(
   'previewImport',
   {
     featureArea: 'baseball-import',
-    requiredCapability: 'can_manage_imports',
-    teamFrom: (a: {
-      teamId: string;
-      sourceId: string;
-      csvContent: string;
-      statType?: 'practice' | 'game' | 'other';
-      sessionDate?: string;
-    }) => a.teamId,
+    requiredCapability: (a: PreviewImportArgs) => importCapabilityForShape(a),
+    teamFrom: (a: PreviewImportArgs) => a.teamId,
   },
-  async (
-    _ctx,
-    args: {
-      teamId: string;
-      sourceId: string;
-      csvContent: string;
-      // The targeted grain — supplied so the preview can detect EXISTING rows and
-      // show the per-row create/update/skip verdict BEFORE commit. Optional so a
-      // caller that only wants the parse/match preview still works (verdicts empty).
-      statType?: 'practice' | 'game' | 'other';
-      sessionDate?: string;
-    }
-  ): Promise<ImportPreview> => {
+  async (_ctx, args: PreviewImportArgs): Promise<ImportPreview> => {
     const supabase = await createClient();
     const { teamId, sourceId } = args;
     const db = supabase as unknown as LooseClient;
@@ -815,7 +839,30 @@ export const commitImport = withBaseballAction(
   'commitImport',
   {
     featureArea: 'baseball-import',
-    requiredCapability: 'can_manage_imports',
+    // ROUND-4 FIX (#863) — pre-consolidation, stats-only staff (can_manage_stats,
+    // no can_manage_imports) could upload box scores via the legacy /stats/upload
+    // wizard; the consolidated Import Center regressed that by hard-gating BOTH
+    // previewImport and commitImport to can_manage_imports unconditionally,
+    // silently locking out every stats-only role even though the quickEntryOnly
+    // inline wizard (see StatsUploadPage) still renders for them. Restore the
+    // faithful capability model: a 'game_box_score' commit — the ONLY shape
+    // quickEntryOnly's UI can ever produce (see ImportWizardClient's `!quickEntryOnly`-
+    // gated shape picker / back-to-choose affordances) — may be authorized by
+    // can_manage_imports OR can_manage_stats. Every other shape (season_totals,
+    // event_log, or omitted/undefined) keeps the ORIGINAL can_manage_imports-only
+    // gate, so stats-only staff gain NOTHING beyond the historical box-score path.
+    // `args.dataShape` (CommitImportArgs.dataShape) is gated on here via the SAME
+    // field applyImportPlan below uses to decide canonical-table routing — there
+    // is no separate, more "server-trusted" value to derive it from at commit
+    // time (no staged/server-persisted preview precedes a direct commit; see
+    // reviewImportRun for the ONE flow that does persist it, which stays fully
+    // can_manage_imports-gated below, unchanged). Using the identical binding for
+    // both the auth decision and the write decision means they can never diverge:
+    // a caller cannot claim 'game_box_score' to unlock the OR-gate while having
+    // the season_totals/event_log canonical write actually apply — that write
+    // branch only runs when this SAME field says 'season_totals'/'event_log',
+    // which requires the (unrelaxed) can_manage_imports gate to have passed.
+    requiredCapability: (a: CommitImportArgs) => importCapabilityForShape(a),
     teamFrom: (a: CommitImportArgs) => a.teamId,
   },
   async (ctx, args: CommitImportArgs): Promise<CommitImportResult> => {

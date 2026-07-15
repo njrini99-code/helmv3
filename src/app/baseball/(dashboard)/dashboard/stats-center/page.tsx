@@ -23,6 +23,7 @@
 import { redirect } from 'next/navigation';
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import {
   getStatsCenter,
   type StatSide,
@@ -102,12 +103,17 @@ export default async function StatsCenterPage({
   //    read model that feeds the V10 chart gallery (chase/whiff/EV-LA/spray/
   //    pitch-shape/velo-decay). The event read model is itself can_manage_stats-
   //    gated and returns empty visuals when no granular events are captured.
-  const [model, visualsPayload] = await Promise.all([
+  const [model, visualsPayload, canManageImports] = await Promise.all([
     getStatsCenter(context.activeTeamId, options),
     getStatVisualsPayload(context.activeTeamId, {
       fromDate: options.fromDate ?? null,
       toDate: options.toDate ?? null,
     }),
+    // Decides where the client's import entry points route: straight to the
+    // full Import Center for import-capable staff, or through the
+    // capability-aware /stats/upload shim for everyone else. Same helper the
+    // shim itself branches on, so the two stay in agreement.
+    hasBaseballCapability(context.activeTeamId, 'can_manage_imports'),
   ]);
 
   // The full V10 chart payload (every visual family). Undefined ONLY when the
@@ -117,6 +123,7 @@ export default async function StatsCenterPage({
   return (
     <StatsCenterClient
       model={model}
+      canManageImports={canManageImports}
       statVisualsData={statVisualsData}
       initialFilters={{
         seasonYear: model.seasonYear,

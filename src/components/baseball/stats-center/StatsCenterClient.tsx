@@ -29,7 +29,7 @@ import { LazyMotion, m, useReducedMotion } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
-import { IconDownload, IconFilter, IconFolder, IconUpload, IconX } from '@/components/icons';
+import { IconDownload, IconFilter, IconFolder, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { loadStatsCenter } from '@/app/baseball/actions/games';
 // V10 stat-visual chart gallery (stat-visuals packet). Mounted at team scope; it
@@ -80,6 +80,17 @@ interface StatsCenterClientProps {
    * renders its truthful "no captured events" frames.
    */
   statVisualsData?: StatVisualsData;
+  /**
+   * Whether the viewer holds can_manage_imports (computed server-side by the
+   * page). Decides where the two import entry points route: import-capable
+   * staff go straight to the full Import Center (whose middleware gate is
+   * can_manage_imports), everyone else through the capability-aware
+   * /stats/upload shim (middleware gate: can_manage_stats). Sending
+   * import-capable-but-not-stats staff (e.g. the director_ops preset) through
+   * the shim would bounce them off its can_manage_stats middleware gate
+   * before the shim's own capability branch ever ran.
+   */
+  canManageImports?: boolean;
 }
 
 /** Which game-set the wall currently shows. */
@@ -455,7 +466,12 @@ function SegmentedControl<T extends string>({
 // Main client
 // -----------------------------------------------------------------------------
 
-export function StatsCenterClient({ model: initialModel, initialFilters, statVisualsData }: StatsCenterClientProps) {
+export function StatsCenterClient({
+  model: initialModel,
+  initialFilters,
+  statVisualsData,
+  canManageImports = false,
+}: StatsCenterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reducedMotion = useReducedMotion() ?? false;
@@ -632,27 +648,37 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
     .filter(Boolean)
     .join(' · ');
 
+  // Both import entry points (header action + empty-state CTA) share one
+  // capability-resolved destination — see the canManageImports prop doc.
+  const importEntryHref = canManageImports
+    ? '/baseball/dashboard/import'
+    : '/baseball/dashboard/stats/upload';
+
   const mastheadActions = (
     <div className="flex flex-wrap items-center gap-2">
       <SegmentedControl options={GAME_SET_OPTIONS} value={gameSet} onChange={setGameSet} ariaLabel="Game set" />
-      {/* Ruling 2 (item 2): Upload + Import Center folded off the hub sub-nav
-          strip into persistent header-level actions here — Stats Center is
-          now the ONLY place they're reachable from the Stats & Performance
-          hub (the empty-state "Import a box score" CTA below stays too, for
-          the exact moment it's most useful). */}
-      <Button
-        variant="ghost"
-        size="md"
-        leftIcon={<IconUpload size={16} />}
-        onClick={() => router.push('/baseball/dashboard/stats/upload')}
-      >
-        Upload
-      </Button>
+      {/* Ruling 2 (item 2): Import Center folded off the hub sub-nav strip into
+          a persistent header-level action here — Stats Center is now the
+          ONLY place it's reachable from the Stats & Performance hub (the
+          empty-state "Import a box score" CTA below stays too, for the exact
+          moment it's most useful).
+          Wizard consolidation: the standalone "Upload" button that used to
+          sit beside this one (routing to the retired /stats/upload wizard)
+          is gone — that wizard is now the SAME entry point ("Quick box
+          score"). The destination branches on the viewer's capability
+          (importEntryHref): can_manage_imports staff go STRAIGHT to the full
+          Import Center — routing them through the /stats/upload shim would
+          bounce anyone without can_manage_stats (e.g. director_ops) off that
+          route's own middleware gate — while everyone else goes through the
+          shim, which renders the quick-box-score wizard inline for
+          can_manage_stats-only staff (assistant/pitching/hitting/catching/
+          defensive/strength coach) instead of locking them out on Import
+          Center's can_manage_imports gate. */}
       <Button
         variant="ghost"
         size="md"
         leftIcon={<IconFolder size={16} />}
-        onClick={() => router.push('/baseball/dashboard/import')}
+        onClick={() => router.push(importEntryHref)}
       >
         Import Center
       </Button>
@@ -835,7 +861,7 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
             <EmptyIssue
               variant="stats"
               action={
-                <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard/import')}>
+                <Button variant="secondary" size="md" onClick={() => router.push(importEntryHref)}>
                   Import a box score
                 </Button>
               }
