@@ -151,6 +151,78 @@ function legacyBaseballRedirectTarget(pathname: string): string | null {
 }
 
 /**
+ * Exact marketing-root paths: the site root plus each sport's bare landing
+ * page. Deliberately exact-match only — `/baseball/anything-else` is an app
+ * route, not the marketing root.
+ */
+const MARKETING_ROOT_PATHS = new Set(['/', '/baseball', '/golf', '/lifting']);
+
+/**
+ * Segment names shared by every sport's (auth) route group. No live session
+ * is required (or expected) on any of these — a signed-in-but-idle visitor
+ * revisiting /baseball/login, /golf/signup, /auth/callback, etc. must never
+ * be app-level idle-bounced off the very page that lets them sign back in.
+ */
+const AUTH_ROUTE_SEGMENTS = new Set([
+  'login',
+  'signup',
+  'forgot-password',
+  'reset-password',
+  'complete-signup',
+  'callback',
+  'demo',
+  'welcome',
+]);
+
+/**
+ * The (player-dashboard) route group's literal segments. This is
+ * BaseballHelm's entire private, authenticated player app (PLAYER_HOME is
+ * '/baseball/player/today') and lives under the SAME /baseball/player/*
+ * URL prefix as the sibling (public)/player/[id] dynamic profile route.
+ * Next.js always resolves a literal segment match ahead of a dynamic
+ * sibling, so these four segments can never resolve to the public profile
+ * page — any OTHER /baseball/player/<x> segment is the public route.
+ */
+const PRIVATE_BASEBALL_PLAYER_APP_SEGMENTS = new Set(['today', 'practice', 'timeline', 'passport']);
+
+/**
+ * BaseballHelm's (public) route groups: no-auth-required profile/report
+ * pages meant to be viewed by anyone with the link (recruiters, family,
+ * boosters). Guards the /baseball/player/<x> boundary against
+ * PRIVATE_BASEBALL_PLAYER_APP_SEGMENTS above so the private player app is
+ * never misclassified as public.
+ */
+function isPublicBaseballRoute(pathname: string): boolean {
+  const [, section, id] = pathname.split('/').filter(Boolean);
+  if (section === 'player') return id !== undefined && !PRIVATE_BASEBALL_PLAYER_APP_SEGMENTS.has(id);
+  if (section === 'team' || section === 'program' || section === 'packet') return id !== undefined;
+  return false;
+}
+
+/**
+ * True for routes that must NEVER trigger the app-level idle-reauth bounce:
+ * marketing roots, every sport's (auth) flows, and BaseballHelm's (public)
+ * profile groups. Deliberately narrow — everything else under a sport
+ * prefix (including the player-dashboard, coach/player onboarding, and
+ * admin sub-app surfaces) is a genuinely authenticated surface and MUST
+ * stay in scope for the idle-reauth gate below.
+ *
+ * See #872 fix-backlog: an earlier version of this gate keyed on
+ * isDashboardRoute instead of this predicate, which silently exempted
+ * BaseballHelm's entire player-facing app
+ * (/baseball/player/{today,practice,timeline,passport}, none of which live
+ * under a dashboard route) from idle-reauth, reintroducing the #730
+ * shared-device exposure for players.
+ */
+function isPublicRoute(pathname: string, sport: 'baseball' | 'golf' | 'lifting' | null): boolean {
+  if (MARKETING_ROOT_PATHS.has(pathname)) return true;
+  if (!sport) return false;
+  const section = pathname.split('/').filter(Boolean)[1];
+  if (section !== undefined && AUTH_ROUTE_SEGMENTS.has(section)) return true;
+  return sport === 'baseball' && isPublicBaseballRoute(pathname);
+}
+
+/**
  * Check if user is authorized to access the requested route based on their role
  */
 interface SupabaseClient {
@@ -432,10 +504,25 @@ export async function updateSession(request: NextRequest) {
   // (client hook) and bootstrapped here on first sight; its long lifetime means
   // a genuine reopen after the window is always "present + stale". Absent/fresh
   // markers are treated as active so a brand-new login is never bounced.
-  // Scoped to sport page routes (golf/baseball/lifting) AND /admin — the
-  // single most powerful account in the app must not be exempt from the
-  // platform's own idle-reauth policy (see #730). /api is still out.
-  if (user && (sport || onAdminPath)) {
+  //
+  // Scoped BROAD then narrowed: fires for authenticated requests on ANY sport
+  // path (golf/baseball/lifting) or /admin — the single most powerful account
+  // in the app must not be exempt from the platform's own idle-reauth policy
+  // (see #730) — MINUS routes isPublicRoute() marks as genuinely public
+  // (marketing roots, (auth) login/signup/reset/callback flows, and
+  // BaseballHelm's (public) player/team/program/packet profile groups).
+  // /api is still out.
+  //
+  // Do NOT narrow this to isDashboardRoute (that was the #872 fix-backlog
+  // bug): BaseballHelm has a whole authenticated, non-dashboard surface —
+  // most notably the (player-dashboard) route group
+  // (/baseball/player/{today,practice,timeline,passport}, PLAYER_HOME) and
+  // /baseball/admin/demo-sessions — that isDashboardRoute does not match but
+  // very much requires a live session. isPublicRoute() is the only source of
+  // truth for what's exempt; everything else in scope here stays gated.
+  const isIdleGatedRoute = (Boolean(sport) || onAdminPath) && !isPublicRoute(pathname, sport);
+
+  if (user && isIdleGatedRoute) {
     const lastActivity = parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value);
     const now = Date.now();
 
@@ -455,7 +542,10 @@ export async function updateSession(request: NextRequest) {
       loginUrl.pathname = sport ? `/${sport}/login` : '/golf/login';
       loginUrl.search = '';
       loginUrl.searchParams.set('message', 'session_expired');
-      if (isProtectedRoute || onAdminPath) loginUrl.searchParams.set('returnTo', pathname);
+      // Already gated on isIdleGatedRoute via the enclosing `if` above, so
+      // returnTo is always set here — send the user back to the exact page
+      // they were bounced from once they re-authenticate.
+      loginUrl.searchParams.set('returnTo', pathname);
 
       const res = NextResponse.redirect(loginUrl);
       // Propagate any cookie removals signOut wrote onto supabaseResponse...
