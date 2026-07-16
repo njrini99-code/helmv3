@@ -5,10 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyProfileView } from '@/lib/notifications';
 import { logServerError } from '@/lib/server-error-logger';
-import {
-  getCoachRosterPlayerIds,
-  isPlayerProfilePrivate,
-} from '@/lib/baseball/player-visibility';
+import { getCoachRosterPlayerIds } from '@/lib/baseball/player-visibility';
+import { assertCoachCanRecruitPlayer } from '@/lib/baseball/recruitability';
+import type { CoachType } from '@/app/baseball/actions/discover';
 
 export interface PlayerPeekData {
   id: string;
@@ -45,16 +44,25 @@ export interface PlayerPeekData {
  * Fetch player data for the peek panel preview.
  * Returns essential info for quick view without full profile load.
  *
- * P0 PRIVACY — restores the Discover / assertCoachCanRecruitPlayer policy
- * for this surface (see src/lib/baseball/player-visibility.ts, the shared
- * source of truth for both predicates below). A viewer may see a player's
- * peek data ONLY when:
+ * P0 PRIVACY — gates this surface behind assertCoachCanRecruitPlayer()
+ * (src/lib/baseball/recruitability.ts), the ONE full-policy implementation
+ * that discover.ts's browse query and the watchlist/engagement write paths
+ * already enforce. Routing through that single source of truth (instead of
+ * re-deriving a partial copy here) is deliberate: a prior version of this
+ * gate checked only recruiting_activated + profile_visibility and missed
+ * two of Discover's restrictions (coach_type vs player_type, and
+ * discoverable-team membership) — see git history / PR #873 review. A
+ * viewer may see a player's peek data ONLY when:
  *   (a) the viewer is a coach on a team the player is a MEMBER of
  *       (own-roster peek — allowed regardless of recruiting_activated /
  *       profile_visibility, same as viewing your own roster elsewhere), OR
- *   (b) the player has recruiting_activated = true AND their
- *       baseball_player_settings.profile_visibility is not 'private' — the
- *       exact predicate Discover/browse enforce.
+ *   (b) assertCoachCanRecruitPlayer() allows it — recruiting_activated,
+ *       not a college player, coach_type/player_type compatible (a JUCO
+ *       coach may not peek another JUCO player, mirroring discover.ts's
+ *       browse filter), profile_visibility not 'private', and the player
+ *       is on a discoverable (HS/showcase/JUCO) team roster — a player
+ *       removed from every roster is not peekable even if
+ *       recruiting_activated was never reset.
  * A viewer with no baseball_coaches row at all (e.g. a player-role session)
  * is denied outright, mirroring Discover's own "no coachProfile -> nothing"
  * behavior. Every branch below returns the SAME generic 'Player not found'
@@ -77,12 +85,14 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
     }
 
     // Viewer must be a coach — mirrors discover.ts requiring a coachProfile
-    // before returning anything (a player-role session has none).
+    // before returning anything (a player-role session has none). coach_type
+    // is fetched here (previously it wasn't) so the gate below can consult
+    // it — see assertCoachCanRecruitPlayer's coach_type_mismatch checks.
     const { data: coach } = await supabase
       .from('baseball_coaches')
-      .select('id, full_name, organization_id')
+      .select('id, full_name, organization_id, coach_type')
       .eq('user_id', user.id)
-      .single() as { data: { id: string; full_name: string | null; organization_id: string | null } | null };
+      .single() as { data: { id: string; full_name: string | null; organization_id: string | null; coach_type: string | null } | null };
 
     if (!coach) {
       return { success: false, error: 'Player not found' };
@@ -128,15 +138,29 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
     // P0 PRIVACY GATE — evaluated BEFORE any watchlist lookup or telemetry
     // write below, so a denied request never fires the engagement-event
     // insert or the profile-view email.
+    //
+    // Own-roster is checked here (not inside assertCoachCanRecruitPlayer)
+    // because peek's own-roster rule is the INVERSE of that function's: a
+    // coach may always view their own roster player regardless of
+    // recruiting_activated / profile_visibility, whereas
+    // assertCoachCanRecruitPlayer denies own-roster players (reason
+    // 'on_own_roster') because you don't "recruit" a player you already
+    // have. Everything else — coach_type vs player_type, recruiting_activated,
+    // college-player exclusion, profile_visibility, and discoverable-team
+    // membership — is delegated entirely to assertCoachCanRecruitPlayer so
+    // this gate cannot drift from Discover's policy again.
     // -------------------------------------------------------------------
     const rosterIds = await getCoachRosterPlayerIds(supabase, coach.id);
     const isOwnRoster = rosterIds.has(playerId);
 
     if (!isOwnRoster) {
-      const isRecruitable =
-        player.recruiting_activated === true &&
-        !(await isPlayerProfilePrivate(supabase, playerId));
-      if (!isRecruitable) {
+      const recruitability = await assertCoachCanRecruitPlayer(
+        supabase,
+        coach.id,
+        coach.coach_type as CoachType,
+        playerId,
+      );
+      if (!recruitability.allowed) {
         return { success: false, error: 'Player not found' };
       }
     }
