@@ -25,6 +25,7 @@
 import { cn } from '@/lib/utils';
 import { EditorsLetter } from '../EditorsLetter';
 import { Eyebrow } from '../Eyebrow';
+import { formatRate } from '../format';
 import { PaperCard } from '../PaperCard';
 import { StatReadout } from '../StatReadout';
 import { Trace } from '../Trace';
@@ -47,6 +48,21 @@ export interface ClimbArcProps {
   title?: string;
   /** Lane ink for the climb stroke (default team green). */
   ink?: 'team';
+  /**
+   * Decimal places for the readout / PR / goal captions. When omitted, derives
+   * from the series: an all-integer series gets 0; a series with any
+   * non-integer reading gets 3 when its magnitude is small (< 10 — a
+   * batting-average-style rate, where `.250` vs `.300` is the whole point) or
+   * 1 otherwise (e.g. an exit-velo-style reading). A caller with a known
+   * house style (e.g. AVG) should still pass this explicitly.
+   */
+  decimals?: number;
+  /**
+   * Signature line under the "not enough data yet" honest-empty state (e.g.
+   * `— My Development`). `ClimbArc` is shared across multiple features, so
+   * there is no correct default — omit for no signoff.
+   */
+  signoff?: string;
   className?: string;
 }
 
@@ -90,7 +106,16 @@ function pct(coord: number, span: number): string {
   return `${(coord / span) * 100}%`;
 }
 
-export function ClimbArc({ points, goal, unit, title, ink = 'team', className }: ClimbArcProps) {
+export function ClimbArc({
+  points,
+  goal,
+  unit,
+  title,
+  ink = 'team',
+  decimals: decimalsProp,
+  signoff,
+  className,
+}: ClimbArcProps) {
   if (points.length < 2) {
     return (
       <EditorsLetter
@@ -98,7 +123,7 @@ export function ClimbArc({ points, goal, unit, title, ink = 'team', className }:
         live
         title="Not enough data yet"
         body="The Climb draws itself once a couple of readings are on the record — then every session adds to the arc, with the best day pinned as a personal record."
-        signoff="— My Development"
+        signoff={signoff}
       />
     );
   }
@@ -136,7 +161,26 @@ export function ClimbArc({ points, goal, unit, title, ink = 'team', className }:
   });
   const lastIdx = n - 1;
   const nowIsPeak = bestIdx === lastIdx;
-  const decimals = values.some((v) => !Number.isInteger(v)) ? 1 : 0;
+
+  // Precision: an explicit `decimals` prop wins. Otherwise derive from the
+  // series itself — a batting-average-style rate (small magnitude, non-integer
+  // readings) needs 3 decimals or `.250` vs `.300` reads as the same number;
+  // an integer series (counts, lb) stays at 0.
+  const magnitude = Math.max(...values.map((v) => Math.abs(v)));
+  const decimals =
+    typeof decimalsProp === 'number'
+      ? decimalsProp
+      : values.some((v) => !Number.isInteger(v))
+        ? magnitude < 10
+          ? 3
+          : 1
+        : 0;
+  // House style (formatRate): drop the leading zero once the series is a
+  // sub-1 rate (`.250`, not `0.250`). Gated on `decimals > 0` so a caller can
+  // never trip `formatRate`'s own decimals=0 edge case (it collapses `0` to
+  // an empty string) — an integer series never qualifies.
+  const dropLeadingZero = decimals > 0 && magnitude < 1;
+  const fmt = (v: number): string => (dropLeadingZero ? formatRate(v, decimals) : v.toFixed(decimals));
 
   // The faint "then" ghost — the opening stretch of the season, drawn behind.
   const ghostCut = Math.max(2, Math.ceil(n * 0.35));
@@ -149,7 +193,8 @@ export function ClimbArc({ points, goal, unit, title, ink = 'team', className }:
   // under noUncheckedIndexedAccess without a non-null assertion.
   if (!now || !best || !start) return null;
 
-  const goalY = typeof goal === 'number' ? yAt(goal) : null;
+  const goalValue = typeof goal === 'number' ? goal : null;
+  const goalY = goalValue !== null ? yAt(goalValue) : null;
 
   return (
     <PaperCard className={cn('p-5', className)}>
@@ -161,14 +206,27 @@ export function ClimbArc({ points, goal, unit, title, ink = 'team', className }:
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-microlabel font-semibold uppercase tracking-[0.14em] text-grade-plus">Now</span>
-          <StatReadout
-            value={now.value}
-            decimals={decimals}
-            emphasis
-            pr={nowIsPeak}
-            className="text-h1 leading-none"
-            ariaLabel={title ?? 'current value'}
-          />
+          {dropLeadingZero ? (
+            // A sub-1 rate (AVG-style): render the house-style formatted
+            // string (leading zero dropped) — a static figure, matching how
+            // every other rate stat on the Living Annual kit displays.
+            <StatReadout
+              value={fmt(now.value)}
+              emphasis
+              pr={nowIsPeak}
+              className="text-h1 leading-none"
+              ariaLabel={title ?? 'current value'}
+            />
+          ) : (
+            <StatReadout
+              value={now.value}
+              decimals={decimals}
+              emphasis
+              pr={nowIsPeak}
+              className="text-h1 leading-none"
+              ariaLabel={title ?? 'current value'}
+            />
+          )}
           {unit ? (
             <span className="font-annual text-caption uppercase tracking-[0.12em] text-text-tertiary">{unit}</span>
           ) : null}
@@ -220,15 +278,15 @@ export function ClimbArc({ points, goal, unit, title, ink = 'team', className }:
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-full font-annual text-microbadge font-semibold uppercase tracking-[0.14em]"
             style={{ left: pct(best.x, VBW), top: pct(best.y, VBH), color: 'var(--sodium)' }}
           >
-            PR <span className="tabular-nums">{best.value.toFixed(decimals)}</span>
+            PR <span className="tabular-nums">{fmt(best.value)}</span>
           </span>
         )}
-        {goalY !== null ? (
+        {goalY !== null && goalValue !== null ? (
           <span
             className="pointer-events-none absolute right-0 -translate-y-1/2 font-annual text-microbadge font-semibold uppercase tracking-[0.14em] text-grade-plus"
             style={{ top: pct(goalY, VBH) }}
           >
-            Goal <span className="tabular-nums">{goal?.toFixed(decimals)}</span>
+            Goal <span className="tabular-nums">{fmt(goalValue)}</span>
             {unit ? ` ${unit}` : ''}
           </span>
         ) : null}

@@ -43,5 +43,5 @@ export function TrendChart({ stats, className }: TrendChartProps) {
     [stats],
   );
 
-  return <ClimbArc points={points} goal={0.3} unit="AVG" title="Batting Average" className={className} />;
+  return <ClimbArc points={points} goal={0.3} unit="AVG" title="Batting Average" decimals={3} className={className} />;
 }
