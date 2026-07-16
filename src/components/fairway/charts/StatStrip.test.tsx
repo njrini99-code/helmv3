@@ -196,7 +196,44 @@ describe('StatStrip — phone shape by count', () => {
     expect(list.className).toContain('forced-colors:[mask-image:none]');
   });
 
-  it('grid mode (below the rail threshold) carries no edge-fade mask — there is nothing to hint at swiping past', () => {
+  it('reserves a real trailing spacer after the last chip so the edge-fade only ever dims empty space', () => {
+    // Regression this covers: the fade above is a STATIC mask painted on the
+    // container's own viewport, not scroll-position-aware. With no reserved
+    // space past the final chip, the true last chip scrolls flush against
+    // the container's right edge, so the fade's 2rem zone permanently dims
+    // ~22% of REAL content at scroll-end — exactly the moment the fix is
+    // supposed to reward. A trailing, non-content spacer (>= the fade's
+    // 2rem width) after the last chip guarantees the fade only ever
+    // overlaps that dead space, never the last chip's own pixels.
+    render(
+      <StatStrip count={8} ariaLabel="trailing spacer">
+        {chips(8)}
+      </StatStrip>,
+    );
+    const list = screen.getByRole('list', { name: 'trailing spacer' });
+    const chipChildren = screen.getAllByRole('listitem');
+    expect(chipChildren).toHaveLength(8);
+
+    // The spacer is the list's final DOM child, sits after every real chip,
+    // and is excluded from both the `listitem` role query above and the
+    // accessibility tree (decorative only).
+    const spacer = list.lastElementChild as HTMLElement;
+    expect(spacer).not.toBe(chipChildren[7]);
+    expect(spacer.getAttribute('aria-hidden')).toBe('true');
+    expect(spacer.getAttribute('role')).not.toBe('listitem');
+
+    // Width matches the fade's own 2rem exactly; combined with RAIL_BASE's
+    // gap-4 (1rem) ahead of it, the reserved dead zone (3rem) comfortably
+    // exceeds the 2rem it needs to fully absorb. Never shrinks (a shrinking
+    // spacer could collapse to nothing under a wide chip set) and disappears
+    // once the rail dissolves into the desktop grid at `sm`, where a stray
+    // flex child would otherwise throw off the grid's column count.
+    expect(spacer.className).toContain('shrink-0');
+    expect(spacer.className).toContain('basis-8');
+    expect(spacer.className).toContain('sm:hidden');
+  });
+
+  it('grid mode (below the rail threshold) carries no edge-fade mask or trailing spacer — there is nothing to hint at swiping past', () => {
     const { container } = render(
       <StatStrip count={4} columns={4}>
         {chips(4)}
@@ -204,6 +241,10 @@ describe('StatStrip — phone shape by count', () => {
     );
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).not.toContain('mask-image');
+    // The spacer is a rail-only affordance — the grid branch must not grow
+    // an extra phantom cell that would throw off its column count.
+    expect(root.children).toHaveLength(4);
+    expect(root.querySelector('[aria-hidden="true"]')).not.toBeInTheDocument();
   });
 
   it('is NOT React.memo — children are always fresh from the caller (memo would lie about stability)', () => {

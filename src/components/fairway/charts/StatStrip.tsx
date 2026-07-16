@@ -19,7 +19,10 @@
  *                    callers pin it to index 0 before rendering. The rail's
  *                    scrollbar is hidden, so a static trailing `mask-image`
  *                    fade (`RAIL_EDGE_FADE` below) is the affordance that
- *                    tells a phone user there's more to swipe to.
+ *                    tells a phone user there's more to swipe to. A trailing
+ *                    spacer (`RAIL_EDGE_SPACER`) reserves real empty space
+ *                    after the last chip so that fade only ever dims empty
+ *                    space, never the true last chip itself.
  *
  * At `sm` (≥640px) and up, nothing here changes shape: the desktop
  * `sm:grid-cols-2 lg:grid-cols-N` composition is the byte-for-byte original
@@ -115,6 +118,23 @@ export interface StatStripProps {
 const RAIL_EDGE_FADE =
   '[mask-image:linear-gradient(to_right,black_calc(100%_-_2rem),transparent)] ' +
   'sm:[mask-image:none] forced-colors:[mask-image:none]';
+
+// Trailing buffer rendered AFTER the last chip so RAIL_EDGE_FADE's static
+// 2rem mask above only ever fades EMPTY space, never the true last chip.
+// Without this, a chip set with no slack past its final item scrolls until
+// the last chip sits flush against the container's own right edge — the
+// mask is painted on the container's viewport, not scroll-position-aware,
+// so at that point its 2rem fade permanently dims ~22% of real content
+// (the exact opposite of the affordance it exists to give). This spacer's
+// `basis-8` (2rem) matches the fade width exactly, and RAIL_BASE's own
+// `gap-4` (1rem) between it and the last real chip adds a further 1rem on
+// top, so the reserved dead zone (3rem) is comfortably wider than the
+// 2rem it needs to fully absorb. Not a `listitem` — `aria-hidden` keeps it
+// out of the rail's list semantics and out of the accessibility tree
+// entirely — and hidden at `sm` alongside the fade itself, since the rail
+// dissolves into a grid there and a stray flex child would throw off the
+// grid's column count.
+const RAIL_EDGE_SPACER = 'shrink-0 basis-8 sm:hidden';
 
 // Rail (phone) shell: horizontal snap scroller, hidden scrollbar, a
 // forced-colors outline so the band's edge survives high-contrast mode (the
@@ -265,6 +285,7 @@ export function StatStrip({
             child
           ),
         )}
+        <div aria-hidden="true" className={RAIL_EDGE_SPACER} />
       </div>
     );
   }
