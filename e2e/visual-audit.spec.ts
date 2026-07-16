@@ -370,9 +370,16 @@ async function runRoleVisualAudit(
   }
 }
 
+// Each role's crawl is ONE long test walking dozens of routes × 2 viewports
+// with per-route settle delays — Playwright's default 30s per-test timeout
+// killed the first production run 2 routes in. Budget the whole crawl instead;
+// the workflow's job-level timeout-minutes (30) stays the real upper bound.
+const CRAWL_TIMEOUT_MS = 25 * 60 * 1000;
+
 test.describe('Visual audit — coach', { tag: '@coach' }, () => {
   test('screenshot every discovered coach route at phone + desktop viewports', async ({ page }) => {
     test.skip(process.env.VISUAL_AUDIT !== '1', 'Gated behind VISUAL_AUDIT=1 — see visual-audit.yml');
+    test.setTimeout(CRAWL_TIMEOUT_MS);
     await runRoleVisualAudit(page, 'coach', '/baseball/dashboard/command-center');
   });
 });
@@ -380,6 +387,7 @@ test.describe('Visual audit — coach', { tag: '@coach' }, () => {
 test.describe('Visual audit — player', { tag: '@player' }, () => {
   test('screenshot every discovered player route at phone + desktop viewports', async ({ page }) => {
     test.skip(process.env.VISUAL_AUDIT !== '1', 'Gated behind VISUAL_AUDIT=1 — see visual-audit.yml');
+    test.setTimeout(CRAWL_TIMEOUT_MS);
     await runRoleVisualAudit(page, 'player', '/baseball/player/today');
   });
 });
