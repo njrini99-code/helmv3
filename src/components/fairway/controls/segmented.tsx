@@ -122,13 +122,22 @@ export function Segmented<T extends string = string>({
             aria-label={typeof opt.label === 'string' ? opt.label : undefined}
             data-slot="fw-segment"
             className={cn(
-              'relative isolate inline-flex min-w-0 items-center justify-center rounded-md',
+              // No min-w-0 here (deliberately): a flex item's default
+              // `min-width: auto` floors it at its own content size, which is
+              // what lets the row overflow into the track's `overflow-x-auto`
+              // + useScrollFade affordance above instead of every segment
+              // shrinking to an illegible sliver (the bug this comment
+              // replaces). `fullWidth` still grows items to share the row
+              // evenly when there's slack, via flex-1; when there isn't
+              // enough room even for that, the same content-size floor kicks
+              // in and the row scrolls, same as the non-fullWidth case.
+              'relative isolate inline-flex items-center justify-center rounded-md',
               'font-fw-sans font-medium',
               fwTransition,
               fwFocusRing,
               'disabled:opacity-40 disabled:pointer-events-none',
               sizeItem[size],
-              fullWidth && 'flex-1',
+              fullWidth ? 'flex-1' : 'flex-shrink-0',
               selected ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary',
             )}
           >
@@ -146,8 +155,12 @@ export function Segmented<T extends string = string>({
               />
             )}
             {opt.icon && <span className="flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4">{opt.icon}</span>}
+            {/* No truncate: the label is what was being masked at 1 char wide.
+                whitespace-nowrap keeps it on one line inside the fixed-height
+                pill instead of wrapping now that the item can't shrink below
+                its content. */}
             <span
-              className="min-w-0 truncate"
+              className="whitespace-nowrap"
               title={typeof opt.label === 'string' ? opt.label : undefined}
             >
               {opt.label}
