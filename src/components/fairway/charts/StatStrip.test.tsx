@@ -175,6 +175,78 @@ describe('StatStrip — phone shape by count', () => {
     expect(list.className).toContain('[&::-webkit-scrollbar]:hidden');
   });
 
+  it('rail carries a trailing edge-fade so a hidden-scrollbar rail still signals more content past the visible chips', () => {
+    // The bug this covers: with the scrollbar hidden above, a chip set that
+    // happens to fill the container's content width to the pixel (e.g. an
+    // 8-item "2026 Season" strip showing only 2 chips at 390px) leaves ZERO
+    // affordance that H/HR/RBI/R/BB/SB exist past the edge. A static
+    // mask-image fade is the fix — it must be present in rail mode...
+    render(
+      <StatStrip count={8} ariaLabel="edge fade">
+        {chips(8)}
+      </StatStrip>,
+    );
+    const list = screen.getByRole('list', { name: 'edge fade' });
+    expect(list.className).toContain('[mask-image:linear-gradient(to_right,black_calc(100%_-_2rem),transparent)]');
+    // ...and it must be switched off once the rail dissolves into the
+    // desktop grid at `sm` (nothing left to fade there) and in
+    // `forced-colors` mode (never fade the one outline high-contrast relies
+    // on for the band's edge).
+    expect(list.className).toContain('sm:[mask-image:none]');
+    expect(list.className).toContain('forced-colors:[mask-image:none]');
+  });
+
+  it('reserves a real trailing spacer after the last chip so the edge-fade only ever dims empty space', () => {
+    // Regression this covers: the fade above is a STATIC mask painted on the
+    // container's own viewport, not scroll-position-aware. With no reserved
+    // space past the final chip, the true last chip scrolls flush against
+    // the container's right edge, so the fade's 2rem zone permanently dims
+    // ~22% of REAL content at scroll-end — exactly the moment the fix is
+    // supposed to reward. A trailing, non-content spacer (>= the fade's
+    // 2rem width) after the last chip guarantees the fade only ever
+    // overlaps that dead space, never the last chip's own pixels.
+    render(
+      <StatStrip count={8} ariaLabel="trailing spacer">
+        {chips(8)}
+      </StatStrip>,
+    );
+    const list = screen.getByRole('list', { name: 'trailing spacer' });
+    const chipChildren = screen.getAllByRole('listitem');
+    expect(chipChildren).toHaveLength(8);
+
+    // The spacer is the list's final DOM child, sits after every real chip,
+    // and is excluded from both the `listitem` role query above and the
+    // accessibility tree (decorative only).
+    const spacer = list.lastElementChild as HTMLElement;
+    expect(spacer).not.toBe(chipChildren[7]);
+    expect(spacer.getAttribute('aria-hidden')).toBe('true');
+    expect(spacer.getAttribute('role')).not.toBe('listitem');
+
+    // Width matches the fade's own 2rem exactly; combined with RAIL_BASE's
+    // gap-4 (1rem) ahead of it, the reserved dead zone (3rem) comfortably
+    // exceeds the 2rem it needs to fully absorb. Never shrinks (a shrinking
+    // spacer could collapse to nothing under a wide chip set) and disappears
+    // once the rail dissolves into the desktop grid at `sm`, where a stray
+    // flex child would otherwise throw off the grid's column count.
+    expect(spacer.className).toContain('shrink-0');
+    expect(spacer.className).toContain('basis-8');
+    expect(spacer.className).toContain('sm:hidden');
+  });
+
+  it('grid mode (below the rail threshold) carries no edge-fade mask or trailing spacer — there is nothing to hint at swiping past', () => {
+    const { container } = render(
+      <StatStrip count={4} columns={4}>
+        {chips(4)}
+      </StatStrip>,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).not.toContain('mask-image');
+    // The spacer is a rail-only affordance — the grid branch must not grow
+    // an extra phantom cell that would throw off its column count.
+    expect(root.children).toHaveLength(4);
+    expect(root.querySelector('[aria-hidden="true"]')).not.toBeInTheDocument();
+  });
+
   it('is NOT React.memo — children are always fresh from the caller (memo would lie about stability)', () => {
     expect(typeof StatStrip).toBe('function');
   });
