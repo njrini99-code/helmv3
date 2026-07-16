@@ -105,7 +105,7 @@ export function useAnalytics() {
               name,
               division,
               logo_url,
-              state,
+              location_state,
               conference
             )
           )
@@ -158,11 +158,11 @@ export function useAnalytics() {
 
       // Calculate top schools (by profile views)
       // If recruiting not activated, show anonymous data
-      const schoolViews: Record<string, { name: string; count: number; division?: string; logo?: string; state?: string; conference?: string }> = {};
+      const schoolViews: Record<string, { name: string; count: number; division?: string; logo?: string; locationState?: string; conference?: string }> = {};
       events
         .filter(e => e.engagement_type === 'profile_view' && e.baseball_coaches)
         .forEach(event => {
-          const coach = event.baseball_coaches as { organization?: { name?: string; state?: string; division?: string; conference?: string; logo_url?: string } };
+          const coach = event.baseball_coaches as { organization?: { name?: string; location_state?: string; division?: string; conference?: string; logo_url?: string } };
           const org = coach?.organization;
           if (org) {
             let key: string;
@@ -174,9 +174,9 @@ export function useAnalytics() {
               displayName = key;
             } else {
               // Show anonymous data: "A coach from [State]" or "[Division] program"
-              if (org.state) {
-                key = `state_${org.state}`;
-                displayName = `A coach from ${org.state}`;
+              if (org.location_state) {
+                key = `state_${org.location_state}`;
+                displayName = `A coach from ${org.location_state}`;
               } else if (org.division) {
                 key = `division_${org.division}`;
                 displayName = `${org.division} program`;
@@ -192,7 +192,7 @@ export function useAnalytics() {
                 count: 0,
                 division: isRecruitingActivated ? org.division : undefined,
                 logo: isRecruitingActivated ? org.logo_url : undefined,
-                state: org.state,
+                locationState: org.location_state,
                 conference: org.conference,
               };
             }
