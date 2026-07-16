@@ -247,6 +247,27 @@ async function captureRouteAllViewports(
  * failure (entry route unreachable, zero nav links discovered, or every
  * discovered route failed to produce a single screenshot).
  */
+/**
+ * One in-test re-login through the real login form. The storageState from
+ * playwright/baseball-auth.setup.ts is minted when the WORKFLOW starts, but
+ * the roles crawl serially — by the time the second role's crawl begins, its
+ * access token can have expired (run #2: the player crawl started ~6 minutes
+ * after its setup and prod middleware bounced it with ?message=session_expired
+ * while the coach crawl, which ran within its token's lifetime, completed
+ * fine). Same form-fill contract as the setup file; throws on failure so the
+ * caller's VisualAuditFailure path still fires.
+ */
+async function reloginInTest(page: Page, role: 'coach' | 'player'): Promise<void> {
+  const email = process.env[`E2E_BASEBALL_${role.toUpperCase()}_EMAIL`];
+  const password = process.env[`E2E_BASEBALL_${role.toUpperCase()}_PASSWORD`];
+  if (!email || !password) throw new Error(`no ${role} credentials in env for re-login`);
+  await page.goto('/baseball/login', { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
+  await page.fill('input[name="email"]', email);
+  await page.fill('input[name="password"]', password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/\/baseball\/(dashboard|player)/, { timeout: NAV_TIMEOUT_MS });
+}
+
 async function crawlAuthenticatedRole(
   page: Page,
   role: 'coach' | 'player',
@@ -264,14 +285,27 @@ async function crawlAuthenticatedRole(
   await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
 
   if (page.url().includes('/login')) {
+    // Stale storageState (expired access token) — not a product bug. One
+    // fresh in-test login before declaring a real login failure.
+    try {
+      await reloginInTest(page, role);
+      await page.goto(entryRoute, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
+      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    } catch {
+      /* fall through to the check below with the original bounce state */
+    }
+  }
+
+  if (page.url().includes('/login')) {
     throw new VisualAuditFailure(
       `visual-audit(${role}): login failure — entry route ${entryRoute} bounced to ${page.url()} ` +
-        '(authenticated storageState did not hold)',
+        '(authenticated storageState did not hold, and one fresh in-test re-login also failed)',
     );
   }
 
   const visited = new Set<string>();
   const publicSamples = new Set<string>();
+  let midCrawlRelogins = 0;
   const frontier = await discoverVisibleNavLinks(page);
   for (const link of await discoverPublicSampleLinks(page)) publicSamples.add(link);
 
@@ -299,8 +333,21 @@ async function crawlAuthenticatedRole(
     for (const link of await discoverPublicSampleLinks(page)) publicSamples.add(link);
 
     if (page.url().includes('/login')) {
+      // Same stale-token tolerance as the entry check: tokens minted at
+      // workflow start can expire mid-crawl on a long route list. Two fresh
+      // re-logins per crawl before treating it as a real failure.
+      if (midCrawlRelogins < 2) {
+        midCrawlRelogins++;
+        try {
+          await reloginInTest(page, role);
+          continue;
+        } catch {
+          /* fall through to the throw below */
+        }
+      }
       throw new VisualAuditFailure(
-        `visual-audit(${role}): login failure — session bounced to ${page.url()} while crawling ${route}`,
+        `visual-audit(${role}): login failure — session bounced to ${page.url()} while crawling ${route} ` +
+          `(after ${midCrawlRelogins} in-test re-login${midCrawlRelogins === 1 ? '' : 's'})`,
       );
     }
   }
