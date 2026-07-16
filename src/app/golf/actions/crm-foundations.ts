@@ -54,8 +54,8 @@ type AnySupabase = any;
 // SUPPRESSIONS
 // ============================================================================
 export async function getSuppressions(emails?: string[]): Promise<EmailSuppression[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
     let query = client
       .from('crm_email_suppressions')
@@ -87,8 +87,8 @@ export async function addSuppression(input: {
   reason: SuppressionReason;
   metadata?: Record<string, unknown>;
 }): Promise<EmailSuppression> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -121,8 +121,8 @@ export async function addSuppression(input: {
 }
 
 export async function removeSuppression(id: string): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { error } = await client
@@ -151,8 +151,8 @@ export async function removeSuppression(id: string): Promise<{ ok: true }> {
 // NOTES
 // ============================================================================
 export async function listCoachNotes(coachId: string): Promise<CrmNote[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -183,8 +183,8 @@ export async function createCoachNote(input: {
   kind?: NoteKind;
   is_pinned?: boolean;
 }): Promise<CrmNote> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -220,8 +220,8 @@ export async function updateCoachNote(
   id: string,
   patch: Partial<Pick<CrmNote, 'body' | 'kind' | 'is_pinned'>>,
 ): Promise<CrmNote> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -249,8 +249,8 @@ export async function updateCoachNote(
 }
 
 export async function deleteCoachNote(id: string): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { error } = await client
@@ -282,8 +282,8 @@ export async function listCoachTasks(
   coachId: string,
   opts?: { includeCompleted?: boolean },
 ): Promise<CrmTask[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     let query = client
@@ -317,8 +317,8 @@ export async function listCoachTasks(
 export async function listMyDueTasks(
   opts?: { byEod?: boolean; limit?: number },
 ): Promise<CrmTask[]> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     let query = client
@@ -360,8 +360,8 @@ export async function createCrmTask(
     'id' | 'created_by' | 'created_at' | 'updated_at' | 'completed_at' | 'reminder_sent'
   >,
 ): Promise<CrmTask> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -404,8 +404,8 @@ export async function updateCrmTask(
   id: string,
   patch: Partial<CrmTask>,
 ): Promise<CrmTask> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // Strip server-managed columns from any patch attempt
@@ -443,8 +443,8 @@ export async function updateCrmTask(
 }
 
 export async function completeCrmTask(id: string): Promise<CrmTask> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -478,8 +478,8 @@ export async function completeCrmTask(id: string): Promise<CrmTask> {
 // SEGMENTS
 // ============================================================================
 export async function listSegments(): Promise<CrmSegment[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -510,8 +510,8 @@ export async function createSegment(input: {
   is_shared?: boolean;
   pin_order?: number;
 }): Promise<CrmSegment> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -548,8 +548,8 @@ export async function updateSegment(
   id: string,
   patch: Partial<Omit<CrmSegment, 'id' | 'created_by' | 'created_at'>>,
 ): Promise<CrmSegment> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -577,8 +577,8 @@ export async function updateSegment(
 }
 
 export async function deleteSegment(id: string): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { error } = await client

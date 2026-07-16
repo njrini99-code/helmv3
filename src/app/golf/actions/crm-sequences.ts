@@ -104,8 +104,8 @@ type AnySupabase = any;
 // SEQUENCES
 // ============================================================================
 export async function listSequences(): Promise<CrmSequence[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -132,8 +132,8 @@ export async function getSequence(id: string): Promise<{
   sequence: CrmSequence;
   steps: CrmSequenceStep[];
 }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data: sequence, error: seqError } = await client
@@ -185,8 +185,8 @@ export interface SequenceEnrollmentCounts {
 export async function getSequenceEnrollmentCounts(
   sequence_id: string,
 ): Promise<SequenceEnrollmentCounts> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
     const countFor = async (status?: SequenceEnrollmentStatus) => {
       let q = client
@@ -219,8 +219,8 @@ export async function createSequence(input: {
   description?: string;
   trigger_kind?: SequenceTriggerKind;
 }): Promise<CrmSequence> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -256,8 +256,8 @@ export async function updateSequence(
   id: string,
   patch: Partial<Pick<CrmSequence, 'name' | 'description' | 'is_active' | 'trigger_kind'>>,
 ): Promise<CrmSequence> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -285,8 +285,8 @@ export async function updateSequence(
 }
 
 export async function deleteSequence(id: string): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { error } = await client
@@ -323,8 +323,8 @@ export async function upsertSequenceStep(input: {
   body_override?: string;
   condition?: Record<string, unknown>;
 }): Promise<CrmSequenceStep> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // Upsert on (sequence_id, step_order) — the unique constraint handles
@@ -365,8 +365,8 @@ export async function upsertSequenceStep(input: {
 }
 
 export async function deleteSequenceStep(id: string): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { error } = await client
@@ -420,8 +420,8 @@ export async function enrollCoachesInSequence(input: {
   sequence_id: string;
   coach_ids: string[];
 }): Promise<{ enrolled: number; skipped: number }> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     if (input.coach_ids.length === 0) {
@@ -485,8 +485,8 @@ export async function enrollSegmentInSequence(input: {
   sequence_id: string;
   segment_id: string;
 }): Promise<{ enrolled: number; skipped: number }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // Pull the segment definition (Filters JSONB) and translate to a
@@ -587,8 +587,8 @@ export async function listEnrollments(
   sequence_id: string,
   opts?: { status?: SequenceEnrollmentStatus; limit?: number },
 ): Promise<CrmSequenceEnrollment[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     let query = client
@@ -636,8 +636,8 @@ export async function getCoachSequenceEnrollmentStatuses(
   coachIds: string[],
 ): Promise<Record<string, CoachEnrollmentSummary>> {
   if (!coachIds.length) return {};
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
     const out: Record<string, CoachEnrollmentSummary> = {};
     for (let i = 0; i < coachIds.length; i += 500) {
@@ -676,8 +676,8 @@ export async function getCoachSequenceEnrollmentStatuses(
 }
 
 export async function pauseEnrollment(id: string): Promise<CrmSequenceEnrollment> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -708,8 +708,8 @@ export async function stopEnrollment(
   id: string,
   reason: SequenceEnrollmentStopReason,
 ): Promise<CrmSequenceEnrollment> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -803,8 +803,8 @@ function replyRate(replied: number, delivered: number): number {
 export async function getSequencePerformance(
   sequence_id: string,
 ): Promise<SequencePerformance> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // 1) Sequence name (for notes matching) + its declared steps (so a step with

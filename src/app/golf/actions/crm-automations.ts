@@ -81,8 +81,8 @@ export async function listAutomations(opts?: {
   trigger?: CrmAutomationTrigger;
   activeOnly?: boolean;
 }): Promise<CrmAutomation[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     let query = client
@@ -116,8 +116,8 @@ export async function listAutomations(opts?: {
 }
 
 export async function getAutomation(id: string): Promise<CrmAutomation> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -150,8 +150,8 @@ export async function createAutomation(input: {
   is_active?: boolean;
   priority?: number;
 }): Promise<CrmAutomation> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     if (!input.name || !input.name.trim()) {
@@ -205,8 +205,8 @@ export async function updateAutomation(
     priority: number;
   }>,
 ): Promise<CrmAutomation> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // Strip server-managed columns from any patch attempt.
@@ -244,8 +244,8 @@ export async function updateAutomation(
 }
 
 export async function deleteAutomation(id: string): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { error } = await client

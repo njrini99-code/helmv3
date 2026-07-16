@@ -112,8 +112,8 @@ function normalizeFormat(raw: unknown): TemplateFormat {
 // LIST / READ
 // ============================================================================
 export async function listTemplates(): Promise<CrmEmailTemplate[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client
@@ -165,8 +165,8 @@ export async function createTemplate(input: {
   merge_tags?: string[];
   is_default?: boolean;
 }): Promise<CrmEmailTemplate> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const name = input.name.trim();
@@ -247,8 +247,8 @@ export async function updateTemplate(
     is_default: boolean;
   }>,
 ): Promise<CrmEmailTemplate> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // Build the patch, trimming string fields when present.
@@ -331,8 +331,8 @@ export async function updateTemplate(
 // DELETE
 // ============================================================================
 export async function deleteTemplate(id: string): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { error } = await client.from('crm_email_templates').delete().eq('id', id);
@@ -360,8 +360,8 @@ export async function deleteTemplate(id: string): Promise<{ ok: true }> {
 // Copies a row verbatim (subject/body/format/merge_tags/category) under a new
 // "<name> (copy)" name. The copy is never a default and starts at 0 uses.
 export async function duplicateTemplate(id: string): Promise<CrmEmailTemplate> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data: src, error: readErr } = await client
@@ -430,8 +430,8 @@ export async function setDefaultTemplate(
   id: string,
   category: TemplateCategory,
 ): Promise<CrmEmailTemplate> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // 1) Clear existing defaults in this category (skip the target row).
@@ -497,8 +497,8 @@ export async function sendTestTemplate(input: {
   id: string;
   toEmail?: string;
 }): Promise<{ ok: true; to: string }> {
+  const { supabase, user } = await getAuthedClient();
   try {
-    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // 1) Load the template (subject/body/format).

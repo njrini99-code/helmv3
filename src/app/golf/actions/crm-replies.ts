@@ -86,8 +86,8 @@ export async function listReplies(opts?: {
   unreadOnly?: boolean;
   limit?: number;
 }): Promise<CrmReply[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     let query = client
@@ -129,8 +129,8 @@ export async function getCoachReplies(coachId: string): Promise<CrmReply[]> {
 }
 
 export async function markReplyRead(id: string): Promise<CrmReply> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const { data, error } = await client

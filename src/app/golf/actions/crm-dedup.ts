@@ -91,8 +91,8 @@ export interface DuplicateGroup {
  * been merged away.
  */
 export async function findDuplicateCoaches(): Promise<DuplicateGroup[]> {
+  const { supabase } = await getAuthedClient();
   try {
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     const rows = await fetchAllRows<DuplicateCoach>((from, to) =>
@@ -175,6 +175,7 @@ export async function mergeCoaches(input: {
   keep_id: string;
   merge_id: string;
 }): Promise<{ ok: true }> {
+  const { supabase } = await getAuthedClient();
   try {
     const { keep_id, merge_id } = input;
     if (!keep_id || !merge_id) {
@@ -184,7 +185,6 @@ export async function mergeCoaches(input: {
       throw new Error('mergeCoaches: cannot merge a coach into itself');
     }
 
-    const { supabase } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // 1. Re-point child rows.
