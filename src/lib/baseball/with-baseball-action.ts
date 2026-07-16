@@ -15,12 +15,20 @@
 //                    SERVER-SIDE via requireBaseballCapability() against the
 //                    resolved team. Head/primary coach implicitly hold all caps;
 //                    non-staff / suspended hold none. requiredCapability may
-//                    also be a readonly array (ANY-of / OR) or a resolver
-//                    function of the action's own args (evaluated once, before
-//                    AUTH) that RETURNS a single capability or an ANY-of array
-//                    — e.g. relaxing the gate only for one client-declared
-//                    shape/kind while every other shape keeps the original,
-//                    single, stricter capability.
+//                    also be a non-empty readonly array (ANY-of / OR) or a
+//                    resolver function of the action's own args that RETURNS a
+//                    single capability or a non-empty ANY-of array — e.g.
+//                    relaxing the gate only for one client-declared shape/kind
+//                    while every other shape keeps the original, single,
+//                    stricter capability. Resolved exactly ONCE per call,
+//                    INSIDE this wrapper's own guarded try/catch (after AUTH,
+//                    before enforcement) — a throwing resolver (e.g. a
+//                    malformed/omitted argument) is therefore sanitized and
+//                    logged through the same BaseballActionError + Sentry path
+//                    as any other action-body failure, never thrown raw. A
+//                    resolver that returns an empty array at runtime is
+//                    rejected (fail closed) rather than silently skipping
+//                    enforcement.
 //   4. OBSERVABILITY — run the action inside a Sentry scope tagged
 //                    { sport:'baseball', feature:<featureArea>, action:<name> }
 //                    with user + breadcrumbs, and on throw route the error
@@ -167,7 +175,8 @@ export interface WithBaseballActionOptions<TArgs extends unknown[] = unknown[]> 
    *
    * Three forms:
    *   - a single BaseballCapability            : the existing, most common form.
-   *   - a readonly array of BaseballCapability  : ANY-of (OR) — the staff member
+   *   - a NON-EMPTY readonly array of
+   *     BaseballCapability                     : ANY-of (OR) — the staff member
    *                                               need only hold ONE of the listed
    *                                               capabilities. On a miss, the
    *                                               thrown BaseballCapabilityError
@@ -177,17 +186,36 @@ export interface WithBaseballActionOptions<TArgs extends unknown[] = unknown[]> 
    *                                               a fully-unauthorized caller sees
    *                                               the same error identity as a
    *                                               single-capability gate would).
-   *   - (...args) => single | array             : resolve the requirement from the
+   *   - (...args) => single | non-empty array   : resolve the requirement from the
    *                                               action's OWN arguments (e.g. gate
    *                                               on a client-supplied shape/kind
-   *                                               field) — evaluated once per call,
-   *                                               before AUTH, from the SAME `args`
-   *                                               the action body receives.
+   *                                               field) — evaluated exactly ONCE
+   *                                               per call, from the SAME `args`
+   *                                               the action body receives, INSIDE
+   *                                               this wrapper's own guarded
+   *                                               try/catch (after AUTH resolves,
+   *                                               before capability enforcement
+   *                                               runs) — a throwing resolver is
+   *                                               sanitized + logged exactly like
+   *                                               any other action failure, never
+   *                                               thrown raw. A resolver that
+   *                                               returns an empty array at
+   *                                               runtime (despite the non-empty
+   *                                               tuple type below) is rejected —
+   *                                               fail closed, enforcement is
+   *                                               never silently skipped.
+   *
+   * The array forms are typed as non-empty tuples
+   * (`readonly [BaseballCapability, ...BaseballCapability[]]`) so `[]` is a
+   * compile-time error; the runtime check above catches a resolver that
+   * manufactures an empty array anyway (e.g. from an empty input list).
    */
   requiredCapability?:
     | BaseballCapability
-    | readonly BaseballCapability[]
-    | ((...args: TArgs) => BaseballCapability | readonly BaseballCapability[]);
+    | readonly [BaseballCapability, ...BaseballCapability[]]
+    | ((...args: TArgs) =>
+        | BaseballCapability
+        | readonly [BaseballCapability, ...BaseballCapability[]]);
   /**
    * When set, the wrapper enforces a PLAYER/GUARDIAN-access toggle SERVER-SIDE
    * (via requirePlayerAccess) against the resolved team before the body runs.
@@ -291,23 +319,19 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
   } = opts;
 
   return async (...args: TArgs): Promise<TResult> => {
-    // Resolve the (possibly args-conditional) capability requirement ONCE, up
-    // front, from the SAME args the action body receives below — so the
-    // observability tags/metadata and the actual enforcement in step 3 can
-    // never disagree about what was required. A plain single-capability opt
-    // (the ~60 existing call sites) resolves to a one-element list here, so
-    // every branch below behaves byte-identically to the pre-existing
-    // single-capability path.
-    const resolvedCapability =
-      typeof requiredCapability === 'function'
-        ? requiredCapability(...args)
-        : requiredCapability;
-    const resolvedCapabilityList: readonly BaseballCapability[] | null = resolvedCapability
-      ? Array.isArray(resolvedCapability)
-        ? resolvedCapability
-        : [resolvedCapability as BaseballCapability]
-      : null;
-    const resolvedCapabilityTag = resolvedCapabilityList?.join('|') ?? null;
+    // The (possibly args-conditional) capability requirement is resolved
+    // exactly ONCE per call, from the SAME `args` the action body receives
+    // below — but NOT here. It is resolved INSIDE the guarded try/catch below
+    // (see step 1c, after AUTH), not before Sentry.withScope even starts, so a
+    // throwing resolver (e.g. a malformed/omitted argument) is caught by this
+    // wrapper's own error handling and produces the same sanitized
+    // BaseballActionError + Sentry-logged path as any other action-body
+    // failure — never a raw, unsanitized throw straight out of this function
+    // before any observability wiring has run. These are declared here (not
+    // `const` inside the try) only so buildTraceContext's closure below can
+    // read whatever they resolve to, from either the success or catch path.
+    let resolvedCapabilityList: readonly BaseballCapability[] | null = null;
+    let resolvedCapabilityTag: string | null = null;
 
     return Sentry.withScope(async (scope) => {
       // Stable scope identity for every trace emitted from this action.
@@ -322,7 +346,10 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         data: {
           feature,
           featureArea,
-          requiredCapability: resolvedCapabilityTag,
+          // requiredCapability is intentionally omitted here: it isn't
+          // resolved yet at this point (see step 1c below, inside the try) —
+          // logging it now would always show `null`. The "capability
+          // requirement resolved" breadcrumb added in step 1c carries it.
           requiredPlayerAccess: requiredPlayerAccess ?? null,
         },
       });
@@ -397,6 +424,60 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         }
 
         // -------------------------------------------------------------------
+        // 1c. Resolve the (possibly args-conditional) capability requirement.
+        //     Moved here (post-review fix) from BEFORE Sentry.withScope even
+        //     started to HERE — inside this try/catch, after AUTH — so a
+        //     throwing resolver (e.g. a malformed/omitted argument) is caught
+        //     by this wrapper's own error handling below and produces the
+        //     same sanitized BaseballActionError + Sentry-logged path as any
+        //     other action-body failure, instead of a raw, unsanitized throw
+        //     that skipped every bit of this wrapper's observability. Still
+        //     resolved exactly ONCE, from the SAME `args` reference the
+        //     action body receives (unchanged from before this move) — the
+        //     auth/write coupling (capability always checked against the
+        //     same args the body runs with) is preserved.
+        // -------------------------------------------------------------------
+        const resolvedCapability =
+          typeof requiredCapability === 'function'
+            ? requiredCapability(...args)
+            : requiredCapability;
+        resolvedCapabilityList = resolvedCapability
+          ? Array.isArray(resolvedCapability)
+            ? resolvedCapability
+            : [resolvedCapability as BaseballCapability]
+          : null;
+        // Fail closed: a resolver typed to return a non-empty tuple can still
+        // manufacture an empty array at runtime (e.g. an empty input list).
+        // Treating `[]` as "no capability required" would silently SKIP
+        // enforcement entirely — instead, reject it the same way any other
+        // capability miss is rejected (a thrown BaseballCapabilityError),
+        // same fail-closed posture as this codebase's other capability
+        // defaults (e.g. imports.ts's can_manage_imports fallback for an
+        // unrecognized shape).
+        if (resolvedCapabilityList && resolvedCapabilityList.length === 0) {
+          // Team id isn't resolved yet at this point in the flow (CONTEXT
+          // runs next) — an empty string here is fine, the thrown error is
+          // caught as a recognized control-flow error below regardless of
+          // teamId, and the resolver bug it flags has nothing to do with
+          // which team was targeted.
+          throw new BaseballCapabilityError(
+            'can_manage_imports',
+            '',
+            'Capability requirement resolved to an empty set — denying by default.',
+          );
+        }
+        resolvedCapabilityTag = resolvedCapabilityList?.join('|') ?? null;
+        if (resolvedCapabilityTag) {
+          scope.setTag('baseball_capability', resolvedCapabilityTag);
+        }
+        scope.addBreadcrumb({
+          category: 'baseball.action',
+          message: `capability requirement resolved for ${name}`,
+          level: 'info',
+          data: { requiredCapability: resolvedCapabilityTag },
+        });
+
+        // -------------------------------------------------------------------
         // 2. CONTEXT — resolve the server-validated active baseball context.
         // -------------------------------------------------------------------
         let context: ActiveBaseballContext | null = null;
@@ -462,7 +543,8 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
               'Could not resolve a team for capability enforcement.',
             );
           }
-          scope.setTag('baseball_capability', resolvedCapabilityTag!);
+          // baseball_capability tag already set in step 1c, right after
+          // resolution — not repeated here.
           if (resolvedCapabilityList.length === 1) {
             await requireBaseballCapability(targetTeamId, resolvedCapabilityList[0]!);
           } else {
