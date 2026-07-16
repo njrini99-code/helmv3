@@ -4,6 +4,11 @@ import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { createClient } from '@/lib/supabase/server';
 import type { Organization, Player } from '@/lib/types';
 import { logServerError } from '@/lib/server-error-logger';
+import {
+  getPrivatePlayerIds,
+  formatIdListForNotIn,
+  getCoachRosterPlayerIds,
+} from '@/lib/baseball/player-visibility';
 
 // Coach type for discoverability filtering
 export type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
@@ -98,76 +103,6 @@ async function getDiscoverableTeamPlayerIds(
   if (memberErr) return null;
 
   return [...new Set((members ?? []).map((m) => m.player_id).filter(Boolean))];
-}
-
-/**
- * Get player IDs whose `baseball_player_settings.profile_visibility` is
- * `'private'` — the SAME semantics `assertCoachCanRecruitPlayer` in
- * recruitability.ts uses (only an explicit `'private'` row denies; a
- * missing settings row, or any other value, defaults to visible/public).
- * Returned as a Set so callers can exclude these players from Discover
- * search/map results (P0 privacy fix — these rows were never checked here).
- */
-async function getPrivatePlayerIds(
-  supabase: Awaited<ReturnType<typeof createClient>>
-): Promise<Set<string>> {
-  const { data, error } = await supabase
-    .from('baseball_player_settings')
-    .select('player_id')
-    .eq('profile_visibility', 'private');
-
-  if (error) {
-    await logServerError(`Error fetching private player settings: ${error instanceof Error ? error.message : String(error)}`, { action: 'discover.getPrivatePlayerIds' });
-    // Fail closed would hide everyone; fail open here matches the pattern of
-    // the other discoverability helpers (getCoachRosterPlayerIds) which
-    // silently return an empty set on error. This side-query failing does
-    // NOT disable the other discoverability filters (own-team / discoverable
-    // team) still applied by the caller.
-    return new Set();
-  }
-
-  return new Set((data ?? []).map((s) => s.player_id).filter(Boolean));
-}
-
-/** Format a set of player IDs as a PostgREST `.not(col, 'in', ...)` value. */
-function formatIdListForNotIn(ids: Set<string>): string {
-  return `(${[...ids].join(',')})`;
-}
-
-/**
- * Get player IDs on the coach's own team (to exclude from discover - they see them in roster)
- */
-async function getCoachRosterPlayerIds(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  coachId: string | undefined
-): Promise<Set<string>> {
-  const excludedIds = new Set<string>();
-
-  if (!coachId) return excludedIds;
-
-  // head_coach_id does not exist on baseball_teams — get teams via team_coach_staff
-  const { data: staffEntries } = await supabase
-    .from('baseball_team_coach_staff')
-    .select('team_id')
-    .eq('coach_id', coachId);
-
-  const coachTeams = staffEntries?.map((e) => ({ id: e.team_id })) ?? [];
-
-  const teamIds = coachTeams?.map((t) => t.id) || [];
-
-  if (teamIds.length === 0) return excludedIds;
-
-  // Get roster players for coach's teams
-  const { data: rosterPlayers } = await supabase
-    .from('baseball_team_members')
-    .select('player_id')
-    .in('team_id', teamIds);
-
-  rosterPlayers?.forEach((p) => {
-    if (p.player_id) excludedIds.add(p.player_id);
-  });
-
-  return excludedIds;
 }
 
 /**
