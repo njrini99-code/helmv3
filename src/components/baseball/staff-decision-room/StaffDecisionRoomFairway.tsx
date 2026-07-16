@@ -567,11 +567,13 @@ export function StaffDecisionRoomFairway({
             </Eyebrow>
           </div>
           {data.recentGameResults.length > 0 && (
-            <span className="text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">Last 14 days</span>
+            <span className="text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+              Most recent completed games
+            </span>
           )}
         </div>
         {data.recentGameResults.length === 0 ? (
-          <EditorsLetter ink="pursuit" title="No completed games in the last 14 days." />
+          <EditorsLetter ink="pursuit" title="No completed games yet." />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {data.recentGameResults.map((g, idx) => (
