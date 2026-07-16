@@ -45,6 +45,11 @@ export default function BaseballJoinPage() {
       return;
     }
 
+    if (!/^[A-Z0-9]+$/.test(trimmed)) {
+      setError('Invite code must contain only letters and numbers.');
+      return;
+    }
+
     router.push(`/baseball/join/${trimmed}`);
   };
 
