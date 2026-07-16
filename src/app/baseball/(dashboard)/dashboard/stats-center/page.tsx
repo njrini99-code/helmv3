@@ -103,7 +103,7 @@ export default async function StatsCenterPage({
   //    read model that feeds the V10 chart gallery (chase/whiff/EV-LA/spray/
   //    pitch-shape/velo-decay). The event read model is itself can_manage_stats-
   //    gated and returns empty visuals when no granular events are captured.
-  const [model, visualsPayload, canManageImports] = await Promise.all([
+  const [model, visualsPayload, canManageImports, canManageStats] = await Promise.all([
     getStatsCenter(context.activeTeamId, options),
     getStatVisualsPayload(context.activeTeamId, {
       fromDate: options.fromDate ?? null,
@@ -114,6 +114,12 @@ export default async function StatsCenterPage({
     // capability-aware /stats/upload shim for everyone else. Same helper the
     // shim itself branches on, so the two stay in agreement.
     hasBaseballCapability(context.activeTeamId, 'can_manage_imports'),
+    // Whether the shim destination (/stats/upload, middleware-gated on
+    // can_manage_stats) is even reachable for this viewer. Staff holding
+    // NEITHER capability get no import entry point at all — routing them to
+    // either destination would just bounce them off that destination's own
+    // middleware gate.
+    hasBaseballCapability(context.activeTeamId, 'can_manage_stats'),
   ]);
 
   // The full V10 chart payload (every visual family). Undefined ONLY when the
@@ -124,6 +130,7 @@ export default async function StatsCenterPage({
     <StatsCenterClient
       model={model}
       canManageImports={canManageImports}
+      canManageStats={canManageStats}
       statVisualsData={statVisualsData}
       initialFilters={{
         seasonYear: model.seasonYear,

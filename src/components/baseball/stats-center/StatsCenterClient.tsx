@@ -91,6 +91,16 @@ interface StatsCenterClientProps {
    * before the shim's own capability branch ever ran.
    */
   canManageImports?: boolean;
+  /**
+   * Whether the viewer holds can_manage_stats (computed server-side by the
+   * page, alongside canManageImports). Both import entry points (the header
+   * action and the empty-state CTA) are hidden entirely when the viewer holds
+   * NEITHER capability — canManageImports=false alone does not mean "route
+   * through the shim," it can also mean "no import capability at all," and
+   * routing that viewer anywhere would just bounce them off whichever
+   * destination's middleware gate they still fail.
+   */
+  canManageStats?: boolean;
 }
 
 /** Which game-set the wall currently shows. */
@@ -471,6 +481,7 @@ export function StatsCenterClient({
   initialFilters,
   statVisualsData,
   canManageImports = false,
+  canManageStats = false,
 }: StatsCenterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -650,6 +661,11 @@ export function StatsCenterClient({
 
   // Both import entry points (header action + empty-state CTA) share one
   // capability-resolved destination — see the canManageImports prop doc.
+  // Neither destination is reachable for a viewer holding NEITHER
+  // capability (canManageImports gates Import Center, canManageStats gates
+  // the /stats/upload shim), so canShowImportEntry below hides both actions
+  // for that viewer entirely instead of routing them into a middleware bounce.
+  const canShowImportEntry = canManageImports || canManageStats;
   const importEntryHref = canManageImports
     ? '/baseball/dashboard/import'
     : '/baseball/dashboard/stats/upload';
@@ -673,15 +689,20 @@ export function StatsCenterClient({
           shim, which renders the quick-box-score wizard inline for
           can_manage_stats-only staff (assistant/pitching/hitting/catching/
           defensive/strength coach) instead of locking them out on Import
-          Center's can_manage_imports gate. */}
-      <Button
-        variant="ghost"
-        size="md"
-        leftIcon={<IconFolder size={16} />}
-        onClick={() => router.push(importEntryHref)}
-      >
-        Import Center
-      </Button>
+          Center's can_manage_imports gate. Staff holding NEITHER capability
+          (canShowImportEntry false) get no import action at all — every
+          destination this button could route to gates on one of these two
+          capabilities, so showing it would only produce a dead button. */}
+      {canShowImportEntry && (
+        <Button
+          variant="ghost"
+          size="md"
+          leftIcon={<IconFolder size={16} />}
+          onClick={() => router.push(importEntryHref)}
+        >
+          Import Center
+        </Button>
+      )}
       <Button
         variant="secondary"
         size="md"
@@ -860,10 +881,15 @@ export function StatsCenterClient({
           ) : allNoData ? (
             <EmptyIssue
               variant="stats"
+              // Same canShowImportEntry gate as the header action above — a
+              // viewer holding neither can_manage_imports nor can_manage_stats
+              // gets the honest empty letter with no dead CTA underneath it.
               action={
-                <Button variant="secondary" size="md" onClick={() => router.push(importEntryHref)}>
-                  Import a box score
-                </Button>
+                canShowImportEntry ? (
+                  <Button variant="secondary" size="md" onClick={() => router.push(importEntryHref)}>
+                    Import a box score
+                  </Button>
+                ) : undefined
               }
             />
           ) : (
