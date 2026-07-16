@@ -109,12 +109,21 @@ export function PlayerRowPlate({
 
   const nameAndStats = (
     <>
-      {/* Name plate */}
+      {/* Name plate. The name span carries an explicit `min-w-[64px]`: without
+          it, `truncate`'s `overflow-hidden` resolves the flex item's
+          "automatic minimum size" to 0 (CSS flexbox spec), so under width
+          pressure from the jersey number + PositionChip (neither of which
+          clip, so both hold their full content width) the name collapses to
+          a single glyph or nothing at all rather than truncating gracefully
+          — the bug behind the 390px roster wall showing jersey+position with
+          no name. The floor guarantees a legible fragment even in the
+          tightest row; there's headroom above it whenever the row has more
+          to give (flex-basis:auto still renders the full name when it fits). */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {jerseyNumber != null ? (
           <span className="font-annual text-body-sm tabular-nums text-text-tertiary">{jerseyNumber}</span>
         ) : null}
-        <span className="truncate font-annual leading-none text-text-primary">
+        <span data-testid="player-row-name" className="min-w-[64px] truncate font-annual leading-none text-text-primary">
           <span className="font-normal text-text-secondary">{firstName} </span>
           <span className="font-semibold uppercase" style={{ fontVariant: 'small-caps' }}>
             {lastName}
@@ -128,7 +137,11 @@ export function PlayerRowPlate({
       {/* Stat run */}
       <div className={cn('flex', STAT_GAP)}>
         {stats.map((s, i) => (
-          <div key={`${s.label ?? 'stat'}-${i}`} className={cn(STAT_COL, 'flex flex-col items-end gap-1')}>
+          <div
+            key={`${s.label ?? 'stat'}-${i}`}
+            data-testid="player-row-stat"
+            className={cn(STAT_COL, 'flex flex-col items-end gap-1')}
+          >
             {s.label ? (
               <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">{s.label}</span>
             ) : null}
