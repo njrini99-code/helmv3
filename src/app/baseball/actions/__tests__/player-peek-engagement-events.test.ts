@@ -8,6 +8,13 @@
 // 42703-failed forever (unchecked). This locks in:
 //   1. The insert no longer sends `is_anonymous`.
 //   2. A failed insert is now logged via logServerError instead of swallowed.
+//
+// The fixture player has recruiting_activated: true (P0 privacy gate —
+// player-peek.ts now runs through withBaseballAction and denies a peek
+// unless the player is on the viewer's own roster OR recruiting_activated +
+// not private; see player-peek-privacy.test.ts for the authorization matrix
+// itself). Sentry/demo-config are mocked inert so this file continues to
+// test ONLY the engagement-event insert, not the wrapper's guard mechanics.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -17,7 +24,18 @@ vi.mock('@/lib/notifications', () => ({
 }));
 
 const logServerError = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError,
+  logServerException: vi.fn(async () => {}),
+}));
+vi.mock('@sentry/nextjs', () => ({
+  withScope: (fn: (scope: unknown) => unknown) =>
+    fn({ setTag: vi.fn(), setUser: vi.fn(), addBreadcrumb: vi.fn() }),
+}));
+vi.mock('@/lib/demo/baseball-config.server', () => ({
+  isCurrentSessionBaseballDemo: vi.fn(async () => false),
+  isBaseballDemoCoachEmail: vi.fn(() => false),
+}));
 
 const PLAYER_ID = 'player-1';
 const insertCalls: unknown[] = [];
@@ -52,6 +70,7 @@ function chainTable(table: string) {
               exit_velo: null,
               sixty_time: null,
               pop_time: null,
+              recruiting_activated: true,
               updated_at: null,
               user_id: null,
             },

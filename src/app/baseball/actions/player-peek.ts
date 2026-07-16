@@ -1,10 +1,14 @@
 'use server';
 
-import { withAdminObserved } from '@/lib/admin/observed-action';
+import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyProfileView } from '@/lib/notifications';
 import { logServerError } from '@/lib/server-error-logger';
+import {
+  getCoachRosterPlayerIds,
+  isPlayerProfilePrivate,
+} from '@/lib/baseball/player-visibility';
 
 export interface PlayerPeekData {
   id: string;
@@ -40,6 +44,22 @@ export interface PlayerPeekData {
 /**
  * Fetch player data for the peek panel preview.
  * Returns essential info for quick view without full profile load.
+ *
+ * P0 PRIVACY — restores the Discover / assertCoachCanRecruitPlayer policy
+ * for this surface (see src/lib/baseball/player-visibility.ts, the shared
+ * source of truth for both predicates below). A viewer may see a player's
+ * peek data ONLY when:
+ *   (a) the viewer is a coach on a team the player is a MEMBER of
+ *       (own-roster peek — allowed regardless of recruiting_activated /
+ *       profile_visibility, same as viewing your own roster elsewhere), OR
+ *   (b) the player has recruiting_activated = true AND their
+ *       baseball_player_settings.profile_visibility is not 'private' — the
+ *       exact predicate Discover/browse enforce.
+ * A viewer with no baseball_coaches row at all (e.g. a player-role session)
+ * is denied outright, mirroring Discover's own "no coachProfile -> nothing"
+ * behavior. Every branch below returns the SAME generic 'Player not found'
+ * error so a denied request is indistinguishable from a truly-missing row.
+ *
  * SEMGREP-ALLOW: read endpoint; engagement-event insert is fire-and-forget telemetry, no UI cache to invalidate
  */
 async function getPlayerPeekDataImpl(playerId: string): Promise<{
@@ -54,6 +74,18 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
+    }
+
+    // Viewer must be a coach — mirrors discover.ts requiring a coachProfile
+    // before returning anything (a player-role session has none).
+    const { data: coach } = await supabase
+      .from('baseball_coaches')
+      .select('id, full_name, organization_id')
+      .eq('user_id', user.id)
+      .single() as { data: { id: string; full_name: string | null; organization_id: string | null } | null };
+
+    if (!coach) {
+      return { success: false, error: 'Player not found' };
     }
 
     // Get player data
@@ -82,6 +114,7 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
         exit_velo,
         sixty_time,
         pop_time,
+        recruiting_activated,
         updated_at
       `)
       .eq('id', playerId)
@@ -91,74 +124,82 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
       return { success: false, error: 'Player not found' };
     }
 
-    // Get coach data and watchlist status
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id, full_name, organization_id')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; full_name: string | null; organization_id: string | null } | null };
+    // -------------------------------------------------------------------
+    // P0 PRIVACY GATE — evaluated BEFORE any watchlist lookup or telemetry
+    // write below, so a denied request never fires the engagement-event
+    // insert or the profile-view email.
+    // -------------------------------------------------------------------
+    const rosterIds = await getCoachRosterPlayerIds(supabase, coach.id);
+    const isOwnRoster = rosterIds.has(playerId);
+
+    if (!isOwnRoster) {
+      const isRecruitable =
+        player.recruiting_activated === true &&
+        !(await isPlayerProfilePrivate(supabase, playerId));
+      if (!isRecruitable) {
+        return { success: false, error: 'Player not found' };
+      }
+    }
 
     let isOnWatchlist = false;
     let watchlistId: string | null = null;
     let pipelineStage: string | null = null;
 
-    if (coach) {
-      const { data: watchlist } = await supabase
-        .from('baseball_watchlists')
-        .select('id, pipeline_stage')
-        .eq('coach_id', coach.id)
-        .eq('player_id', playerId)
-        .maybeSingle();
+    const { data: watchlist } = await supabase
+      .from('baseball_watchlists')
+      .select('id, pipeline_stage')
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId)
+      .maybeSingle();
 
-      if (watchlist) {
-        isOnWatchlist = true;
-        watchlistId = watchlist.id;
-        pipelineStage = watchlist.pipeline_stage;
-      }
+    if (watchlist) {
+      isOnWatchlist = true;
+      watchlistId = watchlist.id;
+      pipelineStage = watchlist.pipeline_stage;
+    }
 
-      // Log profile view engagement
-      const { error: engagementError } = await fromUntyped(supabase, 'baseball_player_engagement_events')
-        .insert({ // nosemgrep: helmv3-action-missing-revalidate -- fire-and-forget telemetry, no UI cache
-          player_id: playerId,
-          coach_id: coach.id,
-          engagement_type: 'profile_view',
-          metadata: { source: 'peek_panel' },
-        });
-      if (engagementError) {
-        await logServerError(
-          `Failed to record profile_view engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
-          { action: 'player_peek.getPlayerPeekData.engagementEvent' },
-        );
-      }
+    // Log profile view engagement
+    const { error: engagementError } = await fromUntyped(supabase, 'baseball_player_engagement_events')
+      .insert({ // nosemgrep: helmv3-action-missing-revalidate -- fire-and-forget telemetry, no UI cache
+        player_id: playerId,
+        coach_id: coach.id,
+        engagement_type: 'profile_view',
+        metadata: { source: 'peek_panel' },
+      });
+    if (engagementError) {
+      await logServerError(
+        `Failed to record profile_view engagement event: ${engagementError instanceof Error ? engagementError.message : String(engagementError)}`,
+        { action: 'player_peek.getPlayerPeekData.engagementEvent' },
+      );
+    }
 
-      // Notify the player of the profile view (fire-and-forget)
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: playerRow } = await supabase.from('baseball_players' as any)
-          .select('user_id').eq('id', playerId).single() as { data: { user_id: string } | null };
+    // Notify the player of the profile view (fire-and-forget)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: playerRow } = await supabase.from('baseball_players' as any)
+        .select('user_id').eq('id', playerId).single() as { data: { user_id: string } | null };
 
-        if (playerRow?.user_id) {
-          const { data: userRow } = await supabase.from('users')
-            .select('email').eq('id', playerRow.user_id).single();
+      if (playerRow?.user_id) {
+        const { data: userRow } = await supabase.from('users')
+          .select('email').eq('id', playerRow.user_id).single();
 
-          let schoolName = 'a program';
-          if (coach.organization_id) {
-            const { data: org } = await supabase.from('organizations')
-              .select('name').eq('id', coach.organization_id).single();
-            if (org?.name) schoolName = org.name;
-          }
-
-          const viewerInfo = coach.full_name?.trim()
-            ? `${coach.full_name} from ${schoolName}`
-            : `A coach from ${schoolName}`;
-
-          if (userRow?.email) {
-            await notifyProfileView(playerRow.user_id, userRow.email, viewerInfo);
-          }
+        let schoolName = 'a program';
+        if (coach.organization_id) {
+          const { data: org } = await supabase.from('organizations')
+            .select('name').eq('id', coach.organization_id).single();
+          if (org?.name) schoolName = org.name;
         }
-      } catch (notifErr) {
-        await logServerError(`[playerPeek] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'player_peek.getPlayerPeekData' });
+
+        const viewerInfo = coach.full_name?.trim()
+          ? `${coach.full_name} from ${schoolName}`
+          : `A coach from ${schoolName}`;
+
+        if (userRow?.email) {
+          await notifyProfileView(playerRow.user_id, userRow.email, viewerInfo);
+        }
       }
+    } catch (notifErr) {
+      await logServerError(`[playerPeek] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'player_peek.getPlayerPeekData' });
     }
 
     return {
@@ -200,8 +241,19 @@ async function getPlayerPeekDataImpl(playerId: string): Promise<{
   }
 }
 
-export const getPlayerPeekData = withAdminObserved(
+// Wrapped the SAME way discover.ts wraps its cross-team browse/peek reads
+// (#394-style): peek is reached from Discover/Watchlist/Pipeline, all of
+// which are cross-team by nature — there is no single "target team" to
+// resolve a capability against, and identity is derived from the coach's own
+// baseball_coaches row inside the impl (unchanged), not from an active-team
+// context. requireActiveContext: false — a coach with no active team
+// membership can still open the peek panel from Discover. demoSafe: true —
+// preserves this action's PRE-EXISTING (unguarded) behavior for the shared
+// demo coach session; this PR's scope is the P0 authorization gate above,
+// not the demo write-pollution question the engagement-event insert / email
+// notification below separately raise (see PR notes / deferred).
+export const getPlayerPeekData = withBaseballAction(
   'getPlayerPeekData',
-  { sport: 'baseball', feature: 'baseball_player_peek', featureArea: 'baseball-player-peek' },
-  getPlayerPeekDataImpl,
+  { featureArea: 'baseball-player-peek', requireActiveContext: false, demoSafe: true },
+  (_ctx, playerId: string) => getPlayerPeekDataImpl(playerId),
 );
