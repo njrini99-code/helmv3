@@ -141,6 +141,33 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
     ...formData,
   } as Player);
 
+  // Backfill formData whenever a fresher `player` object arrives. `formData`
+  // is seeded once at mount (above) — if this component ever mounts before
+  // the FULL player row is in the shared auth store (e.g. a lightweight
+  // route-guard reconciliation writes a partial {id, onboarding_completed,
+  // player_type} player object into the store ahead of useAuth()'s full-row
+  // fetch — see use-baseball-auth.ts's reconcileStore), formData permanently
+  // lacks keys like first_name/last_name even after the store is later
+  // replaced with the complete row, because nothing ever re-seeds it. That
+  // produced a live bug: the Input for a populated name field rendered
+  // empty, and a Save could have sent an update with the name field simply
+  // absent. This only ever ADDS a field that formData doesn't have yet
+  // (strict `undefined` check) — it can never overwrite something the
+  // player already typed, even if they cleared a field to ''.
+  useEffect(() => {
+    setFormData((prev) => {
+      let changed = false;
+      const next: Partial<Player> = { ...prev };
+      (Object.keys(player) as Array<keyof Player>).forEach((key) => {
+        if (prev[key] === undefined && player[key] !== undefined) {
+          next[key] = player[key] as never;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [player]);
+
   // Fetch team memberships — UNCHANGED query.
   useEffect(() => {
     async function fetchTeamMemberships() {
