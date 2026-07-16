@@ -432,10 +432,27 @@ export async function updateSession(request: NextRequest) {
   // (client hook) and bootstrapped here on first sight; its long lifetime means
   // a genuine reopen after the window is always "present + stale". Absent/fresh
   // markers are treated as active so a brand-new login is never bounced.
-  // Scoped to sport page routes (golf/baseball/lifting) AND /admin — the
-  // single most powerful account in the app must not be exempt from the
-  // platform's own idle-reauth policy (see #730). /api is still out.
-  if (user && (sport || onAdminPath)) {
+  //
+  // Scoped to routes that actually require a live session: dashboard routes
+  // (isProtectedRoute) AND /admin — the single most powerful account in the
+  // app must not be exempt from the platform's own idle-reauth policy (see
+  // #730). /api is still out.
+  //
+  // NOT scoped to "any sport path" (that was the bug — see fix-backlog
+  // finding on this block): marketing roots, login/signup/auth flows, and
+  // public (public)-route-group profiles (player/team/program/packet) live
+  // under /baseball, /golf, /lifting too and must never idle-bounce a
+  // signed-in-but-idle visitor with a session_expired error banner. Those
+  // routes don't need this gate at all — supabase.auth.getUser() above
+  // already refreshes the real auth session/cookies for every request
+  // regardless of this block, so a public page under an idle-but-otherwise-
+  // valid session still gets its token silently refreshed and served
+  // normally; we simply skip the extra app-level "bounce with error banner"
+  // + cookie-cleanup step here. Routes with their own non-dashboard auth
+  // (e.g. the player-dashboard/onboarding route groups) enforce auth in
+  // their own layouts, same as the golf/lifting exemption from
+  // checkRouteAuthorization below.
+  if (user && (isProtectedRoute || onAdminPath)) {
     const lastActivity = parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value);
     const now = Date.now();
 
