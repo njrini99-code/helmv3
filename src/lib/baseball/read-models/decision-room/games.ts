@@ -90,6 +90,13 @@ function resultOf(
  * Loads recent COMPLETED games for the team, most-recent first, for the
  * Decision Room "game results" rail.
  *
+ * NO DATE-RANGE FILTER: this returns the most-recent `MAX_ROWS` completed
+ * games regardless of how old they are — there is no `gte('game_date', ...)`
+ * window. The UI must NOT label this section with a specific trailing window
+ * (e.g. "last 14 days") — that claim doesn't describe this query and goes
+ * false the moment a team hasn't played in the last two weeks. Label it as
+ * "most recent completed games" instead (see StaffDecisionRoomFairway.tsx).
+ *
  * @param supabase AUTHENTICATED server client (RLS-bound to the caller).
  * @param teamId   The caller's team id; the query is additionally scoped to it.
  */

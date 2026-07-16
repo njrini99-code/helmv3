@@ -2,6 +2,10 @@ import 'server-only';
 
 import type { createClient } from '@/lib/supabase/server';
 import type { CoachType } from '@/app/baseball/actions/discover';
+import {
+  getCoachRosterPlayerIds,
+  isPlayerProfilePrivate,
+} from '@/lib/baseball/player-visibility';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -44,26 +48,6 @@ async function getDiscoverableTeamPlayerIds(supabase: Supabase): Promise<Set<str
   return new Set((members ?? []).map((m) => m.player_id).filter(Boolean));
 }
 
-async function getCoachRosterPlayerIds(
-  supabase: Supabase,
-  coachId: string,
-): Promise<Set<string>> {
-  const { data: staffEntries } = await supabase
-    .from('baseball_team_coach_staff')
-    .select('team_id')
-    .eq('coach_id', coachId);
-
-  const teamIds = staffEntries?.map((e) => e.team_id) ?? [];
-  if (teamIds.length === 0) return new Set();
-
-  const { data: rosterPlayers } = await supabase
-    .from('baseball_team_members')
-    .select('player_id')
-    .in('team_id', teamIds);
-
-  return new Set((rosterPlayers ?? []).map((p) => p.player_id).filter(Boolean));
-}
-
 /**
  * Server-side recruitability gate — mirrors Discover eligibility (#402).
  * Call before watchlist writes and recruiting engagement events.
@@ -100,13 +84,7 @@ export async function assertCoachCanRecruitPlayer(
     return { allowed: false, reason: 'coach_type_mismatch' };
   }
 
-  const { data: settings } = await supabase
-    .from('baseball_player_settings')
-    .select('profile_visibility')
-    .eq('player_id', playerId)
-    .maybeSingle();
-
-  if (settings?.profile_visibility === 'private') {
+  if (await isPlayerProfilePrivate(supabase, playerId)) {
     return { allowed: false, reason: 'profile_private' };
   }
 

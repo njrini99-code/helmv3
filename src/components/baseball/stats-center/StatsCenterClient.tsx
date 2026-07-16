@@ -165,20 +165,30 @@ const PITCHING_COLS: ReadonlyArray<StatColSpec<PitchingSplit>> = [
 ];
 
 // -----------------------------------------------------------------------------
-// Mobile record-book "headline" columns (Rule 8, docs/MOBILE_DOCTRINE.md): below
-// `md` a spread renders as full-width identity + 2 cards rather than the fixed
-// six-column plate, so each row only carries the two figures a coach reads a
-// season by at a glance — batting AVG/OPS, pitching ERA/WHIP. Pitching reuses
-// the first two full-column specs verbatim (same read/cell/leader logic); AVG
-// is likewise shared with the full batting spec — OPS is the one addition.
+// Mobile record-book "headline" column (Rule 8, docs/MOBILE_DOCTRINE.md): below
+// `md` a spread renders as full-width identity rows rather than the fixed
+// six-column plate, so each row carries exactly the ONE figure a coach reads a
+// season by at a glance — batting OPS (overall production), pitching ERA
+// (the classic single-figure read).
+//
+// This used to carry two (AVG+OPS / ERA+WHIP), but two fixed-width 80px stat
+// columns left no reserved width for PlayerRowPlate's `min-w-[64px]` name
+// floor once a jersey number + PositionChip took their share of a 360-390px
+// row — per the CSS flexbox spec, `truncate`'s `overflow-hidden` on the name
+// span alone (not an ancestor) resolves ITS automatic minimum size to 0 under
+// that squeeze, so the name itself collapsed to a single glyph or nothing at
+// all while the jersey/chip never budged (#roster-mobile-name-collapse —
+// same root cause as the Roster Wall fix in roster-wall-stats.ts's
+// buildWallStatsMobile; see that file for the full width-budget rationale).
+// The dropped figure (AVG / WHIP) is one tap away on the player's own stats
+// page, same precedent as buildWallStatsMobile.
 // -----------------------------------------------------------------------------
 
 const MOBILE_BATTING_COLS: ReadonlyArray<StatColSpec<BattingSplit>> = [
-  ...BATTING_COLS.slice(0, 1), // AVG
   { label: 'OPS', read: (b) => b.ops, dir: 'high', cell: (b) => (b.ops === null ? EM_DASH : formatRate(b.ops, 3)) },
 ];
 
-const MOBILE_PITCHING_COLS: ReadonlyArray<StatColSpec<PitchingSplit>> = PITCHING_COLS.slice(0, 2); // ERA, WHIP
+const MOBILE_PITCHING_COLS: ReadonlyArray<StatColSpec<PitchingSplit>> = PITCHING_COLS.slice(0, 1); // ERA
 
 /**
  * For each column, the set of player ids that lead it (green). A column needs at
@@ -931,6 +941,13 @@ export function StatsCenterClient({
           <StatVisualsSection
             scope="team"
             data={statVisualsData}
+            // Same canShowImportEntry/importEntryHref resolution as the header
+            // Import Center button + "Import a box score" empty-state CTA
+            // above — a viewer holding neither can_manage_imports nor
+            // can_manage_stats gets no CTA here either, instead of the old
+            // hardcoded /baseball/dashboard/import link that dead-ended
+            // can_manage_stats-only staff.
+            importHref={canShowImportEntry ? importEntryHref : undefined}
             savedViews={statVisualViews.savedViews}
             onSaveView={statVisualViews.onSaveView}
             onSetPinned={statVisualViews.onSetPinned}

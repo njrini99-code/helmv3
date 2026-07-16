@@ -192,8 +192,24 @@ function familyHasData(family: Family, data: StatVisualsData): boolean {
 /**
  * One honest, on-brand empty surface for a whole family — an `EditorsLetter`
  * that teaches what unlocks the charts, instead of a dead grid of empty frames.
+ *
+ * `importHref` is the capability-resolved destination the PARENT already
+ * computed (Stats Center branches can_manage_imports -> /baseball/dashboard/
+ * import, else can_manage_stats -> /baseball/dashboard/stats/upload, else
+ * hides the action entirely — see StatVisualsSectionProps.importHref doc).
+ * This component never hardcodes a route: no href means no CTA, matching the
+ * same "no dead button for a viewer holding neither capability" contract the
+ * page's other two import entry points already follow.
  */
-function FamilyEmptyState({ label, scope }: { label: string; scope: Scope }) {
+function FamilyEmptyState({
+  label,
+  scope,
+  importHref,
+}: {
+  label: string;
+  scope: Scope;
+  importHref?: string;
+}) {
   return (
     <div className="xl:col-span-2">
       <EditorsLetter
@@ -204,9 +220,9 @@ function FamilyEmptyState({ label, scope }: { label: string; scope: Scope }) {
             : 'These source-backed visuals draw from pitch-by-pitch, batted-ball, and workload events. Import a box score or connect a source and they populate automatically.'
         }
         action={
-          scope === 'team' ? (
+          scope === 'team' && importHref ? (
             <Link
-              href="/baseball/dashboard/import"
+              href={importHref}
               className="group inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-[var(--paper)] px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               Import stats
@@ -250,6 +266,18 @@ export interface StatVisualsSectionProps {
   /** 'team' (Stats Center) or 'player' (player profile). Drives family set. */
   scope?: Scope;
   data?: StatVisualsData;
+  /**
+   * Capability-resolved destination for each empty family's "Import stats"
+   * CTA (team scope only — player scope never shows this action). The
+   * PARENT resolves this exactly like Stats Center's own header/empty-state
+   * import entry points: can_manage_imports -> /baseball/dashboard/import,
+   * else can_manage_stats -> /baseball/dashboard/stats/upload, else omit
+   * this prop so the CTA hides entirely instead of dead-ending a viewer who
+   * holds neither capability. This component intentionally never hardcodes
+   * a route (see prior /baseball/dashboard/import lockout for a
+   * can_manage_stats-only viewer).
+   */
+  importHref?: string;
   /** open the source drawer for the given underlying event ids (parent-owned). */
   onOpenSources?: (ids: string[]) => void;
   /** player this gallery is scoped to (player profile); scopes saved views. */
@@ -280,6 +308,7 @@ export interface StatVisualsSectionProps {
 export function StatVisualsSection({
   scope = 'team',
   data = {},
+  importHref,
   onOpenSources,
   playerId,
   savedViews,
@@ -413,7 +442,7 @@ export function StatVisualsSection({
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {!activeFamilyHasData && (
-          <FamilyEmptyState label={activeFamilyLabel} scope={scope} />
+          <FamilyEmptyState label={activeFamilyLabel} scope={scope} importHref={importHref} />
         )}
 
         {activeFamilyHasData && family === 'dna' && (
