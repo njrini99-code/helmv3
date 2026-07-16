@@ -43,6 +43,11 @@ import {
   type BaseballMetricId,
 } from '@/lib/coachhelm/baseball/metrics/registry';
 import { loadEngineStatRows } from '@/lib/baseball/coachhelm/engine-stat-rows';
+import {
+  loadEngineEventRows,
+  eventDerivedVelocityForPlayer,
+  type EngineEventRows,
+} from '@/lib/baseball/coachhelm/engine-event-derived';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';
 
 // A minimally-typed client so the sweep runs against either the RLS server
@@ -162,6 +167,18 @@ export async function sweepActionOutcomes(
     else byPlayer.set(r.player_id, [r]);
   }
 
+  // #852 residual: event-derived velocity, scoped to the SAME after-window
+  // honesty rule as the box-score pool below (measured strictly AFTER the
+  // action's created_at). ALL-OR-NOTHING: an event-read failure leaves
+  // eventRows null, so every action's `eventDerivedForPlayer` below resolves
+  // to no event data (legacy scalar fallback for every player this pass) --
+  // never a partial event/legacy blend (mirrors loadEngineStatRows's own rule).
+  const { data: eventRows }: { data: EngineEventRows | null } = await loadEngineEventRows(
+    supabase,
+    teamId,
+    playerIds,
+  );
+
   const nowIso = new Date().toISOString();
   let measured = 0;
   // Signal ids whose linked action's target metric IMPROVED this pass — used to
@@ -185,7 +202,25 @@ export async function sweepActionOutcomes(
         // still gates on the resulting sample (honest, just less precise).
         playerRows;
 
-    const loaded = loadPlayerMetrics(a.player_id!, afterRows);
+    // Event rows get the SAME after-window filter (measured_at strictly after
+    // created_at) so an event-derived velocity metric is apples-to-apples with
+    // the box-score after-window above -- a pre-action pitch/batted-ball must
+    // never count toward "did it move" measurement.
+    const afterPitches = eventRows
+      ? createdAt
+        ? eventRows.pitches.filter((p) => !!p.measured_at && p.measured_at > createdAt)
+        : eventRows.pitches
+      : [];
+    const afterBattedBalls = eventRows
+      ? createdAt
+        ? eventRows.battedBalls.filter((b) => !!b.measured_at && b.measured_at > createdAt)
+        : eventRows.battedBalls
+      : [];
+    const eventDerivedForPlayer = eventRows
+      ? eventDerivedVelocityForPlayer(a.player_id!, afterPitches, afterBattedBalls)
+      : null;
+
+    const loaded = loadPlayerMetrics(a.player_id!, afterRows, nowIso, eventDerivedForPlayer);
     const lm = loaded.metrics[metric];
     const observed = lm?.value ?? null;
     const afterSampleN = lm?.sample_n ?? 0;

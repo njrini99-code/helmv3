@@ -744,11 +744,29 @@ export function buildHitterMetrics(
     ),
     scalarMetric(
       { metricKey: 'avg_exit_velocity', metricGroup: 'hitting', label: 'Avg Exit Velo', unit: 'mph', higherIsBetter: true, threshold: SCALAR_THRESHOLD, fallbackContext },
-      avgOf(battedBalls.map((b) => b.exit_velocity)), bbCount, bbProv,
+      // sampleSize is the count of rows that ACTUALLY carried a velocity
+      // reading (exit_velocity is nullable — a hand-charted at-bat with no
+      // radar gun logs the batted ball with no exit_velocity), never bbCount
+      // (every batted ball, radar-read or not). A player with 10 batted balls
+      // but only 4 exit-velo readings must report sampleSize 4, not 10 —
+      // gateSample() honesty depends on it.
+      avgOf(battedBalls.map((b) => b.exit_velocity)),
+      battedBalls.filter((b) => b.exit_velocity != null).length,
+      // Provenance must be the SAME reading-bearing rows sampleSize counts —
+      // NOT bbProv (every batted ball, hand-charted or radar-read). Passing
+      // the unfiltered set lets hand-charted rows with no reading (typically
+      // `unverified`) drag trustTier/dataContext down even when every row
+      // that actually fed the average was `official` radar data.
+      battedBalls.filter((b) => b.exit_velocity != null),
     ),
     scalarMetric(
       { metricKey: 'avg_launch_angle', metricGroup: 'hitting', label: 'Avg Launch Angle', unit: 'deg', higherIsBetter: true, threshold: SCALAR_THRESHOLD, fallbackContext },
-      avgOf(battedBalls.map((b) => b.launch_angle)), bbCount, bbProv,
+      // Same non-null-reading rule as avg_exit_velocity above — launch_angle
+      // is independently nullable per row.
+      avgOf(battedBalls.map((b) => b.launch_angle)),
+      battedBalls.filter((b) => b.launch_angle != null).length,
+      // Same provenance-must-match-sampleSize fix as avg_exit_velocity above.
+      battedBalls.filter((b) => b.launch_angle != null),
     ),
   ];
 
@@ -988,7 +1006,15 @@ export function buildPitcherMetrics(
     ),
     scalarMetric(
       { metricKey: 'avg_velocity', metricGroup: 'pitching', label: 'Avg Velocity', unit: 'mph', higherIsBetter: true, threshold: SCALAR_THRESHOLD, fallbackContext },
-      avgOf(pitches.map((p) => p.velocity)), pitches.filter((p) => p.velocity != null).length, pProv,
+      // Same provenance-must-match-sampleSize rule as the batting-side
+      // avg_exit_velocity/avg_launch_angle above — velocity is nullable per
+      // pitch (a hand-charted pitch with no radar gun logs no velocity), so
+      // pProv (every pitch, radar-read or not) would let non-reading rows
+      // drag trustTier/dataContext down below what the reading-bearing rows
+      // actually warrant.
+      avgOf(pitches.map((p) => p.velocity)),
+      pitches.filter((p) => p.velocity != null).length,
+      pitches.filter((p) => p.velocity != null),
     ),
   ];
 

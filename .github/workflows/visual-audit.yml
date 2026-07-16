@@ -1,0 +1,108 @@
+name: Visual Audit
+
+# Manual-only production screenshot crawl (e2e/visual-audit.spec.ts). NOT part
+# of any PR gate or push trigger — this hits a real, deployed base_url (prod
+# by default) as both the baseball coach and player roles, discovers every
+# visible nav route from the LIVE DOM, and captures full-page screenshots at
+# phone (390x844) and desktop (1440x900) viewports for a human/follow-up
+# review pass to look at. Screenshots are data capture, not assertions — the
+# spec only fails this workflow on a login failure or a total navigation
+# failure (see e2e/visual-audit.spec.ts's module doc for the exact contract).
+#
+# Runs ONLY the baseball auth setup + this spec — no build, no dev server, no
+# seeding: PLAYWRIGHT_BASE_URL points playwright.config.ts at the deployed
+# base_url, which makes its `webServer` block a no-op (only defined when
+# PLAYWRIGHT_BASE_URL is unset), so there is nothing to boot locally.
+#
+# `--project=baseball-coach --project=baseball-player` alone is sufficient to
+# also run the `setup` project (playwright/baseball-auth.setup.ts): both
+# projects declare `dependencies: ['setup']` in playwright.config.ts, and
+# Playwright always runs a project's dependencies with their own FULL,
+# unfiltered test file set — the `e2e/visual-audit.spec.ts` file argument on
+# the CLI only restricts the explicitly-requested top-level projects
+# (baseball-coach/baseball-player), never a project pulled in purely as a
+# dependency. Verified against the installed playwright package's runner
+# source (collectProjectsAndTestFiles in lib/runner/index.js) before relying
+# on it here. The `setup` project's testMatch is scoped to
+# `baseball-auth.setup.ts` specifically, so Golf's `playwright/auth.setup.ts`
+# is never pulled in.
+#
+# SECURITY: consumes ZERO untrusted user input — the only `${{ }}` expressions
+# are a trusted workflow_dispatch string input, secrets, and github.run_number.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Base URL to crawl (playwright.config.ts baseURL)
+        required: false
+        default: "https://helmsportslabs.com"
+        type: string
+
+concurrency:
+  group: visual-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  visual-audit:
+    name: Visual audit (coach + player)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+      VISUAL_AUDIT: "1"
+      # Fail loud (not a graceful skip) on missing/bad creds — this run is
+      # pointless without a real authenticated crawl.
+      PLAYWRIGHT_BASEBALL_REQUIRED: "1"
+      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Runs the `setup` project (baseball coach + player auth, persisting
+      # storageState) as a dependency, then this spec under baseball-coach
+      # and baseball-player — see the header comment above for why no
+      # explicit --project=setup is needed.
+      - name: Run visual-audit screenshot crawl
+        run: |
+          npx playwright test \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/visual-audit.spec.ts
+
+      - name: Upload visual-audit screenshots + manifests
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4
+        with:
+          name: visual-audit-${{ github.run_number }}
+          path: test-results/visual-audit
+          retention-days: 7
+          if-no-files-found: warn

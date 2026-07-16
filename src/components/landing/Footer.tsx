@@ -44,7 +44,7 @@ export function Footer() {
               <span className="text-lg font-semibold tracking-tight text-warm-900">Helm Sports Labs</span>
             </div>
             <p className="mt-3 text-sm text-warm-500 leading-relaxed max-w-xs">
-              The coaching intelligence layer for college golf — strokes-gained, qualifiers, and the conversations that matter.
+              The coaching and recruiting intelligence layer for college athletics — rosters, stats, and the conversations that matter.
             </p>
           </div>
 

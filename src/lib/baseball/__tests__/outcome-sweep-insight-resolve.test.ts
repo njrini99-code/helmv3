@@ -58,6 +58,12 @@ function makeClient(opts: {
       select: () => builder,
       eq: () => builder,
       in: () => builder,
+      // #852 residual: the outcome sweep now also reads
+      // baseball_pitch_events/baseball_batted_ball_events (event-derived
+      // velocity) via the #813 superseded-row filter. Neither table is seeded
+      // by these fixtures (falls to `[]` in the `data` lookup above), so this
+      // is a pass-through -- it only needs to exist so the call doesn't throw.
+      is: () => builder,
       order: () => builder,
       limit: () => builder,
       // The stats read now paginates via fetchAllRowsResult (ends on .range).

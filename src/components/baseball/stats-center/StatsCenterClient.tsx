@@ -29,7 +29,7 @@ import { LazyMotion, m, useReducedMotion } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
-import { IconDownload, IconFilter, IconFolder, IconUpload, IconX } from '@/components/icons';
+import { IconDownload, IconFilter, IconFolder, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { loadStatsCenter } from '@/app/baseball/actions/games';
 // V10 stat-visual chart gallery (stat-visuals packet). Mounted at team scope; it
@@ -80,6 +80,27 @@ interface StatsCenterClientProps {
    * renders its truthful "no captured events" frames.
    */
   statVisualsData?: StatVisualsData;
+  /**
+   * Whether the viewer holds can_manage_imports (computed server-side by the
+   * page). Decides where the two import entry points route: import-capable
+   * staff go straight to the full Import Center (whose middleware gate is
+   * can_manage_imports), everyone else through the capability-aware
+   * /stats/upload shim (middleware gate: can_manage_stats). Sending
+   * import-capable-but-not-stats staff (e.g. the director_ops preset) through
+   * the shim would bounce them off its can_manage_stats middleware gate
+   * before the shim's own capability branch ever ran.
+   */
+  canManageImports?: boolean;
+  /**
+   * Whether the viewer holds can_manage_stats (computed server-side by the
+   * page, alongside canManageImports). Both import entry points (the header
+   * action and the empty-state CTA) are hidden entirely when the viewer holds
+   * NEITHER capability — canManageImports=false alone does not mean "route
+   * through the shim," it can also mean "no import capability at all," and
+   * routing that viewer anywhere would just bounce them off whichever
+   * destination's middleware gate they still fail.
+   */
+  canManageStats?: boolean;
 }
 
 /** Which game-set the wall currently shows. */
@@ -455,7 +476,13 @@ function SegmentedControl<T extends string>({
 // Main client
 // -----------------------------------------------------------------------------
 
-export function StatsCenterClient({ model: initialModel, initialFilters, statVisualsData }: StatsCenterClientProps) {
+export function StatsCenterClient({
+  model: initialModel,
+  initialFilters,
+  statVisualsData,
+  canManageImports = false,
+  canManageStats = false,
+}: StatsCenterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reducedMotion = useReducedMotion() ?? false;
@@ -632,30 +659,50 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
     .filter(Boolean)
     .join(' · ');
 
+  // Both import entry points (header action + empty-state CTA) share one
+  // capability-resolved destination — see the canManageImports prop doc.
+  // Neither destination is reachable for a viewer holding NEITHER
+  // capability (canManageImports gates Import Center, canManageStats gates
+  // the /stats/upload shim), so canShowImportEntry below hides both actions
+  // for that viewer entirely instead of routing them into a middleware bounce.
+  const canShowImportEntry = canManageImports || canManageStats;
+  const importEntryHref = canManageImports
+    ? '/baseball/dashboard/import'
+    : '/baseball/dashboard/stats/upload';
+
   const mastheadActions = (
     <div className="flex flex-wrap items-center gap-2">
       <SegmentedControl options={GAME_SET_OPTIONS} value={gameSet} onChange={setGameSet} ariaLabel="Game set" />
-      {/* Ruling 2 (item 2): Upload + Import Center folded off the hub sub-nav
-          strip into persistent header-level actions here — Stats Center is
-          now the ONLY place they're reachable from the Stats & Performance
-          hub (the empty-state "Import a box score" CTA below stays too, for
-          the exact moment it's most useful). */}
-      <Button
-        variant="ghost"
-        size="md"
-        leftIcon={<IconUpload size={16} />}
-        onClick={() => router.push('/baseball/dashboard/stats/upload')}
-      >
-        Upload
-      </Button>
-      <Button
-        variant="ghost"
-        size="md"
-        leftIcon={<IconFolder size={16} />}
-        onClick={() => router.push('/baseball/dashboard/import')}
-      >
-        Import Center
-      </Button>
+      {/* Ruling 2 (item 2): Import Center folded off the hub sub-nav strip into
+          a persistent header-level action here — Stats Center is now the
+          ONLY place it's reachable from the Stats & Performance hub (the
+          empty-state "Import a box score" CTA below stays too, for the exact
+          moment it's most useful).
+          Wizard consolidation: the standalone "Upload" button that used to
+          sit beside this one (routing to the retired /stats/upload wizard)
+          is gone — that wizard is now the SAME entry point ("Quick box
+          score"). The destination branches on the viewer's capability
+          (importEntryHref): can_manage_imports staff go STRAIGHT to the full
+          Import Center — routing them through the /stats/upload shim would
+          bounce anyone without can_manage_stats (e.g. director_ops) off that
+          route's own middleware gate — while everyone else goes through the
+          shim, which renders the quick-box-score wizard inline for
+          can_manage_stats-only staff (assistant/pitching/hitting/catching/
+          defensive/strength coach) instead of locking them out on Import
+          Center's can_manage_imports gate. Staff holding NEITHER capability
+          (canShowImportEntry false) get no import action at all — every
+          destination this button could route to gates on one of these two
+          capabilities, so showing it would only produce a dead button. */}
+      {canShowImportEntry && (
+        <Button
+          variant="ghost"
+          size="md"
+          leftIcon={<IconFolder size={16} />}
+          onClick={() => router.push(importEntryHref)}
+        >
+          Import Center
+        </Button>
+      )}
       <Button
         variant="secondary"
         size="md"
@@ -834,10 +881,15 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
           ) : allNoData ? (
             <EmptyIssue
               variant="stats"
+              // Same canShowImportEntry gate as the header action above — a
+              // viewer holding neither can_manage_imports nor can_manage_stats
+              // gets the honest empty letter with no dead CTA underneath it.
               action={
-                <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard/import')}>
-                  Import a box score
-                </Button>
+                canShowImportEntry ? (
+                  <Button variant="secondary" size="md" onClick={() => router.push(importEntryHref)}>
+                    Import a box score
+                  </Button>
+                ) : undefined
               }
             />
           ) : (

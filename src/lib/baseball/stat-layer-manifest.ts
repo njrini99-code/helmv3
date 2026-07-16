@@ -318,10 +318,38 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
       '#379 Phase 4a: pins loaders.ts\'s legacy-fallback behavior (an unmigrated caller keeps citing baseball_player_stats verbatim in source_refs when no eventDerived/source-table input is supplied) alongside the NEW event-derived-override and box-score-normalization tests — so this legitimately still references the deprecated table by design, not staleness. Retires once loaders.ts drops the legacy-table fallback entirely (tracked on loaders.ts\'s own manifest entry above).',
   },
   {
+    path: 'src/lib/baseball/__tests__/engine-run-event-velocity.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      '#852 residual: pins runBaseballEngineCore threading event-derived velocity (engine-event-derived.ts) into loadAllPlayerMetrics — asserts event-derived avg exit velocity WINS over a legacy baseball_player_stats exit_velocity scalar for the same player, and that a zero-event player keeps their legacy scalar (plus the all-or-nothing degrade on an event-read failure). The legacy fixture rows are the fallback pin, not staleness; retires with loaders.ts\'s legacy-scalar fallback.',
+  },
+  {
+    path: 'src/lib/baseball/__tests__/outcome-sweep-event-velocity.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      '#852 residual: pins sweepActionOutcomes threading event-derived velocity into its per-action after-window loadPlayerMetrics call — event-derived avg exit velocity wins over the legacy baseball_player_stats scalar for the same player, and a pre-action event is excluded by the after-window filter. The legacy fixture row is the fallback pin, not staleness; retires with loaders.ts\'s legacy-scalar fallback.',
+  },
+  {
+    path: 'src/lib/baseball/__tests__/action-baseline-event-velocity.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      '#852 residual: pins buildActionOutcomeSeed threading event-derived velocity into its baseline capture — event-derived avg exit velocity wins over the legacy baseball_player_stats scalar for the same player; a zero-event player\'s legacy scalar still seeds the baseline. The legacy fixture row is the fallback pin, not staleness; retires with loaders.ts\'s legacy-scalar fallback.',
+  },
+  {
     path: 'src/app/baseball/actions/__tests__/imports-registry.test.ts',
     group: 'test',
     status: 'pending migration',
     note: 'Exercises imports.ts commitImport() against a fake baseball_player_stats table.',
+  },
+  {
+    path: 'src/app/baseball/actions/__tests__/imports-capability-shape-gate.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      '#863 round-4 regression coverage for the previewImport/commitImport shape-conditional capability gate (can_manage_imports OR can_manage_stats for game_box_score only) — mirrors imports-registry.test.ts above; exercises the SAME commitImport() legacy write against a fake baseball_player_stats table to prove an authorized stats-only-staff commit actually writes, not just that the gate doesn\'t throw. Production reference is the legacy-import-writer entry, not a new one.',
   },
   {
     path: 'src/app/baseball/actions/__tests__/upload-stats-csv.test.ts',

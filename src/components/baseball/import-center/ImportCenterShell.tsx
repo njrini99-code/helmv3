@@ -28,6 +28,7 @@ import { EventImportWizard } from '@/components/baseball/import-center/EventImpo
 import type { BaseballImportRunRow } from '@/lib/types/baseball-imports';
 import type { BaseballSourceKey } from '@/lib/types/baseball-stat-events';
 import type { BaseballSourceTrustLevel } from '@/lib/types/baseball-settings';
+import type { BaseballStatUpload } from '@/lib/types';
 import type { MatchablePlayer } from '@/lib/baseball/import-matching';
 
 // The shell carries the full matcher shape (id/name + jersey/grad_year/position)
@@ -54,6 +55,13 @@ interface Props {
   teamName: string;
   players: RosterPlayer[];
   recentRuns: BaseballImportRunRow[];
+  /**
+   * Historical rows from the pre-consolidation flat-upload path
+   * (baseball_stat_uploads) — no longer written to, but still the record of
+   * every upload made before this wizard consolidation. Rendered as a
+   * read-only "Legacy uploads" section inside the box-score wizard.
+   */
+  legacyUploads?: BaseballStatUpload[];
   eventSources: Array<{ key: BaseballSourceKey; label: string; accept: string }>;
   registeredSources: RegisteredSourceOption[];
 }
@@ -70,6 +78,7 @@ export function ImportCenterShell({
   teamName,
   players,
   recentRuns,
+  legacyUploads,
   eventSources,
   registeredSources,
 }: Props) {
@@ -122,6 +131,7 @@ export function ImportCenterShell({
           teamName={teamName}
           players={players}
           recentRuns={recentRuns}
+          legacyUploads={legacyUploads}
           registeredSources={registeredSources}
           showHeader={false}
           onRequestEventLevel={() => setMode('event_level')}
