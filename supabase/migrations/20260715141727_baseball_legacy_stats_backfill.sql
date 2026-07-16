@@ -149,8 +149,10 @@
 -- fresh in this transaction and never persisted as a callable object — so
 -- there is nothing new here to REVOKE from anon or pin a search_path on. This
 -- migration calls no functions at all beyond core Postgres builtins and
--- pgcrypto's `digest()` (already installed — see 20260527000000's
--- `CREATE EXTENSION IF NOT EXISTS pgcrypto`). It still deliberately does NOT
+-- pgcrypto's `digest()`, schema-qualified as `extensions.digest` — pgcrypto
+-- lives in the `extensions` schema on BOTH prod (verified via pg_extension)
+-- and fresh `supabase start` stacks; an unqualified or `public.`-qualified
+-- call fails 42883 in either environment. It still deliberately does NOT
 -- call `public.recalculate_baseball_season_stats` itself — Step 4 mirrors
 -- its aggregation logic inline (read-only against the rows this migration
 -- just wrote) rather than invoking the live RPC, so this migration never
@@ -227,7 +229,7 @@ hashed AS (
   SELECT
     g.team_id, g.session_date, g.opponent_name,
     substring(
-      public.digest(
+      extensions.digest(
         'baseball-legacy-backfill-379:box-game:' || g.team_id::text || ':' || g.session_date::text,
         'sha1'
       )
@@ -316,7 +318,7 @@ norm AS (
 hashed AS (
   SELECT n.*,
     substring(
-      public.digest(
+      extensions.digest(
         'baseball-legacy-backfill-379:box-bat:' || n.game_id::text || ':' || n.player_id::text,
         'sha1'
       )
@@ -411,7 +413,7 @@ norm AS (
 hashed AS (
   SELECT n.*,
     substring(
-      public.digest(
+      extensions.digest(
         'baseball-legacy-backfill-379:box-pit:' || n.game_id::text || ':' || n.player_id::text,
         'sha1'
       )
