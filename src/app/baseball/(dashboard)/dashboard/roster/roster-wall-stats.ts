@@ -84,3 +84,20 @@ export function buildWallStatsMobile(agg: BaseballPlayerAggregates | undefined, 
 export function buildBoardStats(fresh: Freshness): PlayerRowStat[] {
   return [{ label: 'Updated', value: fresh.label, leader: fresh.level === 'fresh' }];
 }
+
+// Status board's "Awaiting Join" column ONLY (#roster-pending-actions-clip,
+// FIX_FIRST follow-up on PR #882's roster name-floor fix): this row's
+// trailing element is `PendingMemberActions` (Approve/Decline), not the 44px
+// RosterRowMenu kebab every other board row carries. Even icon-only, two
+// 44px buttons + a 6px gap cost ~94px — 50px more than the kebab's 44px — and
+// a pending recruit has no meaningful season stat to show anyway (no games
+// played as this team yet), so the honest move is the same one `buildWallStats`
+// already makes for a dead column: don't render one. Zeroing this column
+// reclaims the width `buildBoardStats`'s single freshness figure would have
+// spent, which — combined with `PendingMemberActions` going icon-only — is
+// what keeps this row's name floor + trailing buttons inside the ~360-400px
+// PaperCard at every breakpoint (width arithmetic in RosterFairway.tsx's
+// TriageBoard `statsFor` wiring + roster-triage-row-width.test.tsx).
+export function buildPendingBoardStats(): PlayerRowStat[] {
+  return [];
+}

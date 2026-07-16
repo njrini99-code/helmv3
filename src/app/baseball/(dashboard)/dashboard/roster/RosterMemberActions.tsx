@@ -69,30 +69,45 @@ export function PendingMemberActions({
     // Rendered as a SIBLING of the row's <PlayerRowPlate> (not nested inside
     // it), so these buttons never bubble into the row's own onClick-to-profile
     // navigation — no stopPropagation needed.
+    //
+    // ICON-ONLY, ALWAYS (#roster-pending-actions-clip): this only ever renders
+    // inside the Status board's "Awaiting Join" TriageColumn — a PaperCard
+    // that's ~360-400px wide at EVERY breakpoint (TriageBoard adds more
+    // same-width grid columns as the viewport grows rather than widening a
+    // single card; see roster-wall-stats.ts's buildBoardStats comment). Two
+    // labeled buttons ("Approve" + "Decline", each with an icon) cost ~200px
+    // combined — leaving no width for PlayerRowPlate's `min-w-[64px]` name
+    // floor even with its stat column zeroed out (`buildPendingBoardStats`),
+    // so the row overflowed PaperCard's `overflow-hidden` and risked clipping
+    // these very buttons for a real pending join request (functional-access
+    // regression, not cosmetic). Two 44px IconButtons + a 6px gap cost ~94px
+    // instead — a `sm:` viewport breakpoint would be dishonest here since the
+    // card never actually widens past ~400px even on desktop, so there is no
+    // "wide" state where full text would ever paint. aria-label carries the
+    // full "Approve/Decline {name}'s join request" text for a11y — same
+    // icon-only-with-aria-label pattern as the sibling RosterRowMenu kebab.
     <div className="flex shrink-0 items-center gap-1.5">
-      <FairwayButton
+      <IconButton
         variant="secondary"
-        size="sm"
+        size="md"
         busy={pending === 'approve'}
         disabled={pending !== null}
         onClick={() => handle('approve')}
         aria-label={`Approve ${playerName}'s join request`}
       >
-        <IconCheck size={14} className="mr-1" />
-        Approve
-      </FairwayButton>
-      <FairwayButton
+        <IconCheck size={18} />
+      </IconButton>
+      <IconButton
         variant="ghost"
-        size="sm"
+        size="md"
         busy={pending === 'reject'}
         disabled={pending !== null}
         onClick={() => handle('reject')}
         aria-label={`Decline ${playerName}'s join request`}
         className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
       >
-        <IconX size={14} className="mr-1" />
-        Decline
-      </FairwayButton>
+        <IconX size={18} />
+      </IconButton>
     </div>
   );
 }

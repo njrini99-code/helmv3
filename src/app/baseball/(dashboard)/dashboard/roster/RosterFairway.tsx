@@ -59,7 +59,13 @@ import { SavedLineupsPanel, type SavedLineupSlot } from './SavedLineupsPanel';
 import { POSITIONS } from './roster-constants';
 // Same rationale as POSITIONS above — plus these three are pure functions
 // worth unit-testing without RosterFairway's much heavier component graph.
-import { WALL_COLUMNS, buildWallStats, buildWallStatsMobile, buildBoardStats } from './roster-wall-stats';
+import {
+  WALL_COLUMNS,
+  buildWallStats,
+  buildWallStatsMobile,
+  buildBoardStats,
+  buildPendingBoardStats,
+} from './roster-wall-stats';
 import type { TeamMember, RosterSurface, SortField, SortDirection } from './RosterClient';
 
 // LineupBuilder / InviteModal own their prop types; borrow them so we never
@@ -303,12 +309,17 @@ function TriageColumn({
   members,
   onSelect,
   renderTrailing,
+  statsFor = boardRowStats,
 }: {
   label: string;
   members: RosterBoardMember[];
   onSelect: (playerId: string) => void;
   /** Optional per-row trailing content (e.g. the pending column's Approve/Decline). */
   renderTrailing?: (member: RosterBoardMember) => ReactNode;
+  /** Per-row stat column(s) — defaults to the shared freshness column (`boardRowStats`); a
+   *  column with an unusually wide trailing element (e.g. `pending`'s Approve/Decline) can
+   *  override this to reclaim width — see the `statsFor` wiring in `TriageBoard` below. */
+  statsFor?: (member: RosterBoardMember) => PlayerRowStat[];
 }) {
   return (
     <PaperCard className="flex flex-col p-4">
@@ -330,7 +341,7 @@ function TriageColumn({
                     lastName={m.lastName ?? ''}
                     jerseyNumber={m.jerseyNumber ?? undefined}
                     position={m.primaryPosition ?? undefined}
-                    stats={boardRowStats(m)}
+                    stats={statsFor(m)}
                     onClick={() => onSelect(m.playerId)}
                   />
                 </div>
@@ -349,11 +360,16 @@ function TriageBoard({
   groups,
   onSelect,
   renderTrailing,
+  statsFor,
 }: {
   columns: { key: string; label: string }[];
   groups: Record<string, RosterBoardMember[]>;
   onSelect: (playerId: string) => void;
   renderTrailing?: (columnKey: string, member: RosterBoardMember) => ReactNode;
+  /** Optional per-COLUMN stat override (see `TriageColumn`'s `statsFor`) — e.g. the Status
+   *  board zeroes the `pending` column's stat so `PendingMemberActions` (Approve/Decline)
+   *  has the width it needs; every other column keeps the default `boardRowStats`. */
+  statsFor?: (columnKey: string, member: RosterBoardMember) => PlayerRowStat[];
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -364,6 +380,7 @@ function TriageBoard({
           members={groups[c.key] ?? []}
           onSelect={onSelect}
           renderTrailing={renderTrailing ? (m) => renderTrailing(c.key, m) : undefined}
+          statsFor={statsFor ? (m) => statsFor(c.key, m) : undefined}
         />
       ))}
     </div>
@@ -733,6 +750,14 @@ export function RosterFairway(props: RosterFairwayProps) {
                 columns={STATUS_BOARD_COLUMNS}
                 groups={statusGroups}
                 onSelect={onSelectPlayer}
+                // `pending` trades the RosterRowMenu kebab (44px) for
+                // PendingMemberActions (Approve/Decline, ~94px icon-only) — so
+                // it zeroes its stat column to reclaim the width the wider
+                // trailing element costs (#roster-pending-actions-clip); every
+                // other status column keeps the shared freshness column.
+                statsFor={(columnKey, member) =>
+                  columnKey === 'pending' ? buildPendingBoardStats() : boardRowStats(member)
+                }
                 renderTrailing={(columnKey, member) => {
                   const playerName = `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim() || 'this player';
                   if (columnKey === 'pending') {

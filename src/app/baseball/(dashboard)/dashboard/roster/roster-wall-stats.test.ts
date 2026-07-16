@@ -23,11 +23,25 @@
  *      RosterRowMenu kebab (Edit/Remove) risked getting clipped by PaperCard's
  *      `overflow-hidden` too. `buildBoardStats` must return exactly the one
  *      figure (freshness) these boards have room for.
+ *  (d) [BROKEN, round-3 FIX_FIRST on PR #882] The Status board's `pending`
+ *      column swaps the 44px RosterRowMenu kebab (c)'s budget assumed for
+ *      `PendingMemberActions` (Approve/Decline) — even icon-only, ~94px, more
+ *      than double the kebab. `buildPendingBoardStats` must return an EMPTY
+ *      stat list so that column reclaims the width `buildBoardStats`'s one
+ *      freshness figure would otherwise spend (see
+ *      roster-triage-pending-row-width.test.tsx for the full width budget).
  */
 import { describe, it, expect } from 'vitest';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { Freshness } from '@/components/baseball/roster/roster-triage';
-import { EM_DASH, WALL_COLUMNS, buildWallStats, buildWallStatsMobile, buildBoardStats } from './roster-wall-stats';
+import {
+  EM_DASH,
+  WALL_COLUMNS,
+  buildWallStats,
+  buildWallStatsMobile,
+  buildBoardStats,
+  buildPendingBoardStats,
+} from './roster-wall-stats';
 
 function agg(overrides: Partial<BaseballPlayerAggregates> = {}): BaseballPlayerAggregates {
   return {
@@ -150,5 +164,15 @@ describe('buildBoardStats — triage board 1-column row (#roster-triage-kebab-cl
   it('renders "No data" honestly for a player with no captured sessions, not a fabricated value', () => {
     const stats = buildBoardStats(freshness({ level: 'none', days: null, label: 'No data' }));
     expect(stats).toEqual([{ label: 'Updated', value: 'No data', leader: false }]);
+  });
+});
+
+describe('buildPendingBoardStats — Status board "Awaiting Join" row, 0-column (#roster-pending-actions-clip)', () => {
+  it('returns an empty stat list — not the shared 1-column freshness figure', () => {
+    expect(buildPendingBoardStats()).toEqual([]);
+  });
+
+  it('always returns a fresh empty array (no accidental caller-shared/mutated reference)', () => {
+    expect(buildPendingBoardStats()).not.toBe(buildPendingBoardStats());
   });
 });
