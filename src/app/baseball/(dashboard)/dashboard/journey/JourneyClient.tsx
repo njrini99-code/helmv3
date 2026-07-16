@@ -252,10 +252,11 @@ export default function JourneyClient() {
 
       {stats && stats.total_interests > 0 && (
         <KPIContentsStrip
-          columns={5}
+          columns={6}
           items={[
             { label: 'Total Schools', value: stats.total_interests },
             { label: 'Interested', value: stats.schools_interested },
+            { label: 'Researching', value: stats.schools_researching },
             { label: 'Contacted', value: stats.schools_contacted },
             { label: 'Visited', value: stats.schools_visited },
             { label: 'Offers', value: stats.schools_offered, leader: stats.schools_offered > 0 },

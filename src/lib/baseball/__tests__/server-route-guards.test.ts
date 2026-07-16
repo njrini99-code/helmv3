@@ -28,6 +28,7 @@ vi.mock('@/lib/supabase/server', () => ({
 import {
   requireBaseballPlayerRoute,
   requireRecruitingCoachRoute,
+  requireRecruitingPlayerRoute,
   requireShowcaseOrgRoute,
 } from '../server-route-guards';
 
@@ -74,6 +75,73 @@ describe('requireBaseballPlayerRoute (#410)', () => {
     };
     mocks.getSessionProfile.mockResolvedValue(session);
     await expect(requireBaseballPlayerRoute()).resolves.toEqual(session);
+  });
+});
+
+describe('requireRecruitingPlayerRoute (player recruiting-hub gate)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('redirects unauthenticated users to login (delegates to requireBaseballPlayerRoute)', async () => {
+    mocks.getSessionProfile.mockResolvedValue(null);
+    await expect(requireRecruitingPlayerRoute()).rejects.toThrow('REDIRECT:/baseball/login');
+  });
+
+  it('redirects coaches away (delegates to requireBaseballPlayerRoute)', async () => {
+    mocks.getSessionProfile.mockResolvedValue({
+      userId: 'u1',
+      role: 'coach',
+      coach: { id: 'c1', coach_type: 'college' },
+      player: null,
+    });
+    await expect(requireRecruitingPlayerRoute()).rejects.toThrow(
+      'REDIRECT:/baseball/dashboard/stats-center',
+    );
+  });
+
+  it('honors a custom redirectTo for the coach branch', async () => {
+    mocks.getSessionProfile.mockResolvedValue({
+      userId: 'u1',
+      role: 'coach',
+      coach: { id: 'c1', coach_type: 'college' },
+      player: null,
+    });
+    await expect(
+      requireRecruitingPlayerRoute({ redirectTo: '/baseball/dashboard/command-center' }),
+    ).rejects.toThrow('REDIRECT:/baseball/dashboard/command-center');
+  });
+
+  it('flags isCollegePlayer=true for a college player, WITHOUT redirecting (caller renders the honest state)', async () => {
+    const session = {
+      userId: 'u1',
+      role: 'player',
+      coach: null,
+      player: { id: 'p1', player_type: 'college' },
+    };
+    mocks.getSessionProfile.mockResolvedValue(session);
+
+    await expect(requireRecruitingPlayerRoute()).resolves.toEqual({
+      session,
+      isCollegePlayer: true,
+    });
+  });
+
+  it('flags isCollegePlayer=false for high_school/juco/showcase players', async () => {
+    for (const player_type of ['high_school', 'juco', 'showcase']) {
+      const session = {
+        userId: 'u1',
+        role: 'player',
+        coach: null,
+        player: { id: 'p1', player_type },
+      };
+      mocks.getSessionProfile.mockResolvedValue(session);
+
+      await expect(requireRecruitingPlayerRoute()).resolves.toEqual({
+        session,
+        isCollegePlayer: false,
+      });
+    }
   });
 });
 

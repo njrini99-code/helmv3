@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { CalendarFairway } from '@/components/baseball/calendar/CalendarFairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
+import { resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
+import { computeUpcomingEventsSummary } from '@/lib/baseball/calendar/upcoming-events';
 
 export const metadata: Metadata = {
   title: 'Calendar | Helm Sports',
@@ -218,29 +220,34 @@ export default async function BaseballCalendarPage() {
 
   // ── Event summary strip ─────────────────────────────────────────────────────
   //
-  // "Upcoming" = start time at or after local midnight TODAY (not the exact
-  // `now` instant) — an event scheduled earlier today still counts as
-  // upcoming for the rest of the day, and the boundary can't drift mid-render
-  // between the two numbers below.
+  // "Upcoming" = start time at or after TEAM-LOCAL midnight today (not the
+  // exact `now` instant, and never the SERVER RUNTIME's own midnight) — an
+  // event scheduled earlier today still counts as upcoming for the rest of
+  // the team's day, and the boundary can't drift mid-render between the two
+  // numbers below.
+  //
+  // THE GAP THIS CLOSED: this used to be `new Date(now.getFullYear(),
+  // now.getMonth(), now.getDate())` — the server's own local date. Vercel
+  // runs in UTC, so in the evening Eastern hours (after ~8pm ET) that silently
+  // promoted tomorrow (UTC) to "today," excluding every one of the team's own
+  // still-today events from both numbers below. Same Gap-1 class of bug the
+  // Daily Contract closed for lifting (`daily-contract/contract-day.ts`) —
+  // `resolveTeamTimezone` + `computeUpcomingEventsSummary` reuse that exact
+  // team-owned-IANA-timezone fix instead of the runtime's own clock.
   //
   // Both the headline count and the per-type badges are derived from the SAME
-  // filtered list. Previously `upcomingEvents` filtered by date while
-  // `eventTypeCounts` summed EVERY event this team has ever had (no date
-  // filter at all) — on a team with only past/demo events that showed the
-  // contradictory "0 upcoming events · 1 Practice · 1 Meeting · 1 Game" (the
-  // badges counting events the headline had already excluded). Single source
-  // of truth below so the two numbers can never disagree again.
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const upcomingEventsList = events.filter(
-    (e) => new Date(e.start_time || e.start_date) >= startOfToday
+  // filtered list inside `computeUpcomingEventsSummary`. Previously
+  // `upcomingEvents` filtered by date while `eventTypeCounts` summed EVERY
+  // event this team has ever had (no date filter at all) — on a team with
+  // only past/demo events that showed the contradictory "0 upcoming events ·
+  // 1 Practice · 1 Meeting · 1 Game" (the badges counting events the headline
+  // had already excluded). Single source of truth below so the two numbers
+  // can never disagree again.
+  const teamTimezone = await resolveTeamTimezone(supabase, teamId ?? '');
+  const { upcomingEvents, eventTypeCounts } = computeUpcomingEventsSummary(
+    events,
+    teamTimezone,
   );
-  const upcomingEvents = upcomingEventsList.length;
-  const eventTypeCounts = upcomingEventsList.reduce<Record<string, number>>((acc, e) => {
-    const t = e.event_type || 'other';
-    acc[t] = (acc[t] || 0) + 1;
-    return acc;
-  }, {});
 
   // ── No team resolved: college coaches get the recruiting-focused empty
   //    state (they're pure recruiters — no team is expected); every other
