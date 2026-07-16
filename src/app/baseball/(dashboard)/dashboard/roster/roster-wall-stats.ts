@@ -7,6 +7,7 @@
  */
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import { formatRate, type PlayerRowStat } from '@/components/baseball/living-annual';
+import type { Freshness } from '@/components/baseball/roster/roster-triage';
 
 export const EM_DASH = '—';
 
@@ -57,4 +58,29 @@ export function buildWallStatsMobile(agg: BaseballPlayerAggregates | undefined, 
     return [{ label: 'OPS', value: EM_DASH }];
   }
   return [{ label: 'OPS', value: agg.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3), leader }];
+}
+
+// Triage-board row (Position / Status / Development tabs, #roster-triage-
+// kebab-clip): TriageBoard's grid (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-3
+// 2xl:grid-cols-4`) keeps every card roughly 360-400px wide at EVERY
+// breakpoint — it's a masonry-style multi-column layout that adds more
+// same-width columns as the viewport grows, not a table that widens with it
+// — so the original 2-stat row (production OPS + last-touch freshness) was
+// never actually a "mobile-only" width problem. With a jersey number +
+// PositionChip taking their share of that ~360-400px card, and — on the
+// Status board specifically — the trailing RosterRowMenu kebab too, there
+// was no room left for PlayerRowPlate's `min-w-[64px]` name floor: real
+// flexbox overflow that PaperCard's `overflow-hidden` clips, up to and
+// including the row's own Edit/Remove kebab on the Status board (a
+// functional access regression, not just a cosmetic one).
+//
+// Freshness — not production — is the signal unique to a triage board: OPS
+// already headlines the Roster Wall's 'cards' surface (`buildWallStatsMobile`
+// above) with the same leader treatment, and the whole premise of a triage
+// board is "what needs my attention right now", which is a recency question,
+// not a production one. So freshness is the one that survives the width cut.
+// Production is one tap away on the player's own stats page — same
+// precedent as `buildWallStatsMobile`'s AVG/OBP/SLG rationale.
+export function buildBoardStats(fresh: Freshness): PlayerRowStat[] {
+  return [{ label: 'Updated', value: fresh.label, leader: fresh.level === 'fresh' }];
 }

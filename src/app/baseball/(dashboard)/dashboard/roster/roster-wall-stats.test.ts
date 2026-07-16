@@ -13,10 +13,21 @@
  *      and causing most rows to render 0-1 characters of the player's name.
  *      buildWallStatsMobile must return exactly the one headline figure (OPS)
  *      the row has room for.
+ *  (c) [BROKEN, follow-up FIX_FIRST on PR #882] The Position/Status/Development
+ *      triage boards (TriageColumn/TriageBoard in RosterFairway.tsx) render
+ *      the SAME shared `PlayerRowPlate` molecule inside a card that's only
+ *      ~360-400px wide at every breakpoint, but kept a 2-stat row (OPS +
+ *      freshness) after the Roster Wall was cut to 1 — so once the Roster
+ *      Wall's `min-w-[64px]` name floor shipped, these boards had no width
+ *      budget left for it, and on the Status board the row's own trailing
+ *      RosterRowMenu kebab (Edit/Remove) risked getting clipped by PaperCard's
+ *      `overflow-hidden` too. `buildBoardStats` must return exactly the one
+ *      figure (freshness) these boards have room for.
  */
 import { describe, it, expect } from 'vitest';
 import type { BaseballPlayerAggregates } from '@/lib/types';
-import { EM_DASH, WALL_COLUMNS, buildWallStats, buildWallStatsMobile } from './roster-wall-stats';
+import type { Freshness } from '@/components/baseball/roster/roster-triage';
+import { EM_DASH, WALL_COLUMNS, buildWallStats, buildWallStatsMobile, buildBoardStats } from './roster-wall-stats';
 
 function agg(overrides: Partial<BaseballPlayerAggregates> = {}): BaseballPlayerAggregates {
   return {
@@ -106,5 +117,38 @@ describe('buildWallStatsMobile — phone 1-column row (#roster-mobile-name-colla
   it('returns a single em-dash OPS stat (not a fabricated zero) when a player has no aggregates', () => {
     const stats = buildWallStatsMobile(undefined, false);
     expect(stats).toEqual([{ label: 'OPS', value: EM_DASH }]);
+  });
+});
+
+describe('buildBoardStats — triage board 1-column row (#roster-triage-kebab-clip)', () => {
+  function freshness(overrides: Partial<Freshness> = {}): Freshness {
+    return { level: 'fresh', days: 2, label: '2d', ...overrides };
+  }
+
+  it('returns exactly ONE stat — not the old two (OPS + freshness)', () => {
+    const stats = buildBoardStats(freshness());
+    expect(stats).toHaveLength(1);
+  });
+
+  it('surfaces the freshness label under an "Updated" label, self-labeled (no shared header on the triage boards)', () => {
+    const stats = buildBoardStats(freshness({ label: '2d' }));
+    expect(stats[0]?.label).toBe('Updated');
+    expect(stats[0]?.value).toBe('2d');
+  });
+
+  it('never includes a raw OPS entry', () => {
+    const stats = buildBoardStats(freshness());
+    expect(stats.some((s) => s.label === 'OPS')).toBe(false);
+  });
+
+  it('flags the entry as leader only when the freshness level is "fresh"', () => {
+    expect(buildBoardStats(freshness({ level: 'fresh' }))[0]?.leader).toBe(true);
+    expect(buildBoardStats(freshness({ level: 'recent' }))[0]?.leader).toBe(false);
+    expect(buildBoardStats(freshness({ level: 'stale' }))[0]?.leader).toBe(false);
+  });
+
+  it('renders "No data" honestly for a player with no captured sessions, not a fabricated value', () => {
+    const stats = buildBoardStats(freshness({ level: 'none', days: null, label: 'No data' }));
+    expect(stats).toEqual([{ label: 'Updated', value: 'No data', leader: false }]);
   });
 });

@@ -123,7 +123,7 @@ export function PlayerRowPlate({
         {jerseyNumber != null ? (
           <span className="font-annual text-body-sm tabular-nums text-text-tertiary">{jerseyNumber}</span>
         ) : null}
-        <span className="min-w-[64px] truncate font-annual leading-none text-text-primary">
+        <span data-testid="player-row-name" className="min-w-[64px] truncate font-annual leading-none text-text-primary">
           <span className="font-normal text-text-secondary">{firstName} </span>
           <span className="font-semibold uppercase" style={{ fontVariant: 'small-caps' }}>
             {lastName}
@@ -137,7 +137,11 @@ export function PlayerRowPlate({
       {/* Stat run */}
       <div className={cn('flex', STAT_GAP)}>
         {stats.map((s, i) => (
-          <div key={`${s.label ?? 'stat'}-${i}`} className={cn(STAT_COL, 'flex flex-col items-end gap-1')}>
+          <div
+            key={`${s.label ?? 'stat'}-${i}`}
+            data-testid="player-row-stat"
+            className={cn(STAT_COL, 'flex flex-col items-end gap-1')}
+          >
             {s.label ? (
               <span className="text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">{s.label}</span>
             ) : null}

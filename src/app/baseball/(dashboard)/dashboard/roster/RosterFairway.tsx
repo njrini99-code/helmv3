@@ -38,7 +38,6 @@ import {
   Eyebrow,
   InkBadge,
   Reveal,
-  formatRate,
   type PlayerRowStat,
 } from '@/components/baseball/living-annual';
 import { getFreshness, positionGroupOf } from '@/components/baseball/roster/roster-triage';
@@ -60,7 +59,7 @@ import { SavedLineupsPanel, type SavedLineupSlot } from './SavedLineupsPanel';
 import { POSITIONS } from './roster-constants';
 // Same rationale as POSITIONS above — plus these three are pure functions
 // worth unit-testing without RosterFairway's much heavier component graph.
-import { EM_DASH, WALL_COLUMNS, buildWallStats, buildWallStatsMobile } from './roster-wall-stats';
+import { WALL_COLUMNS, buildWallStats, buildWallStatsMobile, buildBoardStats } from './roster-wall-stats';
 import type { TeamMember, RosterSurface, SortField, SortDirection } from './RosterClient';
 
 // LineupBuilder / InviteModal own their prop types; borrow them so we never
@@ -282,14 +281,21 @@ function groupByDevelopment(members: RosterBoardMember[]): Record<string, Roster
   return groups;
 }
 
-/** A triage row's two-figure read: production (OPS) + last-touch freshness. */
+/**
+ * A triage row's headline read — last-touch freshness. Used to carry OPS
+ * too, but that made every card a 2-stat-column row, and TriageColumn's
+ * PaperCard is only ~360-400px wide at every breakpoint (see
+ * `buildBoardStats` in roster-wall-stats.ts for the full width-budget
+ * rationale) — there wasn't reserved room left for PlayerRowPlate's
+ * `min-w-[64px]` name floor once a jersey number + PositionChip (and, on the
+ * Status board, the trailing RosterRowMenu kebab) took their share, so the
+ * row overflowed PaperCard's `overflow-hidden`, clipping the kebab itself on
+ * the Status board (#roster-triage-kebab-clip). Delegates the actual
+ * building to roster-wall-stats.ts so it's covered by the same
+ * directly-testable pure-function pattern as the Roster Wall's columns.
+ */
 function boardRowStats(member: RosterBoardMember): PlayerRowStat[] {
-  const agg = member.aggregates;
-  const fresh = getFreshness(agg);
-  return [
-    { value: agg?.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3) },
-    { value: fresh.label, leader: fresh.level === 'fresh' },
-  ];
+  return buildBoardStats(getFreshness(member.aggregates));
 }
 
 function TriageColumn({
