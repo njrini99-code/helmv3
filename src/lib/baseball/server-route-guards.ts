@@ -165,3 +165,26 @@ export async function requireBaseballPlayerRoute(options?: {
 
   return session;
 }
+
+/**
+ * Gate for the PLAYER-facing recruiting hub (My Journey, Discover Colleges,
+ * My Analytics). Per the Recruiting Activation Model, a `college` player's
+ * recruiting status is "Never" — team features only, never a school-interest
+ * funnel to track. `requireBaseballPlayerRoute` alone only checks
+ * role === 'player'; it does not check `player_type`, so a college player
+ * could reach and fully use these recruiting-only surfaces.
+ *
+ * Mirrors the existing `player_type === 'college'` gate already used by
+ * `/dashboard/activate` (and `usePlayerRecruitingGate` for
+ * `/dashboard/college-interest`): the CALLER renders an explicit, honest
+ * "not available for college players" state rather than this guard silently
+ * redirecting, since a silent bounce would be a confusing dead end for a
+ * player who followed a real nav link.
+ */
+export async function requireRecruitingPlayerRoute(options?: {
+  redirectTo?: string;
+}) {
+  const session = await requireBaseballPlayerRoute(options);
+  const isCollegePlayer = session.player?.player_type === 'college';
+  return { session, isCollegePlayer };
+}
