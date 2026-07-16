@@ -752,7 +752,12 @@ export function buildHitterMetrics(
       // gateSample() honesty depends on it.
       avgOf(battedBalls.map((b) => b.exit_velocity)),
       battedBalls.filter((b) => b.exit_velocity != null).length,
-      bbProv,
+      // Provenance must be the SAME reading-bearing rows sampleSize counts —
+      // NOT bbProv (every batted ball, hand-charted or radar-read). Passing
+      // the unfiltered set lets hand-charted rows with no reading (typically
+      // `unverified`) drag trustTier/dataContext down even when every row
+      // that actually fed the average was `official` radar data.
+      battedBalls.filter((b) => b.exit_velocity != null),
     ),
     scalarMetric(
       { metricKey: 'avg_launch_angle', metricGroup: 'hitting', label: 'Avg Launch Angle', unit: 'deg', higherIsBetter: true, threshold: SCALAR_THRESHOLD, fallbackContext },
@@ -760,7 +765,8 @@ export function buildHitterMetrics(
       // is independently nullable per row.
       avgOf(battedBalls.map((b) => b.launch_angle)),
       battedBalls.filter((b) => b.launch_angle != null).length,
-      bbProv,
+      // Same provenance-must-match-sampleSize fix as avg_exit_velocity above.
+      battedBalls.filter((b) => b.launch_angle != null),
     ),
   ];
 
@@ -1000,7 +1006,15 @@ export function buildPitcherMetrics(
     ),
     scalarMetric(
       { metricKey: 'avg_velocity', metricGroup: 'pitching', label: 'Avg Velocity', unit: 'mph', higherIsBetter: true, threshold: SCALAR_THRESHOLD, fallbackContext },
-      avgOf(pitches.map((p) => p.velocity)), pitches.filter((p) => p.velocity != null).length, pProv,
+      // Same provenance-must-match-sampleSize rule as the batting-side
+      // avg_exit_velocity/avg_launch_angle above — velocity is nullable per
+      // pitch (a hand-charted pitch with no radar gun logs no velocity), so
+      // pProv (every pitch, radar-read or not) would let non-reading rows
+      // drag trustTier/dataContext down below what the reading-bearing rows
+      // actually warrant.
+      avgOf(pitches.map((p) => p.velocity)),
+      pitches.filter((p) => p.velocity != null).length,
+      pitches.filter((p) => p.velocity != null),
     ),
   ];
 

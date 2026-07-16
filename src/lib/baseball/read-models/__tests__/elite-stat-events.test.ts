@@ -244,6 +244,60 @@ describe('buildHitterMetrics — avg_exit_velocity / avg_launch_angle sampleSize
   });
 });
 
+// =============================================================================
+// Provenance (trustTier/dataContext) must reflect the SAME reading-bearing
+// rows sampleSize counts, not the full battedBalls/pitches array. Regression
+// coverage for the post-#864 review fix: dominantTrust/dominantContext used
+// to receive bbProv/pProv (every row) even for the velocity-gated scalar
+// metrics, so a majority of hand-charted (no-reading, unverified) rows could
+// drag trustTier down to 'unverified' even when every row that actually fed
+// the average was 'official' radar data.
+// =============================================================================
+describe('buildHitterMetrics / buildPitcherMetrics — provenance matches the reading-bearing rows, not the full row set', () => {
+  it('avg_exit_velocity reports the trust tier of the radar rows that fed it, unaffected by MORE-numerous hand-charted rows with no reading', () => {
+    const battedBalls = [
+      // 2 radar-tracked batted balls: the only rows with an actual reading.
+      bbe({ exit_velocity: 95, trust_tier: 'official' }),
+      bbe({ exit_velocity: 98, trust_tier: 'official' }),
+      // 5 hand-charted batted balls: no velocity reading, weaker trust tier.
+      // If provenance were still the full bbProv array, these would
+      // outnumber the radar rows 5-to-2 and drag trustTier down to
+      // 'unverified' even though they contributed NOTHING to the average.
+      ...Array.from({ length: 5 }, () => bbe({ exit_velocity: null, trust_tier: 'unverified' })),
+    ];
+    const model = buildHitterMetrics('p1', [], battedBalls, 'official_game');
+    const m = metric(model, 'avg_exit_velocity')!;
+    expect(m.sampleSize).toBe(2);
+    expect(m.value).toBeCloseTo((95 + 98) / 2);
+    expect(m.trustTier).toBe('official');
+  });
+
+  it('avg_launch_angle reports the trust tier of the reading-bearing rows only', () => {
+    const battedBalls = [
+      bbe({ launch_angle: 12, trust_tier: 'official' }),
+      bbe({ launch_angle: 18, trust_tier: 'official' }),
+      ...Array.from({ length: 5 }, () => bbe({ launch_angle: null, trust_tier: 'unverified' })),
+    ];
+    const model = buildHitterMetrics('p1', [], battedBalls, 'official_game');
+    const m = metric(model, 'avg_launch_angle')!;
+    expect(m.sampleSize).toBe(2);
+    expect(m.trustTier).toBe('official');
+  });
+
+  it('avg_velocity (pitching) reports the trust tier of the radar-tracked pitches, unaffected by MORE-numerous hand-charted pitches with no velocity reading', () => {
+    const pitches = [
+      pitch({ velocity: 92, trust_tier: 'official' }),
+      pitch({ velocity: 94, trust_tier: 'official' }),
+      ...Array.from({ length: 5 }, () => pitch({ velocity: null, trust_tier: 'unverified' })),
+    ];
+    const model = buildPitcherMetrics('p1', pitches, [], 'official_game');
+    const m = metric(model, 'avg_velocity')!;
+    expect(m.sampleSize).toBe(2);
+    expect(m.value).toBeCloseTo((92 + 94) / 2);
+    expect(m.trustTier).toBe('official');
+  });
+});
+
 describe('honest confidence + provenance', () => {
   it('never returns high on a thin sample', () => {
     const thin = buildHitterMetrics('p1', Array.from({ length: 5 }, () => pitch({ is_in_zone: false, is_swing: true })), [], 'official_game');
