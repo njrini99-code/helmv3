@@ -1740,7 +1740,7 @@ export function ImportWizardClient({
                       <td className="px-4 py-2">
                         <LegacyUploadStatus status={u.status} />
                       </td>
-                      <td className="px-4 py-2 text-text-secondary">
+                      <td className="px-4 py-2 text-text-secondary" suppressHydrationWarning>
                         {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
                       </td>
                     </tr>
