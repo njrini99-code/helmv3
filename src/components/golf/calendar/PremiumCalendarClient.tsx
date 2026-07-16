@@ -1150,7 +1150,7 @@ export function PremiumCalendarClient({
                 onViewChange={setView}
                 currentDate={currentDate}
                 onNavigate={handleNavigate}
-                onAddEvent={handleAddEvent}
+                onAddEvent={isCoach ? handleAddEvent : undefined}
                 teamTimezone={teamTimezone ?? undefined}
                 secondaryTimezone={secondaryTimezone}
                 onSecondaryTimezoneChange={setSecondaryTimezone}

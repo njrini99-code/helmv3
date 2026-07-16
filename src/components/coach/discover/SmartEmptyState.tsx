@@ -7,16 +7,23 @@ import { Button } from '@/components/ui/button';
 import { IconSearch, IconMapPin, IconFilter, IconUsers, IconArrowRight } from '@/components/icons';
 
 interface SmartEmptyStateProps {
+  // Shape matches DiscoverView's `filters` prop (this component's sole
+  // caller, via DiscoverView.tsx) — `states` is a multi-select array, not a
+  // single `state` string. The caller's real filters object also carries a
+  // `mode: 'players' | 'teams'` field that is intentionally NOT declared
+  // here: it is never a user-set filter, so it must stay out of
+  // `activeFilterCount` below (see that count's own comment).
   filters: {
     gradYear?: number;
     position?: string;
-    state?: string;
+    states?: string[];
     minVelo?: number;
     maxVelo?: number;
     minExit?: number;
     maxExit?: number;
     hasVideo?: boolean;
     search?: string;
+    teamType?: string;
   };
   stateCounts?: Record<string, number>;
   totalPlayersUnfiltered?: number;
@@ -99,8 +106,32 @@ export function SmartEmptyState({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Count how many filters are active
-  const activeFilterCount = Object.values(filters).filter(v => v !== undefined && v !== '').length;
+  // Count how many filters are active. Mirrors the exact curated field list
+  // DiscoverClient.tsx's own `activeFilterCount` (the number shown on the
+  // "Filters" button badge and the mobile Sheet description) uses — do NOT
+  // swap this back to Object.values(filters). The real filters object this
+  // component receives also carries a `mode: 'players' | 'teams'` field
+  // (always a non-empty string, never a user-set filter) which would
+  // permanently over-count by at least one and desync this copy from the
+  // badge the coach can actually see and clear.
+  const activeFilterCount = [
+    filters.gradYear,
+    filters.position,
+    filters.states && filters.states.length > 0 ? true : undefined,
+    filters.minVelo,
+    filters.maxVelo,
+    filters.minExit,
+    filters.maxExit,
+    filters.hasVideo,
+    filters.search,
+    filters.teamType,
+  ].filter(Boolean).length;
+
+  // NEIGHBORING_STATES suggestions only make sense for a single selected
+  // state; a multi-state selection falls through to the "top states for
+  // position" suggestions below instead (no single neighbor set to offer).
+  const singleSelectedState =
+    filters.states && filters.states.length === 1 ? filters.states[0] : undefined;
 
   // Generate suggestions based on current filters
   const suggestions = useMemo(() => {
@@ -113,9 +144,9 @@ export function SmartEmptyState({
       icon: typeof IconMapPin;
     }> = [];
 
-    // If filtered by state, suggest neighboring states
-    if (filters.state && stateCounts) {
-      const neighbors = NEIGHBORING_STATES[filters.state] || [];
+    // If filtered by a single state, suggest neighboring states
+    if (singleSelectedState && stateCounts) {
+      const neighbors = NEIGHBORING_STATES[singleSelectedState] || [];
       const neighboringSuggestions = neighbors
         .filter(code => (stateCounts[code] || 0) > 0)
         .map(code => ({
@@ -194,7 +225,7 @@ export function SmartEmptyState({
     }
 
     return result.slice(0, 4); // Max 4 suggestions
-  }, [filters, stateCounts, searchParams, router]);
+  }, [filters, singleSelectedState, stateCounts, searchParams, router]);
 
   // Clear all filters
   const clearAllFilters = () => {
@@ -278,7 +309,7 @@ export function SmartEmptyState({
       )}
 
       {/* Top states for position */}
-      {filters.position && topStatesForPosition.length > 0 && !filters.state && (
+      {filters.position && topStatesForPosition.length > 0 && !singleSelectedState && (
         <div className="w-full max-w-lg mb-8">
           <p className="text-sm font-medium text-warm-700 mb-4">
             Top states for {filters.position}s

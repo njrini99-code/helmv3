@@ -520,7 +520,13 @@ export function PlayerPassportFairway({ model, compact = false, fullHref }: Play
 
         <HairlineRule ink="hairline" className="my-5" />
 
-        <SubSectionHeader title="Verified Measurables" meta={`${model.completeness.percent}% on the record`} />
+        {/* No meta % here — model.completeness.percent is the whole passport's
+            completeness (identity+positions+measurables+stats+story+media+
+            academic+exposure), not a measurables-specific figure, and all
+            measurable rows below are honestly "—" until verified. The
+            percentage belongs only on the page-level "On the Record" footer
+            (see the full-mode render below), matching that surface exactly. */}
+        <SubSectionHeader title="Verified Measurables" />
         <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
           {measurableRows.map((row, i) => (
             <MeasurableRowLine key={row.key} row={row} index={i} />

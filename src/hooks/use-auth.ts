@@ -202,6 +202,19 @@ export function useAuth() {
     for (const key of PLAYER_UPDATE_DENYLIST) {
       delete safeUpdates[key];
     }
+    // DEFENSIVE: never let a blank first/last name silently overwrite an
+    // existing one. A stale/partial `formData` snapshot upstream (e.g. a
+    // profile-edit form seeded before the full player row loaded — see
+    // CollegeProfileEditor's blank-name-input investigation) could otherwise
+    // send an empty string for a name field the player never intended to
+    // clear. If the on-record name is already non-empty, drop an incoming
+    // empty-string update for that same field rather than applying it.
+    if (safeUpdates.first_name === '' && player.first_name) {
+      delete safeUpdates.first_name;
+    }
+    if (safeUpdates.last_name === '' && player.last_name) {
+      delete safeUpdates.last_name;
+    }
     const { data, error } = await supabase
       .from('baseball_players')
       .update(safeUpdates)

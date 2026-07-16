@@ -291,7 +291,14 @@ export default function DevPlansClient() {
                           size="md"
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex items-center gap-2">
+                          {/* items-start (not items-center): a long title can wrap to
+                              several lines on a narrow viewport, and centering the badge
+                              against the whole multi-line block made it visually land
+                              beside a middle line instead of labeling the card — see
+                              visual-audit coach-devplans-performance-videos.md [DESIGN].
+                              Top-aligning keeps the badge next to the title's first line
+                              no matter how many lines it wraps to. */}
+                          <div className="mb-1 flex items-start gap-2">
                             <h3 className="font-annual text-body-lg font-semibold text-text-primary">{plan.title}</h3>
                             <InkBadge label={(STATUS_LABEL[plan.status ?? 'draft'] ?? plan.status ?? 'Unknown').toUpperCase()} tone={badge.tone} variant={badge.variant} />
                           </div>
@@ -318,7 +325,14 @@ export default function DevPlansClient() {
                           </div>
                         </div>
                       </div>
-                      <Link href={`/baseball/dashboard/dev-plans/${plan.id}`}>
+                      {/* shrink-0: without it, a long title + two-word badge in the
+                          sibling column left too little row width and this shrank
+                          BELOW its own "View Plan" text's intrinsic width — Button's
+                          base classes are whitespace-nowrap + overflow-hidden, so the
+                          shrunken box hard-clipped the label to "View" with no
+                          ellipsis. shrink-0 forces the title column to wrap/give up
+                          width first instead. */}
+                      <Link href={`/baseball/dashboard/dev-plans/${plan.id}`} className="shrink-0">
                         <Button variant="secondary" size="sm">
                           View Plan
                         </Button>
