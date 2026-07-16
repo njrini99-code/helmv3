@@ -34,6 +34,7 @@ export interface JourneyEvent {
 interface JourneyStats {
   total_interests: number;
   schools_interested: number;
+  schools_researching: number;
   schools_contacted: number;
   schools_visited: number;
   schools_offered: number;
@@ -201,6 +202,12 @@ export function useJourney() {
     const journeyStats: JourneyStats = {
       total_interests: interests?.length || 0,
       schools_interested: interestStatuses.filter(s => s === 'interested').length,
+      // 'researching' is a fully valid, selectable status (JourneyClient's
+      // statusOptions, RecruitingSchemas.updateStatus) that previously had no
+      // bucket here at all — a school marked "Researching" counted toward
+      // total_interests but vanished from every other KPI column, so the
+      // strip's numbers never summed to the "Total Schools" figure.
+      schools_researching: interestStatuses.filter(s => s === 'researching').length,
       schools_contacted: interestStatuses.filter(s => s === 'contacted').length,
       schools_visited: interestStatuses.filter(s => s === 'visited').length,
       schools_offered: interestStatuses.filter(s => s === 'offered').length,

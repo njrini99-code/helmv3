@@ -456,9 +456,25 @@ export function DiscoverView({
     router.push(`/baseball/program/${teamId}`);
   };
 
-  // Check for active filters
-  const hasActiveFilters = Object.values(filters).some(
-    (v) => v !== undefined && v !== ''
+  // Check for active filters. Same curated field list DiscoverClient.tsx
+  // uses for its own "Filters" button badge — do NOT swap this back to
+  // Object.values(filters).some(...). The real filters object this
+  // component receives (from DiscoverClient) also carries a
+  // `mode: 'players' | 'teams'` field that is always a non-empty string and
+  // is never a user-set filter; scanning every value made this permanently
+  // `true`, which silently killed the "N players/teams found" count line
+  // below (`!hasActiveFilters`) any time zero filters were actually set.
+  const hasActiveFilters = Boolean(
+    filters.gradYear ||
+    filters.position ||
+    (filters.states && filters.states.length > 0) ||
+    filters.minVelo ||
+    filters.maxVelo ||
+    filters.minExit ||
+    filters.maxExit ||
+    filters.hasVideo ||
+    filters.search ||
+    filters.teamType
   );
 
   // Determine current count and pages based on mode
@@ -607,7 +623,7 @@ export function DiscoverView({
             ) : sortedPlayers.length === 0 ? (
               <SmartEmptyState
                 filters={filters}
-                stateCounts={{}}
+                stateCounts={playerStateCounts}
                 totalPlayersUnfiltered={playerCount}
               />
             ) : (
