@@ -16,7 +16,10 @@
  *   count 4        → 2×2 grid — everything visible in ≤2 rows (rule 3).
  *   count ≥ 5      → a single horizontal snap-rail. The FIRST child is the
  *                    one that should carry a `leader`/`emphasis` treatment —
- *                    callers pin it to index 0 before rendering.
+ *                    callers pin it to index 0 before rendering. The rail's
+ *                    scrollbar is hidden, so a static trailing `mask-image`
+ *                    fade (`RAIL_EDGE_FADE` below) is the affordance that
+ *                    tells a phone user there's more to swipe to.
  *
  * At `sm` (≥640px) and up, nothing here changes shape: the desktop
  * `sm:grid-cols-2 lg:grid-cols-N` composition is the byte-for-byte original
@@ -97,12 +100,29 @@ export interface StatStripProps {
 
 // ── Static, JIT-safe class maps — Tailwind must see complete literals. ──────
 
+// A soft trailing fade on the rail's right edge. With the scrollbar hidden
+// (`[scrollbar-width:none]` below), a chip set that happens to fill the
+// container's content width to the pixel leaves ZERO visual cue that more
+// chips exist past it — the exact failure a phone-width "2026 Season" 8-stat
+// rail hit: two chips (G, AB) filled the card's content width almost exactly,
+// so H / HR / RBI / R / BB / SB were unreachable with no affordance to swipe.
+// Static — it always marks the trailing edge rather than tracking scroll
+// position, so StatStrip stays hook-free / RSC-safe (see file header); the
+// same tradeoff every scroll-fade-only affordance makes. Reset to `none` at
+// `sm` (the rail dissolves into an `overflow-visible` grid there — nothing
+// to fade) and in `forced-colors` mode (never fade the one outline
+// high-contrast mode relies on for the band's edge).
+const RAIL_EDGE_FADE =
+  '[mask-image:linear-gradient(to_right,black_calc(100%_-_2rem),transparent)] ' +
+  'sm:[mask-image:none] forced-colors:[mask-image:none]';
+
 // Rail (phone) shell: horizontal snap scroller, hidden scrollbar, a
 // forced-colors outline so the band's edge survives high-contrast mode (the
 // green rule / sunken well it would otherwise rely on can flatten there).
 const RAIL_BASE =
   'flex snap-x snap-mandatory overflow-x-auto gap-4 pb-1 scroll-px-4 ' +
-  '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden forced-colors:outline';
+  '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden forced-colors:outline ' +
+  RAIL_EDGE_FADE;
 
 // Per-chip wrapper in rail mode. `sm:basis-auto` hands sizing back to the
 // grid once the rail dissolves into `sm:grid-cols-2` at ≥640px.

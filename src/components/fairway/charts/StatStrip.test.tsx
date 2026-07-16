@@ -175,6 +175,37 @@ describe('StatStrip — phone shape by count', () => {
     expect(list.className).toContain('[&::-webkit-scrollbar]:hidden');
   });
 
+  it('rail carries a trailing edge-fade so a hidden-scrollbar rail still signals more content past the visible chips', () => {
+    // The bug this covers: with the scrollbar hidden above, a chip set that
+    // happens to fill the container's content width to the pixel (e.g. an
+    // 8-item "2026 Season" strip showing only 2 chips at 390px) leaves ZERO
+    // affordance that H/HR/RBI/R/BB/SB exist past the edge. A static
+    // mask-image fade is the fix — it must be present in rail mode...
+    render(
+      <StatStrip count={8} ariaLabel="edge fade">
+        {chips(8)}
+      </StatStrip>,
+    );
+    const list = screen.getByRole('list', { name: 'edge fade' });
+    expect(list.className).toContain('[mask-image:linear-gradient(to_right,black_calc(100%_-_2rem),transparent)]');
+    // ...and it must be switched off once the rail dissolves into the
+    // desktop grid at `sm` (nothing left to fade there) and in
+    // `forced-colors` mode (never fade the one outline high-contrast relies
+    // on for the band's edge).
+    expect(list.className).toContain('sm:[mask-image:none]');
+    expect(list.className).toContain('forced-colors:[mask-image:none]');
+  });
+
+  it('grid mode (below the rail threshold) carries no edge-fade mask — there is nothing to hint at swiping past', () => {
+    const { container } = render(
+      <StatStrip count={4} columns={4}>
+        {chips(4)}
+      </StatStrip>,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).not.toContain('mask-image');
+  });
+
   it('is NOT React.memo — children are always fresh from the caller (memo would lie about stability)', () => {
     expect(typeof StatStrip).toBe('function');
   });
