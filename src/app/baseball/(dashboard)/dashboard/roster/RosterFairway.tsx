@@ -58,13 +58,14 @@ import { SavedLineupsPanel, type SavedLineupSlot } from './SavedLineupsPanel';
 // above) consumes it at module scope, so defining it here re-creates the
 // import cycle behind the prod roster TDZ crash (see roster-constants.ts).
 import { POSITIONS } from './roster-constants';
+// Same rationale as POSITIONS above — plus these three are pure functions
+// worth unit-testing without RosterFairway's much heavier component graph.
+import { EM_DASH, WALL_COLUMNS, buildWallStats, buildWallStatsMobile } from './roster-wall-stats';
 import type { TeamMember, RosterSurface, SortField, SortDirection } from './RosterClient';
 
 // LineupBuilder / InviteModal own their prop types; borrow them so we never
 // depend on non-exported internals and stay in lockstep with those components.
 type LineupProps = ComponentProps<typeof LineupBuilder>;
-
-const EM_DASH = '—';
 
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 
@@ -83,6 +84,10 @@ const SURFACE_OPTIONS: { value: RosterSurface; label: string }[] = [
   { value: 'development', label: 'Development' },
 ];
 
+// 'sessions' stays a valid SortField (RosterClient.tsx) but is deliberately
+// not offered here — the SESS column it would sort is gone from this wall
+// (see WALL_COLUMNS' comment); don't offer sorting by a figure nothing on
+// screen shows anymore.
 const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'name', label: 'Name' },
   { value: 'position', label: 'Position' },
@@ -90,7 +95,6 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'obp', label: 'OBP' },
   { value: 'slg', label: 'SLG' },
   { value: 'ops', label: 'OPS' },
-  { value: 'sessions', label: 'Sessions' },
 ];
 
 const VIEW_OPTIONS: { value: 'roster' | 'lineup'; label: string }[] = [
@@ -101,48 +105,9 @@ const VIEW_OPTIONS: { value: 'roster' | 'lineup'; label: string }[] = [
 const ALL = 'all';
 
 // ── Record-book roster wall (the `cards` surface) ───────────────────────────
-
-// EXIT V intentionally omitted — the aggregates table carries no exit-velocity
-// column in the live schema and nothing writes one (Ruling 4). Honest UI over
-// a dead column: don't render a stat that can never populate.
-const WALL_COLUMNS = ['AVG', 'OBP', 'SLG', 'OPS', 'SESS'];
-
-function buildWallStats(agg: BaseballPlayerAggregates | undefined, leader: boolean): PlayerRowStat[] {
-  if (!agg) {
-    return [
-      { value: EM_DASH },
-      { value: EM_DASH },
-      { value: EM_DASH },
-      { value: EM_DASH },
-      { value: 0 },
-    ];
-  }
-  return [
-    { value: agg.career_avg == null ? EM_DASH : formatRate(agg.career_avg, 3) },
-    { value: agg.career_obp == null ? EM_DASH : formatRate(agg.career_obp, 3) },
-    { value: agg.career_slg == null ? EM_DASH : formatRate(agg.career_slg, 3) },
-    { value: agg.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3), leader },
-    { value: agg.total_sessions },
-  ];
-}
-
-// Phone read (doctrine Rule 8): a coach triages the wall by contact (AVG)
-// and overall production (OPS) — OBP/SLG/SESS live on the player detail page
-// this row already taps through to. Labels render inline (PlayerRowStat's
-// "standalone row" mode) since there's no shared `PlayerRowPlateHeader` at
-// this width to carry the column labels instead.
-function buildWallStatsMobile(agg: BaseballPlayerAggregates | undefined, leader: boolean): PlayerRowStat[] {
-  if (!agg) {
-    return [
-      { label: 'AVG', value: EM_DASH },
-      { label: 'OPS', value: EM_DASH },
-    ];
-  }
-  return [
-    { label: 'AVG', value: agg.career_avg == null ? EM_DASH : formatRate(agg.career_avg, 3) },
-    { label: 'OPS', value: agg.career_ops == null ? EM_DASH : formatRate(agg.career_ops, 3), leader },
-  ];
-}
+// Column list + row-stat builders (WALL_COLUMNS, buildWallStats,
+// buildWallStatsMobile) live in ./roster-wall-stats — see that module for the
+// EXIT V / SESS omission rationale and the mobile 1-stat rationale.
 
 function RosterWall({
   members,
@@ -174,11 +139,12 @@ function RosterWall({
 
   return (
     <>
-      {/* Below md (Rule 8): identity + the two stats a coach actually
-          triages by, full-width rows, tap-through to the detail page for
-          the rest of the record book — never the five-column table's
-          horizontal scroll on a reading surface. Row menu (jersey/position
-          edit, remove) rides alongside on both breakpoints. */}
+      {/* Below md (Rule 8): identity + the one headline production figure
+          (OPS) a coach triages by at a glance, full-width rows, tap-through
+          to the detail page for the rest of the record book — never the
+          five-column table's horizontal scroll on a reading surface. Row
+          menu (jersey/position edit, remove) rides alongside on both
+          breakpoints. */}
       <div className="flex flex-col md:hidden">
         {members.map((member, i) => {
           const playerName = `${member.player.first_name ?? ''} ${member.player.last_name ?? ''}`.trim() || 'this player';
