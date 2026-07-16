@@ -125,7 +125,7 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
       ),
     );
     lines.push('');
-    lines.push('WINS / RESULTS (last 14 days)');
+    lines.push('WINS / RESULTS (most recent completed games)');
     if (data.recentGameResults.length === 0) lines.push('  (no completed games)');
     data.recentGameResults.forEach((g) => {
       const res = g.result ? g.result.toUpperCase() : '?';

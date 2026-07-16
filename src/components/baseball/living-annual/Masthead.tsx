@@ -72,7 +72,7 @@ export function Masthead({
       animate="visible"
       variants={container}
       style={active ? { scale, y, transformOrigin: 'left top' } : undefined}
-      className={cn('relative', className)}
+      className={cn('relative min-w-0', className)}
     >
       {registrationTick ? (
         <span aria-hidden className="pointer-events-none absolute -left-2 -top-2 h-3.5 w-3.5">
@@ -87,12 +87,15 @@ export function Masthead({
         </m.div>
       ) : null}
 
-      <m.div variants={item} className="font-annual text-3xl font-normal leading-[0.95] text-text-primary md:text-4xl">
+      <m.div
+        variants={item}
+        className="break-words font-annual text-3xl font-normal leading-[0.95] text-text-primary md:text-4xl"
+      >
         {given}
       </m.div>
       <m.div
         variants={item}
-        className="font-annual text-5xl font-medium uppercase leading-[0.9] tracking-tight text-text-primary md:text-7xl"
+        className="break-words font-annual text-5xl font-medium uppercase leading-[0.9] tracking-tight text-text-primary md:text-7xl"
         style={{ fontVariant: 'small-caps' }}
       >
         {surname}

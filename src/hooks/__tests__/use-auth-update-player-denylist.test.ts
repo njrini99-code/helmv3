@@ -114,3 +114,74 @@ describe('useAuth().updatePlayer — authorization-column denylist', () => {
     expect(updateCalls).toEqual([{ about_me: 'hello', city: 'Raleigh' }]);
   });
 });
+
+describe('useAuth().updatePlayer — never blank an existing name', () => {
+  // Regression guard for the CollegeProfileEditor blank-name-input
+  // investigation: a stale/partial `formData` snapshot (seeded before the
+  // full player row loaded) could send `first_name: ''` / `last_name: ''`
+  // for a player who already has a real name on file. `updatePlayer` must
+  // drop that specific empty-string overwrite rather than apply it, while
+  // still allowing every other field (including a legitimate name EDIT) to
+  // go through untouched.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    updateCalls.length = 0;
+  });
+
+  it('drops an empty-string first_name/last_name when the player already has a name on file', async () => {
+    fakeAuthState.player = {
+      id: 'player-1',
+      user_id: 'user-1',
+      first_name: 'Marcus',
+      last_name: 'Rodriguez',
+    };
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.updatePlayer({
+        first_name: '',
+        last_name: '',
+        city: 'Raleigh',
+      });
+    });
+
+    expect(updateCalls).toHaveLength(1);
+    const sent = updateCalls[0]!;
+    expect(sent).toEqual({ city: 'Raleigh' });
+    expect(sent).not.toHaveProperty('first_name');
+    expect(sent).not.toHaveProperty('last_name');
+  });
+
+  it('still allows a real (non-empty) name edit through', async () => {
+    fakeAuthState.player = {
+      id: 'player-1',
+      user_id: 'user-1',
+      first_name: 'Marcus',
+      last_name: 'Rodriguez',
+    };
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.updatePlayer({ first_name: 'Marc' });
+    });
+
+    expect(updateCalls).toEqual([{ first_name: 'Marc' }]);
+  });
+
+  it('allows clearing a name to empty when the player had no name on file yet', async () => {
+    fakeAuthState.player = { id: 'player-1', user_id: 'user-1', first_name: null, last_name: null };
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.updatePlayer({ first_name: '' });
+    });
+
+    // Nothing to protect — the on-record name was already empty/null, so the
+    // guard (which only fires when `player.first_name` is currently truthy)
+    // does not apply and the update passes through.
+    expect(updateCalls).toEqual([{ first_name: '' }]);
+  });
+});

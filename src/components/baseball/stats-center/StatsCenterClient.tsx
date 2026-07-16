@@ -931,6 +931,13 @@ export function StatsCenterClient({
           <StatVisualsSection
             scope="team"
             data={statVisualsData}
+            // Same canShowImportEntry/importEntryHref resolution as the header
+            // Import Center button + "Import a box score" empty-state CTA
+            // above — a viewer holding neither can_manage_imports nor
+            // can_manage_stats gets no CTA here either, instead of the old
+            // hardcoded /baseball/dashboard/import link that dead-ended
+            // can_manage_stats-only staff.
+            importHref={canShowImportEntry ? importEntryHref : undefined}
             savedViews={statVisualViews.savedViews}
             onSaveView={statVisualViews.onSaveView}
             onSetPinned={statVisualViews.onSetPinned}
