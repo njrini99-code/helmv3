@@ -13,11 +13,11 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/"
-      component="RootErrorBoundary"
+      route="/baseball"
+      component="BaseballRoot"
       title="Something went wrong"
-      message="We hit an unexpected snag loading Helm Sports Labs. Please try again."
-      homePath="/"
+      message="An unexpected error occurred. Please try again."
+      homePath="/baseball"
     />
   );
 }

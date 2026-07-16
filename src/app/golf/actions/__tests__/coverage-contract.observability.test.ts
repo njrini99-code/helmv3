@@ -26,6 +26,15 @@ function isDefaultExport(node: ts.Node): boolean {
   return Boolean(ts.getCombinedModifierFlags(node as ts.Declaration) & ts.ModifierFlags.Default);
 }
 
+/** `export const foo = async () => {...}` / `export const foo = async function () {...}` —
+ *  the arrow/function-expression equivalent of an exported async function
+ *  declaration. Modifiers (incl. `async`) live on the initializer itself for
+ *  these forms, not on the VariableStatement. */
+function isAsyncArrowOrFunctionExpr(node: ts.Node): node is ts.ArrowFunction | ts.FunctionExpression {
+  if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) return false;
+  return Boolean(node.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword));
+}
+
 function wrappedActionNames(sourceFile: ts.SourceFile): Set<string> {
   const names = new Set<string>();
 
@@ -90,6 +99,32 @@ describe('Golf server-action observability coverage', () => {
             gaps.push(`${path.relative(process.cwd(), file)}:${line} ${node.name.text}`);
           }
         }
+
+        if (ts.isVariableStatement(node) && isExported(node)) {
+          for (const declaration of node.declarationList.declarations) {
+            if (
+              !ts.isIdentifier(declaration.name) ||
+              !declaration.initializer ||
+              !isAsyncArrowOrFunctionExpr(declaration.initializer)
+            ) {
+              continue;
+            }
+
+            const fn = declaration.initializer;
+            const body = fn.body?.getText(sourceFile) ?? '';
+            const delegatesToWrapped = [...wrappedNames].some((name) =>
+              new RegExp(`\\b${name}\\s*\\(`).test(body),
+            );
+            const wrapsInline = /\bwithAdminObserved\s*\(/.test(body);
+            const logsInline = /\blogServer(Exception|Error)\s*\(/.test(body);
+
+            if (!delegatesToWrapped && !wrapsInline && !logsInline) {
+              const line = sourceFile.getLineAndCharacterOfPosition(declaration.getStart(sourceFile)).line + 1;
+              gaps.push(`${path.relative(process.cwd(), file)}:${line} ${declaration.name.text}`);
+            }
+          }
+        }
+
         ts.forEachChild(node, visit);
       }
 

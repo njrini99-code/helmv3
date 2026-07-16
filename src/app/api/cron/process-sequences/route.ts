@@ -104,7 +104,7 @@ export async function GET(request: Request) {
     const message = err instanceof Error ? err.message : String(err);
     await logServerError(
       `[cron.process-sequences] unexpected error: ${message}`,
-      { action: 'cron.process_sequences' },
+      { action: 'cron.process_sequences', source: 'cron' },
       'error',
     );
     return NextResponse.json({ error: message }, { status: 500 });
@@ -179,15 +179,37 @@ async function tick(): Promise<{
     enrollments.map((e) => processEnrollment(client, e)),
   );
 
+  let rejected = 0;
+  const rejectionSamples: string[] = [];
   for (const r of settled) {
     if (r.status !== 'fulfilled') {
       failed += 1;
+      rejected += 1;
+      if (rejectionSamples.length < 3) {
+        rejectionSamples.push(r.reason instanceof Error ? r.reason.message : String(r.reason));
+      }
       continue;
     }
     if (r.value.outcome === 'sent') sent += 1;
     else if (r.value.outcome === 'stopped') stopped += 1;
     else if (r.value.outcome === 'completed') completed += 1;
     else if (r.value.outcome === 'failed') failed += 1;
+  }
+
+  // Single roll-up (not one log per rejection) so a bad batch doesn't flood
+  // the admin feed — the per-enrollment try/catch inside processEnrollment
+  // already covers expected failure modes; a rejection here means something
+  // escaped that (e.g. a thrown DB error), so it's still worth surfacing.
+  if (rejected > 0) {
+    await logServerError(
+      `[cron.process-sequences] ${rejected} enrollment(s) rejected out of ${enrollments.length}`,
+      {
+        action: 'cron.process_sequences.batch',
+        source: 'cron',
+        metadata: { rejected, total: enrollments.length, samples: rejectionSamples },
+      },
+      'warning',
+    );
   }
 
   return { candidates: enrollments.length, sent, stopped, completed, failed };
@@ -331,7 +353,7 @@ async function processEnrollment(
   if (!apiKey) {
     await logServerError(
       'process-sequences cron is missing RESEND_API_KEY',
-      { action: 'cron.process_sequences.missing_api_key' },
+      { action: 'cron.process_sequences.missing_api_key', source: 'cron' },
       'critical',
     );
     return { outcome: 'failed' };
@@ -388,6 +410,7 @@ async function processEnrollment(
       `[cron.process-sequences] Resend send failed (${res.status}): ${text}`,
       {
         action: 'cron.process_sequences.send_failed',
+        source: 'cron',
         extra: {
           enrollment_id: enrollment.id,
           coach_id: coach.id,

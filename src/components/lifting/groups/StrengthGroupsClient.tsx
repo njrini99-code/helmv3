@@ -12,6 +12,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { logError } from '@/lib/error-logging';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -259,6 +260,11 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
         setActivePane('detail');
       } else {
         setCreateError(result.error ?? 'Failed to create group.');
+        logError(
+          new Error(result.error ?? 'Failed to create group'),
+          { component: 'StrengthGroupsClient', action: 'create-group', sport: 'golf', orgId },
+          'high'
+        );
       }
     });
   }
@@ -277,6 +283,11 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
         );
       } else {
         toast.error(result.error ?? 'Failed to add member.');
+        logError(
+          new Error(result.error ?? 'Failed to add group member'),
+          { component: 'StrengthGroupsClient', action: 'add-group-member', sport: 'golf', orgId, groupId: selectedGroup.id, athleteId },
+          'high'
+        );
       }
     });
   }
@@ -299,6 +310,11 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
         );
       } else {
         toast.error(result.error ?? 'Failed to remove member.');
+        logError(
+          new Error(result.error ?? 'Failed to remove group member'),
+          { component: 'StrengthGroupsClient', action: 'remove-group-member', sport: 'golf', orgId, groupId: selectedGroup.id, athleteId },
+          'high'
+        );
       }
     });
   }
@@ -311,6 +327,11 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
         if (selectedGroupId === groupId) setSelectedGroupId(groups[0]?.id ?? null);
       } else {
         toast.error(result.error ?? 'Failed to archive group.');
+        logError(
+          new Error(result.error ?? 'Failed to archive group'),
+          { component: 'StrengthGroupsClient', action: 'archive-group', sport: 'golf', orgId, groupId },
+          'high'
+        );
       }
     });
   }

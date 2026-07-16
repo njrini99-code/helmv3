@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/baseball/actions/auth';
+import { logError } from '@/lib/error-logging';
 import { invalidateAuthCache } from '@/hooks/use-baseball-auth';
 import { Input } from '@/components/ui/input';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -88,7 +89,12 @@ export function BaseballSignInForm() {
         if (storedReturnTo) sessionStorage.removeItem('baseball_login_returnTo');
         router.replace(result.redirectTo || '/baseball/dashboard');
       }
-    } catch {
+    } catch (err) {
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'BaseballSignInForm', action: 'loginAction', sport: 'baseball' },
+        'high'
+      );
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }

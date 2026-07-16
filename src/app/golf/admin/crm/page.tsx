@@ -90,6 +90,7 @@ import { mergeTemplate, buildGmailComposeUrl } from '@/lib/crm/gmail-compose';
 import type { CoachEngagement } from './types/foundations';
 import { Button, IconButton } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import { NativeSelect } from '@/components/ui/native-select';
 
 // ============================================================================
@@ -453,6 +454,12 @@ export default function CRMPage() {
       setConferences(uniqueConferences);
     } catch (err) {
       console.error('Failed to fetch all coaches:', err);
+      toast.error('Failed to load coaches', err instanceof Error ? err.message : 'Please refresh and try again.');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'CRMPage', action: 'fetch-all-coaches', sport: 'golf' },
+        'medium'
+      );
     } finally {
       setLoading(false);
     }
@@ -549,6 +556,11 @@ export default function CRMPage() {
       .catch((err) => {
         // Non-fatal: badges fall back to "—" placeholder when the map is empty.
         console.warn('[crm] engagement fetch failed:', err);
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'CRMPage', action: 'fetch-coach-engagement', sport: 'golf' },
+          'medium'
+        );
       });
     return () => {
       cancelled = true;
@@ -571,6 +583,11 @@ export default function CRMPage() {
       })
       .catch((err) => {
         console.warn('[crm] enrollment fetch failed:', err);
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'CRMPage', action: 'fetch-coach-sequence-enrollment', sport: 'golf' },
+          'medium'
+        );
       });
     return () => {
       cancelled = true;
@@ -628,6 +645,11 @@ export default function CRMPage() {
       if (cancelled) return;
       if (tplError) {
         console.warn('[crm] email template fetch failed:', tplError.message);
+        logError(
+          new Error(tplError.message),
+          { component: 'CRMPage', action: 'fetch-email-templates', sport: 'golf' },
+          'medium'
+        );
         return;
       }
       const rows = (data ?? []) as Array<{ id: string; name: string | null; subject: string | null; body: string | null }>;
@@ -675,10 +697,22 @@ export default function CRMPage() {
         if (r.configured) {
           getDomainAuthStatus()
             .then((d) => { if (!cancelled && d.checked && d.result) setDomainAuth(d.result); })
-            .catch(() => {});
+            .catch((err) => {
+              logError(
+                err instanceof Error ? err : new Error(String(err)),
+                { component: 'CRMPage', action: 'fetch-domain-auth-status', sport: 'golf' },
+                'medium'
+              );
+            });
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'CRMPage', action: 'fetch-gmail-send-status', sport: 'golf' },
+          'medium'
+        );
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -727,6 +761,12 @@ export default function CRMPage() {
       if (selectedCoach?.id === coachId) setSelectedCoach(prev => prev ? { ...prev, ...finalUpdates } : null);
     } catch (err) {
       console.error('Failed to update coach:', err);
+      toast.error('Failed to update coach', err instanceof Error ? err.message : 'Please try again.');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'CRMPage', action: 'update-coach', sport: 'golf', coachId },
+        'high'
+      );
       fetchAllCoaches();
     }
   };
@@ -759,6 +799,12 @@ export default function CRMPage() {
       }));
     } catch (err) {
       console.error('Failed to bulk update:', err);
+      toast.error('Failed to update coaches', err instanceof Error ? err.message : 'Please try again.');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'CRMPage', action: 'bulk-update-coaches', sport: 'golf', coachIds: ids },
+        'high'
+      );
       fetchAllCoaches();
     }
   };
@@ -837,10 +883,20 @@ export default function CRMPage() {
         toast.success(`Sent to ${coach.name} — marked contacted`);
       } else {
         toast.error(res.error ?? 'Gmail send failed');
+        logError(
+          new Error(res.error ?? 'Gmail send failed'),
+          { component: 'CRMPage', action: 'send-coach-via-gmail', sport: 'golf', coachId: coach.id },
+          'high'
+        );
       }
     } catch (err) {
       toast.dismiss(tid);
       toast.error(err instanceof Error ? err.message : 'Gmail send failed');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'CRMPage', action: 'send-coach-via-gmail', sport: 'golf', coachId: coach.id },
+        'high'
+      );
     }
   }, [activeManualTemplate, markCoachContactedLocally]);
 
@@ -851,7 +907,13 @@ export default function CRMPage() {
     if (!activeManualTemplate || !coach.email) return;
     if (gmailDirectEnabled) { void sendViaGmail(coach); return; }
     const subject = mergeTemplate(activeManualTemplate.subject, coach);
-    logManualGmailTouch({ coach_id: coach.id, subject }).catch(() => {});
+    logManualGmailTouch({ coach_id: coach.id, subject }).catch((err) => {
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'CRMPage', action: 'log-manual-gmail-touch', sport: 'golf', coachId: coach.id },
+        'medium'
+      );
+    });
     markCoachContactedLocally(coach.id);
     toast.success(`Opened Gmail for ${coach.name} — logged as contacted`);
   }, [activeManualTemplate, gmailDirectEnabled, sendViaGmail, markCoachContactedLocally]);
@@ -884,6 +946,11 @@ export default function CRMPage() {
       const { ok } = await setCoachAssignee({ coach_id: coachId, assignee });
       if (!ok) {
         toast.error('Failed to update assignee');
+        logError(
+          new Error('Failed to update coach assignee'),
+          { component: 'CRMPage', action: 'set-coach-assignee', sport: 'golf', coachId },
+          'high'
+        );
         fetchAllCoaches();
       }
     },
@@ -942,7 +1009,15 @@ export default function CRMPage() {
         fetchAllCoaches();
       }
       setSelectedIds(new Set());
-    } catch (err) { console.error('Bulk action failed:', err); }
+    } catch (err) {
+      console.error('Bulk action failed:', err);
+      toast.error('Bulk action failed', err instanceof Error ? err.message : 'Please try again.');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'CRMPage', action: 'bulk-action', sport: 'golf', bulkAction: action, coachIds: ids },
+        'high'
+      );
+    }
   };
 
   const exportToCSV = () => {
@@ -983,6 +1058,11 @@ export default function CRMPage() {
       toast.dismiss(tid);
       if (!res.ok) {
         toast.error(res.error ?? 'Batch send failed');
+        logError(
+          new Error(res.error ?? 'Batch send failed'),
+          { component: 'CRMPage', action: 'send-batch-via-gmail', sport: 'golf' },
+          'high'
+        );
       } else if (res.capped && res.sent === 0) {
         toast('Daily Gmail send cap reached — try again tomorrow');
       } else {
@@ -994,6 +1074,11 @@ export default function CRMPage() {
     } catch (err) {
       toast.dismiss(tid);
       toast.error(err instanceof Error ? err.message : 'Batch send failed');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'CRMPage', action: 'send-batch-via-gmail', sport: 'golf' },
+        'high'
+      );
     } finally {
       setGmailBatchSending(false);
     }

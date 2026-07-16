@@ -1778,7 +1778,11 @@ async function getAdminDashboardDataImpl(): Promise<AdminDashboardData> {
         const rows = res.data ?? [];
         if (!Array.isArray(rows) || rows.length === 0) return null;
         return rows[0] ?? null;
-      } catch {
+      } catch (e) {
+        void logServerError(
+          `[admin-data] get_platform_health_stats threw: ${describeError(e)}`,
+          { action: 'admin_data.getAdminDashboardData', featureArea: 'admin' },
+        );
         return null;
       }
     })(),

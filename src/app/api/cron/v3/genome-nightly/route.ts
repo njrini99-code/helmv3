@@ -62,7 +62,7 @@ async function handle(): Promise<NextResponse> {
   // unique key for correct page boundaries — the actual "stalest first"
   // ordering is re-derived client-side below via computedAtByPlayer, so
   // ordering by the table's own primary key (player_id) is safe.
-  const { data: existingGenomes } = await fetchAllRowsResult<{ player_id: string; computed_at: string }>(
+  const { data: existingGenomes, error: genomesErr } = await fetchAllRowsResult<{ player_id: string; computed_at: string }>(
     (from, to) =>
       supabase
         .from('golf_player_genome')
@@ -72,12 +72,19 @@ async function handle(): Promise<NextResponse> {
     undefined,
     { table: 'golf_player_genome', action: 'cron.v3.genome-nightly', sport: 'golf' },
   );
+  if (genomesErr) {
+    // Not logged here: this route is wrapped in recordJobRun (job-log.ts),
+    // which already writes a "Cron failed" Bridge event for any >=400
+    // response — logging again here would double-write error_logs/
+    // admin_events/Sentry for the same failure.
+    return NextResponse.json({ success: false, error: genomesErr.message }, { status: 500 });
+  }
   const computedAtByPlayer = new Map<string, string>();
   for (const g of existingGenomes ?? []) {
     computedAtByPlayer.set(g.player_id, g.computed_at);
   }
 
-  const { data: members } = await fetchAllRowsResult<{ player_id: string }>(
+  const { data: members, error: membersErr } = await fetchAllRowsResult<{ player_id: string }>(
     (from, to) =>
       supabase
         .from('golf_team_members')
@@ -88,6 +95,13 @@ async function handle(): Promise<NextResponse> {
     undefined,
     { table: 'golf_team_members', action: 'cron.v3.genome-nightly', sport: 'golf' },
   );
+  if (membersErr) {
+    // Not logged here: this route is wrapped in recordJobRun (job-log.ts),
+    // which already writes a "Cron failed" Bridge event for any >=400
+    // response — logging again here would double-write error_logs/
+    // admin_events/Sentry for the same failure.
+    return NextResponse.json({ success: false, error: membersErr.message }, { status: 500 });
+  }
   const allPlayerIds = Array.from(new Set((members ?? []).map((m) => m.player_id)));
 
   // Sort: never-computed (no entry in map) come first, then by ascending
@@ -116,7 +130,7 @@ async function handle(): Promise<NextResponse> {
     } catch (err) {
       await logServerError(
         `genome-nightly compute exception for ${pid}: ${err instanceof Error ? err.message : String(err)}`,
-        { action: 'cron.v3.genome-nightly' },
+        { action: 'cron.v3.genome-nightly', source: 'cron' },
       );
       per_player.push({
         player_id: pid,

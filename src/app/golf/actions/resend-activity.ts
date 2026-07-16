@@ -248,25 +248,37 @@ export async function getEmailDetail(resendMessageId: string): Promise<{
 }> {
   const supabase = await requireAdmin();
 
-  const [emailRes, eventsRes] = await Promise.all([
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('emails')
-      .select('*')
-      .eq('resend_message_id', resendMessageId)
-      .maybeSingle(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('email_events')
-      .select('*')
-      .eq('resend_message_id', resendMessageId)
-      .order('occurred_at', { ascending: true }),
-  ]);
+  try {
+    const [emailRes, eventsRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('emails')
+        .select('*')
+        .eq('resend_message_id', resendMessageId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('email_events')
+        .select('*')
+        .eq('resend_message_id', resendMessageId)
+        .order('occurred_at', { ascending: true }),
+    ]);
 
-  return {
-    email: (emailRes.data as EmailRow) ?? null,
-    events: ((eventsRes.data ?? []) as EmailEventRow[]),
-  };
+    if (emailRes.error) {
+      await logServerError(`[resend-activity] email detail query failed: ${emailRes.error instanceof Error ? emailRes.error.message : String(emailRes.error)}`, { action: 'resend_activity.getEmailDetail' });
+    }
+    if (eventsRes.error) {
+      await logServerError(`[resend-activity] email detail events query failed: ${eventsRes.error instanceof Error ? eventsRes.error.message : String(eventsRes.error)}`, { action: 'resend_activity.getEmailDetail' });
+    }
+
+    return {
+      email: (emailRes.data as EmailRow) ?? null,
+      events: ((eventsRes.data ?? []) as EmailEventRow[]),
+    };
+  } catch (err) {
+    await logServerError(`[resend-activity] email detail threw: ${err instanceof Error ? err.message : String(err)}`, { action: 'resend_activity.getEmailDetail' });
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------

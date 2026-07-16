@@ -49,6 +49,7 @@ import {
   type EngineEventRows,
 } from '@/lib/baseball/coachhelm/engine-event-derived';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';
+import { logServerError } from '@/lib/server-error-logger';
 
 // A minimally-typed client so the sweep runs against either the RLS server
 // client or the service-role admin client (both expose `.from`). RLS still
@@ -181,6 +182,11 @@ export async function sweepActionOutcomes(
 
   const nowIso = new Date().toISOString();
   let measured = 0;
+  // Rows whose outcome UPDATE failed this pass. Never thrown per-row (one bad
+  // action must not abort measuring the rest of the batch) — accumulated and
+  // reported as ONE roll-up trace after the loop instead of silently dropped.
+  let failed = 0;
+  const failureSamples: string[] = [];
   // Signal ids whose linked action's target metric IMPROVED this pass — used to
   // transition the SOURCE insight's lifecycle_state -> 'resolved' (orthogonal to
   // the coach's own status). This closes source → signal → action → outcome:
@@ -250,7 +256,29 @@ export async function sweepActionOutcomes(
     if (!error) {
       measured += 1;
       if (verdict === 'improved' && a.signal_id) improvedSignalIds.add(a.signal_id);
+    } else {
+      failed += 1;
+      if (failureSamples.length < 5) {
+        failureSamples.push(
+          `${a.id}: ${(error as { message?: string }).message ?? 'unknown error'}`,
+        );
+      }
     }
+  }
+
+  if (failed > 0) {
+    await logServerError(
+      `outcome-sweep: ${failed} of ${todo.length} action outcome write(s) failed for team ${teamId}`,
+      {
+        action: 'sweepActionOutcomes',
+        sport: 'baseball',
+        source: 'background_job',
+        skipSentry: true,
+        teamId,
+        metadata: { failed, sample: failureSamples },
+      },
+      'warning',
+    );
   }
 
   // RESOLVE SOURCE INSIGHTS for actions whose target metric improved. The link

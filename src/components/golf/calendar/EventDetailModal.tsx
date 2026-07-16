@@ -23,6 +23,7 @@ import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
 import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
 import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import { EventDocumentsSection } from './EventDocumentsSection';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
@@ -452,16 +453,28 @@ export function EventDetailModal({
         const { getEventRSVP } = await loadGolfCalendarActions();
         const result = await getEventRSVP(event.id);
         if (cancelled) return;
-        if (result.success && result.data) {
+        if (result.success) {
           const ids = result.data.summary.attendees.map((a) => a.playerId);
           setExistingAttendeeIds(ids);
           setFormData((prev) => ({ ...prev, attendeeIds: ids }));
           setAttendeeHydration('loaded');
         } else {
           setAttendeeHydration('error');
+          logError(
+            new Error(result.error || 'Failed to load event attendees'),
+            { component: 'EventDetailModal', action: 'hydrate-attendees', sport: 'golf', eventId: event.id },
+            'medium'
+          );
         }
-      } catch {
-        if (!cancelled) setAttendeeHydration('error');
+      } catch (err) {
+        if (!cancelled) {
+          setAttendeeHydration('error');
+          logError(
+            err instanceof Error ? err : new Error(String(err)),
+            { component: 'EventDetailModal', action: 'hydrate-attendees', sport: 'golf', eventId: event.id },
+            'medium'
+          );
+        }
       }
     })();
     return () => {
@@ -549,8 +562,13 @@ export function EventDetailModal({
         if (result.success && result.data) {
           setConflicts(result.data as ConflictData);
         }
-      } catch {
+      } catch (err) {
         // Conflict check failed - continue without warning
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'EventDetailModal', action: 'check-schedule-conflicts', sport: 'golf' },
+          'medium'
+        );
       } finally {
         setCheckingConflicts(false);
       }
@@ -604,6 +622,11 @@ export function EventDetailModal({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'EventDetailModal', action: 'submit-with-scope', sport: 'golf', pendingScopeAction },
+        'high'
+      );
     } finally {
       setPendingScopeAction(null);
     }
@@ -627,6 +650,11 @@ export function EventDetailModal({
       await onSave(buildSubmitData());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save event');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'EventDetailModal', action: 'save-event', sport: 'golf', isCreating },
+        'high'
+      );
     }
   };
 
@@ -637,6 +665,11 @@ export function EventDetailModal({
       await onRestore();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to restore event');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'EventDetailModal', action: 'restore-event', sport: 'golf', eventId: event?.id },
+        'high'
+      );
     }
   };
 
@@ -651,6 +684,11 @@ export function EventDetailModal({
       await onDelete();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete event');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'EventDetailModal', action: 'delete-event', sport: 'golf', eventId: event?.id },
+        'high'
+      );
     }
   };
 
@@ -673,11 +711,21 @@ export function EventDetailModal({
         toast.success('Reminders sent', `Notified ${sent} player${sent === 1 ? '' : 's'}.`);
       } else {
         toast.error('Failed to send reminders', result.error ?? 'Try again in a moment.');
+        logError(
+          new Error(result.error || 'Failed to send event reminders'),
+          { component: 'EventDetailModal', action: 'send-roster-reminder', sport: 'golf', eventId: event?.id },
+          'medium'
+        );
       }
     } catch (err) {
       toast.error(
         'Failed to send reminders',
         err instanceof Error ? err.message : 'Try again in a moment.',
+      );
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'EventDetailModal', action: 'send-roster-reminder', sport: 'golf', eventId: event?.id },
+        'medium'
       );
     }
   };
@@ -1328,6 +1376,11 @@ export function EventDetailModal({
                 onRespond={async (response) => {
                   const result = await respondToRSVP(response);
                   if (!result.success) {
+                    logError(
+                      new Error(result.error || 'Failed to update RSVP'),
+                      { component: 'EventDetailModal', action: 'respond-to-rsvp', sport: 'golf', eventId: event.id },
+                      'high'
+                    );
                     throw new Error(result.error || 'Failed to update RSVP');
                   }
                 }}

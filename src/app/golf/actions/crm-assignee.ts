@@ -11,6 +11,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export async function setCoachAssignee(input: {
   coach_id: string;
@@ -27,6 +29,19 @@ export async function setCoachAssignee(input: {
     .eq('id', input.coach_id);
 
   if (error) {
+    await logServerError(
+      `[crm-assignee] setCoachAssignee failed: ${describeError(error)}`,
+      {
+        action: 'crm_assignee.setCoachAssignee',
+        source: 'server_action',
+        sport: 'golf',
+        featureArea: 'crm',
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+        metadata: { coachId: input.coach_id },
+      },
+    );
     return { ok: false };
   }
   revalidatePath('/golf/admin/crm');

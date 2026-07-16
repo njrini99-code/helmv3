@@ -47,6 +47,8 @@
 // it is unit-testable with an in-memory fake and runs identically under the cron.
 // =============================================================================
 
+import { logServerError } from '@/lib/server-error-logger';
+
 // A minimally-typed client so the sweep runs against the service-role admin
 // client (the trusted Inngest cron) the same way missed-sweep.ts does. Every
 // query is scoped by team_id; the admin client is the only RLS-bypass path,
@@ -182,6 +184,11 @@ export async function sweepTaskReminders(
   let reminded = 0;
   let delivered = 0;
   let skippedClosed = 0;
+  // Best-effort per-assignee delivery failures — never rethrown (the flag flip
+  // proceeds independently), accumulated and reported as ONE roll-up trace after
+  // the loop instead of silently dropped.
+  let deliveryFailed = 0;
+  const failureSamples: string[] = [];
 
   for (const row of rows) {
     // Closed tasks: flag (so they drop out of future sweeps) but never nag.
@@ -241,8 +248,12 @@ export async function sweepTaskReminders(
           delivered += 1;
           deliveredThisTask += 1;
         }
-      } catch {
+      } catch (err) {
         // Swallowed by design (best-effort). The flag flip below still proceeds.
+        deliveryFailed += 1;
+        if (failureSamples.length < 5) {
+          failureSamples.push(`${row.id}/${playerId}: ${err instanceof Error ? err.message : String(err)}`);
+        }
       }
     }
 
@@ -273,6 +284,21 @@ export async function sweepTaskReminders(
       );
     }
     reminded += 1;
+  }
+
+  if (deliveryFailed > 0) {
+    await logServerError(
+      `reminder-sweep: ${deliveryFailed} per-assignee timeline delivery failure(s) for team ${teamId}`,
+      {
+        action: 'sweepTaskReminders',
+        sport: 'baseball',
+        source: 'background_job',
+        skipSentry: true,
+        teamId,
+        metadata: { failed: deliveryFailed, sample: failureSamples },
+      },
+      'warning',
+    );
   }
 
   return { reminded, delivered, skippedClosed };

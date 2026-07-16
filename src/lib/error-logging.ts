@@ -282,27 +282,77 @@ export function logError(
   sendToMonitoringService(logEntry);
 }
 
+/** 429 (rate-limited) and 5xx (backend fault) are worth retrying; other 4xx are not — the
+ * request itself is malformed/rejected and a retry or beacon fallback would just repeat it. */
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
 /**
  * Send error to external monitoring service
- * Replace this with your actual error monitoring service integration
+ *
+ * Lossless-effort delivery: a plain `fetch().catch(() => {})` drops the report
+ * the moment the network hiccups or the tab is backgrounded mid-request, which
+ * is exactly when we most need the report. `keepalive` lets the request outlive
+ * a navigating/closing page; one retry absorbs a transient 429/5xx or network
+ * blip; `sendBeacon` is the last-resort transport that the browser guarantees
+ * to attempt even during unload, when `fetch` itself can be aborted outright.
+ *
+ * This path must never recurse into `logError` (that would risk an infinite
+ * loop reporting its own delivery failures) and must never throw — the worst
+ * outcome here is a `console.error`, not a crashed caller.
  */
 function sendToMonitoringService(logEntry: ErrorLogEntry): void {
   if (typeof window === 'undefined') return;
 
-  fetch('/api/log-error', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: logEntry.error.message,
-      stack: logEntry.error.stack,
-      context: logEntry.context,
-      severity: logEntry.severity,
-      timestamp: logEntry.timestamp,
-      url: window.location.href,
-    }),
-  }).catch(() => {
-    // Silently fail - don't let logging errors break the app
+  const body = JSON.stringify({
+    message: logEntry.error.message,
+    stack: logEntry.error.stack,
+    context: logEntry.context,
+    severity: logEntry.severity,
+    timestamp: logEntry.timestamp,
+    url: window.location.href,
   });
+
+  const fallbackToBeacon = (): void => {
+    try {
+      if (typeof navigator.sendBeacon === 'function') {
+        const delivered = navigator.sendBeacon('/api/log-error', new Blob([body], { type: 'application/json' }));
+        if (delivered) return;
+      }
+    } catch {
+      // fall through to the console.error below
+    }
+    console.error('[error-logging] failed to deliver error report to /api/log-error');
+  };
+
+  const post = (isRetry: boolean): void => {
+    fetch('/api/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    })
+      .then((response) => {
+        if (response.ok || !isRetryableStatus(response.status)) return;
+        if (isRetry) {
+          fallbackToBeacon();
+        } else {
+          setTimeout(() => post(true), 2000);
+        }
+      })
+      .catch(() => {
+        // Network-level failure (offline, DNS, aborted) — treat the same as a
+        // retryable status: one retry, then the beacon fallback.
+        if (isRetry) {
+          fallbackToBeacon();
+        } else {
+          setTimeout(() => post(true), 2000);
+        }
+      });
+  };
+
+  post(false);
 }
 
 /**
@@ -385,6 +435,43 @@ export function softReloadForStaleServerAction(): void {
 }
 
 /**
+ * Mirrors the chunk-load detection in `RouteErrorBoundary` (not exported there,
+ * so duplicated here rather than imported) — a stale deployment reference is
+ * a distinct, non-actionable failure mode worth tagging separately from a
+ * generic runtime error.
+ */
+function isChunkLoadErrorMessage(message: string): boolean {
+  const msg = message.toLowerCase();
+  return (
+    msg.includes('loading chunk') ||
+    msg.includes('loading css chunk') ||
+    msg.includes('chunkloaderror') ||
+    (msg.includes('cannot read properties of undefined') && msg.includes("'call'"))
+  );
+}
+
+/** React hydration mismatches, including the minified production error codes
+ * (#418/#419/#421/#425) that replace the descriptive dev-mode message. */
+function isHydrationErrorMessage(message: string): boolean {
+  const msg = message.toLowerCase();
+  return (
+    msg.includes('hydration failed') ||
+    msg.includes('while hydrating') ||
+    msg.includes('text content does not match server-rendered html') ||
+    msg.includes('#418') ||
+    msg.includes('#419') ||
+    msg.includes('#421') ||
+    msg.includes('#425')
+  );
+}
+
+function classifyGlobalErrorKind(message: string): 'chunk_load' | 'hydration' | undefined {
+  if (isChunkLoadErrorMessage(message)) return 'chunk_load';
+  if (isHydrationErrorMessage(message)) return 'hydration';
+  return undefined;
+}
+
+/**
  * Capture and log unhandled promise rejections
  */
 export function setupGlobalErrorHandlers(): void {
@@ -402,12 +489,14 @@ export function setupGlobalErrorHandlers(): void {
         return;
       }
 
+      const errorKind = classifyGlobalErrorKind(reasonMessage);
       logError(
         new Error(reasonMessage || 'Unhandled Promise Rejection'),
         {
           component: 'GlobalErrorHandler',
           action: 'unhandledrejection',
           reason,
+          ...(errorKind ? { errorKind } : {}),
         },
         'high'
       );
@@ -420,6 +509,7 @@ export function setupGlobalErrorHandlers(): void {
         softReloadForStaleServerAction();
         return;
       }
+      const errorKind = classifyGlobalErrorKind(err.message || event.message || '');
       logError(
         err,
         {
@@ -428,6 +518,7 @@ export function setupGlobalErrorHandlers(): void {
           filename: event.filename,
           lineno: event.lineno,
           colno: event.colno,
+          ...(errorKind ? { errorKind } : {}),
         },
         'high'
       );

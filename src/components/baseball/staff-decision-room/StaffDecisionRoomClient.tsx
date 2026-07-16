@@ -37,6 +37,7 @@ import { toast } from '@/components/ui/sonner';
 
 import { createMeetingItem, type DecisionRoomData } from '@/app/baseball/actions/decision-room';
 import { recordActionOutcomes } from '@/app/baseball/actions/coachhelm-actions';
+import { logError } from '@/lib/error-logging';
 import { StaffDecisionRoomFairway } from './StaffDecisionRoomFairway';
 
 interface StaffDecisionRoomClientProps {
@@ -91,9 +92,19 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
           refresh();
         } else {
           toast.error('Could not add item', res.error ?? 'Please try again.');
+          logError(
+            new Error(res.error ?? 'Could not add agenda item'),
+            { component: 'StaffDecisionRoomClient', action: 'submitNewItem', sport: 'baseball' },
+            'high'
+          );
         }
-      } catch {
+      } catch (error) {
         toast.error('Something went wrong', 'Please try again.');
+        logError(
+          error instanceof Error ? error : new Error('Something went wrong adding agenda item'),
+          { component: 'StaffDecisionRoomClient', action: 'submitNewItem', sport: 'baseball' },
+          'high'
+        );
       }
     });
   }
@@ -206,9 +217,19 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
           router.refresh();
         } else {
           toast.error('Could not re-measure', res.error);
+          logError(
+            new Error(res.error || 'Could not re-measure action outcomes'),
+            { component: 'StaffDecisionRoomClient', action: 'reMeasureOutcomes', sport: 'baseball' },
+            'high'
+          );
         }
-      } catch {
+      } catch (error) {
         toast.error('Something went wrong', 'Please try again.');
+        logError(
+          error instanceof Error ? error : new Error('Something went wrong re-measuring action outcomes'),
+          { component: 'StaffDecisionRoomClient', action: 'reMeasureOutcomes', sport: 'baseball' },
+          'high'
+        );
       }
     });
 

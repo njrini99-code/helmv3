@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logError } from '@/lib/error-logging';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -150,6 +151,11 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
         // just-uploaded storage object so it doesn't become an orphan.
         await supabase.storage.from('baseball_videos').remove([fileName]);
         setError(saveResult.error ?? 'Could not save the video. Please try again.');
+        logError(
+          new Error(saveResult.error ?? 'Failed to save video'),
+          { component: 'VideoUpload', action: 'save-video', sport: 'shared' },
+          'high'
+        );
         return;
       }
       dbSaved = true;
@@ -163,6 +169,11 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
         const primaryResult = await setMyPrimaryVideo({ videoId: newVideoId });
         if (!primaryResult.success) {
           setError(primaryResult.error ?? 'Video uploaded, but it could not be set as your primary video. You can set it from your video library.');
+          logError(
+            new Error(primaryResult.error ?? 'Failed to set primary video'),
+            { component: 'VideoUpload', action: 'set-primary-video', sport: 'shared', videoId: newVideoId },
+            'high'
+          );
         }
       }
       setProgress(100);
@@ -177,6 +188,11 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
         await supabase.storage.from('baseball_videos').remove([fileName]).catch(() => undefined);
       }
       setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'VideoUpload', action: 'upload-video', sport: 'shared' },
+        'high'
+      );
     } finally {
       setUploading(false);
     }

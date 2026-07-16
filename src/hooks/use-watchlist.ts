@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import {
   addToWatchlist as addToWatchlistAction,
   removeFromWatchlist as removeFromWatchlistAction,
@@ -27,7 +28,7 @@ export function useWatchlist() {
 
     setLoading(true);
     try {
-      const { data } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('baseball_watchlists')
         .select(`
           id,
@@ -45,9 +46,25 @@ export function useWatchlist() {
         .eq('coach_id', coach.id)
         .order('priority', { ascending: false });
 
+      if (fetchError) {
+        console.error('[useWatchlist] fetchWatchlist failed:', fetchError);
+        logError(
+          new Error(fetchError.message || 'Failed to load watchlist'),
+          { component: 'useWatchlist', action: 'fetchWatchlist', sport: 'baseball' },
+          'medium'
+        );
+        setWatchlist([]);
+        return;
+      }
+
       setWatchlist((data || []) as WatchlistWithPlayer[]);
     } catch (err) {
       console.error('[useWatchlist] fetchWatchlist failed:', err);
+      logError(
+        err instanceof Error ? err : new Error('Failed to load watchlist'),
+        { component: 'useWatchlist', action: 'fetchWatchlist', sport: 'baseball' },
+        'medium'
+      );
       setWatchlist([]);
     } finally {
       setLoading(false);
@@ -69,6 +86,11 @@ export function useWatchlist() {
 
     if (!result.success) {
       toast.error('Failed to add player', result.message || 'Could not add player to watchlist. Please try again.');
+      logError(
+        new Error(result.message || 'Failed to add player to watchlist'),
+        { component: 'useWatchlist', action: 'addToWatchlist', sport: 'baseball' },
+        'high'
+      );
       return false;
     }
 
@@ -87,6 +109,11 @@ export function useWatchlist() {
 
     if (!result.success) {
       toast.error('Failed to remove player', result.message || 'Could not remove player from watchlist. Please try again.');
+      logError(
+        new Error(result.message || 'Failed to remove player from watchlist'),
+        { component: 'useWatchlist', action: 'removeFromWatchlist', sport: 'baseball' },
+        'high'
+      );
       return false;
     }
 
@@ -128,6 +155,11 @@ export function useWatchlist() {
 
     if (!result.success) {
       toast.error('Failed to update stage', result.error || 'Could not update pipeline stage. Please try again.');
+      logError(
+        new Error(result.error || 'Failed to update pipeline stage'),
+        { component: 'useWatchlist', action: 'updateStage', sport: 'baseball' },
+        'high'
+      );
       return false;
     }
 
@@ -152,6 +184,11 @@ export function useWatchlist() {
 
     if (!result.success) {
       toast.error('Failed to update notes', result.error || 'Could not save notes. Please try again.');
+      logError(
+        new Error(result.error || 'Failed to save watchlist notes'),
+        { component: 'useWatchlist', action: 'updateNotes', sport: 'baseball' },
+        'high'
+      );
       return false;
     }
 

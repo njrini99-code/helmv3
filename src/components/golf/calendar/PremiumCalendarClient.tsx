@@ -8,6 +8,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { toast } from '@/components/ui/sonner';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { logError } from '@/lib/error-logging';
 import {
   DndContext,
   DragEndEvent,
@@ -347,8 +348,18 @@ export function PremiumCalendarClient({
         });
         return { success: true };
       }
+      logError(
+        new Error(result.error || 'Failed to update RSVP'),
+        { component: 'PremiumCalendarClient', action: 'rsvp-response', sport: 'golf', eventId },
+        'high'
+      );
       return { success: false, error: result.error || 'Failed to update RSVP' };
     } catch (err) {
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'PremiumCalendarClient', action: 'rsvp-response', sport: 'golf', eventId },
+        'high'
+      );
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
   }, [actionHandlers, resolvedCapabilities.rsvpWrite]);
@@ -420,8 +431,13 @@ export function PremiumCalendarClient({
                   })) as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>;
                   return { playerId, periods };
                 }
-              } catch {
+              } catch (err) {
                 // Individual player fetch failed — return empty so others still show
+                logError(
+                  err instanceof Error ? err : new Error(String(err)),
+                  { component: 'PremiumCalendarClient', action: 'fetch-player-availability', sport: 'golf', playerId },
+                  'medium'
+                );
               }
               return { playerId, periods: [] as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }> };
             })
@@ -433,9 +449,14 @@ export function PremiumCalendarClient({
             newMap.set(playerId, periods);
           });
           setMultiPlayerBusyPeriods(newMap);
-        } catch {
+        } catch (err) {
           // Entire availability fetch failed — silently degrade (calendar still works, just no availability overlay)
           console.warn('[PremiumCalendarClient] Failed to fetch player availability');
+          logError(
+            err instanceof Error ? err : new Error(String(err)),
+            { component: 'PremiumCalendarClient', action: 'fetch-all-player-availability', sport: 'golf' },
+            'medium'
+          );
         }
       };
 
@@ -496,9 +517,14 @@ export function PremiumCalendarClient({
           })) as Array<Record<string, unknown> & { start: string; end: string; ownerType?: 'coach' | 'player' }>;
           setCoachBusyPeriods(periods);
         }
-      } catch {
+      } catch (err) {
         // Availability fetch failed — calendar still works, just no busy-period overlay
         console.warn('[PremiumCalendarClient] Failed to fetch current user availability');
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'PremiumCalendarClient', action: 'fetch-current-user-availability', sport: 'golf' },
+          'medium'
+        );
       }
     };
 
@@ -826,6 +852,11 @@ export function PremiumCalendarClient({
         return;
       }
       toast.error('Save failed', msg || 'Failed to save event. Please try again.');
+      logError(
+        err instanceof Error ? err : new Error(msg),
+        { component: 'PremiumCalendarClient', action: 'save-event', sport: 'golf', isCreatingEvent },
+        'high'
+      );
     } finally {
       setIsSavingEvent(false);
     }
@@ -959,11 +990,23 @@ export function PremiumCalendarClient({
         });
         if (!result.success) {
           console.error('Failed to reschedule event:', result.error);
+          toast.error('Reschedule failed', result.error || 'Failed to reschedule event. Please try again.');
+          logError(
+            new Error(result.error || 'Failed to reschedule event'),
+            { component: 'PremiumCalendarClient', action: 'drag-reschedule-all-day-event', sport: 'golf', eventId },
+            'high'
+          );
           return;
         }
         router.refresh();
       } catch (err) {
         console.error('Failed to reschedule event:', err);
+        toast.error('Reschedule failed', err instanceof Error ? err.message : 'Failed to reschedule event. Please try again.');
+        logError(
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'PremiumCalendarClient', action: 'drag-reschedule-all-day-event', sport: 'golf', eventId },
+          'high'
+        );
       }
       return;
     }
@@ -1005,12 +1048,24 @@ export function PremiumCalendarClient({
 
       if (!result.success) {
         console.error('Failed to reschedule event:', result.error);
+        toast.error('Reschedule failed', result.error || 'Failed to reschedule event. Please try again.');
+        logError(
+          new Error(result.error || 'Failed to reschedule event'),
+          { component: 'PremiumCalendarClient', action: 'drag-reschedule-event', sport: 'golf', eventId },
+          'high'
+        );
         return;
       }
 
       router.refresh();
     } catch (err) {
       console.error('Failed to reschedule event:', err);
+      toast.error('Reschedule failed', err instanceof Error ? err.message : 'Failed to reschedule event. Please try again.');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'PremiumCalendarClient', action: 'drag-reschedule-event', sport: 'golf', eventId },
+        'high'
+      );
     }
   };
 
@@ -1406,6 +1461,11 @@ export function PremiumCalendarClient({
               window.location.reload();
               return;
             }
+            logError(
+              err instanceof Error ? err : new Error(msg),
+              { component: 'PremiumCalendarClient', action: 'save-event-mobile-sheet', sport: 'golf', isCreatingEvent },
+              'high'
+            );
             throw err;
           } finally {
             setIsSavingEvent(false);
@@ -1428,6 +1488,11 @@ export function PremiumCalendarClient({
               window.location.reload();
               return;
             }
+            logError(
+              err instanceof Error ? err : new Error(msg),
+              { component: 'PremiumCalendarClient', action: 'delete-event-mobile-sheet', sport: 'golf', eventId: selectedEvent.id },
+              'high'
+            );
             throw err;
           } finally {
             setIsSavingEvent(false);

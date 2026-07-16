@@ -36,6 +36,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { sweepActionOutcomes } from '@/lib/baseball/coachhelm/outcome-sweep';
+import { logServerException } from '@/lib/server-error-logger';
 import {
   buildActionOutcomeSeed,
   primaryMetricOfInsightMetadata,
@@ -211,7 +212,13 @@ export const recordActionOutcomes = withBaseballAction(
       revalidatePath('/baseball/dashboard/command-center');
       revalidatePath('/baseball/dashboard/decision-room');
       return { success: true, evaluated, measured };
-    } catch {
+    } catch (error) {
+      await logServerException(error, {
+        action: 'recordActionOutcomes',
+        sport: 'baseball',
+        source: 'server_action',
+        teamId: ctx.targetTeamId,
+      });
       return { success: false, evaluated: 0, measured: 0, error: 'Could not record action outcomes.' };
     }
   },

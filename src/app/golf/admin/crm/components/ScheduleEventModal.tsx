@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logError } from '@/lib/error-logging';
 import { cn } from '@/lib/utils';
 import { format, addDays, addHours, parseISO } from 'date-fns';
 import type { Coach } from '../crm-config';
@@ -134,11 +135,18 @@ export function ScheduleEventModal({
     }
 
     const timer = setTimeout(async () => {
-      const { data } = await supabase
+      const { data, error: searchError } = await supabase
         .from('crm_coaches')
         .select('*')
         .or(`name.ilike.%${coachSearchQuery}%,school.ilike.%${coachSearchQuery}%`)
         .limit(5);
+      if (searchError) {
+        logError(
+          new Error(searchError.message),
+          { component: 'ScheduleEventModal', action: 'search-coaches', sport: 'golf' },
+          'medium'
+        );
+      }
       setCoachSearchResults((data || []) as Coach[]);
     }, 200);
 
@@ -201,6 +209,11 @@ export function ScheduleEventModal({
     } catch (err) {
       console.error('Failed to save event:', err);
       setError(err instanceof Error ? err.message : 'Failed to save event');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'ScheduleEventModal', action: isEditing ? 'update-crm-event' : 'create-crm-event', sport: 'golf', eventId: event?.id, coachId: form.coachId },
+        'high'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -223,6 +236,11 @@ export function ScheduleEventModal({
     } catch (err) {
       console.error('Failed to delete event:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete event');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'ScheduleEventModal', action: 'delete-crm-event', sport: 'golf', eventId: event.id },
+        'high'
+      );
     } finally {
       setSubmitting(false);
     }

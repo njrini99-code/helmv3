@@ -24,6 +24,7 @@ import { verifyEmailDeliverability } from '@/lib/crm/email-verify';
 import { checkDomainAuth, type DomainAuthResult } from '@/lib/crm/domain-auth-check';
 import { mergeTags, type Recipient } from '@/lib/crm/merge-tags';
 import { describeError } from '@/lib/utils/describe-error';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
 
 const CRM_REVALIDATE_PATH = '/golf/admin/crm';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -233,6 +234,13 @@ export async function sendCoachViaGmail(input: {
     revalidatePath(CRM_REVALIDATE_PATH);
     return { ok: true };
   } catch (err) {
+    await logServerException(err, {
+      action: 'crm_gmail_send.sendCoachViaGmail',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+      metadata: { coachId: input.coach_id, subject: input.subject },
+    });
     return { ok: false, error: describeError(err) };
   }
 }
@@ -343,15 +351,44 @@ export async function sendNextBatchViaGmail(input: {
         sent++;
         details.push({ name: c.name, school: c.school, status: 'sent' });
       } catch (err) {
+        // Per-recipient failures are rolled up into ONE log after the loop
+        // (below) rather than logged here — a bad batch would otherwise spam
+        // one admin_events row per recipient.
         failed++;
         details.push({ name: c.name, school: c.school, status: 'failed', reason: describeError(err) });
       }
       if (i < targets.length - 1) await sleep(jitterGapMs()); // jittered pace for deliverability
     }
 
+    if (failed > 0) {
+      await logServerError(
+        `[crm-gmail-send] sendNextBatchViaGmail: ${failed} of ${targets.length} sends failed`,
+        {
+          action: 'crm_gmail_send.sendNextBatchViaGmail',
+          source: 'server_action',
+          sport: 'golf',
+          featureArea: 'crm',
+          metadata: {
+            templateId: input.templateId,
+            sentCount: sent,
+            skippedCount: skipped,
+            failedCount: failed,
+            samples: details.filter((d) => d.status === 'failed').slice(0, 5),
+          },
+        },
+      );
+    }
+
     revalidatePath(CRM_REVALIDATE_PATH);
     return { ok: true, sent, skipped, failed, capped: sentToday + sent >= dailyCap, details };
   } catch (err) {
+    await logServerException(err, {
+      action: 'crm_gmail_send.sendNextBatchViaGmail',
+      source: 'server_action',
+      sport: 'golf',
+      featureArea: 'crm',
+      metadata: { templateId: input.templateId, limit: input.limit },
+    });
     return { ok: false, ...empty, error: describeError(err) };
   }
 }

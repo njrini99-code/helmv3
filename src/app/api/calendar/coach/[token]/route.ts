@@ -15,6 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { generateCoachCalendar, convertToICalEvent } from '@/lib/calendar/ical';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { addMonths, format } from 'date-fns';
+import { logServerException } from '@/lib/server-error-logger';
 
 interface CoachTeamAuthRpcClient {
   rpc(
@@ -28,7 +29,7 @@ interface CoachStaffRow {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -171,7 +172,17 @@ export async function GET(
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
-  } catch {
+  } catch (error) {
+    await logServerException(error, {
+      action: 'calendarCoachFeedApi.get',
+      route: '/api/calendar/coach/[token]',
+      url: request.url,
+      source: 'route_handler',
+      sport: 'golf',
+      featureArea: 'calendar',
+      handled: false,
+      statusCode: 500,
+    });
     return new NextResponse('Internal server error', { status: 500 });
   }
 }

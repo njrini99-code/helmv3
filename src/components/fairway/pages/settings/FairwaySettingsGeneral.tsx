@@ -41,6 +41,7 @@ import Link from 'next/link';
 import { Field } from '@base-ui-components/react/field';
 
 import { createClient } from '@/lib/supabase/client';
+import { logError } from '@/lib/error-logging';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
@@ -496,8 +497,13 @@ export function FairwaySettingsGeneral() {
             : undefined,
         });
       }
-    } catch {
+    } catch (err) {
       setLoadError(true);
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'FairwaySettingsGeneral', action: 'load-profile', sport: 'golf' },
+        'medium'
+      );
     }
   }, [golfUser]);
 
@@ -521,14 +527,24 @@ export function FairwaySettingsGeneral() {
         const payload = await response.json().catch(() => ({}));
         void triggerHaptic('error');
         fairwayToast.error(payload.error || 'Failed to delete account');
+        logError(
+          new Error(payload.error || `Failed to delete account (status ${response.status})`),
+          { component: 'FairwaySettingsGeneral', action: 'delete-account', sport: 'golf', statusCode: response.status },
+          'critical'
+        );
         return;
       }
       void triggerHaptic('success');
       fairwayToast.success('Account deleted successfully');
       window.location.href = isNativeApp() ? '/golf/login' : '/';
-    } catch {
+    } catch (err) {
       void triggerHaptic('error');
       fairwayToast.error('Failed to delete account');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'FairwaySettingsGeneral', action: 'delete-account', sport: 'golf' },
+        'critical'
+      );
     } finally {
       setDeletingAccount(false);
       setDeleteConfirmOpen(false);
@@ -826,6 +842,11 @@ function PersonalInfoPanel({
       router.refresh();
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to update profile');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'PersonalInfoPanel', action: 'update-profile', sport: 'golf', role: profile.role },
+        'high'
+      );
     } finally {
       setSaving(false);
     }
@@ -912,6 +933,11 @@ function EmailPanel({ currentEmail }: { currentEmail: string }) {
       setNewEmail('');
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to update email');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'EmailPanel', action: 'update-email', sport: 'golf' },
+        'high'
+      );
     } finally {
       setSaving(false);
     }
@@ -983,6 +1009,11 @@ function PasswordPanel() {
       setConfirmPassword('');
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to update password');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'PasswordPanel', action: 'update-password', sport: 'golf' },
+        'high'
+      );
     } finally {
       setSaving(false);
     }
@@ -1222,6 +1253,11 @@ function NotificationsPanel() {
     const res = await getNotificationPreferences();
     if (res.error || !res.data) {
       setLoadFailed(true);
+      logError(
+        new Error(res.error || 'Failed to load notification preferences'),
+        { component: 'NotificationsPanel', action: 'load-notification-preferences', sport: 'golf' },
+        'medium'
+      );
       return;
     }
     setPrefs(res.data as DeliveryNotificationPreferences);
@@ -1245,6 +1281,11 @@ function NotificationsPanel() {
         setPrefs(previous);
         void triggerHaptic('error');
         fairwayToast.error(res.error || 'Failed to save preference');
+        logError(
+          new Error(res.error || 'Failed to save notification preference'),
+          { component: 'NotificationsPanel', action: 'toggle-notification-preference', sport: 'golf', key },
+          'high'
+        );
       } else {
         void triggerHaptic('light');
         setSavedAt(Date.now()); // P384: flash the auto-save "Saved" signal.
@@ -1405,6 +1446,11 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     if (error) {
       setLoadFailed(true);
       setLoaded(true);
+      logError(
+        new Error(error.message),
+        { component: 'GolfScoringPanel', action: 'load-golf-team-settings', sport: 'golf', teamId },
+        'medium'
+      );
       return;
     }
 
@@ -1467,6 +1513,11 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       fairwayToast.success('Golf settings updated');
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to save');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'GolfScoringPanel', action: 'save-golf-team-settings', sport: 'golf', teamId },
+        'high'
+      );
     } finally {
       setSaving(false);
     }
@@ -1676,6 +1727,11 @@ function PlayerGolfDetailsPanel({
       onUpdate();
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to save');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'PlayerGolfDetailsPanel', action: 'save-golf-details', sport: 'golf', playerId },
+        'high'
+      );
     } finally {
       setSaving(false);
     }
@@ -1773,6 +1829,11 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
     if (teamError) {
       setLoadFailed(true);
       setLoaded(true);
+      logError(
+        new Error(teamError.message),
+        { component: 'TeamSettingsPanel', action: 'load-team', sport: 'golf', teamId: activeTeamId },
+        'medium'
+      );
       return;
     }
 
@@ -1797,6 +1858,11 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
         if (orgError) {
           setLoadFailed(true);
           setLoaded(true);
+          logError(
+            new Error(orgError.message),
+            { component: 'TeamSettingsPanel', action: 'load-organization', sport: 'golf', organizationId: team.organization_id },
+            'medium'
+          );
           return;
         }
         if (org) {
@@ -1882,6 +1948,11 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       onUpdate();
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to save');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'TeamSettingsPanel', action: 'save-team-settings', sport: 'golf', teamId },
+        'high'
+      );
     } finally {
       setSaving(false);
     }
@@ -1995,6 +2066,11 @@ export function InviteSettingsPanel() {
     if (error) {
       setLoadFailed(true);
       setLoaded(true);
+      logError(
+        new Error(error.message),
+        { component: 'InviteSettingsPanel', action: 'load-invite-code', sport: 'golf', teamId: activeTeamId },
+        'medium'
+      );
       return;
     }
 
@@ -2021,8 +2097,13 @@ export function InviteSettingsPanel() {
       if (error) throw error;
       setInviteCode(newCode);
       fairwayToast.success('New invite code generated');
-    } catch {
+    } catch (err) {
       fairwayToast.error('Failed to generate code');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'InviteSettingsPanel', action: 'regenerate-invite-code', sport: 'golf', teamId },
+        'high'
+      );
     } finally {
       setLoading(false);
     }
@@ -2035,8 +2116,13 @@ export function InviteSettingsPanel() {
       setCopied(true);
       fairwayToast.success('Invite link copied');
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (err) {
       fairwayToast.error('Failed to copy');
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'InviteSettingsPanel', action: 'copy-invite-link', sport: 'golf', teamId },
+        'medium'
+      );
     }
   };
 

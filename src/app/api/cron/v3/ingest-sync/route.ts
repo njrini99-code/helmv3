@@ -19,6 +19,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { getAdapter } from '@/lib/coachhelm/v3/ingest/registry';
 import { nextConnectionState, INGEST_PROVIDERS } from '@/lib/coachhelm/v3/ingest/types';
 import type { IngestConnection, IngestProvider } from '@/lib/coachhelm/v3/ingest/types';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -37,12 +38,12 @@ interface CronSummary {
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-ingest-sync', () => handle());
 }
 export async function POST(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-ingest-sync', () => handle());
 }
 
 async function handle(): Promise<NextResponse> {
@@ -58,10 +59,20 @@ async function handle(): Promise<NextResponse> {
     duration_ms: 0,
   };
 
-  const { data: connections } = await sb
+  const { data: connections, error: connectionsErr } = await sb
     .from('golf_ingest_connections')
     .select('player_id, provider, access_token_encrypted, refresh_token_encrypted, expires_at, last_synced_at, state')
     .eq('state', 'active');
+  if (connectionsErr) {
+    // Not logged here: this route is wrapped in recordJobRun (job-log.ts),
+    // which already writes a "Cron failed" Bridge event for any >=400
+    // response — logging again here would double-write error_logs/
+    // admin_events/Sentry for the same failure.
+    return NextResponse.json(
+      { success: false, error: connectionsErr.message, duration_ms: Date.now() - startedAt },
+      { status: 500 },
+    );
+  }
   const rows = (connections ?? []) as Array<IngestConnection>;
   summary.connections_considered = rows.length;
 
@@ -108,7 +119,7 @@ async function handle(): Promise<NextResponse> {
       summary.errors += 1;
       await logServerError(
         `ingest-sync ${conn.provider}/${conn.player_id}: ${err instanceof Error ? err.message : String(err)}`,
-        { action: 'cron.v3.ingest-sync' },
+        { action: 'cron.v3.ingest-sync', source: 'cron' },
       );
       await sb.from('golf_ingest_sync_log').insert({
         player_id: conn.player_id,

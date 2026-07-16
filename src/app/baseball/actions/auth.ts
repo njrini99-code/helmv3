@@ -18,6 +18,7 @@ import {
 } from '@/lib/auth/account-lockout';
 import { validatePassword } from '@/lib/auth/password-validation';
 import { sanitizeAuthError } from '@/lib/db-error';
+import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
 import { logServerError } from '@/lib/server-error-logger';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 
@@ -122,6 +123,13 @@ async function loginActionImpl(
       locked: lockoutResult.locked,
     });
 
+    // Log failed login attempt (fire-and-forget)
+    logSecurityEvent(
+      `Failed login attempt: ${normalizedEmail}`,
+      lockoutResult.locked ? 'warning' : 'info',
+      { email: normalizedEmail, ip, remainingAttempts: lockoutResult.remainingAttempts, sport: 'baseball' }
+    ).catch(() => {});
+
     // Return appropriate error message
     if (lockoutResult.locked && lockoutResult.lockedUntil) {
       return {
@@ -155,6 +163,9 @@ async function loginActionImpl(
     userId: data.user.id,
     ip,
   });
+
+  // Log successful login event (fire-and-forget)
+  logLogin(data.user.id, normalizedEmail, { ip, userAgent, sport: 'baseball' }).catch(() => {});
 
   // Get user role and profile status to determine redirect
   const { data: userData } = await supabase
@@ -370,6 +381,9 @@ async function signupActionImpl(
     }
   }
 
+  // Log signup event (fire-and-forget)
+  logSignup(data.user.id, normalizedEmail, role, { ip, sport: 'baseball' }).catch(() => {});
+
   // Redirect based on role - coaches go to onboarding, players go to player onboarding
   const redirectTo = role === 'coach'
     ? '/baseball/coach-onboarding'
@@ -447,6 +461,10 @@ async function requestPasswordResetActionImpl(
     email: normalizedEmail,
     ip,
   });
+
+  // Log password-reset request (fire-and-forget) — mirrors golf auth's
+  // admin-feed capture so reset requests are visible for both sports.
+  logSecurityEvent('Password reset requested', 'info', { email: normalizedEmail, sport: 'baseball' }).catch(() => {});
 
   // Generic response - don't reveal if email exists
   return {

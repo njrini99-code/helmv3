@@ -26,6 +26,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
+import { logError } from '@/lib/error-logging';
 import {
   attachDocumentToEvent,
   detachDocumentFromEvent,
@@ -89,6 +90,12 @@ export function EventDocumentsSection({
       if (cancelled) return;
       if (res.success && res.data) {
         setAttached(res.data);
+      } else {
+        logError(
+          new Error(res.error || 'Failed to load event documents'),
+          { component: 'EventDocumentsSection', action: 'load-event-documents', sport: 'golf', eventId },
+          'medium'
+        );
       }
       setLoading(false);
     });
@@ -108,6 +115,11 @@ export function EventDocumentsSection({
       setShowPicker(false);
     } else {
       toast.error('Could not attach', res.error || 'Try again in a moment.');
+      logError(
+        new Error(res.error || 'Failed to attach document to event'),
+        { component: 'EventDocumentsSection', action: 'attach-document', sport: 'golf', eventId, documentId: docId },
+        'high'
+      );
     }
     setPendingAction(null);
   };
@@ -120,6 +132,11 @@ export function EventDocumentsSection({
       setAttached((prev) => prev.filter((r) => r.document.id !== docId));
     } else {
       toast.error('Could not remove', res.error || 'Try again in a moment.');
+      logError(
+        new Error(res.error || 'Failed to detach document from event'),
+        { component: 'EventDocumentsSection', action: 'detach-document', sport: 'golf', eventId, documentId: docId },
+        'high'
+      );
     }
     setPendingAction(null);
   };
@@ -261,7 +278,15 @@ function DocumentPickerDialog({
     setLoading(true);
     getDocuments(teamId).then((res) => {
       if (cancelled) return;
-      if (res.data) setDocs(res.data);
+      if (res.data) {
+        setDocs(res.data);
+      } else {
+        logError(
+          new Error(res.error || 'Failed to load team documents'),
+          { component: 'EventDocumentsSection', action: 'load-document-library', sport: 'golf', teamId },
+          'medium'
+        );
+      }
       setLoading(false);
     });
     return () => {
