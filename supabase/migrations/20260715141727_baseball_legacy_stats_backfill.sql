@@ -51,9 +51,11 @@
 -- COPY-ONLY: this migration only ever INSERTs — into `baseball_games`,
 -- `baseball_box_score_batting`, `baseball_box_score_pitching`, and (Step 4,
 -- below) `baseball_player_season_stats` guarded by `ON CONFLICT DO NOTHING`
--- so an EXISTING season row is never touched. It never UPDATEs or DELETEs a
--- single row of `baseball_player_stats` (or anything else) — the legacy
--- table is read-only input here.
+-- so an EXISTING season row is never touched, plus its own append-only
+-- `baseball_legacy_backfill_manifest` rollback ledger (see "ROLLBACK
+-- MANIFEST" below). It never UPDATEs or DELETEs a single row of
+-- `baseball_player_stats` (or anything else) — the legacy table is
+-- read-only input here.
 --
 -- SEASON-STATS SAFETY (post-review fix — read this before assuming
 -- `baseball_player_season_stats` is inert until someone deliberately recalcs)
@@ -133,16 +135,15 @@
 -- `detId()` uses (see its header comment + #827). The namespace here is
 -- `baseball-legacy-backfill-379` — DELIBERATELY DIFFERENT from the seed
 -- script's `baseball-stats-seed` namespace, so these ids can never collide
--- with anything the demo seeder (or anything else) has ever produced, and so
--- a rollback can RECOMPUTE (not merely record) exactly which rows are this
--- migration's. Every INSERT below is `ON CONFLICT (...) DO NOTHING` keyed on
--- that deterministic id (or the table's own natural unique key), so re-running
--- this file is always a no-op the second time. Step 4's season-stats seed has
--- no id of its own to derive — it's keyed on the table's existing
--- `(player_id, team_id, season_year)` unique constraint with `DO NOTHING`,
--- which is equally idempotent: a second run recomputes the identical
--- aggregate and finds the conflict already satisfied (either from its own
--- first run or a pre-existing row it never touched either time).
+-- with anything the demo seeder (or anything else) has ever produced. Every
+-- INSERT below is `ON CONFLICT (...) DO NOTHING` keyed on that deterministic
+-- id (or the table's own natural unique key), so re-running this file is
+-- always a no-op the second time. Step 4's season-stats seed has no id of its
+-- own to derive — it's keyed on the table's existing `(player_id, team_id,
+-- season_year)` unique constraint with `DO NOTHING`, which is equally
+-- idempotent: a second run recomputes the identical aggregate and finds the
+-- conflict already satisfied (either from its own first run or a
+-- pre-existing row it never touched either time).
 --
 -- No new database function is created. The id derivation is inlined as plain
 -- SQL (bytea `get_byte`/`set_byte` + `pgcrypto.digest`) inside CTEs, computed
@@ -159,23 +160,93 @@
 -- depends on — or risks a future edit to — that shared function's behavior.
 -- See SEASON-STATS SAFETY above.
 --
+-- ROLLBACK MANIFEST (post-review fix — replaces id-recomputation rollback)
+-- ---------------------------------------------------------------------------
+-- Recomputing ids from whatever `baseball_player_stats` happens to contain AT
+-- ROLLBACK TIME is not safe: legacy rows can be edited or deleted between
+-- apply and rollback, which would recompute a DIFFERENT candidate set than
+-- what was actually written, and a Step-4-seeded season row that a later live
+-- `recalculate_baseball_season_stats()` call has already folded new, real
+-- games into is no longer safe to delete purely from a pre-flight diff. So
+-- Step 0 below first creates (if missing) a permanent, additive,
+-- service-role-only ledger table, `baseball_legacy_backfill_manifest`, and
+-- every subsequent INSERT in this file (Steps 1-4) immediately re-inserts its
+-- own `RETURNING` rows into that manifest, tagged with this run's
+-- `run_tag` (`'baseball-legacy-backfill-379'`), in the SAME transaction as the
+-- data write itself. Rollback (see the runbook's "Rollback story") then joins
+-- against this manifest instead of recomputing anything — it deletes EXACTLY
+-- the rows this run created, nothing more, nothing else, regardless of what
+-- `baseball_player_stats` looks like by the time rollback runs. The manifest
+-- itself is never deleted by rollback (or by this migration) — it is
+-- permanent, append-only audit history.
+--
+-- CONCURRENCY
+-- ---------------------------------------------------------------------------
+-- Step 0 below takes an explicit `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE`
+-- on all five tables this migration reads or writes, BEFORE the eligibility
+-- snapshot, so a concurrent box-score/game save (which takes the default
+-- ROW EXCLUSIVE mode for its own INSERT/UPDATE) cannot land between the
+-- eligibility snapshot and this migration's own writes and invalidate it —
+-- see docs/baseball/legacy-backfill-runbook.md's "Apply window" note. This
+-- does not self-conflict with this migration's own later INSERTs: Postgres
+-- never blocks a transaction on a lock it already holds itself, and
+-- SHARE ROW EXCLUSIVE is a superset of what ROW EXCLUSIVE (a plain INSERT)
+-- needs. It DOES block other sessions' writes to these tables for the
+-- duration of this transaction — apply only during a low-traffic window.
+--
 -- Wrapped in an explicit BEGIN/COMMIT (precedented in this repo — see
 -- 20260528041553_fix_coachhelm_settings_preferences_and_insight_types.sql) so
--- the two TEMP TABLE snapshots and all four INSERTs commit atomically as one
--- unit regardless of how the migration runner batches statements.
+-- the manifest table, the two TEMP TABLE snapshots, and all four INSERTs (plus
+-- their manifest records) commit atomically as one unit regardless of how the
+-- migration runner batches statements.
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
+-- Step -1 — permanent rollback manifest (service-role only). Created once;
+-- IF NOT EXISTS makes a second run of this file a no-op here too. RLS is
+-- enabled with no policies attached (deny-by-default for authenticated/anon);
+-- the explicit REVOKE below is the actual enforcement, RLS is defense in
+-- depth. service_role (the only writer/reader — the migration runner and any
+-- future rollback script) bypasses RLS entirely, as usual.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.baseball_legacy_backfill_manifest (
+  id         bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  run_tag    text NOT NULL,
+  row_kind   text NOT NULL CHECK (row_kind IN ('game', 'batting_row', 'pitching_row', 'season_stat_triple')),
+  game_id    uuid,
+  player_id  uuid,
+  team_id    uuid,
+  season_year integer,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.baseball_legacy_backfill_manifest ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.baseball_legacy_backfill_manifest FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.baseball_legacy_backfill_manifest TO service_role;
+
+-- ----------------------------------------------------------------------------
+-- Step 0a — lock every table this migration reads or writes BEFORE taking the
+-- eligibility snapshot below, so a concurrent save cannot invalidate it. See
+-- "CONCURRENCY" above.
+-- ----------------------------------------------------------------------------
+LOCK TABLE public.baseball_player_stats,
+           public.baseball_games,
+           public.baseball_box_score_batting,
+           public.baseball_box_score_pitching,
+           public.baseball_player_season_stats
+  IN SHARE ROW EXCLUSIVE MODE;
+
+-- ----------------------------------------------------------------------------
 -- Step 0 — snapshot eligible ("zero box-score data") teams BEFORE any writes.
 -- ----------------------------------------------------------------------------
-DROP TABLE IF EXISTS pg_temp._bb_legacy_backfill_379_teams;
-CREATE TEMP TABLE _bb_legacy_backfill_379_teams (
+DROP TABLE IF EXISTS pg_temp.baseball_legacy_backfill_379_teams;
+CREATE TEMP TABLE baseball_legacy_backfill_379_teams (
   team_id uuid PRIMARY KEY
 ) ON COMMIT DROP;
 
-INSERT INTO _bb_legacy_backfill_379_teams (team_id)
+INSERT INTO baseball_legacy_backfill_379_teams (team_id)
 SELECT DISTINCT ps.team_id
 FROM public.baseball_player_stats ps
 WHERE ps.stat_type = 'game'
@@ -191,8 +262,8 @@ WHERE ps.stat_type = 'game'
 -- (team_id, session_date) only (mirrors #827's buildBoxScoreRowsForSessions:
 -- "Scoped to TEAM + DATE only (never player_id)").
 -- ----------------------------------------------------------------------------
-DROP TABLE IF EXISTS pg_temp._bb_legacy_backfill_379_games;
-CREATE TEMP TABLE _bb_legacy_backfill_379_games (
+DROP TABLE IF EXISTS pg_temp.baseball_legacy_backfill_379_games;
+CREATE TEMP TABLE baseball_legacy_backfill_379_games (
   team_id uuid NOT NULL,
   session_date date NOT NULL,
   opponent_name text,
@@ -200,7 +271,7 @@ CREATE TEMP TABLE _bb_legacy_backfill_379_games (
   PRIMARY KEY (team_id, session_date)
 ) ON COMMIT DROP;
 
-INSERT INTO _bb_legacy_backfill_379_games (team_id, session_date, opponent_name, game_id)
+INSERT INTO baseball_legacy_backfill_379_games (team_id, session_date, opponent_name, game_id)
 WITH game_groups AS (
   SELECT
     ps.team_id,
@@ -215,7 +286,7 @@ WITH game_groups AS (
     -- convention, not a real-data one).
     MIN(NULLIF(TRIM(ps.session_name), '')) AS opponent_name
   FROM public.baseball_player_stats ps
-  JOIN _bb_legacy_backfill_379_teams t ON t.team_id = ps.team_id
+  JOIN baseball_legacy_backfill_379_teams t ON t.team_id = ps.team_id
   WHERE ps.stat_type = 'game'
   GROUP BY ps.team_id, ps.session_date
   HAVING NOT EXISTS (
@@ -263,21 +334,31 @@ SELECT
   )::uuid AS game_id
 FROM hexed;
 
-INSERT INTO public.baseball_games (
-  id, team_id, game_date, game_type, opponent_name, status, notes
+WITH inserted_games AS (
+  INSERT INTO public.baseball_games (
+    id, team_id, game_date, game_type, opponent_name, status, notes
+  )
+  SELECT
+    g.game_id,
+    g.team_id,
+    g.session_date,
+    'game',
+    g.opponent_name,
+    'completed',
+    'Backfilled by #379 one-time legacy stats backfill from baseball_player_stats '
+      || '(copy-only; legacy rows untouched). Deterministic id — see '
+      || 'docs/baseball/legacy-backfill-runbook.md for rollback.'
+  FROM baseball_legacy_backfill_379_games g
+  ON CONFLICT (id) DO NOTHING
+  RETURNING id AS game_id, team_id
 )
-SELECT
-  g.game_id,
-  g.team_id,
-  g.session_date,
-  'game',
-  g.opponent_name,
-  'completed',
-  'Backfilled by #379 one-time legacy stats backfill from baseball_player_stats '
-    || '(copy-only; legacy rows untouched). Deterministic id — see '
-    || 'docs/baseball/legacy-backfill-runbook.md for rollback.'
-FROM _bb_legacy_backfill_379_games g
-ON CONFLICT (id) DO NOTHING;
+-- Manifest record for exactly the games this run actually inserted (an
+-- ON CONFLICT DO NOTHING that hits an existing row returns nothing here, so
+-- a second run of this file adds zero manifest rows too — same idempotency
+-- guarantee as the data write itself).
+INSERT INTO public.baseball_legacy_backfill_manifest (run_tag, row_kind, game_id, team_id)
+SELECT 'baseball-legacy-backfill-379', 'game', game_id, team_id
+FROM inserted_games;
 
 -- ----------------------------------------------------------------------------
 -- Step 2 — batting lines. One per (game, player); dedupe via ROW_NUMBER when
@@ -286,7 +367,7 @@ ON CONFLICT (id) DO NOTHING;
 WITH candidates AS (
   SELECT ps.*, g.game_id
   FROM public.baseball_player_stats ps
-  JOIN _bb_legacy_backfill_379_games g
+  JOIN baseball_legacy_backfill_379_games g
     ON g.team_id = ps.team_id AND g.session_date = ps.session_date
   WHERE ps.stat_type = 'game'
 ),
@@ -360,22 +441,28 @@ rated AS (
 final AS (
   SELECT r.*, CASE WHEN r.obp IS NOT NULL AND r.slg IS NOT NULL THEN ROUND(r.obp + r.slg, 3) END AS ops
   FROM rated r
+),
+inserted_batting AS (
+  INSERT INTO public.baseball_box_score_batting (
+    id, game_id, player_id, team_id,
+    ab, r, h, doubles, triples, hr, rbi, bb, k, sb, cs, hbp, sac, sf, lob, batting_order,
+    avg, obp, slg, ops
+  )
+  SELECT
+    bat_id, game_id, player_id, team_id,
+    ab,
+    0,     -- r (runs scored): no legacy column — honestly 0, not fabricated
+    h, doubles, triples, hr, rbi, bb, k, sb, cs, hbp, sac, sf,
+    0,     -- lob: no legacy column (CSV-import-only ephemeral field, never persisted)
+    NULL,  -- batting_order: no legacy column
+    avg, obp, slg, ops
+  FROM final
+  ON CONFLICT (game_id, player_id) DO NOTHING
+  RETURNING game_id, player_id, team_id
 )
-INSERT INTO public.baseball_box_score_batting (
-  id, game_id, player_id, team_id,
-  ab, r, h, doubles, triples, hr, rbi, bb, k, sb, cs, hbp, sac, sf, lob, batting_order,
-  avg, obp, slg, ops
-)
-SELECT
-  bat_id, game_id, player_id, team_id,
-  ab,
-  0,     -- r (runs scored): no legacy column — honestly 0, not fabricated
-  h, doubles, triples, hr, rbi, bb, k, sb, cs, hbp, sac, sf,
-  0,     -- lob: no legacy column (CSV-import-only ephemeral field, never persisted)
-  NULL,  -- batting_order: no legacy column
-  avg, obp, slg, ops
-FROM final
-ON CONFLICT (game_id, player_id) DO NOTHING;
+INSERT INTO public.baseball_legacy_backfill_manifest (run_tag, row_kind, game_id, player_id, team_id)
+SELECT 'baseball-legacy-backfill-379', 'batting_row', game_id, player_id, team_id
+FROM inserted_batting;
 
 -- ----------------------------------------------------------------------------
 -- Step 3 — pitching lines. Only legacy rows that actually recorded innings
@@ -384,7 +471,7 @@ ON CONFLICT (game_id, player_id) DO NOTHING;
 WITH candidates AS (
   SELECT ps.*, g.game_id
   FROM public.baseball_player_stats ps
-  JOIN _bb_legacy_backfill_379_games g
+  JOIN baseball_legacy_backfill_379_games g
     ON g.team_id = ps.team_id AND g.session_date = ps.session_date
   WHERE ps.stat_type = 'game'
     AND ps.innings_pitched IS NOT NULL
@@ -456,19 +543,25 @@ rated AS (
     CASE WHEN outs > 0 THEN ROUND(9.0 * k / (outs / 3.0), 2) END AS k9,
     CASE WHEN outs > 0 THEN ROUND(9.0 * bb / (outs / 3.0), 2) END AS bb9
   FROM outsed
+),
+inserted_pitching AS (
+  INSERT INTO public.baseball_box_score_pitching (
+    id, game_id, player_id, team_id, ip, h, r, er, bb, k, hr, pitch_count, strikes, result,
+    era, whip, k9, bb9
+  )
+  SELECT
+    pit_id, game_id, player_id, team_id, ip, h, r, er, bb, k,
+    0,     -- hr (home runs allowed): no legacy column — honestly 0, not fabricated
+    pitch_count, strikes,
+    NULL,  -- result (W/L/S/H/BS/ND): no legacy column, decision unknown
+    era, whip, k9, bb9
+  FROM rated
+  ON CONFLICT (game_id, player_id) DO NOTHING
+  RETURNING game_id, player_id, team_id
 )
-INSERT INTO public.baseball_box_score_pitching (
-  id, game_id, player_id, team_id, ip, h, r, er, bb, k, hr, pitch_count, strikes, result,
-  era, whip, k9, bb9
-)
-SELECT
-  pit_id, game_id, player_id, team_id, ip, h, r, er, bb, k,
-  0,     -- hr (home runs allowed): no legacy column — honestly 0, not fabricated
-  pitch_count, strikes,
-  NULL,  -- result (W/L/S/H/BS/ND): no legacy column, decision unknown
-  era, whip, k9, bb9
-FROM rated
-ON CONFLICT (game_id, player_id) DO NOTHING;
+INSERT INTO public.baseball_legacy_backfill_manifest (run_tag, row_kind, game_id, player_id, team_id)
+SELECT 'baseball-legacy-backfill-379', 'pitching_row', game_id, player_id, team_id
+FROM inserted_pitching;
 
 -- ----------------------------------------------------------------------------
 -- Step 4 — season-stat seed for exactly the (player_id, team_id, season_year)
@@ -493,12 +586,12 @@ ON CONFLICT (game_id, player_id) DO NOTHING;
 WITH bb379_touched AS (
   SELECT DISTINCT bsb.player_id, bsb.team_id, EXTRACT(YEAR FROM bg.game_date)::integer AS season_year
   FROM public.baseball_box_score_batting bsb
-  JOIN _bb_legacy_backfill_379_games tg ON tg.game_id = bsb.game_id
+  JOIN baseball_legacy_backfill_379_games tg ON tg.game_id = bsb.game_id
   JOIN public.baseball_games bg ON bg.id = bsb.game_id
   UNION
   SELECT DISTINCT bsp.player_id, bsp.team_id, EXTRACT(YEAR FROM bg.game_date)::integer AS season_year
   FROM public.baseball_box_score_pitching bsp
-  JOIN _bb_legacy_backfill_379_games tg ON tg.game_id = bsp.game_id
+  JOIN baseball_legacy_backfill_379_games tg ON tg.game_id = bsp.game_id
   JOIN public.baseball_games bg ON bg.id = bsp.game_id
 ),
 bb379_bat_agg AS (
@@ -595,36 +688,42 @@ bb379_pit_final AS (
     CASE WHEN p.ip > 0 THEN ROUND(9.0 * p.k_thrown / p.ip, 2) END AS k9,
     CASE WHEN p.ip > 0 THEN ROUND(9.0 * p.bb_allowed / p.ip, 2) END AS bb9
   FROM bb379_pit_agg p
+),
+inserted_season AS (
+  INSERT INTO public.baseball_player_season_stats (
+    player_id, team_id, season_year,
+    g, ab, r, h, doubles, triples, hr, rbi, bb, k, sb, cs, hbp, sac, sf,
+    ibb, gidp, roe, two_out_rbi, lob,
+    avg, obp, slg, ops,
+    g_p, gs, w, l, sv, ip, h_allowed, r_allowed, er, bb_allowed, k_thrown, hr_allowed,
+    gf, holds, blown_saves, bf, p_hbp, wp,
+    era, whip, k9, bb9,
+    last_updated
+  )
+  SELECT
+    t.player_id, t.team_id, t.season_year,
+    COALESCE(bat.g, 0), COALESCE(bat.ab, 0), COALESCE(bat.r, 0), COALESCE(bat.h, 0),
+    COALESCE(bat.doubles, 0), COALESCE(bat.triples, 0), COALESCE(bat.hr, 0), COALESCE(bat.rbi, 0),
+    COALESCE(bat.bb, 0), COALESCE(bat.k, 0), COALESCE(bat.sb, 0), COALESCE(bat.cs, 0),
+    COALESCE(bat.hbp, 0), COALESCE(bat.sac, 0), COALESCE(bat.sf, 0),
+    COALESCE(bat.ibb, 0), COALESCE(bat.gidp, 0), COALESCE(bat.roe, 0), COALESCE(bat.two_out_rbi, 0), COALESCE(bat.lob, 0),
+    bat.avg, bat.obp, bat.slg, bat.ops,
+    COALESCE(pit.g_p, 0), 0, COALESCE(pit.w, 0), COALESCE(pit.l, 0), COALESCE(pit.sv, 0),
+    COALESCE(pit.ip, 0), COALESCE(pit.h_allowed, 0), COALESCE(pit.r_allowed, 0), COALESCE(pit.er, 0),
+    COALESCE(pit.bb_allowed, 0), COALESCE(pit.k_thrown, 0), COALESCE(pit.hr_allowed, 0),
+    COALESCE(pit.gf, 0), COALESCE(pit.holds, 0), COALESCE(pit.blown_saves, 0), COALESCE(pit.bf, 0),
+    COALESCE(pit.p_hbp, 0), COALESCE(pit.wp, 0),
+    pit.era, pit.whip, pit.k9, pit.bb9,
+    now()
+  FROM bb379_touched t
+  LEFT JOIN bb379_bat_final bat ON bat.player_id = t.player_id AND bat.team_id = t.team_id AND bat.season_year = t.season_year
+  LEFT JOIN bb379_pit_final pit ON pit.player_id = t.player_id AND pit.team_id = t.team_id AND pit.season_year = t.season_year
+  ON CONFLICT (player_id, team_id, season_year) DO NOTHING
+  RETURNING player_id, team_id, season_year
 )
-INSERT INTO public.baseball_player_season_stats (
-  player_id, team_id, season_year,
-  g, ab, r, h, doubles, triples, hr, rbi, bb, k, sb, cs, hbp, sac, sf,
-  ibb, gidp, roe, two_out_rbi, lob,
-  avg, obp, slg, ops,
-  g_p, gs, w, l, sv, ip, h_allowed, r_allowed, er, bb_allowed, k_thrown, hr_allowed,
-  gf, holds, blown_saves, bf, p_hbp, wp,
-  era, whip, k9, bb9,
-  last_updated
-)
-SELECT
-  t.player_id, t.team_id, t.season_year,
-  COALESCE(bat.g, 0), COALESCE(bat.ab, 0), COALESCE(bat.r, 0), COALESCE(bat.h, 0),
-  COALESCE(bat.doubles, 0), COALESCE(bat.triples, 0), COALESCE(bat.hr, 0), COALESCE(bat.rbi, 0),
-  COALESCE(bat.bb, 0), COALESCE(bat.k, 0), COALESCE(bat.sb, 0), COALESCE(bat.cs, 0),
-  COALESCE(bat.hbp, 0), COALESCE(bat.sac, 0), COALESCE(bat.sf, 0),
-  COALESCE(bat.ibb, 0), COALESCE(bat.gidp, 0), COALESCE(bat.roe, 0), COALESCE(bat.two_out_rbi, 0), COALESCE(bat.lob, 0),
-  bat.avg, bat.obp, bat.slg, bat.ops,
-  COALESCE(pit.g_p, 0), 0, COALESCE(pit.w, 0), COALESCE(pit.l, 0), COALESCE(pit.sv, 0),
-  COALESCE(pit.ip, 0), COALESCE(pit.h_allowed, 0), COALESCE(pit.r_allowed, 0), COALESCE(pit.er, 0),
-  COALESCE(pit.bb_allowed, 0), COALESCE(pit.k_thrown, 0), COALESCE(pit.hr_allowed, 0),
-  COALESCE(pit.gf, 0), COALESCE(pit.holds, 0), COALESCE(pit.blown_saves, 0), COALESCE(pit.bf, 0),
-  COALESCE(pit.p_hbp, 0), COALESCE(pit.wp, 0),
-  pit.era, pit.whip, pit.k9, pit.bb9,
-  now()
-FROM bb379_touched t
-LEFT JOIN bb379_bat_final bat ON bat.player_id = t.player_id AND bat.team_id = t.team_id AND bat.season_year = t.season_year
-LEFT JOIN bb379_pit_final pit ON pit.player_id = t.player_id AND pit.team_id = t.team_id AND pit.season_year = t.season_year
-ON CONFLICT (player_id, team_id, season_year) DO NOTHING;
+INSERT INTO public.baseball_legacy_backfill_manifest (run_tag, row_kind, player_id, team_id, season_year)
+SELECT 'baseball-legacy-backfill-379', 'season_stat_triple', player_id, team_id, season_year
+FROM inserted_season;
 
 COMMIT;
 
@@ -715,4 +814,14 @@ COMMIT;
 -- NOT in the BEFORE result was seeded by Step 4 and is safe to remove on
 -- rollback; any row that WAS in the BEFORE result is the pre-existing
 -- baseline Step 4 deliberately left untouched.)
+
+-- ---- AFTER: manifest audit — every row this run recorded, by kind ----
+-- SELECT row_kind, count(*) AS n
+-- FROM public.baseball_legacy_backfill_manifest
+-- WHERE run_tag = 'baseball-legacy-backfill-379'
+-- GROUP BY row_kind
+-- ORDER BY row_kind;
+-- (This is the authoritative rollback source — see the runbook's "Rollback
+-- story" for the manifest-join DELETE statements. It is never itself deleted
+-- by rollback; it is permanent, append-only history.)
 -- =============================================================================

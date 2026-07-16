@@ -47,7 +47,8 @@ The migration is the one-time catch-up for exactly those teams:
 (`baseball_games.game_type` only allows `'game'`/`'scrimmage'`).
 
 **Copy-only.** The migration only ever `INSERT`s into `baseball_games`,
-`baseball_box_score_batting`, `baseball_box_score_pitching`. It never
+`baseball_box_score_batting`, `baseball_box_score_pitching`, and
+`baseball_player_season_stats`. It never
 `UPDATE`s or `DELETE`s a row of `baseball_player_stats`, or anything else —
 the legacy table is read-only input.
 
@@ -182,16 +183,22 @@ bytes (version nibble forced to `0x5`, variant bits forced to `10xx`) — the
 exact pattern `scripts/seed-baseball-stats.mjs`'s `detId()` uses (see its
 header comment and `#827`). The namespace is deliberately different from the
 seed script's own `baseball-stats-seed` namespace, so these ids can never
-collide with the demo seeder's (or anything else's) ids, and so this exact id
-formula can be **recomputed** later — not merely looked up from a log — which
-is what makes the rollback below possible without any extra bookkeeping
-table.
+collide with the demo seeder's (or anything else's) ids.
 
 Every `INSERT` is `ON CONFLICT (...) DO NOTHING` keyed on that deterministic
 id (games) or the table's natural unique key (`(game_id, player_id)` for
-batting/pitching). Re-running the file is always a no-op the second time —
-verified empirically (see "Verified" below): a second run against the same
-database inserted zero new rows in any of the three tables.
+batting/pitching, `(player_id, team_id, season_year)` for the season seed).
+Re-running the file is always a no-op the second time — verified empirically
+(see "Verified" below): a second run against the same database inserted zero
+new rows in any of the four tables.
+
+**Rollback no longer depends on recomputing these ids** — see "Rollback
+story" below. The migration also writes a permanent, append-only manifest
+table, `baseball_legacy_backfill_manifest`, recording every row it inserts
+(games, batting rows, pitching rows, and season-stat triples) tagged with
+`run_tag = 'baseball-legacy-backfill-379'`, in the SAME transaction as each
+insert. That manifest — not the deterministic ids — is the authoritative
+record of exactly what this run touched, and is what rollback joins against.
 
 ## How the orchestrator applies it
 
@@ -205,11 +212,19 @@ This file stays **written, not applied** until Nick says go. When he does:
    stop and get Nick's explicit call on those specific teams/players before
    proceeding (see "Season-stats interaction" above) — do not treat an
    empty migration diff as proof this step is unnecessary.
-3. Apply the migration file verbatim via `mcp__supabase__apply_migration`
+3. **Apply during a low-traffic window.** The migration takes an explicit
+   `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE` on `baseball_player_stats`,
+   `baseball_games`, `baseball_box_score_batting`, `baseball_box_score_pitching`,
+   and `baseball_player_season_stats` before it snapshots eligibility, so that
+   a concurrent box-score/game save cannot land mid-run and invalidate the
+   snapshot. Ordinary reads (Stats Center, Roster, etc.) are unaffected —
+   only writes to those five tables briefly queue behind this migration's
+   transaction until it commits.
+4. Apply the migration file verbatim via `mcp__supabase__apply_migration`
    (file content unchanged from what's committed — this is a WRITE-ONLY repo
    file until that point).
-4. Run the **post-check queries** below to confirm row-count parity per team.
-5. Spot-check one backfilled team's Stats Center page in the app to confirm
+5. Run the **post-check queries** below to confirm row-count parity per team.
+6. Spot-check one backfilled team's Stats Center page in the app to confirm
    real numbers now render (previously empty).
 
 No code changes accompany this migration — nothing needs deploying alongside
@@ -276,73 +291,56 @@ team+date+player legacy rows existed (see Known Limitations).
 
 ## Rollback story
 
-Copy-only means rollback is a pure delete, and because every id is
-deterministic (not random), rollback does not depend on any log or snapshot
-from the original run — it **recomputes** the exact same ids from whatever
-`baseball_player_stats` currently contains, then deletes any row whose id
-matches. Rows this migration never created simply won't match anything (a
-pre-existing team's real box-score id was assigned by `gen_random_uuid()`,
-not derived from this hash, so it cannot collide), so this is precise and
-safe to run at any time after the migration, without needing to already know
-which teams were touched.
+Rollback is a pure delete, joined against the permanent
+`baseball_legacy_backfill_manifest` table this migration writes to (see
+"Idempotency" above) — it does **not** recompute anything. The migration
+used to recompute the deterministic ids from whatever `baseball_player_stats`
+happened to contain at rollback time; that is not safe, because legacy rows
+can be edited or deleted between apply and rollback, which would recompute a
+DIFFERENT candidate set than what this run actually wrote. The manifest is
+an immutable, apply-time record — written in the SAME transaction as each
+insert — of exactly which rows this run created, so rollback reads it
+instead of re-deriving anything from current, possibly-changed state.
 
 Run this as one transaction:
 
 ```sql
 BEGIN;
 
--- Recompute candidate game ids from CURRENT baseball_player_stats — no
--- eligibility gate needed here; safety comes from exact id match, not from
--- re-deriving "which teams were eligible" (which would self-exclude every
--- team this migration touched, since they now have box-score rows).
-WITH game_groups AS (
-  SELECT ps.team_id, ps.session_date
-  FROM public.baseball_player_stats ps
-  WHERE ps.stat_type = 'game'
-  GROUP BY ps.team_id, ps.session_date
-),
-hashed AS (
-  SELECT g.team_id, g.session_date,
-    substring(
-      public.digest('baseball-legacy-backfill-379:box-game:' || g.team_id::text || ':' || g.session_date::text, 'sha1')
-      FROM 1 FOR 16
-    ) AS raw16
-  FROM game_groups g
-),
-versioned AS (
-  SELECT team_id, session_date, set_byte(raw16, 6, (get_byte(raw16, 6) & 15) | 80) AS b1 FROM hashed
-),
-varianted AS (
-  SELECT team_id, session_date,
-    set_byte(b1, 8, ((((get_byte(b1, 8) >> 4) & 3) | 8) << 4) | (get_byte(b1, 8) & 15)) AS b2
-  FROM versioned
-),
-hexed AS (SELECT team_id, session_date, encode(b2, 'hex') AS hx FROM varianted),
-game_ids AS (
-  SELECT team_id, session_date,
-    (substring(hx FROM 1 FOR 8) || '-' || substring(hx FROM 9 FOR 4) || '-' ||
-     substring(hx FROM 13 FOR 4) || '-' || substring(hx FROM 17 FOR 4) || '-' ||
-     substring(hx FROM 21 FOR 12))::uuid AS game_id
-  FROM hexed
-)
-SELECT game_id INTO TEMP _rollback_379_game_ids FROM game_ids;
+-- Eyeball this before deleting: counts by kind, should match the manifest
+-- audit query at the bottom of the migration file.
+SELECT row_kind, count(*) AS n
+FROM public.baseball_legacy_backfill_manifest
+WHERE run_tag = 'baseball-legacy-backfill-379'
+GROUP BY row_kind
+ORDER BY row_kind;
 
--- Eyeball this before deleting: should equal the number of games the
--- post-check query above reported as backfilled.
-SELECT count(*) AS games_to_delete
-FROM public.baseball_games g
-JOIN _rollback_379_game_ids c ON c.game_id = g.id;
+-- Batting rows this run inserted — join by (game_id, player_id), the
+-- manifest's recorded key for row_kind = 'batting_row'.
+DELETE FROM public.baseball_box_score_batting bsb
+USING public.baseball_legacy_backfill_manifest m
+WHERE m.run_tag = 'baseball-legacy-backfill-379'
+  AND m.row_kind = 'batting_row'
+  AND bsb.game_id = m.game_id
+  AND bsb.player_id = m.player_id;
 
-DELETE FROM public.baseball_box_score_batting
-WHERE game_id IN (SELECT game_id FROM _rollback_379_game_ids);
+-- Pitching rows this run inserted.
+DELETE FROM public.baseball_box_score_pitching bsp
+USING public.baseball_legacy_backfill_manifest m
+WHERE m.run_tag = 'baseball-legacy-backfill-379'
+  AND m.row_kind = 'pitching_row'
+  AND bsp.game_id = m.game_id
+  AND bsp.player_id = m.player_id;
 
-DELETE FROM public.baseball_box_score_pitching
-WHERE game_id IN (SELECT game_id FROM _rollback_379_game_ids);
+-- Games this run synthesized.
+DELETE FROM public.baseball_games g
+USING public.baseball_legacy_backfill_manifest m
+WHERE m.run_tag = 'baseball-legacy-backfill-379'
+  AND m.row_kind = 'game'
+  AND g.id = m.game_id;
 
-DELETE FROM public.baseball_games
-WHERE id IN (SELECT game_id FROM _rollback_379_game_ids);
-
--- Review the row counts printed by the DELETEs above, THEN:
+-- Review the row counts printed by the DELETEs above (should match the
+-- audit query's counts for 'batting_row' / 'pitching_row' / 'game'), THEN:
 COMMIT;
 -- (or ROLLBACK; instead, to abort without changing anything)
 ```
@@ -351,40 +349,61 @@ COMMIT;
 `_pitching` is `ON DELETE CASCADE`, so deleting only the `baseball_games` rows
 would technically also remove the box-score rows — the explicit 3-statement
 form above is preferred for an auditable, step-by-step rollback where each
-`DELETE`'s row count is visible before committing.
+`DELETE`'s row count is visible before committing, and where each `DELETE`
+is independently scoped to its own manifest `row_kind` rather than relying on
+cascade to clean up rows a bug might have mis-tagged.
 
 `baseball_player_stats` (the legacy source) is never touched by the forward
-migration, so there is nothing to restore there on rollback.
+migration, so there is nothing to restore there on rollback. The manifest
+table itself is **never deleted** by this rollback (or by the migration) —
+it is permanent, append-only audit history, not a single-use ticket.
 
 ### Season-stats rollback
 
-Step 4's seed is guarded by `ON CONFLICT DO NOTHING`, so — unlike the
-deterministic-id games/box-score rollback above — there is no id to
-recompute-and-match for `baseball_player_season_stats` rows: a row this
-migration seeded and a row that pre-existed both look like ordinary rows
-once written, keyed only on `(player_id, team_id, season_year)`.
+Step 4's seed is recorded in the manifest too (`row_kind = 'season_stat_triple'`),
+so — unlike the old pre-flight-diff approach this replaces — there is no
+"before" snapshot to have saved and no diff to compute: the manifest already
+distinguishes a triple Step 4 inserted (present in the manifest) from a
+pre-existing baseline Step 4's `ON CONFLICT DO NOTHING` left untouched (never
+recorded, because nothing was actually inserted for it).
 
-This is exactly why the **pre-flight query** ("Season-stats interaction"
-above) must be run and its output saved (a screenshot, a CSV export, a copy
-of the JSON result) **before** applying the migration:
+```sql
+BEGIN;
 
-1. **Before applying**, run the pre-flight query and save its output — that
-   is your "already existed" list for every triple this migration is about
-   to touch.
-2. **If you need to roll back**, run the same pre-flight-shaped query again
-   (against the same touched-triple set the games rollback above
-   recomputes) and diff against the saved "before" list:
-   - Any `(player_id, team_id, season_year)` present **now** but **absent**
-     from the saved "before" list was seeded by Step 4 — safe to `DELETE FROM
-     baseball_player_season_stats WHERE (player_id, team_id, season_year) =
-     (...)` for those rows specifically.
-   - Any triple present in **both** is the pre-existing baseline Step 4 never
-     touched — leave it alone.
-3. If the "before" snapshot was never taken (e.g. this section is read after
-   the fact), do **not** guess — treat every season-stats row for a
-   backfilled team as unknown provenance and reconcile it manually against
-   `season_totals` import records or Nick's own knowledge of that team,
-   rather than deleting rows that might be real, independent data.
+DELETE FROM public.baseball_player_season_stats bpss
+USING public.baseball_legacy_backfill_manifest m
+WHERE m.run_tag = 'baseball-legacy-backfill-379'
+  AND m.row_kind = 'season_stat_triple'
+  AND bpss.player_id = m.player_id
+  AND bpss.team_id = m.team_id
+  AND bpss.season_year = m.season_year;
+
+COMMIT;
+```
+
+**Caveat the manifest does not erase — read before assuming this DELETE is a
+clean undo:** by the time you run this, a season row Step 4 seeded may
+already have been folded into by an ordinary, already-shipped box-score save
+(see "Season-stats interaction" above). This DELETE is safe to run anyway,
+specifically **because** of how `recalculate_baseball_season_stats()` is
+written — verified directly against its body
+(`supabase/migrations/20260624001000_baseball_official_stat_breadth.sql:109-265`):
+every call does a fresh `SELECT SUM(...)` aggregation over **all** of that
+player/team/year's currently-completed box-score games, then an unconditional
+`INSERT ... ON CONFLICT (player_id, team_id, season_year) DO UPDATE SET
+col = EXCLUDED.col` for every column. It is a from-scratch REBUILD every
+time, never an incremental merge on top of whatever the row already held. So:
+
+- Deleting the row here does not "lose" anything the next ordinary save
+  can't reconstruct: once this rollback's box-score DELETEs above have
+  already removed this migration's synthesized rows, the next box-score save
+  for that player/team/year calls `recalculate_baseball_season_stats()` again,
+  which re-aggregates from whatever box-score rows remain (this migration's
+  are now gone) and does a full, correct overwrite — not a correction applied
+  on top of stale data.
+- Until that next save happens, the row is simply absent (an honest empty
+  state), not silently wrong — which is why deleting it outright, rather than
+  trying to hand-patch it, is the conservative choice here.
 
 ## Season-stats reconcile (only relevant for pre-existing baselines Step 4 left alone)
 
@@ -427,9 +446,11 @@ Supabase project) with fixture data covering:
 Results: avg/obp/slg/ops and era/whip/k9/bb9 matched hand-calculated values
 (and the outs-based IP conversion) exactly; the already-box-score team was
 untouched; the colliding date was correctly skipped; a second run of the
-same file inserted zero additional rows anywhere; a rollback recompute+delete
-(run inside a `ROLLBACK`ed transaction as a dry run) matched exactly the rows
-the migration had created, and nothing else.
+same file inserted zero additional rows anywhere. (This pass predates the
+manifest-based rollback below — at the time, rollback was a deterministic-id
+recompute-and-delete, which matched exactly the rows the migration had
+created in a `ROLLBACK`ed dry run. That recompute strategy has since been
+replaced; see "Rollback manifest, lock, and temp-table rename" below.)
 
 ### Step 4 (season-stats seed) — re-verified after the post-review fix
 
@@ -471,6 +492,50 @@ Confirmed:
   was silently overwritten by that already-shipped RPC, exactly as warned.
   This was not a hypothetical for this test — it happened on the very next
   ordinary save.
-- The rollback story (games/box-score delete + the season-stats diff-based
-  delete described in "Season-stats rollback" above) correctly removed only
-  the seeded row and left the pre-existing baseline intact.
+- The rollback story tested at the time (games/box-score delete + the
+  since-superseded season-stats diff-based delete) correctly removed only
+  the seeded row and left the pre-existing baseline intact. See below for
+  what changed and how the current manifest-based rollback was verified.
+
+### Rollback manifest, lock, and temp-table rename — verified by design review (post-review fix)
+
+This round replaced the deterministic-id-recompute rollback above with the
+manifest-join rollback in "Rollback story," added the `LOCK TABLE` at the top
+of the transaction, and renamed the two TEMP TABLEs to the required
+`baseball_` prefix. These were verified as follows (design/code review, not a
+fresh disposable-Postgres re-run — the underlying INSERT/aggregation logic
+this touches is unchanged from the passes above):
+
+- **Manifest wiring**: each of the four `INSERT ... RETURNING` statements
+  (games, batting, pitching, season-stats) was checked column-by-column
+  against the manifest table's schema — the `RETURNING` list supplies exactly
+  the columns each row's `row_kind` needs (`game_id`+`team_id` for `'game'`;
+  `game_id`+`player_id`+`team_id` for `'batting_row'`/`'pitching_row'`;
+  `player_id`+`team_id`+`season_year` for `'season_stat_triple'`), and because
+  the manifest INSERT reads from the data INSERT's own `RETURNING` (not a
+  separate re-query), a conflict that makes the data INSERT a no-op also
+  makes the manifest INSERT a no-op — the idempotency guarantee is structural,
+  not a separate thing to keep in sync.
+- **Lock self-conflict**: `SHARE ROW EXCLUSIVE MODE` conflicts with `ROW
+  EXCLUSIVE` (what a plain `INSERT` takes) from **other** sessions, but
+  Postgres never blocks a transaction on a lock it already holds itself —
+  a single transaction's lock requests against its own previously-acquired
+  locks always succeed immediately, regardless of nominal conflict mode. So
+  taking the stronger lock first, then running this migration's own
+  `INSERT`s in the same transaction, cannot self-deadlock or self-block.
+- **"Recalc fully rebuilds it" claim**: verified directly against
+  `recalculate_baseball_season_stats()`'s actual body
+  (`supabase/migrations/20260624001000_baseball_official_stat_breadth.sql:109-265`)
+  — it declares fresh local variables, `SELECT SUM(...) INTO` them from a
+  from-scratch aggregation query scoped to `(player_id, team_id,
+  season_year)` over `baseball_box_score_batting`/`_pitching` joined to
+  `baseball_games`, then does one `INSERT ... ON CONFLICT (player_id,
+  team_id, season_year) DO UPDATE SET <every column> = EXCLUDED.<column>`.
+  There is no read-modify-write against the row's own prior value anywhere in
+  it — every call is a full, from-scratch overwrite, confirming the
+  "Season-stats rollback" caveat above.
+- **Temp-table rename**: verified by grepping the full migration file for the
+  old `_bb_legacy_backfill_379_teams`/`_bb_legacy_backfill_379_games` names
+  after the rename — zero remaining references; all 8 occurrences (2×`DROP
+  TABLE IF EXISTS`, 2×`CREATE TEMP TABLE`, 2×`INSERT INTO`, plus the `JOIN`
+  references in Steps 1-4) now use the `baseball_` prefix.
