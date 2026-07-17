@@ -28,6 +28,7 @@ import { Badge, Chip } from '@/components/fairway/controls/badge';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 import { scoreToParTone, formatToPar, getRoundTypeLabel } from './FairwayRoundCard';
+import { formatDateOnlyWeekdayShort, formatDateOnlyShort } from '@/lib/golf/date-only';
 
 export interface FairwayRoundRowProps {
   round: RoundLibraryRound;
@@ -36,11 +37,14 @@ export interface FairwayRoundRowProps {
   userRole: 'coach' | 'player';
 }
 
+// round_date is a DATE column ('YYYY-MM-DD') — parsed + formatted through the
+// shared date-only helper so this row can never disagree with the round detail
+// header on the calendar day (#916: `new Date(iso).toLocaleDateString()` with
+// no timeZone pin read the previous day west of UTC).
 function dateParts(iso: string): { weekday: string; md: string } {
-  const d = new Date(iso);
   return {
-    weekday: d.toLocaleDateString('en-US', { weekday: 'short' }),
-    md: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    weekday: formatDateOnlyWeekdayShort(iso),
+    md: formatDateOnlyShort(iso),
   };
 }
 

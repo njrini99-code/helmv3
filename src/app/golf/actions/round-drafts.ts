@@ -158,6 +158,20 @@ async function saveRoundDraftImpl(
       total_score: null as null,
       score_to_par: null as null,
       total_putts: null as null,
+      // Qualifier linkage (#916): `data.selectedQualifierId`/`selectedRoundNumber`
+      // carry the qualifier a draft round belongs to (set by the round-setup
+      // UI's qualifier picker), but this record never wrote them to
+      // golf_rounds — so any round that passed through this (legacy/offline-
+      // sync) draft-save path silently lost its qualifier_id even when
+      // round_type correctly said 'qualifier', and never showed up in the
+      // qualifier's results. Only include the field when the caller
+      // explicitly supplied it, so a draft-save that doesn't carry qualifier
+      // context (e.g. an older offline queue entry) can never clobber a
+      // qualifier_id an earlier save already set.
+      ...(data.selectedQualifierId !== undefined ? { qualifier_id: data.selectedQualifierId } : {}),
+      ...(data.selectedRoundNumber !== undefined
+        ? { qualifier_round_number: data.selectedRoundNumber }
+        : {}),
     };
 
     const hasTrackedRoundData = async (roundId: string): Promise<boolean> => {

@@ -11,6 +11,7 @@ import { ViewHeader, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -328,10 +329,10 @@ export default async function TeamStatsPage() {
     // carry a putts value (totalHolesWithPutts), NOT every scored hole — the
     // numerator only summed holes with a non-null putts, so dividing by all
     // scored holes (Σ holes_played) understated putts/round whenever some holes
-    // lacked a recorded putt count.
-    const puttsPerRound = totalHolesWithPutts > 0 && totalPutts > 0
-      ? (totalPutts / totalHolesWithPutts) * 18
-      : null;
+    // lacked a recorded putt count. Shared with the player stats cockpit
+    // (src/lib/utils/golf-stats-calculator-shots.ts) via calculatePuttsPerRound
+    // so the two surfaces can never disagree on the same player again (#917).
+    const puttsPerRound = calculatePuttsPerRound(totalPutts, totalHolesWithPutts);
 
     // Birdies per round: normalize to 18-hole equivalent
     // golf_holes.score is stored per-hole — null values indicate pre-score-tracking rounds

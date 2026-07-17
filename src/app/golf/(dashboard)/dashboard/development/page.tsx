@@ -14,7 +14,12 @@ import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/F
 import { surfaceName } from '@/lib/golf/surface-registry';
 
 export const metadata: Metadata = {
-  title: `${surfaceName('development')} | Helm Golf`,
+  // The browser tab should match the masthead tab identity the user actually
+  // clicked ('Players', the coachhelm-tab surface-registry entry) — not the
+  // page-content identity ('Development Plans', the 'page' group entry for
+  // the SAME href). Both entries are intentional per surface-registry.ts's
+  // two-name-level design; only the <title> was still reading the wrong one (#917).
+  title: `${surfaceName('players-tab')} | Helm Golf`,
   description: 'Manage player development plans and focus areas for your team.',
 };
 
