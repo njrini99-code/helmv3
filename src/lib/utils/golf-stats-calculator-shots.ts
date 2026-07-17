@@ -8,6 +8,8 @@
  * with a pure shot-based approach that derives everything from individual shots.
  */
 
+import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
+
 // ============================================================================
 // TYPES - Raw Data from Database
 // ============================================================================
@@ -1624,6 +1626,12 @@ function aggregateRoundStats(rounds: Array<{
   let currentBirdieStreak = 0;
   let currentParStreak = 0;
   let current3PuttStreak = 0;
+  // Denominator for puttsPerRound (#917) — holes that actually carry a
+  // recorded putts value, NOT every hole played (stats.holesPlayed). Dividing
+  // by every hole played dilutes the average for any round with an unlogged
+  // hole; see src/lib/golf/putts-per-round.ts for the shared formula this
+  // and Team Stats both consume.
+  let totalHolesWithPutts = 0;
 
   // Process each round
   for (const round of rounds) {
@@ -1917,6 +1925,7 @@ function aggregateRoundStats(rounds: Array<{
       // (the old known-hole path fabricated putts=2 for these holes).
       if (hole.putts !== null) {
         stats.totalPutts += hole.putts;
+        if (hole.putts > 0) totalHolesWithPutts++;
         if (hole.threePutts) stats.threePuttsTotal++;
         if (hole.putts === 1) stats.onePuttsTotal++;
       }
@@ -2357,9 +2366,13 @@ function aggregateRoundStats(rounds: Array<{
     par5: finalizeParScore(scorePar5),
   };
 
-  stats.puttsPerRound = stats.holesPlayed > 0
-    ? Math.round(((stats.totalPutts / stats.holesPlayed) * 18) * 100) / 100
-    : null;
+  // Shared formula with Team Stats (src/app/golf/(dashboard)/dashboard/stats/
+  // team/page.tsx) via calculatePuttsPerRound — divides by holes that
+  // actually carry a recorded putts value (totalHolesWithPutts), not every
+  // hole played (stats.holesPlayed), so the two surfaces can never disagree
+  // on the same player again (#917).
+  const rawPuttsPerRound = calculatePuttsPerRound(stats.totalPutts, totalHolesWithPutts);
+  stats.puttsPerRound = rawPuttsPerRound != null ? Math.round(rawPuttsPerRound * 100) / 100 : null;
   stats.puttsPerHole = safeAverage(stats.totalPutts, stats.holesPlayed);
   // Denominator = GIR holes with KNOWN putts (null-skip both sides of the
   // ratio; a GIR hole with unrecorded putts must not drag the average down).

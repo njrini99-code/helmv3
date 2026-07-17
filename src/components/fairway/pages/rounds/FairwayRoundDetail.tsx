@@ -58,6 +58,7 @@ import {
   Button,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
+import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — fully-resolved, serializable data from the server page.
@@ -181,17 +182,13 @@ export function FairwayRoundDetail({
   const reviewHref = `/golf/dashboard/rounds/${round.id}/review`;
 
   // ── Masthead copy ──────────────────────────────────────────────────────────
-  // round_date is a DATE column ('YYYY-MM-DD') → new Date() = midnight UTC.
-  // Pin the formatters to UTC so SSR (server TZ) and hydration (client TZ) agree —
-  // without this, west-of-UTC clients render the previous day (React #418 + off-by-one).
-  const roundDate = new Date(round.round_date);
-  const dayOfWeek = roundDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-  const dateLabel = roundDate.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  // round_date is a DATE column ('YYYY-MM-DD'). Parsed + formatted through the
+  // shared date-only helper (pinned to UTC) so SSR (server TZ) and hydration
+  // (client TZ) agree, AND this header can never disagree with the rounds-list
+  // row on the calendar day (#916: a sibling surface's un-pinned formatter
+  // read the previous day west of UTC).
+  const dayOfWeek = formatDateOnlyWeekdayLong(round.round_date);
+  const dateLabel = formatDateOnlyFull(round.round_date);
   const heroTitle = `${dayOfWeek} at ${shortCourse(round.course_name)}`;
   const holesPlayed = round.holes_played ?? 18;
   const contextLine = `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · ${playerName}`;
