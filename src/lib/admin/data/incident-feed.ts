@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
+import { getProductionDeployAt, RELEASE_GRACE_MS } from '@/lib/admin/auto-resolve';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 import {
@@ -40,6 +41,26 @@ export function filterSentryIssuesByWindow(
 ): SentryIssue[] {
   const since = Date.now() - windowHours * 3600_000;
   return issues.filter((issue) => Date.parse(issue.lastSeen) >= since);
+}
+
+/**
+ * Release-aware read-time filter — the incident-list mirror of
+ * auto-resolve.ts's Rule A for admin_events. Once the newest READY
+ * production deploy is >= 24h old, a Sentry issue that hasn't fired since
+ * BEFORE that deploy is treated as fixed and dropped from the merged
+ * incident feed; an issue with a lastSeen at/after deployAt (a regression,
+ * or one that never stopped) still shows. Pure and fail-open: `deployAt:
+ * null` (deploy data unavailable) or a deploy under 24h old both pass every
+ * issue through unfiltered — never a false "it's fixed" claim without
+ * evidence.
+ */
+export function filterSentryIssuesByDeploy(
+  issues: readonly SentryIssue[],
+  deployAt: number | null,
+  now: number = Date.now(),
+): SentryIssue[] {
+  if (deployAt === null || now - deployAt < RELEASE_GRACE_MS) return [...issues];
+  return issues.filter((issue) => Date.parse(issue.lastSeen) >= deployAt);
 }
 
 export function summarizeIncidentFeed(incidents: readonly TriageItem[]): IncidentFeedCounts {
@@ -118,14 +139,21 @@ export async function fetchIncidentFeed(
   sentry: AdminFetchResult<SentryIssue[]>;
   counts: IncidentFeedCounts;
 }> {
-  const [sentry, appEvents] = await Promise.all([
+  const [sentry, appEvents, deploy] = await Promise.all([
     prefetched?.sentry ?? fetchSentryIssues({ limit: 50 }),
     queryAppErrorEvents(filters),
+    getProductionDeployAt(),
   ]);
+
+  // Deploy-based hiding applies only to the MERGED incident feed (the
+  // triage queue / "Active groups" surfaces) — never to the raw `sentry`
+  // AdminFetchResult returned below, which backs the Errors tab's
+  // deliberately un-windowed "Sentry unresolved (org-wide)" panel.
+  const releaseFilteredSentry = filterSentryIssuesByDeploy(sentry.data ?? [], deploy.deployAt);
 
   const { incidents, counts } = buildIncidentFeedFromSources(
     appEvents,
-    sentry.data ?? [],
+    releaseFilteredSentry,
     filters.windowHours,
   );
 

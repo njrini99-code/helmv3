@@ -12,7 +12,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { upsertInsightV3, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v3';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { isEvidenceRefusal } from '@/lib/coachhelm/v2/insights/upsert';
 import { calcConfidence } from '@/lib/coachhelm/v2/insights/types';
 import type { CausalityLevel, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 // Import from the leaf registry, NOT the './index' barrel — the barrel
@@ -430,10 +431,25 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         result.rule_emitted += 1;
       }
     } catch (err) {
-      await logServerError(
-        `synthesizeForPlayer: rule ${rule.id} compose/upsert threw for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
-        { action: 'v3.composite.synthesis.upsert' },
-      );
+      const message = `synthesizeForPlayer: rule ${rule.id} compose/upsert threw for ${playerId}: ${err instanceof Error ? err.message : String(err)}`;
+      if (isEvidenceRefusal(err)) {
+        // Rule 1's sample-floor refusal is control flow BY DESIGN (insufficient
+        // evidence → don't publish), not an infra failure. Route it to the
+        // background-job event log at 'warning' with Sentry suppressed so it
+        // stops paging as a prod incident — but it still counts toward
+        // result.errors below, same as any other compose/upsert failure, so
+        // the sweep's error-gated stale-retraction skip (see below) is unchanged.
+        await logServerEvent(
+          message,
+          { action: 'v3.composite.synthesis.upsert', source: 'background_job', skipSentry: true },
+          'warning',
+        );
+      } else {
+        await logServerError(
+          message,
+          { action: 'v3.composite.synthesis.upsert' },
+        );
+      }
       result.errors += 1;
     }
   }

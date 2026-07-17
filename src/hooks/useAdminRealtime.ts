@@ -100,6 +100,13 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
   const channelRef = useRef<RealtimeChannel | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectedRef = useRef(false);
+  // Monotonic per-connect() counter, suffixed onto the channel topic so a
+  // fresh channel never shares its name with one whose async removeChannel()
+  // leave (phx_leave over the socket) hasn't completed yet — reusing the
+  // static topic name here is what let a channel already in 'joined' state
+  // receive a late .on() call and throw "cannot add postgres_changes
+  // callbacks after subscribe()" in prod.
+  const channelIdRef = useRef(0);
   const [supabase] = useState(() => createClient());
 
   // Calculate event counts by severity
@@ -170,9 +177,12 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
       setIsConnected(false);
       isConnectedRef.current = false;
 
+      channelIdRef.current += 1;
+      const channelName = `admin-realtime-events-${channelIdRef.current}`;
+
       // Create channel for admin_events table (primary) + fallback to admin_client_errors
       const channel = supabase
-        .channel('admin-realtime-events', {
+        .channel(channelName, {
           config: {
             presence: { key: 'admin-dashboard' },
           },
@@ -314,7 +324,9 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
       }
       
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+        supabase.removeChannel(channelRef.current).catch(() => {
+          // Ignore cleanup errors
+        });
         channelRef.current = null;
       }
     };
