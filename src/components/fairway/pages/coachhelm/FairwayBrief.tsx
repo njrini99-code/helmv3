@@ -180,14 +180,33 @@ function signalsHref(categoryId: string): string {
   return `/golf/dashboard/insights?category=${encodeURIComponent(token)}`;
 }
 
-function formatAnalyzed(iso: string): string {
-  const d = new Date(iso);
+/**
+ * `dateOnly` is `getTeamCategoryInsights`'s `lastAnalyzed` — a plain
+ * 'YYYY-MM-DD' calendar date sourced from `golf_rounds.round_date` (a DATE
+ * column, no time-of-day component). Format it as a DATE ONLY.
+ *
+ * 2026-07-17 — #920 (fake timestamp): this used to be `new Date(iso)` +
+ * `toLocaleString(..., { hour, minute })`, which (a) parsed the date-only
+ * string as UTC MIDNIGHT then localized it to the viewer's timezone,
+ * fabricating a specific clock time ("Jun 8, 8:00 PM") the round never had,
+ * and (b) for viewers west of UTC, silently shifted the calendar date itself
+ * back a day. Anchoring BOTH the parse and the format in UTC (never the
+ * viewer's local zone) means every viewer sees the SAME calendar day — the
+ * correct behavior for a value that has no time-of-day or timezone to begin
+ * with — and keeps this deterministic across SSR/hydration (no LocalTime
+ * needed; there's no real instant here to localize).
+ *
+ * Exported (not just used internally) so the date-only/no-timezone-shift/
+ * no-fabricated-time contract has a direct unit test — see
+ * src/components/fairway/pages/coachhelm/FairwayBrief.formatAnalyzed.test.ts.
+ */
+export function formatAnalyzed(dateOnly: string): string {
+  const d = new Date(`${dateOnly}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('en-US', {
+  return d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+    timeZone: 'UTC',
   });
 }
 
