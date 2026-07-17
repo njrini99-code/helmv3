@@ -6,6 +6,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { computeSeriesTrend } from '@/lib/coachhelm/trend';
 import { getInsightsForCoachWithMeta } from '@/app/golf/actions/insight-delivery';
 import {
   assembleBriefEngineInsights,
@@ -66,6 +67,14 @@ export interface TeamCategoryInsightsResult {
   data?: {
     categories: TeamCategory[];
     teamHealth: number;
+    /**
+     * The most recent completed round's `round_date` — a plain 'YYYY-MM-DD'
+     * calendar date, NOT a full timestamp. `golf_rounds.round_date` is a
+     * DATE column with no time-of-day component; consumers must format this
+     * as a date only (see FairwayBrief's `formatAnalyzed`) and must not
+     * localize it to the viewer's timezone, which would shift the calendar
+     * date itself around midnight. '' when there is no completed round yet.
+     */
     lastAnalyzed: string;
   };
   error?: string;
@@ -204,30 +213,13 @@ function roundMetricValue(
 }
 
 /**
- * Determine trend and delta from two ordered groups of round metric values.
- * `recent` = most recent rounds, `previous` = older rounds.
+ * Minimum meaningful per-round change for a category metric to read as a
+ * trend rather than noise. Shared across all five categories — see
+ * `computeSeriesTrend` in `@/lib/coachhelm/trend` (#914's canonical trend
+ * classifier, now also consumed by the Players tab and Team Stats so a
+ * player's trend can't disagree across CoachHelm surfaces).
  */
-function computeTrend(
-  recent: number[],
-  previous: number[],
-  lowerIsBetter: boolean,
-): { trend: 'improving' | 'stable' | 'declining'; delta: number } {
-  if (recent.length === 0 || previous.length === 0) {
-    return { trend: 'stable', delta: 0 };
-  }
-  const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-  const prevAvg = previous.reduce((a, b) => a + b, 0) / previous.length;
-  const delta = recentAvg - prevAvg;
-  const threshold = 0.5; // Minimum meaningful change
-
-  if (Math.abs(delta) < threshold) {
-    return { trend: 'stable', delta };
-  }
-
-  // For "lower is better" metrics, a negative delta means improvement
-  const improving = lowerIsBetter ? delta < -threshold : delta > threshold;
-  return { trend: improving ? 'improving' : 'declining', delta };
-}
+const CATEGORY_TREND_THRESHOLD = 0.5;
 
 /**
  * Generate up to 3 insights for a category based on player data.
@@ -838,9 +830,18 @@ async function getTeamCategoryInsightsImpl(
           .map((r) => roundMetricValue(r, catDef.id))
           .filter((v): v is number => v != null);
 
-        const recentSlice = metricValues.slice(0, 5);
-        const previousSlice = metricValues.slice(5, 10);
-        const { trend, delta } = computeTrend(recentSlice, previousSlice, catDef.lowerIsBetter);
+        // Canonical trend classifier (#914): recent-5-vs-previous-5 window,
+        // shared threshold definition. minPrevious:1 preserves this category
+        // grid's existing behavior of reading a trend off a single prior
+        // round rather than requiring the stricter 3-round floor the
+        // score-trend surfaces use (Team Stats / Players tab) — a per-round
+        // category metric already has fewer, coarser samples than a
+        // per-player game-wide score series.
+        const { trend, delta } = computeSeriesTrend(metricValues, {
+          lowerIsBetter: catDef.lowerIsBetter,
+          threshold: CATEGORY_TREND_THRESHOLD,
+          minPrevious: 1,
+        });
 
         values.push(val);
         playerStats.push({
@@ -974,7 +975,14 @@ async function getTeamCategoryInsightsImpl(
       const d = typeof r.round_date === 'string' ? r.round_date : '';
       return d > max ? d : max;
     }, '');
-    const lastAnalyzed = latestRoundDate ? new Date(latestRoundDate).toISOString() : '';
+    // 2026-07-17 — #920 (fake timestamp): pass the plain 'YYYY-MM-DD' date
+    // straight through. The old `new Date(latestRoundDate).toISOString()`
+    // parsed the date-only string as UTC MIDNIGHT, and the Brief then
+    // localized that fabricated instant to the viewer's timezone — inventing
+    // a specific clock time ("8:00 PM") the round never had, and for viewers
+    // west of UTC, shifting the calendar date itself back a day. `round_date`
+    // has no time component; don't manufacture one.
+    const lastAnalyzed = latestRoundDate;
 
     return {
       success: true,
