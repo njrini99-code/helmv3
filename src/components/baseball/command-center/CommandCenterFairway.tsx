@@ -286,10 +286,15 @@ export function CommandCenterFairway({
               onOpenPlayer={openPlayer}
             />
           ) : (
+            // Distinct headline from CoverHero's own "Standing by — awaiting
+            // first pitch." (that one is the WEEKLY COVER voice — no game on
+            // the schedule yet). This is the MORNING BRIEF voice — the AI
+            // engine, not the schedule — so the two empty-state cards never
+            // read as an identical pair stacked on the same page.
             <EditorsLetter
               ink="team"
               live
-              title="Standing by — awaiting first pitch."
+              title="Standing by — the desk is quiet."
               body="Your morning brief prints here the moment CoachHelm reads recent stats, workload, and trends."
               signoff="— From the desk of CoachHelm"
             />
