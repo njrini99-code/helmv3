@@ -731,7 +731,7 @@ export function FairwayCoachDashboard({
                 {topPlayers.slice(0, 5).map((p, i) => (
                   <li key={p.id}>
                     <Link
-                      href={`/golf/dashboard/players/${p.id}`}
+                      href={`/golf/dashboard/players/${p.id}/game?tab=scouting`}
                       prefetch={false}
                       className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                     >

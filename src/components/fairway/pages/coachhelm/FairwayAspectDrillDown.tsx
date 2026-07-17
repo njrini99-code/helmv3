@@ -437,7 +437,7 @@ export function FairwayAspectDrillDown({
                     return (
                       <li key={p.playerId}>
                         <Link
-                          href={`/golf/dashboard/players/${p.playerId}`}
+                          href={`/golf/dashboard/players/${p.playerId}/game?tab=scouting`}
                           className={cn(
                             'group flex items-center gap-3 px-4 py-3',
                             'transition-colors duration-fast ease-soft hover:bg-surface-sunken/60',

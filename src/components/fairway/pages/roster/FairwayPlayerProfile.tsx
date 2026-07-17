@@ -189,9 +189,9 @@ export function FairwayPlayerProfile({
         className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3"
       >
         <PlayerSurfaceLink
-          href={`/golf/dashboard/players/${player.id}`}
+          href={`/golf/dashboard/players/${player.id}/game?tab=scouting`}
           icon={<IconSparkles size={18} className="text-accent-600" />}
-          title="AI Insight"
+          title="Scouting Report"
           description="Verdict, evidence & plan"
         />
         <PlayerSurfaceLink
@@ -201,7 +201,7 @@ export function FairwayPlayerProfile({
           description="Composite rating profile"
         />
         <PlayerSurfaceLink
-          href={`/golf/dashboard/coachhelm/genome/${player.id}`}
+          href={`/golf/dashboard/players/${player.id}/genome`}
           icon={<IconLayers size={18} className="text-accent-600" />}
           title="Genome"
           description="Game-profile radar"

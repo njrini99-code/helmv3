@@ -62,7 +62,7 @@ export function CategoryDrillDown({
     if (onPlayerClick) {
       onPlayerClick(playerId);
     } else {
-      router.push(`/golf/dashboard/players/${playerId}`);
+      router.push(`/golf/dashboard/players/${playerId}/game?tab=scouting`);
     }
   };
 

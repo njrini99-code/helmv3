@@ -6,13 +6,14 @@ import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayBrief, FeatureUnavailable } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { surfaceName } from '@/lib/golf/surface-registry';
 
 // ============================================================================
 // METADATA
 // ============================================================================
 
 export const metadata = {
-  title: 'Intelligence Dashboard | CoachHelm',
+  title: `${surfaceName('brief')} | CoachHelm`,
   description: 'AI-powered insights, patterns, predictions, and coaching intelligence for your team',
 };
 
@@ -35,8 +36,8 @@ export default async function IntelligenceDashboardPage() {
     if (player) {
       return (
         <FeatureUnavailable
-          title="Intelligence Hub"
-          message="The Intelligence Hub aggregates team-wide signals for coaches. Your personal AI coaching surface lives on the CoachHelm dashboard."
+          title={surfaceName('brief')}
+          message={`The ${surfaceName('brief')} aggregates team-wide signals for coaches. Your personal AI coaching surface lives on the CoachHelm dashboard.`}
           actionHref="/golf/dashboard/coachhelm"
           actionLabel="Open CoachHelm"
         />

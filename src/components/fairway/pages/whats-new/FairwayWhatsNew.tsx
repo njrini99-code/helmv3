@@ -183,7 +183,7 @@ function itemMatchesFilter(item: WhatsNewItem, filter: WhatsNewFilter): boolean 
 // where that player's insights, patterns, and focus areas all live — so the row
 // always resolves to the underlying entity's context, never a dead end (P388).
 function hrefForItem(item: WhatsNewItem): string {
-  return `/golf/dashboard/players/${item.playerId}`;
+  return `/golf/dashboard/players/${item.playerId}/game?tab=scouting`;
 }
 
 export function FairwayWhatsNew({ success, error, items, truncated }: FairwayWhatsNewProps) {

@@ -805,7 +805,7 @@ export function PlayersGridView({
                   id: 'genome',
                   label: 'View genome',
                   icon: <IconChevronRight size={16} />,
-                  onSelect: (r) => router.push(`/golf/dashboard/coachhelm/genome/${r.player.id}`),
+                  onSelect: (r) => router.push(`/golf/dashboard/players/${r.player.id}/genome`),
                 },
               ]}
               emptyState={

@@ -4178,7 +4178,10 @@ async function refreshPlayerAnalysisAsCoachImpl(
   const result = await observedTriggerPlayerInsightsAfterRound(playerId);
 
   if (result.success) {
-    revalidatePath(`/golf/dashboard/players/${playerId}`);
+    // GOLF IA REORG (final_migrations #11): the Scouting Report content this
+    // insight run feeds now lives on the canonical /players/[playerId]/game
+    // route (Scouting Report tab), not the legacy /players/[playerId] shim.
+    revalidatePath(`/golf/dashboard/players/${playerId}/game`);
   }
 
   return {

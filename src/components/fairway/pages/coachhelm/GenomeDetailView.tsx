@@ -285,7 +285,9 @@ export function GenomeDetailView({
     // grid. Compare stays primary (only meaningful once a genome exists).
     <div className="flex flex-wrap items-center gap-1.5">
       <Button variant="ghost" size="sm" leftIcon={<IconSparkles size={15} />} asChild>
-        <Link href={`/golf/dashboard/players/${playerId}`}>AI Insight</Link>
+        <Link href={`/golf/dashboard/players/${playerId}/game?tab=scouting`}>
+          Scouting report
+        </Link>
       </Button>
       <Button variant="ghost" size="sm" leftIcon={<IconChartRadar size={15} />} asChild>
         <Link href={`/golf/dashboard/players/${playerId}/game`}>Game fingerprint</Link>

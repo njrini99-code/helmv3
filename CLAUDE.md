@@ -39,6 +39,7 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 | **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — All tables, all enums, all type locations (AUTOGEN table count block — do not hand-copy the number elsewhere, it rots) |
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
 | **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all action files, component directories |
+| **CoachHelm AI / Stats nav labels or hrefs** (rail, sub-nav tabs, CommandPalette, page `<title>`, breadcrumb) | `src/lib/golf/surface-registry.ts` — SINGLE SOURCE OF TRUTH for the canonical `{id, canonicalName, href, role, group, legacy?, hidden?}` of every CoachHelm AI + Stats surface. Every consumer (`nav-registry.ts`, `CoachHelmSubNav.tsx`, `CommandPalette.tsx`, breadcrumb, page titles) imports from here — never hand-write a label/href for one of these surfaces |
 | **Baseball features** | `memory/context/baseballhelm-features.md` — feature-by-feature data flow, files, tables, gaps; `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` — canonical spec (source of truth for what baseball should be) |
 | **Cross-product structure** (route trees, canonical action-wrapper/toast/data-access/design-token/nav-registry/error-boundary idioms, known traps) | `docs/REPO_MAP.md` — resolved route atlas for BaseballHelm/GolfHelm/Lift Lab/Admin, idioms table with file:line anchors, 7 traps, pre-code checklist |
 
@@ -102,7 +103,7 @@ import type { Player, Coach, Organization } from '@/lib/types';
 | Coaching Settings | `/dashboard/settings/coaching-intelligence` | golf_coach_philosophy | (in settings page) |
 | Development Plans | `/dashboard/development` | golf_player_focus_areas | development.ts |
 | Create Qualifier | `/dashboard/qualifiers/new` | golf_qualifiers | golf.ts |
-| Team Stats | `/dashboard/stats/team` | golf_player_stats_cache | stats.ts, stats-v2.ts |
+| Team Stats | `/dashboard/stats/team` | golf_player_stats_cache | stats.ts, stats-data.ts, stats-leak-maps.ts, stats-intelligence.ts |
 
 ### Player-Only Features
 | Feature | Route | Primary Table | Action File |
@@ -128,7 +129,7 @@ import type { Player, Coach, Organization } from '@/lib/types';
 | Documents | `/dashboard/documents` | golf_documents | documents.ts |
 | Travel | `/dashboard/travel` | golf_travel_itineraries | travel.ts |
 | Qualifiers (view) | `/dashboard/qualifiers` | golf_qualifiers | golf.ts |
-| Stats (personal) | `/dashboard/stats` | golf_player_stats_cache | stats.ts |
+| Stats (personal) | `/dashboard/stats` | golf_player_stats_cache | stats.ts, stats-data.ts, stats-leak-maps.ts, stats-intelligence.ts |
 | Team Info | `/dashboard/team` | golf_teams | teams.ts |
 | Settings | `/dashboard/settings` | users, golf_coaches/players | (inline) |
 
@@ -482,4 +483,5 @@ sync path. The same hard-rule set is documented in
 | `memory/context/golfhelm-features.md` | 28 features: data flows, files, tables, deps, gaps | Working on any feature (the main reference) |
 | `memory/context/golfhelm-database.md` | Every column of every table (from production DB) | Writing SQL, adding columns, debugging data |
 | `memory/context/coachhelm-ai.md` | V2 engine: orchestrator, mining, predictions, NLG | Working on CoachHelm AI specifically |
+| `src/lib/golf/surface-registry.ts` | Canonical name/href/role/group for every CoachHelm AI + Stats surface (rail, sub-nav, palette, titles, breadcrumb all read from it) | Adding/renaming/redirecting a CoachHelm AI or Stats route |
 | `src/app/golf/README.md` | Golf platform overview | Quick orientation |

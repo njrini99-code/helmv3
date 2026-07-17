@@ -45,6 +45,7 @@ import {
   COACHHELM_COACH_CLUSTER_PREFIXES,
   type GolfNavBadgeCounts,
 } from '@/lib/golf/nav-registry';
+import { surfaceName, surfaceHref } from '@/lib/golf/surface-registry';
 
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { MobileNavProvider } from '@/contexts/mobile-nav-context';
@@ -99,14 +100,16 @@ const COACHHELM_CLUSTER_SEGMENTS = new Set(
   ),
 );
 
-/** Top-bar breadcrumb labels for the first dashboard segment (desktop only). */
+/** Top-bar breadcrumb labels for the first dashboard segment (desktop only).
+ *  The CoachHelm AI + Stats entries are sourced from surface-registry.ts so
+ *  this map can never disagree with the rail/sub-nav/palette (P409+). */
 const SEGMENT_LABELS: Record<string, string> = {
-  intelligence: 'CoachHelm AI',
-  coachhelm: 'CoachHelm AI',
+  intelligence: surfaceName('rail-coachhelm-ai-coach'),
+  coachhelm: surfaceName('rail-coachhelm-ai-player'),
   roster: 'Roster',
   rounds: 'Rounds',
   calendar: 'Calendar',
-  stats: 'Stats',
+  stats: surfaceName('stats'),
   messages: 'Messages',
   announcements: 'Announcements',
   travel: 'Travel',
@@ -116,21 +119,21 @@ const SEGMENT_LABELS: Record<string, string> = {
   recruiting: 'Recruiting HQ',
   development: 'Development',
   qualifiers: 'Qualifiers',
-  'my-development': 'My Development',
+  'my-development': surfaceName('my-development-tab'),
   'my-qualifiers': 'My Qualifiers',
   'team-hub': 'Team Hub',
   settings: 'Settings',
-  insights: 'Insights',
-  alerts: 'Alerts',
-  patterns: 'Patterns',
+  insights: surfaceName('insights'),
+  alerts: surfaceName('alerts'),
+  patterns: surfaceName('patterns'),
   analytics: 'Analytics',
-  players: 'Players',
+  players: surfaceName('players-tab'),
   classes: 'Classes',
   hub: 'Hub',
   team: 'Team Info',
   'whats-new': "What's New",
-  'my-game-profile': 'My Game',
-  'my-standing': 'My Standing',
+  'my-game-profile': surfaceName('my-game-profile-tab'),
+  'my-standing': surfaceName('my-standing-tab'),
 };
 
 function toTitle(seg: string): string {
@@ -138,15 +141,17 @@ function toTitle(seg: string): string {
 }
 
 /** Within the CoachHelm cluster, the leaf-tab label the masthead sub-nav shows
- *  (so the top-bar breadcrumb agrees with it instead of disagreeing). */
+ *  (so the top-bar breadcrumb agrees with it instead of disagreeing). Sourced
+ *  from surface-registry.ts — the same canonical names CoachHelmSubNav.tsx
+ *  renders for these tabs. */
 const COACHHELM_TAB_LABELS: Record<string, string> = {
-  intelligence: 'Brief',
-  alerts: 'Signals',
-  insights: 'Signals',
-  patterns: 'Signals',
-  development: 'Players',
-  analytics: 'Effectiveness', // /analytics/coachhelm
-  coachhelm: 'Ask', // /coachhelm/chat, /coachhelm/genome
+  intelligence: surfaceName('brief'),
+  alerts: surfaceName('signals'),
+  insights: surfaceName('signals'),
+  patterns: surfaceName('signals'),
+  development: surfaceName('players-tab'),
+  analytics: surfaceName('effectiveness'), // /analytics/coachhelm
+  coachhelm: surfaceName('ask'), // /coachhelm/chat, /coachhelm/genome
 };
 
 /** Pathname → breadcrumb trail. Two levels normally (Dashboard / Section); for
@@ -163,7 +168,7 @@ function buildBreadcrumbs(pathname: string): Breadcrumb[] {
     const tabLabel = COACHHELM_TAB_LABELS[seg] ?? SEGMENT_LABELS[seg] ?? toTitle(seg);
     return [
       { label: 'Dashboard', href: '/golf/dashboard' },
-      { label: 'CoachHelm AI', href: '/golf/dashboard/intelligence' },
+      { label: surfaceName('rail-coachhelm-ai-coach'), href: surfaceHref('rail-coachhelm-ai-coach') },
       { label: tabLabel },
     ];
   }

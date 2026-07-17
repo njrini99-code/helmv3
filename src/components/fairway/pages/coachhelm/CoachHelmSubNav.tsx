@@ -41,6 +41,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/fairway/controls/badge';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
+import { surfaceName } from '@/lib/golf/surface-registry';
 
 /* ---------------------------------------------------------------------------
  * Tab vocabulary
@@ -73,13 +74,13 @@ interface TabDef {
 const TABS: readonly TabDef[] = [
   {
     tab: 'brief',
-    label: 'Brief',
+    label: surfaceName('brief'),
     href: '/golf/dashboard/intelligence',
     matchPrefixes: ['/golf/dashboard/intelligence'],
   },
   {
     tab: 'signals',
-    label: 'Signals',
+    label: surfaceName('signals'),
     href: '/golf/dashboard/alerts',
     matchPrefixes: [
       '/golf/dashboard/alerts',
@@ -89,7 +90,7 @@ const TABS: readonly TabDef[] = [
   },
   {
     tab: 'players',
-    label: 'Players',
+    label: surfaceName('players-tab'),
     href: '/golf/dashboard/development',
     matchPrefixes: [
       '/golf/dashboard/development',
@@ -103,13 +104,13 @@ const TABS: readonly TabDef[] = [
   },
   {
     tab: 'effectiveness',
-    label: 'Effectiveness',
+    label: surfaceName('effectiveness'),
     href: '/golf/dashboard/analytics/coachhelm',
     matchPrefixes: ['/golf/dashboard/analytics/coachhelm'],
   },
   {
     tab: 'ask',
-    label: 'Ask',
+    label: surfaceName('ask'),
     href: '/golf/dashboard/coachhelm/chat',
     matchPrefixes: ['/golf/dashboard/coachhelm/chat'],
   },
@@ -131,7 +132,7 @@ const TABS: readonly TabDef[] = [
 const PLAYER_TABS: readonly TabDef[] = [
   {
     tab: 'brief',
-    label: 'Overview',
+    label: surfaceName('overview'),
     href: '/golf/dashboard/coachhelm',
     // exact-only match below; the coachhelm root is the player front door, and
     // its nested /chat + /genome routes belong to OTHER tabs, so we match exact.
@@ -139,19 +140,19 @@ const PLAYER_TABS: readonly TabDef[] = [
   },
   {
     tab: 'players',
-    label: 'Development',
+    label: surfaceName('my-development-tab'),
     href: '/golf/dashboard/my-development',
     matchPrefixes: ['/golf/dashboard/my-development'],
   },
   {
     tab: 'effectiveness',
-    label: 'Game Profile',
+    label: surfaceName('my-game-profile-tab'),
     href: '/golf/dashboard/my-game-profile',
     matchPrefixes: ['/golf/dashboard/my-game-profile'],
   },
   {
     tab: 'standing',
-    label: 'Standing',
+    label: surfaceName('my-standing-tab'),
     href: '/golf/dashboard/my-standing',
     matchPrefixes: ['/golf/dashboard/my-standing'],
   },
