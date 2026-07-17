@@ -2089,9 +2089,30 @@
     }
   }
 
-  /* Inline link touch targets on mobile */
+  /* Inline link touch targets on mobile.
+   *
+   * ROOT CAUSE of #905/#927 (fixed 2026-07-17): the bare `li a` clause below
+   * matches ANY `<a>` inside ANY `<li>` app-wide, including structural
+   * flex/grid-divided nav rows like FairwayBottomNav and HubSubNav — not
+   * just inline links inside rendered prose. Every anchor those components
+   * render is a plain `<a>`/`<Link>` inside an `<li>` with NO margin utility
+   * of its own, so this rule's `margin: -0.375rem -0.125rem` (-6px/-2px)
+   * applied unchallenged (no competing Tailwind class = no specificity
+   * contest to win): a flex column computed to an honest 1/5-of-320px share
+   * had its rendered `<a>` bleed 2px past each edge (+4px total width, -2px
+   * left shift) purely from this rule — nothing to do with the row's own
+   * flex/justify-content classes. For the FIRST column that shift crosses
+   * the viewport's left edge, which is exactly the "Home" [left -2, right
+   * 66] failure e2e/mobile-viewports.spec.ts caught. `:not(...)` scopes the
+   * touch-target trick back to actual inline body-text links (its original
+   * intent) and leaves nav/tab/toolbar anchors — which already own precise
+   * touch-target sizing via their own component classes — alone.
+   */
   @media (max-width: 1023px) {
-    .prose a, p a, li a, span a {
+    .prose a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a),
+    p a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a),
+    li a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a),
+    span a:not(nav a, [role="navigation"] a, [role="tablist"] a, [role="toolbar"] a) {
       display: inline-block;
       padding: 0.375rem 0.125rem;
       margin: -0.375rem -0.125rem;

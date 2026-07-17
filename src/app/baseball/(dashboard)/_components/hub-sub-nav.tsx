@@ -284,7 +284,18 @@ export function HubSubNav({ tabs, ariaLabel, className }: HubSubNavProps) {
                   onKeyDown={onKeyDown}
                   data-active={isActive ? '' : undefined}
                   className={cn(
-                    'group relative inline-flex select-none items-center gap-2 whitespace-nowrap',
+                    // `m-0` (#927): globals.css's blanket `li a` "inline link
+                    // touch target" rule (meant for prose body text) matches
+                    // this `<a>` too — a plain anchor inside an `<li>` — and,
+                    // with no margin utility here to out-specificity it,
+                    // applied its `margin: -0.375rem -0.125rem` unchallenged:
+                    // +4px width and a 2px left shift on every tab, on top of
+                    // whatever this tab's own content needed. `m-0` (a class
+                    // selector) beats the rule's `li a` (two type selectors)
+                    // on specificity and neutralizes it; the global rule is
+                    // now also scoped to exclude `nav`-shaped anchors (this
+                    // strip is a `<nav>`) so this can't silently recur here.
+                    'group relative inline-flex select-none items-center gap-2 whitespace-nowrap m-0',
                     'rounded-t-lg px-3.5 pb-3 pt-3 text-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-grade-plus/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[color:var(--paper)]',
