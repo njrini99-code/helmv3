@@ -250,6 +250,10 @@ export interface BarCompareProps {
   data: BarCompareDatum[];
   benchmark?: { value: number; label?: string };
   valueFormatter?: (value: number) => string;
+  /** Serializable formatting mode for Server Component callers (functions
+   *  can't cross the RSC boundary): 'signed' renders +N for positives. Ignored
+   *  when valueFormatter is provided. */
+  valueFormat?: 'signed';
   height?: number;
   state?: ChartFrameState;
   actions?: React.ReactNode;
@@ -269,14 +273,19 @@ export function BarCompare({
   data,
   benchmark,
   valueFormatter,
+  valueFormat,
   height = 240,
   state,
   actions,
   className,
 }: BarCompareProps) {
   const fmt = React.useCallback(
-    (v: number) => (valueFormatter ? valueFormatter(v) : String(v)),
-    [valueFormatter],
+    (v: number) => {
+      if (valueFormatter) return valueFormatter(v);
+      if (valueFormat === 'signed' && v > 0) return `+${v}`;
+      return String(v);
+    },
+    [valueFormatter, valueFormat],
   );
   const resolvedState: ChartFrameState = state ?? (data.length === 0 ? 'empty' : 'ready');
 

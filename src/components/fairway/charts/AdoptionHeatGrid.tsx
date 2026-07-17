@@ -52,8 +52,11 @@ export interface AdoptionHeatGridRow {
 
 export interface AdoptionHeatGridProps {
   rows: readonly AdoptionHeatGridRow[];
-  /** Builds the row-label drill-through href, e.g. `/admin/errors?feature=<key>`. */
-  rowHref: (key: string) => string;
+  /** Row-label drill-through href template; `{key}` is replaced with the
+   *  URL-encoded feature key, e.g. `/admin/errors?feature={key}`. A template
+   *  string rather than a builder function — this component is mounted from a
+   *  Server Component, and functions can't cross the RSC boundary. */
+  rowHrefTemplate: string;
   className?: string;
 }
 
@@ -102,7 +105,7 @@ function clampPopoverX(x: number): number {
   return Math.min(Math.max(x, min), max);
 }
 
-export function AdoptionHeatGrid({ rows, rowHref, className }: AdoptionHeatGridProps) {
+export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionHeatGridProps) {
   const [windowMode, setWindowMode] = React.useState<'30d' | '12w'>('30d');
   const [active, setActive] = React.useState<ActiveCell | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -168,7 +171,7 @@ export function AdoptionHeatGrid({ rows, rowHref, className }: AdoptionHeatGridP
                   <div className="sticky left-0 z-10 flex w-40 shrink-0 items-center gap-1.5 border-r border-warm-200 bg-cream-50 px-2.5 py-1.5">
                     <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', TIER_DOT[row.tier])} aria-hidden />
                     <Link
-                      href={rowHref(row.key)}
+                      href={rowHrefTemplate.replace('{key}', encodeURIComponent(row.key))}
                       className="min-w-0 truncate text-body-sm text-warm-800 underline-offset-2 hover:text-primary-700 hover:underline"
                       title={row.label}
                     >

@@ -96,7 +96,7 @@ export function ReleaseCard({ card }: { card: ReleaseCardData }) {
             value: f.delta,
             highlight: f.delta > 0,
           }))}
-          valueFormatter={(v) => (v > 0 ? `+${v}` : String(v))}
+          valueFormat="signed"
           height={Math.max(120, card.topFeatureDeltas.length * 40)}
         />
       ) : (
