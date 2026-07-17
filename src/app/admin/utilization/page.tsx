@@ -76,7 +76,7 @@ export default async function UtilizationPage() {
             feature label to view its error trace; click a cell for that day&apos;s detail.
           </p>
           <div className="mt-3">
-            <AdoptionHeatGrid rows={rows} rowHref={(key) => `/admin/errors?feature=${key}`} />
+            <AdoptionHeatGrid rows={rows} rowHrefTemplate="/admin/errors?feature={key}" />
           </div>
         </Surface>
 
