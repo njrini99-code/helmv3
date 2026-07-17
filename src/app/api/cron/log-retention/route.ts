@@ -25,6 +25,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { archiveKnownResolvedIncidents } from '@/lib/admin/incident-resolver';
+import { autoResolveFixedIncidents, type AutoResolveResult } from '@/lib/admin/auto-resolve';
 import type { Database } from '@/lib/types/database';
 
 export const runtime = 'nodejs';
@@ -116,6 +117,18 @@ function purgeJobLogsBefore(admin: AdminClient, before: string): Promise<number>
   );
 }
 
+/** Fail-soft wrapper — an auto-resolve bug/outage must never fail the
+ *  retention cron's own purge work. Failure is logged, not thrown. */
+async function runAutoResolve(): Promise<AutoResolveResult | { error: string }> {
+  try {
+    return await autoResolveFixedIncidents();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[log-retention] autoResolveFixedIncidents failed', message);
+    return { error: message };
+  }
+}
+
 export async function GET(req: NextRequest) {
   const expected = process.env.CRON_SECRET;
   if (!expected || req.headers.get('authorization') !== `Bearer ${expected}`) {
@@ -128,6 +141,7 @@ export async function GET(req: NextRequest) {
     const ago13mo = new Date(Date.now() - 396 * 86400_000).toISOString();
 
     const hygiene = await archiveKnownResolvedIncidents();
+    const autoResolve = await runAutoResolve();
 
     let deleted = 0;
     deleted += await purgeAdminEvents(admin, ['info', 'warning'], ago90d);
@@ -136,6 +150,12 @@ export async function GET(req: NextRequest) {
     deleted += await purgeErrorLogsBefore(admin, ago13mo);
     deleted += await purgeJobLogsBefore(admin, ago90d);
 
-    return NextResponse.json({ ok: true, deleted, autoResolved: hygiene.archived, buckets: hygiene.buckets });
+    return NextResponse.json({
+      ok: true,
+      deleted,
+      autoResolved: hygiene.archived,
+      buckets: hygiene.buckets,
+      releaseAutoResolve: autoResolve,
+    });
   });
 }

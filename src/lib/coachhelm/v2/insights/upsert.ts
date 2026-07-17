@@ -44,6 +44,40 @@ import { logServerError } from '@/lib/server-error-logger';
  */
 export const GATED_OUT = '__gated_out__';
 
+/** Stable marker for `isEvidenceRefusal` — see below. Not exported; callers
+ * should go through the predicate, not compare `code` themselves. */
+const EVIDENCE_REFUSAL_CODE = 'INSIGHT_EVIDENCE_REFUSAL' as const;
+
+/**
+ * Thrown by `upsertInsight` when `evidence.sample_n` is below the Rule 1
+ * floor. This is CONTROL FLOW BY DESIGN — insufficient evidence means "don't
+ * publish yet", not an infra failure. Callers that don't need to distinguish
+ * it can keep treating it as a generic thrown Error; callers that log
+ * failures (e.g. the v3 synthesis sweep) should route it through
+ * `isEvidenceRefusal()` and log at a non-paging severity instead of letting
+ * it read as a prod incident.
+ */
+export class InsightEvidenceRefusal extends Error {
+  readonly code = EVIDENCE_REFUSAL_CODE;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'InsightEvidenceRefusal';
+  }
+}
+
+/**
+ * True when `err` is an `InsightEvidenceRefusal`. Checks the stable `code`
+ * marker rather than `instanceof` (robust to module duplication across
+ * bundler chunks) or message text (fragile against copy edits).
+ */
+export function isEvidenceRefusal(err: unknown): err is InsightEvidenceRefusal {
+  return (
+    err instanceof Error &&
+    (err as { code?: unknown }).code === EVIDENCE_REFUSAL_CODE
+  );
+}
+
 const MOVEMENT_THRESHOLD = 0.05; // 5%
 const MATURATION_MOVEMENTS = 3;
 const MIN_SAMPLE_N = 5;
@@ -69,7 +103,7 @@ export async function upsertInsight(
 ): Promise<string> {
   // Rule 1 — sample size floor.
   if (!input.evidence || input.evidence.sample_n < MIN_SAMPLE_N) {
-    throw new Error(
+    throw new InsightEvidenceRefusal(
       `upsertInsight: evidence.sample_n=${input.evidence?.sample_n ?? 'null'} < ${MIN_SAMPLE_N}; refusing to emit`,
     );
   }

@@ -62,6 +62,21 @@ interface LeaderboardJoinRow extends EngagementRow {
   } | null;
 }
 
+// Max coach_ids per PostgREST `.in()` batch. The CRM page can pass ~2,300
+// UUIDs in one call; a single `.in('coach_id', coachIds)` query for that
+// many ids blows the request URL past ~85KB and the query dies with an
+// empty-message PostgrestError, degrading the whole page to {}. Chunking
+// keeps each request URL well under any practical limit.
+const ENGAGEMENT_BATCH_SIZE = 150;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    batches.push(items.slice(i, i + size));
+  }
+  return batches;
+}
+
 // ---------------------------------------------------------------------------
 // getCoachEngagement — batch lookup keyed by coach_id, mirrors signature of
 // getCoachLastEmailActivity at resend-activity.ts:345.
@@ -81,39 +96,68 @@ export async function getCoachEngagement(
   // data yet", so degrading to {} here is always safe.
   try {
     const admin = createAdminClient();
+    const batches = chunk(coachIds, ENGAGEMENT_BATCH_SIZE);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (admin as any)
-      .from('crm_coach_engagement')
-      .select('coach_id, score, temperature, opens_90d, clicks_90d, last_event_at')
-      .in('coach_id', coachIds);
+    // Batch failures are collected rather than logged individually inside
+    // the map — a systemic cause (e.g. the matview missing) fails every
+    // batch independently, and logging per-batch would fire up to
+    // batches.length separate logServerError/Sentry writes for one root
+    // cause on a single page load. One summary log per invocation instead.
+    const batchErrors: Array<{ batchIndex: number; error: { code?: string; hint?: string; details?: string; message?: string } }> = [];
 
-    if (error) {
-      // error is a Supabase PostgrestError — a plain object, not an Error
-      // instance. describeError() extracts code/message/details/hint instead
-      // of collapsing it to "[object Object]" via String(error).
+    const batchResults = await Promise.all(
+      batches.map(async (batchIds, batchIndex) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (admin as any)
+          .from('crm_coach_engagement')
+          .select('coach_id, score, temperature, opens_90d, clicks_90d, last_event_at')
+          .in('coach_id', batchIds);
+
+        if (error) {
+          // error is a Supabase PostgrestError — a plain object, not an
+          // Error instance. describeError() (used below) extracts
+          // code/message/details/hint instead of collapsing it to
+          // "[object Object]" via String(error). A single failed batch
+          // must not discard the other batches' results, so we record it
+          // and return empty for this batch only rather than throwing.
+          batchErrors.push({ batchIndex, error });
+          return [] as EngagementRow[];
+        }
+
+        return (data ?? []) as EngagementRow[];
+      }),
+    );
+
+    if (batchErrors.length > 0) {
+      const first = batchErrors[0]!;
       await logServerError(
-        `[crm-engagement] getCoachEngagement failed: ${describeError(error)}`,
+        `[crm-engagement] getCoachEngagement: ${batchErrors.length}/${batches.length} batch(es) failed: ${describeError(first.error)}`,
         {
           action: 'crm_engagement.getCoachEngagement',
-          errorCode: error.code,
-          errorHint: error.hint,
-          errorDetails: error.details,
+          errorCode: first.error.code,
+          errorHint: first.error.hint,
+          errorDetails: first.error.details,
+          metadata: {
+            batchCount: batches.length,
+            failedBatchCount: batchErrors.length,
+            failedBatchIndexes: batchErrors.map((b) => b.batchIndex),
+          },
         },
       );
-      return {};
     }
 
     const out: Record<string, CoachEngagement> = {};
-    for (const row of (data ?? []) as EngagementRow[]) {
-      out[row.coach_id] = {
-        coach_id: row.coach_id,
-        score: row.score,
-        temperature: row.temperature,
-        opens_90d: row.opens_90d,
-        clicks_90d: row.clicks_90d,
-        last_event_at: row.last_event_at,
-      };
+    for (const rows of batchResults) {
+      for (const row of rows) {
+        out[row.coach_id] = {
+          coach_id: row.coach_id,
+          score: row.score,
+          temperature: row.temperature,
+          opens_90d: row.opens_90d,
+          clicks_90d: row.clicks_90d,
+          last_event_at: row.last_event_at,
+        };
+      }
     }
     return out;
   } catch (err) {

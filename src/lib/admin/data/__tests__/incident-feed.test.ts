@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildIncidentFeedFromSources,
+  filterSentryIssuesByDeploy,
   filterSentryIssuesByWindow,
   summarizeIncidentFeed,
 } from '@/lib/admin/data/incident-feed';
@@ -62,5 +63,27 @@ describe('incident feed', () => {
     expect(incidents).toHaveLength(3);
     expect(summarizeIncidentFeed(incidents)).toEqual(counts);
     expect(counts).toMatchObject({ totalGroups: 3, appGroups: 2, sentryGroups: 1 });
+  });
+
+  it('filterSentryIssuesByDeploy passes everything through when deploy data is unavailable', () => {
+    const issues = [sentryIssue({ id: 'a', lastSeen: '2020-01-01T00:00:00Z' })];
+    expect(filterSentryIssuesByDeploy(issues, null)).toEqual(issues);
+  });
+
+  it('filterSentryIssuesByDeploy passes everything through while the deploy is under 24h old', () => {
+    const now = Date.parse('2026-07-16T12:00:00Z');
+    const deployAt = now - 2 * 3600_000;
+    const issues = [sentryIssue({ id: 'a', lastSeen: '2020-01-01T00:00:00Z' })];
+    expect(filterSentryIssuesByDeploy(issues, deployAt, now)).toEqual(issues);
+  });
+
+  it('filterSentryIssuesByDeploy hides issues quiet since before a >=24h-old deploy, keeps regressions', () => {
+    const now = Date.parse('2026-07-16T12:00:00Z');
+    const deployAt = now - 48 * 3600_000;
+    const fixed = sentryIssue({ id: 'fixed', lastSeen: new Date(deployAt - 3600_000).toISOString() });
+    const regressed = sentryIssue({ id: 'regressed', lastSeen: new Date(deployAt + 3600_000).toISOString() });
+
+    const filtered = filterSentryIssuesByDeploy([fixed, regressed], deployAt, now);
+    expect(filtered.map((i) => i.id)).toEqual(['regressed']);
   });
 });
