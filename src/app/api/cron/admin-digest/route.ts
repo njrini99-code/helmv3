@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const ago24h = new Date(Date.now() - 86400_000).toISOString();
     const now = new Date();
 
-    const [errors24h, signups, golf, baseball, lifts, integrityFails, jobRows, regressed, triage] =
+    const [errors24h, signups, golf, baseball, lifts, integrityFails, jobRows, regressed, triage, demoNew, demoPending] =
       await Promise.all([
         admin
           .from('admin_events')
@@ -46,13 +46,21 @@ export async function GET(req: NextRequest) {
           .order('started_at', { ascending: false }).limit(300),
         fetchSentryIssues({ query: 'is:regressed', limit: 25 }),
         fetchTriageQueue(),
+        admin.from('demo_requests').select('id', { count: 'exact', head: true }).gte('created_at', ago24h),
+        admin.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
     const latestByJob = new Map<string, { started_at: string; status: string }>();
     for (const row of (jobRows.data ?? []) as Array<{ job_type: string; status: string; started_at: string }>) {
       if (!latestByJob.has(row.job_type)) latestByJob.set(row.job_type, row);
     }
+    const demoPendingCount = demoPending.count ?? 0;
     const reds: string[] = [
+      // A lead awaiting reply is the most actionable item in the whole digest —
+      // it stays red until someone moves it out of 'pending' in the CRM.
+      ...(demoPendingCount > 0
+        ? [`${demoPendingCount} demo request${demoPendingCount === 1 ? '' : 's'} awaiting reply`]
+        : []),
       ...((integrityFails.data ?? []) as Array<{ title: string }>).map((r) => r.title),
       ...CRON_REGISTRY
         .filter((e) => e.jobType !== 'admin-digest')
@@ -76,6 +84,7 @@ export async function GET(req: NextRequest) {
         regressed: regressed.status === 'ok' ? (regressed.data?.length ?? 0) : null,
       },
       signups24h: ((signups.data ?? []) as Array<{ email: string; role: string }>),
+      demoRequests: { new24h: demoNew.count ?? 0, pendingTotal: demoPendingCount },
       activity24h: {
         golfRounds: golf.count ?? 0,
         baseballGames: baseball.count ?? 0,

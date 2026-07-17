@@ -32,7 +32,18 @@ export interface SendOpsDigestResult {
 
 const DEFAULT_FROM = 'Helm Bridge <bridge@helmsportslabs.com>';
 
-export async function sendOpsDigest(email: DigestEmail): Promise<SendOpsDigestResult> {
+export interface OpsAlert {
+  subject: string;
+  text: string;
+  html?: string;
+}
+
+/**
+ * One-off ops notification through the same dedicated transport — for events
+ * that shouldn't wait for the daily digest (e.g. a new demo request). Same
+ * fail-soft contract: unconfigured → skipped, never throws.
+ */
+export async function sendOpsAlert(alert: OpsAlert): Promise<SendOpsDigestResult> {
   const client = getOpsClient();
   if (!client) return { sent: false, skipped: true, reason: 'ops-transport-not-configured' };
 
@@ -42,10 +53,14 @@ export async function sendOpsDigest(email: DigestEmail): Promise<SendOpsDigestRe
   const { data, error } = await client.emails.send({
     from: process.env.OPS_DIGEST_FROM || DEFAULT_FROM,
     to,
-    subject: email.subject,
-    html: email.html,
-    text: email.text,
+    subject: alert.subject,
+    text: alert.text,
+    ...(alert.html ? { html: alert.html } : {}),
   });
   if (error) return { sent: false, skipped: false, reason: error.message ?? 'send failed' };
   return { sent: true, skipped: false, messageId: data?.id };
+}
+
+export async function sendOpsDigest(email: DigestEmail): Promise<SendOpsDigestResult> {
+  return sendOpsAlert({ subject: email.subject, text: email.text, html: email.html });
 }
