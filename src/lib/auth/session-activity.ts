@@ -23,6 +23,7 @@ import {
   isSessionIdleExpired,
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
+import { isDemoMetadataUser, probeSignedIn } from '@/lib/demo/gate-probe';
 
 const ACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Re-check every minute
 
@@ -83,6 +84,23 @@ export function useSessionActivity() {
   const supabase = useMemo(() => createClient(), []);
 
   const handleLogout = useCallback(async () => {
+    const path = window.location.pathname;
+    const sport = path.startsWith('/golf')
+      ? 'golf'
+      : path.startsWith('/lifting')
+        ? 'lifting'
+        : path.startsWith('/baseball')
+          ? 'baseball'
+          : null;
+
+    // A demo visitor never had a password — /login is a dead end for them.
+    // Resolve demo-context BEFORE signing out (the metadata this reads only
+    // exists on the still-live session); probeSignedIn is hard-timeout-guarded
+    // so a stuck check can never block the logout itself (#918).
+    const isDemo =
+      (sport === 'golf' || sport === 'baseball') &&
+      isDemoMetadataUser(await probeSignedIn(supabase));
+
     clearLastActivity();
     try {
       await supabase.auth.signOut();
@@ -90,19 +108,20 @@ export function useSessionActivity() {
       /* best-effort — still redirect to the login screen below */
     }
 
-    const path = window.location.pathname;
     if (path.startsWith('/admin')) {
       const params = new URLSearchParams({ message: 'session_expired', returnTo: path });
       router.replace(`/golf/login?${params.toString()}`);
       return;
     }
-    const sport = path.startsWith('/golf')
-      ? 'golf'
-      : path.startsWith('/lifting')
-        ? 'lifting'
-        : 'baseball';
+
+    if (isDemo && (sport === 'golf' || sport === 'baseball')) {
+      // replace() so the back button doesn't return to the timed-out page.
+      router.replace(`/${sport}/demo?message=demo_session_expired`);
+      return;
+    }
+
     // replace() so the back button doesn't return to the timed-out page.
-    router.replace(`/${sport}/login?message=session_expired`);
+    router.replace(`/${sport ?? 'baseball'}/login?message=session_expired`);
   }, [router, supabase]);
 
   const checkSessionTimeout = useCallback(async () => {

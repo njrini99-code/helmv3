@@ -173,6 +173,18 @@ async function enterBaseballDemoImpl(
     };
   }
 
+  // --- 6b. Stamp the session as a demo session ------------------------------
+  //    `user_metadata.is_demo` is readable by BOTH client and server code
+  //    (unlike the demo email, which stays a server-only secret) — the shared
+  //    idle-timeout flow (middleware + useSessionActivity) reads it to route
+  //    an expired demo session back to /baseball/demo instead of the password
+  //    login (#918). Best-effort: a failure here must never block entry.
+  try {
+    await supabase.auth.updateUser({ data: { is_demo: true } });
+  } catch {
+    // Worst case the session_expired redirect falls back to /baseball/login.
+  }
+
   // --- 7. Mirror into the admin_events feed (best-effort) ------------------
   //    userId is the shared demo account's real uuid; userEmail is the
   //    visitor's email so admins can identify who entered. The

@@ -9,6 +9,9 @@ import {
   isSessionIdleExpired,
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
+import { isDemoMetadataUser, type ProbedUser } from '@/lib/demo/gate-probe';
+import { isDemoCoachEmail } from '@/lib/demo/config.server';
+import { isBaseballDemoCoachEmail } from '@/lib/demo/baseball-config.server';
 
 /**
  * STAFF_CAPABILITY_ROUTES — the middleware mirror of every nav-registry entry
@@ -55,6 +58,27 @@ function getSportFromPath(pathname: string): 'baseball' | 'golf' | 'lifting' | n
   if (pathname.startsWith('/golf')) return 'golf';
   if (pathname.startsWith('/lifting')) return 'lifting';
   return null;
+}
+
+/**
+ * True when `user`'s CURRENT session belongs to a shared demo account for a
+ * sport that has a demo gate (golf, baseball — lifting has none). An expired
+ * demo session has nowhere to "sign in again" (the visitor never had a
+ * password), so the idle-timeout redirect below routes these back to the
+ * sport's /demo gate instead of the dead-end password login (#918).
+ *
+ * Checks `user_metadata.is_demo` first (set by `enterDemo` /
+ * `enterBaseballDemo` right after sign-in, readable without a secret) and
+ * falls back to an email match against the server-only demo credentials —
+ * covers a session established before this fix shipped, which won't carry
+ * the metadata flag yet.
+ */
+function isDemoContextUser(user: ProbedUser, sport: 'baseball' | 'golf' | 'lifting' | null): boolean {
+  if (sport !== 'golf' && sport !== 'baseball') return false;
+  if (isDemoMetadataUser(user)) return true;
+  return sport === 'golf'
+    ? isDemoCoachEmail(user.email)
+    : isBaseballDemoCoachEmail(user.email);
 }
 
 /**
@@ -568,16 +592,26 @@ export async function updateSession(request: NextRequest) {
       }
 
       const loginUrl = request.nextUrl.clone();
-      // /admin has no login route of its own — it reuses /golf/login (same as
-      // evaluateAdminGate's 'redirect-login' decision above) with returnTo
-      // bringing them back to /admin after signing in again.
-      loginUrl.pathname = sport ? `/${sport}/login` : '/golf/login';
-      loginUrl.search = '';
-      loginUrl.searchParams.set('message', 'session_expired');
-      // Already gated on isIdleGatedRoute via the enclosing `if` above, so
-      // returnTo is always set here — send the user back to the exact page
-      // they were bounced from once they re-authenticate.
-      loginUrl.searchParams.set('returnTo', pathname);
+      if (isDemoContextUser(user, sport)) {
+        // A demo visitor never had a password — there is nothing for them to
+        // "sign in again" with, so /login is a dead end. Route back to the
+        // sport's own /demo gate (which re-enters the shared account) with a
+        // friendly message instead (#918).
+        loginUrl.pathname = `/${sport}/demo`;
+        loginUrl.search = '';
+        loginUrl.searchParams.set('message', 'demo_session_expired');
+      } else {
+        // /admin has no login route of its own — it reuses /golf/login (same as
+        // evaluateAdminGate's 'redirect-login' decision above) with returnTo
+        // bringing them back to /admin after signing in again.
+        loginUrl.pathname = sport ? `/${sport}/login` : '/golf/login';
+        loginUrl.search = '';
+        loginUrl.searchParams.set('message', 'session_expired');
+        // Already gated on isIdleGatedRoute via the enclosing `if` above, so
+        // returnTo is always set here — send the user back to the exact page
+        // they were bounced from once they re-authenticate.
+        loginUrl.searchParams.set('returnTo', pathname);
+      }
 
       const res = NextResponse.redirect(loginUrl);
       // Propagate any cookie removals signOut wrote onto supabaseResponse...

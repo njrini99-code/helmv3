@@ -157,6 +157,18 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
     };
   }
 
+  // --- 5b. Stamp the session as a demo session ------------------------------
+  //    `user_metadata.is_demo` is readable by BOTH client and server code
+  //    (unlike the demo email, which stays a server-only secret) — the shared
+  //    idle-timeout flow (middleware + useSessionActivity) reads it to route
+  //    an expired demo session back to /golf/demo instead of the password
+  //    login (#918). Best-effort: a failure here must never block entry.
+  try {
+    await supabase.auth.updateUser({ data: { is_demo: true } });
+  } catch {
+    // Worst case the session_expired redirect falls back to /golf/login.
+  }
+
   // --- 6. Mirror into the admin_events feed --------------------------------
   //    userId is the shared demo account's real uuid; userEmail is the
   //    visitor's email so admins can identify them. The golf_demo_sessions
